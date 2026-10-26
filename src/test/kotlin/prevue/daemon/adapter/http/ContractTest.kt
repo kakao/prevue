@@ -122,6 +122,8 @@ class ContractTest {
         runBlocking { viewer.drain() }
 
         check("focus.on", post("/focus", mapOf("index" to 0, "interactive" to true)))
+        // 정착 줄(객체 settle)은 인터랙티브가 켜진 사이의 state 에만 실린다. state 는 최신 값만 내보내 바로 끄면 덮일 수 있다 — 도착을 보고 끈다
+        awaitUntil("SSE 의 정착 줄") { events.any { e -> e["type"] == "state" && (e["state"] as? Map<*, *>)?.get("settle") is Map<*, *> } }
         check("card.skipped", post("/card", mapOf("index" to 1, "force" to true)))
         check("focus.off", post("/focus", mapOf("index" to 0, "interactive" to false)))
 
