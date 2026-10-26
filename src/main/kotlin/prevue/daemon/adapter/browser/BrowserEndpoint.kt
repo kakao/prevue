@@ -107,7 +107,8 @@ class BrowserEndpoint(
         ex.requestURI.query?.split('&')?.firstNotNullOfOrNull { pair -> pair.removePrefix("v=").takeIf { it != pair && it.isNotEmpty() } }
 
     private fun viewport(ex: HttpExchange) {
-        frames.viewport((ex.body()["width"] as? Number)?.toInt())
+        val body = ex.body()
+        frames.viewport((body["width"] as? Number)?.toInt(), body["viewer"] as? String)
         ex.json(200, ACCEPTED)
     }
 

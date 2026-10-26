@@ -1,7 +1,7 @@
 // 한 장 화면 — 기기를 쥔 작업 공간(D-57). 가리키기 · 인터랙티브(FR-18) · 확대 · 뒤로 가기. 터치 · 휠을 보내는 것은 input.js 다.
 import { $, store, cardOf } from "./store.js";
 import { phrase } from "./strings.js";
-import { post, get, viewerStream } from "./api.js";
+import { post, get, viewerStream, reportStreamWidth } from "./api.js";
 import { flatten, byPick, narrow, hitIn, posIn, drawBox, point, setSay, sayOn } from "./point.js";
 import { setStatus, flash, setSummary } from "./capsule.js";
 import { createResizeController } from "./resize.js";
@@ -75,7 +75,7 @@ function reportViewport() {
     // 크기 틀이 움직이는 동안의 폭은 도착 폭이 아니다 — 거기서 재면 112px 스트림을 614px 에 늘려 조작 중 화면이 흐렸다. 멈춘 뒤에 잰다
     if (resizeUI.moving()) { reportViewport(); return; }
     const w = Math.round(shot.offsetWidth * devicePixelRatio * zoom.z);
-    if (w && w !== sentW) { sentW = w; post("/stream/viewport", { width: w }).catch(() => {}); }
+    if (w && w !== sentW) { sentW = w; reportStreamWidth(w).catch(() => {}); }
   }, 120);
 }
 

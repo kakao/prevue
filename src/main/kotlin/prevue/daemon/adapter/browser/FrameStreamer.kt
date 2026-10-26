@@ -45,10 +45,11 @@ class FrameStreamer(
     private class Watch(val on: Boolean) : Cmd
     private class Subscribe(val out: OutputStream, val viewer: String?) : Cmd
     private class Unsubscribe(val sub: Subscriber) : Cmd
-    private class Viewport(val width: Int?) : Cmd
+    private class Viewport(val viewer: String?, val width: Int?) : Cmd
     private class Encoded(val e: FrameEncoder.Encoded) : Cmd
 
     private class Subscriber(val out: OutputStream, val viewer: String?) {
+        var width: Int? = null
         val parts = Channel<FrameEncoder.Part>(Channel.CONFLATED)
         lateinit var job: Job
     }
@@ -63,7 +64,7 @@ class FrameStreamer(
     private var lastPart: FrameEncoder.Part? = null
     private var lastSeq = 0L
     private var watched = false
-    private var width: Int? = null
+    private val width: Int? get() = subscribers.mapNotNull { it.width }.maxOrNull()
     private var conflated = 0L
     private var sent = 0L
     private lateinit var writers: CoroutineScope
@@ -72,7 +73,7 @@ class FrameStreamer(
 
     fun subscribe(out: OutputStream, viewer: String? = null) { if (cmds.trySend(Subscribe(out, viewer)).isFailure) closeQuietly(out) }
 
-    fun viewport(width: Int?) { cmds.trySend(Viewport(width?.takeIf { it > 0 })) }
+    fun viewport(width: Int?, viewer: String? = null) { cmds.trySend(Viewport(viewer, width?.takeIf { it > 0 })) }
 
     fun stop() { cmds.close(); job.cancel() }
 
@@ -107,24 +108,33 @@ class FrameStreamer(
                 if (watched == c.on) return
                 watched = c.on
                 encoder.reset()
-                if (c.on) submitLast(encoder) else { width = null; dropSubscribers() }
+                if (c.on) submitLast(encoder) else dropSubscribers()
             }
-            is Subscribe -> {
-                replaceStreamOf(c.viewer)
-                val sub = Subscriber(c.out, c.viewer)
-                lastPart?.let { sub.parts.trySend(it) }
-                sub.job = writers.launch(write + CoroutineName("prevue-stream-out")) { pump(sub) }
-                subscribers += sub
-                submitLast(encoder)
-            }
-            is Unsubscribe -> if (subscribers.remove(c.sub)) drop(c.sub)
-            is Viewport -> width = c.width
+            is Subscribe -> subscribe(c, encoder)
+            is Unsubscribe -> resizingAfter(encoder) { if (subscribers.remove(c.sub)) drop(c.sub) }
+            is Viewport -> resizingAfter(encoder) { subscribers.filter { it.viewer != null && it.viewer == c.viewer }.forEach { it.width = c.width } }
             is Encoded -> encoder.finished(c.e)?.let { part ->
                 lastPart = part
                 sent++
                 for (s in subscribers) s.parts.trySend(part)
             }
         }
+    }
+
+    private fun subscribe(c: Subscribe, encoder: FrameEncoder) {
+        val kept = subscribers.firstOrNull { c.viewer != null && it.viewer == c.viewer }?.width
+        replaceStreamOf(c.viewer)
+        val sub = Subscriber(c.out, c.viewer).apply { width = kept }
+        lastPart?.let { sub.parts.trySend(it) }
+        sub.job = writers.launch(write + CoroutineName("prevue-stream-out")) { pump(sub) }
+        subscribers += sub
+        submitLast(encoder)
+    }
+
+    private inline fun resizingAfter(encoder: FrameEncoder, change: () -> Unit) {
+        val before = width
+        change()
+        if (width != before) submitLast(encoder)
     }
 
     private fun show(f: LiveFrame?, encoder: FrameEncoder) {

@@ -9,6 +9,8 @@ export const get = url => fetch(url);
 // 이 페이지의 스트림 이름표 — 같은 페이지가 스트림을 새로 열면 데몬이 이 페이지의 옛 스트림을 닫는다(WebKit 은 옛 연결을 닫지 않는다).
 const viewerId = Math.random().toString(36).slice(2, 10);
 export const viewerStream = url => `${url}${url.includes("?") ? "&" : "?"}v=${viewerId}`;
+// 폭은 같은 이름표로 알린다 — 데몬이 붙은 뷰어 중 가장 큰 폭으로 줄여, 작은 창 하나가 다른 창의 스트림을 흐리게 하지 않는다.
+export const reportStreamWidth = width => post("/stream/viewport", { width, viewer: viewerId });
 
 export const fetchProjectFiles = () => fetch("/project-files.json").then(r => r.json());
 

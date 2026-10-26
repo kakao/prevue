@@ -133,6 +133,49 @@ class FrameStreamerTest {
         for (s in listOf(again, other, plain)) assertEquals(0x00ff00, lastPicture(s.bytes())?.getRGB(0, 0)?.and(0xffffff))
     }
 
+    @Test fun `작은 뷰어가 나중에 폭을 알려도 붙은 뷰어 중 가장 큰 폭으로 줄이고, 떠난 뷰어의 폭은 빠진다`() = runTest {
+        val stream = streamer()
+        watching.value = true
+        var gone = false
+        val big = object : OutputStream() {
+            override fun write(b: Int) { if (gone) throw java.io.IOException("closed") }
+            override fun write(b: ByteArray, off: Int, len: Int) { if (gone) throw java.io.IOException("closed") }
+        }
+        val small = Socket()
+        stream.subscribe(big, "big")
+        stream.subscribe(small, "small")
+        stream.viewport(300, "big")
+        stream.viewport(100, "small")
+        runCurrent()
+        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        runCurrent()
+        assertEquals(300, lastPicture(small.bytes())?.width, "마지막에 알린 작은 폭으로 모두를 줄였다")
+        gone = true
+        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        runCurrent()
+        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        runCurrent()
+        assertEquals(100, lastPicture(small.bytes())?.width, "끊긴 뷰어의 폭이 남았다")
+    }
+
+    @Test fun `구독이 없는 뷰어 · 이름표 없는 폭은 줄이는 폭에 들지 않고, 같은 뷰어가 스트림을 새로 열어도 폭은 이어진다`() = runTest {
+        val stream = streamer()
+        watching.value = true
+        val first = Socket()
+        stream.subscribe(first, "a")
+        stream.viewport(200, "a")
+        stream.viewport(380, "gone")
+        stream.viewport(390)
+        runCurrent()
+        stream.subscribe(Socket(), "a")
+        val seen = Socket()
+        stream.subscribe(seen)
+        runCurrent()
+        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        runCurrent()
+        assertEquals(200, lastPicture(seen.bytes())?.width)
+    }
+
     @Test fun `멈춘 뒤에 온 구독은 바로 닫는다`() = runTest {
         val stream = streamer()
         stream.stop()
