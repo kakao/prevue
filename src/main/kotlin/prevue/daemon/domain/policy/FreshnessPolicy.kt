@@ -16,6 +16,16 @@ object FreshnessPolicy {
     /** 새 파일이 아직 Gradle 산출물에 없을 수 있나. 산출물 시각을 모르면 그렇다고 본다 — 감시가 생성을 봤다. */
     fun newerThanBuild(mtime: Long, builtAt: Long?): Boolean = builtAt == null || mtime > builtAt
 
+    // 외부: kotlinc가 선언이 겹친 컴파일을 이 문구들로 보고한다
+    private val duplicateErrors = listOf("conflicting overloads", "overload resolution ambiguity", "redeclaration", "conflicting declarations")
+
+    fun duplicateIn(paths: Collection<String>, messages: String): Boolean =
+        messages.lineSequence().filter { ": error:" in it }.any { line ->
+            val file = line.substringBefore(':')
+            val text = line.substringAfter(": error:").trim().lowercase()
+            paths.any { it == file || it.endsWith("/$file") } && duplicateErrors.any(text::startsWith)
+        }
+
     /** 실패한 컴파일의 오류가 자기 안에 난 파일들([paths] 중). kotlinc는 `경로:줄:칸: error:`로 적고 경로가 상대일 수 있어 뒤에서 맞춘다. */
     fun blamed(paths: Collection<String>, messages: String): Set<String> {
         val at = messages.lineSequence().filter { ": error:" in it }.map { it.substringBefore(':') }.filter { it.isNotBlank() }.toSet()

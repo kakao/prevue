@@ -37,4 +37,16 @@ class FreshnessPolicyTest {
         assertFalse(FreshnessPolicy.newerThanBuild(mtime = 100, builtAt = 200))
         assertTrue(FreshnessPolicy.newerThanBuild(mtime = 100, builtAt = null))
     }
+
+    @Test fun `컴파일러가 선언이 겹친다고 한 파일만 겹친 것으로 본다`() {
+        val msg = "/r/copy/Screen.kt:109:1: error: conflicting overloads:\nfun Screen(): Unit\n/r/app/Screen.kt:119:5: error: overload resolution ambiguity between candidates:\n"
+        assertTrue(FreshnessPolicy.duplicateIn(setOf("/r/copy/Screen.kt"), msg))
+        assertTrue(FreshnessPolicy.duplicateIn(setOf("/r/app/Screen.kt"), msg))
+        assertFalse(FreshnessPolicy.duplicateIn(setOf("/r/other/Card.kt"), msg))
+    }
+
+    @Test fun `이름이 같아도 컴파일러가 겹친다고 하지 않으면 겹친 것이 아니다`() {
+        assertFalse(FreshnessPolicy.duplicateIn(setOf("/r/common/Platform.kt"), "/r/common/Platform.kt:3:9: error: unresolved reference 'x'.\n"))
+        assertFalse(FreshnessPolicy.duplicateIn(setOf("/r/common/Platform.kt"), ""))
+    }
 }

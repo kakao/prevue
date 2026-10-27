@@ -64,7 +64,8 @@ class StaleCallers(
         val blamed = FreshnessPolicy.blamed(first.map { it.canonicalPath }, c.messages)
         val broken = fresh.filter { it.canonicalPath in blamed }
         ed.forgetNew(broken)
-        if (broken.isEmpty() || broken.size != blamed.size) return Batch(first, seen, c)
+        val duplicated = FreshnessPolicy.duplicateIn(blamed - broken.map { it.canonicalPath }.toSet(), c.messages)
+        if (broken.isEmpty() || (broken.size != blamed.size && !duplicated)) return Batch(first, seen, c)
         val rest = first - broken.toSet()
         val again = compileAll(rest, texts)
         // 다시 해도 실패하면 처음 것을 낸다 — 새 파일 자신의 오류가 진짜 원인을 말한다
