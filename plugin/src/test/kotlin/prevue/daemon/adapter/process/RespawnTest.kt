@@ -13,6 +13,12 @@ class RespawnTest {
     private val screen = File(dir, "Screen.kt").apply { writeText("") }
     private val base = listOf("--classpath", "a.json", "--port", "8791")
 
+    // D-127 — 학습은 처음 띄운 JVM 하나가 맡는다. 물려받으면 끝나 가는 옛 JVM과 같은 캐시 파일에 겹쳐 쓴다
+    @Test fun `다시 띄울 때 AOT 학습 플래그는 물려주지 않고 캐시 사용은 물려준다`() {
+        val input = listOf("-Xmx3g", "-XX:AOTCacheOutput=/a/k.aot.tmp", "-XX:AOTCache=/a/k.aot", "-XX:-AOTClassLinking")
+        assertEquals(listOf("-Xmx3g", "-XX:AOTCache=/a/k.aot", "-XX:-AOTClassLinking"), Respawn.jvmArgs(input))
+    }
+
     @Test fun `지금 보드로 다시 연다`() {
         assertEquals(base + listOf("--show", screen.path), Respawn.args(base + listOf("--show", hang.path), screen, hang))
     }

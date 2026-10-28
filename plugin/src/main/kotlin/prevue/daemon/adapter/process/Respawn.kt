@@ -31,10 +31,12 @@ object Respawn {
     /** 이 JVM과 같은 실행 파일 · JVM 옵션 · 클래스패스로 띄운다. 표준 출력 · 오류는 같은 로그로 간다(bin/prevue가 연 파일을 물려받는다). */
     fun start(mainClass: String, args: List<String>) {
         val java = File(System.getProperty("java.home"), "bin/java").path
-        val cmd = listOf(java) + ManagementFactory.getRuntimeMXBean().inputArguments +
+        val cmd = listOf(java) + jvmArgs(ManagementFactory.getRuntimeMXBean().inputArguments) +
             listOf("-cp", System.getProperty("java.class.path"), mainClass) + args
         ProcessBuilder(cmd).inheritIO().apply { environment()[ENV_AT] = System.currentTimeMillis().toString() }.start()
     }
+
+    fun jvmArgs(input: List<String>): List<String> = input.filterNot { it.startsWith("-XX:AOTCacheOutput=") }
 
     /** bin/prevue가 띄울 때 적은 pid는 첫 JVM의 것이다. 다시 뜬 JVM이 자기 pid로 고쳐 쓴다 — `stop` · 생존 판정이 그 파일을 본다. */
     fun writePid(env: Map<String, String> = System.getenv()) {

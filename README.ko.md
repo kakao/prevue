@@ -192,7 +192,7 @@ Android Studio의 Interactive Mode처럼 클릭 · 드래그로 모션과 애니
 - **Hot Swap** — 저장한 뒤 25장이 전부 새 그림이 되기까지. 첫 장은 0.9초에 나옵니다
 - **First Preview** — Android Studio는 프로젝트를 열고, Prevue는 데몬을 띄우고 첫 렌더가 끝나기까지
 - **Memory** — Android Studio는 한 시점의 IDE와 Gradle 데몬 합계, Prevue는 저장 10번 뒤 데몬 하나의 메모리 사용량입니다. 모듈을 오가며 오래 써도 1.6GB가 최대였고, 10분 동안 쓰지 않으면 스스로 종료됩니다
-- **Disk** — Android Studio 앱 번들 대 `~/.prevue/toolchain`
+- **Disk** — Android Studio 앱 번들 대 `~/.prevue/toolchain`. JDK 25 이상이면 데몬을 빨리 띄우려고 `~/.prevue/aot`에 200MB 안팎의 클래스 캐시를 더 둡니다
 - **Prevue가 다시 그리는 속도** — 리터럴 · 리소스 값 저장은 컴파일을 건너뜁니다. 모듈 전환과 기기 바꾸기는 새 그림이 나오기까지, 인터랙티브는 피드를 드래그하는 동안 뷰어 스트림의 프레임 수입니다
 
 ## 명령

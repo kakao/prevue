@@ -451,14 +451,20 @@ class Cli(unittest.TestCase):
     # 회귀: 종료 요청을 처리하지 못한 데몬을 35초 기다린 뒤 stopped 에 세고 살려 뒀다 — 그 데몬이 포트를 쥐어 새 show 가 거기 붙었다
     def test_종료_요청을_처리하지_못하는_데몬도_내리고_센다(self):
         port, fake = self.broken_daemon()
-        jars = os.path.join(self.daemons, "daemon-%d.jars" % port)
+        key = os.path.join(self.daemons, "daemon-%d.jarkey" % port)
+        with open(key, "w") as f:
+            f.write("k1\n")
+        jars = os.path.join(self.daemons, "jars-k1")
+        legacy = os.path.join(self.daemons, "daemon-%d.jars" % port)
         os.makedirs(jars)
+        os.makedirs(legacy)
         t0 = time.time()
         rc, out = self.prevue("stop", "--all")
         self.assertEqual((rc, out.get("ok"), out.get("stopped")), (0, True, 1))
         self.assertLess(time.time() - t0, 10, "HTTP 오류면 기다리지 않고 신호로 내린다")
         self.assertIsNotNone(fake.wait(timeout=5))
-        self.assertFalse(os.path.exists(jars), "내린 데몬의 jar 복사본을 지운다")
+        self.assertEqual([os.path.exists(p) for p in (key, jars, legacy)], [False, False, False],
+                         "내린 데몬의 jar 표 · 아무도 가리키지 않는 복사본 · 옛 자리의 복사본을 지운다")
 
     def test_TERM_을_무시하는_데몬은_KILL_로_내린다(self):
         port, fake = self.broken_daemon(ignore_term=True)
