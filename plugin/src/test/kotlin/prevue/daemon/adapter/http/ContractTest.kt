@@ -214,11 +214,53 @@ class ContractTest {
         return diffs
     }
 
-    /** 이벤트는 같은 종류라도 부른 자리마다 키가 다르다(감시가 부른 컴파일엔 감지·대기 ms). 종류별로 합쳐 본다. */
+    /**
+     * 이벤트는 같은 종류라도 부른 자리마다 키가 다르다(감시가 부른 컴파일엔 감지·대기 ms). 종류별로 합쳐 본다.
+     * state 는 뷰어마다 최신 값만 보낸다(CONFLATED) — 한 단계에만 잠깐 서는 모양(choice · selection · boardNote …)은 다음 단계가 덮으면 오지 않는다.
+     * 그래서 state 는 "온 것이 모두 계약 안에 있다"만 본다. 그 모양들은 GET /viewer/state 계약이 정확히 고정하고, SSE 로만 보이는 것(settle)은 도착을 기다린다.
+     * ui 는 버리지 않는 채널이라 그대로 정확히 견준다.
+     */
     private fun compareEvents(): List<String> {
         val byType = events.groupBy { it["type"].toString() }.toSortedMap()
             .mapValues { (_, evs) -> evs.map { schema(it) }.reduce(::union) }
-        return compare("events", 200, byType).map { it.replace("example", "") }
+        val file = File(dir, "events.json")
+        @Suppress("UNCHECKED_CAST")
+        val want = if (file.isFile) Json.parse(file.readText()) as Map<String, Map<String, Any?>> else null
+        // 이 파일의 schema 는 종류별 스키마를 한 번 더 스키마로 만든 것이고, 종류별 스키마 자체는 example 에 있다
+        val known = want?.get("example")
+        if (update) {
+            val state = listOfNotNull(known?.get("state"), byType["state"]).reduce(::union)
+            return compare("events", 200, byType + ("state" to state))
+        }
+        if (want == null || known == null) return listOf("events: contract/events.json 이 없다")
+        val diffs = ArrayList<String>()
+        diff("events:", want["schema"]!! - "state", schema(byType - "state"), diffs)
+        if (byType["state"] == null) diffs += "events:state 빠짐"
+        else fits("events:state.", known["state"], byType["state"], diffs)
+        return diffs
+    }
+
+    /** [got]이 [want] 안에 드는가 — 키 · 타입이 빠지거나 좁은 것은 괜찮고, 없던 키 · 타입만 어긋남이다. */
+    private fun fits(at: String, want: Any?, got: Any?, out: MutableList<String>) {
+        fun types(v: Any?) = when (v) {
+            is String -> v.split('|').toSet()
+            is Map<*, *> -> (v["|"] as? String)?.split('|')?.toSet().orEmpty() + "object"
+            is List<*> -> setOf("array")
+            else -> setOf(v.toString())
+        }
+        when {
+            want is Map<*, *> && got is Map<*, *> -> got.keys.map { it.toString() }.sorted().forEach { k ->
+                when {
+                    k == "|" -> fits(at + "|", want["|"] ?: "", got["|"], out)
+                    k !in want -> out += "$at$k 새로 생김 (${got[k]})"
+                    else -> fits("$at$k.", want[k], got[k], out)
+                }
+            }
+            want is List<*> && got is List<*> -> if (got.single() != "empty") {
+                if (want.single() == "empty") out += "${at}[] 새로 생김 (${got.single()})" else fits("$at[].", want.single(), got.single(), out)
+            }
+            else -> (types(got) - types(want) - "empty").takeIf { it.isNotEmpty() }?.let { out += "${at.removeSuffix(".")} 새 타입 $it" }
+        }
     }
 
     private fun diff(at: String, want: Any?, got: Any?, out: MutableList<String>) {
