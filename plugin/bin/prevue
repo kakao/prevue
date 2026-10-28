@@ -284,9 +284,12 @@ force_exit() {  # <port>
 drop_jars() {  # <port>
   [ -n "$(alive_records "$1")" ] && return
   rm -f "$DAEMON_DIR/daemon-$1.jarkey"; rm -rf "$DAEMON_DIR/daemon-$1.jars"
-  for d in "$DAEMON_DIR"/jars-*; do
-    [ -d "$d" ] || continue
-    cat "$DAEMON_DIR"/daemon-*.jarkey 2>/dev/null | grep -qx "${d##*/jars-}" || rm -rf "$d"
+}
+# 내용별 복사본은 여러 시작이 함께 쓴다 — 쓰려는 시작이 먼저 touch 하므로 10분 넘게 아무도 쓰지 않았고 가리키는 표도 없는 것만 거둔다.
+sweep_jars() {
+  local keys; keys="$(cat "$DAEMON_DIR"/daemon-*.jarkey 2>/dev/null)"
+  find "$DAEMON_DIR" -maxdepth 1 -type d -name 'jars-*' -mmin +10 2>/dev/null | while read -r d; do
+    printf '%s\n' "$keys" | grep -qx "${d##*/jars-}" || rm -rf "$d"
   done
 }
 # 데몬 클래스 데이터의 AOT 캐시(D-127) — 클래스를 미리 읽어 둔 판이라 콜드의 kotlinc 첫 컴파일 · 렌더러 기동이 빨라진다.
@@ -301,27 +304,31 @@ aot_args() {  # <java 플래그 …> — AOT 배열 · AOT_CACHE · AOT_LOCK 을
   mkdir -p "$AOT_DIR" || return
   local key; key="$({ printf '%s\n' "$JDK" "$@"; cksum < "$JDK/release"; } | cksum | awk '{print $1}')"
   local f="$AOT_DIR/$key.aot" lock="$AOT_DIR/$key.training"
+  # 학습 JVM 은 명령줄에 이 .tmp 를 단 프로세스다 — pid 만 보면 재부팅 뒤 재사용된 pid · 샌드박스의 EPERM 에 속는다.
+  # 30초 안에 끝난 학습(뜨다 죽음)은 클래스를 덜 담아 올리지 않는다.
   if [ -d "$lock" ]; then
-    local p; p="$(cat "$lock/pid" 2>/dev/null)"
-    if [ -n "$p" ] && ! kill -0 "$p" 2>/dev/null; then
-      [ -s "$f.tmp" ] && mv -f "$f.tmp" "$f"; rm -rf "$lock"
+    local p started; p="$(cat "$lock/pid" 2>/dev/null)"; started="$(cat "$lock/started" 2>/dev/null)"
+    if [ -n "$p" ] && ! ps -p "$p" -o command= 2>/dev/null | grep -qF -- "-XX:AOTCacheOutput=$f.tmp"; then
+      [ -s "$f.tmp" ] && [ "$(( $(date -r "$f.tmp" +%s) - ${started:-0} ))" -ge 30 ] && mv -f "$f.tmp" "$f"
+      rm -rf "$lock" "$f.tmp"
     elif [ -z "$p" ] && [ -z "$(find "$lock" -maxdepth 0 -mmin -1 2>/dev/null)" ]; then
       rm -rf "$lock"
     fi
   fi
-  find "$AOT_DIR" -maxdepth 1 \( -name '*.aot' -o -name '*.aot.tmp' \) ! -name "$key.aot*" -mtime +1 -delete 2>/dev/null
+  find "$AOT_DIR" -maxdepth 1 \( -name '*.aot' -o -name '*.aot.tmp' -o -name '*.training' \) ! -name "$key.*" -mtime +1 \
+    -exec rm -rf {} + 2>/dev/null
   AOT_FLAGS=(-XX:+UnlockDiagnosticVMOptions -XX:-AOTRecordTraining -XX:-AOTClassLinking)
   if [ -s "$f" ]; then
     touch "$f"; AOT=("${AOT_FLAGS[@]}" "-XX:AOTCache=$f"); AOT_CACHE="$f"
   elif [ "${FG:-0}" != 1 ] && mkdir "$lock" 2>/dev/null; then
-    AOT=("${AOT_FLAGS[@]}" "-XX:AOTCacheOutput=$f.tmp"); AOT_LOCK="$lock"
+    date +%s > "$lock/started"; AOT=("${AOT_FLAGS[@]}" "-XX:AOTCacheOutput=$f.tmp"); AOT_LOCK="$lock"
   fi
 }
 # /shutdown 을 보낸 자리를 끝까지 내린다. 요청이 HTTP 오류로 돌아왔으면(1) 기다리지 않고 신호로 간다 — 연결 자체가 안 되면(3)
 # 이미 HTTP 를 닫고 정리 중일 수 있어 먼저 기다린다. 데몬은 /shutdown 뒤 30초에 스스로 끝나므로 35초 뒤에도 살았으면 멈춘 것이다.
 bring_down() {  # <port> <post 의 종료 코드>
   if [ "$2" = 1 ]; then force_exit "$1"; else await_exit "$1" || force_exit "$1"; fi || return 1
-  drop_jars "$1"
+  drop_jars "$1"; sweep_jars
 }
 # $PORT 에 닿지 못했을 때의 답. curl 의 오류 문구는 샌드박스 차단과 빈 포트에서 같아("Couldn't connect to server")
 # 가를 수 없다 — 기록으로 가른다. 살아 있으면 이 셸이 못 닿는 것이고 start 로 보내지 않는다.
@@ -850,9 +857,10 @@ case "$cmd" in
       [ -e "$d" ] || continue; d="${d##*/daemon-}"; drop_jars "${d%.*}"
     done
     OWN_JAR="${PREVUE_CP%%:*}"    # 우리 jar 가 맨 앞이다(prevueEnv)
-    KEY="$(cksum "$OWN_JAR" "$PREVUE_BRIDGE" | cksum | awk '{print $1}')"
+    KEY="$({ cksum "$OWN_JAR" "$PREVUE_BRIDGE"; date -r "$OWN_JAR" +%s; date -r "$PREVUE_BRIDGE" +%s; } | cksum | awk '{print $1}')"
     printf '%s\n' "$KEY" > "$DAEMON_DIR/daemon-$PORT.jarkey"
     JARS="$DAEMON_DIR/jars-$KEY"
+    [ -d "$JARS" ] && touch "$JARS"; sweep_jars
     if [ ! -d "$JARS" ]; then
       t="$DAEMON_DIR/.jars-$KEY.$$"
       mkdir -p "$t" && cp -p "$OWN_JAR" "$PREVUE_BRIDGE" "$t/" \
@@ -861,7 +869,7 @@ try: os.rename(sys.argv[1], sys.argv[2])
 except OSError:
     if not os.path.isdir(sys.argv[2]): raise' "$t" "$JARS"
       rm -rf "$t"
-      [ -d "$JARS" ] || { echo "{\"ok\":false,\"error\":$(jstr "Couldn't copy $OWN_JAR to $JARS for the daemon to run from")}"; exit 1; }
+      [ -d "$JARS" ] || { echo "{\"ok\":false,\"error\":$(jstr "Couldn't copy $OWN_JAR and $PREVUE_BRIDGE to $JARS for the daemon to run from")}"; exit 1; }
     fi
     DAEMON_CP="$JARS/$(basename "$OWN_JAR")${PREVUE_CP#"$OWN_JAR"}"
     JVM=("-Xmx${PREVUE_HEAP:-2g}" -XX:+UseG1GC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=30 -XX:G1PeriodicGCInterval=30000 -Djava.awt.headless=true
@@ -883,7 +891,7 @@ except OSError:
     [ -n "$AOT_LOCK" ] && echo $! > "$AOT_LOCK/pid"
     for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; sleep 0.5; done
     # JVM 은 맞지 않는 캐시를 알리고 캐시 없이 뜬다 — 지워 두면 다음 시작이 다시 학습한다
-    [ -n "$AOT_CACHE" ] && grep -qE '\[error *\]\[aot' "$LOG" 2>/dev/null && rm -f "$AOT_CACHE"
+    [ -n "$AOT_CACHE" ] && grep -E '\[(error|warning) *\]\[(aot|cds)' "$LOG" 2>/dev/null | grep -qv 'Preload Warning' && rm -f "$AOT_CACHE"
     if ! curl -sf -m 2 "$BASE/status" >/dev/null; then
       # 죽은 이유는 로그에 있다. 경로만 주고 "읽어 봐라"로 끝내면 한 겹 아래에 묻힌다 —
       # 스택 프레임을 걷어낸 마지막 줄이 대개 그 이유다.
