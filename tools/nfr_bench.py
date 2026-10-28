@@ -789,7 +789,7 @@ def main():
     ap.add_argument("--stream-seeds", default="1,2", help="NFR-6 스트림 — 쉼표로, 시드마다 --stream-ops 번 조작한다(한 데몬에 잇달아)")
     ap.add_argument("--stream-ops", type=int, default=300)
     ap.add_argument("--stream-every", type=int, default=10, help="footprint 를 재는 간격(초)")
-    ap.add_argument("--big-rounds", type=int, default=20, help="NFR-6 큰 기기 — 크기 셋 고르기 + 저장 한 바퀴의 수")
+    ap.add_argument("--big-rounds", type=int, default=30, help="NFR-6 큰 기기 — 크기 셋 고르기 + 저장 한 바퀴의 수")
     ap.add_argument("--big-quiet", type=float, default=2.0, help="고르기 · 저장 뒤 쉬는 초 — 1초 잠잠하면 옆 그림을 미리 그린다")
     ap.add_argument("--skip", default="", help="쉼표로 — cold,hot,switch,memory,tabswitch,tabs,idle,timeout,stream,big")
     a = ap.parse_args()
