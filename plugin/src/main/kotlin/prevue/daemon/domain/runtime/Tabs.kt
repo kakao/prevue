@@ -95,7 +95,7 @@ class Tabs(
         val t = System.nanoTime()
         live.compiling(ed, listOf(f), by)
         val batch = coroutineScope {
-            if (!engine.drewOnce) launch { warmRenderer(f) }
+            launch { warmRenderer(f) }
             modules.compileWithNew(ed, listOf(f))
         }
         if (batch.result.ok) engine.codeChanged()
@@ -105,7 +105,7 @@ class Tabs(
 
     private suspend fun warmRenderer(f: File) {
         val p = runCatching { previews.inFile(f) }.getOrDefault(emptyList()).firstOrNull { it.methodParams.isEmpty() } ?: return
-        engine.showAside(p.copy(previewId = p.previewId + WARM_SUFFIX))
+        engine.warmIfCold(p.copy(previewId = p.previewId + WARM_SUFFIX))
     }
 
     private fun previewClasses(f: File): List<String> =
