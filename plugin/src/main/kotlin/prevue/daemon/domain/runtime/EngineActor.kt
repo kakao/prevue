@@ -101,11 +101,15 @@ class EngineActor(
     val frames: StateFlow<LiveLoop.Report> get() = loop.report
     fun isLatest(shot: SettledShot): Boolean = loop.isLatest(shot)
 
+    @Volatile var drewOnce = false
+        private set
+
     suspend fun show(p: PreviewSpec, interactive: Boolean = false, ownLoader: Boolean = false): RenderOutput = call {
+        drewOnce = true
         loop.close()
         if (interactive) loop.open(p, interactive = true) else renderer.show(p, ownLoader)
     }
-    suspend fun showAside(p: PreviewSpec): RenderOutput = call { renderer.showAside(p) }
+    suspend fun showAside(p: PreviewSpec): RenderOutput = call { drewOnce = true; renderer.showAside(p) }
     fun keepImage(out: RenderOutput, previewId: String): RenderOutput = renderer.copyImage(out, previewId)
     fun msSinceInput(): Long = loop.lastInputAt.value?.let { now() - it } ?: Long.MAX_VALUE
     suspend fun rerender(p: PreviewSpec): RenderOutput = call { if (loop.preview != null) loop.look(false).out else renderer.show(p) }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import prevue.daemon.adapter.compile.HotCompiler
@@ -142,8 +143,8 @@ private fun PrevueDaemon.assemble(boot: Boot) {
     serve(ui) { uc.readStatus().lastRenderMs }
     log("http://127.0.0.1:${boot.args.port}/  (${(System.nanoTime() - boot.startedNs) / 1_000_000}ms)")
     if (watches.watching) watches.report(graph)
-    warmUp(boot, compiler, graph)
-    boot.args.show?.let { showInitial(it, uc) }
+    val initial = boot.args.show?.let { showInitial(it, uc) }
+    warmUp(boot, compiler, graph, after = initial)
 }
 
 private fun moduleInfo(boot: Boot, renderSpec: ClasspathSpec, graph: ModuleGraph, rendersApp: Boolean): ModuleInfo {
@@ -245,8 +246,9 @@ private fun PrevueDaemon.respawnLater(
     }
 }
 
-private fun PrevueDaemon.warmUp(boot: Boot, compiler: HotCompiler, graph: ModuleGraph) {
+private fun PrevueDaemon.warmUp(boot: Boot, compiler: HotCompiler, graph: ModuleGraph, after: Job?) {
     scope.launch(CoroutineName("prevue-warmup")) {
+        after?.join()
         val warmFile = boot.args.show?.substringBefore('#')?.let { File(it) }?.takeIf { it.isFile }
             ?: boot.spec.sourceRoots.asSequence().flatMap { it.walkTopDown() }.takeWhile { isActive }.firstOrNull {
                 it.extension == "kt" && it.readText().contains("@Preview")
@@ -259,7 +261,7 @@ private fun PrevueDaemon.warmUp(boot: Boot, compiler: HotCompiler, graph: Module
     }
 }
 
-private fun PrevueDaemon.showInitial(target: String, uc: UseCases) {
+private fun PrevueDaemon.showInitial(target: String, uc: UseCases): Job =
     scope.launch(CoroutineName("prevue-initial-preview")) {
         val (t, idx) = target.substringBefore('#') to target.substringAfter('#', "").toIntOrNull()
         try {
@@ -270,6 +272,5 @@ private fun PrevueDaemon.showInitial(target: String, uc: UseCases) {
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { log("show 실패: $e"); e.printStackTrace() }
     }
-}
 
 private fun log(s: String) = println("[prevue ${java.time.LocalTime.now().withNano(0)}] $s")
