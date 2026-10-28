@@ -98,6 +98,11 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // CI 는 보고서를 올리지 않는다 — 실패한 단언의 메시지가 로그에 없으면 무엇이 어긋났는지 알 길이 없다
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
     // 계약(contract/*.json)을 다시 쓴다. 의도한 변화일 때만 — diff 가 커밋에 실린다.
     systemProperty("prevue.contract.update", providers.gradleProperty("contractUpdate").getOrElse("false"))
 }
