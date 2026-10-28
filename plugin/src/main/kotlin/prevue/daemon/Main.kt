@@ -153,7 +153,7 @@ private fun PrevueDaemon.watchRenderer(engine: BootingEngine, boot: Boot, uc: Us
     scope.launch(CoroutineName("prevue-lost")) {
         val booted = try { engine.await() }
             catch (e: CancellationException) { throw e }
-            catch (e: Throwable) { log("렌더러를 띄우지 못했다: $e"); e.printStackTrace(); kotlin.system.exitProcess(1) }
+            catch (e: Throwable) { requestFailure("렌더러를 띄우지 못했다", e); return@launch }
         val lost = booted.lost.filterNotNull().first()
         respawnLater(boot.argv, uc, ui, lost.reason.text, lost.preview.file)
     }

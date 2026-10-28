@@ -76,7 +76,9 @@ class StaleCallers(
         val before = literals.read(files)
         val seen = files.associate { it.canonicalPath to it.lastModified() }
         val alone = compileAll(files, before)
-        return if (alone.ok) done(ed, files, seen, alone) else compileWithNew(ed, files, before)
+        if (alone.ok) return done(ed, files, seen, alone)
+        val asked = files.map { it.canonicalPath }.toSet()
+        return if (ws.now.newFiles.any { it !in asked }) compileWithNew(ed, files, before) else Batch(files, seen, alone)
     }
 
     suspend fun behindBuild(): List<File> =

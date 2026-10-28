@@ -3,6 +3,7 @@ package prevue.daemon.domain.runtime
 import prevue.daemon.entity.ensure
 import prevue.daemon.entity.phrase
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import prevue.daemon.entity.PreviewSpec
@@ -95,7 +96,7 @@ class Tabs(
         val t = System.nanoTime()
         live.compiling(ed, listOf(f), by)
         val batch = coroutineScope {
-            launch { warmRenderer(f) }
+            if (f.path !in ws.now.newFiles) launch { warmRenderer(f) }
             modules.compileOpening(ed, listOf(f))
         }
         if (batch.result.ok) engine.codeChanged()
@@ -105,7 +106,11 @@ class Tabs(
 
     private suspend fun warmRenderer(f: File) {
         val p = runCatching { previews.inFile(f) }.getOrDefault(emptyList()).firstOrNull { it.methodParams.isEmpty() } ?: return
-        engine.warmIfCold(p.copy(previewId = p.previewId + WARM_SUFFIX))
+        try {
+            val out = engine.warmIfCold(p.copy(previewId = p.previewId + WARM_SUFFIX)) ?: return
+            listOfNotNull(engine.written(out).image, out.tree).forEach { it.delete() }
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) { System.err.println("[prevue] 렌더러를 미리 데우지 못했다 — 첫 그림이 데우기를 맡는다: $e") }
     }
 
     private fun previewClasses(f: File): List<String> =

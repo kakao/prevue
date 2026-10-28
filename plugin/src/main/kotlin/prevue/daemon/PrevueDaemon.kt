@@ -24,7 +24,7 @@ class PrevueDaemon(
 ) : AutoCloseable {
     private enum class Phase { READY, RUNNING, CLOSING }
     private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null, val resources: List<AutoCloseable> = emptyList())
-    private class StopRequest(val reason: String, val respawn: List<String>? = null)
+    private class StopRequest(val reason: String, val respawn: List<String>? = null, val failure: Throwable? = null)
 
     private val job = SupervisorJob()
     val scope = CoroutineScope(job + Dispatchers.Default + CoroutineExceptionHandler { _, e -> log("데몬 작업 실패: $e") })
@@ -50,6 +50,8 @@ class PrevueDaemon(
     }
 
     fun requestStop(reason: String) { requested.complete(StopRequest(reason)) }
+
+    fun requestFailure(reason: String, failure: Throwable) { requested.complete(StopRequest(reason, failure = failure)) }
 
     fun requestRestart(reason: String, respawn: List<String>) { requested.complete(StopRequest("다시 띄운다 — $reason", respawn)) }
 
@@ -80,6 +82,7 @@ class PrevueDaemon(
             assemble()
             val stop = runBlocking { requested.await() }
             log("데몬 종료 요청: ${stop.reason}")
+            stop.failure?.let { throw it }
             return stop.respawn
         } finally {
             try { close() } finally {

@@ -256,19 +256,34 @@ class TabsTest {
 
     // D-126 — 렌더러는 컴파일하는 동안 옛 산출물로 데우되 그 그림은 내보내지 않는다
     @Test fun `콜드 렌더러는 열기 전 컴파일 동안 따로 한 장 그려 데우고 첫 그림은 컴파일 뒤에 그린다`() {
-        val card = fx.previewFile("NewsCard")
-        ws.noteCreated(listOf(card), emptyList())
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
         show(card)
+        assertEquals(listOf(listOf(card.canonicalFile)), fx.compiler.compiled.toList())
         assertEquals(1, fx.renderer.asides.size)
         assertTrue(fx.renderer.asides.single().previewId.endsWith("-warm"))
         assertTrue(fx.renderer.shown.none { it.previewId.endsWith("-warm") })
         assertFalse(ws.now.board!!.focusCard.spec.previewId.endsWith("-warm"))
         assertEquals(1, fx.renderer.codeChanges)
 
-        val other = fx.previewFile("Other")
-        ws.noteCreated(listOf(other), emptyList())
+        val other = fx.previewFile("Other").apply { setLastModified(3_000_000) }
         show(other)
         assertEquals(1, fx.renderer.asides.size, "한 번 그린 렌더러는 다시 데우지 않는다")
+    }
+
+    @Test fun `새 파일은 옛 산출물에 클래스가 없어 데우지 않는다`() {
+        val card = fx.previewFile("NewsCard")
+        ws.noteCreated(listOf(card), emptyList())
+        show(card)
+        assertTrue(fx.renderer.asides.isEmpty())
+    }
+
+    @Test fun `여는 파일만 실패하고 함께 실을 새 파일이 없으면 다시 하지 않는다`() {
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        fx.compiler.ok = false
+        show(card)
+        assertEquals(1, fx.compiler.compiled.size)
     }
 
     @Test fun `여는 파일만으로 실패하면 새 파일을 함께 실어 다시 한다`() {

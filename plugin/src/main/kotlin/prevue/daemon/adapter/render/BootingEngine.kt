@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import prevue.daemon.domain.port.LiveSession
@@ -26,7 +27,7 @@ class BootingEngine(
 ) : PreviewRenderer, LiveSessionFactory, AutoCloseable {
     private class Booted(val engine: RenderEngine, val overlay: ResourceOverlay?)
 
-    private val booted: Deferred<Booted> = scope.async(Dispatchers.IO + CoroutineName("prevue-renderer-boot")) {
+    private val booted: Deferred<Booted> = scope.async(Dispatchers.IO + NonCancellable + CoroutineName("prevue-renderer-boot")) {
         boot().let { Booted(it, ResourceOverlay.install(it.renderer)) }
     }
 
@@ -37,7 +38,7 @@ class BootingEngine(
     override suspend fun ready() { booted.await() }
 
     override fun close() {
-        if (booted.isCompleted) ready.close() else booted.invokeOnCompletion { if (it == null) ready.close() }
+        booted.invokeOnCompletion { bootedNow?.close() }
     }
 
     override suspend fun show(p: PreviewSpec, ownLoader: Boolean): RenderOutput = await().show(p, ownLoader)
