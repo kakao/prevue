@@ -18,10 +18,10 @@ import time
 import unittest
 from unittest import mock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import daemon_records as R  # noqa: E402
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 BOOT = 1791192312.0   # 실측 머신의 부팅 시각(2026-10-05 18:25:12 KST)
 DAY = 86400
 JAVA = "/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java"

@@ -2,7 +2,7 @@
 """Codex 스킬 평가(NFR-15 · D-55) — tools/skill-eval.sh(Claude `plugin eval`)와 같은 케이스 · 같은 가짜 prevue 를 Codex 로 돌린다.
 
 Codex 에는 plugin eval 이 없어 여기서 조립 · 실행 · 채점을 한다.
-- 조립: build/eval-codex/market 에 로컬 마켓플레이스(`prevue-eval`)를 짓는다 — 진짜 codex/skills · bin/help 에 가짜 bin/prevue.
+- 조립: build/eval-codex/market 에 로컬 마켓플레이스(`prevue-eval`)를 짓는다 — 진짜 plugin/codex/skills · plugin/bin/help 에 가짜 bin/prevue.
 - 실행: 케이스마다 임시 작업 디렉터리에 scaffold.sh 를 돌리고 `codex exec --json` 으로 프롬프트 하나를 보낸다.
   사용자 설정(`~/.codex/config.toml`)은 읽지 않는다(--ignore-user-config) — 설치된 진짜 prevue 플러그인 · 훅 · 다른 플러그인이
   섞이지 않게. 인증은 CODEX_HOME 그대로다(갱신 토큰을 복사하면 원래 Codex 의 로그인이 풀릴 수 있다).
@@ -69,9 +69,11 @@ def assemble(src=ROOT):
                    "plugins": [{"name": "prevue", "source": {"source": "local", "path": "./prevue"},
                                 "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
                                 "category": "Developer Tools"}]}, f, ensure_ascii=False, indent=1)
-    shutil.copy(os.path.join(src, ".codex-plugin", "plugin.json"), os.path.join(plugin, ".codex-plugin", "plugin.json"))
-    shutil.copytree(os.path.join(src, "codex"), os.path.join(plugin, "codex"))
-    shutil.copytree(os.path.join(src, "bin", "help"), os.path.join(plugin, "bin", "help"))
+    # 플러그인은 plugin/ 에 있다(D-123). 그 전 판의 체크아웃은 루트가 곧 플러그인이다
+    product = os.path.join(src, "plugin") if os.path.isdir(os.path.join(src, "plugin")) else src
+    shutil.copy(os.path.join(product, ".codex-plugin", "plugin.json"), os.path.join(plugin, ".codex-plugin", "plugin.json"))
+    shutil.copytree(os.path.join(product, "codex"), os.path.join(plugin, "codex"))
+    shutil.copytree(os.path.join(product, "bin", "help"), os.path.join(plugin, "bin", "help"))
     shutil.copy(os.path.join(ROOT, "tests", "evals", "prevue"), os.path.join(plugin, "bin", "prevue"))
     os.chmod(os.path.join(plugin, "bin", "prevue"), 0o755)
     png(os.path.join(plugin, "fixtures", "card.png"))

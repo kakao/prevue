@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>준비 → 보드 전환 시제품</title>
-<link rel="stylesheet" href="../../../viewer/tokens.css">
-<link rel="stylesheet" href="../../../viewer/preparation.css">
+<link rel="stylesheet" href="../../../plugin/viewer/tokens.css">
+<link rel="stylesheet" href="../../../plugin/viewer/preparation.css">
 <link rel="stylesheet" href="draft.css">
 <style>
   /* 실제 준비 장면(preparation-scene.js) 아래에 확정한 보드(레일 + 흐르는 묶음)를 깔고, 넘어가는 방식만 바꾼다. ?mode=hero|fade|cursor|rise */
@@ -34,7 +34,7 @@
 <span class="tag" id="tag"></span>
 <script src="draft.js"></script>
 <script type="module">
-  import { createScene, sceneEasing, handoffMs } from "../../../viewer/js/preparation-scene.js";
+  import { createScene, sceneEasing, handoffMs } from "../../../plugin/viewer/js/preparation-scene.js";
   const q = new URLSearchParams(location.search);
   const mode = ["hero", "fade", "cursor", "rise"].includes(q.get("mode")) ? q.get("mode") : "hero";
   if (q.get("theme")) document.documentElement.dataset.theme = q.get("theme");

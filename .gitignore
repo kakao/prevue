@@ -2,7 +2,7 @@
 .gradle/
 build/
 **/build/
-!gradle/wrapper/gradle-wrapper.jar
+!plugin/gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 local.properties
 
@@ -17,7 +17,7 @@ out/
 !assets/**
 !prototypes/**/*.png
 
-# 작업 메모다. skills/ 와 .claude-plugin/ 은 제품이므로 추적한다.
+# 작업 메모다. plugin/(skills/ · .claude-plugin/ 포함)은 제품이므로 추적한다.
 # .claude/skills/ 는 dev-skills-src/ 의 생성물(이 저장소를 개발할 때 쓰는 스킬)이라 추적한다.
 # 세션 규칙(AGENTS.md · CLAUDE.md)은 워크트리로 따라가야 해 추적하고, 개인 경로만 CLAUDE.local.md 에 둔다(.worktreeinclude 가 복사한다).
 .worktrees/

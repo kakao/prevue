@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlsplit
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "bin"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugin/bin"))
 import prevue_plan as plan
 import prevue_prepare as preparation
 

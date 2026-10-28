@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 // 실제 뷰어의 접기 장면을 독립 실행해 렌더 도착과 관계없이 이음매를 잰다.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const markup = (await readFile(join(root, 'viewer/index.html'), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+const markup = (await readFile(join(root, 'plugin/viewer/index.html'), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 const harness = `<script type="module">
 import { createResizeScene } from '/js/resize-scene.js';
 document.querySelector('#focusView').hidden=false;
@@ -24,8 +24,8 @@ window.ready=true;
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, 'http://localhost').pathname;
   if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup+harness); return; }
-  const file = resolve(root, 'viewer', '.' + path);
-  if (!file.startsWith(join(root, 'viewer') + '/')) { response.writeHead(404).end(); return; }
+  const file = resolve(root, 'plugin/viewer', '.' + path);
+  if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
   try {
     const body = await readFile(file);
     response.setHeader('Content-Type', ({'.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'})[extname(file)] || 'application/octet-stream');

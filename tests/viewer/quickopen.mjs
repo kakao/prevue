@@ -7,7 +7,7 @@ import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const state = JSON.parse(await readFile(join(root, 'contract/viewer.state.board.json'), 'utf8')).example;
+const state = JSON.parse(await readFile(join(root, 'plugin/contract/viewer.state.board.json'), 'utf8')).example;
 state.selection = null;
 const files = [{ path: state.board.file, rel: 'app/Cards.kt', module: ':app', mtime: 1, previews: [] }];
 const streams = new Set();
@@ -21,8 +21,8 @@ const server = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(path === '/preview-files.json' ? { ready: true, files } : { files: {} }));
   } else {
-    const file = resolve(root, 'viewer', '.' + (path === '/' ? '/index.html' : path));
-    if (!file.startsWith(join(root, 'viewer') + '/')) { response.writeHead(404).end(); return; }
+    const file = resolve(root, 'plugin/viewer', '.' + (path === '/' ? '/index.html' : path));
+    if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
     try {
       const body = await readFile(file);
       response.setHeader('Content-Type', ({ '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' })[extname(file)] || 'application/octet-stream');

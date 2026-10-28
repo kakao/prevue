@@ -5,7 +5,7 @@ from pathlib import Path
 import unittest
 
 
-STRINGS = Path(__file__).resolve().parent.parent.parent / "viewer/strings"
+STRINGS = Path(__file__).resolve().parent.parent.parent / "plugin/viewer/strings"
 SLOTS = re.compile(r"\{(\w+)\}")
 
 

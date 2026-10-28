@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 // 가짜 데몬이라 데몬 없이 돈다: node tests/viewer/layers.mjs
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const REPO = '/repo';
-const state = JSON.parse(JSON.stringify(JSON.parse(await readFile(join(root, 'contract/viewer.state.board.json'), 'utf8')).example).replaceAll('<repo>', REPO));
+const state = JSON.parse(JSON.stringify(JSON.parse(await readFile(join(root, 'plugin/contract/viewer.state.board.json'), 'utf8')).example).replaceAll('<repo>', REPO));
 state.selection = null;
 for (const g of state.board.groups) for (const c of g.cards) Object.assign(c, { widthDp: 360, heightDp: 780, imageUrl: `/shot.jpg?c=${c.index}`, treeUrl: `/tree.json?c=${c.index}` });
 const FILE = state.board.file;
@@ -54,8 +54,8 @@ const server = createServer(async (request, response) => {
   else if (path === '/viewer/cancel') { calls.cancel++; push({ choice: null }); json({ ok: true }); }
   else if (path.startsWith('/viewer/')) json({ ok: true });
   else {
-    const file = resolve(root, 'viewer', '.' + (path === '/' ? '/index.html' : path));
-    if (!file.startsWith(join(root, 'viewer') + '/')) { response.writeHead(404).end(); return; }
+    const file = resolve(root, 'plugin/viewer', '.' + (path === '/' ? '/index.html' : path));
+    if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
     try {
       const data = await readFile(file);
       response.setHeader('Content-Type', ({ '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' })[extname(file)] || 'application/octet-stream');

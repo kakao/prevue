@@ -1,12 +1,12 @@
 # 릴리즈 기록 — 릴리즈 PR(develop → main)을 머지한 뒤 main 에서 손으로 돌려 태그와 GitHub Release 를 남긴다.
-# 버전의 원천은 VERSION 하나다 — develop 에 직접 미는 버전 커밋(/ship)에서 VERSION 을 올리고 tools/sync-version.sh 로 옮긴다.
+# 버전의 원천은 plugin/VERSION 하나다 — develop 에 직접 미는 버전 커밋(/ship)에서 VERSION 을 올리고 tools/sync-version.sh 로 옮긴다.
 # main 은 배포본이다 — 마켓플레이스 둘의 플러그인 소스가 main 브랜치를 가리켜 머지가 곧 배포다. 그래서 검증은 머지 전에
 # 릴리즈 PR 의 빌드 검증(build.yml)과 /ship(버전 · 태그 · 동기화)이 끝냈다. 이것은 기록이라 늦거나 실패해도 설치하는 사람에게 영향이 없다.
 # PR 이 돌리지 않는 파일로 따로 둔다 — 같은 파일이면 PR 체크에 "건너뜀"으로 늘 보인다.
 name: 릴리즈
 
 on:
-  # VERSION 의 태그가 이미 있으면 아무것도 하지 않는다.
+  # plugin/VERSION 의 태그가 이미 있으면 아무것도 하지 않는다.
   workflow_dispatch:
 
 concurrency:
@@ -30,7 +30,7 @@ jobs:
       - name: 태그할 버전을 읽는다
         run: |
           set -eu
-          NEXT="$(tr -d ' \t\r\n' < VERSION)"
+          NEXT="$(tr -d ' \t\r\n' < plugin/VERSION)"
           echo "NEXT=$NEXT" >> "$GITHUB_ENV"
           if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
             echo "v$NEXT 은 이미 태그됐다 — 할 일이 없다"; echo "RELEASE=0" >> "$GITHUB_ENV"; exit 0

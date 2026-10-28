@@ -9,8 +9,8 @@ import kotlin_source  # noqa: E402
 import lint  # noqa: E402
 import slop  # noqa: E402
 
-DOMAIN = "src/main/kotlin/prevue/daemon/domain/A.kt"
-ADAPTER = "src/main/kotlin/prevue/daemon/adapter/render/A.kt"
+DOMAIN = "plugin/src/main/kotlin/prevue/daemon/domain/A.kt"
+ADAPTER = "plugin/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
@@ -107,14 +107,14 @@ class Comments(unittest.TestCase):
         self.assertEqual(self.comments(text, {4}), [])
 
     def test_옮긴_파일은_옛_경로와_대조한다(self):
-        out = "R097\tsrc/main/kotlin/a/Old.kt\tsrc/main/kotlin/b/New.kt\nM\tsrc/main/kotlin/c/C.kt\nA\tsrc/main/kotlin/d/D.kt\n"
-        self.assertEqual(lint.renames(out), {"src/main/kotlin/b/New.kt": "src/main/kotlin/a/Old.kt"})
+        out = "R097\tplugin/src/main/kotlin/a/Old.kt\tplugin/src/main/kotlin/b/New.kt\nM\tplugin/src/main/kotlin/c/C.kt\nA\tplugin/src/main/kotlin/d/D.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/b/New.kt": "plugin/src/main/kotlin/a/Old.kt"})
 
     def test_rename_으로_안_잡힌_이동은_파일_이름으로_짝짓는다(self):
-        out = ("D\tsrc/main/kotlin/usecase/Shot.kt\nA\tsrc/main/kotlin/domain/runtime/Shot.kt\n"
-               "D\tsrc/main/kotlin/usecase/Gone.kt\nA\tsrc/main/kotlin/c/Fresh.kt\n"
-               "D\tsrc/main/kotlin/a/Twin.kt\nD\tsrc/main/kotlin/b/Twin.kt\nA\tsrc/main/kotlin/c/Twin.kt\n")
-        self.assertEqual(lint.renames(out), {"src/main/kotlin/domain/runtime/Shot.kt": "src/main/kotlin/usecase/Shot.kt"})
+        out = ("D\tplugin/src/main/kotlin/usecase/Shot.kt\nA\tplugin/src/main/kotlin/domain/runtime/Shot.kt\n"
+               "D\tplugin/src/main/kotlin/usecase/Gone.kt\nA\tplugin/src/main/kotlin/c/Fresh.kt\n"
+               "D\tplugin/src/main/kotlin/a/Twin.kt\nD\tplugin/src/main/kotlin/b/Twin.kt\nA\tplugin/src/main/kotlin/c/Twin.kt\n")
+        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/domain/runtime/Shot.kt": "plugin/src/main/kotlin/usecase/Shot.kt"})
 
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])

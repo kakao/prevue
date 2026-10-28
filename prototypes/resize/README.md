@@ -1,6 +1,6 @@
 # 크기 전환 시제품
 
-인터랙티브 크기 조절(크기 · 기기 · 접기 전환)의 모션 값을 제품 코드보다 먼저 눈으로 맞추는 정적 페이지입니다. 제품 뷰어(`viewer/`)가 아니고 데몬과 이어지지 않습니다 — 그림은 실제 nowinandroid 렌더를 담아 둔 것이고, 새 첫 장이 오는 시점은 조절기의 지연으로 흉내 냅니다.
+인터랙티브 크기 조절(크기 · 기기 · 접기 전환)의 모션 값을 제품 코드보다 먼저 눈으로 맞추는 정적 페이지입니다. 제품 뷰어(`plugin/viewer/`)가 아니고 데몬과 이어지지 않습니다 — 그림은 실제 nowinandroid 렌더를 담아 둔 것이고, 새 첫 장이 오는 시점은 조절기의 지연으로 흉내 냅니다.
 
 ## 띄우기
 
@@ -43,7 +43,7 @@ http://127.0.0.1:8793/ 을 엽니다. 캔버스로 그림의 가장자리 색을
 
 ## 담긴 것
 
-- `img/` — nowinandroid(Apache-2.0) `ForYouScreenPopulatedFeed`(phone 카드)의 실제 렌더 PNG. 이 저장소의 `bin/prevue`로 nowinandroid 체크아웃 안에서 떴다(Gradle 실행 없음, 이미 뜬 클래스패스 덤프).
+- `img/` — nowinandroid(Apache-2.0) `ForYouScreenPopulatedFeed`(phone 카드)의 실제 렌더 PNG. 이 저장소의 `plugin/bin/prevue`로 nowinandroid 체크아웃 안에서 떴다(Gradle 실행 없음, 이미 뜬 클래스패스 덤프).
 
   ```sh
   F=com.google.samples.apps.nowinandroid.feature.foryou.impl.ForYouScreenKt.ForYouScreenPopulatedFeed

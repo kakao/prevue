@@ -11,7 +11,7 @@ import unittest
 
 from test_plan import P   # bin 을 경로에 넣는 것은 test_plan 이다
 
-CONTRACT = os.path.join(os.path.dirname(__file__), "..", "..", "contract", "wait.json")
+CONTRACT = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "contract", "wait.json")
 CARD_MAX = 1000
 REPO = "/Users/someone/Desktop/Company/ShopMall/worktree-feature-route-planner"
 OUT = "/Users/someone/.prevue/projects/%s/daemon/out" % P.repo_key(REPO)

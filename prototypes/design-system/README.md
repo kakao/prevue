@@ -1,10 +1,10 @@
 # 디자인 시스템 견본
 
-`viewer/tokens.css`의 토큰과 그것으로 짠 컴포넌트를 라이트 · 다크로 나란히 늘어놓는 정적 페이지입니다. 제품 뷰어(`viewer/`)가 아니고 데몬과 이어지지 않습니다. 값은 이 페이지가 아니라 `tokens.css` 한 곳에 있습니다.
+`plugin/viewer/tokens.css`의 토큰과 그것으로 짠 컴포넌트를 라이트 · 다크로 나란히 늘어놓는 정적 페이지입니다. 제품 뷰어(`plugin/viewer/`)가 아니고 데몬과 이어지지 않습니다. 값은 이 페이지가 아니라 `tokens.css` 한 곳에 있습니다.
 
 ## 띄우기
 
-`../../viewer/tokens.css`를 읽으므로 저장소 루트를 띄웁니다.
+`../../plugin/viewer/tokens.css`를 읽으므로 저장소 루트를 띄웁니다.
 
 ```sh
 python3 -m http.server 8793 --bind 127.0.0.1

@@ -26,7 +26,7 @@ import { join, dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PREVUE = join(ROOT, "bin/prevue");
+const PREVUE = join(ROOT, "plugin/bin/prevue");
 const OUT = join(ROOT, "assets");
 const FAVICON = `data:image/svg+xml;base64,${readFileSync(join(ROOT, "assets/icon.svg")).toString("base64")}`;
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";

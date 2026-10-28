@@ -249,10 +249,10 @@ class Data(unittest.TestCase):
         viewer.DATA = self.data
 
     def test_데이터_예외는_그_자리만_놓아주고_가리키는_곳이_없으면_실패다(self):
-        viewer.DATA = (("viewer/js/m.js", 'stop-color="white"', "마스크 휘도"),)
-        root = self.tree({"viewer/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
+        viewer.DATA = (("plugin/viewer/js/m.js", 'stop-color="white"', "마스크 휘도"),)
+        root = self.tree({"plugin/viewer/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/raw-color"])
-        root = self.tree({"viewer/js/m.js": "const a = 1;\n"})
+        root = self.tree({"plugin/viewer/js/m.js": "const a = 1;\n"})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/data-stale"])
 
 

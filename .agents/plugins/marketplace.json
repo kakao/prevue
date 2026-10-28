@@ -7,8 +7,9 @@
     {
       "name": "prevue",
       "source": {
-        "source": "url",
+        "source": "git-subdir",
         "url": "https://github.com/kakao/prevue.git",
+        "path": "plugin",
         "ref": "main"
       },
       "policy": {

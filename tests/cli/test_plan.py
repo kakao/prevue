@@ -11,7 +11,7 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import prevue_plan as P  # noqa: E402
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")

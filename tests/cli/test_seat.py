@@ -14,7 +14,7 @@ import time
 
 from test_plan import Case, P
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2] / "plugin"
 CLI = (ROOT / "bin/prevue").read_text()
 PORT_BASE = int(re.search(r"^PORT_BASE=(\d+)", CLI, re.M)[1])
 PORT_SPAN = int(re.search(r"^PORT_SPAN=(\d+)", CLI, re.M)[1])

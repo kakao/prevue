@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>준비 화면 시제품</title>
-<link rel="stylesheet" href="../../../viewer/tokens.css">
-<link rel="stylesheet" href="../../../viewer/preparation.css">
+<link rel="stylesheet" href="../../../plugin/viewer/tokens.css">
+<link rel="stylesheet" href="../../../plugin/viewer/preparation.css">
 <style>
   /* 실제 준비 화면(preparation-scene.js · preparation.css) 위에 배치만 덧입힌다. ?layout=1|3 · ?fail=1 · ?theme=dark */
   body { margin: 0; background: var(--surface); }
@@ -66,7 +66,7 @@
 </head>
 <body>
 <script type="module">
-  import { createScene } from "../../../viewer/js/preparation-scene.js";
+  import { createScene } from "../../../plugin/viewer/js/preparation-scene.js";
 
   const q = new URLSearchParams(location.search);
   const layout = q.get("layout") === "3" ? "3" : "1", failing = q.get("fail") === "1";

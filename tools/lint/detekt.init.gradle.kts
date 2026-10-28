@@ -25,7 +25,7 @@ rootProject {
             (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
             @Suppress("UNCHECKED_CAST")
             (getProperty("ignoreFailures") as Property<Boolean>).set(true)
-            (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("tools/lint/detekt.yml"))
+            (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../tools/lint/detekt.yml"))
         }
     }
 }

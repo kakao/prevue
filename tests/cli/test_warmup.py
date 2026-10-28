@@ -15,12 +15,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import prevue_plan as P  # noqa: E402
 from test_plan import Repo  # noqa: E402
 
-PREVUE = os.path.join(os.path.dirname(__file__), "..", "..", "bin", "prevue")
-PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "bin", "prevue_plan.py")
+PREVUE = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "prevue")
+PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "prevue_plan.py")
 
 # 가짜 gradlew — 부를 때마다 대상(-Dprevue.project.N · variant.N · out.N)을 한 줄 적고, 대상마다 덤프를, -Dprevue.timing 에 단계 시각을 쓴다.
 # FAKE_FAIL_BOTH 가 있으면 대상이 둘인 부름은 실패한다(합친 호출이 실패하는 경우). FAKE_NO_CLASSPATH 면 덤프에 classPath 가 없다

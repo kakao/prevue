@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const [viewer, file, ...extra] = process.argv.slice(2);
 assert(viewer && file, 'node tests/viewer/restart.mjs <뷰어 URL> <프리뷰 파일> [warmup 추가 인자…]');
-const prevue = join(dirname(fileURLToPath(import.meta.url)), '../../bin/prevue');
+const prevue = join(dirname(fileURLToPath(import.meta.url)), '../../plugin/bin/prevue');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const lastJson = out => JSON.parse(out.trim().split('\n').at(-1));
 const run = async args => lastJson((await promisify(execFile)(prevue, args, { encoding: 'utf8', env: { ...process.env, NO_OPEN: '1' } })).stdout);

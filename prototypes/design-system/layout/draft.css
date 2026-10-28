@@ -1,4 +1,4 @@
-/* 구조 시안의 공용 틀. 값은 ../../../viewer/tokens.css 의 역할 이름만 쓴다 — 시안에서 정한 배치를 영역 PR이 그대로 옮기려고.
+/* 구조 시안의 공용 틀. 값은 ../../../plugin/viewer/tokens.css 의 역할 이름만 쓴다 — 시안에서 정한 배치를 영역 PR이 그대로 옮기려고.
    폭 · 높이 · 위치 같은 배치 치수는 D-96이 자유로 둔다. 좁은 창은 미디어 쿼리 대신 컨테이너 쿼리로 그려 한 페이지에 나란히 둔다. */
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--surface); color: var(--on-surface); font: var(--type-body-medium); }

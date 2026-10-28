@@ -25,7 +25,8 @@ git pull --ff-only origin develop
 ## 1. 어디서부터인가
 
 ```sh
-D=$(git show origin/develop:VERSION | tr -d ' \n'); M=$(git show origin/main:VERSION | tr -d ' \n')
+ver() { { git show "$1:plugin/VERSION" 2>/dev/null || git show "$1:VERSION"; } | tr -d ' \n'; }   # plugin/ 로 옮기기 전 판은 루트에 있다(D-123)
+D=$(ver origin/develop); M=$(ver origin/main)
 git rev-parse -q --verify "refs/tags/v$M"                       # main 버전의 태그
 gh pr list --base main --head develop --state open --json number,url
 gh pr list --base main --head develop --state merged --limit 1 --json number -q '.[0].number'   # 마지막 릴리즈 PR
@@ -54,7 +55,7 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 
 **실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. PR마다 본문 맨 위의 Sub-Task 키(`<!-- subtask: … -->`, 없으면 `없음`)를 읽는다 — 6단계 릴리즈 캡처의 재료다.
 
-**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
+**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
 
 이것을 한 화면으로 보이고 승인을 받는다.
 
@@ -72,14 +73,14 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 넷 — 스킬 두 벌 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 여섯 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 "빌드 검증"이 같은 넷에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 다섯 — 스킬 두 벌 · 고지 사본 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 여섯 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 "빌드 검증"이 같은 다섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
-printf '%s\n' 0.11.0 > VERSION
+printf '%s\n' 0.11.0 > plugin/VERSION
 sh tools/sync-version.sh            # 매니페스트 둘 · README 두 벌의 배지 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜)
 sh tools/sync-version.sh --check
-git diff --stat                     # VERSION · .claude-plugin/plugin.json · .codex-plugin/plugin.json · README.md · README.ko.md · CHANGELOG.md 뿐이다
+git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · README.md · README.ko.md · CHANGELOG.md 뿐이다
 git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트 · 배지, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
 git push origin HEAD:develop        # fast-forward 만
 gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본문>"
@@ -116,7 +117,7 @@ gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 
 **상태가 없는 head.** 평가 도중이나 실패 뒤 고침으로 PR head가 바뀌면(develop이 움직였다) 새 head에는 상태가 없다. 1단계 · 4단계 모두 같은 규칙이다:
 
 ```sh
-git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
+git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
 ```
 
 비었으면 앞 결과를 새 head에 그대로 올리고(설명 끝에 "· 앞 커밋 <짧은 sha> 결과"), 아니면 새 head에서 평가를 다시 돌린다. 앞 head는 PR 코멘트의 평가 결과나 `gh api $GHE repos/$R/commits/<sha>/status`로 찾는다.

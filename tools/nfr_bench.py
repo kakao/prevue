@@ -31,8 +31,8 @@ import time
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(ROOT, "bin", "prevue")
-sys.path.insert(0, os.path.join(ROOT, "bin"))
+CLI = os.path.join(ROOT, "plugin", "bin", "prevue")
+sys.path.insert(0, os.path.join(ROOT, "plugin", "bin"))
 import prevue_plan as P  # noqa: E402
 
 NIA = os.path.expanduser("~/Desktop/Private/nowinandroid")

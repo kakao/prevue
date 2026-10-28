@@ -1,7 +1,10 @@
-# skills/ · codex/skills/ 는 skills-src/ 에서, .claude/skills/ · .agents/skills/ 는 dev-skills-src/ 에서 tools/gen-skills.sh 가 만든 것이다.
+# plugin/skills/ · plugin/codex/skills/ 는 skills-src/ 에서, .claude/skills/ · .agents/skills/ 는 dev-skills-src/ 에서 tools/gen-skills.sh 가 만든 것이다.
 # PR 화면에서 접어 원본 변경만 보이게 한다.
-skills/** linguist-generated=true
-codex/skills/** linguist-generated=true
+plugin/skills/** linguist-generated=true
+plugin/codex/skills/** linguist-generated=true
+# plugin/ 의 LICENSE · NOTICE.md 는 루트 원본을 tools/plugin-copies.sh 가 옮긴 것이다.
+plugin/LICENSE linguist-generated=true
+plugin/NOTICE.md linguist-generated=true
 .claude/skills/** linguist-generated=true
 .agents/skills/** linguist-generated=true
 # 병렬 작업 PR 이 [Unreleased] 의 같은 자리에 줄을 더한다. 양쪽 줄을 다 남긴다 — 순서는 릴리즈의 버전 커밋(/ship)에서 고른다.

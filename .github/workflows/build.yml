@@ -10,7 +10,7 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
-# 사용자의 /bin/sh 에서 도는 스크립트(bin/prevue · build/prevue-env)를 bash 가 아니라 sh 로 본다.
+# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/build/prevue-env)를 bash 가 아니라 sh 로 본다.
 defaults:
   run:
     shell: sh
@@ -34,9 +34,13 @@ jobs:
         with:
           fetch-depth: 0    # 린트가 origin/main 과의 diff 로 새 주석 · 건드린 함수를 본다
 
-      # 스킬 두 벌(skills/ · codex/skills/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
+      # 스킬 두 벌(plugin/skills/ · plugin/codex/skills/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
       - name: 스킬 두 벌이 원본에서 만들어졌는지 본다
         run: sh tools/gen-skills.sh --check
+
+      # 설치본은 plugin/ 만 받는다(D-123) — 그 안의 LICENSE · NOTICE.md 는 루트 원본의 사본이다.
+      - name: 플러그인의 고지 사본이 원본과 맞는지 본다
+        run: sh tools/plugin-copies.sh --check
 
       # CLI 는 macOS 기본 python3(3.9)에서 돈다 — 러너의 새 python 으로 보면 3.10+ 문법이 그대로 지나간다.
       - name: python3를 3.9로 맞춘다
@@ -54,13 +58,16 @@ jobs:
           distribution: temurin
           java-version: "17"      # build.gradle.kts 의 jvmToolchain(17) 과 같은 값이다
 
+      # 제품 빌드는 플러그인 폴더(plugin/)가 하나의 Gradle 프로젝트다 — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
+        working-directory: plugin
         run: |
           set -eu
           ./gradlew installPrevue --no-daemon
 
       # 가짜 포트 위의 Session·Server 테스트. 조용히 되돌아가도 화면은 멀쩡한 규칙들이라 눈으로는 못 잡는다.
       - name: 데몬 단위 테스트
+        working-directory: plugin
         run: ./gradlew test --no-daemon
 
       # 슬롭 규칙 · detekt 지표 · 새 주석(D-70). 작업 PR 마다 로컬에서 돌렸으면 깨끗하다 — 여기는 건너뛴 것을 잡는 그물이다.
@@ -73,11 +80,13 @@ jobs:
           sh tools/lint.sh --base "origin/$BASE_REF"
 
       - name: 산출물이 나왔는지 본다
+        working-directory: plugin
         run: |
           set -eu
           test -s build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
 
       - name: 빌드 결과를 확인한다
+        working-directory: plugin
         run: |
           set -eu
           test -s build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
@@ -117,6 +126,7 @@ jobs:
           echo "클래스패스 순서 OK — reflect $R < renderer $N"
 
       - name: CLI 계약을 확인한다
+        working-directory: plugin
         run: |
           set -eu
           command -v bash >/dev/null || { echo "::warning::bash 가 없어 CLI 계약 검사를 건너뛴다"; exit 0; }

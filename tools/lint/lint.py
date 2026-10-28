@@ -20,12 +20,13 @@ import kotlin_source  # noqa: E402
 import slop  # noqa: E402
 import viewer  # noqa: E402
 
-ROOTS = ("src/main/kotlin/", "src/bridge/kotlin/")
+PLUGIN = "plugin"
+ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
-DETEKT_REPORTS = tuple("%s/reports/detekt/%s.xml" % (LINT_BUILD, s) for s in ("main", "bridge"))
+DETEKT_REPORTS = tuple("%s/%s/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge"))
 EXTERNAL = re.compile(r"^//\s*외부:")
-INIT_SCRIPT = "tools/lint/detekt.init.gradle.kts"
+INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
 
 DETEKT_GROUPS = {
     "LongMethod": "metric/long-method", "LongParameterList": "metric/long-parameter-list",
@@ -93,7 +94,7 @@ def detekt_findings(gradle_args):
     # 태스크 실행 기록도 따로 둔다 — 기록은 태스크 경로마다 하나라, 같이 쓰면 평소 빌드가 린트의 클래스패스를 보고 다시 컴파일한다
     cmd = ["./gradlew", "-q", "--init-script", INIT_SCRIPT, "-Pprevue.lintBuildDir=" + LINT_BUILD,
            "--project-cache-dir", LINT_BUILD + "/.gradle"] + gradle_args + ["detektMain", "detektBridge"]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN)
     if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS):
         tail = "\n".join((r.stdout + r.stderr).strip().splitlines()[-15:])
         hint = "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다" if "--offline" in gradle_args else ""
@@ -121,7 +122,8 @@ def viewer_findings():
 def changed_lines(base):
     """기준점(merge-base)에서 작업 트리까지 더하거나 바꾼 줄 {경로: {줄}}. 커밋 안 한 변경 · 새 파일도 넣는다."""
     out = {}
-    diff = git("diff", "-M", "-U0", "--no-color", "--no-ext-diff", base, "--", *ROOTS)
+    # 경로를 좁히지 않는다 — 좁히면 밖에서 옮겨 온 파일이 이름 바뀜이 아니라 새 파일로 잡힌다
+    diff = git("diff", "-M", "-U0", "--no-color", "--no-ext-diff", base)
     path = None
     for ln in diff.splitlines():
         if ln.startswith("+++ "):
@@ -208,7 +210,7 @@ def main(argv):
     findings.extend(detekt_findings((["--no-daemon"] if ci else []) + ([] if args.online or ci else ["--offline"])))
 
     changed = changed_lines(base)
-    moved = renames(git("diff", "-M", "--name-status", "--no-ext-diff", base, "--", *ROOTS))
+    moved = renames(git("diff", "-M", "--name-status", "--no-ext-diff", base))
     findings.extend(new_comments(srcs, changed, lambda path: git("show", "%s:%s" % (base, moved.get(path, path)), check=False)))
 
     for f in sorted(findings, key=lambda f: (f.path, f.line, f.rule)):

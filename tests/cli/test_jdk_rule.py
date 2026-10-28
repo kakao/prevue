@@ -7,7 +7,7 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import jdk_rule  # noqa: E402
 
 

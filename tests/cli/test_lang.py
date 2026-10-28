@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlsplit
 from test_plan import Case, P
 import prevue_prepare as preparation
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
 
 class Helpers(unittest.TestCase):

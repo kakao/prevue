@@ -11,8 +11,8 @@ P=build/eval-plugin
 rm -rf "$P"
 mkdir -p "$P/.claude-plugin" "$P/bin" "$P/fixtures" "$P/evals"
 printf '{"name":"prevue","description":"Prevue 스킬 평가용 — 가짜 prevue"}\n' > "$P/.claude-plugin/plugin.json"
-cp -R skills "$P/skills"
-cp -R bin/help "$P/bin/help"
+cp -R plugin/skills "$P/skills"
+cp -R plugin/bin/help "$P/bin/help"
 cp tests/evals/prevue "$P/bin/prevue" && chmod +x "$P/bin/prevue"
 # 응답의 image 가 가리킬 카드 그림. 저장소는 *.png 를 무시해 사본을 두지 않고 여기서 만든다(회색 412×915, PIL 없이).
 python3 - "$P/fixtures/card.png" <<'PY'

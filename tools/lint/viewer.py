@@ -12,8 +12,8 @@
 import os
 import re
 
-VIEWER = "viewer"
-TOKENS = "viewer/tokens.css"
+VIEWER = "plugin/viewer"
+TOKENS = "plugin/viewer/tokens.css"
 
 # 데이터라 날값이 아닌 것 — (경로, 그 줄에 있는 조각, 이유). 가리키는 곳이 사라지면 실패한다.
 DATA = ()
