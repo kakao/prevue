@@ -3,6 +3,8 @@
 
 재는 것: NFR-11 콜드 · NFR-1 저장 → 첫 카드(중앙값 · p90) · NFR-1b 저장 → 보드 전부 · NFR-12 다른 모듈 전환 ·
 NFR-6 반복 뒤 RSS · NFR-14 유휴 감시 CPU · NFR-4 무한 루프 컴포저블의 상한과 데몬 생존.
+NFR-6 큰 기기: 같은 픽스처의 폭으로 갈리는 카드를 인터랙티브로 켜고 `/stream`을 연 채 Fold8 · Ultra · 커스텀 상한(1600×1600dp)을
+번갈아 고르고 저장하며 footprint 를 잰다.
 NFR-6 스트림: 앞 단계의 데몬을 내린 뒤 `fixtures/pearl` 데몬을 따로 띄워, 카드를 인터랙티브로 켜고 `/stream`을 연 채
 시드로 섞은 조작(탭 · ← · 스크롤 · 저장)을 돌리며 데몬의 phys_footprint(`footprint`)를 잰다. 덤프는 이 체크아웃의
 `bin/prevue warmup`이 뜬다(저장소 안 픽스처라 승인 밖).
@@ -56,6 +58,9 @@ LIMITS = {
     "NFR-6 스트림": ("인터랙티브 + 스트림 조작 중 footprint 중앙값(MB)", 2560),
     "NFR-6 스트림 봉우리": ("인터랙티브 + 스트림 조작 중 footprint 최대(MB)", 3072),
     "NFR-6 스트림 조작": ("조작 실패 + 로그 예외 줄 + 데몬 재시작", 0),
+    "NFR-6 큰 기기": ("큰 기기 · 커스텀 상한 고르기 + 저장 중 footprint — 뒤 10바퀴 중앙값(MB)", 2560),
+    "NFR-6 큰 기기 봉우리": ("큰 기기 · 커스텀 상한 고르기 + 저장 중 footprint 최대(MB)", 3072),
+    "NFR-6 큰 기기 조작": ("고르기 · 저장 실패 + 로그 예외 줄 + 데몬 재시작", 0),
 }
 FIXTURE = os.path.join(ROOT, "fixtures", "pearl")
 FIXTURE_SRC = os.path.join(FIXTURE, "feature", "pearl", "src", "main", "kotlin", "com", "example", "pearl", "feature", "pearl")
@@ -643,6 +648,82 @@ class StreamBench(Bench):
                  (len(fails), fails[:3], len(exc), "있음" if restarted else "없음"))
 
 
+class BigBench(Bench):
+    """NFR-6 큰 기기. 폭으로 갈리는 카드(`AdaptivePreviews.kt` 카드 0)를 인터랙티브로 켜고 `/stream`을 연 채
+    크기를 큰 것끼리 번갈아 고르고 저장한다. 커스텀 상한(`ScreenSize`의 `DP_RANGE`)을 함께 골라 상한의 메모리를 지킨다."""
+
+    SIZES = ("fold8", "ultra", "1600x1600")
+    SAVE = ("maxOf(2, (width - 48) / 220)", "maxOf((width - 48) / 220, 2)")   # 구조 변경 — 리터럴 빠른 경로를 타지 않는다
+
+    def __init__(self, a):
+        fa = argparse.Namespace(**vars(a))
+        fa.repo, fa.file, fa.other = FIXTURE, os.path.join(FIXTURE_SRC, "AdaptivePreviews.kt"), None
+        fa.dump, fa.resources_from, fa.port, fa.literal_at, fa.resource_at = "feature_pearl-debug.json", "app-debug.json", 0, "", ""
+        super().__init__(fa)
+        if self.text.count(self.SAVE[0]) != 1:
+            sys.exit("큰 기기: 저장할 조각이 %s 에 한 번만 있어야 한다: %r" % (self.file, self.SAVE[0]))
+        self.pid_file = self.log[:-len(".log")] + ".pid"
+
+    def describe(self):
+        return ["- 큰 기기: `fixtures/pearl` `AdaptivePreviews.kt` 카드 0 인터랙티브 · `/stream` 연 채 · %s 고르기 + 저장 %d바퀴 · 고를 때마다 %.1f초 쉬고 footprint. "
+                "복사본 `.cache/spike/nfr/`를 `--watch`" % (" → ".join(self.SIZES), self.a.big_rounds, self.a.big_quiet)]
+
+    def pick(self, size):
+        body = {"index": 0, "interactive": True, "by": "nfr"}
+        body.update({"size": size} if "x" in size else {"device": size})
+        r = self.post("/focus", body)
+        if r.get("error") or r.get("ok") is False:
+            raise RuntimeError("%s 고르기 실패: %s" % (size, json.dumps(r, ensure_ascii=False)[-300:]))
+
+    def big(self):
+        self.start()
+        pid = open(self.pid_file).read().strip()
+        log0, frames, stop = self.offset(), [0], threading.Event()
+
+        def watch_stream():
+            while not stop.is_set():
+                try:
+                    with _http.open(self.base + "/stream", timeout=30) as r:
+                        while not stop.is_set() and r.read(65536):
+                            frames[0] += 1
+                except (OSError, http.client.HTTPException):
+                    time.sleep(0.5)
+
+        threading.Thread(target=watch_stream, daemon=True).start()
+        samples, fails, t0 = [], [], time.monotonic()
+        try:
+            for i in range(1, self.a.big_rounds + 1):
+                for step in self.SIZES + ("save",):
+                    try:
+                        if step == "save":
+                            self.text = self.text.replace(*self.SAVE) if self.SAVE[0] in self.text else self.text.replace(*self.SAVE[::-1])
+                            with open(self.file, "w", encoding="utf-8") as f:
+                                f.write(self.text)
+                        else:
+                            self.pick(step)
+                    except (OSError, ValueError, RuntimeError) as e:
+                        fails.append("%d %s — %r" % (i, step, e))
+                    time.sleep(self.a.big_quiet)              # 잠잠해야 옆 그림(자세 · 막대 칸)을 미리 그린다
+                    samples.append({"round": i, "step": step, "footprintMb": footprint_mb(pid)})
+        finally:
+            stop.set()
+        with open(self.log, encoding="utf-8", errors="replace") as f:
+            f.seek(log0)
+            exc = [l for l in f.read().splitlines() if re.search(r"Exception|Error|at [a-z]+\.[A-Za-z.]+\(", l)]
+        restarted = open(self.pid_file).read().strip() != pid
+        foot = [x["footprintMb"] for x in samples if x["footprintMb"]]
+        tail = [x["footprintMb"] for x in samples if x["footprintMb"] and x["round"] > self.a.big_rounds - 10]
+        if frames[0] == 0 or not tail:
+            sys.exit("큰 기기: 스트림 청크 %d · footprint 표본 %d — 잴 수 없었다" % (frames[0], len(foot)))
+        by = {s: max(x["footprintMb"] for x in samples if x["step"] == s and x["footprintMb"]) for s in self.SIZES + ("save",)}
+        secs = round(time.monotonic() - t0)
+        self.raw["big"] = {"samples": samples, "chunks": frames[0], "fails": fails, "logExceptions": exc[:50], "restarted": restarted, "seconds": secs}
+        self.row("NFR-6 큰 기기", statistics.median(tail), "뒤 10바퀴 표본 %d개 · 처음 %d → 끝 %dMB · %d초" % (len(tail), foot[0], foot[-1], secs))
+        self.row("NFR-6 큰 기기 봉우리", max(foot), "단계별 최대 " + " · ".join("%s %d" % kv for kv in by.items()))
+        self.row("NFR-6 큰 기기 조작", len(fails) + len(exc) + restarted, "실패 %d %s · 로그 예외 줄 %d · 데몬 재시작 %s" %
+                 (len(fails), fails[:3], len(exc), "있음" if restarted else "없음"))
+
+
 def report(benches, sha):
     when = time.strftime("%Y-%m-%d")
     print("## %s · %s · `%s` · NFR 통합 측정(`tools/nfr_bench.py`)\n" % (when, " · ".join(os.path.basename(b.a.repo) for b in benches), sha))
@@ -690,17 +771,19 @@ def main():
     ap.add_argument("--stream-seeds", default="1,2", help="NFR-6 스트림 — 쉼표로, 시드마다 --stream-ops 번 조작한다(한 데몬에 잇달아)")
     ap.add_argument("--stream-ops", type=int, default=300)
     ap.add_argument("--stream-every", type=int, default=10, help="footprint 를 재는 간격(초)")
-    ap.add_argument("--skip", default="", help="쉼표로 — cold,hot,switch,memory,tabswitch,tabs,idle,timeout,stream")
+    ap.add_argument("--big-rounds", type=int, default=20, help="NFR-6 큰 기기 — 크기 셋 고르기 + 저장 한 바퀴의 수")
+    ap.add_argument("--big-quiet", type=float, default=2.0, help="고르기 · 저장 뒤 쉬는 초 — 1초 잠잠하면 옆 그림을 미리 그린다")
+    ap.add_argument("--skip", default="", help="쉼표로 — cold,hot,switch,memory,tabswitch,tabs,idle,timeout,stream,big")
     a = ap.parse_args()
     skip = set(filter(None, a.skip.split(",")))
     sha = subprocess.run(["git", "-C", ROOT, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     benches = []
     steps = ("cold", "hot", "switch", "memory", "tabswitch", "tabs", "idle", "timeout")
     fixture_dumps = os.path.expanduser("~/.prevue/projects/" + P.repo_key(FIXTURE))
-    if "stream" not in skip and not all(os.path.isfile(os.path.join(fixture_dumps, d)) for d in ("feature_pearl-debug.json", "app-debug.json")):
+    if not skip.issuperset(("stream", "big")) and not all(os.path.isfile(os.path.join(fixture_dumps, d)) for d in ("feature_pearl-debug.json", "app-debug.json")):
         # 앞 단계를 다 돈 뒤에 멈추지 않게 미리 본다
         sys.exit("픽스처 덤프가 없다: %s — bin/prevue warmup %s --variant debug --resources-from :app (저장소 안 픽스처라 승인 밖)"
-                 " 또는 --skip stream" % (fixture_dumps, os.path.join(FIXTURE_SRC, "PearlPreviews.kt")))
+                 " 또는 --skip stream,big" % (fixture_dumps, os.path.join(FIXTURE_SRC, "PearlPreviews.kt")))
     if not skip.issuperset(steps):
         b = Bench(a)
         benches.append(b)
@@ -721,6 +804,13 @@ def main():
             run(s, s.stream)
         except (Exception, SystemExit) as e:                     # noqa: BLE001 — 스트림이 멈춰도 앞 단계의 숫자는 남긴다
             s.row("NFR-6 스트림", float("inf"), "멈춤: %s" % (e.code if isinstance(e, SystemExit) else repr(e)))
+    if "big" not in skip:                                        # 혼자 떠 있을 때 잰다 — 앞 데몬은 run 이 내렸다
+        g = BigBench(a)
+        benches.append(g)
+        try:
+            run(g, g.big)
+        except (Exception, SystemExit) as e:                     # noqa: BLE001
+            g.row("NFR-6 큰 기기", float("inf"), "멈춤: %s" % (e.code if isinstance(e, SystemExit) else repr(e)))
     sys.exit(0 if benches and report(benches, sha) else 1)
 
 
