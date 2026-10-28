@@ -96,7 +96,7 @@ class Tabs(
         live.compiling(ed, listOf(f), by)
         val batch = coroutineScope {
             launch { warmRenderer(f) }
-            modules.compileWithNew(ed, listOf(f))
+            modules.compileOpening(ed, listOf(f))
         }
         if (batch.result.ok) engine.codeChanged()
         ed.markCompiled(batch.seen)

@@ -242,6 +242,48 @@ class TabsTest {
         assertTrue(ws.now.newFiles.isEmpty())
     }
 
+    // 콜드 첫 PNG(NFR-11) — 빌드 뒤로 바뀐 소스를 다 실으면 모듈마다 콜드 컴파일이라 첫 그림이 그만큼 늦었다
+    @Test fun `열 때는 여는 파일만 먼저 컴파일하고 함께 실을 새 파일은 다음 컴파일에 남긴다`() {
+        show(fx.file)
+        val card = fx.previewFile("NewsCard")
+        val other = fx.previewFile("Other")
+        ws.noteCreated(listOf(card, other), emptyList())
+        fx.compiler.compiled.clear()
+        show(card)
+        assertEquals(listOf(listOf(card.canonicalFile)), fx.compiler.compiled.toList())
+        assertEquals(setOf(other.canonicalPath), ws.now.newFiles)
+    }
+
+    // D-126 — 렌더러는 컴파일하는 동안 옛 산출물로 데우되 그 그림은 내보내지 않는다
+    @Test fun `콜드 렌더러는 열기 전 컴파일 동안 따로 한 장 그려 데우고 첫 그림은 컴파일 뒤에 그린다`() {
+        val card = fx.previewFile("NewsCard")
+        ws.noteCreated(listOf(card), emptyList())
+        show(card)
+        assertEquals(1, fx.renderer.asides.size)
+        assertTrue(fx.renderer.asides.single().previewId.endsWith("-warm"))
+        assertTrue(fx.renderer.shown.none { it.previewId.endsWith("-warm") })
+        assertFalse(ws.now.board!!.focusCard.spec.previewId.endsWith("-warm"))
+        assertEquals(1, fx.renderer.codeChanges)
+
+        val other = fx.previewFile("Other")
+        ws.noteCreated(listOf(other), emptyList())
+        show(other)
+        assertEquals(1, fx.renderer.asides.size, "한 번 그린 렌더러는 다시 데우지 않는다")
+    }
+
+    @Test fun `여는 파일만으로 실패하면 새 파일을 함께 실어 다시 한다`() {
+        show(fx.file)
+        val card = fx.previewFile("NewsCard")
+        val needed = fx.previewFile("Needed")
+        ws.noteCreated(listOf(card, needed), emptyList())
+        fx.compiler.needs = setOf(needed.canonicalFile)
+        fx.compiler.compiled.clear()
+        show(card)
+        assertEquals(listOf(listOf(card.canonicalFile), listOf(card.canonicalFile, needed.canonicalFile)), fx.compiler.compiled.toList())
+        assertTrue(ws.now.newFiles.isEmpty())
+        assertNull(ws.now.lastCompileFailure)
+    }
+
     @Test fun `열기 전 컴파일이 실패하면 기다림이 빈 그림 대신 컴파일 오류로 답한다`() {
         show(fx.file)
         val card = fx.previewFile("NewsCard")
