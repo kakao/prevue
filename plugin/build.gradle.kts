@@ -136,7 +136,7 @@ tasks.register<Test>("integrationTest") {
     executable = "$jdk/bin/java"
     maxHeapSize = "2g"
     jvmArgs(
-        "-XX:+UseG1GC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-XX:G1PeriodicGCInterval=3000", "-Djava.awt.headless=true",
+        "-XX:+UseG1GC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-XX:G1PeriodicGCInterval=30000", "-Djava.awt.headless=true",
         "--add-opens=java.base/java.lang=ALL-UNNAMED", "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED", "--add-opens=java.base/java.nio=ALL-UNNAMED",
     )

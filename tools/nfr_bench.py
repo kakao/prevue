@@ -709,20 +709,28 @@ class BigBench(FixtureBench):
         r = self.post("/focus", {"index": 0, "interactive": True, "by": "nfr"})
         if r.get("error") or r.get("ok") is False:
             sys.exit("큰 기기: 인터랙티브를 켜지 못했다: %s" % json.dumps(r, ensure_ascii=False)[-400:])
+        t = time.monotonic()
+        while not ((self.get("/board").get("cards") or [{}])[0].get("ok") and self.get("/status").get("interactive") is not None):
+            if time.monotonic() - t > 60:
+                sys.exit("큰 기기: 인터랙티브 첫 장이 60초 안에 오지 않았다")
+            time.sleep(0.2)
         pid0, log0, frames, stop = self.pid(), self.offset(), [0], threading.Event()
         threading.Thread(target=self.watch_stream, args=(stop, frames), daemon=True).start()
-        time.sleep(self.a.big_quiet)                             # 첫 라이브 장과 옆 그림이 끝난 뒤부터 잰다
+        time.sleep(self.a.big_quiet)                             # 첫 장 뒤 옆 그림이 끝난 뒤부터 잰다
         samples, fails, t0 = [], [], time.monotonic()
         try:
             for i in range(1, self.a.big_rounds + 1):
                 for step in self.SIZES + ("save",):
                     try:
-                        self.save(i) if step == "save" else self.pick(step)
-                    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as e:
+                        if step == "save":
+                            self.save(i)
+                        else:
+                            self.pick(step)
+                    except (OSError, ValueError, RuntimeError, http.client.HTTPException, subprocess.TimeoutExpired) as e:
                         fails.append("%d %s — %r" % (i, step, e))
                     time.sleep(self.a.big_quiet)              # 잠잠해야 옆 그림(자세 · 막대 칸)을 미리 그린다
                     try:
-                        mb = footprint_mb(pid0)
+                        mb = footprint_mb(self.pid() or pid0)  # 다시 뜬 데몬도 잰다 — 재시작은 조작 행이 센다
                     except (OSError, subprocess.TimeoutExpired):  # 표본 하나를 잃어도 끝까지 잰다
                         mb = None
                     samples.append({"round": i, "step": step, "footprintMb": mb})
@@ -731,12 +739,14 @@ class BigBench(FixtureBench):
         exc, restarted = self.log_exceptions(log0), self.pid() != pid0
         foot = [x["footprintMb"] for x in samples if x["footprintMb"]]
         tail = [x["footprintMb"] for x in samples if x["footprintMb"] and x["round"] > self.a.big_rounds - self.TAIL]
+        self.raw["big"] = {"samples": samples, "frames": frames[0], "fails": fails, "logExceptions": exc[:50], "restarted": restarted}
         if frames[0] == 0 or not tail:
+            self.ops_row("NFR-6 큰 기기 조작", fails, exc, restarted)  # 멈춰도 실패 · 재시작 기록은 남긴다
             sys.exit("큰 기기: 프레임 %d · footprint 표본 %d — 잴 수 없었다" % (frames[0], len(foot)))
         by = {s: max((x["footprintMb"] for x in samples if x["step"] == s and x["footprintMb"]), default=0) for s in self.SIZES + ("save",)}
         lost = len(samples) - len(foot)
         secs = round(time.monotonic() - t0)
-        self.raw["big"] = {"samples": samples, "frames": frames[0], "fails": fails, "logExceptions": exc[:50], "restarted": restarted, "seconds": secs}
+        self.raw["big"]["seconds"] = secs
         self.row("NFR-6 큰 기기", statistics.median(tail), "뒤 %d바퀴 표본 %d개 · 처음 %d → 끝 %dMB · 잃은 표본 %d · %d초" % (self.TAIL, len(tail), foot[0], foot[-1], lost, secs))
         self.row("NFR-6 큰 기기 봉우리", max(foot), "프레임 %d장 · 단계별 최대 %s" % (frames[0], " · ".join("%s %d" % kv for kv in by.items())))
         self.ops_row("NFR-6 큰 기기 조작", fails, exc, restarted)
