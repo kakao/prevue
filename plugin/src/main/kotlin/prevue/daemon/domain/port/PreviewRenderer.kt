@@ -7,6 +7,7 @@ import prevue.daemon.entity.Phrase
 import prevue.daemon.entity.PreviewSpec
 
 interface PreviewRenderer {
+    suspend fun ready() {}
     suspend fun show(p: PreviewSpec, ownLoader: Boolean = false): RenderOutput
     suspend fun showAside(p: PreviewSpec): RenderOutput
     fun copyImage(out: RenderOutput, previewId: String): RenderOutput

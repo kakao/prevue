@@ -25,6 +25,7 @@ sealed interface ResourceLookup {
  * 얹은 값은 다음 태스크부터 보이고, 로더 · R 클래스는 그대로다.
  */
 interface ResourceValues {
+    suspend fun ready(): Boolean = true
     /** [file](`res/values…/파일.xml`)의 내용이 [text]일 때의 항목들. XML이 깨졌으면 null. */
     fun parse(file: File, text: String): List<ResourceEntry>?
     /** 지금 그리는 값 — 얹은 값이 있으면 그것. */

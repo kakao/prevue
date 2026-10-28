@@ -36,6 +36,7 @@ class EngineActor(
     init {
         scope.launch(context + CoroutineName("prevue-engine")) {
             try {
+                renderer.ready()
                 while (isActive) {
                     val c = next() ?: continue
                     if (!isActive) { c.reply.cancel(); break }

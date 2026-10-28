@@ -26,7 +26,7 @@ class ResourcePatches(private val values: ResourceValues?, private val reappearM
 
     suspend fun apply(files: List<File>): Outcome {
         val t = System.nanoTime()
-        val batch = Batch()
+        val batch = Batch(values?.takeIf { it.ready() })
         for (f in files) {
             val old = known.value[f.canonicalPath]
             val text = read(f)
@@ -39,7 +39,7 @@ class ResourcePatches(private val values: ResourceValues?, private val reappearM
         return Outcome(n, batch.stale, compile)
     }
 
-    private inner class Batch {
+    private inner class Batch(private val values: ResourceValues?) {
         private val puts = ArrayList<Put>()
         private val settled = HashMap<String, String?>()
         var stale: Phrase? = null

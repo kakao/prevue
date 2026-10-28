@@ -60,7 +60,7 @@ object EngineRule {
     private val outside = mapOf(
         "domain/ReadStatusUseCase.kt" to (Regex("""\bengine\.(\w+)""") to observed),
         "domain/UseCases.kt" to (Regex("""\bports\.(?:engine|sessions)\.(\w+)""") to setOf("protect")),
-        "Main.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "lost", "negatives", "renderer")),
+        "Main.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives", "await", "resources")),
     )
     private val concrete = Regex("""\bRenderEngine\b""")
     private fun code(text: String) = text.lineSequence().filterNot { it.trimStart().let { l -> l.startsWith("*") || l.startsWith("//") || l.startsWith("/*") } }
