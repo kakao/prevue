@@ -134,9 +134,9 @@ tasks.register<Test>("integrationTest") {
     // layoutlib 은 JDK 21+ 로 컴파일됐다 — 데몬과 같은 JDK · JVM 옵션으로 돈다(bin/prevue 의 RUN).
     val jdk = providers.environmentVariable("PREVUE_JDK").getOrElse("/Applications/Android Studio.app/Contents/jbr/Contents/Home")
     executable = "$jdk/bin/java"
-    maxHeapSize = "3g"
+    maxHeapSize = "2g"
     jvmArgs(
-        "-XX:+UseG1GC", "-Djava.awt.headless=true",
+        "-XX:+UseG1GC", "-XX:MinHeapFreeRatio=10", "-XX:MaxHeapFreeRatio=30", "-XX:G1PeriodicGCInterval=3000", "-Djava.awt.headless=true",
         "--add-opens=java.base/java.lang=ALL-UNNAMED", "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED", "--add-opens=java.base/java.nio=ALL-UNNAMED",
     )

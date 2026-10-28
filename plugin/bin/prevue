@@ -803,6 +803,8 @@ case "$cmd" in
     alive_records --clean >/dev/null
     # layoutlib 17.0.x는 Java 21 바이트코드다. 힙 상한은 NFR-6 — worktree 셋과 함께 돌아도 절제한다.
     # GC 는 G1 이다(D-72). ParallelGC 는 한 번 넓힌 힙을 돌려주지 않아, 인터랙티브로 조작하면 쓰는 힙이 100MB대여도 RSS 가 2.5GB 를 넘었다.
+    # 힙 상한 2GB 와 여유 비율 · 주기 GC(D-127) — 큰 기기 · 1600dp 그림은 한 장이 거대 객체(70MB)라 G1 이 커밋을 상한까지 넓혀
+    # 살아 있는 힙이 300~800MB 여도 footprint 봉우리가 3.6GB 였다. 기본 여유 비율(70%)은 GC 뒤에도 쓰는 양의 세 배를 쥔다.
     # headless 다. layoutlib 이 AWT 를 쓰면 macOS 가 이 JVM 을 창 앱으로 올려 독에 뜨고, 종료 뒤에는 "최근 앱"에
     # 실행 파일(java)이 exec 아이콘으로 남았다. 데몬은 창 없이 그림만 만드니 창 시스템에 붙을 이유가 없다(렌더·터치 실측).
     # 데몬은 체크아웃의 jar 가 아니라 자기 복사본으로 돈다(D-125). gradlew test · installPrevue 가 build/ 의 jar 를 제자리에서
@@ -818,7 +820,7 @@ case "$cmd" in
         || { rm -f "$t"; echo "{\"ok\":false,\"error\":$(jstr "Couldn't copy $j to $JARS for the daemon to run from")}"; exit 1; }
     done
     DAEMON_CP="$JARS/$(basename "$OWN_JAR")${PREVUE_CP#"$OWN_JAR"}"
-    RUN=("$JDK/bin/java" "-Xmx${PREVUE_HEAP:-3g}" -XX:+UseG1GC -Djava.awt.headless=true
+    RUN=("$JDK/bin/java" "-Xmx${PREVUE_HEAP:-2g}" -XX:+UseG1GC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=30 -XX:G1PeriodicGCInterval=3000 -Djava.awt.headless=true
       --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED
       --add-opens=java.desktop/sun.awt.image=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED
       -cp "$DAEMON_CP" prevue.daemon.MainKt
