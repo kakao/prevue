@@ -14,6 +14,8 @@ import socket
 import subprocess
 import sys
 import tempfile
+import textwrap
+import threading
 import time
 import unittest
 from unittest import mock
@@ -415,6 +417,54 @@ class Cli(unittest.TestCase):
         self.assertTrue(waiting, "데몬이 사는 동안 stop 이 끝났다")
         self.assertLess(time.time() - t0, 10, "데몬이 끝나면 stop 도 곧 끝난다")
         self.assertEqual((stop.returncode, json.loads(out.decode().strip().splitlines()[-1]).get("ok")), (0, True))
+
+    def broken_daemon(self, ignore_term=False):
+        """/status 에는 답하고 /shutdown 에는 500 을 내는 가짜 데몬 — 클래스를 못 읽는 데몬이 그랬다(NoClassDefFoundError).
+        거두는 스레드를 붙인다 — 진짜 데몬은 launchd · init 이 바로 거두고, 좀비에는 kill -0 이 성공한다."""
+        port = free_port()
+        code = textwrap.dedent("""
+            import http.server, signal, sys
+            if sys.argv[1] == "1": signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            class H(http.server.BaseHTTPRequestHandler):
+                def log_message(self, *a): pass
+                def reply(self):
+                    ok = self.path == "/status"
+                    body = b'{"repo":"/r","overlay":"/h/.prevue/projects/r/overlay/app"}' if ok else b"java.lang.NoClassDefFoundError"
+                    self.send_response(200 if ok else 500); self.end_headers(); self.wfile.write(body)
+                do_GET = do_POST = reply
+            http.server.HTTPServer(("127.0.0.1", int(sys.argv[3])), H).serve_forever()
+        """)
+        fake = subprocess.Popen([sys.executable, "-c", code, "1" if ignore_term else "0", "prevue.daemon.MainKt", str(port), "--port", str(port)])
+        self.addCleanup(fake.kill)
+        threading.Thread(target=fake.wait, daemon=True).start()
+        with open(os.path.join(self.daemons, "daemon-%d.pid" % port), "w") as f:
+            f.write("%d\n" % fake.pid)
+        for _ in range(100):
+            try:
+                socket.create_connection(("127.0.0.1", port), 0.2).close()
+                break
+            except OSError:
+                time.sleep(0.05)
+        self.need_command(fake.pid)
+        return port, fake
+
+    # 회귀: 종료 요청을 처리하지 못한 데몬을 35초 기다린 뒤 stopped 에 세고 살려 뒀다 — 그 데몬이 포트를 쥐어 새 show 가 거기 붙었다
+    def test_종료_요청을_처리하지_못하는_데몬도_내리고_센다(self):
+        port, fake = self.broken_daemon()
+        jars = os.path.join(self.daemons, "daemon-%d.jars" % port)
+        os.makedirs(jars)
+        t0 = time.time()
+        rc, out = self.prevue("stop", "--all")
+        self.assertEqual((rc, out.get("ok"), out.get("stopped")), (0, True, 1))
+        self.assertLess(time.time() - t0, 10, "HTTP 오류면 기다리지 않고 신호로 내린다")
+        self.assertIsNotNone(fake.poll())
+        self.assertFalse(os.path.exists(jars), "내린 데몬의 jar 복사본을 지운다")
+
+    def test_TERM_을_무시하는_데몬은_KILL_로_내린다(self):
+        port, fake = self.broken_daemon(ignore_term=True)
+        rc, out = self.prevue("stop", "--port", str(port))
+        self.assertEqual((rc, out.get("ok"), out.get("ports")), (0, True, [port]))
+        self.assertEqual(fake.poll(), -signal.SIGKILL)
 
     def test_clean_은_부팅_전의_죽은_기록을_지우고_로그는_둔다(self):
         boot = self.boot()
