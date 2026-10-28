@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { toBoard } from "./daemon.mjs";
 
 // 전용 워크트리로 fixtures/pearl의 AdaptivePreviews.kt를 먼저 연다. 첫 카드를 조작한다.
 const viewer = process.argv[2];
@@ -56,8 +57,7 @@ try {
     await until(`!document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#shot').getAttribute('src').startsWith('/stream') && Number(document.querySelector('#rlW').value)===Math.round(__store.st.focus.size.widthDp) && Number(document.querySelector('#rlH').value)===Math.round(__store.st.focus.size.heightDp)`);
   };
   const post = async (path, body) => { const r = await fetch(new URL(path, viewer), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); assert(r.ok, path); };
-  // 앞 테스트가 중간에 죽어 인터랙티브 카드를 켜 둔 데몬이어도 보드에서 시작한다
-  await post("/viewer/exit", {});
+  await toBoard(viewer);
   await send("Page.enable"); await send("Runtime.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__errors=[];addEventListener('error',e=>__errors.push(e.message));addEventListener('unhandledrejection',e=>__errors.push(String(e.reason)));` });

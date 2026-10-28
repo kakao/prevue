@@ -21,4 +21,4 @@ Prevue 통합 테스트(`./gradlew integrationTest`)가 그리는 대상이자 R
 
 테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `src/integrationTest`와 `tests/viewer`도 같이 본다.
 
-`tests/viewer`의 데몬 테스트(tabs · workspace · content · resize · preparation)는 `AdaptivePreviews.kt`로 띄운 이 체크아웃의 데몬 하나에 연달아 돌려도 된다. 각 테스트가 시작할 때 데몬을 보드로 되돌려, 앞 테스트가 중간에 죽어도 다음 테스트로 번지지 않는다.
+`tests/viewer`의 데몬 테스트(tabs · workspace · content · resize · preparation)는 `AdaptivePreviews.kt`로 띄운 이 체크아웃의 데몬 하나에 연달아 돌려도 된다(`tests/viewer/daemon.mjs`).
