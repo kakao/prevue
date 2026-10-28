@@ -273,16 +273,21 @@ force_exit() {  # <port>
   local pid sig; pid="$(cat "$DAEMON_DIR/daemon-$1.pid" 2>/dev/null)"
   [ -n "$pid" ] && [ -n "$(alive_records "$1")" ] || return 0
   for sig in TERM KILL; do
-    kill -s "$sig" "$pid" 2>/dev/null || return 0
+    # 신호를 못 보냈으면(샌드박스 · 남의 권한) 끝난 것이 아니라 못 내린 것이다 — 이미 끝났을 때만 0
+    kill -s "$sig" "$pid" 2>/dev/null || { case "$(kill -0 "$pid" 2>&1)" in *"No such process"*) return 0 ;; esac; return 1; }
     for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || return 0; sleep 0.25; done
   done
   return 1
 }
+# 이 데몬의 jar 복사본(D-125)을 지운다. 기록이 아직 산 데몬(살았는지 모르는 샌드박스 포함 · 다시 뜬 JVM)을 가리키면 그 데몬이 읽는 중이라 둔다.
+drop_jars() {  # <port>
+  [ -n "$(alive_records "$1")" ] || rm -rf "$DAEMON_DIR/daemon-$1.jars"
+}
 # /shutdown 을 보낸 자리를 끝까지 내린다. 요청이 HTTP 오류로 돌아왔으면(1) 기다리지 않고 신호로 간다 — 연결 자체가 안 되면(3)
-# 이미 HTTP 를 닫고 정리 중일 수 있어 먼저 기다린다. 내려갔으면 그 데몬의 jar 복사본(D-125)도 지운다.
+# 이미 HTTP 를 닫고 정리 중일 수 있어 먼저 기다린다. 데몬은 /shutdown 뒤 30초에 스스로 끝나므로 35초 뒤에도 살았으면 멈춘 것이다.
 bring_down() {  # <port> <post 의 종료 코드>
   if [ "$2" = 1 ]; then force_exit "$1"; else await_exit "$1" || force_exit "$1"; fi || return 1
-  rm -rf "$DAEMON_DIR/daemon-$1.jars"
+  drop_jars "$1"
 }
 # $PORT 에 닿지 못했을 때의 답. curl 의 오류 문구는 샌드박스 차단과 빈 포트에서 같아("Couldn't connect to server")
 # 가를 수 없다 — 기록으로 가른다. 살아 있으면 이 셸이 못 닿는 것이고 start 로 보내지 않는다.
@@ -803,15 +808,20 @@ case "$cmd" in
     # 데몬은 체크아웃의 jar 가 아니라 자기 복사본으로 돈다(D-125). gradlew test · installPrevue 가 build/ 의 jar 를 제자리에서
     # 다시 구우면 떠 있던 데몬이 클래스를 못 읽고(NoClassDefFoundError) 그리기도 종료 요청도 처리하지 못했다.
     # 임시 파일에 쓴 뒤 mv 로 바꿔 끼운다 — 같은 자리에서 아직 끝나지 않은 옛 데몬은 열어 둔 옛 파일을 계속 읽는다.
+    # 스스로 끝난 데몬(유휴 종료 · 죽음)의 복사본은 지울 곳이 stop 뿐이라 여기서 거둔다.
+    for d in "$DAEMON_DIR"/daemon-*.jars; do [ -d "$d" ] || continue; d="${d##*/daemon-}"; drop_jars "${d%.jars}"; done
     JARS="$DAEMON_DIR/daemon-$PORT.jars"; mkdir -p "$JARS"
-    for j in "${PREVUE_CP%%:*}" "$PREVUE_BRIDGE"; do
-      cp "$j" "$JARS/.$(basename "$j").$$" && mv -f "$JARS/.$(basename "$j").$$" "$JARS/$(basename "$j")" \
-        || { echo "{\"ok\":false,\"error\":\"Couldn't copy $j to $JARS for the daemon to run from\"}"; exit 1; }
+    OWN_JAR="${PREVUE_CP%%:*}"    # 우리 jar 가 맨 앞이다(prevueEnv)
+    for j in "$OWN_JAR" "$PREVUE_BRIDGE"; do
+      t="$JARS/.$(basename "$j").$$"
+      cp "$j" "$t" && mv -f "$t" "$JARS/$(basename "$j")" \
+        || { rm -f "$t"; echo "{\"ok\":false,\"error\":$(jstr "Couldn't copy $j to $JARS for the daemon to run from")}"; exit 1; }
     done
+    DAEMON_CP="$JARS/$(basename "$OWN_JAR")${PREVUE_CP#"$OWN_JAR"}"
     RUN=("$JDK/bin/java" "-Xmx${PREVUE_HEAP:-3g}" -XX:+UseG1GC -Djava.awt.headless=true
       --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED
       --add-opens=java.desktop/sun.awt.image=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED
-      -cp "$JARS/$(basename "${PREVUE_CP%%:*}"):${PREVUE_CP#*:}" prevue.daemon.MainKt
+      -cp "$DAEMON_CP" prevue.daemon.MainKt
       --layoutlib "$PREVUE_LAYOUTLIB" --compiler "$PREVUE_COMPILER" --bridge "$JARS/$(basename "$PREVUE_BRIDGE")"
       --viewer "$PREVUE_VIEWER" ${ARGS[@]+"${ARGS[@]}"})
     # 렌더 스레드를 잃은 데몬은 같은 자리에 자기를 다시 띄운다(NFR-4) — 새 JVM 이 자기 pid 를 여기 고쳐 쓴다.

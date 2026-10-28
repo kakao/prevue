@@ -457,14 +457,14 @@ class Cli(unittest.TestCase):
         rc, out = self.prevue("stop", "--all")
         self.assertEqual((rc, out.get("ok"), out.get("stopped")), (0, True, 1))
         self.assertLess(time.time() - t0, 10, "HTTP 오류면 기다리지 않고 신호로 내린다")
-        self.assertIsNotNone(fake.poll())
+        self.assertIsNotNone(fake.wait(timeout=5))
         self.assertFalse(os.path.exists(jars), "내린 데몬의 jar 복사본을 지운다")
 
     def test_TERM_을_무시하는_데몬은_KILL_로_내린다(self):
         port, fake = self.broken_daemon(ignore_term=True)
         rc, out = self.prevue("stop", "--port", str(port))
         self.assertEqual((rc, out.get("ok"), out.get("ports")), (0, True, [port]))
-        self.assertEqual(fake.poll(), -signal.SIGKILL)
+        self.assertEqual(fake.wait(timeout=5), -signal.SIGKILL)
 
     def test_clean_은_부팅_전의_죽은_기록을_지우고_로그는_둔다(self):
         boot = self.boot()
@@ -488,7 +488,7 @@ class MainClass(unittest.TestCase):
             return f.read()
 
     def test_데몬을_띄우는_두_곳이_같은_메인_클래스를_넘긴다(self):
-        self.assertRegex(self.source("bin", "prevue"), r'-cp "\$PREVUE_CP" %s\s' % re.escape(R.DAEMON_MAIN))
+        self.assertRegex(self.source("bin", "prevue"), r'-cp "\$DAEMON_CP" %s\s' % re.escape(R.DAEMON_MAIN))
         self.assertIn('Respawn.start("%s", ' % R.DAEMON_MAIN, self.source("src", "main", "kotlin", "prevue", "daemon", "Main.kt"))
 
 
@@ -506,6 +506,8 @@ class Launch(unittest.TestCase):
         with open(os.path.join(plugin, "build", "prevue-env"), "w") as f:
             for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
                 f.write('%s="$ROOT/build/%s"\n' % (k, k.lower()))
+        for jar in ("prevue_cp", "prevue_bridge"):      # start 가 데몬이 돌 복사본으로 옮긴다(D-125)
+            open(os.path.join(plugin, "build", jar), "w").close()
         self.java = os.path.join(self.home, "jdk", "bin", "java")
         os.makedirs(os.path.dirname(self.java))
         with open(self.java, "w") as f:
