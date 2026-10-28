@@ -466,7 +466,7 @@ esac
 if [ "${RESOLVE_SEAT:-0}" = 1 ]; then
     if [ "$PORT_GIVEN" = 0 ]; then
       # 인자가 가리킨 저장소는 그대로 따른다. cwd 는 약한 단서라, 거기 데몬이 실제로 살 때만 쓴다 —
-      # 에이전트의 작업 디렉터리가 대상 저장소가 아닌 경우가 흔하고(이 도구의 저장소에도 gradlew 가 있다),
+      # 에이전트의 작업 디렉터리가 대상 저장소가 아닌 경우가 흔하고(이 도구의 plugin/ · 픽스처에도 gradlew 가 있다),
       # 그때 엉뚱한 빈자리를 골라 "닿지 못했다"로 끝내면 이유를 알 수 없다.
       KEY="$(key_from_args "$@")" || KEY=""
       if [ -z "$KEY" ] && R="$(repo_root "$PWD" 2>/dev/null)"; then

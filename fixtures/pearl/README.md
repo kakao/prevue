@@ -1,8 +1,8 @@
 # Pearl 픽스처
 
-Prevue 통합 테스트(`./gradlew integrationTest`)가 그리는 대상이자 README 그림을 찍는 버블티 주문 앱이다. 멀티 모듈로 나눠, 테스트가 보는 갈래를 한 저장소 안에서 덮는다.
+Prevue 통합 테스트(`plugin/`에서 `./gradlew integrationTest`)가 그리는 대상이자 README 그림을 찍는 버블티 주문 앱이다. 멀티 모듈로 나눠, 테스트가 보는 갈래를 한 저장소 안에서 덮는다.
 
-- **도구 빌드와 떨어진 독립 Gradle 프로젝트다.** 루트의 `./gradlew`는 여기를 모른다. 통합 테스트가 `bin/prevue warmup`으로 이 프로젝트에 Gradle을 한 번 돌려 클래스패스 덤프를 뜬다(공개 Maven만 쓴다 — 승인 없음).
+- **도구 빌드와 떨어진 독립 Gradle 프로젝트다.** 도구의 `plugin/gradlew`는 여기를 모른다. 통합 테스트가 `plugin/bin/prevue warmup`으로 이 프로젝트에 Gradle을 한 번 돌려 클래스패스 덤프를 뜬다(공개 Maven만 쓴다 — 승인 없음).
 - **버전은 고정한다**(`gradle/libs.versions.toml`). 올리는 PR이 곧 Prevue의 호환성 확인이다. 의존성은 Compose · Material3 · AndroidX core뿐이다 — 새 라이브러리는 공개 저장소의 라이선스 확인을 다시 받는다.
 - **그림 파일이 없다.** 컵 · 음료 · 펄 · 얼음 · 블롭은 `:core:ui`의 `Cup`이 Canvas 기본 도형으로 그리고, 아이콘은 직접 쓴 벡터다. 셰이더 · 블러는 쓰지 않는다 — 렌더러가 CPU에서 그려 셰이더는 틱마다 수백 ms다.
 - **글꼴은 시스템 기본이다.** 글꼴 파일을 싣지 않는다 — 실으면 공개 저장소의 라이선스 확인(OLIVE)을 다시 받는다. 화면 글자는 영어 한 벌이다.
@@ -19,6 +19,6 @@ Prevue 통합 테스트(`./gradlew integrationTest`)가 그리는 대상이자 R
 | `:feature:search` | 검색(TextField) | 아직 없음 — 글자 넣기(`type`)를 덮을 자리 |
 | `:app` | 앱 진입점 | 라이브러리 모듈이 리소스를 빌리는 앱(D-38) |
 
-테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `src/integrationTest`와 `tests/viewer`도 같이 본다.
+테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `plugin/src/integrationTest`와 `tests/viewer`도 같이 본다.
 
 `tests/viewer`의 데몬 테스트(tabs · workspace · content · resize · preparation)는 `AdaptivePreviews.kt`로 띄운 이 체크아웃의 데몬 하나에 연달아 돌려도 된다(`tests/viewer/daemon.mjs`).

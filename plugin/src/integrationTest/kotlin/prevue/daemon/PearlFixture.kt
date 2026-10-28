@@ -18,7 +18,7 @@ import prevue.json.Json
 object PearlFixture {
     private val HOME = System.getProperty("user.home")
     private val ROOT: File? = System.getProperty("prevue.root")?.let(::File)
-    val dir: File? = System.getProperty("prevue.pearl")?.let(::File)
+    val dir: File? = ROOT?.let { File(it.parentFile, "fixtures/pearl") }
     val viewer: File? = ROOT?.let { File(it, "viewer") }
 
     private fun main(module: String) = File(dir, "$module/src/main")

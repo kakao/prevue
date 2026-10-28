@@ -15,7 +15,7 @@ README 상단 영상을 찍는 출발점이다. 에이전트가 프롬프트 한
 VIEWER_SURFACE=<cmux 브라우저 판> sh fixtures/pearl-demo/stage.sh   # 기본 ~/Desktop/pearl
 ```
 
-대상 폴더에 새로 복사하고 git 첫 커밋을 만든 뒤, 이 체크아웃의 `bin/prevue`로 Gradle 덤프까지만 떠 둔다(지난 판의 데몬은 내린다). **데몬은 영상 속 에이전트가 띄운다** — 준비 화면이 보드로 걷히는 장면이 영상에 들어간다.
+대상 폴더에 새로 복사하고 git 첫 커밋을 만든 뒤, 이 체크아웃의 `plugin/bin/prevue`로 Gradle 덤프까지만 떠 둔다(지난 판의 데몬은 내린다). **데몬은 영상 속 에이전트가 띄운다** — 준비 화면이 보드로 걷히는 장면이 영상에 들어간다.
 끝에 에이전트를 띄울 명령을 찍는다. 그 명령은
 - `PATH` 앞에 `shim/open`을 둔다 — `prevue start`가 기본 브라우저로 여는 뷰어를 `PEARL_VIEWER_SURFACE` 판으로 보내고 `lang=en`으로 고정한다.
 - 이 체크아웃을 `--plugin-dir`로 읽고, 설치된 마켓플레이스 판은 그 세션에서만 끈다.

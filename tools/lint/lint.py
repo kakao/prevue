@@ -22,6 +22,8 @@ import viewer  # noqa: E402
 
 PLUGIN = "plugin"
 ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/")
+# plugin/ 으로 옮기기 전의 자리(D-123) — 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
+OLD_ROOTS = ("src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
 DETEKT_REPORTS = tuple("%s/%s/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge"))
@@ -102,7 +104,8 @@ def detekt_findings(gradle_args):
     found = []
     for report in DETEKT_REPORTS:
         for file_el in ET.parse(report).getroot().iter("file"):
-            path = os.path.relpath(file_el.get("name"))
+            name = file_el.get("name")
+            path = os.path.relpath(name if os.path.isabs(name) else os.path.join(PLUGIN, name))
             for e in file_el.iter("error"):
                 name = e.get("source", "").split(".")[-1]
                 rule = DETEKT_GROUPS.get(name, "detekt/" + name)
@@ -122,8 +125,8 @@ def viewer_findings():
 def changed_lines(base):
     """기준점(merge-base)에서 작업 트리까지 더하거나 바꾼 줄 {경로: {줄}}. 커밋 안 한 변경 · 새 파일도 넣는다."""
     out = {}
-    # 경로를 좁히지 않는다 — 좁히면 밖에서 옮겨 온 파일이 이름 바뀜이 아니라 새 파일로 잡힌다
-    diff = git("diff", "-M", "-U0", "--no-color", "--no-ext-diff", base)
+    # 옛 자리도 넣는다 — 새 자리만 주면 옮겨 온 파일이 이름 바뀜이 아니라 새 파일로 잡힌다
+    diff = git("diff", "-M", "-U0", "--no-color", "--no-ext-diff", base, "--", *(ROOTS + OLD_ROOTS))
     path = None
     for ln in diff.splitlines():
         if ln.startswith("+++ "):
@@ -177,7 +180,7 @@ def renames(name_status):
         parts = ln.split("\t")
         if len(parts) == 3 and parts[0].startswith("R"):
             out[parts[2]] = parts[1]
-        elif len(parts) == 2 and parts[0] in ("D", "A") and in_scope(parts[1]):
+        elif len(parts) == 2 and parts[0] in ("D", "A") and (in_scope(parts[1]) or parts[0] == "D" and parts[1].endswith(".kt") and parts[1].startswith(OLD_ROOTS)):
             pairs.append((parts[0], parts[1]))
             (gone if parts[0] == "D" else added)[os.path.basename(parts[1])] += 1
     old_at = {os.path.basename(p): p for s, p in pairs if s == "D"}
@@ -210,7 +213,7 @@ def main(argv):
     findings.extend(detekt_findings((["--no-daemon"] if ci else []) + ([] if args.online or ci else ["--offline"])))
 
     changed = changed_lines(base)
-    moved = renames(git("diff", "-M", "--name-status", "--no-ext-diff", base))
+    moved = renames(git("diff", "-M", "--name-status", "--no-ext-diff", base, "--", *(ROOTS + OLD_ROOTS)))
     findings.extend(new_comments(srcs, changed, lambda path: git("show", "%s:%s" % (base, moved.get(path, path)), check=False)))
 
     for f in sorted(findings, key=lambda f: (f.path, f.line, f.rule)):

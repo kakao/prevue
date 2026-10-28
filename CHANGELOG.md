@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **The plugin install is smaller.** Claude Code and Codex now download only the plugin itself, not the repository's README media, design prototypes, tests, or test fixtures. Update the marketplace first, as always, then the plugin.
+- **The plugin install is smaller.** Claude Code and Codex now download only the plugin itself, not the repository's README media, design prototypes, tests, or test fixtures. **Update the marketplace before the plugin this time** — a marketplace entry from before this release can no longer find the plugin.
 
 ## [0.18.3] — 2026-10-28
 

@@ -8,7 +8,7 @@ DEST=${1:-$HOME/Desktop/pearl}
 # 영상은 이 체크아웃(개발판)으로 찍는다 — 에이전트도 이 체크아웃을 플러그인으로 읽어야 한다(마지막 줄).
 # CLI 는 자기 사본이 띄운 데몬만 보므로 데몬도 같은 사본으로 띄운다
 REPO=$(cd "$HERE/../.." && pwd)
-PREVUE=${PREVUE:-$REPO/bin/prevue}
+PREVUE=${PREVUE:-$REPO/plugin/bin/prevue}
 # 영상은 영어판이다 — 뷰어 주소에 ?lang=en 을 실어 녹화하는 사람의 언어와 상관없이 영어로 연다
 export PREVUE_LANG=en
 [ -x "$PREVUE" ] || { echo "$PREVUE 가 없다 — 저장소에서 ./gradlew --offline installPrevue 를 먼저 돌린다" >&2; exit 2; }

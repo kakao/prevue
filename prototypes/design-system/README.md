@@ -19,5 +19,5 @@ http://127.0.0.1:8793/prototypes/design-system/ 을 엽니다. 오른쪽 위 단
 - `img/` — nowinandroid(Apache-2.0)의 프리뷰 렌더 PNG와 줄인 노드 트리. 뷰어 구조 시안이 쓸 그림이라 견본이 쓰지 않는 것도 둡니다
 
 대비 표는 페이지가 열릴 때 그 면에서 풀린 색으로 계산합니다. 반투명한 바탕은 그 아래 면에 겹친 색으로 잽니다.
-- `layout/` — 뷰어 구조 시안(D-94). 화면마다 확정한 배치 · 고정 동작 대조표 · 새 값 후보 · 결정 재료는 `layout/README.md`. 준비 화면 두 쪽(`prepare-live.html` · `handoff-live.html`)은 실제 준비 장면 코드(`viewer/js/preparation-scene.js`)를 불러 돈다
+- `layout/` — 뷰어 구조 시안(D-94). 화면마다 확정한 배치 · 고정 동작 대조표 · 새 값 후보 · 결정 재료는 `layout/README.md`. 준비 화면 두 쪽(`prepare-live.html` · `handoff-live.html`)은 실제 준비 장면 코드(`plugin/viewer/js/preparation-scene.js`)를 불러 돈다
 - `img/pearl/` — `fixtures/pearl` 렌더를 480px JPEG로 줄인 것(시안용, 약 0.5MB)

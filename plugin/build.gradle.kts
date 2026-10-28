@@ -136,7 +136,6 @@ tasks.register<Test>("integrationTest") {
         "--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED", "--add-opens=java.base/java.nio=ALL-UNNAMED",
     )
     systemProperty("prevue.root", rootDir.absolutePath)
-    systemProperty("prevue.pearl", pearlFixture.path)
     // 멈춘 렌더 · 정착 대기가 테스트를 끝없이 붙잡았다 — 상한을 넘으면 그 자리의 스택과 함께 실패한다.
     // 별도 스레드여야 인터럽트를 안 받는 대기에서도 제때 실패한다. 준비(@BeforeAll)는 warmup 10분 + 보드 채우기를 품는다.
     systemProperty("junit.jupiter.execution.timeout.thread.mode.default", "SEPARATE_THREAD")

@@ -116,6 +116,10 @@ class Comments(unittest.TestCase):
                "D\tplugin/src/main/kotlin/a/Twin.kt\nD\tplugin/src/main/kotlin/b/Twin.kt\nA\tplugin/src/main/kotlin/c/Twin.kt\n")
         self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/domain/runtime/Shot.kt": "plugin/src/main/kotlin/usecase/Shot.kt"})
 
+    def test_plugin_으로_옮기며_고친_파일은_옛_자리와_짝짓는다(self):
+        out = "D\tsrc/main/kotlin/a/Moved.kt\nA\tplugin/src/main/kotlin/a/Moved.kt\nD\tfixtures/x/Moved2.kt\nA\tplugin/src/main/kotlin/b/Moved2.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/a/Moved.kt": "src/main/kotlin/a/Moved.kt"})
+
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])
         self.assertEqual(self.comments("// 외부: 첫 줄\n// 이어지는 줄\nval a = 1\n", {1, 2, 3}), [1, 2])
