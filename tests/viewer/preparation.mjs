@@ -52,7 +52,11 @@ try {
     const RealSource=EventSource;window.EventSource=class extends RealSource{constructor(...a){super(...a);__events.push(this);this.addEventListener('message',e=>{try{const b=JSON.parse(e.data).state?.boot;if(b)window.__boot=b}catch{}})}};
     window.__inject=s=>{if(!window.__boot)throw Error('실제 SSE 상태가 아직 오지 않아 boot 를 모른다');__events.at(-1).dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:{...s,boot:__boot}})}))};
   ` });
-  let state = await fetch(new URL('/viewer/state', viewer)).then(response => response.json());
+  // 앞 테스트가 중간에 죽어 인터랙티브 카드를 켜 둔 데몬이면 준비 화면이 서지 않는다 — 보드로 되돌리고 시작한다
+  await fetch(new URL('/viewer/exit', viewer), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  let state;
+  for (let i = 0; i < 50; i++, await pause(100)) if (!(state = await fetch(new URL('/viewer/state', viewer)).then(response => response.json())).focus) break;
+  assert(!state.focus, '데몬을 보드로 되돌림');
   if (!state.board) {
     await send('Page.navigate', { url: bootstrap || viewer });
     await until(`!document.querySelector('#preparation') && document.querySelector('#startView')?.hidden===false && document.querySelector('#startView .qo-row')`);

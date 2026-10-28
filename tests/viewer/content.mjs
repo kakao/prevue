@@ -95,6 +95,8 @@ try {
     return { stage: Math.max(...["x", "y", "w", "h"].map(k => Math.abs(a.stage[k] - b.real[k]))), shot: Math.max(...["x", "y", "w", "h"].map(k => Math.abs(top(a)[k] - b.shot[k]))) };
   };
 
+  // 앞 테스트가 중간에 죽어 인터랙티브 카드를 켜 둔 데몬이어도 보드에서 시작한다
+  await post("/viewer/exit", {});
   await send("Page.enable"); await send("Runtime.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__errors=[];addEventListener('error',e=>__errors.push(e.message));addEventListener('unhandledrejection',e=>__errors.push(String(e.reason)));` });
