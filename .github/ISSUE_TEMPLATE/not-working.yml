@@ -37,8 +37,9 @@ body:
       label: Environment
       value: |
         - macOS version and chip (Apple silicon / Intel):
-        - JDK (`java -version`):
         - Android Studio installed (yes / no):
+        - JDK, only if Android Studio isn't installed (`java -version`):
+        - Command Line Tools installed (`xcode-select -p`):
         - Agent and version (Claude Code / Codex):
         - Prevue version (`claude plugin list` or `codex plugin list`):
     validations:
@@ -58,5 +59,5 @@ body:
     id: logs
     attributes:
       label: Logs
-      description: The output of `prevue health <file>` and the end of `prevue log` (ask your agent to run them).
+      description: The output of `prevue health <file>` and the end of `prevue log` (ask your agent to run them). This issue is public, so remove internal Maven hosts, paths, and credentials first.
       render: text
