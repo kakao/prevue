@@ -170,6 +170,12 @@ class KmpVariant(Case):
         self.kmp_built(":shared", "compileDebugKotlinAndroid", time.time())
         self.assertEqual(P.pick_fresh(P.module_dir(self.r.root, ":shared"), ["debug", "release"])[0], "debug")
 
+    def test_옛_기록과_새_기록이_함께면_새것을_본다(self):
+        now = time.time()
+        self.kmp_built(":shared", "compileDebugKotlin", now - 86400)
+        self.kmp_built(":shared", "compileDebugKotlinAndroid", now)
+        self.assertAlmostEqual(P.last_built(P.module_dir(self.r.root, ":shared"), "debug"), now, delta=1)
+
     def test_앱_덤프가_담으면_자기_덤프_없이_준비됨(self):
         d = P.module_dir(self.r.root, ":shared")
         jar = os.path.join(d, "build", "intermediates", "runtime_library_classes_jar", "androidMain", "classes.jar")

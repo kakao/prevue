@@ -158,12 +158,14 @@ def last_built(module_dir_, name):
     다음 순위로 넘어갈 뿐이다(개발 문서 버전 핀).
     """
     # KMP 는 태스크 이름이 다르다 — 새 플러그인 compileAndroidMain, 옛 조합 compile<변형>KotlinAndroid
+    # 둘이 함께 있으면(KMP 로 옮긴 모듈의 옛 기록) 새것을 본다
+    times = []
     for task in ("compile%sKotlin" % _cap(name), "compile%sKotlinAndroid" % _cap(name), "compile%s" % _cap(name)):
         try:
-            return os.path.getmtime(os.path.join(module_dir_, "build", "kotlin", task, "cacheable", "last-build.bin"))
+            times.append(os.path.getmtime(os.path.join(module_dir_, "build", "kotlin", task, "cacheable", "last-build.bin")))
         except OSError:
             pass
-    return None
+    return max(times) if times else None
 
 
 def pick_fresh(module_dir_, names):

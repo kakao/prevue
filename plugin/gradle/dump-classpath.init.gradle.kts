@@ -14,7 +14,7 @@ fun obj(m: Map<String, Collection<String>>) = m.entries.joinToString(",\n    ", 
 // 확장은 프로젝트가 평가될 때 모아 두고 목록은 실행 때 읽는다 — configure-on-demand 저장소에서는 덤프 태스크가 설정될 때
 // 의존 모듈이 아직 평가 전이라 확장이 없고(DroidKaigi 2025 실측: 0개), 실행 때 Project 를 만지는 것은 Gradle 9 가 막는다.
 class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
-val kotlinModules = LinkedHashMap<String, KotlinModule>()
+val kotlinModules = java.util.concurrent.ConcurrentHashMap<String, KotlinModule>()
 
 fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatching {
     fun call(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
@@ -27,7 +27,7 @@ fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatch
         ?: return@runCatching null
     (call(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
         .flatMap { ss -> (call(call(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
-        .filterNot { it.startsWith(m.buildDir.get().asFile.absolutePath + "/") }   // 생성 코드(Res 접근자)는 Gradle 몫이다
+        .filterNot { File(it).toPath().startsWith(m.buildDir.get().asFile.toPath()) }   // 생성 코드(Res 접근자)는 Gradle 몫이다
         .distinct()
 }.getOrNull()
 
