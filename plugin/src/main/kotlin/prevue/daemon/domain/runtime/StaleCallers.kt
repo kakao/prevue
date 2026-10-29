@@ -9,6 +9,7 @@ import prevue.daemon.domain.model.Work
 import prevue.daemon.entity.lines
 import prevue.daemon.entity.phrase
 import prevue.daemon.domain.policy.CompileOrder
+import prevue.daemon.domain.policy.ExpectActual
 import prevue.daemon.domain.policy.FreshnessPolicy
 import prevue.daemon.domain.policy.LinkagePolicy
 import prevue.daemon.domain.port.Compiler
@@ -51,9 +52,10 @@ class StaleCallers(
      */
     suspend fun compileWithNew(ed: WorkspaceEditor, files: List<File>, before: Map<String, String?> = literals.read(files)): Batch {
         val asked = files.map { it.canonicalPath }.toSet()
-        val (fresh, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter { it.isFile }
+        val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter { it.isFile }
             .partition { FreshnessPolicy.newerThanBuild(it.lastModified(), compiler.builtAt(ws.graph.ownerOf(it))) }
-        ed.forgetNew(built)
+        val (held, fresh) = newer.partition { ExpectActual.declares(it, null) }
+        ed.forgetNew(built + held)
         // 읽는 사이에 또 저장되면 옛 값이 남아 기다림이 다음 저장을 기다린다.
         val seen = (files + fresh).associate { it.canonicalPath to it.lastModified() }
         val first = files + fresh

@@ -18,6 +18,7 @@ object StaleReasons {
     const val BUILD = "build"
     const val RESOURCES = "resources"
     const val BUILD_FILES = "build-files"
+    const val EXPECT_ACTUAL = "expect-actual"
 
     /** 오버레이는 직전 성공본 그대로다 — 화면에 남아 있는 그림은 이 저장 **이전**의 코드다. */
     fun compileFailed(files: List<File>, messages: String, hint: Phrase? = null) = reason(files,

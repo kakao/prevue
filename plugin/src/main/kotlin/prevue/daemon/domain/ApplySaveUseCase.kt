@@ -5,6 +5,7 @@ import java.io.File
 import prevue.daemon.entity.PreviewSpec
 import prevue.daemon.domain.port.CompileResult
 import prevue.daemon.domain.model.CardResult
+import prevue.daemon.domain.model.StaleReason
 import prevue.daemon.domain.model.ReloadResult
 import prevue.daemon.domain.model.SaveTiming
 import prevue.daemon.domain.model.VacantTab
@@ -54,18 +55,33 @@ class ApplySaveUseCase(
         require(files.isNotEmpty()) { "files가 없고 현재 프리뷰에 파일도 없다" }
         val seenNow = files.associate { it.canonicalPath to it.lastModified() }
         val texts = literals.read(files)
-        val multiplatform = files.filter { f -> (texts[f.absolutePath] ?: runCatching { f.readText() }.getOrNull())?.let(ExpectActual::declares) == true }
-        if (multiplatform.isNotEmpty()) return@saving needsGradleBuild(ed, multiplatform, seenNow + valuesSeen)
         val coded = save.copy(texts = texts)
         val patched = if (change == null) null else applyLiterals(p, files, texts, seenNow, r?.compile != null, coded)
-        patched ?: compileAndRender(p, files, texts, coded)
+        patched ?: compileOrHold(p, files, r?.compile, coded)
     }
 
-    private fun needsGradleBuild(ed: WorkspaceEditor, files: List<File>, seen: Map<String, Long>): ReloadResult {
-        val why = StaleReasons.expectActual(files)
-        ed.markStale(StaleReasons.BUILD, why)
-        ed.markCompiled(seen)
-        return ReloadResult.NeedsGradleBuild(files, why.what, ws.now.stale)
+    private suspend fun compileOrHold(p: PreviewSpec, files: List<File>, values: CompileResult?, save: Save): ReloadResult {
+        val (held, code) = files.partition { ExpectActual.declares(it, save.texts[it.absolutePath]) }
+        if (held.isEmpty()) return compileAndRender(p, files, save.texts, save)
+        val why = holdForGradle(save.ed, held)
+        if (code.isNotEmpty()) return compileAndRender(p, code, save.texts, save)
+        if (values != null) return render(p, values, emptyList(), save.valuesSeen, save, repair = false)
+        save.ed.markCompiled(save.valuesSeen)
+        return ReloadResult.NeedsGradleBuild(held, why.what, ws.now.stale)
+    }
+
+    private fun holdForGradle(ed: WorkspaceEditor, files: List<File>): StaleReason {
+        val next = StaleReasons.expectActual(files)
+        val why = ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.let { next.copy(files = (it.files + next.files).distinct(), since = it.since) } ?: next
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, why)
+        ed.markCompiled(files.associate { it.canonicalPath to it.lastModified() })
+        return why
+    }
+
+    private fun releaseHeld(ed: WorkspaceEditor, compiled: List<File>) {
+        val held = ws.now.stale[StaleReasons.EXPECT_ACTUAL] ?: return
+        val left = held.files - compiled.map { it.absolutePath }.toSet()
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, if (left.isEmpty()) null else held.copy(files = left))
     }
 
     private fun nothingShown(ed: WorkspaceEditor, valuesSeen: Map<String, Long>): ReloadResult {
@@ -108,6 +124,7 @@ class ApplySaveUseCase(
         val seen = batch.seen + save.valuesSeen
         if (!batch.result.ok) return compileFailed(p, batch, seen, save)
         ed.update { it.copy(stale = it.stale - StaleReasons.COMPILE, lastCompileFailure = null) }
+        releaseHeld(ed, batch.files)
         engine.codeChanged()
         if (vacateIfPreviewLost(ed, files, seen)) return ReloadResult.NothingShown
         val reread = tabs.reread(ed, p)

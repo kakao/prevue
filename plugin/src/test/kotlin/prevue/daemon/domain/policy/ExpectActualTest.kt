@@ -17,6 +17,8 @@ class ExpectActualTest {
             "expect abstract class Base",
             "    actual val name: String = \"x\"",
             "@Suppress(\"X\") internal actual object Clock",
+            "@Deprecated(\"x\", ReplaceWith(\"y\")) actual fun foo() = Unit",
+            "/* note */\nexpect fun after()",
         ).forEach { assertTrue(ExpectActual.declares(it), it) }
     }
 
@@ -28,6 +30,8 @@ class ExpectActualTest {
             "assertEquals(expected, actual)",
             "Text(\"the actual value\")",
             "// expect fun later()",
+            "/*\nexpect fun legacy()\n*/",
+            "val src = \"\"\"\n    actual fun x()\n\"\"\"",
             "@Preview\n@Composable\nfun Screen() = Unit",
         ).forEach { assertFalse(ExpectActual.declares(it), it) }
     }
