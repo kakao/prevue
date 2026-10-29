@@ -73,7 +73,7 @@ class HotCompiler(
 
     private fun args(u: Module, files: List<File>, dest: File): Array<String> = buildList {
         add("-no-jdk"); add("-no-stdlib"); add("-no-reflect")
-        add("-jvm-target"); add("17")
+        add("-jvm-target"); add(u.spec.jvmTarget)
         add("-module-name"); add(u.spec.kotlinModuleName)
         // 모듈 디렉터리도 friend다 — 앞서 핫 컴파일한 파일의 `internal` 선언을 이 파일이 쓴다
         add("-Xfriend-paths=" + (listOf(u.dir.absolutePath) + u.spec.ownClassPath).joinToString(","))

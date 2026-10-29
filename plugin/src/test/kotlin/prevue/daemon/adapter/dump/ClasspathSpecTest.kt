@@ -49,6 +49,23 @@ class ClasspathSpecTest {
         assertEquals(listOf(File(libJar)), spec(":feature:foryou", listOf(libJar), listOf(libJar), emptyList(), emptyList()).kotlinBuildMarkers())
     }
 
+    // #21. JVM 21 모듈의 inline 함수는 17 타깃 코드에 인라인되지 않는다 — Gradle이 구운 클래스의 버전을 따른다.
+    @Test fun `핫 컴파일의 jvm-target 은 Gradle 이 구운 Kotlin 클래스의 버전을 따르고 클래스가 없으면 17이다`() {
+        fun header(major: Int) = byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte(), 0, 0, (major shr 8).toByte(), major.toByte())
+        File(libClasses, "com/example/Retry.class").apply { parentFile.mkdirs(); writeBytes(header(65)) }
+        val javac = File(root, "feature/foryou/build/javac").apply { mkdirs(); File(this, "J.class").writeBytes(header(61)) }.path
+        assertEquals("21", spec(":feature:foryou", listOf(libR, libClasses, javac), listOf(libR, libClasses, javac), emptyList(), listOf(libR)).jvmTarget)
+        assertEquals("17", spec(":core:ui", listOf(uiClasses), listOf(uiClasses), emptyList(), emptyList()).jvmTarget)
+
+        val jar = File(root, "core/designsystem/build/full.jar")
+        java.util.zip.ZipOutputStream(jar.outputStream()).use { z ->
+            z.putNextEntry(java.util.zip.ZipEntry("META-INF/designsystem.kotlin_module")); z.closeEntry()
+            z.putNextEntry(java.util.zip.ZipEntry("com/example/Ds.class")); z.write(header(69)); z.closeEntry()
+        }
+        assertEquals("25", spec(":core:designsystem", listOf(jar.path), listOf(jar.path), emptyList(), emptyList()).jvmTarget)
+        assertEquals(null, classMajor(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 65)))
+    }
+
     @Test fun `앱이 담은 모듈은 앱 클래스패스로 그리고 자기 산출물을 앞에 둔다`() {
         val (r, onApp) = ClasspathSpec.forRender(home, app, overlay)
         assertTrue(onApp)

@@ -88,6 +88,21 @@ class ClasspathSpec(
             ?: error("$project 산출물에서 .kotlin_module을 찾지 못했다 — 모듈명을 정할 수 없다")
     }
 
+    val jvmTarget: String by lazy {
+        val major = kotlinOutputs().firstNotNullOfOrNull(::firstClassHeader)?.let { classMajor(it) }
+        major?.takeIf { it > JAVA_8_MAJOR }?.let { (it - CLASS_MAJOR_OFFSET).toString() } ?: DEFAULT_JVM_TARGET
+    }
+
+    private fun firstClassHeader(root: File): ByteArray? = when {
+        root.isDirectory -> root.walkTopDown().firstOrNull { it.isFile && it.name.endsWith(".class") }
+            ?.inputStream()?.use { it.readNBytes(CLASS_HEADER_BYTES) }
+        root.isFile && root.name.endsWith(".jar") -> ZipFile(root).use { z ->
+            z.entries().asSequence().firstOrNull { it.name.endsWith(".class") && !it.name.startsWith("META-INF/") }
+                ?.let { e -> z.getInputStream(e).use { it.readNBytes(CLASS_HEADER_BYTES) } }
+        }
+        else -> null
+    }
+
     private fun findKotlinModuleName(root: File): String? {
         if (root.isDirectory) {
             return File(root, "META-INF").listFiles().orEmpty()
@@ -211,3 +226,13 @@ class ClasspathSpec(
         }
     }
 }
+
+private const val CLASS_HEADER_BYTES = 8
+private const val CLASS_MAJOR_OFFSET = 44
+private const val JAVA_8_MAJOR = 52
+private const val DEFAULT_JVM_TARGET = "17"
+private val CLASS_MAGIC = byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte())
+
+internal fun classMajor(header: ByteArray): Int? =
+    header.takeIf { it.size >= CLASS_HEADER_BYTES && it.copyOfRange(0, 4).contentEquals(CLASS_MAGIC) }
+        ?.let { ((it[6].toInt() and 0xFF) shl 8) or (it[7].toInt() and 0xFF) }
