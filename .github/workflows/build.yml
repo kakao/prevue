@@ -56,7 +56,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"      # build.gradle.kts 의 jvmToolchain(17) 과 같은 값이다
+          java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build.gradle.kts 가 고정한다
 
       # 제품 빌드는 플러그인 폴더(plugin/)가 하나의 Gradle 프로젝트다 — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
