@@ -11,9 +11,14 @@ fun obj(m: Map<String, Collection<String>>) = m.entries.joinToString(",\n    ", 
 // KMP 모듈은 commonMain 과 중간 소스 세트를 Android 컴파일에 함께 넣는다 — 그 목록은 AGP 가 아니라 KMP 플러그인만 안다(옛 조합은
 // AGP 소스에 commonMain 이 없다). 타입에 기대지 않으려고 리플렉션으로 읽고, KMP 가 아니거나 Android 타깃이 없으면 null.
 // 컴파일은 새 플러그인이면 main, 옛 조합이면 변형 이름(없으면 debug 계열 첫째)이다.
-fun kmpAndroidRoots(q: Project, variant: String): List<String>? = runCatching {
+// 확장은 프로젝트가 평가될 때 모아 두고 목록은 실행 때 읽는다 — configure-on-demand 저장소에서는 덤프 태스크가 설정될 때
+// 의존 모듈이 아직 평가 전이라 확장이 없고(DroidKaigi 2025 실측: 0개), 실행 때 Project 를 만지는 것은 Gradle 9 가 막는다.
+class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
+val kotlinModules = LinkedHashMap<String, KotlinModule>()
+
+fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatching {
     fun call(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
-    val ext = q.extensions.findByName("kotlin") ?: return@runCatching null
+    val ext = m?.ext ?: return@runCatching null
     val targets = (call(ext, "getTargets") as? Iterable<*>)?.filterNotNull() ?: return@runCatching null
     val android = targets.firstOrNull { call(it, "getPlatformType").toString() == "androidJvm" } ?: return@runCatching null
     val comps = (call(android, "getCompilations") as Iterable<*>).filterNotNull()
@@ -22,7 +27,7 @@ fun kmpAndroidRoots(q: Project, variant: String): List<String>? = runCatching {
         ?: return@runCatching null
     (call(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
         .flatMap { ss -> (call(call(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
-        .filterNot { it.startsWith(q.layout.buildDirectory.get().asFile.absolutePath + "/") }   // 생성 코드(Res 접근자)는 Gradle 몫이다
+        .filterNot { it.startsWith(m.buildDir.get().asFile.absolutePath + "/") }   // 생성 코드(Res 접근자)는 Gradle 몫이다
         .distinct()
 }.getOrNull()
 
@@ -87,6 +92,7 @@ fun countOutcomes() = runCatching {
 gradle.afterProject {
     // init script는 build-logic 같은 included build에도 적용되므로, 대상이 아니면 조용히 건너뛴다.
     val p = this
+    p.extensions.findByName("kotlin")?.let { kotlinModules[p.path] = KotlinModule(it, p.layout.buildDirectory) }
     val t = targets.firstOrNull { it.path == p.path } ?: return@afterProject
     registerDump(p, t.path, t.variant, t.out)
 }
@@ -98,7 +104,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
     p.tasks.register("prevueDumpClasspath") {
         val androidExt = p.extensions.findByName("android") ?: error(
             when {
-                kmpAndroidRoots(p, variant) != null ->
+                kmpAndroidRoots(kotlinModules[p.path], variant) != null ->
                     "$targetPath is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of the app module and this module's previews come up from that dump"
                 p.extensions.findByName("kotlin")?.javaClass?.name.orEmpty().contains("Multiplatform") ->
                     "$targetPath is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Add an Android library target to draw them"
@@ -205,8 +211,8 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val depResSnapshot = depRes
         val compileJarsSnapshot = compileJars
         val repoRoot = p.rootProject.projectDir.absolutePath
-        val kmpSourceRoots = p.rootProject.allprojects.mapNotNull { q -> kmpAndroidRoots(q, variant)?.let { q.path to it } }.toMap()
         doLast {
+            val kmpSourceRoots = kotlinModules.mapNotNull { (path, m) -> kmpAndroidRoots(m, variant)?.let { path to it } }.toMap()
             // 리소스 디렉터리만 아직 경로로 훑는다. 클래스와 R 은 위에서 태스크에게 물었다.
             fun intermediate(name: String): List<File> =
                 File(buildDir, "intermediates/$name/$variant")
