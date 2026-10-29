@@ -51,18 +51,29 @@ class ClasspathSpecTest {
 
     // #21. JVM 21 모듈의 inline 함수는 17 타깃 코드에 인라인되지 않는다 — Gradle이 구운 클래스의 버전을 따른다.
     @Test fun `핫 컴파일의 jvm-target 은 Gradle 이 구운 Kotlin 클래스의 버전을 따르고 클래스가 없으면 17이다`() {
-        fun header(major: Int) = byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte(), 0, 0, (major shr 8).toByte(), major.toByte())
+        fun header(major: Int, kotlin: Boolean = true) =
+            byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte(), 0, 0, (major shr 8).toByte(), major.toByte()) +
+                (if (kotlin) "Lkotlin/Metadata;" else "Ljava/lang/Object;").toByteArray()
         File(libClasses, "com/example/Retry.class").apply { parentFile.mkdirs(); writeBytes(header(65)) }
-        val javac = File(root, "feature/foryou/build/javac").apply { mkdirs(); File(this, "J.class").writeBytes(header(61)) }.path
-        assertEquals("21", spec(":feature:foryou", listOf(libR, libClasses, javac), listOf(libR, libClasses, javac), emptyList(), listOf(libR)).jvmTarget)
+        // javac 산출물(BuildConfig 등)은 compileOptions의 타깃이라 Kotlin 타깃과 다를 수 있다 — 앞에 와도 보지 않는다
+        val javac = File(root, "feature/foryou/build/javac").apply { mkdirs(); File(this, "BuildConfig.class").writeBytes(header(61, kotlin = false)) }.path
+        assertEquals("21", spec(":feature:foryou", listOf(libR, javac, libClasses), listOf(libR, javac, libClasses), emptyList(), listOf(libR)).jvmTarget)
+        assertEquals("17", spec(":core:ui", listOf(uiClasses), listOf(uiClasses), emptyList(), emptyList()).jvmTarget)
+        File(uiClasses, "com/example/Old.class").apply { parentFile.mkdirs(); writeBytes(header(52)) }
         assertEquals("17", spec(":core:ui", listOf(uiClasses), listOf(uiClasses), emptyList(), emptyList()).jvmTarget)
 
         val jar = File(root, "core/designsystem/build/full.jar")
         java.util.zip.ZipOutputStream(jar.outputStream()).use { z ->
             z.putNextEntry(java.util.zip.ZipEntry("META-INF/designsystem.kotlin_module")); z.closeEntry()
-            z.putNextEntry(java.util.zip.ZipEntry("com/example/Ds.class")); z.write(header(69)); z.closeEntry()
+            z.putNextEntry(java.util.zip.ZipEntry("com/example/J.class")); z.write(header(61, kotlin = false)); z.closeEntry()
+            z.putNextEntry(java.util.zip.ZipEntry("com/example/Ds.class")); z.write(header(65)); z.closeEntry()
         }
-        assertEquals("25", spec(":core:designsystem", listOf(jar.path), listOf(jar.path), emptyList(), emptyList()).jvmTarget)
+        assertEquals("21", spec(":core:designsystem", listOf(jar.path), listOf(jar.path), emptyList(), emptyList()).jvmTarget)
+        // 데몬이 돌리는 JVM보다 높게 굽지 않는다 — 그런 클래스는 어차피 올릴 수 없다
+        File(root, "core/designsystem/build/far.jar").also { far ->
+            java.util.zip.ZipOutputStream(far.outputStream()).use { z -> z.putNextEntry(java.util.zip.ZipEntry("F.class")); z.write(header(44 + 99)); z.closeEntry() }
+            assertEquals(Runtime.version().feature().toString(), spec(":core:designsystem", listOf(far.path), listOf(far.path), emptyList(), emptyList()).jvmTarget)
+        }
         assertEquals(null, classMajor(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 65)))
     }
 

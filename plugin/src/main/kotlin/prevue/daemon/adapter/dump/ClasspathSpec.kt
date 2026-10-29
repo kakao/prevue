@@ -89,16 +89,17 @@ class ClasspathSpec(
     }
 
     val jvmTarget: String by lazy {
-        val major = kotlinOutputs().firstNotNullOfOrNull(::firstClassHeader)?.let { classMajor(it) }
-        major?.takeIf { it > JAVA_8_MAJOR }?.let { (it - CLASS_MAJOR_OFFSET).toString() } ?: DEFAULT_JVM_TARGET
+        val major = runCatching { kotlinOutputs().firstNotNullOfOrNull(::firstKotlinClass)?.let(::classMajor) }.getOrNull()
+        major?.takeIf { it > JAVA_8_MAJOR }
+            ?.let { minOf(it - CLASS_MAJOR_OFFSET, Runtime.version().feature()).toString() } ?: DEFAULT_JVM_TARGET
     }
 
-    private fun firstClassHeader(root: File): ByteArray? = when {
-        root.isDirectory -> root.walkTopDown().firstOrNull { it.isFile && it.name.endsWith(".class") }
-            ?.inputStream()?.use { it.readNBytes(CLASS_HEADER_BYTES) }
+    private fun firstKotlinClass(root: File): ByteArray? = when {
+        root.isDirectory -> root.walkTopDown().filter { it.isFile && it.name.endsWith(".class") }
+            .map { it.readBytes() }.firstOrNull(::isKotlinClass)
         root.isFile && root.name.endsWith(".jar") -> ZipFile(root).use { z ->
-            z.entries().asSequence().firstOrNull { it.name.endsWith(".class") && !it.name.startsWith("META-INF/") }
-                ?.let { e -> z.getInputStream(e).use { it.readNBytes(CLASS_HEADER_BYTES) } }
+            z.entries().asSequence().filter { it.name.endsWith(".class") && !it.name.startsWith("META-INF/") }
+                .map { e -> z.getInputStream(e).use { it.readBytes() } }.firstOrNull(::isKotlinClass)
         }
         else -> null
     }
@@ -232,6 +233,11 @@ private const val CLASS_MAJOR_OFFSET = 44
 private const val JAVA_8_MAJOR = 52
 private const val DEFAULT_JVM_TARGET = "17"
 private val CLASS_MAGIC = byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte())
+
+private val KOTLIN_METADATA = "Lkotlin/Metadata;".toByteArray()
+
+private fun isKotlinClass(bytes: ByteArray): Boolean =
+    (0..bytes.size - KOTLIN_METADATA.size).any { i -> KOTLIN_METADATA.indices.all { bytes[i + it] == KOTLIN_METADATA[it] } }
 
 internal fun classMajor(header: ByteArray): Int? =
     header.takeIf { it.size >= CLASS_HEADER_BYTES && it.copyOfRange(0, 4).contentEquals(CLASS_MAGIC) }
