@@ -199,4 +199,22 @@ class ClasspathSpecTest {
         assertEquals(":feature:foryou", g.home)
         assertEquals(listOf(File(appClasses)), g.node(":app")!!.outputs)            // 앱 R.jar는 리소스다
     }
+
+    @Test fun `KMP 모듈은 덤프가 적은 Android 컴파일의 소스 세트를 감시한다`() {
+        val shared = out("shared", "classes.jar")
+        val common = File(root, "shared/src/commonMain/kotlin").apply { mkdirs() }
+        val android = File(root, "shared/src/androidMain/kotlin").apply { mkdirs() }
+        File(root, "shared/src/iosMain/kotlin").mkdirs()
+        val json = File(root, "app-kmp.json").apply {
+            writeText("""{"project":":app","variant":"debug","resourceApkPath":"app.ap_",
+                "classPath":["$appR","$appClasses","$shared"],"projectClassPath":["$appR","$appClasses","$shared"],
+                "compileClassPath":["/m2/c.jar"],"rClassJars":["$appR"],"resourceDirs":[],
+                "kmpSourceRoots":{":shared":["$android","$common","${File(root, "shared/src/gone/kotlin")}"]}}""")
+        }
+        val kmpApp = ClasspathSpec.load(json)
+        val g = WatchGraph.ofApp(kmpApp, kmpApp)
+        assertEquals(listOf(android, common), g.node(":shared")!!.sourceRoots)   // 없는 디렉터리 · iosMain은 보지 않는다
+        val (r, _) = ClasspathSpec.forRender(kmpApp.dependency(":shared"), kmpApp, overlay)
+        assertEquals(kmpApp.kmpSourceRoots, r.kmpSourceRoots)
+    }
 }

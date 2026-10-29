@@ -146,6 +146,44 @@ class Freshness(Case):
         self.assertEqual(P.pick_fresh(self.mod, ["devRelease"]), (None, None))
 
 
+class KmpVariant(Case):
+    """KMP 의 Android 라이브러리 플러그인은 변형이 androidMain 하나뿐이고 태스크 이름도 다르다(D-108)."""
+
+    def kmp_built(self, module, task, when):
+        c = os.path.join(P.module_dir(self.r.root, module), "build", "kotlin", task, "cacheable")
+        os.makedirs(c, exist_ok=True)
+        open(os.path.join(c, "last-build.bin"), "w").close()
+        os.utime(os.path.join(c, "last-build.bin"), (when, when))
+
+    def setUp(self):
+        super().setUp()
+        self.r = self.repo(":app", ":shared")
+
+    def test_androidMain_은_debug_계열이다(self):
+        self.assertEqual(P.pick(["androidMain"]), ("androidMain", "rule"))
+
+    def test_새_플러그인의_컴파일_기록(self):
+        self.kmp_built(":shared", "compileAndroidMain", time.time())
+        self.assertEqual(P.pick_fresh(P.module_dir(self.r.root, ":shared"), ["androidMain"])[0], "androidMain")
+
+    def test_옛_조합의_컴파일_기록(self):
+        self.kmp_built(":shared", "compileDebugKotlinAndroid", time.time())
+        self.assertEqual(P.pick_fresh(P.module_dir(self.r.root, ":shared"), ["debug", "release"])[0], "debug")
+
+    def test_앱_덤프가_담으면_자기_덤프_없이_준비됨(self):
+        d = P.module_dir(self.r.root, ":shared")
+        jar = os.path.join(d, "build", "intermediates", "runtime_library_classes_jar", "androidMain", "classes.jar")
+        os.makedirs(os.path.dirname(jar))
+        open(jar, "w").close()
+        self.kmp_built(":shared", "compileAndroidMain", time.time())
+        self.r.built(":app", "debug", time.time())
+        apk = self.r.apk(":app", "debug")
+        self.r.dump(":app", "debug", apk=apk, classPath=[jar], compileClassPath=["c.jar"])
+        out, rc = self.r.plan(":shared", file=self.r.src(":shared"))
+        self.assertEqual((out["variant"], out.get("host")), ("androidMain", ":app"))
+        self.assertNotIn("choose", out)
+
+
 # ── 관찰 ────────────────────────────────────────────────────────────────────
 
 class Observe(Case):

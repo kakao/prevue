@@ -25,3 +25,5 @@ When it fails
   compileClassPath came out empty — runtime jars have no .kotlin_module, so top-level functions can't be found. Take it again
   It picked a release variant — give a debug variant with --variant (release · minify strip the source info that links clicks to code)
   The module has no android extension — it doesn't apply to pure JVM modules
+  It is a KMP module — warm up with a file of the Android app module that includes it. The app dump also watches commonMain · androidMain and draws that module's previews
+  It is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Pass it on to the person as is

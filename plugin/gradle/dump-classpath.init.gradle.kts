@@ -5,6 +5,26 @@ import java.util.zip.ZipFile
 
 fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
 fun arr(v: Collection<String>) = v.joinToString(",\n    ", "[\n    ", "\n  ]") { "\"${esc(it)}\"" }
+fun obj(m: Map<String, Collection<String>>) = m.entries.joinToString(",\n    ", "{\n    ", "\n  }") { (k, v) -> "\"${esc(k)}\": ${arr(v)}" }
+    .takeIf { m.isNotEmpty() } ?: "{}"
+
+// KMP 모듈은 commonMain 과 중간 소스 세트를 Android 컴파일에 함께 넣는다 — 그 목록은 AGP 가 아니라 KMP 플러그인만 안다(옛 조합은
+// AGP 소스에 commonMain 이 없다). 타입에 기대지 않으려고 리플렉션으로 읽고, KMP 가 아니거나 Android 타깃이 없으면 null.
+// 컴파일은 새 플러그인이면 main, 옛 조합이면 변형 이름(없으면 debug 계열 첫째)이다.
+fun kmpAndroidRoots(q: Project, variant: String): List<String>? = runCatching {
+    fun call(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
+    val ext = q.extensions.findByName("kotlin") ?: return@runCatching null
+    val targets = (call(ext, "getTargets") as? Iterable<*>)?.filterNotNull() ?: return@runCatching null
+    val android = targets.firstOrNull { call(it, "getPlatformType").toString() == "androidJvm" } ?: return@runCatching null
+    val comps = (call(android, "getCompilations") as Iterable<*>).filterNotNull()
+    fun named(n: String) = comps.firstOrNull { call(it, "getName") == n }
+    val comp = named(variant) ?: named("main") ?: comps.firstOrNull { (call(it, "getName") as String).endsWith("ebug") }
+        ?: return@runCatching null
+    (call(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
+        .flatMap { ss -> (call(call(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
+        .filterNot { it.startsWith(q.layout.buildDirectory.get().asFile.absolutePath + "/") }   // 생성 코드(Res 접근자)는 Gradle 몫이다
+        .distinct()
+}.getOrNull()
 
 // 대상은 0부터 번호 붙은 prevue.project.N · prevue.variant.N · prevue.out.N. 라이브러리 모듈과 리소스를 빌릴 앱을 Gradle 한 번에 뜬다 —
 // 모듈 덤프의 태스크는 앱 덤프의 부분집합이라 고정비(기동 · 설정)만 한 번 빠진다. 값을 한 속성에 이어 붙이지 않는다 — 출력 경로에는 어떤 글자든 온다.
@@ -76,8 +96,15 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
     // (실측: "'debug' 변형이 없다 — 후보: " 가 빈 목록으로 나왔다). 아래 설정 블록은 태스크가
     // 실현될 때, 즉 모든 평가가 끝난 뒤에 돌므로 그때는 다 보인다.
     p.tasks.register("prevueDumpClasspath") {
-        val androidExt = p.extensions.findByName("android")
-            ?: error("$targetPath has no android extension")
+        val androidExt = p.extensions.findByName("android") ?: error(
+            when {
+                kmpAndroidRoots(p, variant) != null ->
+                    "$targetPath is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of the app module and this module's previews come up from that dump"
+                p.extensions.findByName("kotlin")?.javaClass?.name.orEmpty().contains("Multiplatform") ->
+                    "$targetPath is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Add an Android library target to draw them"
+                else -> "$targetPath has no android extension"
+            }
+        )
 
         // AGP 버전 간 시그니처 드리프트를 피하려고 리플렉션으로 읽는다.
         val namespace = androidExt.javaClass.getMethod("getNamespace").invoke(androidExt) as? String ?: ""
@@ -178,6 +205,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val depResSnapshot = depRes
         val compileJarsSnapshot = compileJars
         val repoRoot = p.rootProject.projectDir.absolutePath
+        val kmpSourceRoots = p.rootProject.allprojects.mapNotNull { q -> kmpAndroidRoots(q, variant)?.let { q.path to it } }.toMap()
         doLast {
             // 리소스 디렉터리만 아직 경로로 훑는다. 클래스와 R 은 위에서 태스크에게 물었다.
             fun intermediate(name: String): List<File> =
@@ -285,6 +313,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                   "rClassJars": ${arr(rClassJars)},
                   "resourceDirs": ${arr(resDirs)},
                   "variantsKnown": ${arr(variantsKnown)},
+                  "kmpSourceRoots": ${obj(kmpSourceRoots)},
                   "defaultHint": { "buildType": "${esc(defaultBuildType)}", "flavors": ${arr(defaultFlavors)} }
                 }
                 """.trimIndent()

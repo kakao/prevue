@@ -13,6 +13,7 @@ class DumpPaths(
     val compileClassPath: List<String>,
     val rClassJars: List<String>,
     val resourceDirs: List<String>,
+    val kmpSourceRoots: Map<String, List<String>> = emptyMap(),
 )
 
 class Derivation private constructor(
@@ -45,6 +46,7 @@ class ClasspathSpec(
     val compileClassPath: List<String> = paths.compileClassPath
     val rClassJars: List<String> = paths.rClassJars
     val resourceDirs: List<String> = paths.resourceDirs
+    val kmpSourceRoots: Map<String, List<String>> = paths.kmpSourceRoots
     val borrowedFrom: String? = derivation.borrowedFrom
     val borrowedCount: Int = derivation.borrowedCount
     val derivedFrom: String? = derivation.derivedFrom
@@ -122,6 +124,7 @@ class ClasspathSpec(
     /** 소스 루트 후보. 존재하는 것만 돌려준다. flavor 소스셋은 variant 이름의 접두 조합으로 넓게 잡는다. */
     val sourceRoots: List<File>
         get() {
+            kmpSourceRoots[project]?.let { roots -> return roots.map(::File).filter { it.isDirectory } }
             val src = File(moduleDir, "src")
             val names = linkedSetOf("main", variant) + variantParts(variant)
             return names.flatMap { n -> listOf(File(src, "$n/java"), File(src, "$n/kotlin")) }.filter { it.isDirectory }
@@ -169,6 +172,7 @@ class ClasspathSpec(
             classPath = mine + app.rClassJars + borrowed,
             projectClassPath = projectClassPath.filter { it !in own } + app.rClassJars + inRepo,
             compileClassPath = compileClassPath, rClassJars = app.rClassJars, resourceDirs = resourceDirs,
+            kmpSourceRoots = app.kmpSourceRoots + kmpSourceRoots,
         )
         val derivation = Derivation.borrowed(ownClassPath, app.project.takeIf { borrowed.isNotEmpty() }, borrowed.size)
         return ClasspathSpec(file, project, variant, namespace, app.resourceApkPath, paths, derivation)
@@ -181,6 +185,7 @@ class ClasspathSpec(
         val paths = DumpPaths(
             classPath = classPath, projectClassPath = projectClassPath,
             compileClassPath = compileClassPath + rClassJars.filter { it !in compileClassPath }, rClassJars = rClassJars, resourceDirs = resourceDirs,
+            kmpSourceRoots = kmpSourceRoots,
         )
         val derivation = Derivation.derived(own, from = this)
         return ClasspathSpec(file, project, variant, "", resourceApkPath, paths, derivation)
@@ -203,6 +208,7 @@ class ClasspathSpec(
             val paths = DumpPaths(
                 classPath = front + r.classPath, projectClassPath = front + r.projectClassPath,
                 compileClassPath = r.compileClassPath, rClassJars = r.rClassJars, resourceDirs = r.resourceDirs,
+                kmpSourceRoots = r.kmpSourceRoots + home.kmpSourceRoots,
             )
             val borrowedCount = if (onApp) (app!!.classPath.toSet() - home.classPath.toSet()).size else r.borrowedCount
             val derivation = Derivation.rendered(app?.project, borrowedCount)
@@ -215,6 +221,8 @@ class ClasspathSpec(
             val paths = DumpPaths(
                 classPath = m.strings("classPath"), projectClassPath = m.strings("projectClassPath"),
                 compileClassPath = m.strings("compileClassPath"), rClassJars = m.strings("rClassJars"), resourceDirs = m.strings("resourceDirs"),
+                kmpSourceRoots = (m["kmpSourceRoots"] as? Map<*, *>).orEmpty()
+                    .map { (k, v) -> k.toString() to (v as? List<*>).orEmpty().map { it.toString() } }.toMap(),
             )
             val spec = ClasspathSpec(
                 file, m.string("project") ?: error("project 없음"), m.string("variant") ?: "debug", m.string("namespace") ?: "",

@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **Draws commonMain previews of KMP · Compose Multiplatform modules.** Like Android Studio, it draws them from the module's Android compilation, and iOS · web targets alongside are fine. They come up from the dump of the Android app that includes the module, and Prevue watches commonMain · androidMain and the intermediate source sets Android takes part in, so saving redraws without Gradle. It takes AGP 9's `com.android.kotlin.multiplatform.library` (variant `androidMain`) and the older `kotlin.multiplatform` + `com.android.library` pair. Warming up a KMP module directly tells you to use the app module, and a module with no Android target says why. Fonts · images from CMP resources (`Res`) are not loaded yet, so text may draw in the default font
 ## [0.20.2] — 2026-10-29
 
 - **`prevue setup` works with only Android Studio's Java installed.** It used to stop with "Cannot find a Java installation … matching: {languageVersion=17}" unless JDK 17 was also installed ([#22](https://github.com/kakao/prevue/issues/22)). JDK 21 or later is enough now, as the README says.

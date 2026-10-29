@@ -127,7 +127,14 @@ def _cap(s):
     return s[:1].upper() + s[1:]
 
 
+# KMP 의 Android 라이브러리 플러그인은 변형이 이것 하나뿐이다(빌드 타입이 없다). debug 가 아니어도 소스 정보가 들어 있어(Kotlin 2.1.20 기본값)
+# 클릭을 코드로 잇는 데 문제가 없다(D-108).
+KMP_VARIANT = "androidMain"
+
+
 def _is_debug(n):
+    if n == KMP_VARIANT:
+        return True
     return (n == "debug" or n.endswith("Debug")) and "UnitTest" not in n and "AndroidTest" not in n
 
 
@@ -150,11 +157,13 @@ def last_built(module_dir_, name):
     안을 다 뒤지면 대형 앱 모듈에서 3초라 health 마다 치를 수 없다. 코틀린 플러그인 내부 경로라 바뀔 수 있다 — 바뀌면 None 이 되어
     다음 순위로 넘어갈 뿐이다(개발 문서 버전 핀).
     """
-    p = os.path.join(module_dir_, "build", "kotlin", "compile%sKotlin" % _cap(name), "cacheable", "last-build.bin")
-    try:
-        return os.path.getmtime(p)
-    except OSError:
-        return None
+    # KMP 는 태스크 이름이 다르다 — 새 플러그인 compileAndroidMain, 옛 조합 compile<변형>KotlinAndroid
+    for task in ("compile%sKotlin" % _cap(name), "compile%sKotlinAndroid" % _cap(name), "compile%s" % _cap(name)):
+        try:
+            return os.path.getmtime(os.path.join(module_dir_, "build", "kotlin", task, "cacheable", "last-build.bin"))
+        except OSError:
+            pass
+    return None
 
 
 def pick_fresh(module_dir_, names):
