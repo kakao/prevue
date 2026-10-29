@@ -60,8 +60,8 @@ class MultiPreview(classPath: List<String>) {
 
     /** `@Preview` · `@Preview.Container`면 그 인자들, 다른 애노테이션이면 null. */
     private fun previews(a: ClassAnnotation): List<Map<String, String>>? = when (a.type) {
-        PREVIEW -> listOf(a.values)
-        PREVIEW_CONTAINER -> a.nestedArray("value").map { it.values }
+        in PREVIEWS -> listOf(a.values)
+        in PREVIEW_CONTAINERS -> a.nestedArray("value").map { it.values }
         else -> null
     }
 
@@ -94,8 +94,8 @@ class MultiPreview(classPath: List<String>) {
     private fun remember(fqn: String, p: Parsed): Parsed = p.also { cache.update { m -> m + (fqn to p) } }
 
     private companion object {
-        const val PREVIEW = "Landroidx/compose/ui/tooling/preview/Preview;"
-        const val PREVIEW_CONTAINER = "Landroidx/compose/ui/tooling/preview/Preview\$Container;"
+        val PREVIEWS = PreviewLocator.PREVIEW_FQNS.map { "L${it.replace('.', '/')};" }.toSet()
+        val PREVIEW_CONTAINERS = PREVIEWS.map { it.removeSuffix(";") + "\$Container;" }.toSet()
     }
 }
 

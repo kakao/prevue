@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 class PreviewLocatorTest {
     private val classPath = System.getProperty("java.class.path").split(File.pathSeparator)
     private val screens = File("src/test/kotlin/prevue/fixture/preview/Screens.kt")
+    private val legacy = File("src/test/kotlin/prevue/fixture/preview/Legacy.kt")
     private val workDir = lazy { Files.createTempDirectory("prevue-src").toFile() }
     /**
      * 클래스 파일보다 옛것으로 찍은 소스 복사본 — 클래스 파일을 읽는 길을 늘 탄다. 원본을 그대로 읽으면 판정이 디스크의 mtime 순서에 걸린다:
@@ -20,8 +21,8 @@ class PreviewLocatorTest {
      */
     private val compiled by lazy { screensAt("old", 1_000L) }
 
-    private fun screensAt(dir: String, mtime: Long): File =
-        screens.copyTo(File(workDir.value, "$dir/${screens.name}")).also { check(it.setLastModified(mtime)) { "mtime을 못 찍었다: $it" } }
+    private fun screensAt(dir: String, mtime: Long, source: File = screens): File =
+        source.copyTo(File(workDir.value, "$dir/${source.name}")).also { check(it.setLastModified(mtime)) { "mtime을 못 찍었다: $it" } }
 
     @AfterEach fun tearDown() { if (workDir.isInitialized()) workDir.value.deleteRecursively() }
 
@@ -75,6 +76,24 @@ class PreviewLocatorTest {
 
     @Test fun `별칭으로 import 한 Preview 도 Preview 다`() {
         assertEquals(listOf(mapOf("name" to "aliased", "widthDp" to "200")), previews()["Aliased"])
+    }
+
+    @Test fun `레거시 JetBrains Preview 를 직접 단 함수는 클래스 파일에 접힌 상수로 읽는다`() {
+        assertEquals(
+            listOf(mapOf("name" to "legacy wide", "widthDp" to "600"), mapOf("name" to "legacy tall", "heightDp" to "1200")),
+            previews(screensAt("legacy", 1_000L, legacy))["LegacyDirect"],
+        )
+    }
+
+    @Test fun `레거시 JetBrains Preview 로 만든 멀티프리뷰를 푼다`() {
+        assertEquals(
+            listOf(mapOf("name" to "legacy light"), mapOf("name" to "legacy dark", "showBackground" to "true")),
+            previews(screensAt("legacy", 1_000L, legacy))["LegacyMulti"],
+        )
+    }
+
+    @Test fun `별칭으로 import 한 레거시 JetBrains Preview 도 Preview 다`() {
+        assertEquals(listOf(mapOf("name" to "legacy aliased")), previews(screensAt("legacy", 1_000L, legacy))["LegacyAliased"])
     }
 
     @Test fun `멀티프리뷰 선언이 오버레이에서 바뀌면 다음 읽기에 맞는다`() {
