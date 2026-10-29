@@ -145,7 +145,8 @@ class ClasspathSpec(
 
     /** 이 모듈의 매니페스트들 — 앞의 것이 이긴다(variant · flavor → main). */
     val manifests: List<File>
-        get() = (linkedSetOf(variant) + variantParts(variant) + "main" + kmpAndroidSourceSets).map { File(moduleDir, "src/$it/AndroidManifest.xml") }.filter { it.isFile }
+        get() = (linkedSetOf(variant) + variantParts(variant) + "main" + kmpAndroidSourceSets)
+            .map { File(moduleDir, "src/$it/AndroidManifest.xml") }.filter { it.isFile }
 
     /** 바뀌면 클래스패스 덤프가 낡는 파일들. 덤프 자신도 포함한다 — 다시 덤프했으면 데몬이 든 것이 옛것이다. */
     val buildFiles: List<File>
@@ -157,7 +158,8 @@ class ClasspathSpec(
             file,
         ).filter { it.isFile }
 
-    private val kmpAndroidSourceSets: List<String> get() = if (project in kmpSourceRoots) listOf("androidMain") else emptyList()
+    private val kmpAndroidSourceSets: List<String>
+        get() = if (project !in kmpSourceRoots) emptyList() else listOf("android" + variant.replaceFirstChar(Char::uppercase), "androidMain")
 
     // devDebug → [dev, debug]. 정확한 flavor 분해는 Gradle만 알지만, 소스 루트를 찾는 데는 이 근사가 충분하다.
     private fun variantParts(v: String): List<String> =

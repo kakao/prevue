@@ -24,22 +24,22 @@ class ApkWithAssetsTest {
 
     private fun entries(f: File) = ZipFile(f).use { z -> z.entries().asSequence().associate { e -> e.name to z.getInputStream(e).readBytes().decodeToString() } }
 
-    @Test fun `에셋이 있으면 리소스 APK 뒤에 assets 경로로 합친 사본을 쓴다`() {
+    @Test fun `CMP 리소스가 있으면 리소스 APK 에 assets 경로로 합친 사본을 쓰고 다른 에셋은 싣지 않는다`() {
         val merged = File(root, "merged").apply { File(this, "composeResources/app/font").mkdirs() }
         File(merged, "composeResources/app/font/sans.ttf").writeText("font")
         File(merged, "top.txt").writeText("top")
         val out = ApkWithAssets.of(apk, listOf(merged, File(root, "gone")), daemon)
         assertEquals(File(daemon, ApkWithAssets.FILE_NAME), out)
         assertEquals(
-            mapOf("resources.arsc" to "arsc", "AndroidManifest.xml" to "m", "assets/composeResources/app/font/sans.ttf" to "font", "assets/top.txt" to "top"),
+            mapOf("resources.arsc" to "arsc", "AndroidManifest.xml" to "m", "assets/composeResources/app/font/sans.ttf" to "font"),
             entries(out),
         )
         assertEquals("arsc", entries(apk)["resources.arsc"])
     }
 
-    @Test fun `에셋이 없으면 원본을 그대로 쓰고 지난 사본을 지운다`() {
+    @Test fun `CMP 리소스가 없으면 원본을 그대로 쓰고 지난 사본을 지운다`() {
         File(daemon, ApkWithAssets.FILE_NAME).apply { parentFile.mkdirs(); writeText("old") }
-        val empty = File(root, "empty").apply { mkdirs() }
+        val empty = File(root, "empty").apply { mkdirs(); File(this, "lottie.json").writeText("{}") }
         assertEquals(apk, ApkWithAssets.of(apk, listOf(empty), daemon))
         assertFalse(File(daemon, ApkWithAssets.FILE_NAME).exists())
     }
