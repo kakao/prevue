@@ -206,6 +206,8 @@
   "stale.classPending.remedy": "다음 산출물 변경에서 자동으로 다시 그려요. 빌드가 끝났는데도 계속되면 prevue reload {file}",
   "stale.compile": "컴파일이 실패해서 지금 보는 그림은 이 저장 전의 것이에요",
   "stale.compile.remedy": "소스를 고쳐 다시 저장하세요",
+  "stale.expectActual": "이 파일에는 expect/actual 선언이 있어 Gradle 빌드로만 컴파일돼요. 지금 보는 그림은 이 저장 전의 것이에요",
+  "stale.expectActual.remedy": "Gradle로 앱을 빌드하세요. 빌드 산출물이 바뀌면 자동으로 다시 그려요",
   "stale.filePlaceholder": "<파일>",
   "stale.head": "⚠ {what}",
   "stale.outputsGone": "컴파일 산출물이 없어요. 빌드 중이거나 clean된 상태예요",

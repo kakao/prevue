@@ -28,6 +28,9 @@ object StaleReasons {
     fun resources(files: List<File>, shown: File?, why: Phrase? = null) = reason(files,
         phrase("stale.resources"), phrase("stale.resources.remedy", "file" to placeholder(shown)), why)
 
+    fun expectActual(files: List<File>) = reason(files,
+        phrase("stale.expectActual"), phrase("stale.expectActual.remedy"))
+
     fun buildFiles(files: List<File>) = reason(files,
         phrase("stale.buildFiles"), phrase("stale.buildFiles.remedy"))
 

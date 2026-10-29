@@ -18,6 +18,7 @@ internal object HotSwapLog {
             ReloadResult.NothingShown -> null
             is ReloadResult.Unchanged -> "reload $names: unchanged — 내용이 지금 그림과 같다"
             is ReloadResult.ResourcesStale -> "reload $names: stale resources — ${r.why.text}"
+            is ReloadResult.NeedsGradleBuild -> "reload $names: needs Gradle build — ${r.why.text}"
         }
     }
 

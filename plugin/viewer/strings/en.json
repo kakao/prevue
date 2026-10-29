@@ -207,6 +207,8 @@
   "stale.classPending.remedy": "It redraws on its own at the next output change. If it keeps waiting after the build finishes, prevue reload {file}",
   "stale.compile": "The compile failed, so the image you see is from before this save",
   "stale.compile.remedy": "Fix the source and save again",
+  "stale.expectActual": "This file has expect/actual declarations, which only a Gradle build can compile. The image you see is from before this save",
+  "stale.expectActual.remedy": "Build the app with Gradle. It redraws on its own when the build outputs change",
   "stale.filePlaceholder": "<file>",
   "stale.head": "⚠ {what}",
   "stale.outputsGone": "The compile outputs are missing. A build is running or they were cleaned",

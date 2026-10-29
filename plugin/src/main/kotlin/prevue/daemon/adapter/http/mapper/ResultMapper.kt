@@ -65,6 +65,7 @@ fun ReloadResult.toJson(): Map<String, Any?> = when (this) {
     is ReloadResult.Unchanged -> mapOf("ok" to true, "unchanged" to true, "files" to files.map { it.absolutePath })
     // D-68. 그리지 않았다 — 그림은 저장 전 것이고 이유는 stale.resources.message에 있다.
     is ReloadResult.ResourcesStale -> mapOf("ok" to false, "files" to files.map { it.absolutePath }, "message" to why.text, "stale" to stale.staleJson())
+    is ReloadResult.NeedsGradleBuild -> mapOf("ok" to false, "files" to files.map { it.absolutePath }, "message" to why.text, "stale" to stale.staleJson())
 }
 
 fun FocusResult.toJson(): Map<String, Any?> = when (this) {

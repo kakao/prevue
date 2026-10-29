@@ -111,6 +111,10 @@ sealed interface ReloadResult {
     data class ResourcesStale(val files: List<File>, val why: Phrase, val stale: Map<String, StaleReason>) : ReloadResult {
         override val ok = false
     }
+
+    data class NeedsGradleBuild(val files: List<File>, val why: Phrase, val stale: Map<String, StaleReason>) : ReloadResult {
+        override val ok = false
+    }
 }
 
 /** 카드 한 장(FR-17). 그린 것과 쓰기 실패는 카드에 남고, 나머지는 응답일 뿐이다. */

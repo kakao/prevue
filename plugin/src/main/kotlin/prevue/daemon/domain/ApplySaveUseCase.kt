@@ -9,6 +9,7 @@ import prevue.daemon.domain.model.ReloadResult
 import prevue.daemon.domain.model.SaveTiming
 import prevue.daemon.domain.model.VacantTab
 import prevue.daemon.domain.port.SourceChange
+import prevue.daemon.domain.policy.ExpectActual
 import prevue.daemon.domain.policy.StaleReasons
 import prevue.daemon.domain.runtime.EngineActor
 import prevue.daemon.domain.runtime.Lines
@@ -53,9 +54,18 @@ class ApplySaveUseCase(
         require(files.isNotEmpty()) { "files가 없고 현재 프리뷰에 파일도 없다" }
         val seenNow = files.associate { it.canonicalPath to it.lastModified() }
         val texts = literals.read(files)
+        val multiplatform = files.filter { f -> (texts[f.absolutePath] ?: runCatching { f.readText() }.getOrNull())?.let(ExpectActual::declares) == true }
+        if (multiplatform.isNotEmpty()) return@saving needsGradleBuild(ed, multiplatform, seenNow + valuesSeen)
         val coded = save.copy(texts = texts)
         val patched = if (change == null) null else applyLiterals(p, files, texts, seenNow, r?.compile != null, coded)
         patched ?: compileAndRender(p, files, texts, coded)
+    }
+
+    private fun needsGradleBuild(ed: WorkspaceEditor, files: List<File>, seen: Map<String, Long>): ReloadResult {
+        val why = StaleReasons.expectActual(files)
+        ed.markStale(StaleReasons.BUILD, why)
+        ed.markCompiled(seen)
+        return ReloadResult.NeedsGradleBuild(files, why.what, ws.now.stale)
     }
 
     private fun nothingShown(ed: WorkspaceEditor, valuesSeen: Map<String, Long>): ReloadResult {
