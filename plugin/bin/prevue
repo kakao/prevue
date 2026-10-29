@@ -117,6 +117,9 @@ abspath() {  # 존재하는 경로만 받는다
   fi
 }
 
+# Amper 같은 Gradle 아닌 빌드도 여기서 멈춘다 — --project 만 권하면 없는 gradlew 를 찾게 만든다
+NO_GRADLEW="gradlew not found — Prevue reads Gradle builds only (it runs Gradle once to read the classpath). If this is a Gradle repository, give its root with --project"
+
 repo_root() {  # <경로> — 위로 올라가며 gradlew를 찾는다
   local d; d="$(abspath "$1")" || return 1
   [ -d "$d" ] || { d="${d%/*}"; d="${d:-/}"; }
@@ -393,7 +396,7 @@ dump_out() {  # <repo> <module> <variant> — 덤프 JSON은 저장소 밖에 �
 plan_json() {  # <파일|""> <variant|""> <projdir|""> [module]
   local file="$1" variant="$2" proj="$3" repo module="${4:-}" toolchain=true
   repo="$(repo_root "${proj:-${file:-$PWD}}")" || {
-    echo '{"ok":false,"error":"gradlew not found — give the repository root with --project"}'; return 2; }
+    echo "{\"ok\":false,\"error\":\"$NO_GRADLEW\"}"; return 2; }
   if [ -n "$module" ]; then
     [ "${module#:}" = "$module" ] && module=":$module"
   else
@@ -632,7 +635,7 @@ case "$cmd" in
     esac; done
 
     GIVEN="${PROJ:-${FILE:-$PWD}}"
-    ROOTDIR="$(repo_root "$GIVEN")" || { echo "{\"ok\":false,\"error\":\"gradlew not found ($GIVEN) — give the repository root with --project\"}"; exit 2; }
+    ROOTDIR="$(repo_root "$GIVEN")" || { echo "{\"ok\":false,\"error\":\"$NO_GRADLEW ($GIVEN)\"}"; exit 2; }
     # 모듈은 파일이 놓인 자리다. 못 정하면 include 목록을 그대로 올려 보내고 스킬이 고른다.
     if [ -z "$MODULE" ]; then
       MODULE="$(python3 "$PLAN_PY" module "$ROOTDIR" "$FILE" warmup)" || { echo "$MODULE"; exit 2; }

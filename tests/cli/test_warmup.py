@@ -376,6 +376,22 @@ class GradleRun(unittest.TestCase):
             P.RUNS_KEEP = keep
 
 
+class NotGradle(unittest.TestCase):
+    """Amper 처럼 gradlew 가 없는 빌드 — Gradle 만 읽는다고 이유를 말하고 멈춘다. --project 만 권하면 없는 gradlew 를 찾게 만든다."""
+
+    def test_gradlew_가_없으면_Gradle_빌드만_읽는다고_말한다(self):
+        with tempfile.TemporaryDirectory() as t:
+            open(os.path.join(t, "module.yaml"), "w").close()
+            kt = os.path.join(t, "Main.kt")
+            open(kt, "w").close()
+            env = dict(os.environ, HOME=t)
+            w = subprocess.run([PREVUE, "warmup", kt], capture_output=True, text=True, env=env, timeout=60)
+            self.assertEqual(w.returncode, 2, w.stdout + w.stderr)
+            h = subprocess.run([PREVUE, "health", kt], capture_output=True, text=True, env=env, timeout=60)
+            for out in (w.stdout, h.stdout):
+                self.assertIn("Gradle builds only", json.loads(out.strip().splitlines()[-1])["error"])
+
+
 class NoPython(unittest.TestCase):
     """python3 가 없는 맥(Command Line Tools 없음). bin/prevue 가 python 없이 답해야 한다 — 물을 문장(ask)까지 JSON 으로."""
 
