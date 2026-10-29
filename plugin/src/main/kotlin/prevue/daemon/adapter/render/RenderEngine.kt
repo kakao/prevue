@@ -38,6 +38,7 @@ class RenderEngine(
     private val spec: ClasspathSpec,
     private val layoutlibDir: File,
     override val outDir: File,
+    private val resourceApk: File = File(spec.resourceApkPath),
 ) : PreviewRenderer, LiveSessionFactory, AutoCloseable {
     val renderer: Renderer
     override val bootstrapMs: Long
@@ -84,11 +85,11 @@ class RenderEngine(
     init {
         val t = System.nanoTime()
         renderer = RenderEnvironmentBootstrapper(
-            File(layoutlibDir, "data/fonts").absolutePath, spec.resourceApkPath, spec.namespace,
+            File(layoutlibDir, "data/fonts").absolutePath, resourceApk.absolutePath, spec.namespace,
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
-        negatives = ApkNegatives.fix(renderer, spec.resourceApkPath)
+        negatives = ApkNegatives.fix(renderer, resourceApk.absolutePath)
         renderService = privateField("renderService") as RenderService
         baseConfiguration = privateField("baseConfiguration") as Configuration
         resourceIds = ResourceIds(renderer)

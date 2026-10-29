@@ -217,4 +217,23 @@ class ClasspathSpecTest {
         val (r, _) = ClasspathSpec.forRender(kmpApp.dependency(":shared"), kmpApp, overlay)
         assertEquals(kmpApp.kmpSourceRoots, r.kmpSourceRoots)
     }
+
+    @Test fun `KMP 모듈의 res 와 매니페스트는 androidMain 에서도 찾고 앱의 에셋 디렉터리는 그릴 덤프까지 간다`() {
+        val shared = out("shared", "classes.jar")
+        val res = File(root, "shared/src/androidMain/res").apply { mkdirs() }
+        val manifest = File(root, "shared/src/androidMain/AndroidManifest.xml").apply { writeText("<manifest/>") }
+        val json = File(root, "app-assets.json").apply {
+            writeText("""{"project":":app","variant":"debug","resourceApkPath":"app.ap_",
+                "classPath":["$appR","$appClasses","$shared"],"projectClassPath":["$appR","$appClasses","$shared"],
+                "compileClassPath":["/m2/c.jar"],"rClassJars":["$appR"],"resourceDirs":[],"assetsDirs":["/app/assets"],
+                "kmpSourceRoots":{":shared":["${File(root, "shared/src/commonMain/kotlin")}"]}}""")
+        }
+        val kmpApp = ClasspathSpec.load(json)
+        val dep = kmpApp.dependency(":shared")
+        assertEquals(listOf(res), dep.resourceRoots)
+        assertEquals(listOf(manifest), dep.manifests)
+        assertEquals(listOf("/app/assets"), ClasspathSpec.forRender(dep, kmpApp, overlay).first.assetsDirs)
+        assertEquals(listOf("/app/assets"), home.withResourcesFrom(kmpApp).assetsDirs)
+        assertEquals(emptyList<File>(), home.resourceRoots)                       // 안드로이드 모듈은 androidMain 을 보지 않는다
+    }
 }

@@ -17,6 +17,7 @@ import prevue.daemon.adapter.dump.WatchGraph
 import prevue.daemon.adapter.process.ProcessMemory
 import prevue.daemon.adapter.process.Respawn
 import prevue.daemon.adapter.process.Reveal
+import prevue.daemon.adapter.render.ApkWithAssets
 import prevue.daemon.adapter.render.BootingEngine
 import prevue.daemon.adapter.render.RenderEngine
 import prevue.daemon.adapter.source.GitHead
@@ -144,7 +145,9 @@ private fun PrevueDaemon.assemble(boot: Boot) {
 }
 
 private fun PrevueDaemon.bootEngine(boot: Boot, renderSpec: ClasspathSpec) = BootingEngine(scope, boot.paths.out) {
-    RenderEngine(renderSpec, boot.args.layoutlib, boot.paths.out).apply { preloadNext = boot.args.preload }.also { e ->
+    val apk = ApkWithAssets.of(File(renderSpec.resourceApkPath), renderSpec.assetsDirs.map(::File), boot.paths.mine)
+    if (apk.path != renderSpec.resourceApkPath) log("리소스 APK에 에셋을 합친 사본: $apk")
+    RenderEngine(renderSpec, boot.args.layoutlib, boot.paths.out, apk).apply { preloadNext = boot.args.preload }.also { e ->
         log("렌더러 준비 ${e.bootstrapMs}ms" + (e.negatives?.let { " · APK 음수 치수 ${it.count}개 바로잡음 ${it.ms}ms" } ?: ""))
     }
 }
@@ -196,8 +199,9 @@ private class Watches(
             val resDirs = graph.nodes.flatMap { it.resRoots }
                 .flatMap { r -> r.walkTopDown().filter { it.isDirectory } }
                 .filter { it.canonicalFile !in valueDirs }
+            val assetDirs = spec.assetsDirs.map(::File).flatMap { r -> r.walkTopDown().filter { it.isDirectory } }
             val resources = (listOfNotNull(spec.resourceApkPath.takeIf { it.isNotBlank() }?.let { File(it) }) + rJars)
-                .filter { it.exists() } + resDirs
+                .filter { it.exists() } + resDirs + assetDirs
             return Watches(watching, roots, valueDirs, ownOut, depOut, resources, spec.buildFiles)
         }
     }

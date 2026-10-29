@@ -179,7 +179,10 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         // 앱에서 그걸 집으면 리소스 ID 가 조용히 틀린다 — 그래서 앱에 둘 다 있어도 앞의 것만 본다.
         val resTask = taskOf("process${v}Resources")
         val rTask = resTask ?: taskOf("generate${v}RFile")
-        (listOfNotNull(kotlinTask, javacTask, resTask, rTask)).distinct().forEach { dependsOn(it) }
+        // CMP 리소스(글꼴 · 문자열 .cvr)는 res 가 아니라 에셋으로 앱에 실린다. 렌더러는 리소스 APK 안의 assets/ 를 읽는데
+        // .ap_ 에는 그것이 없어 데몬이 합친 사본을 만든다. 앱만 — 라이브러리는 앱의 리소스로 그린다.
+        val assetsTask = resTask?.let { taskOf("merge${v}Assets") }
+        (listOfNotNull(kotlinTask, javacTask, resTask, rTask, assetsTask)).distinct().forEach { dependsOn(it) }
 
         // 의존 모듈의 산출물도 우리가 만들게 한다. 여태는 런타임 클래스패스를 **해석만** 해서
         // runtime_library_classes_jar/.../classes.jar 경로를 적어 놓고, 그것을 만드는
@@ -207,6 +210,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val kotlinAsked = kotlinTask == null || kotlinOut != null
         val resOutputs: FileCollection? = resTask?.outputs?.files
         val rOutputs: FileCollection? = rTask?.outputs?.files
+        val assetsOutputs: FileCollection? = assetsTask?.outputs?.files
         val depJarsSnapshot = depJars
         val depResSnapshot = depRes
         val compileJarsSnapshot = compileJars
@@ -258,6 +262,9 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                 rJars.filter { it.absolutePath.contains("/intermediates/$name/") }
                     .map { it.absolutePath }.takeIf { it.isNotEmpty() }
             } ?: rJars.firstOrNull()?.absolutePath?.let { listOf(it) }.orEmpty()
+
+            val assetsDirs = assetsOutputs?.files.orEmpty()
+                .filter { d -> d.isDirectory && d.walkTopDown().any { it.isFile } }.map { it.absolutePath }
 
             val ownRes = (intermediate("merged_res") + intermediate("packaged_res"))
                 .filter { it.isDirectory }.map { it.absolutePath }
@@ -318,6 +325,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                   "compileClassPath": ${arr(compileClassPath)},
                   "rClassJars": ${arr(rClassJars)},
                   "resourceDirs": ${arr(resDirs)},
+                  "assetsDirs": ${arr(assetsDirs)},
                   "variantsKnown": ${arr(variantsKnown)},
                   "kmpSourceRoots": ${obj(kmpSourceRoots)},
                   "defaultHint": { "buildType": "${esc(defaultBuildType)}", "flavors": ${arr(defaultFlavors)} }
