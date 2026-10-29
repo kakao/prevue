@@ -137,7 +137,7 @@ codex plugin add prevue@prevue
 ```
 
 바뀐 것은 [CHANGELOG.md](CHANGELOG.md)에 있습니다.
-막히면 에이전트에게 `prevue log`를 읽어 달라고 하세요. 그래도 안 되면 이슈로 알려 주세요.
+막히면 에이전트에게 `prevue log`를 읽어 달라고 하세요. 그래도 안 되면 [이슈로 알려 주세요](https://github.com/kakao/prevue/issues/new?template=not-working.yml).
 
 ## 더 자세히
 

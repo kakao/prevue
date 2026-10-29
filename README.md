@@ -139,7 +139,7 @@ codex plugin add prevue@prevue
 ```
 
 Changes are in [CHANGELOG.md](CHANGELOG.md).
-If you get stuck, ask your agent to read `prevue log`. If that doesn't help, let us know in an issue.
+If you get stuck, ask your agent to read `prevue log`. If that doesn't help, [let us know in an issue](https://github.com/kakao/prevue/issues/new?template=not-working.yml).
 
 ## A closer look
 

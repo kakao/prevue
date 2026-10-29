@@ -1,0 +1,62 @@
+name: Not working
+description: Prevue didn't install, start, or draw your Preview.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Prevue. English or Korean is fine (한국어로 써도 됩니다).
+        Before you paste anything, remove internal paths, hostnames, and credentials.
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where did it stop?
+      options:
+        - Installing the plugin
+        - First setup (toolchain download or Gradle classpath dump)
+        - Starting the daemon
+        - First render of a Preview
+        - Redraw after saving
+        - The viewer in the browser
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What you did and what you saw
+      description: What you asked the agent (or typed), and what came back. An error message or a screenshot helps most.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - macOS version and chip (Apple silicon / Intel):
+        - JDK (`java -version`):
+        - Android Studio installed (yes / no):
+        - Agent and version (Claude Code / Codex):
+        - Prevue version (`claude plugin list` or `codex plugin list`):
+    validations:
+      required: true
+
+  - type: textarea
+    id: project
+    attributes:
+      label: Target project
+      description: The project you pointed Prevue at.
+      value: |
+        - Number of modules (roughly):
+        - AGP / Kotlin / Compose versions:
+        - Link, if it's public:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The output of `prevue health <file>` and the end of `prevue log` (ask your agent to run them).
+      render: text

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A screen you can't see in a Preview
+    url: https://github.com/kakao/prevue/discussions/18
+    about: Tell us which screen you can't preview and why. It shapes what Prevue covers next.
