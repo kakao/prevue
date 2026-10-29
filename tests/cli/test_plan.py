@@ -30,6 +30,7 @@ class Repo:
         base = tempfile.mkdtemp(dir=root)   # 한 테스트가 저장소를 여럿 지어도 겹치지 않게
         self.root, self.projects = os.path.join(base, "repo"), os.path.join(base, "projects")
         os.makedirs(self.root)
+        P.PROJECTS = self.projects
         open(os.path.join(self.root, "gradlew"), "w").close()
         with open(os.path.join(self.root, "settings.gradle.kts"), "w") as f:
             f.write("include(\n" + ",\n".join('    "%s"' % m for m in modules) + "\n)\n")
@@ -196,6 +197,19 @@ class Observe(Case):
     def test_모듈은_가장_가까운_빌드_파일(self):
         r = self.repo(":app", ":feature:foryou:impl")
         self.assertEqual(P.module_of(r.root, r.src(":feature:foryou:impl")), ":feature:foryou:impl")
+
+    def test_projectDir_을_옮긴_모듈은_덤프의_moduleDirs_로_찾는다(self):
+        r = self.repo(":app")
+        widgets = os.path.join(r.root, "core", "design", "widgets")
+        src = os.path.join(widgets, "src", "main", "kotlin", "Card.kt")
+        os.makedirs(os.path.dirname(src))
+        open(os.path.join(widgets, "build.gradle.kts"), "w").close()
+        open(src, "w").close()
+        self.assertEqual(P.module_of(r.root, src), ":core:design:widgets")
+        r.dump(":app", "debug", moduleDirs={":": r.root, ":app": P.module_dir(r.root, ":app"), ":widgets": widgets})
+        self.assertEqual(P.module_of(r.root, src), ":widgets")
+        self.assertEqual(P.module_dir(r.root, ":widgets"), widgets)
+        self.assertEqual(P.settings_modules(r.root), [":app", ":widgets"])
 
     def test_저장소_루트의_빌드_파일은_모듈이_아니다(self):
         r = self.repo(":app")

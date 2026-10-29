@@ -40,7 +40,7 @@ if os.environ.get("FAKE_FAIL_BOTH") and len(targets) > 1:
 apks = json.loads(os.environ["FAKE_APKS"])
 for m, v, out in targets:
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-    d = {"schema": 2, "project": m, "variant": v, "namespace": "", "resourceApkPath": apks.get(m, ""),
+    d = {"schema": 3, "project": m, "variant": v, "namespace": "", "resourceApkPath": apks.get(m, ""),
          "classPath": [], "projectClassPath": [], "compileClassPath": [], "rClassJars": [], "resourceDirs": [],
          "variantsKnown": [v]}
     if os.environ.get("FAKE_NO_CLASSPATH"):

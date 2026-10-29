@@ -7,6 +7,8 @@ fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
 fun arr(v: Collection<String>) = v.joinToString(",\n    ", "[\n    ", "\n  ]") { "\"${esc(it)}\"" }
 fun obj(m: Map<String, Collection<String>>) = m.entries.joinToString(",\n    ", "{\n    ", "\n  }") { (k, v) -> "\"${esc(k)}\": ${arr(v)}" }
     .takeIf { m.isNotEmpty() } ?: "{}"
+fun dict(m: Map<String, String>) = m.entries.joinToString(",\n    ", "{\n    ", "\n  }") { (k, v) -> "\"${esc(k)}\": \"${esc(v)}\"" }
+    .takeIf { m.isNotEmpty() } ?: "{}"
 
 // KMP 모듈은 commonMain 과 중간 소스 세트를 Android 컴파일에 함께 넣는다 — 그 목록은 AGP 가 아니라 KMP 플러그인만 안다(옛 조합은
 // AGP 소스에 commonMain 이 없다). 타입에 기대지 않으려고 리플렉션으로 읽고, KMP 가 아니거나 Android 타깃이 없으면 null.
@@ -55,7 +57,17 @@ fun stamp(key: String, value: Long = System.currentTimeMillis()) {
     }
 }
 stamp("initAt")
-gradle.settingsEvaluated { stamp("settingsAt") }
+// 모듈 경로와 디렉터리는 settings 가 정한다 — projectDir 을 옮긴 저장소(`:widgets` → core/design/widgets)에서는
+// 경로를 디렉터리로 바꿔 짐작할 수 없다. 설정 전의 settings 에서 읽어 Project 를 만지지 않는다.
+val moduleDirs = LinkedHashMap<String, String>()
+gradle.settingsEvaluated {
+    fun walk(d: ProjectDescriptor) {
+        moduleDirs[d.path] = d.projectDir.absolutePath
+        d.children.forEach(::walk)
+    }
+    walk(settings.rootProject)
+    stamp("settingsAt")
+}
 gradle.projectsEvaluated { stamp("configuredAt") }
 var graph: List<Task> = emptyList()
 gradle.taskGraph.whenReady { graph = allTasks; stamp("graphTasks", allTasks.size.toLong()); stamp("graphAt") }
@@ -315,8 +327,10 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             File(outPath).apply { parentFile?.mkdirs() }.writeText(
                 """
                 {
-                  "schema": 2,
+                  "schema": 3,
                   "project": "${esc(targetPath)}",
+                  "repoRoot": "${esc(repoRoot)}",
+                  "moduleDirs": ${dict(moduleDirs)},
                   "variant": "${esc(variant)}",
                   "namespace": "${esc(namespace)}",
                   "resourceApkPath": "${esc(resourceApk)}",

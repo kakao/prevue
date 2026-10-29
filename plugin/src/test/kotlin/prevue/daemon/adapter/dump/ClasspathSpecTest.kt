@@ -236,4 +236,27 @@ class ClasspathSpecTest {
         assertEquals(listOf("/app/assets"), home.withResourcesFrom(kmpApp).assetsDirs)
         assertEquals(emptyList<File>(), home.resourceRoots)                       // 안드로이드 모듈은 androidMain 을 보지 않는다
     }
+    @Test fun `projectDir 을 옮긴 저장소는 덤프의 moduleDirs 로 모듈과 저장소 루트를 찾는다`() {
+        val layout = mapOf(":" to root.path, ":app" to File(root, "src/app").path, ":widgets" to File(root, "src/core/design/widgets").path)
+        val widgetsClasses = out("src/core/design/widgets", "classes", "widgets")
+        val widgetsJar = out("src/core/design/widgets", "classes.jar")
+        val remappedAppClasses = out("src/app", "classes", "app")
+        File(root, "src/core/design/widgets/src/main/kotlin").mkdirs()
+        File(root, "src/app/src/main/kotlin").mkdirs()
+        fun remapped(project: String, cp: List<String>, compile: List<String>, apk: String = "") =
+            ClasspathSpec(File(root, "$project.json"), project, "debug", "", apk,
+                DumpPaths(classPath = cp, projectClassPath = cp, compileClassPath = compile, rClassJars = emptyList(), resourceDirs = emptyList(),
+                    layout = RepoLayout(root.path, layout)))
+        val widgets = remapped(":widgets", listOf(widgetsClasses), listOf("/m2/compose-ui.jar"))
+        val remappedApp = remapped(":app", listOf(remappedAppClasses, widgetsJar), listOf(widgetsJar), apk = "app.ap_")
+
+        assertEquals(root, widgets.repoRoot)
+        assertEquals(File(root, "src/core/design/widgets"), widgets.moduleDir)
+        assertEquals(listOf(":widgets"), remappedApp.projectModules)
+        assertEquals(listOf(widgetsJar), remappedApp.dependency(":widgets").ownClassPath)
+
+        val g = WatchGraph.ofApp(widgets, remappedApp)
+        assertEquals(listOf(":widgets", ":app"), g.nodes.map { it.path })
+        assertEquals(":widgets", g.ownerOf(File(root, "src/core/design/widgets/src/main/kotlin/Card.kt")))
+    }
 }

@@ -14,7 +14,10 @@ import time
 # 덤프 규약 번호. 덤프에 적히는 경로 규칙이 바뀌면 여기와 init 스크립트를 함께 올린다.
 # 도구 버전이 아니라 이 숫자로 판정하므로, 규약이 그대로인 패치에서는 아무도 다시 뜨지 않는다.
 # 옛 규약을 받아 주는 길은 없다 — 번호가 다르면 다시 뜬다.
-SCHEMA = 2
+SCHEMA = 3
+
+# 덤프 JSON 의 자리. 테스트가 가짜 홈으로 바꾼다.
+PROJECTS = os.path.join(os.path.expanduser("~"), ".prevue", "projects")
 
 # AGP가 변형별로 가르는 디렉터리들. 여기 있는 이름이 그 모듈에 **실재하는** 변형이다.
 # 어느 것이 debug 계열인지는 여기서 고르지 않는다 — 이름을 그대로 올려 보낸다.
@@ -31,16 +34,42 @@ def repo_key(repo):
     return repo.lstrip("/").replace("/", "_")
 
 
+_layouts = {}
+
+
+def module_layout(repo):
+    """settings 가 정한 모듈 경로 → 디렉터리. projectDir 을 옮긴 저장소(`:widgets` → core/design/widgets)에서는 경로로 짐작할 수 없다.
+    덤프마다 settings 전체를 실으므로 이 저장소의 가장 새 덤프 하나에서 읽는다. 덤프가 아직 없으면 빈 것 — 그때는 경로로 짐작한다."""
+    d = os.path.join(PROJECTS, repo_key(repo))
+    try:
+        dumps = sorted(((os.path.getmtime(p), p) for p in (os.path.join(d, n) for n in os.listdir(d) if n.endswith(".json"))), reverse=True)
+    except OSError:
+        return {}
+    for key in dumps:
+        if key not in _layouts:
+            try:
+                with open(key[1], encoding="utf-8") as f:
+                    _layouts[key] = json.load(f).get("moduleDirs") or {}
+            except Exception:
+                _layouts[key] = {}
+        if _layouts[key]:
+            return _layouts[key]
+    return {}
+
+
 def module_dir(repo, module):
-    return os.path.join(repo, module.lstrip(":").replace(":", "/"))
+    return module_layout(repo).get(module) or os.path.join(repo, module.lstrip(":").replace(":", "/"))
 
 
 def module_of(repo, path):
     """가장 가까운 build.gradle 이 그 파일의 모듈이다. 판단이 아니라 위치다. 저장소 루트까지 없으면 None."""
+    by_dir = {v: k for k, v in module_layout(repo).items() if k != ":"}
     d = os.path.abspath(path)
     if not os.path.isdir(d):
         d = os.path.dirname(d)
     while d != "/" and d != repo:
+        if d in by_dir:
+            return by_dir[d]
         if os.path.isfile(os.path.join(d, "build.gradle.kts")) or os.path.isfile(os.path.join(d, "build.gradle")):
             return ":" + os.path.relpath(d, repo).replace("/", ":")
         d = os.path.dirname(d)
@@ -56,7 +85,11 @@ def settings_modules(repo):
 
     콜론 없는 이름도 모듈이다 — `include("app")`처럼 적은 저장소에서 콜론으로 시작하는 문자열만 줍던 때는 앱 모듈을 못 봐
     라이브러리의 리소스 제공자를 못 골랐다. include 밖의 문자열은 모듈이 아니다(excludedTaskNames 에 든 태스크 경로 등).
+    덤프가 settings 의 모듈 목록을 실었으면 그것이 먼저다 — settings 플러그인이 include 하는 저장소는 글자로 못 읽는다.
     """
+    layout = [m for m in module_layout(repo) if m != ":"]
+    if layout:
+        return layout
     for name in ("settings.gradle.kts", "settings.gradle"):
         p = os.path.join(repo, name)
         if os.path.isfile(p):
@@ -228,7 +261,9 @@ def dump_why(path):
     if d.get("schema") != SCHEMA:
         return "taken with an old schema — take it again"
     mod = d.get("project", "").strip(":").replace(":", "/")
-    own = [q for q in d.get("projectClassPath", []) if "/%s/build/" % mod in q] or d.get("projectClassPath", [])
+    at = (d.get("moduleDirs") or {}).get(d.get("project"))
+    own = [q for q in d.get("projectClassPath", [])
+           if (q.startswith(at + "/build/") if at else "/%s/build/" % mod in q)] or d.get("projectClassPath", [])
     if own and not any(os.path.exists(q) for q in own):
         return "the outputs it points to are gone — if you cleaned, run setup again"
     changed = build_files_changed(path, d)
