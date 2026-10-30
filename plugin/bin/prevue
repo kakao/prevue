@@ -742,14 +742,13 @@ case "$cmd" in
     }
 
     dump() {  # dump <module> <out> [변형] [사람이 준 변형이면 1] — Gradle 1회. 변형을 안 주면 이 모듈의 것
-      local v="${3:-$VARIANT}" given="${4:-$VARIANT_GIVEN}"; DUMP_RETRY=""; DUMP_HOST=""
+      local v="${3:-$VARIANT}" given="${4:-$VARIANT_GIVEN}"; DUMP_RETRY=""; DUMP_HOST=""; DUMP_RC=1
       echo "prevue: calling Gradle once in $ROOTDIR ($1 / $v)" >&2
       if ! gradle_dump "$1|$v|$2"; then
         cat "$GRADLE_ERR" >&2
-        # 첫 줄은 다시 뜰 변형(없으면 빈 줄), 둘째 줄은 이유를 실은 응답이다
-        # 첫 줄은 다시 뜰 변형, 둘째 줄은 대신 뜰 앱(KMP 모듈 — 둘 다 없으면 빈 줄), 나머지는 이유를 실은 응답이다
-        # 종료 2 는 고를 것이 남았다(KMP 모듈을 담은 앱이 여럿)
-        local f; DUMP_RC=1; f="$(python3 "$PLAN_PY" dump-failure "$GRADLE_ERR" "$1" "$v" "$given" "$RESFROM" "$FILE")" || DUMP_RC=$?
+        # 첫 줄은 다시 뜰 변형, 둘째 줄은 대신 뜰 앱(KMP 모듈 — 둘 다 없으면 빈 줄), 나머지는 이유를 실은 응답이다.
+        # 종료 2 는 고를 것이 남았다(KMP 모듈을 담은 앱이 여럿이거나 고른 앱이 그 모듈을 담지 않는다)
+        local f; f="$(python3 "$PLAN_PY" dump-failure "$GRADLE_ERR" "$1" "$v" "$given" "$RESFROM" "$FILE" "$ROOTDIR")" || DUMP_RC=$?
         rm -f "$GRADLE_ERR"
         DUMP_RETRY="${f%%$'\n'*}"; f="${f#*$'\n'}"; DUMP_HOST="${f%%$'\n'*}"; DUMP_ERR="${f#*$'\n'}"; return 1
       fi

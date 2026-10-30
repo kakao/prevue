@@ -266,10 +266,20 @@ class Warmup(unittest.TestCase):
         self.assertTrue(out["classpath"].startswith(self.home) and os.path.exists(out["resourcesClasspath"]))
 
 
-    def test_KMP_모듈은_담은_앱을_알면_모듈을_뜨지_않고_앱만_뜬다(self):
+    def kmp_repo(self, app_holds):
+        """:core:ui 가 새 모양 KMP 모듈(androidMain)이고 :app 이 빌드된 저장소. app_holds 면 :app 의 지난 덤프가 :core:ui 를 담는다."""
         r = self.repo(built=False)
-        r.built(":core:ui", "androidMain", when=time.time())
+        own = r.built(":core:ui", "androidMain", when=time.time())
         r.built(":app", "debug", when=time.time())
+        if app_holds:
+            d = os.path.join(self.home, ".prevue", "projects", P.repo_key(r.root))
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "app-debug.json"), "w") as f:
+                json.dump({"project": ":app", "variant": "debug", "classPath": [own]}, f)
+        return r
+
+    def test_KMP_모듈은_담은_앱을_알면_모듈을_뜨지_않고_앱만_뜬다(self):
+        r = self.kmp_repo(app_holds=True)
         f = r.src(":core:ui")
         rc, out = self.warmup(r, file=f, kmp={":core:ui": ":app [debug]"})
         self.assertEqual(rc, 0, out)
@@ -277,6 +287,14 @@ class Warmup(unittest.TestCase):
         self.assertEqual((out["module"], out["gradle"]["calls"]), (":app", 1))
         self.assertTrue(out["next"].endswith("--show " + f), out["next"])
         self.assertNotIn("--resources-from", out["next"])
+
+    def test_KMP_모듈의_리소스_APK_앱이_그_모듈을_담는지_모르면_모듈_덤프의_실패로_가린다(self):
+        for given in ((), ("--resources-from", ":app")):
+            with self.subTest(given=given):
+                open(self.log, "w").close()
+                rc, out = self.warmup(self.kmp_repo(app_holds=False), *given, kmp={":core:ui": ":app [debug]"})
+                self.assertEqual(rc, 0, out)
+                self.assertEqual([c.split("|")[:2] for c in self.calls()], [[":core:ui", "androidMain"], [":app", "debug"]])
 
     def test_KMP_모듈을_처음_뜨면_실패가_알려_준_앱으로_다시_뜬다(self):
         r = self.repo(built=False)
