@@ -18,20 +18,29 @@ fun dict(m: Map<String, String>) = m.entries.joinToString(",\n    ", "{\n    ", 
 class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
 val kotlinModules = java.util.concurrent.ConcurrentHashMap<String, KotlinModule>()
 
-fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatching {
-    fun call(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
+fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
+
+fun kmpAndroidCompilation(m: KotlinModule?, variant: String): Any? = runCatching {
     val ext = m?.ext ?: return@runCatching null
-    val targets = (call(ext, "getTargets") as? Iterable<*>)?.filterNotNull() ?: return@runCatching null
-    val android = targets.firstOrNull { call(it, "getPlatformType").toString() == "androidJvm" } ?: return@runCatching null
-    val comps = (call(android, "getCompilations") as Iterable<*>).filterNotNull()
-    fun named(n: String) = comps.firstOrNull { call(it, "getName") == n }
-    val comp = named(variant) ?: named("main") ?: comps.firstOrNull { (call(it, "getName") as String).endsWith("ebug") }
-        ?: return@runCatching null
-    (call(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
-        .flatMap { ss -> (call(call(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
-        .filterNot { File(it).toPath().startsWith(m.buildDir.get().asFile.toPath()) }   // 생성 코드(Res 접근자)는 Gradle 몫이다
+    val targets = (kmpCall(ext, "getTargets") as? Iterable<*>)?.filterNotNull() ?: return@runCatching null
+    val android = targets.firstOrNull { kmpCall(it, "getPlatformType").toString() == "androidJvm" } ?: return@runCatching null
+    val comps = (kmpCall(android, "getCompilations") as Iterable<*>).filterNotNull()
+    fun named(n: String) = comps.firstOrNull { kmpCall(it, "getName") == n }
+    named(variant) ?: named("main") ?: comps.firstOrNull { (kmpCall(it, "getName") as String).endsWith("ebug") }
+}.getOrNull()
+
+fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatching {
+    val comp = kmpAndroidCompilation(m, variant) ?: return@runCatching null
+    (kmpCall(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
+        .flatMap { ss -> (kmpCall(kmpCall(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
+        .filterNot { File(it).toPath().startsWith(m!!.buildDir.get().asFile.toPath()) }   // 생성 코드(Res 접근자)는 Gradle 몫이다
         .distinct()
 }.getOrNull()
+
+// 옛 모양 KMP(kotlin.multiplatform + com.android.library)의 Kotlin 컴파일은 compile<V>Kotlin 이 아니라 타깃 이름이 붙은
+// compile<V>Kotlin<타깃>이다. 타깃 이름은 바꿀 수 있어 짐작하지 않고 컴파일에게 묻는다.
+fun kmpCompileTaskName(m: KotlinModule?, variant: String): String? =
+    kmpAndroidCompilation(m, variant)?.let { runCatching { kmpCall(it, "getCompileKotlinTaskName") as String }.getOrNull() }
 
 // 새 모양 KMP 모듈은 android 확장이 없어 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 실패 문구에 그 앱들과
 // debug 계열 변형을 실어 CLI 가 Gradle 을 한 번 더 불러 앱을 뜨게 한다. 앱을 다른 곳에서 알 길이 없는 새 클론의 첫 warmup 이 이 길이다.
@@ -217,9 +226,13 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val v = variant.replaceFirstChar { it.uppercase() }
         fun taskOf(n: String): Task? = p.tasks.findByName(n)
 
-        // 옛 모양 KMP(kotlin.multiplatform + com.android.library)는 Android 컴파일 태스크 이름 끝에 타깃 이름이 붙는다
-        val kotlinTask = taskOf("compile${v}Kotlin") ?: taskOf("compile${v}KotlinAndroid")
-        val kotlinName = kotlinTask?.name ?: "compile${v}Kotlin"
+        val kmpTaskName = kmpCompileTaskName(kotlinModules[p.path], variant)
+        val kotlinTask = taskOf("compile${v}Kotlin") ?: kmpTaskName?.let(::taskOf)
+        val kotlinName = kotlinTask?.name ?: kmpTaskName ?: "compile${v}Kotlin"
+        // KMP 모듈인데 Kotlin 컴파일을 못 찾으면 Java 산출물만으로 덤프가 "성공"해 모든 프리뷰가 ClassNotFound 로 죽는다
+        if (kotlinTask == null && kmpAndroidRoots(kotlinModules[p.path], variant) != null) error(
+            "$targetPath is a KMP module but its Android Kotlin compile task ($kotlinName) wasn't found — stopping instead of taking a dump without its Kotlin classes"
+        )
         val javacTask = taskOf("compile${v}JavaWithJavac")
         // 앱 모듈은 process*Resources 가 **런타임** R.jar 를 낸다. 라이브러리에는 그 태스크가 없고
         // generate*RFile 만 있는데, 그것이 내는 R 은 값이 스텁인 **컴파일용**이다(실측 4156B vs 4261B).
