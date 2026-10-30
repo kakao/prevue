@@ -217,7 +217,9 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val v = variant.replaceFirstChar { it.uppercase() }
         fun taskOf(n: String): Task? = p.tasks.findByName(n)
 
-        val kotlinTask = taskOf("compile${v}Kotlin")
+        // 옛 모양 KMP(kotlin.multiplatform + com.android.library)는 Android 컴파일 태스크 이름 끝에 타깃 이름이 붙는다
+        val kotlinTask = taskOf("compile${v}Kotlin") ?: taskOf("compile${v}KotlinAndroid")
+        val kotlinName = kotlinTask?.name ?: "compile${v}Kotlin"
         val javacTask = taskOf("compile${v}JavaWithJavac")
         // 앱 모듈은 process*Resources 가 **런타임** R.jar 를 낸다. 라이브러리에는 그 태스크가 없고
         // generate*RFile 만 있는데, 그것이 내는 R 은 값이 스텁인 **컴파일용**이다(실측 4156B vs 4261B).
@@ -277,12 +279,12 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             val ownClasses = listOfNotNull(kotlinOut, javacOut).filter { it.isDirectory }.map { it.absolutePath }
 
             if (!kotlinAsked) error(
-                "couldn't ask compile${v}Kotlin for its output location — no destinationDirectory.\n" +
+                "couldn't ask $kotlinName for its output location — no destinationDirectory.\n" +
                     "  AGP · KGP may have changed the task's shape. Stopping here instead of guessing the path."
             )
             if (ownClasses.isEmpty()) error(
                 "$targetPath has no compile outputs — every preview would fail.\n" +
-                    "  compile${v}Kotlin: ${kotlinOut?.absolutePath ?: "(no task)"}\n" +
+                    "  $kotlinName: ${kotlinOut?.absolutePath ?: "(no task)"}\n" +
                     "  compile${v}JavaWithJavac: ${javacOut?.absolutePath ?: "(no task)"}"
             )
 
