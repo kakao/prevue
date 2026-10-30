@@ -46,8 +46,11 @@ sealed interface ScreenSize {
         val hingeDp: Double? get() = panel.hingePx?.let(::dp)
         override val key: String get() = listOfNotNull(model.id, "folded".takeIf { folded }, "land".takeIf { landscape }).joinToString("-")
 
-        override fun applyTo(p: PreviewSpec): PreviewSpec =
-            p.copy(params = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi)))
+        override fun applyTo(p: PreviewSpec): PreviewSpec {
+            val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi))
+            if (p.params["showSystemUi"] == "true") return p.copy(params = rest)
+            return p.copy(params = rest + ("widthDp" to "${widthDp.roundToInt()}") + ("heightDp" to "${heightDp.roundToInt()}"))
+        }
 
         private fun dp(px: Int): Double = Math.round(px * 160.0 / model.dpi * 100) / 100.0
     }

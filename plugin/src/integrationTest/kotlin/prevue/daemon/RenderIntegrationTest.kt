@@ -100,7 +100,7 @@ class RenderIntegrationTest {
         ws.awaitBoardFilled(timeoutMs = 120_000)
     }
 
-    @Test @Order(31) fun `외부 빌드의 클래스 누락은 정상 산출물을 보존하고 새 렌더로 복구된다`() = runBlocking {
+    @Test @Order(32) fun `외부 빌드의 클래스 누락은 정상 산출물을 보존하고 새 렌더로 복구된다`() = runBlocking {
         val preview = ws.now.board?.focusCard?.spec ?: ws.now.current!!
         val initial = engine.written(engine.show(preview))
         assertTrue(initial.ok, initial.message?.text)
@@ -887,10 +887,11 @@ class RenderIntegrationTest {
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             awaitUntil("자세별 그림 세 장 — ${uc.readStatus().postures.keys}", 30_000, pollMs = 50) { uc.readStatus().postures.keys.count { it is ScreenSize.Device } == 3 }
             runBlocking { engine.awaitWrites() }
-            // 기기 자세 셋 뒤에 원래 크기(@Preview)도 미리 그린다 — 그 장은 기기 크기가 아니라 비교에서 뺀다
+            // 기기 자세 셋 뒤에 원래 크기(@Preview)도 미리 그린다 — 그 장은 기기 크기가 아니라 비교에서 뺀다.
+            // 렌더러는 정수 dp 만 받아 패널 px 가 dp 로 나눠떨어지지 않는 기기(Fold8 420dpi)는 반올림한 dp 의 px 로 1px 어긋난다
             val sizes = uc.readStatus().postures.filterKeys { it is ScreenSize.Device }.map { (d, shot) -> d to javax.imageio.ImageIO.read(shot.out.image!!).let { it.width to it.height } }.toMap()
             assertEquals(
-                mapOf(fold8.copy(folded = true) to (1248 to 1972), fold8.copy(landscape = true) to (1848 to 2448), fold8.copy(folded = true, landscape = true) to (1972 to 1248)),
+                mapOf(fold8.copy(folded = true) to (1247 to 1971), fold8.copy(landscape = true) to (1848 to 2449), fold8.copy(folded = true, landscape = true) to (1971 to 1247)),
                 sizes,
             )
             val png = on.result.shot.out.image!!
@@ -906,6 +907,24 @@ class RenderIntegrationTest {
             assertFalse(samePixels(before, javax.imageio.ImageIO.read(now.out.image!!)), "자세별 그림을 그린 뒤 끌어도 그림이 같다")
         } finally {
             runBlocking { uc.focusCard(0, on = false, by = "test") }
+        }
+        assertAlive()
+    }
+
+    // 내용 크기로 감싸는 컴포넌트도 기기를 고르면 그 기기 화면 크기로 그린다 — 작게 그리면 뷰어가 틀에 맞춰 늘려 글자가 찌그러졌다.
+    @Test @Order(31) fun `내용 크기 컴포넌트도 기기를 고르면 기기 화면 크기로 그린다`() {
+        assertTrue(runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        val index = ws.now.board!!.cards.indexOfFirst { it.spec.fqn.endsWith("DrinkByKindPreview") }
+        assertTrue(index >= 0, "보드에 DrinkByKindPreview 카드가 없다")
+        val s26 = ScreenSize.Device(DeviceModel.GALAXY_S26)
+        val on = runBlocking { uc.focusCard(index, on = true, by = "test", size = s26) } as FocusResult.On
+        try {
+            assertTrue(on.result.ok, on.result.shot.out.message?.text)
+            val png = javax.imageio.ImageIO.read(on.result.shot.out.image!!)
+            assertEquals(1080 to 2340, png.width to png.height)
+        } finally {
+            runBlocking { uc.focusCard(index, on = false, by = "test") }
         }
         assertAlive()
     }

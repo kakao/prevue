@@ -88,7 +88,7 @@ class BrowserPresenterTest {
         gate.countDown(); fx.renderer.showGate = null
         awaitUntil("마지막 크기로 다시 연다") { fx.renderer.opened.size == before + 2 && now().focus?.streamUrl != null }
         assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), now().focus?.size)
-        assertEquals(listOf("320", null), fx.renderer.opened.drop(before).map { it.params["widthDp"] })
+        assertEquals(listOf(null, "spec:width=2448px,height=1848px,dpi=420,orientation=landscape"), fx.renderer.opened.drop(before).map { it.params["device"] })
         assertTrue(now().focus!!.interactive)
         assertEquals(420.0 / 160, now().focus!!.pxPerDp)
     }
