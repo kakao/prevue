@@ -53,8 +53,9 @@ button { font: inherit; color: inherit; }
 /* 그림 시작 — 앱 아이콘 · 이니셜 타일. 반경이 아이콘 문법이라 날값 린트가 색만 본다(D-97) */
 .app-icon, .app-tile { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 7.2px; box-shadow: 0 0 0 1px var(--outline-variant), var(--elevation-1); }
 .app-tile { display: grid; place-items: center; color: var(--on-avatar); font: var(--type-title-small); }
-/* 프로젝트 배지 — Android 인지 KMP 인지. 프로젝트 단위라 탭을 바꿔도 그대로다. 아이콘 오른쪽 아래에 배지의 60% 가 겹친다. */
-.app-badge { position: absolute; left: 21px; top: 21px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: var(--corner-full);
+/* 프로젝트 배지 — Android 인지 KMP 인지. 프로젝트 단위라 탭을 바꿔도 그대로다. 아이콘 오른쪽 아래에 배지의 60% 가 겹친다.
+   아이콘은 록업 높이의 가운데에 서므로 위치도 가운데(50% − 16px)에서 잰다 — 두 줄 글자가 32px 보다 높아도 모서리에 붙는다. */
+.app-badge { position: absolute; left: 21px; top: calc(50% + 5px); width: 18px; height: 18px; display: grid; place-items: center; border-radius: var(--corner-full);
              background: var(--surface); box-shadow: 0 0 0 1px var(--outline-variant); }
 .app-badge > * { display: block; }
 .app-badge .android { width: 12px; height: 9px; color: var(--art-android); }

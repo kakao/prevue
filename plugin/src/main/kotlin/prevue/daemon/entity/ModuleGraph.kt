@@ -27,11 +27,10 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
     }
 
     /** 파일을 가진 모듈. 소스 루트 밖(`--watch`로 더한 복사본)은 [home]이 갖는다 — 늘 그 모듈의 인자로 컴파일해 왔다. */
-    fun ownerOf(f: File): String =
-        nodes.firstOrNull { n -> n.sourceRoots.any { f.path.startsWith(it.path + "/") } }?.path ?: home
+    fun ownerOf(f: File): String = rootOf(f)?.first?.path ?: home
 
     /** 이 그래프의 소스 루트 안의 파일인가 — 밖이면 다른 앱(다른 데몬)의 파일이다(D-50). */
-    fun contains(f: File): Boolean = nodes.any { n -> n.sourceRoots.any { f.path.startsWith(it.path + "/") } }
+    fun contains(f: File): Boolean = rootOf(f) != null
 
     /** 산출물이 다시 빌드된 모듈들(Q6). 그 모듈의 오버레이만 낡았다. */
     fun builtBy(outputs: List<File>): List<String> =
@@ -40,9 +39,13 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
     val kmp: Boolean get() = nodes.any { it.kmp }
 
     fun sourceSetOf(f: File): String? {
-        val node = nodes.firstOrNull { n -> n.kmp && n.sourceRoots.any { f.path.startsWith(it.path + "/") } } ?: return null
-        val root = node.sourceRoots.first { f.path.startsWith(it.path + "/") }
-        return root.path.substringAfterLast("/src/", "").substringBefore('/').ifEmpty { null }
+        val (node, root) = rootOf(f) ?: return null
+        if (!node.kmp || root.name !in STANDARD_SOURCE_DIRS || root.parentFile?.parentFile?.name != "src") return null
+        return root.parentFile.name
+    }
+
+    private fun rootOf(f: File): Pair<ModuleNode, File>? = nodes.firstNotNullOfOrNull { n ->
+        n.sourceRoots.firstOrNull { f.path.startsWith(it.path + "/") }?.let { n to it }
     }
 
     fun node(module: String): ModuleNode? = nodes.firstOrNull { it.path == module }
@@ -50,6 +53,8 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
     fun order(module: String): Int = nodes.indexOfFirst { it.path == module }.let { if (it < 0) nodes.size else it }
 
     companion object {
+        private val STANDARD_SOURCE_DIRS = setOf("kotlin", "java")
+
         /** 모듈 하나짜리 — 테스트와 의존을 모를 때. */
         fun single(path: String, sourceRoots: List<File>, outputs: List<File>) = ModuleGraph(path, listOf(ModuleNode(path, sourceRoots, outputs)))
     }

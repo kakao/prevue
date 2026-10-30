@@ -104,7 +104,6 @@
         },
         "header": {
           "branch": "string",
-          "detail": "string",
           "kmp": "string",
           "module": "string",
           "repo": "string",
@@ -344,7 +343,6 @@
         },
         "header": {
           "branch": "null",
-          "detail": "string",
           "kmp": "boolean",
           "module": "string",
           "repo": "string",

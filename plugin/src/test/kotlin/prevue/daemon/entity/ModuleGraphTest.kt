@@ -29,6 +29,13 @@ class ModuleGraphTest {
         assertNull(g.sourceSetOf(File("/elsewhere/Screen.kt")))
     }
 
+    @Test fun `표준 배치가 아닌 루트는 위쪽 경로의 src 를 소스 세트로 읽지 않는다`() {
+        val custom = ModuleNode(":feature:x", listOf(File("/Users/me/src/app/feature/x/shared/kotlin")), emptyList(), kmp = true)
+        val g = ModuleGraph(":feature:x", listOf(custom))
+        assertNull(g.sourceSetOf(File("/Users/me/src/app/feature/x/shared/kotlin/a/Screen.kt")))
+        assertEquals(":feature:x", g.ownerOf(File("/Users/me/src/app/feature/x/shared/kotlin/a/Screen.kt")))
+    }
+
     @Test fun `KMP 모듈이 하나라도 있으면 KMP 프로젝트다`() {
         assertTrue(ModuleGraph(":app", listOf(pearl, app)).kmp)
         assertFalse(ModuleGraph(":app", listOf(app)).kmp)
