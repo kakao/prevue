@@ -7,6 +7,7 @@ import prevue.daemon.entity.Progress
 import prevue.daemon.entity.Semantics
 import prevue.daemon.entity.ViewNode
 import prevue.daemon.domain.model.GoneItem
+import prevue.daemon.domain.model.TabView
 import prevue.daemon.domain.model.SeenItem
 import prevue.daemon.domain.model.Miss
 import prevue.daemon.domain.model.TypeResult
@@ -66,6 +67,12 @@ class ResultMapperTest {
         )
         assertEquals(mapOf("heading" to true, "disabled" to true, "focused" to true), Semantics(heading = true, disabled = true, focused = true).toJson())
         assertEquals(mapOf("current" to 2f, "min" to 0f, "max" to 4f, "steps" to 3), Semantics(progress = Progress(2f, 0f, 4f, 3)).toJson()["progress"])
+    }
+
+    @Test fun `탭은 KMP 소스 세트가 있을 때만 싣는다`() {
+        val f = File("/r/feature/a/src/commonMain/kotlin/Screen.kt")
+        assertEquals("commonMain", TabView(f.path, f, null, ":feature:a", active = true, stale = false, sourceSet = "commonMain").toJson()["sourceSet"])
+        assertEquals(false, TabView(f.path, f, null, ":app", active = true, stale = false).toJson().containsKey("sourceSet"))
     }
 
     @Test fun `아이템은 없는 값을 싣지 않는다`() {

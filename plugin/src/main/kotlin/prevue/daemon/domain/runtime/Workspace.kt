@@ -113,7 +113,8 @@ data class WorkspaceState(
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }
 
     fun tabViews(graph: ModuleGraph): List<TabView> = tabs.map {
-        TabView(it.key, it.file, it.fqn, it.file?.let(graph::ownerOf).orEmpty(), it.key == activeTab, it.stale, it.vacant)
+        TabView(it.key, it.file, it.fqn, it.file?.let(graph::ownerOf).orEmpty(), it.key == activeTab, it.stale, it.vacant,
+            it.file?.let(graph::sourceSetOf))
     }
 
     /** NFR-10. 뷰어가 지금 주소를 들고 있는 것들. 엔진의 상한이 이것만은 지우지 않는다. 숨은 탭은 넣지 않는다 — 지워졌으면 옮길 때 다시 그린다. */

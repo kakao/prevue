@@ -11,8 +11,8 @@ import prevue.daemon.domain.model.PreviewFile
 fun BrowserState.toJson(): Map<String, Any?> = mapOf(
     "version" to version,
     "header" to mapOf("title" to header.title, "tabTitle" to header.tabTitle, "repoPrefix" to header.repoPrefix,
-        "repoLeaf" to header.repoLeaf, "detail" to header.detail, "repo" to header.repo,
-        "branch" to header.branch),
+        "repoLeaf" to header.repoLeaf, "module" to header.module, "variant" to header.variant, "repo" to header.repo,
+        "branch" to header.branch, "sourceSet" to header.sourceSet, "kmp" to header.kmp),
     "screen" to screen.name.lowercase(),
     "board" to board?.let { b ->
         mapOf("file" to b.file, "gen" to b.gen, "focus" to b.focus, "groups" to b.groups.map { g ->
@@ -35,7 +35,8 @@ fun BrowserState.toJson(): Map<String, Any?> = mapOf(
     "selection" to selection?.toJson(),
     "choice" to choice?.let { mapOf("fileName" to it.fileName, "line" to it.line, "candidates" to it.candidates, "repoRoot" to it.repoRoot) },
     "tabs" to tabs.map {
-        mapOf("key" to it.key, "name" to it.name, "dim" to it.dim, "module" to it.module, "title" to it.title, "active" to it.active, "stale" to it.stale)
+        mapOf("key" to it.key, "name" to it.name, "dim" to it.dim, "module" to it.module, "title" to it.title, "active" to it.active, "stale" to it.stale,
+            "sourceSet" to it.sourceSet)
     },
     "settle" to settle?.toJson(),
     "vacant" to vacant?.toJson(),

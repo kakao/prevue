@@ -45,6 +45,7 @@ class ReadStatusUseCase(
             focusAttachedAt = s.focusAttachedAt,
             work = s.work, lastShown = s.lastShown, boardFill = s.boardFill, size = s.shownSize(),
             postures = s.livePostures()?.drawn(s.shownTarget()?.second).orEmpty(),
+            kmp = ws.graph.kmp,
         )
     }
 
@@ -52,7 +53,7 @@ class ReadStatusUseCase(
     private fun shownModule(s: WorkspaceState): ModuleInfo {
         val file = s.board?.file ?: s.current?.file ?: return ws.module
         val m = ws.graph.ownerOf(file)
-        if (m == ws.module.module) return ws.module
-        return ws.module.copy(module = m, kotlinModule = ws.graph.node(m)?.kotlinModule ?: "")
+        val owner = if (m == ws.module.module) ws.module else ws.module.copy(module = m, kotlinModule = ws.graph.node(m)?.kotlinModule ?: "")
+        return owner.copy(sourceSet = ws.graph.sourceSetOf(file))
     }
 }

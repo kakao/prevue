@@ -103,9 +103,10 @@ object BrowserStates {
             title = title,
             tabTitle = "$leaf · $title",
             repoPrefix = repo.removeSuffix(leaf), repoLeaf = leaf,
-            detail = " · ${now.module.module.trimStart(':')} · ${now.module.variant}",
+            module = now.module.module.trimStart(':'), variant = now.module.variant,
             repo = repo,
             branch = side.branch,
+            sourceSet = now.module.sourceSet, kmp = now.kmp,
         )
     }
 
@@ -195,7 +196,7 @@ object BrowserStates {
                 dim = if (t.fqn != null) t.file?.let { " · ${it.nameWithoutExtension}" }.orEmpty() else "",
                 module = t.module.takeIf { (twins[base(t)] ?: 0) > 1 && it.isNotBlank() }?.removePrefix(":"),
                 title = listOfNotNull(t.file?.absolutePath?.removePrefix(repo.trimEnd('/') + "/"), t.fqn).joinToString("\n").ifEmpty { t.key },
-                active = t.active, stale = t.stale,
+                active = t.active, stale = t.stale, sourceSet = t.sourceSet,
             )
         }
     }

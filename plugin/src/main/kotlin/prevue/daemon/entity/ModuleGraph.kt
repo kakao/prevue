@@ -9,6 +9,7 @@ import java.io.File
 data class ModuleNode(
     val path: String, val sourceRoots: List<File>, val outputs: List<File>, val kotlinModule: String? = null,
     val resRoots: List<File> = emptyList(),
+    val kmp: Boolean = false,
 )
 
 /**
@@ -35,6 +36,14 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
     /** 산출물이 다시 빌드된 모듈들(Q6). 그 모듈의 오버레이만 낡았다. */
     fun builtBy(outputs: List<File>): List<String> =
         nodes.filter { n -> outputs.any { it in n.outputs } }.map { it.path }
+
+    val kmp: Boolean get() = nodes.any { it.kmp }
+
+    fun sourceSetOf(f: File): String? {
+        val node = nodes.firstOrNull { n -> n.kmp && n.sourceRoots.any { f.path.startsWith(it.path + "/") } } ?: return null
+        val root = node.sourceRoots.first { f.path.startsWith(it.path + "/") }
+        return root.path.substringAfterLast("/src/", "").substringBefore('/').ifEmpty { null }
+    }
 
     fun node(module: String): ModuleNode? = nodes.firstOrNull { it.path == module }
 

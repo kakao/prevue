@@ -105,11 +105,15 @@
         "header": {
           "branch": "string",
           "detail": "string",
+          "kmp": "string",
+          "module": "string",
           "repo": "string",
           "repoLeaf": "string",
           "repoPrefix": "string",
+          "sourceSet": "string",
           "tabTitle": "string",
-          "title": "string"
+          "title": "string",
+          "variant": "string"
         },
         "screen": "string",
         "selection": {
@@ -182,6 +186,7 @@
             "key": "string",
             "module": "string",
             "name": "string",
+            "sourceSet": "string",
             "stale": "string",
             "title": "string",
             "|": "string"
@@ -340,11 +345,15 @@
         "header": {
           "branch": "null",
           "detail": "string",
+          "kmp": "boolean",
+          "module": "string",
           "repo": "string",
           "repoLeaf": "string",
           "repoPrefix": "string",
+          "sourceSet": "null",
           "tabTitle": "string",
-          "title": "string"
+          "title": "string",
+          "variant": "string"
         },
         "screen": "string",
         "selection": {
@@ -417,6 +426,7 @@
             "key": "string",
             "module": "null",
             "name": "string",
+            "sourceSet": "null",
             "stale": "boolean",
             "title": "string",
             "|": "empty"

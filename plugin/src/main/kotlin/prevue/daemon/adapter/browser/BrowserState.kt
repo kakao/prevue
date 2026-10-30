@@ -43,15 +43,18 @@ data class BrowserState(
     enum class Screen { EMPTY, BOARD, FOCUS, VACANT }
 
     companion object {
-        val EMPTY = BrowserState(0, Header("Prevue", "Prevue", "", "", "", ""), Screen.EMPTY, null, null, emptyList(),
+        val EMPTY = BrowserState(0, Header("Prevue", "Prevue", "", "", "", "", ""), Screen.EMPTY, null, null, emptyList(),
             false, null, null, emptyList(), null, null, null)
     }
 }
 
 /** 머리말. 워크트리를 나란히 열면 파일명이 같아 탭만으로는 못 고른다 — 탭 제목에 저장소를 앞세운다. */
-data class Header(val title: String, val tabTitle: String, val repoPrefix: String, val repoLeaf: String, val detail: String, val repo: String,
+data class Header(val title: String, val tabTitle: String, val repoPrefix: String, val repoLeaf: String, val module: String, val variant: String,
+                  val repo: String,
                   /** 대상 저장소의 지금 브랜치(detached면 짧은 해시). 저장소가 아니면 null. 폴더 이름과 따로 논다 — 워크트리에서 브랜치를 바꿀 수 있다. */
-                  val branch: String? = null)
+                  val branch: String? = null,
+                  val sourceSet: String? = null,
+                  val kmp: Boolean = false)
 
 data class BoardScreen(val file: String, val gen: Int, val focus: Int, val groups: List<CardGroup>)
 
@@ -124,7 +127,8 @@ data class PostureImage(val size: ScreenSize, val imageUrl: String, val dp: DpSi
  * 탭 한 칸. 이름을 먼저 읽게 [dim](`.kt` · FQN 탭의 ` · 파일`)은 흐리게 그린다. [module]은 같은 이름의 탭이 둘 이상일 때만 찬다 —
  * 늘 붙이면 탭 10개에서 이름이 잘린다.
  */
-data class TabChip(val key: String, val name: String, val dim: String, val module: String?, val title: String, val active: Boolean, val stale: Boolean)
+data class TabChip(val key: String, val name: String, val dim: String, val module: String?, val title: String, val active: Boolean, val stale: Boolean,
+                   val sourceSet: String? = null)
 
 data class StaleRow(val head: Phrase, val why: List<Phrase>)
 
