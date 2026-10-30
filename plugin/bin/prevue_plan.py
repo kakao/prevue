@@ -721,7 +721,7 @@ def with_daemons(status_text, lines):
 
 
 def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, env, dmods=(), dstale=(), nojdk="", jdkver="",
-           nosdk=""):
+           nosdk="", jdkfrom=""):
     """(응답, 종료 코드). plan 의 판정에 데몬 생존을 더한다. 빠진 것을 **전부** missing 에 순서대로 싣는다 —
     하나씩 말하면 툴체인을 승인받고 30초 뒤 덤프를 또 물어 대화가 두 번 끊긴다. 한 번에 알면 한 번에 묻는다.
     종료 0 준비됨(데몬까지) · 1 빠진 것 있음 · 2 고를 것이 남았다.
@@ -750,6 +750,8 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
         out["jdk"] = nojdk
         if jdkver:
             out["jdkVersion"] = jdkver
+        if jdkfrom == "none":
+            out["jdkSearched"] = True
     # 데몬이 android.jar 를 찾을 Android SDK 가 없다(nosdk 가 찾아본 폴더). java 와 같은 자리 · 같은 이유다 — 덤프는
     # local.properties 의 sdk.dir 로 돌 수 있어도 데몬은 그것을 읽지 않아, 승인받고 warmup 을 다 돌린 뒤에야 데몬이 죽는다
     if nosdk and not alive and not blocked and "error" not in out:
@@ -808,9 +810,13 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     return out, (2 if (rc == 2 or ("error" in out and not blocked)) else (1 if missing else 0))
 
 
-def jdk_tell(jdk, found=""):
-    """찾은 것(없음 · 낮은 버전)을 먼저 말하고 설치 안내를 잇는다 — 멀쩡한 JDK 17 을 두고 "없다"고만 들으면 왜 막혔는지 모른다."""
-    head = say("jdk-old", jdk=jdk, version=found) if found else say("jdk-none", jdk=jdk)
+def jdk_tell(jdk, found="", searched=False):
+    """찾은 것(없음 · 낮은 버전)을 먼저 말하고 설치 안내를 잇는다 — 멀쩡한 JDK 17 을 두고 "없다"고만 들으면 왜 막혔는지 모른다.
+    searched 는 PREVUE_JDK 없이 흔한 자리를 다 봤는데 없었다는 것 — 한 폴더만 말하면 다른 곳에 깔면 되는 줄 안다."""
+    if found:
+        head = say("jdk-old", jdk=jdk, version=found)
+    else:
+        head = say("jdk-searched") if searched else say("jdk-none", jdk=jdk)
     return head + " " + say("jdk")
 
 
@@ -819,13 +825,13 @@ def runtime_tell(out):
     다시 물어 달라는 말은 끝에 한 번만 붙인다."""
     parts = []
     if out.get("jdk"):
-        parts.append(jdk_tell(out["jdk"], out.get("jdkVersion", "")))
+        parts.append(jdk_tell(out["jdk"], out.get("jdkVersion", ""), out.get("jdkSearched", False)))
     if out.get("sdk"):
         parts.append(say("sdk", sdk=out["sdk"]))
     return " ".join(parts + [say("again")])
 
 
-def runtime_missing(jdk, found="", sdk=""):
+def runtime_missing(jdk, found="", sdk="", jdkfrom=""):
     """start 가 데몬을 띄우기 전에 멈출 때의 응답. jdk · sdk 는 쓸 수 없는 것만 받는다(빈 값은 있다).
     error 는 사실만, 설치 안내는 tell 하나가 갖는다."""
     out, errors = {"ok": False, "missing": []}, []
@@ -835,6 +841,9 @@ def runtime_missing(jdk, found="", sdk=""):
         if found:
             out["jdkVersion"] = found
             errors.append("Java %s at %s — the daemon needs 21 or later" % (found, jdk))
+        elif jdkfrom == "none":
+            out["jdkSearched"] = True
+            errors.append("No Java 21 or later found (PREVUE_JDK unset; looked at Android Studio, JavaVirtualMachines, Homebrew and SDKMAN)")
         else:
             errors.append("No java at %s/bin/java" % jdk)
     if sdk:
@@ -1122,16 +1131,16 @@ def main(argv):
         print(m)
     elif cmd == "plan":                      # <repo> <module> <variant> <파일> <toolchain> <gradle jdk> <projects>
         _emit(*plan(a[0], a[1], a[2], a[3], a[4] == "true", a[5], a[6]))
-    elif cmd == "health":                    # <plan 응답> <plan 종료 코드> <alive> <viewer> <파일> <데몬 status> <blocked> <막힘 문구> <unbaked> <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|"">
+    elif cmd == "health":                    # <plan 응답> <plan 종료 코드> <alive> <viewer> <파일> <데몬 status> <blocked> <막힘 문구> <unbaked> <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처]
         try:
             out = json.loads(a[0])
         except ValueError:
             out = {"ok": False, "error": a[0].strip()}
         dmod, dmods, _ = daemon_status(a[5])
         _emit(*health(out, int(a[1]), a[2] == "true", a[3], a[4], dmod, a[6] == "true", a[7], a[8] == "true", os.environ, dmods,
-                      restart_stale(a[5]), a[9], a[10], a[11]))
-    elif cmd == "runtime-missing":           # <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> — start 가 데몬을 띄우기 전에 멈출 때
-        _emit(runtime_missing(a[0], a[1], a[2]))
+                      restart_stale(a[5]), a[9], a[10], a[11], a[12] if len(a) > 12 else ""))
+    elif cmd == "runtime-missing":           # <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처] — start 가 데몬을 띄우기 전에 멈출 때
+        _emit(runtime_missing(a[0], a[1], a[2], a[3] if len(a) > 3 else ""))
     elif cmd == "hosts":                     # <데몬 status> <모듈> [변형] — 종료 0 이 데몬이 그린다 · 1 다른 앱의 모듈이거나 데몬 없음
         sys.exit(0 if hosts(a[0], a[1], a[2] if len(a) > 2 else "") else 1)
     elif cmd == "resource-variant":          # <repo> <리소스 모듈> <이 모듈의 변형> — 리소스 모듈을 뜰 변형

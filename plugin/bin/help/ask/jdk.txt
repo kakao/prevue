@@ -1,1 +1,1 @@
-Install JDK 21 or later (Android Studio Ladybug or newer also brings one) and set PREVUE_JDK to that JDK's home folder (on macOS, the one that ends in Contents/Home).
+Install one with brew install openjdk@25 — it needs no sudo, and Prevue finds it there by itself with nothing to set. Java 25 or later starts previews about a second faster than 21–24. Or point PREVUE_JDK at a JDK 21+ home folder (on macOS, the one that ends in Contents/Home).
