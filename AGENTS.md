@@ -28,7 +28,6 @@
 - **하드 제약은 기획의 결정 기록이 갖는다.** 빌드 무침습(대상 저장소의 빌드 파일·플러그인·태스크를 건드리지 않는다) · 뷰어는 브라우저 · Gradle은 부트스트랩 1회 · debug 산출물만. 뒤집을 조건이 "없음"인 것은 뒤집지 않는다.
 - **`README.md` 벤치마크가 바뀌면 그 숫자 · 조건 · 명령을 머지 캡처의 실측으로 넘긴다.** README는 사람용 요약, 볼트가 원 기록이다.
 - **`CHANGELOG.md`에는 사용자에게 보이는 변화만** `[Unreleased]` 아래에 적는다. 작업 PR에서 적는다 — 병렬 PR이 같은 자리에 적어도 `merge=union`이 둘 다 남긴다.
-- **외부 기여는 그 CHANGELOG 항목 끝에 멘션한다** — 수정은 `Thanks to @id for the fix (#PR).`, 제보만이면 `Reported by @id.`, 둘 다면 `Thanks to @id for the report and the fix (#PR).` 외부 PR은 머지하면서, 제보로 고친 우리 PR은 그 PR에서 적는다. 릴리즈 뒤에는 GitHub Release 본문까지 고쳐야 해서 늦다.
 - **뷰어의 색 · 글자 · 모서리 · 그림자 · 시간 · 간격은 `plugin/viewer/tokens.css`의 역할 이름으로만 쓴다**(D-96) — `sh tools/lint.sh`가 날값을 막는다. 새 값이 필요하면 `tokens.css`와 견본(`prototypes/design-system/`)을 같은 PR에서 고친다.
 - **버전 숫자(`plugin.json`의 `version` · README 버전 배지 · CHANGELOG 제목)는 손으로 고치지 않는다.** `plugin/VERSION`만 올리고 `tools/sync-version.sh`로 옮긴다. 마켓플레이스의 플러그인 소스는 `main` 브랜치라 main에 머지되는 순간 배포된다.
 
