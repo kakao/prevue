@@ -59,9 +59,14 @@ class Cli(Case):
         self.r.built(":app", "debug")
         self.home = os.path.join(self.tmp.name, "home")
         os.makedirs(self.home)
+        self.jdk = os.path.join(self.tmp.name, "jdk")      # 이 테스트는 데몬을 띄우지 않는다 — java 가 있다는 것만 보이면 된다
+        os.makedirs(os.path.join(self.jdk, "bin"))
+        java = os.path.join(self.jdk, "bin", "java")
+        open(java, "w").close()
+        os.chmod(java, 0o755)
 
     def run_cli(self, *args):
-        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=self.jdk)
         env.pop("PREVUE_LANG", None)
         p = subprocess.run([str(ROOT / "bin/prevue"), *args], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         return json.loads(p.stdout), p.returncode

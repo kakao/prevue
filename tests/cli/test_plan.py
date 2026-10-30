@@ -557,10 +557,10 @@ class Health(Case):
         r.dump(":app", "debug", apk="x.ap_")
         return r.plan(":app", f), f
 
-    def health(self, plan, f, alive=False, dmod="", blocked=False, unbaked=False, env=None, dmods=(), dstale=()):
+    def health(self, plan, f, alive=False, dmod="", blocked=False, unbaked=False, env=None, dmods=(), dstale=(), nojdk=""):
         (out, rc) = plan
         return P.health(out, rc, alive, "http://127.0.0.1:8800/" if alive or blocked else "", f, dmod, blocked, "막혔다",
-                        unbaked, env or {"HOME": self.tmp.name}, dmods, dstale)
+                        unbaked, env or {"HOME": self.tmp.name}, dmods, dstale, nojdk)
 
     def test_리소스가_낡은_데몬이면_다시_뜨라고_묻는다(self):
         plan, f = self.ready_plan()
@@ -613,6 +613,33 @@ class Health(Case):
         out, rc = self.health(plan, f)
         self.assertEqual((rc, out["missing"]), (1, ["daemon"]))
         self.assertTrue(out["next"].startswith("prevue start "))
+
+    def test_java_가_없으면_띄우지_않고_JDK_를_말한다(self):
+        plan, f = self.ready_plan()
+        out, rc = self.health(plan, f, nojdk="/Applications/Android Studio.app/Contents/jbr/Contents/Home")
+        self.assertEqual((rc, out["missing"], out["next"]), (1, ["jdk", "daemon"], "prevue health " + f))
+        self.assertEqual(out["tell"], P.say("jdk", jdk="/Applications/Android Studio.app/Contents/jbr/Contents/Home"))
+        self.assertIsNone(P.autostart(out))
+
+    def test_java_가_없으면_덤프_승인보다_먼저_말한다(self):
+        r = self.repo(":app")
+        f = r.src(":app")
+        r.built(":app", "debug")
+        out, _ = self.health(r.plan(":app", f, toolchain=False), f, nojdk="/nope")
+        self.assertEqual((out["missing"], out["next"]), (["jdk", "toolchain", "dump", "daemon"], "prevue health " + f))
+        self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.say("jdk", jdk="/nope"), False, False))
+
+    def test_저장소를_못_찾은_이유가_java_보다_먼저다(self):
+        out, _ = P.health({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
+                          {"HOME": self.tmp.name}, nojdk="/nope")
+        self.assertNotIn("jdk", out["missing"])
+        self.assertNotIn("tell", out)
+
+    def test_떠_있는_데몬은_java_를_다시_찾지_않는다(self):
+        plan, f = self.ready_plan()
+        out, rc = self.health(plan, f, alive=True, dmod=":app", nojdk="/nope")
+        self.assertEqual((rc, out["missing"]), (0, []))
+        self.assertNotIn("tell", out)
 
     def test_다른_모듈을_그리는_데몬은_없는_것(self):
         plan, f = self.ready_plan()

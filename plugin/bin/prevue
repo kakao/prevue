@@ -81,6 +81,14 @@ JDK="${PREVUE_JDK:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 # 포트마다 데몬 하나이므로 로그·pid도 포트별로 둔다 — 두 모듈을 같이 띄우면 겹친다.
 LOG="$DAEMON_DIR/daemon-$PORT.log"
 
+# 데몬을 띄울 java 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 한 줄만 남고,
+# 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
+require_java() {
+  [ -x "$JDK/bin/java" ] && return 0
+  python3 "$PLAN_PY" jdk-missing "$JDK"
+  exit 3
+}
+
 usage() {
   # 명령 목록 · 명령별 설명은 bin/help 가 갖는다 — 여기와 두 곳에 적으면 어긋난다
   cat "$ROOT/bin/help/index.txt" >&2
@@ -425,7 +433,8 @@ health_json() {  # <파일>
     fi
   fi
   local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
-  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked"
+  local nojdk=""; [ -x "$JDK/bin/java" ] || nojdk="$JDK"
+  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk"
 }
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —
@@ -768,6 +777,7 @@ case "$cmd" in
   start)
     if [ -z "${PREVUE_PREPARATION:-}" ] && [ -z "$(daemon_key "$PORT")" ]; then
       if ! unreachable_daemons "$PORT" | grep -qx "$PORT"; then
+        require_java
         case " $* " in
           *' --fg '*) ;;
           *) exec python3 "$ROOT/bin/prevue_prepare.py" run start "$PORT" "$@" ;;
@@ -826,6 +836,7 @@ case "$cmd" in
       # 그 데몬을 내리면 그 앱의 보드와 편집을 잃는다(D-50). 내리지 않고 거절한다.
       echo "{\"ok\":false,\"error\":\"That seat ($PORT) has another app's daemon drawing $HAVE — drop --port to start in a free seat\"}"; exit 3
     fi
+    require_java
     # 같은 덤프 모듈의 다른 변형을 그리는 데몬은 내리고 띄운다 — 모듈 하나에 데몬 둘이면 힙만 두 벌이고 저장마다 둘 다 다시 그린다.
     # 디렉터리는 데몬마다 갈려(D-64) 지우기로 부딪히지는 않는다. 다른 앱의 데몬은 그대로 둔다(D-50).
     if [ -n "$WANT" ] && [ -n "${KEY:-}" ]; then
