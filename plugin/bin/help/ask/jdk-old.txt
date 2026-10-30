@@ -1,0 +1,1 @@
+Drawing previews needs Java 21 or later, and the one at {jdk} is Java {version}.

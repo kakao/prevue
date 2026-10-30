@@ -81,9 +81,9 @@ JDK="${PREVUE_JDK:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 # 포트마다 데몬 하나이므로 로그·pid도 포트별로 둔다 — 두 모듈을 같이 띄우면 겹친다.
 LOG="$DAEMON_DIR/daemon-$PORT.log"
 
-# JDK 의 주 버전(1.8 은 8). release 가 없으면 빈 값이다
+# JDK 의 주 버전(1.8 은 8). release 가 없으면 빈 값이다. 다시 묶은 JDK 는 JAVA_VERSION 이 둘일 수 있어 첫 줄만 본다
 jdk_major() {
-  sed -n -e 's/^JAVA_VERSION="1\.\([0-9]*\).*/\1/p' -e t -e 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$JDK/release" 2>/dev/null
+  sed -n -e 's/^JAVA_VERSION="1\.\([0-9]*\).*/\1/p' -e t -e 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$JDK/release" 2>/dev/null | head -1
 }
 
 # 데몬을 띄울 수 있는 JDK 인가 — layoutlib 이 Java 21 바이트코드라 21 미만은 setup · warmup 을 다 치른 뒤 데몬이 죽는다.

@@ -577,7 +577,7 @@ def with_ask(out, missing, home):
         out["tell"] = say("network")
         return out
     if "jdk" in missing:
-        out["tell"] = say("jdk", jdk=out.get("jdk", ""))
+        out["tell"] = jdk_tell(out.get("jdk", ""), out.get("jdkVersion", ""))
         return out
     pick, options = choose_options(out)
     options = [o for o in options if o]
@@ -801,9 +801,15 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     return out, (2 if (rc == 2 or ("error" in out and not blocked)) else (1 if missing else 0))
 
 
+def jdk_tell(jdk, found=""):
+    """찾은 것(없음 · 낮은 버전)을 먼저 말하고 설치 안내를 잇는다 — 멀쩡한 JDK 17 을 두고 "없다"고만 들으면 왜 막혔는지 모른다."""
+    head = say("jdk-old", jdk=jdk, version=found) if found else say("jdk-none", jdk=jdk)
+    return head + " " + say("jdk")
+
+
 def jdk_missing(jdk, found=""):
     """start 가 데몬을 띄우기 전에 멈출 때의 응답. error 는 사실만, 설치 안내는 tell 하나가 갖는다."""
-    out = {"ok": False, "missing": ["jdk"], "jdk": jdk, "tell": say("jdk", jdk=jdk)}
+    out = {"ok": False, "missing": ["jdk"], "jdk": jdk, "tell": jdk_tell(jdk, found)}
     if found:
         out["jdkVersion"] = found
         out["error"] = "Java %s at %s — the daemon needs 21 or later" % (found, jdk)

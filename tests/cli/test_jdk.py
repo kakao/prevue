@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from test_plan import Case
+from test_plan import Case, fake_jdk
 
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
@@ -24,19 +24,13 @@ class DaemonJdk(Case):
         os.makedirs(self.home)
 
     def jdk(self, name, version=None):
-        d = os.path.join(self.tmp.name, name)
-        os.makedirs(os.path.join(d, "bin"))
-        java = os.path.join(d, "bin", "java")
-        open(java, "w").close()
-        os.chmod(java, 0o755)
-        if version is not None:
-            with open(os.path.join(d, "release"), "w") as f:
-                f.write('IMPLEMENTOR="test"\nJAVA_VERSION="%s"\n' % version)
-        return d
+        return fake_jdk(os.path.join(self.tmp.name, name), version)
 
     def health(self, jdk):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=jdk)
-        env.pop("PREVUE_LANG", None)
+        # Codex 샌드박스 안에서 돌면 sandbox 가 missing 첫 자리를 차지한다 — 이 테스트가 보는 것은 jdk 다
+        for k in ("PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED"):
+            env.pop(k, None)
         p = subprocess.run([str(ROOT / "bin/prevue"), "health", self.file], capture_output=True, text=True,
                            cwd=self.tmp.name, env=env)
         return json.loads(p.stdout)
@@ -46,6 +40,18 @@ class DaemonJdk(Case):
             jdk = self.jdk("jdk" + major, version)
             out = self.health(jdk)
             self.assertEqual((out["missing"][0], out["jdk"], out["jdkVersion"]), ("jdk", jdk, major), out)
+
+    def test_사람에게는_찾은_버전을_먼저_말한다(self):
+        out = self.health(self.jdk("jdk17", "17.0.12"))
+        self.assertIn("is Java 17.", out["tell"])
+        self.assertIn("PREVUE_JDK", out["tell"])
+
+    def test_JAVA_VERSION_이_둘이면_첫_줄을_본다(self):
+        jdk = self.jdk("jdk-twice")
+        with open(os.path.join(jdk, "release"), "w") as f:
+            f.write('JAVA_VERSION="21.0.5"\nJAVA_VERSION="21.0.5"\n')
+        out = self.health(jdk)
+        self.assertNotIn("jdk", out["missing"], out)
 
     def test_21_이상은_통과한다(self):
         for version in ("21.0.5", "25"):

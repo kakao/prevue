@@ -22,6 +22,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import daemon_records as R  # noqa: E402
+from test_plan import fake_jdk  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 BOOT = 1791192312.0   # 실측 머신의 부팅 시각(2026-10-05 18:25:12 KST)
@@ -582,13 +583,7 @@ class Launch(unittest.TestCase):
     # 지킬 것: java 가 있어도 21 미만이면 띄우지 않는다 — layoutlib 이 21 바이트코드라 데몬이 UnsupportedClassVersionError 로 죽는다
     def test_java_가_21_미만이면_start_는_데몬을_띄우지_않고_찾은_버전을_말한다(self):
         port = str(free_port())
-        jdk = os.path.join(self.home, "jdk17")
-        os.makedirs(os.path.join(jdk, "bin"))
-        java = os.path.join(jdk, "bin", "java")
-        open(java, "w").close()
-        os.chmod(java, 0o755)
-        with open(os.path.join(jdk, "release"), "w") as f:
-            f.write('IMPLEMENTOR="Eclipse Adoptium"\nJAVA_VERSION="17.0.12"\n')
+        jdk = fake_jdk(os.path.join(self.home, "jdk17"), "17.0.12")
         p = subprocess.run([self.cli, "start", "--port", port], cwd=self.home, env=dict(self.env, PREVUE_JDK=jdk),
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
         out = json.loads(p.stdout.decode().splitlines()[-1])
