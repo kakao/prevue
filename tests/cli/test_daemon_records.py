@@ -22,7 +22,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import daemon_records as R  # noqa: E402
-from test_plan import fake_jdk  # noqa: E402
+from test_plan import fake_jdk, fake_sdk  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 BOOT = 1791192312.0   # 실측 머신의 부팅 시각(2026-10-05 18:25:12 KST)
@@ -527,7 +527,8 @@ class Launch(unittest.TestCase):
         self.cli = os.path.join(plugin, "bin", "prevue")
         self.daemons = os.path.join(self.home, "daemons")
         os.makedirs(self.daemons)
-        self.env = prevue_env(self.home, PREVUE_JDK=os.path.dirname(os.path.dirname(self.java)))
+        self.env = prevue_env(self.home, PREVUE_JDK=os.path.dirname(os.path.dirname(self.java)),
+                              ANDROID_HOME=fake_sdk(os.path.join(self.home, "sdk")))
         self.addCleanup(self.put_down)
 
     def put_down(self):

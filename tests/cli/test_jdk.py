@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from test_plan import Case, fake_jdk
+from test_plan import Case, fake_jdk, fake_sdk
 
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
@@ -22,12 +22,14 @@ class DaemonJdk(Case):
         self.r.built(":app", "debug")
         self.home = os.path.join(self.tmp.name, "home")
         os.makedirs(self.home)
+        self.sdk = fake_sdk(os.path.join(self.tmp.name, "sdk"))
 
     def jdk(self, name, version=None):
         return fake_jdk(os.path.join(self.tmp.name, name), version)
 
     def health(self, jdk):
-        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=jdk)
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=jdk,
+                   ANDROID_HOME=self.sdk)
         # Codex 샌드박스 안에서 돌면 sandbox 가 missing 첫 자리를 차지한다 — 이 테스트가 보는 것은 jdk 다
         for k in ("PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED"):
             env.pop(k, None)

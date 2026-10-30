@@ -1,0 +1,1 @@
+Drawing previews needs the Android SDK, and there is none at {sdk} (no platforms/android-*/android.jar there). Install it through Android Studio's setup wizard or the command-line tools (sdkmanager "platforms;android-36"), set ANDROID_HOME to the SDK folder if it isn't at ~/Library/Android/sdk, and ask me again.
