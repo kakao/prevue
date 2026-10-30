@@ -18,6 +18,8 @@ object PearlKmpFixture {
     /** Res 문자열을 읽는 프리뷰 파일 — 저장 회귀의 대상. */
     val filter: File get() = common("feature/pearl", "FilterScreen.kt")
     val expectActual: File get() = common("feature/pearl", "BackHandler.kt")
+    /** 창 폭(`LocalWindowInfo.containerSize`)으로 열 수가 갈리는 프리뷰 — 기본 하나 + 1280dp 하나. */
+    val adaptive: File get() = common("feature/pearl", "AdaptivePreviews.kt")
     /** Android 타깃이 없는 모듈의 프리뷰 파일. */
     val noAndroid: File get() = File(dir, "feature/desktop/src/commonMain/kotlin/com/example/pearl/feature/desktop/MenuBoard.kt")
     const val LEGACY_CARDS = 3

@@ -131,6 +131,14 @@ class KmpRenderIntegrationTest {
         }
     }
 
+    // containerSize를 처음 읽을 때 0이면 maxOf(2, (0 - 48) / 220)로 2열이 된다
+    @Test @Order(9) fun `넓은 정적 프리뷰는 첫 프레임부터 창 폭을 읽어 그 폭의 열 수로 그린다`() {
+        assertBoard(PearlKmpFixture.adaptive, 2)
+        val wide = ws.now.board!!.cards.first { it.spec.fqn.endsWith("AdaptivePearlWidePreview") }
+        val cards = PearlFixture.tree((wide.result as CardResult.Drawn).shot.out.tree!!).cards
+        assertEquals((1280 - 48) / 220, cards.count { it.top == cards.first().top }, "1280dp 첫 줄의 카드 수")
+    }
+
     private fun open(file: File) {
         val r = runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
