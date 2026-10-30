@@ -27,7 +27,7 @@
 - **문서와 코드가 어긋나면 코드가 기준**이다. 저장소 문서는 같은 PR에서 고치고, 볼트 문서가 어긋났으면 머지 캡처의 인사이트로 넘긴다. 같은 사실을 두 곳에 두지 않는다.
 - **하드 제약은 기획의 결정 기록이 갖는다.** 빌드 무침습(대상 저장소의 빌드 파일·플러그인·태스크를 건드리지 않는다) · 뷰어는 브라우저 · Gradle은 부트스트랩 1회 · debug 산출물만. 뒤집을 조건이 "없음"인 것은 뒤집지 않는다.
 - **`README.md` 벤치마크가 바뀌면 그 숫자 · 조건 · 명령을 머지 캡처의 실측으로 넘긴다.** README는 사람용 요약, 볼트가 원 기록이다.
-- **`CHANGELOG.md`에는 사용자에게 보이는 변화만** `[Unreleased]` 아래에 적는다. 작업 PR에서 적는다 — 병렬 PR이 같은 자리에 적어도 `merge=union`이 둘 다 남긴다.
+- **`CHANGELOG.md`에는 사용자에게 보이는 변화만** `[Unreleased]` 아래에 적는다. 작업 PR에서 적는다 — 병렬 PR이 같은 자리에 적어도 `merge=union`이 둘 다 남긴다. 쓰는 법과 외부 기여 · 제보 멘션은 `dev-skills-src/release-notes.md` — 외부 PR을 머지할 때도 본다.
 - **뷰어의 색 · 글자 · 모서리 · 그림자 · 시간 · 간격은 `plugin/viewer/tokens.css`의 역할 이름으로만 쓴다**(D-96) — `sh tools/lint.sh`가 날값을 막는다. 새 값이 필요하면 `tokens.css`와 견본(`prototypes/design-system/`)을 같은 PR에서 고친다.
 - **버전 숫자(`plugin.json`의 `version` · README 버전 배지 · CHANGELOG 제목)는 손으로 고치지 않는다.** `plugin/VERSION`만 올리고 `tools/sync-version.sh`로 옮긴다. 마켓플레이스의 플러그인 소스는 `main` 브랜치라 main에 머지되는 순간 배포된다.
 

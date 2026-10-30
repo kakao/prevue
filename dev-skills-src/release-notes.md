@@ -48,6 +48,7 @@
 4. **멘션 점검.** 아래 명령이 내는 사람마다 그 번호가 걸린 항목에 멘션이 있는지 본다. 없으면 위 표대로 붙인다.
 
 ```sh
+git fetch -q --tags origin                  # v$M 태그가 없으면 git log 가 조용히 비어 PR 쪽을 놓친다
 M=$(git show origin/main:plugin/VERSION)
 { git log --first-parent --format='%s' "v$M"..origin/develop | grep -oE '\(#[0-9]+\)'
   awk '/^## \[Unreleased\]/{f=1;next} /^## \[/{f=0} f' CHANGELOG.md | grep -oE '\[#[0-9]+\]'
@@ -58,3 +59,5 @@ done
 ```
 
 squash 커밋 제목 끝의 `(#N)`과 `[Unreleased]`에 걸린 링크만 본다 — 커밋 본문의 번호까지 주우면 지난 판의 이슈가 섞인다. 링크 없이 고친 외부 제보는 여기에 안 잡힌다. 그래서 제보로 고친 PR은 항목에 이슈 링크를 건다.
+
+`author_association`은 조직 멤버십을 비공개로 둔 팀원도 `CONTRIBUTOR` · `NONE`으로 낸다. 목록에 우리 팀원이 나오면 멘션하지 않고 뺀다.
