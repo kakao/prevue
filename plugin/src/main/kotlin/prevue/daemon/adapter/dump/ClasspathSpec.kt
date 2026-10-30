@@ -15,7 +15,16 @@ class DumpPaths(
     val resourceDirs: List<String>,
     val kmpSourceRoots: Map<String, List<String>> = emptyMap(),
     val assetsDirs: List<String> = emptyList(),
+    val layout: RepoLayout = RepoLayout.UNKNOWN,
 )
+
+class RepoLayout(val root: String?, val moduleDirs: Map<String, String>) {
+    operator fun plus(other: RepoLayout) = RepoLayout(root ?: other.root, other.moduleDirs + moduleDirs)
+
+    companion object {
+        val UNKNOWN = RepoLayout(null, emptyMap())
+    }
+}
 
 class Derivation private constructor(
     internal val compileOwnClassPath: List<String>?,
@@ -49,6 +58,10 @@ class ClasspathSpec(
     val resourceDirs: List<String> = paths.resourceDirs
     val kmpSourceRoots: Map<String, List<String>> = paths.kmpSourceRoots
     val assetsDirs: List<String> = paths.assetsDirs
+    val layout: RepoLayout = paths.layout
+    val moduleDirs: Map<String, String> = layout.moduleDirs
+    private val declaredRepoRoot: String? = layout.root
+    private val declaredModuleDir: String? = moduleDirs[project]
     val borrowedFrom: String? = derivation.borrowedFrom
     val borrowedCount: Int = derivation.borrowedCount
     val derivedFrom: String? = derivation.derivedFrom
@@ -64,7 +77,8 @@ class ClasspathSpec(
     val modulePath: String = project.trim(':').replace(':', '/')
 
     /** 모듈 자기 산출물 디렉터리·jar — 컴파일의 friend path이고 `internal` 접근의 근거다. 자기 R.jar를 포함한다. */
-    val ownClassPath: List<String> = derivation.compileOwnClassPath ?: projectClassPath.filter { it.contains("/$modulePath/build/") }
+    val ownClassPath: List<String> = derivation.compileOwnClassPath
+        ?: projectClassPath.filter { p -> declaredModuleDir?.let { p.startsWith("$it/build/") } ?: p.contains("/$modulePath/build/") }
 
     /**
      * Gradle이 이 모듈의 Kotlin을 마지막으로 컴파일했는지 볼 표지들 — 디렉터리는 Kotlin이 컴파일마다 다시 쓰는 `META-INF/<모듈명>.kotlin_module`,
@@ -78,10 +92,10 @@ class ClasspathSpec(
         else f.takeIf { it.name.endsWith(".jar") }
     }
 
-    val moduleDir: File = ownClassPath.firstOrNull()?.let { File(it.substringBefore("/build/")) }
+    val moduleDir: File = ownClassPath.firstOrNull()?.let { File(declaredModuleDir ?: it.substringBefore("/build/")) }
         ?: error("$project 의 자기 산출물이 클래스패스에 없다 — 모듈이 컴파일된 적이 없거나 덤프가 낡았다")
 
-    val repoRoot: File = File(moduleDir.absolutePath.removeSuffix("/$modulePath"))
+    val repoRoot: File = File(declaredRepoRoot ?: moduleDir.absolutePath.removeSuffix("/$modulePath"))
 
     /**
      * Kotlin 모듈명. `internal` 멤버의 JVM 이름이 `name$moduleName`으로 맹글링되므로 Gradle과 글자까지 같아야 한다.
@@ -179,19 +193,20 @@ class ClasspathSpec(
             projectClassPath = projectClassPath.filter { it !in own } + app.rClassJars + inRepo,
             compileClassPath = compileClassPath, rClassJars = app.rClassJars, resourceDirs = resourceDirs,
             kmpSourceRoots = app.kmpSourceRoots + kmpSourceRoots, assetsDirs = app.assetsDirs,
+            layout = layout + app.layout,
         )
         val derivation = Derivation.borrowed(ownClassPath, app.project.takeIf { borrowed.isNotEmpty() }, borrowed.size)
         return ClasspathSpec(file, project, variant, namespace, app.resourceApkPath, paths, derivation)
     }
 
     fun dependency(project: String): ClasspathSpec {
-        val dir = "/" + project.trim(':').replace(':', '/') + "/build/"
-        val own = projectClassPath.filter { it.startsWith(repoRoot.path + dir) && it !in rClassJars }
+        val dir = moduleDirs[project] ?: (repoRoot.path + "/" + project.trim(':').replace(':', '/'))
+        val own = projectClassPath.filter { it.startsWith("$dir/build/") && it !in rClassJars }
         require(own.isNotEmpty()) { "$project 의 산출물이 ${this.project} 덤프에 없다" }
         val paths = DumpPaths(
             classPath = classPath, projectClassPath = projectClassPath,
             compileClassPath = compileClassPath + rClassJars.filter { it !in compileClassPath }, rClassJars = rClassJars, resourceDirs = resourceDirs,
-            kmpSourceRoots = kmpSourceRoots, assetsDirs = assetsDirs,
+            kmpSourceRoots = kmpSourceRoots, assetsDirs = assetsDirs, layout = layout,
         )
         val derivation = Derivation.derived(own, from = this)
         return ClasspathSpec(file, project, variant, "", resourceApkPath, paths, derivation)
@@ -199,11 +214,15 @@ class ClasspathSpec(
 
     /** 이 덤프의 프로젝트 의존 모듈들 — 같은 저장소 안에 산출물이 있는 것. 클래스패스 순서(소비자 먼저)대로다. */
     val projectModules: List<String>
-        get() = projectClassPath.asSequence()
-            .filter { it.startsWith(repoRoot.path + "/") && "/build/" in it }
-            .map { ":" + it.removePrefix(repoRoot.path + "/").substringBefore("/build/").replace('/', ':') }
-            .filter { it != ":" && it != project }
-            .distinct().toList()
+        get() {
+            val byDir = moduleDirs.entries.associate { (path, dir) -> dir to path }
+            return projectClassPath.asSequence()
+                .filter { it.startsWith(repoRoot.path + "/") && "/build/" in it }
+                .map { it.substringBefore("/build/") }
+                .map { dir -> byDir[dir] ?: (":" + dir.removePrefix(repoRoot.path + "/").replace('/', ':')) }
+                .filter { it != ":" && it != project }
+                .distinct().toList()
+        }
 
     companion object {
         fun forRender(home: ClasspathSpec, app: ClasspathSpec?, overlay: File): Pair<ClasspathSpec, Boolean> {
@@ -215,6 +234,7 @@ class ClasspathSpec(
                 classPath = front + r.classPath, projectClassPath = front + r.projectClassPath,
                 compileClassPath = r.compileClassPath, rClassJars = r.rClassJars, resourceDirs = r.resourceDirs,
                 kmpSourceRoots = r.kmpSourceRoots + home.kmpSourceRoots, assetsDirs = r.assetsDirs,
+                layout = home.layout + r.layout,
             )
             val borrowedCount = if (onApp) (app!!.classPath.toSet() - home.classPath.toSet()).size else r.borrowedCount
             val derivation = Derivation.rendered(app?.project, borrowedCount)
@@ -230,6 +250,10 @@ class ClasspathSpec(
                 kmpSourceRoots = (m["kmpSourceRoots"] as? Map<*, *>).orEmpty()
                     .map { (k, v) -> k.toString() to (v as? List<*>).orEmpty().map { it.toString() } }.toMap(),
                 assetsDirs = m.strings("assetsDirs"),
+                layout = RepoLayout(
+                    m.string("repoRoot"),
+                    (m["moduleDirs"] as? Map<*, *>).orEmpty().map { (k, v) -> k.toString() to v.toString() }.toMap(),
+                ),
             )
             val spec = ClasspathSpec(
                 file, m.string("project") ?: error("project 없음"), m.string("variant") ?: "debug", m.string("namespace") ?: "",
