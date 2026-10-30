@@ -157,6 +157,9 @@
   --avatar-7: #3ea6b5;
   --avatar-8: #8e8e93;
   --on-avatar: var(--gray-light-0);
+  /* 앱 아이콘 배지의 Android 로봇. 성공의 초록이 아니라 대상 앱의 종류를 말하는 브랜드 색이다.
+     라이트는 공식 Android Green(#3ddc84)이 흰 바탕에 씻겨 한 단계 진하게, 다크는 공식 색 그대로. */
+  --art-android: light-dark(#1db161, #3ddc84);
   /* 작업 공간의 기기 몸체. 실제 기기 색이라 라이트 · 다크가 같다. */
   --device-body: #1d1d1f;
   --device-camera: #050505;

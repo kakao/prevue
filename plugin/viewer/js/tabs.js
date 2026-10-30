@@ -4,12 +4,15 @@ import { $ } from "./store.js";
 import { post } from "./api.js";
 import { phrase } from "./strings.js";
 import { reduced, motionToken, motionMs } from "./motion.js";
+import { robot, kmp, kindOf } from "./platform.js";
 
 const rail = $("rail"), list = $("railList"), glider = $("railGlider"), empty = $("railEmpty");
 let tabs = [], activeKey = null;
 
 const X = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m5 5 6 6M11 5l-6 6"/></svg>';
 const FILE = '<svg class="rt-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h5.5L12 4.5V14H4z"/></svg>';
+// 파일 아이콘 자리 — Android 전용 모듈은 문서, KMP 모듈은 소스 세트에 따라 로봇 · KMP(platform.js).
+const ICON = { file: FILE, android: robot("rt-ic"), kmp: kmp("rt-ic") };
 
 function make(t) {
   const el = document.createElement("div");
@@ -19,6 +22,7 @@ function make(t) {
   const name = document.createElement("span"); name.className = "rt-name";
   const mod = document.createElement("span"); mod.className = "rt-mod";
   el.innerHTML = FILE;
+  el.dataset.ic = "file";
   el.append(name, mod, x);
   x.addEventListener("click", e => { e.stopPropagation(); close(el.dataset.key); });
   el.addEventListener("click", () => { if (el.dataset.key !== activeKey) post("/viewer/tab", { key: el.dataset.key }); });
@@ -92,6 +96,13 @@ function layout(force = false) {
 
 function fill(el, t) {
   el.dataset.name = t.name;
+  const ic = kindOf(t.sourceSet);
+  if (el.dataset.ic !== ic) {
+    const tpl = document.createElement("template");
+    tpl.innerHTML = ICON[ic];
+    el.querySelector(".rt-ic").replaceWith(tpl.content.firstChild);
+    el.dataset.ic = ic;
+  }
   el.querySelector(".rt-mod").textContent = ((t.dim || "") + (t.module ? " · " + t.module : "")).replace(/^\s*·\s*/, "");
   el.title = t.title;
   el.classList.toggle("active", t.active);

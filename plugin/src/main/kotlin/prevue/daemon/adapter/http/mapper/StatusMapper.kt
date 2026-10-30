@@ -26,7 +26,8 @@ fun Status.toJson(): Map<String, Any?> = mapOf(
     "memory" to mapOf("heapUsedMb" to engine.heapUsedMb, "heapMaxMb" to engine.heapMaxMb, "rssMb" to engine.rssMb),
     "last" to (last?.toJson() ?: emptyMap<String, Any?>()),
     "work" to work?.toJson(), "size" to size?.toJson(), "kmp" to kmp,
-) + (module.sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap()) + (watch?.let { mapOf("watch" to it.source, "staleWatch" to it.build, "valuesWatch" to it.values) } ?: emptyMap())   // "stale"로 두면 낡음의 이유들을 덮는다
+) + (module.sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap()) +
+    (watch?.let { mapOf("watch" to it.source, "staleWatch" to it.build, "valuesWatch" to it.values) } ?: emptyMap())   // "stale"로 두면 낡음의 이유들을 덮는다
 
 fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     ScreenSize.Original -> null
