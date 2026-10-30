@@ -28,3 +28,8 @@ fun AdaptivePearl(ambient: Boolean = false, open: Boolean = false) {
 @Preview(showBackground = true)
 @Composable
 fun AdaptivePearlPreview() = PearlTheme { AdaptivePearl() }
+
+// 정적 렌더 한 장에서 containerSize를 처음 읽을 때부터 실제 폭인지 보는 자리 — 0으로 읽히면 2열로 그려진다.
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800)
+@Composable
+fun AdaptivePearlWidePreview() = PearlTheme { AdaptivePearl() }
