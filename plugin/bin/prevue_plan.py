@@ -843,7 +843,7 @@ def runtime_missing(jdk, found="", sdk="", jdkfrom=""):
             errors.append("Java %s at %s — the daemon needs 21 or later" % (found, jdk))
         elif jdkfrom == "none":
             out["jdkSearched"] = True
-            errors.append("No Java 21 or later found (PREVUE_JDK unset; looked at Android Studio, JavaVirtualMachines, Homebrew and SDKMAN)")
+            errors.append("No Java 21 or later found (PREVUE_JDK unset; looked at Android Studio, JAVA_HOME, JavaVirtualMachines, Homebrew and SDKMAN)")
         else:
             errors.append("No java at %s/bin/java" % jdk)
     if sdk:

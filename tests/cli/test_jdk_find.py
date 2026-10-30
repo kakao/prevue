@@ -38,6 +38,8 @@ class JdkFind(unittest.TestCase):
             (("21.0.13", "24.0.1", "27.0.1"), "24.0.1"),
             (("27.0.1", "26"), "26"),
             (("25.0.2", "25.0.5"), "25.0.5"),
+            (("25", "25.0.5"), "25.0.5"),
+            (("21.0.13", "21"), "21.0.13"),
         ):
             with self.subTest(versions=versions):
                 base = "set-" + "-".join(versions)
@@ -51,9 +53,14 @@ class JdkFind(unittest.TestCase):
         known = self.jdk("jvms/b-21", "21.0.13")
         self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")]), (known, "ok"))
 
-    def test_판을_모르는_JDK_만_있으면_막지_않는다(self):
-        unknown = self.jdk("jvms/unknown")
-        self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")]), (unknown, "ok"))
+    # 지킬 것: release 없는 옛 번들(Apple 1.6.0.jdk)을 받으면 setup · warmup 을 다 치른 뒤 데몬이 죽는다
+    def test_발견한_JDK_는_판을_모르면_쓰지_않는다(self):
+        self.jdk("jvms/1.6.0.jdk")
+        self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")])[1], "none")
+
+    def test_AS_의_JBR_은_판을_몰라도_쓴다(self):
+        jbr = self.jdk("as/jbr")
+        self.assertEqual(jdk_find.find([jbr], [self.pattern("jvms/*")]), (jbr, "ok"))
 
     # 지킬 것: java_home -v 21+ 는 맞는 것이 없으면 18 을 돌려줬다 — 21 미만은 고르지 않고 낮은 판으로 말한다
     def test_21_미만만_있으면_그중_가장_높은_판을_낮다고_말한다(self):

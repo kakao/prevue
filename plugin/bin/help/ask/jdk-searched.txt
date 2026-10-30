@@ -1,1 +1,1 @@
-Drawing previews needs Java 21 or later, and none was found — PREVUE_JDK isn't set, and Android Studio, Library/Java/JavaVirtualMachines, Homebrew's openjdk and SDKMAN have none.
+Drawing previews needs Java 21 or later, and none was found — PREVUE_JDK isn't set, and Android Studio, JAVA_HOME, Library/Java/JavaVirtualMachines, Homebrew's openjdk and SDKMAN have none.
