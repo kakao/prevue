@@ -5,6 +5,8 @@ What is missing to draw this file. missing lists everything missing in order, an
   sandbox    the Codex sandbox blocks 127.0.0.1 · ~/.prevue (sandbox.config is the config file; restartNeeded means the settings are in but Codex hasn't restarted)
   jdk        no Java 21 or later to run the daemon (jdk is the folder checked; jdkVersion is the older Java found there). Listed before toolchain · dump so no approval or Gradle run is spent first —
              pass tell on and stop; next is health again
+  sdk        no Android SDK platform (android.jar) for the daemon (sdk is the folder checked: ANDROID_HOME, else ANDROID_SDK_ROOT, else ~/Library/Android/sdk).
+             Same place and handling as jdk — pass tell on and stop; next is health again
   toolchain  the renderer · compiler aren't on this machine — prevue setup (external network, user's approval)
   dump       this module's build settings (classpath) are missing or stale (why — e.g. a build file changed after the dump) — prevue warmup (Gradle once, user's approval).
              Also here when the daemon drawing this file holds what was there before resources · build files changed (daemonStale: resources · build-files)
@@ -15,5 +17,5 @@ need:"choose" means something is left to choose (choose: variant · resourcesFro
 The response carries what to say to the person — written for the person; pass it on in the person's language without changing its meaning or adding to it.
   ask      the question to put. It folds approval and choosing into one question. If approved, run next → then, up to the last response's next (start … --show). If declined, stop
   options  the choices — put the chosen one in the <…> slot of next (or then). Choosing one is the approval
-  tell     a message to pass on before stopping (network blocked · restart Codex · no Java). For sandbox, pass this on after adding the ask's settings
+  tell     a message to pass on before stopping (network blocked · restart Codex · no Java · no Android SDK). For sandbox, pass this on after adding the ask's settings
 Exit codes: 0 ready · 1 something is missing · 2 something is left to choose.

@@ -10,7 +10,7 @@ import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
-from test_plan import Case, P
+from test_plan import Case, P, fake_sdk
 import prevue_prepare as preparation
 
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
@@ -64,9 +64,11 @@ class Cli(Case):
         java = os.path.join(self.jdk, "bin", "java")
         open(java, "w").close()
         os.chmod(java, 0o755)
+        self.sdk = fake_sdk(os.path.join(self.tmp.name, "sdk"))
 
     def run_cli(self, *args):
-        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=self.jdk)
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=self.jdk,
+                   ANDROID_HOME=self.sdk)
         env.pop("PREVUE_LANG", None)
         p = subprocess.run([str(ROOT / "bin/prevue"), *args], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         return json.loads(p.stdout), p.returncode

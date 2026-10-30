@@ -95,11 +95,24 @@ have_java() {
   [ -z "$JDK_FOUND" ] || [ "$JDK_FOUND" -ge 21 ]
 }
 
-# 데몬을 띄울 java 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 한 줄만 남고,
-# 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
-require_java() {
-  have_java && return 0
-  python3 "$PLAN_PY" jdk-missing "$JDK" "$JDK_FOUND"
+# 데몬이 android.jar 를 찾는 Android SDK — 찾는 순서는 데몬(AndroidPlatforms.findJar)과 같아야 한다
+SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
+
+# 플랫폼 하나라도 android.jar 가 있어야 데몬이 뜬다. 폴더만 있는 SDK(플랫폼을 안 받음)도 없는 것이다
+have_sdk() {
+  local jar
+  for jar in "$SDK"/platforms/*/android.jar; do [ -f "$jar" ] && return 0; done
+  return 1
+}
+
+# 데몬을 띄울 java · SDK 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 나
+# 데몬 로그의 android.jar 한 줄만 남고, 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
+require_runtime() {
+  local nojdk="" nosdk=""
+  have_java || nojdk="$JDK"
+  have_sdk || nosdk="$SDK"
+  [ -z "$nojdk$nosdk" ] && return 0
+  python3 "$PLAN_PY" runtime-missing "$nojdk" "$JDK_FOUND" "$nosdk"
   exit 3
 }
 
@@ -447,8 +460,8 @@ health_json() {  # <파일>
     fi
   fi
   local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
-  local nojdk=""; have_java || nojdk="$JDK"
-  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND"
+  local nojdk="" nosdk=""; have_java || nojdk="$JDK"; have_sdk || nosdk="$SDK"
+  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk"
 }
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —
@@ -791,7 +804,7 @@ case "$cmd" in
   start)
     if [ -z "${PREVUE_PREPARATION:-}" ] && [ -z "$(daemon_key "$PORT")" ]; then
       if ! unreachable_daemons "$PORT" | grep -qx "$PORT"; then
-        require_java
+        require_runtime
         case " $* " in
           *' --fg '*) ;;
           *) exec python3 "$ROOT/bin/prevue_prepare.py" run start "$PORT" "$@" ;;
@@ -850,7 +863,7 @@ case "$cmd" in
       # 그 데몬을 내리면 그 앱의 보드와 편집을 잃는다(D-50). 내리지 않고 거절한다.
       echo "{\"ok\":false,\"error\":\"That seat ($PORT) has another app's daemon drawing $HAVE — drop --port to start in a free seat\"}"; exit 3
     fi
-    require_java
+    require_runtime
     # 같은 덤프 모듈의 다른 변형을 그리는 데몬은 내리고 띄운다 — 모듈 하나에 데몬 둘이면 힙만 두 벌이고 저장마다 둘 다 다시 그린다.
     # 디렉터리는 데몬마다 갈려(D-64) 지우기로 부딪히지는 않는다. 다른 앱의 데몬은 그대로 둔다(D-50).
     if [ -n "$WANT" ] && [ -n "${KEY:-}" ]; then
