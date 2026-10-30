@@ -1,0 +1,28 @@
+# 고정한다 — 올릴 때는 그 PR이 Prevue의 호환성 확인이다(Prevue 개발 문서 "버전 핀").
+# Kotlin · AGP · CMP는 공개 KMP 검증장(kotlinconf-app)과 같은 조합이다.
+[versions]
+agp = "9.3.3"
+kotlin = "2.4.21"
+composeMultiplatform = "1.12.1"
+material3 = "1.9.0"
+coreKtx = "1.19.0"
+activityCompose = "1.13.0"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
+compose-components-ui-tooling-preview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "composeMultiplatform" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

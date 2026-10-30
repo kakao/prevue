@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kind_fruit_tea">Fruit tea</string>
+    <string name="kind_milk_tea">Milk tea</string>
+    <string name="kind_matcha">Matcha</string>
+    <string name="kind_coffee">Coffee</string>
+    <string name="kind_smoothie">Smoothie</string>
+    <string name="kind_yogurt">Yogurt</string>
+</resources>
