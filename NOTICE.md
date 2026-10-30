@@ -30,20 +30,6 @@ Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributor
 
 Apache License 2.0
 
- **Android robot**
-
-https://developer.android.com/distribute/marketing-tools/brand-guidelines
-
-The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
-
-Creative Commons Attribution 3.0
-
- **Kotlin Multiplatform logo**
-
-https://kotlinlang.org/docs/kotlin-brand-assets.html
-
-Kotlin Multiplatform and its logo are trademarks of JetBrains s.r.o. The logo is used unmodified from the Kotlin brand assets.
-
 # Apache License 2.0 #
 
 ``````````
