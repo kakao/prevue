@@ -81,11 +81,25 @@ JDK="${PREVUE_JDK:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 # 포트마다 데몬 하나이므로 로그·pid도 포트별로 둔다 — 두 모듈을 같이 띄우면 겹친다.
 LOG="$DAEMON_DIR/daemon-$PORT.log"
 
+# JDK 의 주 버전(1.8 은 8). release 가 없으면 빈 값이다. 다시 묶은 JDK 는 JAVA_VERSION 이 둘일 수 있어 첫 줄만 본다
+jdk_major() {
+  sed -n -e 's/^JAVA_VERSION="1\.\([0-9]*\).*/\1/p' -e t -e 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$JDK/release" 2>/dev/null | head -1
+}
+
+# 데몬을 띄울 수 있는 JDK 인가 — layoutlib 이 Java 21 바이트코드라 21 미만은 setup · warmup 을 다 치른 뒤 데몬이 죽는다.
+# 버전을 모르면(release 없음) 막지 않는다. JDK_FOUND 에 찾은 주 버전을 둔다. Gradle JDK(gradle_jdk_of)는 17 도 되므로 쓰지 않는다
+have_java() {
+  JDK_FOUND=""
+  [ -x "$JDK/bin/java" ] || return 1
+  JDK_FOUND="$(jdk_major)"
+  [ -z "$JDK_FOUND" ] || [ "$JDK_FOUND" -ge 21 ]
+}
+
 # 데몬을 띄울 java 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 한 줄만 남고,
 # 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
 require_java() {
-  [ -x "$JDK/bin/java" ] && return 0
-  python3 "$PLAN_PY" jdk-missing "$JDK"
+  have_java && return 0
+  python3 "$PLAN_PY" jdk-missing "$JDK" "$JDK_FOUND"
   exit 3
 }
 
@@ -310,7 +324,7 @@ AOT_DIR="${PREVUE_HOME:-$HOME/.prevue}/aot"
 aot_args() {  # <java 플래그 …> — AOT 배열 · AOT_CACHE · AOT_LOCK 을 채운다
   AOT=(); AOT_CACHE=""; AOT_LOCK=""
   [ "${PREVUE_AOT:-1}" = 0 ] && return
-  local major; major="$(sed -n 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$JDK/release" 2>/dev/null)"
+  local major; major="$(jdk_major)"
   [ "${major:-0}" -ge 25 ] 2>/dev/null || return
   mkdir -p "$AOT_DIR" || return
   local key; key="$({ printf '%s\n' "$JDK" "$@"; cksum < "$JDK/release"; } | cksum | awk '{print $1}')"
@@ -433,8 +447,8 @@ health_json() {  # <파일>
     fi
   fi
   local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
-  local nojdk=""; [ -x "$JDK/bin/java" ] || nojdk="$JDK"
-  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk"
+  local nojdk=""; have_java || nojdk="$JDK"
+  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND"
 }
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —

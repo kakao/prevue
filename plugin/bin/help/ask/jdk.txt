@@ -1,1 +1,1 @@
-Drawing previews needs Java 21 or later, and there is none at {jdk}. Install JDK 21 or later (Android Studio also brings one), set PREVUE_JDK to that JDK's home folder (on macOS, the one that ends in Contents/Home), and ask me again.
+Install JDK 21 or later (Android Studio Ladybug or newer also brings one), set PREVUE_JDK to that JDK's home folder (on macOS, the one that ends in Contents/Home), and ask me again.

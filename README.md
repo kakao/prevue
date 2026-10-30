@@ -103,7 +103,7 @@ Even when two agents save at the same time, each window redraws on its own, and 
 
 Installing takes two commands.
 
-If Android Studio is installed, there's no Java to set up, even if your project uses JDK 17. Without Android Studio, install JDK 21 or later and set `PREVUE_JDK` to its path. You also need the macOS Command Line Tools (`python3`); if they're missing, the agent opens the installer for you.
+If Android Studio Ladybug (2024.2) or newer is installed, there's no Java to set up, even if your project uses JDK 17. Older Android Studio releases bring Java 17, which the preview server can't run on. Without Android Studio, install JDK 21 or later and set `PREVUE_JDK` to its path. You also need the macOS Command Line Tools (`python3`); if they're missing, the agent opens the installer for you.
 
 ```sh
 # Claude Code
