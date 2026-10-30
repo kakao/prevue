@@ -102,7 +102,7 @@ git log -1 --oneline                 # origin/develop 의 끝인지 본다 — �
   - 단위 테스트 `(cd plugin && ./gradlew --offline test)` · CLI 판정 `python3 -m unittest discover -s tests/cli` · 스킬 두 벌 `sh tools/gen-skills.sh --check`
   - 렌더는 **이 워크트리의** `plugin/bin/prevue`로 본다(`AGENTS.md` "브랜치와 워크트리").
   - 뷰어는 헤드리스 Chrome으로 본다. 모션 느낌 · Safari처럼 사람 눈이 필요한 것은 "사람 확인 전"으로 적어 두고 막지 않는다.
-- 사용자에게 보이는 변화는 `CHANGELOG.md` `[Unreleased]`에 적는다.
+- 사용자에게 보이는 변화는 `CHANGELOG.md` `[Unreleased]`에 적는다 — 무엇을 어떤 모양으로 쓰나, 외부 제보 · 기여를 어떻게 멘션하나는 `dev-skills-src/release-notes.md`가 갖는다. 그 항목이 곧 GitHub Release 본문이다.
 - 검증장 · 대상 체크아웃은 `AGENTS.md` "개발 위생"을 따른다.
 - 커밋은 조각마다. 끝에 세션의 공동 저자 줄을 붙인다.
 
