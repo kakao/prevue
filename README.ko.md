@@ -101,7 +101,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 
 설치는 명령 두 줄이면 됩니다.
 
-Android Studio Ladybug(2024.2) 이상이 설치되어 있으면 따로 준비할 Java가 없습니다. 프로젝트가 JDK 17이어도 괜찮습니다. 그보다 오래된 Android Studio는 Java 17을 들고 와서 프리뷰 서버를 띄울 수 없습니다. Android Studio가 없으면 JDK 21 이상을 설치하고 `PREVUE_JDK`에 그 경로를 넣어 주세요. Android SDK도 플랫폼을 하나 이상 받아 두고, `~/Library/Android/sdk`가 아니면 `ANDROID_HOME`에 그 경로를 넣어 주세요. macOS Command Line Tools(`python3`)도 필요한데, 없으면 에이전트가 설치 창을 열어 줍니다.
+Android Studio Ladybug(2024.2) 이상이 설치되어 있으면 따로 준비할 Java가 없습니다. 프로젝트가 JDK 17이어도 괜찮습니다. 그보다 오래된 Android Studio는 Java 17을 들고 와서 프리뷰 서버를 띄울 수 없습니다. Android Studio가 없으면 JDK 21 이상을 설치하세요. `brew install openjdk@25`는 sudo 없이 설치되고, Prevue가 그 자리(또는 `Library/Java/JavaVirtualMachines` · SDKMAN)에서 스스로 찾습니다. 25 이상이면 콜드 시작이 1초쯤 빠릅니다. 다른 JDK를 쓰고 싶을 때만 `PREVUE_JDK`에 경로를 넣어 주세요. Android SDK도 플랫폼을 하나 이상 받아 두고, `~/Library/Android/sdk`가 아니면 `ANDROID_HOME`에 그 경로를 넣어 주세요. macOS Command Line Tools(`python3`)도 필요한데, 없으면 에이전트가 설치 창을 열어 줍니다.
 
 ```sh
 # Claude Code

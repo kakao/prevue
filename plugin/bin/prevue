@@ -77,7 +77,19 @@ open_viewer() {
   return 0
 }
 
-JDK="${PREVUE_JDK:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
+# 데몬을 띄울 JDK — PREVUE_JDK, 없으면 AS 의 JBR 과 흔한 설치 자리에서 찾는다(bin/jdk_find.py, D-130). 찾는 데 python 을 한 번
+# 부르므로(60~130ms) JDK 를 쓰는 명령만 정하고, 정한 것을 PREVUE_JDK_RESOLVED 로 자식 프로세스(start 가 다시 부르는 start)에 넘긴다.
+# JDK_FROM 은 PREVUE_JDK · ok · old · none(다 찾아봤는데 없다) · error(찾기 자체가 실패 — 다 찾아봤다고 말하지 않는다)
+JDK=""; JDK_FROM=""
+jdk_resolve() {
+  [ -n "$JDK_FROM" ] && return 0
+  if [ -n "${PREVUE_JDK:-}" ]; then JDK="$PREVUE_JDK"; JDK_FROM=PREVUE_JDK; return 0; fi
+  local line="${PREVUE_JDK_RESOLVED:-}"
+  [ -n "$line" ] || line="$(python3 "$ROOT/bin/jdk_find.py")"
+  JDK="${line%%$'\t'*}"; JDK_FROM="${line##*$'\t'}"
+  [ -n "$JDK" ] && [ "$JDK_FROM" != "$line" ] || { JDK="/Applications/Android Studio.app/Contents/jbr/Contents/Home"; JDK_FROM=error; }
+  export PREVUE_JDK_RESOLVED="$JDK"$'\t'"$JDK_FROM"
+}
 # 포트마다 데몬 하나이므로 로그·pid도 포트별로 둔다 — 두 모듈을 같이 띄우면 겹친다.
 LOG="$DAEMON_DIR/daemon-$PORT.log"
 
@@ -89,6 +101,7 @@ jdk_major() {
 # 데몬을 띄울 수 있는 JDK 인가 — layoutlib 이 Java 21 바이트코드라 21 미만은 setup · warmup 을 다 치른 뒤 데몬이 죽는다.
 # 버전을 모르면(release 없음) 막지 않는다. JDK_FOUND 에 찾은 주 버전을 둔다. Gradle JDK(gradle_jdk_of)는 17 도 되므로 쓰지 않는다
 have_java() {
+  jdk_resolve
   JDK_FOUND=""
   [ -x "$JDK/bin/java" ] || return 1
   JDK_FOUND="$(jdk_major)"
@@ -112,7 +125,7 @@ require_runtime() {
   have_java || nojdk="$JDK"
   have_sdk || nosdk="$SDK"
   [ -z "$nojdk$nosdk" ] && return 0
-  python3 "$PLAN_PY" runtime-missing "$nojdk" "$JDK_FOUND" "$nosdk"
+  python3 "$PLAN_PY" runtime-missing "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
   exit 3
 }
 
@@ -182,11 +195,12 @@ gradle_jdk_of() {  # <repo> -> "<경로>\t<출처>"
   v="$(sed -n 's/^org\.gradle\.java\.home=//p' "$repo/gradle.properties" 2>/dev/null | head -1)"
   [ -n "$v" ] && [ -x "$v/bin/java" ] && { printf '%s\t%s' "$v" "gradle.properties"; return; }
   # 프로젝트 기록도 빌드 로그도 없으면 ./gradlew 가 이 셸에서 스스로 고를 JDK(JAVA_HOME → PATH 의 java)로 짐작한다 —
-  # AS 가 동기화한 저장소라면 위의 config.properties 가 있었을 것이다. 셸에 java 가 없을 때만 AS 번들 JBR.
+  # AS 가 동기화한 저장소라면 위의 config.properties 가 있었을 것이다. 셸에 java 가 없을 때만 데몬의 JDK.
   [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ] && { printf '%s\t%s' "$JAVA_HOME" "JAVA_HOME (guessed — no project record or build log)"; return; }
   v="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.home = //p' | head -1)"
   [ -n "$v" ] && [ -x "$v/bin/java" ] && { printf '%s\t%s' "$v" "java on PATH (guessed — no project record or build log)"; return; }
-  [ -x "$JDK/bin/java" ] && { printf '%s\t%s' "$JDK" "AS bundled JBR (guessed — no java in the shell)"; return; }
+  jdk_resolve
+  [ -x "$JDK/bin/java" ] && { printf '%s\t%s' "$JDK" "the daemon's JDK (guessed — no java in the shell)"; return; }
   printf '%s\t%s' "" "none"
 }
 
@@ -461,7 +475,7 @@ health_json() {  # <파일>
   fi
   local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
   local nojdk="" nosdk=""; have_java || nojdk="$JDK"; have_sdk || nosdk="$SDK"
-  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk"
+  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
 }
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —
@@ -560,6 +574,7 @@ export PREVUE_LANG="${PREVUE_LANG:-}"
 # 그리고 대개는 아무도 --port 를 안 쓴다. 이 호출이 **어느 저장소를 말하는지**를 먼저 정하고,
 # 자리는 그 저장소에서 계산한다(port_of). 에이전트가 포트를 기억할 일이 없어지고,
 # 기억이 틀려 남의 데몬에게 말하는 길이 닫힌다.
+case "$cmd" in health|setup|warmup|start) jdk_resolve ;; esac
 case "$cmd" in
   resolve|health|setup|warmup|paths) ;;          # 데몬에 말하지 않는다. health 는 자리를 스스로 본다
   stop) case "${1:-}" in --all|--mine) ;; *) RESOLVE_SEAT=1 ;; esac ;;   # --all·--mine 은 저장소를 안 가리킨다
@@ -639,7 +654,7 @@ case "$cmd" in
     fi
     HAD=false; [ -s "$ENV_FILE" ] && HAD=true
     # 래퍼는 JAVA_HOME 을 따른다. 없으면 데몬이 쓰는 것과 같은 JBR 을 준다 — 셸의 java 가 17 인 것이 AGP 세계의 기본값이다.
-    [ -n "${JAVA_HOME:-}" ] || { [ -d "$JDK" ] && export JAVA_HOME="$JDK"; }
+    [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
       if ! (cd "$ROOT" && ./gradlew installPrevue -q --offline) >&2; then
@@ -826,7 +841,7 @@ case "$cmd" in
         exit 1
       fi
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
-      [ -n "${JAVA_HOME:-}" ] || { [ -d "$JDK" ] && export JAVA_HOME="$JDK"; }
+      [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
       (cd "$ROOT" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
     [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" with-lang; exit 3; }

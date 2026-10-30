@@ -13,7 +13,7 @@ from test_plan import Case, fake_jdk, fake_sdk
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
 
-class DaemonJdk(Case):
+class JdkCase(Case):
     def setUp(self):
         super().setUp()
         self.r = self.repo(":app")
@@ -27,6 +27,8 @@ class DaemonJdk(Case):
     def jdk(self, name, version=None):
         return fake_jdk(os.path.join(self.tmp.name, name), version)
 
+
+class DaemonJdk(JdkCase):
     def health(self, jdk):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=jdk,
                    ANDROID_HOME=self.sdk)
@@ -69,6 +71,47 @@ class DaemonJdk(Case):
         out = self.health(os.path.join(self.tmp.name, "nowhere"))
         self.assertEqual(out["missing"][0], "jdk")
         self.assertNotIn("jdkVersion", out)
+        self.assertNotIn("jdkSearched", out)
+
+
+class FoundJdk(JdkCase):
+    """PREVUE_JDK 없이 — 흔한 설치 자리를 찾는다(D-130). PREVUE_JDK_SEARCH 로 자리를 이 테스트의 폴더로 바꿔
+    이 머신의 진짜 설치본(AS · Homebrew)을 보지 않는다."""
+
+    def health(self, jdk=None):
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), ANDROID_HOME=self.sdk,
+                   PREVUE_JDK_SEARCH=os.path.join(self.tmp.name, "jvms", "*"))
+        for k in ("PREVUE_JDK", "PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED"):
+            env.pop(k, None)
+        p = subprocess.run([str(ROOT / "bin/prevue"), "health", self.file], capture_output=True, text=True,
+                           cwd=self.tmp.name, env=env)
+        return json.loads(p.stdout)
+
+    def test_아무것도_없으면_다_찾아봤다고_말하고_brew_명령을_준다(self):
+        out = self.health()
+        self.assertEqual((out["missing"][0], out.get("jdkSearched")), ("jdk", True), out)
+        self.assertIn("none was found", out["tell"])
+        self.assertIn("brew install openjdk@25", out["tell"])
+        self.assertIn("about a second faster", out["tell"])
+
+    def test_안내대로_깐_뒤_같은_명령이_그_JDK_를_찾는다(self):
+        self.assertEqual(self.health()["missing"][0], "jdk")
+        self.jdk("jvms/openjdk@25", "25.0.5")
+        out = self.health()
+        self.assertNotIn("jdk", out["missing"], out)
+
+    def test_start_도_다_찾아봤다고_말한다(self):
+        p = subprocess.run(["python3", str(ROOT / "bin/prevue_plan.py"), "runtime-missing", "/nowhere", "", "", "none"],
+                           capture_output=True, text=True)
+        out = json.loads(p.stdout)
+        self.assertEqual((out["missing"], out["jdkSearched"]), (["jdk"], True), out)
+        self.assertIn("brew install openjdk@25", out["tell"])
+
+    def test_21_미만만_찾으면_그_판을_말한다(self):
+        old = self.jdk("jvms/corretto-18", "18.0.2")
+        out = self.health()
+        self.assertEqual((out["missing"][0], out["jdk"], out["jdkVersion"]), ("jdk", old, "18"), out)
+        self.assertNotIn("jdkSearched", out)
 
 
 if __name__ == "__main__":
