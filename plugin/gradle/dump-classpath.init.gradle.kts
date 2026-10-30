@@ -33,6 +33,36 @@ fun kmpAndroidRoots(m: KotlinModule?, variant: String): List<String>? = runCatch
         .distinct()
 }.getOrNull()
 
+// 새 모양 KMP 모듈은 android 확장이 없어 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 실패 문구에 그 앱들과
+// debug 계열 변형을 실어 CLI 가 Gradle 을 한 번 더 불러 앱을 뜨게 한다. 앱을 다른 곳에서 알 길이 없는 새 클론의 첫 warmup 이 이 길이다.
+// 프로젝트 의존을 따라가므로 평가된 프로젝트만 본다 — configure-on-demand 저장소에서는 앱이 평가 전이라 비어 있을 수 있다.
+fun kmpHosts(p: Project, targetPath: String): Map<String, List<String>> = runCatching {
+    // 테스트 구성(testImplementation · androidTestImplementation · commonTestImplementation …)만 뺀다 — 플레이버 이름에 든 test(latest)는 남긴다
+    val declares = Regex("(?i).*(implementation|api|runtimeOnly)$")
+    fun isTest(name: String) = name.startsWith("test") || name.contains("Test")
+    fun deps(q: Project): List<String> = q.configurations
+        .filter { declares.matches(it.name) && !isTest(it.name) }
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .mapNotNull { d ->
+            // 외부: Gradle 9 는 ProjectDependency.getDependencyProject 를 없앴고 getPath 는 8.11 부터 있다
+            runCatching { d.javaClass.getMethod("getPath").invoke(d) as String }
+                .getOrElse { runCatching { (d.javaClass.getMethod("getDependencyProject").invoke(d) as Project).path }.getOrNull() }
+        }
+    // 거꾸로 따라간다 — 프로젝트마다 구성을 한 번만 훑고, 이 모듈을 쓰는 쪽으로 올라가며 앱을 모은다
+    val users = mutableMapOf<String, MutableSet<String>>()
+    for (q in p.rootProject.allprojects) for (d in deps(q)) users.getOrPut(d) { mutableSetOf() }.add(q.path)
+    val seen = mutableSetOf(targetPath)
+    val todo = ArrayDeque(listOf(targetPath))
+    while (todo.isNotEmpty()) for (u in users[todo.removeFirst()].orEmpty()) if (seen.add(u)) todo.add(u)
+    seen.mapNotNull { p.rootProject.findProject(it) }
+        .filter { it.path != targetPath && it.plugins.hasPlugin("com.android.application") }
+        .sortedBy { it.path }
+        .associate { app ->
+            app.path to app.configurations.names.filter { it.endsWith("RuntimeClasspath") }
+                .map { it.removeSuffix("RuntimeClasspath") }.filter { it.contains("ebug") }.sorted()
+        }
+}.getOrDefault(emptyMap())
+
 // 대상은 0부터 번호 붙은 prevue.project.N · prevue.variant.N · prevue.out.N. 라이브러리 모듈과 리소스를 빌릴 앱을 Gradle 한 번에 뜬다 —
 // 모듈 덤프의 태스크는 앱 덤프의 부분집합이라 고정비(기동 · 설정)만 한 번 빠진다. 값을 한 속성에 이어 붙이지 않는다 — 출력 경로에는 어떤 글자든 온다.
 class Target(val path: String, val variant: String, val out: String)
@@ -117,7 +147,10 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val androidExt = p.extensions.findByName("android") ?: error(
             when {
                 kmpAndroidRoots(kotlinModules[p.path], variant) != null ->
-                    "$targetPath is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of the app module and this module's previews come up from that dump"
+                    "$targetPath is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of the app module and this module's previews come up from that dump" +
+                        kmpHosts(p, targetPath).takeIf { it.isNotEmpty() }?.let { hs ->
+                            " — apps that include it: " + hs.entries.joinToString("; ") { (h, vs) -> "$h [${vs.joinToString(", ")}]" }
+                        }.orEmpty()
                 p.extensions.findByName("kotlin")?.javaClass?.name.orEmpty().contains("Multiplatform") ->
                     "$targetPath is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Add an Android library target to draw them"
                 else -> "$targetPath has no android extension"

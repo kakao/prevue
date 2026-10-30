@@ -24,7 +24,7 @@ PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "
 
 # 가짜 gradlew — 부를 때마다 대상(-Dprevue.project.N · variant.N · out.N)을 한 줄 적고, 대상마다 덤프를, -Dprevue.timing 에 단계 시각을 쓴다.
 # FAKE_FAIL_BOTH 가 있으면 대상이 둘인 부름은 실패한다(합친 호출이 실패하는 경우). FAKE_NO_CLASSPATH 면 덤프에 classPath 가 없다
-# (warmup 의 응답을 못 만드는 덤프).
+# (warmup 의 응답을 못 만드는 덤프). FAKE_KMP({모듈: 담은 앱 문구})에 든 모듈은 새 모양 KMP 모듈처럼 덤프 스크립트의 실패를 낸다.
 FAKE = r'''#!/usr/bin/env python3
 import json, os, sys, time
 props, timing = {}, ""
@@ -35,6 +35,14 @@ targets = []
 while "project.%d" % len(targets) in props:
     i = len(targets); targets.append((props["project.%d" % i], props["variant.%d" % i], props["out.%d" % i]))
 with open(os.environ["FAKE_LOG"], "a") as f: f.write(";".join("|".join(t) for t in targets) + "\n")
+kmp = json.loads(os.environ.get("FAKE_KMP") or "{}")
+for m, v, out in targets:
+    if m in kmp:
+        sys.stderr.write("FAILURE: Build failed with an exception.\n\n* What went wrong:\nCould not create task '%s:prevueDumpClasspath'.\n"
+                         "> %s is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file "
+                         "of the app module and this module's previews come up from that dump%s\n\n* Try:\n> Run with --stacktrace\n"
+                         % (m, m, " — apps that include it: " + kmp[m] if kmp[m] else ""))
+        sys.exit(1)
 if os.environ.get("FAKE_FAIL_BOTH") and len(targets) > 1:
     sys.stderr.write("FAILURE: 가짜 실패\n"); sys.exit(1)
 apks = json.loads(os.environ["FAKE_APKS"])
@@ -74,9 +82,9 @@ class Warmup(unittest.TestCase):
         os.chmod(g, 0o755)
         return r
 
-    def warmup(self, r, *args, fail_both=False, no_perl=False, old_date=False, no_classpath=False, file=None, cwd=None):
+    def warmup(self, r, *args, fail_both=False, no_perl=False, old_date=False, no_classpath=False, file=None, cwd=None, kmp=None):
         env = {k: v for k, v in os.environ.items() if not k.startswith("CODEX")}
-        env.update(HOME=self.home, FAKE_LOG=self.log, FAKE_APKS=json.dumps({":app": self.apk}))
+        env.update(HOME=self.home, FAKE_LOG=self.log, FAKE_APKS=json.dumps({":app": self.apk}), FAKE_KMP=json.dumps(kmp or {}))
         if fail_both:
             env["FAKE_FAIL_BOTH"] = "1"
         if no_classpath:
@@ -258,6 +266,57 @@ class Warmup(unittest.TestCase):
         self.assertTrue(out["classpath"].startswith(self.home) and os.path.exists(out["resourcesClasspath"]))
 
 
+    def kmp_repo(self, app_holds):
+        """:core:ui 가 새 모양 KMP 모듈(androidMain)이고 :app 이 빌드된 저장소. app_holds 면 :app 의 지난 덤프가 :core:ui 를 담는다."""
+        r = self.repo(built=False)
+        own = r.built(":core:ui", "androidMain", when=time.time())
+        r.built(":app", "debug", when=time.time())
+        if app_holds:
+            d = os.path.join(self.home, ".prevue", "projects", P.repo_key(r.root))
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "app-debug.json"), "w") as f:
+                json.dump({"project": ":app", "variant": "debug", "classPath": [own]}, f)
+        return r
+
+    def test_KMP_모듈은_담은_앱을_알면_모듈을_뜨지_않고_앱만_뜬다(self):
+        r = self.kmp_repo(app_holds=True)
+        f = r.src(":core:ui")
+        rc, out = self.warmup(r, file=f, kmp={":core:ui": ":app [debug]"})
+        self.assertEqual(rc, 0, out)
+        self.assertEqual([c.split("|")[:2] for c in self.calls()], [[":app", "debug"]])
+        self.assertEqual((out["module"], out["gradle"]["calls"]), (":app", 1))
+        self.assertTrue(out["next"].endswith("--show " + f), out["next"])
+        self.assertNotIn("--resources-from", out["next"])
+
+    def test_KMP_모듈의_리소스_APK_앱이_그_모듈을_담는지_모르면_모듈_덤프의_실패로_가린다(self):
+        for given in ((), ("--resources-from", ":app")):
+            with self.subTest(given=given):
+                open(self.log, "w").close()
+                rc, out = self.warmup(self.kmp_repo(app_holds=False), *given, kmp={":core:ui": ":app [debug]"})
+                self.assertEqual(rc, 0, out)
+                self.assertEqual([c.split("|")[:2] for c in self.calls()], [[":core:ui", "androidMain"], [":app", "debug"]])
+
+    def test_KMP_모듈을_처음_뜨면_실패가_알려_준_앱으로_다시_뜬다(self):
+        r = self.repo(built=False)
+        os.remove(self.apk)                                                  # 새 클론 — 리소스 APK 도 없다
+        rc, out = self.warmup(r, kmp={":core:ui": ":app [benchmarkDebug, debug]"})
+        self.assertEqual(rc, 0, out)
+        self.assertEqual([c.split("|")[:2] for c in self.calls()], [[":core:ui", "debug"], [":app", "debug"]])
+        self.assertEqual((out["ok"], out["module"], out["gradle"]["calls"]), (True, ":app", 2))
+        self.assertTrue(out["classpath"].endswith("app-debug.json"))
+
+    def test_KMP_모듈을_담은_앱이_여럿이면_고르게_하고_멈춘다(self):
+        rc, out = self.warmup(self.repo(built=False), kmp={":core:ui": ":app [debug]; :tb [debug]"})
+        self.assertEqual((rc, out.get("need")), (2, "choose"), out)
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_KMP_모듈의_앱을_못_찾으면_지금_안내로_멈춘다(self):
+        rc, out = self.warmup(self.repo(built=False), kmp={":core:ui": ""})
+        self.assertEqual(rc, 1, out)
+        self.assertIn("Warm up with a file of the app module", out["error"])
+        self.assertEqual(len(self.calls()), 1)
+
+
 class Combine(unittest.TestCase):
     """이 모듈과 리소스 앱을 Gradle 한 번에 뜰지 — 실패할 근거가 보이면 합치지 않는다."""
 
@@ -287,11 +346,11 @@ class Combine(unittest.TestCase):
     def test_변형을_받았으면_셸이_고른_JDK로_정한다(self):
         self.r.built(":app", "debug")
         self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "debug", ":app", "", "/jdk\t출처"),
-                         ("debug", "given", "/jdk", "출처", "debug"))
+                         ("debug", "given", "/jdk", "출처", "debug", "", ""))
 
     def test_변형을_안_받았으면_plan_의_변형과_JDK로_정한다(self):
         plan = json.dumps({"variant": "debug", "variantChosenBy": "fresh", "gradleJdk": None, "gradleJdkFrom": "없음"})
-        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "", "", plan, ""), ("debug", "fresh", "", "없음", ""))
+        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "", "", plan, ""), ("debug", "fresh", "", "없음", "", "", ""))
 
     def test_plan_이_변형을_못_찍었으면_정하지_않는다(self):
         for plan in (json.dumps({"variant": None, "need": "choose"}), "gradlew not found"):

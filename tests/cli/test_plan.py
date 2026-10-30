@@ -1063,7 +1063,7 @@ class Own(unittest.TestCase):
                          ("0.10.0", None, None))
 
 
-class GradleFailure(unittest.TestCase):
+class GradleFailure(Case):
     def test_안쪽_원인을_읽는다(self):
         # 첫 "> " 줄은 껍데기다. 마지막 들여쓴 줄이 진짜 이유다
         self.assertEqual(P.gradle_why(fixture("gradle-variant-missing.txt")),
@@ -1073,17 +1073,55 @@ class GradleFailure(unittest.TestCase):
         self.assertEqual(P.gradle_why(fixture("gradle-compile-failed.txt")), "Compilation error. See log for more details")
 
     def test_후보가_있으면_규칙으로_다시_뜬다(self):
-        retry, resp = P.dump_failure(fixture("gradle-variant-missing.txt"), ":feature:foryou:impl", "debug", False)
-        self.assertEqual(retry, "demoDebug")
+        retry, host, resp = P.dump_failure(fixture("gradle-variant-missing.txt"), ":feature:foryou:impl", "debug", False)
+        self.assertEqual((retry, host), ("demoDebug", ""))
         self.assertIn("debug variant candidates", resp["error"])
 
     def test_변형을_받았으면_다시_고르지_않는다(self):
         self.assertEqual(P.dump_failure(fixture("gradle-variant-missing.txt"), ":m", "debug", True)[0], "")
 
     def test_이유가_없으면_확인할_것을_말한다(self):
-        retry, resp = P.dump_failure(fixture("gradle-no-reason.txt"), ":app", "debug", False)
-        self.assertEqual(retry, "")
+        retry, host, resp = P.dump_failure(fixture("gradle-no-reason.txt"), ":app", "debug", False)
+        self.assertEqual((retry, host), ("", ""))
         self.assertEqual(resp["error"], "the classpath dump failed — check the module name and variant (:app / debug)")
+
+
+    def kmp(self, hosts, resfrom="", repo=""):
+        why = (":app:ui is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of "
+               "the app module and this module's previews come up from that dump" + (" — apps that include it: " + hosts if hosts else ""))
+        err = fixture("gradle-variant-missing.txt").replace(
+            ":feature:foryou:impl has no variant 'debug' — debug variant candidates: prodDebug, demoDebug", why)
+        return P.dump_failure(err, ":app:ui", "debug", False, resfrom, "/r/app/ui/src/commonMain/kotlin/A.kt", repo)
+
+    def test_KMP_모듈을_담은_앱이_하나면_그_앱을_규칙대로_뜬다(self):
+        self.assertEqual(self.kmp(":app:android [benchmarkDebug, debug]")[:2], ("", ":app:android|debug"))
+        self.assertEqual(self.kmp(":app:android [prodDebug, demoDebug]")[:2], ("", ":app:android|demoDebug"))
+
+    def test_KMP_모듈을_담은_앱이_여럿이면_고르게_한다(self):
+        retry, host, resp = self.kmp(":k9 [debug]; :tb [debug]")
+        self.assertEqual((retry, host, resp["need"], resp["choose"]), ("", "", "choose", ["resourcesFrom"]))
+        self.assertEqual(resp["next"], "prevue warmup /r/app/ui/src/commonMain/kotlin/A.kt --resources-from <:k9|:tb>")
+        self.assertIn("ask", resp)
+
+    def test_KMP_모듈의_앱을_사람이_골랐으면_그것을_뜬다(self):
+        self.assertEqual(self.kmp(":k9 [debug]; :tb [fossDebug]", "tb")[1], ":tb|fossDebug")
+        self.assertEqual(self.kmp("", ":app")[1], ":app|debug")          # 앱이 평가 전이라 못 찾았다(configure-on-demand)
+
+    def test_KMP_모듈의_앱을_못_찾았는데_사람이_골랐으면_그_앱에서_관찰된_변형을_뜬다(self):
+        r = self.repo(":app", ":app:ui")
+        r.built(":app", "fossDebug")
+        self.assertEqual(self.kmp("", ":app", r.root)[1], ":app|fossDebug")
+
+    def test_KMP_모듈을_담지_않은_앱을_골랐으면_담은_앱들_중에서_다시_고르게_한다(self):
+        for hosts in (":k9 [debug]; :tb [debug]", ":k9 [debug]"):
+            retry, host, resp = self.kmp(hosts, ":wear")
+            self.assertEqual((host, resp["need"]), ("", "choose"), hosts)
+            self.assertTrue(resp["error"].startswith(":wear doesn't include :app:ui"), resp["error"])
+
+    def test_KMP_모듈을_담은_앱을_못_찾으면_지금_안내로_멈춘다(self):
+        retry, host, resp = self.kmp("")
+        self.assertEqual((retry, host), ("", ""))
+        self.assertIn("Warm up with a file of the app module", resp["error"])
 
 
 class WarmupResources(Case):

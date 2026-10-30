@@ -8,6 +8,8 @@ If a viewer tab was viewing this daemon, --show opens no new preparation screen 
 It doesn't change the target repository's build files (the script is injected from outside). The variant is the debug variant compiled most recently in that module —
 if that's wrong it shows the moment the screen comes up, and then change it with --variant. A clean repository guesses debug, and if Gradle names candidates it picks once more by the same rule.
 If there are several resource APK candidates it narrows them to the apps containing this module, and if still several it comes back with need:"choose" and ask · options — giving the chosen one as --resources-from remembers it.
+A file of a KMP module (com.android.kotlin.multiplatform.library) is drawn from the dump of the Android app that includes it, so it takes that app's dump instead (module in the response is the app).
+If the app isn't known yet (a fresh clone), the first Gradle call finds it and Gradle runs once more for the app. If several apps include it, it comes back with need:"choose" — give the chosen one as --resources-from.
 --module only when the derivation is wrong (a repository that moved projectDir). With only --module it finds the repository from the current directory — giving the file is safer.
 The dump records fingerprints of the build files (settings · root · that module's build.gradle, gradle.properties, libs.versions.toml) — when they change, health asks to take the dump again.
 If a daemon started by this checkout (including other agents with the same release installed) is drawing that module, it is stopped (stoppedDaemons) — it holds the old dump, so next's start starts a new one. Daemons of other checkouts are only reported in otherDaemons.
@@ -25,5 +27,6 @@ When it fails
   compileClassPath came out empty — runtime jars have no .kotlin_module, so top-level functions can't be found. Take it again
   It picked a release variant — give a debug variant with --variant (release · minify strip the source info that links clicks to code)
   The module has no android extension — it doesn't apply to pure JVM modules
-  It is a KMP module — warm up with a file of the Android app module that includes it. The app dump also watches commonMain · androidMain and draws that module's previews
+  It is a KMP module — no app including it was found (a repository with configure-on-demand doesn't configure the app). Give the app module as --resources-from, or warm up with a file of the app module.
+  The app dump also watches commonMain · androidMain and draws that module's previews
   It is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Pass it on to the person as is

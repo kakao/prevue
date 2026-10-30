@@ -917,19 +917,59 @@ def gradle_why(err):
     return last
 
 
-def dump_failure(err, module, variant, variant_given):
-    """(다시 뜰 변형 또는 "", 오류 응답). clean 저장소는 관찰할 이름이 없어 "debug" 로 짐작했다.
+def _colon(module):
+    """모듈 경로는 콜론으로 시작한다 — 사람은 app 처럼 적기도 한다. 비었으면 그대로."""
+    return ":" + module.lstrip(":") if module else ""
+
+
+KMP_HOSTED = "is a KMP module — it is drawn from the dump of the Android app module"
+
+
+def kmp_hosts(why):
+    """덤프 스크립트가 KMP 모듈 실패에 실은 {앱: debug 계열 변형 후보}. KMP 실패가 아니면 None, 앱을 못 찾았으면 {}."""
+    if KMP_HOSTED not in why:
+        return None
+    m = re.search(r"apps that include it: (.*)$", why)
+    hosts = {}
+    for h in re.finditer(r"(:\S+) \[([^\]]*)\]", m.group(1) if m else ""):
+        hosts[h.group(1)] = [n for n in re.split(r"[\s,]+", h.group(2)) if n]
+    return hosts
+
+
+def dump_failure(err, module, variant, variant_given, resfrom="", file="", repo=""):
+    """(다시 뜰 변형 또는 "", 대신 뜰 앱 "<앱>|<변형>" 또는 "", 오류 응답). clean 저장소는 관찰할 이름이 없어 "debug" 로 짐작했다.
     Gradle 이 실재하는 debug 계열 후보를 말해 주면 같은 규칙으로 한 번만 다시 고른다 — 사람에게 묻지 않는다(AS 도 묻지 않는다).
+    새 모양 KMP 모듈은 자기 덤프가 없다 — 그 모듈을 담은 앱이 하나면(사람이 고른 것이 있으면 그것) 그 앱을 뜨고, 여럿이면 고르게 한다.
+    사람이 고른 앱이 그 모듈을 담지 않으면 담은 앱들 중에서 다시 고르게 한다 — 조용히 바꾸면 고른 것이 사라진다.
     """
     why = gradle_why(err) or "check the module name and variant (%s / %s)" % (module, variant)
     resp = {"ok": False, "error": "the classpath dump failed — %s" % why, "hint": "details are in the Gradle output above"}
+    hosts = kmp_hosts(why)
+    if hosts is not None:
+        resfrom = _colon(resfrom)
+        if resfrom and (resfrom in hosts or not hosts):
+            host = resfrom
+        elif len(hosts) == 1 and not resfrom:
+            host = next(iter(hosts))
+        elif hosts:
+            left = sorted(hosts)
+            error = ("%s doesn't include %s — " % (resfrom, module) if resfrom else "%s is included by more than one app — " % module) + \
+                "%s is a KMP module drawn from the dump of an app that includes it; choose that app via --resources-from" % module
+            return "", "", with_ask({"ok": False, "need": "choose", "choose": ["resourcesFrom"], "module": module, "error": error,
+                                     "next": "prevue warmup %s --resources-from <%s>" % (file or "--module " + module, "|".join(left))},
+                                    [], "")
+        else:
+            return "", "", resp
+        # 앱을 못 찾았는데(configure-on-demand) 사람이 골랐으면 후보가 없다 — 그 앱에서 관찰된 변형을 본다
+        hv = pick(hosts.get(host, []))[0] or (resource_variant(repo, host, "debug") if repo else "") or "debug"
+        return "", "%s|%s" % (host, hv), resp
     retry = ""
     m = re.search(r"debug variant candidates: (.*)", why)
     if not variant_given and m:
         retry = pick([n for n in re.split(r"[\s,]+", m.group(1)) if n])[0]
         if retry == variant:
             retry = ""
-    return retry, resp
+    return retry, "", resp
 
 
 def warmup_resources(repo, module, variant, classpath, given, file=""):
@@ -963,7 +1003,7 @@ def combine_provider(repo, module, variant, by, resfrom):
     한 번도 안 빌드한 클론). 이 모듈에 자기 리소스 APK가 보이면 빌릴 일이 없어 앱 덤프가 헛일이 된다."""
     if not resfrom or not variant or by == "assumed":
         return ""
-    resfrom = resfrom if resfrom.startswith(":") else ":" + resfrom
+    resfrom = _colon(resfrom)
     if resfrom == module or any(r["module"] == module and r["variant"] == variant for r in resource_apks(repo)):
         return ""
     v = resource_variant(repo, resfrom, variant)
@@ -971,10 +1011,13 @@ def combine_provider(repo, module, variant, by, resfrom):
 
 
 def warmup_target(repo, module, variant, resfrom, plan_text, gradle_jdk):
-    """warmup 이 Gradle 을 부르기 전에 정할 것 — (변형, 근거, JDK, JDK 출처, 함께 뜰 제공자 변형). 변형을 못 찍었으면 None.
-    변형을 받지 않았으면 plan 응답(plan_text)에서 변형과 JDK 를 읽는다 — JDK 를 다시 고르면 데몬 로그를 한 번 더 훑는다.
-    받았으면 셸이 고른 gradle_jdk("<경로>\\t<출처>")를 쓴다."""
-    by = "given"
+    """warmup 이 Gradle 을 부르기 전에 정할 것 — (변형, 근거, JDK, JDK 출처, 함께 뜰 제공자 변형, 대신 뜰 앱, 그 변형).
+    변형을 못 찍었으면 None. 변형을 받지 않았으면 plan 응답(plan_text)에서 변형과 JDK 를 읽는다 — JDK 를 다시 고르면 데몬 로그를
+    한 번 더 훑는다. 받았으면 셸이 고른 gradle_jdk("<경로>\\t<출처>")를 쓴다.
+    새 모양 KMP 모듈(변형 androidMain)은 자기 덤프가 없다 — 담은 앱을 이미 알면 모듈은 뜨지 않고 그 앱만 뜬다. 안다는 것은 plan 이
+    고른 host(덤프가 이 모듈을 담는다)이거나, 받은 · plan 이 고른 리소스 제공자의 지난 덤프가 이 모듈을 담는 것이다. 리소스 APK 가
+    있다는 것만으로는 그 앱이 이 모듈을 담는지 모른다 — 그때는 모듈 덤프의 실패가 담은 앱을 알려 준다(dump_failure)."""
+    by, d = "given", {}
     if variant:
         gj, _, gj_from = gradle_jdk.partition("\t")
     else:
@@ -986,11 +1029,18 @@ def warmup_target(repo, module, variant, resfrom, plan_text, gradle_jdk):
         if not variant:
             return None
         gj, gj_from = d.get("gradleJdk") or "", d.get("gradleJdkFrom") or ""
+    if variant == KMP_VARIANT:
+        host = _colon(resfrom or d.get("host") or d.get("resourcesFrom") or "")
+        hv = resource_variant(repo, host, variant) if host else ""
+        hv = hv if hv != KMP_VARIANT else "debug"
+        if host and (host == _colon(d.get("host") or "") or dump_hosts(dump_path(PROJECTS, repo, host, hv), repo, module)):
+            return variant, by, gj, gj_from, "", host, hv
+        return variant, by, gj, gj_from, "", "", ""   # 모듈 덤프는 실패할 것이라 합치면 Gradle 만 한 번 더 든다
     try:
         both = combine_provider(repo, module, variant, by, resfrom)
     except OSError:
         both = ""   # 합치는 것은 고정비를 아낄 뿐이다 — 판정이 깨져도 하나씩 뜨면 된다
-    return variant, by, gj, gj_from, both
+    return variant, by, gj, gj_from, both, "", ""
 
 
 # 단계 — (이름, 앞 시각, 뒤 시각). 시각은 init 스크립트가 남긴 것이고 start · end 는 CLI 의 벽시계다.
@@ -1190,11 +1240,15 @@ def main(argv):
         print(with_daemons(a[0], sys.stdin.read().splitlines()))
     elif cmd == "daemon-module":             # <데몬 status> — 지금 그리는 모듈
         print(daemon_status(a[0])[0])
-    elif cmd == "dump-failure":              # <stderr 파일> <module> <variant> <given 0|1> — 첫 줄 다시 뜰 변형, 둘째 줄 오류 응답
+    elif cmd == "dump-failure":              # <stderr 파일> <module> <variant> <given 0|1> [--resources-from 로 받은 것] [파일] [repo]
+        #                                      — 첫 줄 다시 뜰 변형, 둘째 줄 대신 뜰 앱(<앱>|<변형>), 셋째 줄 오류 응답
         with open(a[0], encoding="utf-8", errors="replace") as f:
-            retry, resp = dump_failure(f.read(), a[1], a[2], a[3] == "1")
+            retry, host, resp = dump_failure(f.read(), a[1], a[2], a[3] == "1", *a[4:7])
         print(retry)
+        print(host)
         print(json.dumps(resp, ensure_ascii=False))
+        if resp.get("need") == "choose":
+            sys.exit(2)
     elif cmd == "warmup-resources":          # <repo> <module> <variant> <덤프> <--resources-from 로 받은 것> [파일]
         mod, choose = warmup_resources(a[0], a[1], a[2], a[3], a[4], a[5] if len(a) > 5 else "")
         if choose:
@@ -1228,7 +1282,7 @@ def main(argv):
             sys.exit(1)
         print("\n".join(args))
     elif cmd == "warmup-target":             # <repo> <module> <받은 변형> <--resources-from 로 받은 것> <plan 응답> <셸이 고른 JDK>
-        # 한 줄에 하나씩 변형 · 근거 · JDK · JDK 출처 · 함께 뜰 제공자 변형. 변형을 못 찍었으면 plan 응답을 그대로 내고 종료 2
+        # 한 줄에 하나씩 변형 · 근거 · JDK · JDK 출처 · 함께 뜰 제공자 변형 · 대신 뜰 앱 · 그 변형. 변형을 못 찍었으면 plan 응답을 그대로 내고 종료 2
         t = warmup_target(*a[:6])
         if t is None:
             sys.stdout.write(a[4])

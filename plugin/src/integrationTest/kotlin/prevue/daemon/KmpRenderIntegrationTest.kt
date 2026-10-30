@@ -122,6 +122,15 @@ class KmpRenderIntegrationTest {
         assertEquals(emptyList<String>(), konan.list().orEmpty().toList(), "Android 타깃 없는 모듈 덤프가 Kotlin/Native 자리에 받았다")
     }
 
+    // 변형을 debug로 주면 androidMain을 못 알아봐 새 클론처럼 모듈 덤프부터 시도한다 — 덤프 스크립트가 실패에 실은 앱으로 다시 뜬다.
+    @Test @Order(8) fun `KMP 모듈 파일로 warmup하면 그 모듈을 담은 앱 덤프를 뜬다`() {
+        for (args in listOf(emptyArray(), arrayOf("--variant", "debug"))) {
+            val json = PearlFixture.warmupJson(PearlKmpFixture.board, *args, env = noKonan)
+            assertTrue("\"ok\": true" in json && "\"module\": \":app\"" in json, "${args.toList()} — $json")
+            assertTrue(json.contains("--show ") && json.contains(PearlKmpFixture.board.name), json)
+        }
+    }
+
     private fun open(file: File) {
         val r = runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
