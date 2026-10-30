@@ -18,6 +18,18 @@ fun dict(m: Map<String, String>) = m.entries.joinToString(",\n    ", "{\n    ", 
 class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
 val kotlinModules = java.util.concurrent.ConcurrentHashMap<String, KotlinModule>()
 
+// 이 스크립트는 composite 의 빌드마다 따로 돌아 kotlinModules 도 빌드마다 따로다 — 루트 덤프가 included build(thunderbird
+// components/ui/bolt)의 KMP 모듈을 못 봐 그 commonMain 이 감시 밖이었다. 그래서 빌드 전부가 루트 Gradle 의 맵 하나에 모듈
+// 디렉터리 → (변형 → 소스 루트)를 모은다. 스크립트 인스턴스마다 클래스로더가 달라 값은 JDK 타입만 쓴다.
+val rootGradle: Gradle = generateSequence(gradle) { it.parent }.last()
+@Suppress("UNCHECKED_CAST")
+val kmpRootsByDir: java.util.concurrent.ConcurrentHashMap<String, java.util.function.Function<String, List<String>?>> =
+    synchronized(rootGradle) {
+        val extra = (rootGradle as ExtensionAware).extensions.extraProperties
+        if (!extra.has("prevue.kmpRootsByDir")) extra.set("prevue.kmpRootsByDir", java.util.concurrent.ConcurrentHashMap<String, Any>())
+        extra.get("prevue.kmpRootsByDir")
+    } as java.util.concurrent.ConcurrentHashMap<String, java.util.function.Function<String, List<String>?>>
+
 fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
 
 fun kmpAndroidCompilation(m: KotlinModule?, variant: String): Any? = runCatching {
@@ -143,7 +155,11 @@ fun countOutcomes() = runCatching {
 gradle.afterProject {
     // init script는 build-logic 같은 included build에도 적용되므로, 대상이 아니면 조용히 건너뛴다.
     val p = this
-    p.extensions.findByName("kotlin")?.let { kotlinModules[p.path] = KotlinModule(it, p.layout.buildDirectory) }
+    p.extensions.findByName("kotlin")?.let { ext ->
+        val m = KotlinModule(ext, p.layout.buildDirectory)
+        kotlinModules[p.path] = m
+        kmpRootsByDir[p.projectDir.absolutePath] = java.util.function.Function { v -> kmpAndroidRoots(m, v) }
+    }
     val t = targets.firstOrNull { it.path == p.path } ?: return@afterProject
     registerDump(p, t.path, t.variant, t.out)
 }
@@ -276,7 +292,17 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val compileJarsSnapshot = compileJars
         val repoRoot = p.rootProject.projectDir.absolutePath
         doLast {
-            val kmpSourceRoots = kotlinModules.mapNotNull { (path, m) -> kmpAndroidRoots(m, variant)?.let { path to it } }.toMap()
+            // 키는 CLI · 데몬이 파일에서 짓는 모듈 이름이다 — 루트 빌드 모듈은 settings 의 경로, included build 모듈은 settings 에 없어
+            // 저장소 상대 디렉터리(components/ui/bolt → :components:ui:bolt). 저장소 밖 included build 는 그 파일을 열 일이 없어 뺀다.
+            fun norm(d: String) = File(d).toPath().normalize().toString()
+            val pathByDir = moduleDirs.entries.associate { (path, dir) -> norm(dir) to path }
+            val root = norm(repoRoot) + "/"
+            val kmpSourceRoots = kmpRootsByDir.mapNotNull { (at, roots) ->
+                val dir = norm(at)
+                val key = pathByDir[dir] ?: dir.takeIf { it.startsWith(root) }
+                    ?.let { ":" + it.removePrefix(root).replace('/', ':') } ?: return@mapNotNull null
+                roots.apply(variant)?.let { key to it }
+            }.toMap()
             // 리소스 디렉터리만 아직 경로로 훑는다. 클래스와 R 은 위에서 태스크에게 물었다.
             fun intermediate(name: String): List<File> =
                 File(buildDir, "intermediates/$name/$variant")

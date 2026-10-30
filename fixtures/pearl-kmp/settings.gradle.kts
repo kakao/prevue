@@ -28,3 +28,9 @@ include(":core:ui")
 include(":feature:pearl")
 include(":feature:search")
 include(":feature:desktop")
+
+includeBuild("components") {
+    dependencySubstitution {
+        substitute(module("com.example.pearl.components:swatch")).using(project(":ui:swatch"))
+    }
+}
