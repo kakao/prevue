@@ -281,7 +281,7 @@ ROOT_BUILD_FILES = ("build.gradle.kts", "build.gradle", "settings.gradle.kts", "
 
 def build_files(repo, module):
     """저장소 상대 경로 목록. 없는 파일도 싣는다 — 새로 생긴 것도 바뀐 것이다."""
-    mod = module.strip(":").replace(":", "/")
+    mod = os.path.relpath(module_dir(repo, module), repo) if module.strip(":") else ""
     own = [mod + "/build.gradle.kts", mod + "/build.gradle"] if mod else []   # 루트 프로젝트(":")는 루트 파일이 곧 제 것이다
     return own + list(ROOT_BUILD_FILES)
 
@@ -360,7 +360,9 @@ def _app_holds(projects_dir, module):
             continue
         app = d.get("project")
         if app:
-            holds[app] = holds.get(app, False) or any(seg in q for q in d.get("projectClassPath", []))
+            at = (d.get("moduleDirs") or {}).get(module)
+            holds[app] = holds.get(app, False) or any(q.startswith(at + "/build/") if at else seg in q
+                                                      for q in d.get("projectClassPath", []))
     return holds
 
 

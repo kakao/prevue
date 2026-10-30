@@ -211,6 +211,21 @@ class Observe(Case):
         self.assertEqual(P.module_dir(r.root, ":widgets"), widgets)
         self.assertEqual(P.settings_modules(r.root), [":app", ":widgets"])
 
+    def test_경로와_디렉터리_이름이_다른_모듈도_덤프의_moduleDirs_로_찾는다(self):
+        r = self.repo(":app")
+        widgets = os.path.join(r.root, "core", "design", "widgets")
+        app_out = os.path.join(P.module_dir(r.root, ":app"), "build", "intermediates", "classes")
+        widgets_out = os.path.join(widgets, "build", "intermediates", "classes")
+        self.assertEqual(P.build_files(r.root, ":design-widgets")[:2], ["design-widgets/build.gradle.kts", "design-widgets/build.gradle"])
+        r.dump(":app", "debug", projectClassPath=[app_out, widgets_out],
+               moduleDirs={":": r.root, ":app": P.module_dir(r.root, ":app"), ":design-widgets": widgets,
+                           ":widgets": os.path.join(r.root, "widgets")})
+        projects_dir = os.path.join(r.projects, P.repo_key(r.root))
+        self.assertEqual(P.build_files(r.root, ":design-widgets")[:2],
+                         ["core/design/widgets/build.gradle.kts", "core/design/widgets/build.gradle"])
+        self.assertEqual(P._app_holds(projects_dir, ":design-widgets"), {":app": True})
+        self.assertEqual(P._app_holds(projects_dir, ":widgets"), {":app": False})
+
     def test_저장소_루트의_빌드_파일은_모듈이_아니다(self):
         r = self.repo(":app")
         open(os.path.join(r.root, "build.gradle.kts"), "w").close()
