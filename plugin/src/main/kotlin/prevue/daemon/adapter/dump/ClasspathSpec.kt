@@ -172,8 +172,10 @@ class ClasspathSpec(
             file,
         ).filter { it.isFile }
 
+    val isKmp: Boolean get() = project in kmpSourceRoots
+
     private val kmpAndroidSourceSets: List<String>
-        get() = if (project !in kmpSourceRoots) emptyList() else listOf("android" + variant.replaceFirstChar(Char::uppercase), "androidMain")
+        get() = if (!isKmp) emptyList() else listOf("android" + variant.replaceFirstChar(Char::uppercase), "androidMain")
 
     // devDebug → [dev, debug]. 정확한 flavor 분해는 Gradle만 알지만, 소스 루트를 찾는 데는 이 근사가 충분하다.
     private fun variantParts(v: String): List<String> =

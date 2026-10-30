@@ -195,7 +195,21 @@ class BrowserStatesTest {
 
     @Test fun `머리말 — 워크트리를 가르게 탭 제목에 저장소 끝을 앞세운다`() {
         val h = build(status(board = board(card(0, "A")))).header
-        assertEquals(Header("Screen.kt", "wt-a · Screen.kt", "/r/", "wt-a", " · app · debug", "/r/wt-a"), h)
+        assertEquals(Header("Screen.kt", "wt-a · Screen.kt", "/r/", "wt-a", "app", "debug", "/r/wt-a"), h)
+    }
+
+    @Test fun `머리말과 탭은 KMP 여부와 소스 세트를 데몬이 정한 대로 싣는다`() {
+        val f = File("/r/wt-a/feature/a/src/commonMain/kotlin/Screen.kt")
+        val tab = TabView(f.path, f, null, ":feature:a", active = true, stale = false, sourceSet = "commonMain")
+        val s = build(status(board = board(card(0, "A")), tabs = listOf(tab)).let {
+            it.copy(kmp = true, module = it.module.copy(sourceSet = "commonMain"))
+        })
+        assertEquals("commonMain", s.header.sourceSet)
+        assertTrue(s.header.kmp)
+        assertEquals("commonMain", s.tabs.single().sourceSet)
+        val android = build(status(board = board(card(0, "A")))).header
+        assertNull(android.sourceSet)
+        assertFalse(android.kmp)
     }
 
     @Test fun `머리말의 브랜치는 Presenter가 읽은 것을 그대로 싣는다`() {

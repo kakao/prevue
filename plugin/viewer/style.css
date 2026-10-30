@@ -46,16 +46,24 @@ button { font: inherit; color: inherit; }
 .brand svg { width: 18px; height: 18px; }
 .brand-name { font: var(--type-label-large); }
 .brand-sep { flex: 0 0 auto; width: 1px; height: 20px; margin: 0 var(--space-4); background: var(--outline-variant); }
-/* 앱 록업(B1 · B4) — 아이콘 32px 하나에 제목 · 부제 두 줄. 이 줄에서 색이 있는 것은 이 아이콘뿐이다. */
-.app { position: relative; min-width: 0; display: flex; align-items: center; gap: var(--space-8); }
+/* 앱 록업(B1 · B4) — 아이콘 32px 하나에 제목 · 부제 두 줄. 이 줄에서 색이 있는 것은 이 아이콘과 그 모서리의 배지뿐이다.
+   배지가 아이콘 밖으로 6px 나와 글자와의 틈을 12px 로 둔다. */
+.app { position: relative; min-width: 0; display: flex; align-items: center; gap: var(--space-12); }
 /* 런처 아이콘 · 이니셜 타일은 같은 squircle(반경 22.5%) — Prevue 아이콘과 같은 문법이다. 원본은 마스크 전의 정사각형이다. */
 /* 그림 시작 — 앱 아이콘 · 이니셜 타일. 반경이 아이콘 문법이라 날값 린트가 색만 본다(D-97) */
 .app-icon, .app-tile { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 7.2px; box-shadow: 0 0 0 1px var(--outline-variant), var(--elevation-1); }
 .app-tile { display: grid; place-items: center; color: var(--on-avatar); font: var(--type-title-small); }
+/* 프로젝트 배지 — Android 인지 KMP 인지. 프로젝트 단위라 탭을 바꿔도 그대로다. 아이콘 오른쪽 아래에 배지의 60% 가 겹친다.
+   아이콘은 록업 높이의 가운데에 서므로 위치도 가운데(50% − 16px)에서 잰다 — 두 줄 글자가 32px 보다 높아도 모서리에 붙는다. */
+.app-badge { position: absolute; left: 21px; top: calc(50% + 5px); width: 18px; height: 18px; display: grid; place-items: center; border-radius: var(--corner-full);
+             background: var(--surface); box-shadow: 0 0 0 1px var(--outline-variant); }
+.app-badge > * { display: block; }
+.app-badge .android { width: 12px; height: 9px; color: var(--art-android); }
+.app-badge .kmp { width: 10px; height: 10px; }
 /* 그림 끝 */
 .app-t { min-width: 0; display: flex; flex-direction: column; }
 .app-name { font: var(--type-title-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* 부제 — 어느 폴더 · 브랜치 · 모듈 · 변형인지. 워크트리를 나란히 띄우면 앱 이름이 같아 이 줄이 구분점이다.
+/* 부제 — 어느 폴더 · 브랜치 · 모듈 · (KMP 면 소스 세트) · 변형인지. 워크트리를 나란히 띄우면 앱 이름이 같아 이 줄이 구분점이다.
    칩이 아니라 글자다(D-60) — 툴바 오른쪽이 이미 알약이라 왼쪽까지 알약이면 누를 것과 읽을 것이 안 갈린다.
    누를 수 있는 칸(폴더 · 브랜치)만 올리면 옅은 바탕이 생긴다(Xcode 스킴 선택기). 모듈 · 변형은 바꿀 수 없어 반응하지 않는다. */
 .proj { min-width: 0; display: flex; align-items: center; gap: var(--space-2); font: var(--type-label-small); color: var(--on-surface-variant); white-space: nowrap; overflow: hidden;
@@ -267,6 +275,10 @@ body.rail-on { --rail-w: 200px; }
 .rt:hover { background: var(--state-hover); }
 .rt:hover, .rt.active { color: var(--on-surface); }
 .rt-ic { flex: 0 0 auto; width: 16px; height: 16px; color: var(--on-surface-variant); }
+/* 그림 시작 — 레일의 KMP · Android 표식. 브랜드 색이라 크롬의 무채색 규칙 밖이다 */
+.rt-ic.android { color: var(--art-android); }
+.rt-ic.kmp { padding: var(--space-2); }
+/* 그림 끝 */
 /* 이름은 남은 칸을 다 갖고(바탕 폭 0 에서 시작) 그 칸에서 tabs.js 가 꼬리를 남기고 가운데를 줄인다. 모듈 폭은 tabs.js 가 이름이 남긴 만큼 준다. */
 .rt-name { flex: 1 1 0; min-width: 0; overflow: hidden; }
 .rt-mod { flex: 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--on-surface-variant); font: var(--type-label-small); }

@@ -175,6 +175,6 @@ fun WaitResult.toJson(): Map<String, Any?> = when (this) {
 
 /** 탭 하나(D-54). FQN 탭이면 [TabView.fqn]이 있고 `file`은 그 함수의 파일이다. */
 fun TabView.toJson(): Map<String, Any?> = mapOf("file" to file?.absolutePath, "fqn" to fqn, "module" to module, "active" to active, "stale" to stale,
-    "vacant" to vacant?.name?.lowercase())
+    "vacant" to vacant?.name?.lowercase()) + (sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap())
 
 fun CloseResult.toJson(): Map<String, Any?> = mapOf("ok" to true, "closed" to closed, "active" to active, "tabs" to tabs.map { it.toJson() })
