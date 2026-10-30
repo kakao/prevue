@@ -703,7 +703,8 @@ case "$cmd" in
     fi
     TARGET="$(python3 "$PLAN_PY" warmup-target "$ROOTDIR" "$MODULE" "$VARIANT" "$RESFROM" "$PLAN" "$GJ")" \
       || { echo "$TARGET"; exit 2; }   # 관찰된 이름에 debug 계열이 없다 — 스킬이 사람에게 묻는다
-    { IFS= read -r VARIANT; IFS= read -r VARIANT_BY; IFS= read -r GRADLE_JDK; IFS= read -r GRADLE_JDK_FROM; IFS= read -r RESV1; } <<< "$TARGET"
+    { IFS= read -r VARIANT; IFS= read -r VARIANT_BY; IFS= read -r GRADLE_JDK; IFS= read -r GRADLE_JDK_FROM; IFS= read -r RESV1
+      IFS= read -r HOST; IFS= read -r HOSTV; } <<< "$TARGET"
     VARIANT_GIVEN=0; [ "$VARIANT_BY" = given ] && VARIANT_GIVEN=1
     echo "prevue: Gradle JDK = ${GRADLE_JDK:-<none>} ($GRADLE_JDK_FROM)" >&2
 
@@ -741,19 +742,28 @@ case "$cmd" in
     }
 
     dump() {  # dump <module> <out> [변형] [사람이 준 변형이면 1] — Gradle 1회. 변형을 안 주면 이 모듈의 것
-      local v="${3:-$VARIANT}" given="${4:-$VARIANT_GIVEN}"; DUMP_RETRY=""
+      local v="${3:-$VARIANT}" given="${4:-$VARIANT_GIVEN}"; DUMP_RETRY=""; DUMP_HOST=""
       echo "prevue: calling Gradle once in $ROOTDIR ($1 / $v)" >&2
       if ! gradle_dump "$1|$v|$2"; then
         cat "$GRADLE_ERR" >&2
         # 첫 줄은 다시 뜰 변형(없으면 빈 줄), 둘째 줄은 이유를 실은 응답이다
-        local f; f="$(python3 "$PLAN_PY" dump-failure "$GRADLE_ERR" "$1" "$v" "$given")"
+        # 첫 줄은 다시 뜰 변형, 둘째 줄은 대신 뜰 앱(KMP 모듈 — 둘 다 없으면 빈 줄), 나머지는 이유를 실은 응답이다
+        # 종료 2 는 고를 것이 남았다(KMP 모듈을 담은 앱이 여럿)
+        local f; DUMP_RC=1; f="$(python3 "$PLAN_PY" dump-failure "$GRADLE_ERR" "$1" "$v" "$given" "$RESFROM" "$FILE")" || DUMP_RC=$?
         rm -f "$GRADLE_ERR"
-        DUMP_RETRY="${f%%$'\n'*}"; DUMP_ERR="${f#*$'\n'}"; return 1
+        DUMP_RETRY="${f%%$'\n'*}"; f="${f#*$'\n'}"; DUMP_HOST="${f%%$'\n'*}"; DUMP_ERR="${f#*$'\n'}"; return 1
       fi
       cat "$GRADLE_ERR" >&2; rm -f "$GRADLE_ERR"
       [ -s "$2" ] || { DUMP_ERR="{\"ok\":false,\"error\":\"The dump is empty — check that $1 has the android extension\"}"; return 1; }
     }
 
+    # 새 모양 KMP 모듈은 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 앱이 그 모듈의 산출물과 리소스 APK 를 함께 담아
+    # 리소스를 빌릴 일도 없다. 앱을 미리 알면(warmup_target) 모듈은 뜨지 않고, 모르면 모듈 덤프의 실패가 앱을 알려 준다(dump_failure).
+    host_instead() {  # host_instead <앱|변형>
+      echo "prevue: $MODULE is a KMP module — taking the dump of the app that includes it (${1%%|*} / ${1#*|})" >&2
+      MODULE="${1%%|*}"; VARIANT="${1#*|}"; VARIANT_GIVEN=0; RESFROM=""; RESV1=""; OUT="$(dump_out "$ROOTDIR" "$MODULE" "$VARIANT")"
+    }
+    if [ -n "$HOST" ]; then host_instead "$HOST|$HOSTV"; fi
     [ -n "$OUT" ] || OUT="$(dump_out "$ROOTDIR" "$MODULE" "$VARIANT")"
     # 합친 호출(RESV1 — warmup_target 이 정했다)이 실패하면 하나씩 다시 뜬다 — 실패의 이유를 대상마다 가르고 변형을 다시 고르는
     # 길이 거기 있다. 그 stderr 는 하나씩 뜨며 대상마다 다시 나오므로 여기서는 버린다.
@@ -768,7 +778,13 @@ case "$cmd" in
       fi
       rm -f "$GRADLE_ERR"
     fi
-    if [ -z "$BOTH" ] && ! dump "$MODULE" "$OUT"; then
+    DUMPED="$BOTH"
+    if [ -z "$DUMPED" ] && dump "$MODULE" "$OUT"; then DUMPED=1; fi
+    if [ -z "$DUMPED" ] && [ -n "${DUMP_HOST:-}" ]; then
+      host_instead "$DUMP_HOST"
+      if dump "$MODULE" "$OUT"; then DUMPED=1; fi
+    fi
+    if [ -z "$DUMPED" ]; then
       # Gradle 이 실재하는 debug 계열 후보를 말해 줬으면 같은 규칙으로 한 번만 다시 뜬다(dump_failure)
       V2="${DUMP_RETRY:-}"
       if [ -n "$V2" ]; then
@@ -776,7 +792,7 @@ case "$cmd" in
         VARIANT="$V2"; OUT="$(dump_out "$ROOTDIR" "$MODULE" "$VARIANT")"
         dump "$MODULE" "$OUT" || { echo "$DUMP_ERR"; exit 1; }
       else
-        echo "$DUMP_ERR"; exit 1
+        echo "$DUMP_ERR"; exit "$DUMP_RC"
       fi
     fi
 
