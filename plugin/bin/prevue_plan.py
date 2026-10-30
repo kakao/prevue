@@ -720,7 +720,7 @@ def with_daemons(status_text, lines):
     return json.dumps(st, ensure_ascii=False)
 
 
-def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, env, dmods=(), dstale=(), nojdk=""):
+def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, env, dmods=(), dstale=(), nojdk="", jdkver=""):
     """(응답, 종료 코드). plan 의 판정에 데몬 생존을 더한다. 빠진 것을 **전부** missing 에 순서대로 싣는다 —
     하나씩 말하면 툴체인을 승인받고 30초 뒤 덤프를 또 물어 대화가 두 번 끊긴다. 한 번에 알면 한 번에 묻는다.
     종료 0 준비됨(데몬까지) · 1 빠진 것 있음 · 2 고를 것이 남았다.
@@ -741,11 +741,14 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     if sandbox:
         out["sandbox"] = sandbox
         missing.append("sandbox")
-    # 데몬을 띄울 java 가 없다(AS 번들 JBR 도 PREVUE_JDK 도 없다). 덤프 승인보다 먼저 말한다 — 승인받고 Gradle 을 몇 분 돌린 뒤에야
-    # start 가 실패하면 대화가 두 번 끊긴다. 저장소를 못 찾은 응답(error)은 그 이유가 먼저다
-    if nojdk and not alive and "error" not in out:
+    # 데몬을 띄울 java 가 없거나 21 미만이다(jdkver 가 찾은 버전). 덤프 승인보다 먼저 말한다 — 승인받고 Gradle 을 몇 분 돌린 뒤에야
+    # start 가 실패하면 대화가 두 번 끊긴다. 저장소를 못 찾은 응답(error)은 그 이유가 먼저고, 데몬이 떠 있는데 못 닿는 것(blocked)은
+    # JDK 가 아니라 셸의 문제다. 고를 것(need:"choose")은 JDK 를 깐 뒤의 health 가 다시 묻는다 — 지금 물으면 고를 후보 없이 묻게 된다
+    if nojdk and not alive and not blocked and "error" not in out:
         missing.append("jdk")
         out["jdk"] = nojdk
+        if jdkver:
+            out["jdkVersion"] = jdkver
     if out.get("toolchain") is False:
         missing.append("toolchain")
     if not hosted and "error" not in out and (rc == 2 or not out.get("classpath")
@@ -767,6 +770,9 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     if viewer:
         out["viewer"] = viewer
     out["missing"] = missing
+    if "jdk" in missing:
+        out.pop("choose", None)
+        rc = 1 if rc == 2 else rc
     if rc != 2:
         out.pop("need", None)
     plan_next = out.get("next", "")
@@ -793,6 +799,17 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     with_ask(out, missing, env.get("HOME") or os.path.expanduser("~"))
     out["ok"] = not missing and "error" not in out
     return out, (2 if (rc == 2 or ("error" in out and not blocked)) else (1 if missing else 0))
+
+
+def jdk_missing(jdk, found=""):
+    """start 가 데몬을 띄우기 전에 멈출 때의 응답. error 는 사실만, 설치 안내는 tell 하나가 갖는다."""
+    out = {"ok": False, "missing": ["jdk"], "jdk": jdk, "tell": say("jdk", jdk=jdk)}
+    if found:
+        out["jdkVersion"] = found
+        out["error"] = "Java %s at %s — the daemon needs 21 or later" % (found, jdk)
+    else:
+        out["error"] = "No java at %s/bin/java" % jdk
+    return out
 
 
 def warmup_cmd(file, out):
@@ -1078,11 +1095,9 @@ def main(argv):
             out = {"ok": False, "error": a[0].strip()}
         dmod, dmods, _ = daemon_status(a[5])
         _emit(*health(out, int(a[1]), a[2] == "true", a[3], a[4], dmod, a[6] == "true", a[7], a[8] == "true", os.environ, dmods,
-                      restart_stale(a[5]), a[9] if len(a) > 9 else ""))
-    elif cmd == "jdk-missing":               # <java 가 없는 JDK> — start 가 데몬을 띄우기 전에 멈출 때의 응답
-        _emit({"ok": False, "missing": ["jdk"], "jdk": a[0],
-               "error": "No java at %s/bin/java — install JDK 21 or later and set PREVUE_JDK to its home" % a[0],
-               "tell": say("jdk", jdk=a[0])})
+                      restart_stale(a[5]), a[9] if len(a) > 9 else "", a[10] if len(a) > 10 else ""))
+    elif cmd == "jdk-missing":               # <쓸 수 없는 JDK> [찾은 주 버전] — start 가 데몬을 띄우기 전에 멈출 때의 응답
+        _emit(jdk_missing(a[0], a[1] if len(a) > 1 else ""))
     elif cmd == "hosts":                     # <데몬 status> <모듈> [변형] — 종료 0 이 데몬이 그린다 · 1 다른 앱의 모듈이거나 데몬 없음
         sys.exit(0 if hosts(a[0], a[1], a[2] if len(a) > 2 else "") else 1)
     elif cmd == "resource-variant":          # <repo> <리소스 모듈> <이 모듈의 변형> — 리소스 모듈을 뜰 변형
