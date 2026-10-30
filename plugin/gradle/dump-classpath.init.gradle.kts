@@ -296,10 +296,11 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             // 저장소 상대 디렉터리(components/ui/bolt → :components:ui:bolt). 저장소 밖 included build 는 그 파일을 열 일이 없어 뺀다.
             fun norm(d: String) = File(d).toPath().normalize().toString()
             val pathByDir = moduleDirs.entries.associate { (path, dir) -> norm(dir) to path }
+            val root = norm(repoRoot) + "/"
             val kmpSourceRoots = kmpRootsByDir.mapNotNull { (at, roots) ->
                 val dir = norm(at)
-                val key = pathByDir[dir] ?: dir.takeIf { it.startsWith("$repoRoot/") }
-                    ?.let { ":" + it.removePrefix("$repoRoot/").replace('/', ':') } ?: return@mapNotNull null
+                val key = pathByDir[dir] ?: dir.takeIf { it.startsWith(root) }
+                    ?.let { ":" + it.removePrefix(root).replace('/', ':') } ?: return@mapNotNull null
                 roots.apply(variant)?.let { key to it }
             }.toMap()
             // 리소스 디렉터리만 아직 경로로 훑는다. 클래스와 R 은 위에서 태스크에게 물었다.
