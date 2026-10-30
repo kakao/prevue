@@ -84,7 +84,7 @@ object PearlFixture {
     }
 
     /** 이 체크아웃의 `bin/prevue warmup [file] [args]`의 마지막 JSON 줄. 실패해도 그 줄을 돌려준다 — 멈추는 이유도 판정 대상이다. */
-    fun warmupJson(file: File, vararg args: String): String {
+    fun warmupJson(file: File, vararg args: String, env: Map<String, String> = emptyMap()): String {
         // 사용자 Gradle의 init 스크립트는 저장소를 사내 Maven으로 돌릴 수 있다 — 그러면 승인 없이 돌릴 근거가 없다
         val inits = File(gradleHome, "init.d").listFiles().orEmpty().filter { it.isFile }
         check(inits.isEmpty()) { "${gradleHome}/init.d 에 init 스크립트가 있다(${inits.map { it.name }}) — 픽스처 Gradle이 사내 Maven으로 갈 수 있어 뜨지 않는다" }
@@ -93,7 +93,7 @@ object PearlFixture {
             val p = ProcessBuilder(listOf(File(ROOT, "bin/prevue").path, "warmup", file.path) + args)
                 .redirectError(ProcessBuilder.Redirect.INHERIT)
                 .redirectOutput(log)
-                .apply { environment()["ANDROID_HOME"] = sdk!!.path }
+                .apply { environment()["ANDROID_HOME"] = sdk!!.path; environment().putAll(env) }
                 .start()
             if (!p.waitFor(10, TimeUnit.MINUTES)) { p.destroyForcibly(); error("warmup 이 10분 안에 끝나지 않았다") }
             val out = log.readText()

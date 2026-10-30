@@ -7,7 +7,6 @@ import java.io.File
  * KMP 모듈은 자기 덤프 없이 그 모듈을 담은 앱의 덤프로 그린다(D-38) — 그래서 warmup은 앱 파일로 한다.
  */
 object PearlKmpFixture {
-    private val HOME = System.getProperty("user.home")
     val dir: File? = PearlFixture.dir?.let { File(it.parentFile, "pearl-kmp") }
 
     private fun common(module: String, name: String) = File(dir, "$module/src/commonMain/kotlin/com/example/pearl/$module/$name")
@@ -23,12 +22,9 @@ object PearlKmpFixture {
     val noAndroid: File get() = File(dir, "feature/desktop/src/commonMain/kotlin/com/example/pearl/feature/desktop/MenuBoard.kt")
     const val LEGACY_CARDS = 3
 
-    /** Kotlin/Native 배포판이 풀리는 자리. 덤프가 iOS 타깃 때문에 여기에 받으면 안 된다. */
-    val konan: File get() = File(System.getenv("KONAN_DATA_DIR") ?: "$HOME/.konan")
-
     fun available(): Boolean = PearlFixture.available() && board.isFile
 
-    /** `:feature:pearl`의 commonMain 파일을 [to] 아래 패키지 경로 그대로 복사한다 — 저장은 복사본에 한다. 복사본. */
+    /** `:feature:pearl`의 commonMain 파일을 [to] 아래 패키지 경로 그대로 복사한다 — 저장은 복사본에 한다. */
     fun copy(file: File, to: File): File =
-        file.copyTo(File(to, "com/example/pearl/feature/pearl/${file.name}").apply { parentFile.mkdirs() }).canonicalFile
+        file.copyTo(File(to, "com/example/pearl/feature/pearl/${file.name}").apply { parentFile.mkdirs() }, overwrite = true).canonicalFile
 }

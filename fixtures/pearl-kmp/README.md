@@ -4,7 +4,7 @@
 
 - **pearl의 규칙을 그대로 따른다** — 독립 Gradle 프로젝트, 공개 Maven만, 버전 고정, 그림 · 글꼴 파일 없음. 그래서 CMP 글꼴은 여기서 못 보고 공개 검증장(kotlinconf-app)에서만 본다.
 - **빌드 모양은 AGP 9의 새 모양**(`com.android.kotlin.multiplatform.library`)이다. Kotlin · AGP · CMP는 kotlinconf-app과 같은 조합이다(`gradle/libs.versions.toml`).
-- **타깃은 Android + iOS다.** iOS 타깃은 덤프 Gradle이 Kotlin/Native를 받지 않는지 보려고 둔다 — 테스트가 덤프 전후로 `~/.konan`을 비교한다.
+- **타깃은 Android + iOS다.** iOS 타깃은 덤프 Gradle이 Kotlin/Native를 받지 않는지 보려고 둔다 — 테스트는 덤프에 빈 `KONAN_DATA_DIR`을 주고 그 자리가 빈 채인지 본다.
 - **pearl을 고치면 여기도 같이 본다.** 코드는 같고 바뀐 곳은 아래뿐이다.
 
 | pearl | pearl-kmp |
@@ -13,6 +13,7 @@
 | `R.string` · `R.drawable`(`res/`) | `Res.string` · `Res.drawable`(`composeResources/`) — 아이콘은 같은 손으로 쓴 벡터다 |
 | 음수 치수 리소스(`dimens.xml`) | 상수 — CMP에는 치수 리소스가 없다 |
 | `BackHandler` | `PearlBackHandler` — expect/actual(`BackHandler.kt`). 저장하면 Prevue가 Gradle 빌드 필요로 멈춘다 |
+| `Configuration.UI_MODE_NIGHT_YES` | 같은 값의 상수(`PearlPreviews.kt`) — `android.content.res`는 commonMain에 없다 |
 | `LocalConfiguration.screenWidthDp` | `screenWidthDp()`(`Window.kt`) — 창 크기에서 잰다 |
 | — | `LegacyPreviews.kt` — 옛 JetBrains `@Preview`(직접 하나 + 멀티 프리뷰 둘) |
 | — | `:feature:desktop` — Android 타깃이 없는 모듈. warmup이 이유를 말하고 멈춘다 |
