@@ -19,6 +19,8 @@ Prevue 통합 테스트(`plugin/`에서 `./gradlew integrationTest`)가 그리�
 | `:feature:search` | 검색(TextField) | 아직 없음 — 글자 넣기(`type`)를 덮을 자리 |
 | `:app` | 앱 진입점 | 라이브러리 모듈이 리소스를 빌리는 앱(D-38) |
 
+KMP 복제본 [`fixtures/pearl-kmp`](../pearl-kmp/README.md)이 같은 코드를 commonMain으로 갖는다 — 여기를 고치면 그쪽도 같이 본다.
+
 테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `plugin/src/integrationTest`와 `tests/viewer`도 같이 본다.
 
 `tests/viewer`의 데몬 테스트(tabs · workspace · content · resize · preparation)는 `AdaptivePreviews.kt`로 띄운 이 체크아웃의 데몬 하나에 연달아 돌려도 된다(`tests/viewer/daemon.mjs`).

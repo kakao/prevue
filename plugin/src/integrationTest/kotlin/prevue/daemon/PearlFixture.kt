@@ -78,30 +78,34 @@ object PearlFixture {
 
     /** `:feature:pearl` 덤프와 리소스를 빌릴 `:app` 덤프 — Gradle 한 번. */
     fun warmup(): Pair<ClasspathSpec, ClasspathSpec> {
+        val json = warmupJson(board!!, "--variant", "debug", "--resources-from", ":app")
+        fun field(name: String) = Regex("\"$name\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("warmup 이 덤프를 뜨지 못했다: $json")
+        return ClasspathSpec.load(File(field("classpath"))) to ClasspathSpec.load(File(field("resourcesClasspath")))
+    }
+
+    /** 이 체크아웃의 `bin/prevue warmup [file] [args]`의 마지막 JSON 줄. 실패해도 그 줄을 돌려준다 — 멈추는 이유도 판정 대상이다. */
+    fun warmupJson(file: File, vararg args: String): String {
         // 사용자 Gradle의 init 스크립트는 저장소를 사내 Maven으로 돌릴 수 있다 — 그러면 승인 없이 돌릴 근거가 없다
         val inits = File(gradleHome, "init.d").listFiles().orEmpty().filter { it.isFile }
         check(inits.isEmpty()) { "${gradleHome}/init.d 에 init 스크립트가 있다(${inits.map { it.name }}) — 픽스처 Gradle이 사내 Maven으로 갈 수 있어 뜨지 않는다" }
         val log = File.createTempFile("prevue-warmup", ".json")
         try {
-            val p = ProcessBuilder(File(ROOT, "bin/prevue").path, "warmup", board!!.path, "--variant", "debug", "--resources-from", ":app")
+            val p = ProcessBuilder(listOf(File(ROOT, "bin/prevue").path, "warmup", file.path) + args)
                 .redirectError(ProcessBuilder.Redirect.INHERIT)
                 .redirectOutput(log)
                 .apply { environment()["ANDROID_HOME"] = sdk!!.path }
                 .start()
             if (!p.waitFor(10, TimeUnit.MINUTES)) { p.destroyForcibly(); error("warmup 이 10분 안에 끝나지 않았다") }
             val out = log.readText()
-            val json = out.lineSequence().lastOrNull { it.startsWith("{") } ?: error("warmup 응답이 없다(종료 ${p.exitValue()}): $out")
-            fun field(name: String) = Regex("\"$name\": \"([^\"]+)\"").find(json)?.groupValues?.get(1)
-                ?: error("warmup 이 덤프를 뜨지 못했다(종료 ${p.exitValue()}): $json")
-            return ClasspathSpec.load(File(field("classpath"))) to ClasspathSpec.load(File(field("resourcesClasspath")))
+            return out.lineSequence().lastOrNull { it.startsWith("{") } ?: error("warmup 응답이 없다(종료 ${p.exitValue()}): $out")
         } finally {
             log.delete()
         }
     }
 
     /** 테스트가 띄운 픽스처의 Gradle 데몬을 내린다 — 남기면 워크트리마다 2GB 데몬이 몇 시간 쉰다. */
-    fun stopGradle() {
-        val d = dir ?: return
+    fun stopGradle(d: File? = dir) {
+        d ?: return
         runCatching {
             ProcessBuilder(File(d, "gradlew").path, "--stop", "-q").directory(d).redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor(1, TimeUnit.MINUTES)
