@@ -55,7 +55,7 @@
 
 ## 승인이 필요한 것
 
-- **대상 저장소의 Gradle 실행**(클래스패스 덤프) — 사내 Maven에 요청이 나간다. 알리고 승인받는다. 도구 자신의 빌드는 `(cd plugin && ./gradlew --offline installPrevue)`로 충분하다. 저장소 안 픽스처(`fixtures/pearl`, 공개 Maven만)는 도구의 일부라 승인 없이 — `integrationTest`가 덤프를 스스로 뜬다. 단 Gradle 홈의 `init.d`에 스크립트가 있으면(저장소를 사내 Maven으로 돌릴 수 있다) 테스트가 뜨지 않고 멈춘다.
+- **대상 저장소의 Gradle 실행**(클래스패스 덤프) — 사내 Maven에 요청이 나간다. 알리고 승인받는다. 도구 자신의 빌드는 `(cd plugin && ./gradlew --offline installPrevue)`로 충분하다. 저장소 안 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp`, 공개 Maven만)는 도구의 일부라 승인 없이 — `integrationTest`가 덤프를 스스로 뜬다. 단 Gradle 홈의 `init.d`에 스크립트가 있으면(저장소를 사내 Maven으로 돌릴 수 있다) 테스트가 뜨지 않고 멈춘다.
 - 사내 Maven 자격을 로그·산출물·커밋에 남기지 않는다(NFR-7).
 
 ## 개발 위생 — 제품 제약이 아니다
