@@ -640,7 +640,7 @@ class Health(Case):
         plan, f = self.ready_plan()
         out, rc = self.health(plan, f, nojdk="/Applications/Android Studio.app/Contents/jbr/Contents/Home")
         self.assertEqual((rc, out["missing"], out["next"]), (1, ["jdk", "daemon"], "prevue health " + f))
-        self.assertEqual(out["tell"], P.jdk_tell("/Applications/Android Studio.app/Contents/jbr/Contents/Home"))
+        self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/Applications/Android Studio.app/Contents/jbr/Contents/Home"}))
         self.assertIsNone(P.autostart(out))
 
     def test_java_가_없으면_덤프_승인보다_먼저_말한다(self):
@@ -649,7 +649,7 @@ class Health(Case):
         r.built(":app", "debug")
         out, _ = self.health(r.plan(":app", f, toolchain=False), f, nojdk="/nope")
         self.assertEqual((out["missing"], out["next"]), (["jdk", "toolchain", "dump", "daemon"], "prevue health " + f))
-        self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.jdk_tell("/nope"), False, False))
+        self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.runtime_tell({"jdk": "/nope"}), False, False))
 
     def test_저장소를_못_찾은_이유가_java_보다_먼저다(self):
         out, _ = P.health({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
@@ -661,7 +661,7 @@ class Health(Case):
         plan, f = self.ready_plan()
         out, rc = self.health(plan, f, nojdk="/jdk17", jdkver="17")
         self.assertEqual((rc, out["missing"], out["jdk"], out["jdkVersion"]), (1, ["jdk", "daemon"], "/jdk17", "17"))
-        self.assertEqual(out["tell"], P.jdk_tell("/jdk17", "17"))
+        self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/jdk17", "jdkVersion": "17"}))
 
     # 지킬 것: 고를 것이 남아도 java 가 먼저다 — 종료 2 는 ask · options 를 약속하는데, jdk 갈래는 tell 만 싣는다
     def test_고를_것이_남아도_java_가_없으면_고르기를_묻지_않고_1(self):
@@ -670,7 +670,7 @@ class Health(Case):
         out, rc = self.health(r.plan(":app"), "", nojdk="/nope")
         self.assertEqual((rc, out["missing"][0]), (1, "jdk"))
         self.assertFalse({"need", "choose", "ask", "options"} & set(out))
-        self.assertEqual(out["tell"], P.jdk_tell("/nope"))
+        self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/nope"}))
 
     # 지킬 것: 데몬이 떠 있는데 이 셸이 못 닿으면 JDK 탓이 아니다 — missing 첫 자리가 next · tell 과 같은 network 여야 한다
     def test_닿지_못하는_데몬은_java_를_찾지_않는다(self):
@@ -701,7 +701,7 @@ class Health(Case):
         out, rc = self.health(r.plan(":app", f, toolchain=False), f, nosdk="/sdk")
         self.assertEqual((rc, out["missing"], out["sdk"], out["next"]),
                          (1, ["sdk", "toolchain", "dump", "daemon"], "/sdk", "prevue health " + f))
-        self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.say("sdk", sdk="/sdk"), False, False))
+        self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.runtime_tell({"sdk": "/sdk"}), False, False))
         self.assertIsNone(P.autostart(out))
 
     # 지킬 것: 둘 다 없으면 한 번에 말한다 — java 만 깔고 다시 물었을 때 SDK 로 또 막히면 대화가 두 번 끊긴다
@@ -709,7 +709,8 @@ class Health(Case):
         plan, f = self.ready_plan()
         out, _ = self.health(plan, f, nojdk="/jdk17", jdkver="17", nosdk="/sdk")
         self.assertEqual(out["missing"], ["jdk", "sdk", "daemon"])
-        self.assertEqual(out["tell"], P.jdk_tell("/jdk17", "17") + " " + P.say("sdk", sdk="/sdk"))
+        self.assertEqual(out["tell"], " ".join((P.jdk_tell("/jdk17", "17"), P.say("sdk", sdk="/sdk"), P.say("again"))))
+        self.assertEqual(out["tell"].count("ask me again"), 1)
 
     def test_고를_것이_남아도_SDK_가_없으면_고르기를_묻지_않고_1(self):
         r = self.repo(":app")
@@ -734,7 +735,7 @@ class Health(Case):
         only = P.runtime_missing("", "", "/sdk")
         self.assertEqual((only["missing"], only["error"], "jdk" in only),
                          (["sdk"], "No Android SDK platform at /sdk/platforms/*/android.jar", False))
-        self.assertEqual(only["tell"], P.say("sdk", sdk="/sdk"))
+        self.assertEqual(only["tell"], P.runtime_tell({"sdk": "/sdk"}))
         both = P.runtime_missing("/nope", "", "/sdk")
         self.assertEqual(both["missing"], ["jdk", "sdk"])
         self.assertIn("ANDROID_HOME", both["tell"])

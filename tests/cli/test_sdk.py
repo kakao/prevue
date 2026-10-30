@@ -74,7 +74,7 @@ class AndroidSdk(Case):
                                   ANDROID_HOME=sdk)
         self.assertEqual((rc, out["ok"], out["missing"], out["sdk"]), (3, False, ["sdk"], sdk))
         self.assertIn("ANDROID_HOME", out["tell"])
-        self.assertFalse(os.path.exists(os.path.join(self.home, ".prevue", "daemon", "daemon-8899.log")))
+        self.assertFalse(os.path.exists(os.path.join(self.home, ".prevue", "daemons", "daemon-8899.log")))
 
 
 if __name__ == "__main__":

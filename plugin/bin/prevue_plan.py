@@ -750,8 +750,8 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
         out["jdk"] = nojdk
         if jdkver:
             out["jdkVersion"] = jdkver
-    # 데몬이 android.jar 를 찾을 Android SDK 가 없다(nosdk 가 찾아본 폴더). java 와 같은 자리 · 같은 이유다 — Gradle 덤프도
-    # SDK 가 있어야 돌아서, 승인받고 돌린 warmup 이 SDK 없음으로 실패한다
+    # 데몬이 android.jar 를 찾을 Android SDK 가 없다(nosdk 가 찾아본 폴더). java 와 같은 자리 · 같은 이유다 — 덤프는
+    # local.properties 의 sdk.dir 로 돌 수 있어도 데몬은 그것을 읽지 않아, 승인받고 warmup 을 다 돌린 뒤에야 데몬이 죽는다
     if nosdk and not alive and not blocked and "error" not in out:
         missing.append("sdk")
         out["sdk"] = nosdk
@@ -815,13 +815,14 @@ def jdk_tell(jdk, found=""):
 
 
 def runtime_tell(out):
-    """빠진 것이 java · SDK 둘이면 한 번에 말한다 — 하나 깔고 다시 물었는데 또 막히면 대화가 두 번 끊긴다."""
+    """빠진 것이 java · SDK 둘이면 한 번에 말한다 — 하나 깔고 다시 물었는데 또 막히면 대화가 두 번 끊긴다.
+    다시 물어 달라는 말은 끝에 한 번만 붙인다."""
     parts = []
     if out.get("jdk"):
         parts.append(jdk_tell(out["jdk"], out.get("jdkVersion", "")))
     if out.get("sdk"):
         parts.append(say("sdk", sdk=out["sdk"]))
-    return " ".join(parts)
+    return " ".join(parts + [say("again")])
 
 
 def runtime_missing(jdk, found="", sdk=""):
