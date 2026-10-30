@@ -100,7 +100,7 @@ class RenderIntegrationTest {
         ws.awaitBoardFilled(timeoutMs = 120_000)
     }
 
-    @Test @Order(31) fun `외부 빌드의 클래스 누락은 정상 산출물을 보존하고 새 렌더로 복구된다`() = runBlocking {
+    @Test @Order(32) fun `외부 빌드의 클래스 누락은 정상 산출물을 보존하고 새 렌더로 복구된다`() = runBlocking {
         val preview = ws.now.board?.focusCard?.spec ?: ws.now.current!!
         val initial = engine.written(engine.show(preview))
         assertTrue(initial.ok, initial.message?.text)
