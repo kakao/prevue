@@ -23,6 +23,9 @@ object PearlKmpFixture {
     /** Android 타깃이 없는 모듈의 프리뷰 파일. */
     val noAndroid: File get() = File(dir, "feature/desktop/src/commonMain/kotlin/com/example/pearl/feature/desktop/MenuBoard.kt")
     const val LEGACY_CARDS = 3
+    /** included build `components`의 KMP 모듈 — CLI · 데몬은 settings 밖 모듈을 저장소 상대 디렉터리로 부른다. */
+    const val INCLUDED = ":components:ui:swatch"
+    val includedCommon: File get() = File(dir, "components/ui/swatch/src/commonMain/kotlin")
 
     fun available(): Boolean = PearlFixture.available() && board.isFile
 

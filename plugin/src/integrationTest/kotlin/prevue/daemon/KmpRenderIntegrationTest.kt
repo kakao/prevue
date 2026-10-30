@@ -51,6 +51,7 @@ class KmpRenderIntegrationTest {
     private lateinit var ws: Workspace
     private lateinit var compiler: HotCompiler
     private lateinit var resourceApk: Pair<File, File>
+    private lateinit var app: ClasspathSpec
     // 덤프만 빈 자리를 Kotlin/Native 자리로 받는다 — 머신에 이미 같은 판이 있어도 받으려 들면 여기에 생긴다
     private val konan = File(out, "konan").apply { mkdirs() }
     private val noKonan = mapOf("KONAN_DATA_DIR" to konan.path)
@@ -58,7 +59,7 @@ class KmpRenderIntegrationTest {
 
     @BeforeAll fun up() {
         val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = noKonan)
-        val app = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
+        app = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
         val home = app.dependency(":feature:pearl")
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
@@ -137,6 +138,12 @@ class KmpRenderIntegrationTest {
         val wide = ws.now.board!!.cards.first { it.spec.fqn.endsWith("AdaptivePearlWidePreview") }
         val cards = PearlFixture.tree((wide.result as CardResult.Drawn).shot.out.tree!!).cards
         assertEquals((1280 - 48) / 220, cards.count { it.top == cards.first().top }, "1280dp 첫 줄의 카드 수")
+    }
+
+    // 덤프 스크립트는 composite 의 빌드마다 따로 돈다 — 루트 덤프가 included build 의 KMP 모듈을 못 보면 그 commonMain 이 감시 밖이다
+    @Test @Order(10) fun `included build 안 KMP 모듈도 commonMain을 감시 루트로 싣는다`() {
+        val roots = app.dependency(PearlKmpFixture.INCLUDED).sourceRoots
+        assertTrue(PearlKmpFixture.includedCommon.canonicalFile in roots.map { it.canonicalFile }, "${PearlKmpFixture.INCLUDED} 감시 루트 — $roots")
     }
 
     private fun open(file: File) {

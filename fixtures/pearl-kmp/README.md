@@ -18,3 +18,4 @@
 | — | `AdaptivePearlWidePreview`(`AdaptivePreviews.kt`) — 1280dp 정적 프리뷰. `screenWidthDp()`가 첫 프레임부터 실제 폭이면 5열이다(`KmpRenderIntegrationTest`가 본다) |
 | — | `LegacyPreviews.kt` — 옛 JetBrains `@Preview`(직접 하나 + 멀티 프리뷰 둘) |
 | — | `:feature:desktop` — Android 타깃이 없는 모듈. warmup이 이유를 말하고 멈춘다 |
+| — | `components/` — `includeBuild`로 싣는 composite 빌드. `:app`이 좌표로 받는 KMP 모듈 `:ui:swatch` 하나를 두고, 덤프가 그 commonMain을 `:components:ui:swatch`로 적는지 본다 |

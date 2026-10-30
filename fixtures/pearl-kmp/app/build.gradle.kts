@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:pearl"))
     implementation(project(":feature:search"))
+    implementation("com.example.pearl.components:swatch")
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     debugImplementation(libs.compose.ui.tooling)
