@@ -21,4 +21,10 @@ class RendererSurfacesTest {
         val message = RendererMismatch(listOf("Renderer.renderService", "ModuleClassLoaderManager.preloader")).message.orEmpty()
         assertTrue("Renderer.renderService, ModuleClassLoaderManager.preloader" in message, message)
     }
+
+    @Test fun `뿌리 표면이 열리지 않으면 그것에 기대는 표면은 따로 세지 않는다`() {
+        val root = Surface("Shaped.renamedRoot") { RendererSurfaces.field(Shaped::class.java, "renamedRoot") }
+        val leaf = Surface("Shaped.leaf", root) { RendererSurfaces.field(root.value.type, "leaf") }
+        assertEquals(listOf("Shaped.renamedRoot"), RendererSurfaces.unopened(listOf(root, leaf)))
+    }
 }

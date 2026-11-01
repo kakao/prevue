@@ -89,7 +89,7 @@ class RenderEngine(
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
-        val surfaces = RendererSurfaces(renderer).opened()
+        val surfaces = try { RendererSurfaces(renderer).opened() } catch (e: RendererMismatch) { renderer.close(); throw e }
         negatives = ApkNegatives.fix(renderer, resourceApk.absolutePath)
         renderService = surfaces.renderService.value
         baseConfiguration = surfaces.baseConfiguration.value

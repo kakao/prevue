@@ -59,13 +59,16 @@ any_repo_daemons() {  # <저장소 키>
   done
   return 0
 }
-# 죽은 이유는 로그에 있다. 데몬이 남긴 마지막 실패 줄을 먼저 본다 — 첫 실행이면 JVM 이 그 뒤에 AOT 캐시를 구운 줄을 더 붙인다.
-# 그런 줄이 없으면 스택 프레임을 걷어낸 마지막 줄이 대개 그 이유다.
+# 데몬이 끝나며 남기는 줄(Main.kt). 로그는 시작마다 새로 쓰고, 자기를 다시 띄우는 데몬(NFR-4)은 이 줄 없이 끝난다 —
+# 그래서 이 줄이 있으면 죽은 것이고, pid 를 보면 새 JVM 이 pid 파일을 고쳐 쓰기 전의 틈을 죽음으로 읽는다.
+log_failure() { grep -E '^\[prevue [0-9:]+\] (데몬 실패|데몬 시작·실행 실패|포트를 열지 못했다)' "$LOG" 2>/dev/null | tail -1; }
+# 죽은 이유. 데몬의 실패 줄을 먼저 본다 — 첫 실행이면 JVM 이 그 뒤에 AOT 캐시를 구운 줄을 더 붙인다.
+# 그런 줄이 없으면 스택 프레임을 걷어낸 마지막 줄이 대개 그 이유다. JSON 문자열에 넣으므로 제어 문자를 걷는다.
 log_why() {
   local why
-  why="$(grep -E '^\[prevue [0-9:]+\] (데몬 실패|데몬 시작·실행 실패|포트를 열지 못했다)' "$LOG" 2>/dev/null | tail -1)"
+  why="$(log_failure)"
   [ -n "$why" ] || why="$(grep -v '^[[:space:]]*at ' "$LOG" 2>/dev/null | grep -v '^[[:space:]]*$' | tail -1)"
-  printf '%s' "$why" | sed 's/\\/\\\\/g; s/"/\\"/g'
+  printf '%s' "$why" | tr '\t' ' ' | LC_ALL=C tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 # 그 저장소에서 마지막으로 show·start 를 받은 데몬. 두 앱이 함께 담은 모듈(core:ui)이나 파일을 안 가리킨 명령(status·wait)이 그리로 간다.
 mark_recent() { [ -n "${KEY:-}" ] && printf '%s' "$PORT" > "$DAEMON_DIR/recent-$KEY" 2>/dev/null; return 0; }
@@ -968,7 +971,7 @@ except OSError:
     python3 -c 'import os, sys; os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])' "${RUN[@]}" >"$LOG" 2>&1 </dev/null &
     echo $! > "$DAEMON_DIR/daemon-$PORT.pid"
     [ -n "$AOT_LOCK" ] && echo $! > "$AOT_LOCK/pid"
-    for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; sleep 0.5; done
+    for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; [ -n "$(log_failure)" ] && break; sleep 0.5; done
     # JVM 은 맞지 않는 캐시를 알리고 캐시 없이 뜬다 — 지워 두면 다음 시작이 다시 학습한다
     [ -n "$AOT_CACHE" ] && grep -E '\[(error|warning) *\]\[(aot|cds)' "$LOG" 2>/dev/null | grep -qv 'Preload Warning' && rm -f "$AOT_CACHE"
     if ! curl -sf -m 2 "$BASE/status" >/dev/null; then
@@ -986,7 +989,7 @@ except OSError:
       for _ in $(seq 1 120); do
         ST="$(curl -sf -m 2 "$BASE/status")" && READY="$(printf '%s' "$ST" | python3 -c "$SHOW_READY" "$(viewer_url)" "$OPENED")" && break
         # 서버는 렌더러보다 먼저 뜬다 — 렌더러를 띄우다 죽으면 60초를 기다리지 말고 그 이유를 낸다
-        if [ -z "$ST" ] && case "$(kill -0 "$(cat "$DAEMON_DIR/daemon-$PORT.pid" 2>/dev/null)" 2>&1)" in *"No such process"*) true ;; *) false ;; esac; then
+        if [ -z "$ST" ] && [ -n "$(log_failure)" ]; then
           WHY="$(log_why)"
           echo "{\"ok\":false,\"error\":\"The daemon stopped${WHY:+ — $WHY}\",\"log\":\"$LOG\"}"; exit 3
         fi

@@ -8,7 +8,7 @@ import java.lang.reflect.Field
 import java.util.concurrent.Executor
 import prevue.daemon.entity.phrase
 
-internal class Surface<T>(val label: String, open: () -> T) {
+internal class Surface<T>(val label: String, val needs: Surface<*>? = null, open: () -> T) {
     val value: T by lazy(open)
     val opens: Boolean get() = runCatching { value }.isSuccess
 }
@@ -20,18 +20,18 @@ internal class RendererSurfaces(renderer: Renderer) {
     val renderService = Surface("Renderer.renderService") { field(Renderer::class.java, "renderService").get(renderer) as RenderService }
     val baseConfiguration = Surface("Renderer.baseConfiguration") { field(Renderer::class.java, "baseConfiguration").get(renderer) as Configuration }
     val manager = Surface("Renderer.moduleClassLoaderManager") { field(Renderer::class.java, "moduleClassLoaderManager").get(renderer) }
-    val createClassLoader = Surface("ModuleClassLoaderManager.createClassLoader") {
+    val createClassLoader = Surface("ModuleClassLoaderManager.createClassLoader", manager) {
         managerClass().getDeclaredMethod("createClassLoader", ClassLoader::class.java).apply { isAccessible = true }
     }
-    val preloader = Surface("ModuleClassLoaderManager.preloader") { field(managerClass(), "preloader") }
-    val preloadExecutor = Surface("ModuleClassLoaderManager.preloaderExecutor") { field(managerClass(), "preloaderExecutor").get(manager.value) as Executor }
-    val sharedClassLoaders = Surface("ModuleClassLoaderManager.sharedClassLoaders") { field(managerClass(), "sharedClassLoaders").get(manager.value) }
-    val invalidateAll = Surface("Cache.invalidateAll") {
+    val preloader = Surface("ModuleClassLoaderManager.preloader", manager) { field(managerClass(), "preloader") }
+    val preloadExecutor = Surface("ModuleClassLoaderManager.preloaderExecutor", manager) { field(managerClass(), "preloaderExecutor").get(manager.value) as Executor }
+    val sharedClassLoaders = Surface("ModuleClassLoaderManager.sharedClassLoaders", manager) { field(managerClass(), "sharedClassLoaders").get(manager.value) }
+    val invalidateAll = Surface("Cache.invalidateAll", manager) {
         Class.forName("com.google.common.cache.Cache", true, managerClass().classLoader).getMethod("invalidateAll")
     }
 
     @Suppress("UNCHECKED_CAST")
-    val composeClasses = Surface("ComposeClassesKt.COMPOSE_CLASSES") {
+    val composeClasses = Surface("ComposeClassesKt.COMPOSE_CLASSES", manager) {
         Class.forName("com.android.tools.render.ComposeClassesKt", true, managerClass().classLoader)
             .getMethod("getCOMPOSE_CLASSES").invoke(null) as Collection<String>
     }
@@ -53,7 +53,8 @@ internal class RendererSurfaces(renderer: Renderer) {
     }
 
     companion object {
-        fun unopened(surfaces: List<Surface<*>>): List<String> = surfaces.filterNot { it.opens }.map { it.label }
+        fun unopened(surfaces: List<Surface<*>>): List<String> =
+            surfaces.filter { s -> s.needs?.opens != false && !s.opens }.map { it.label }
 
         fun field(owner: Class<*>, name: String): Field = owner.getDeclaredField(name).apply { isAccessible = true }
     }

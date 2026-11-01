@@ -39,15 +39,16 @@ internal class RenderOutputs(
     fun written(
         p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, remember: Boolean = true,
     ): RenderOutput {
-        ViewInfoJson.toolingMismatch(result.rootViews)?.let {
-            return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
-        }
         val ph = timing.phases
         var t = System.nanoTime()
         val compose = if (remember) ViewInfoJson.compose(result.rootViews) else emptyList()
         val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), remember && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
+        if (verdict.failure == null) ViewInfoJson.toolingMismatch(result.rootViews)?.let {
+            forgetTree()
+            return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
+        }
         if (afterBuild && verdict.failure == FailureKind.NOT_FOUND)
             return failed(p, FailureKind.NOT_FOUND, verdict.message ?: Verbatim(""), timing)
         afterBuild = false
