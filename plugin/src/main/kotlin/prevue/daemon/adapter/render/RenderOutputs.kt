@@ -8,6 +8,7 @@ import kotlinx.coroutines.CompletableDeferred
 import prevue.daemon.entity.PreviewSpec
 import prevue.daemon.entity.Phrase
 import prevue.daemon.entity.Verbatim
+import prevue.daemon.entity.phrase
 import prevue.daemon.domain.port.FailureKind
 import prevue.daemon.domain.port.RenderOutput
 
@@ -44,6 +45,10 @@ internal class RenderOutputs(
         val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), remember && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
+        if (verdict.failure == null) ViewInfoJson.toolingMismatch(result.rootViews)?.let {
+            forgetTree()
+            return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
+        }
         if (afterBuild && verdict.failure == FailureKind.NOT_FOUND)
             return failed(p, FailureKind.NOT_FOUND, verdict.message ?: Verbatim(""), timing)
         afterBuild = false

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.condition.EnabledIf
 import prevue.daemon.adapter.dump.ClasspathSpec
 import prevue.daemon.adapter.render.RenderEngine
+import prevue.daemon.adapter.render.RendererSurfaces
 import prevue.daemon.adapter.render.ResourceOverlay
 import prevue.daemon.domain.port.ResourceKey
 import prevue.daemon.domain.port.ResourceLookup
@@ -98,6 +99,15 @@ class RenderIntegrationTest {
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)
+    }
+
+    // NFR-5. 렌더러 · ui-tooling 판을 올리면 여기가 먼저 깨진다 — 렌더러 쪽이 어긋나면 엔진이 뜨지 않아 up()이 표면 이름과 함께 실패한다
+    @Test @Order(0) fun `고정한 렌더러와 pearl의 ui-tooling은 판이 짝이다`() {
+        assertEquals(emptyList<String>(), RendererSurfaces.unopened(RendererSurfaces(engine.renderer).all()))
+        val shown = ws.now.lastResult!!
+        assertTrue(shown.ok, shown.toString())
+        val placed = PearlFixture.tree(shown.tree!!).nodes.filter { it.file.endsWith(".kt") && it.line > 0 }
+        assertTrue(placed.isNotEmpty(), "Compose 트리에 파일:줄이 없다")
     }
 
     @Test @Order(32) fun `외부 빌드의 클래스 누락은 정상 산출물을 보존하고 새 렌더로 복구된다`() = runBlocking {

@@ -1,6 +1,5 @@
 package prevue.daemon.adapter.render
 
-import com.android.tools.render.Renderer
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
 import com.android.tools.rendering.classloading.Preloader
@@ -10,7 +9,7 @@ import java.util.zip.ZipFile
 import prevue.daemon.adapter.dump.ClasspathSpec
 import prevue.daemon.entity.PreviewSpec
 
-internal class SharedLoaders(private val spec: ClasspathSpec, private val renderer: Renderer) {
+internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: RendererSurfaces) {
     data class Preloaded(val held: Int, val used: Int, val projectHeld: List<String>)
 
     var currentEmpty = true
@@ -21,18 +20,13 @@ internal class SharedLoaders(private val spec: ClasspathSpec, private val render
     private val projectSeen = HashSet<String>()
     private val topUps = ArrayList<Preloader<*>>()
 
-    private val manager: Any by lazy { field(Renderer::class.java, "moduleClassLoaderManager").get(renderer) }
-    private val createLoader by lazy { manager.javaClass.getDeclaredMethod("createClassLoader", ClassLoader::class.java).apply { isAccessible = true } }
-    private val preloaderField by lazy { field(manager.javaClass, "preloader") }
-    private val preloadExecutor: Executor by lazy { field(manager.javaClass, "preloaderExecutor").get(manager) as Executor }
-    private val sharedCache: Any by lazy { field(manager.javaClass, "sharedClassLoaders").get(manager) }
-    private val invalidateAll by lazy { Class.forName("com.google.common.cache.Cache", true, manager.javaClass.classLoader).getMethod("invalidateAll") }
-
-    @Suppress("UNCHECKED_CAST")
-    private val composeClasses: Collection<String> by lazy {
-        Class.forName("com.android.tools.render.ComposeClassesKt", true, manager.javaClass.classLoader)
-            .getMethod("getCOMPOSE_CLASSES").invoke(null) as Collection<String>
-    }
+    private val manager: Any = surfaces.manager.value
+    private val createLoader = surfaces.createClassLoader.value
+    private val preloaderField = surfaces.preloader.value
+    private val preloadExecutor: Executor = surfaces.preloadExecutor.value
+    private val sharedCache: Any = surfaces.sharedClassLoaders.value
+    private val invalidateAll = surfaces.invalidateAll.value
+    private val composeClasses: Collection<String> = surfaces.composeClasses.value
 
     private val projectJarClasses: Set<String> by lazy {
         spec.projectClassPath.filter { it !in spec.rClassJars }.map(::File)
@@ -121,8 +115,6 @@ internal class SharedLoaders(private val spec: ClasspathSpec, private val render
     }
 
     private companion object {
-        fun field(owner: Class<*>, name: String) = owner.getDeclaredField(name).apply { isAccessible = true }
-
         fun classNamesIn(jar: File): List<String> = ZipFile(jar).use { z ->
             z.entries().asSequence().map { it.name }.filter { it.endsWith(".class") }
                 .map { it.removeSuffix(".class").replace('/', '.') }.toList()

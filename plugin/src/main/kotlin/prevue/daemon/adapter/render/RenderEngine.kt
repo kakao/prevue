@@ -89,15 +89,14 @@ class RenderEngine(
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
+        val surfaces = try { RendererSurfaces(renderer).opened() } catch (e: RendererMismatch) { renderer.close(); throw e }
         negatives = ApkNegatives.fix(renderer, resourceApk.absolutePath)
-        renderService = privateField("renderService") as RenderService
-        baseConfiguration = privateField("baseConfiguration") as Configuration
-        resourceIds = ResourceIds(renderer)
-        loaders = SharedLoaders(spec, renderer)
+        renderService = surfaces.renderService.value
+        baseConfiguration = surfaces.baseConfiguration.value
+        resourceIds = ResourceIds(renderer, surfaces)
+        loaders = SharedLoaders(spec, surfaces)
         outDir.mkdirs()
     }
-
-    private fun privateField(name: String): Any = Renderer::class.java.getDeclaredField(name).apply { isAccessible = true }.get(renderer)
 
     internal fun preloaded(): SharedLoaders.Preloaded = loaders.preloaded(live?.task?.classLoader)
 
