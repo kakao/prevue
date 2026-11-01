@@ -51,7 +51,8 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 
 **버전.** 인자가 있으면 그것. 없으면 `[Unreleased]`를 읽고 제안한다 — 새 기능·동작 변화가 하나라도 있으면 마이너(`0.10.0 → 0.11.0`), 고친 것뿐이면 패치(`0.10.0 → 0.10.1`). 메이저는 사람이 적을 때만 올린다. `M`보다 높아야 하고 `v<버전>` 태그가 없어야 한다 — 머지(=배포) 전에 이것을 보는 곳은 여기뿐이다.
 
-**CHANGELOG 정리.** `dev-skills-src/release-notes.md`의 "릴리즈 정리"대로 한다 — **외부 기여자 · 제보자 멘션 점검**까지. 이 절이 그대로 GitHub Release 본문이 되므로 멘션은 여기서 빠지면 끝이다. 아직 파일에 쓰지 않는다.
+**CHANGELOG 정리.** `dev-skills-src/release-notes.md`의 "릴리즈 정리"대로 한다 — **외부 기여자 · 제보자 멘션 점검**과 **판의 모양**(히어로 그림 · 요약 문단 · 주제별 절 · Thanks)까지. 이 절이 그대로 GitHub Release 본문이 되므로 여기서 빠지면 끝이다. 아직 파일에 쓰지 않는다.
+히어로 그림은 `git cat-file -e origin/develop:assets/release-<버전>.png`로 있는지만 본다 — 없으면 그림 없이 가고, 확인 화면에 그렇다고 한 줄 적는다.
 
 **실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. PR마다 본문 맨 위의 Sub-Task 키(`<!-- subtask: … -->`, 없으면 `없음`)를 읽는다 — 6단계 릴리즈 캡처의 재료다.
 
@@ -62,7 +63,11 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 ```
 0.10.0 → 0.11.0   (새 기능: 헤더 워드마크 · 파일 빠른 열기 …)
 ── CHANGELOG [0.11.0] (정리본) ──
-- **…**
+히어로 assets/release-0.11.0.png | 없음 — 그림 없이
+요약 …
+### <주제> — 항목 머리 줄 …
+### Fixes — …
+### Thanks — @… | 없음
 ── 외부 기여 ──  @Dwite #29 수정 · @sergei-lapin #30 제보 · #31 수정 (정리본에 멘션함) | 없음
 ── 실리는 PR ──  #44 … · #45 … · #47 …
 ── 볼트 릴리즈 캡처 ──  #44 인터랙티브 성능 측정 · #45 헤더 워드마크 · #47 없음

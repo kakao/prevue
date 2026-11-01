@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prevue release hero</title>
+<!-- 릴리즈 노트 맨 위 그림(1280×820, 2배로 찍는다). 톤은 GitHub 소셜 프리뷰(OG)와 같다 — 배경 · 그라데이션 · 글꼴 · 형광펜 밑줄.
+     판마다 바꾸는 것은 주소의 쿼리뿐이다: kick(머리말) · l1 · l2(제목 두 줄, l2 에 형광펜) · shot(창 캡처 PNG 경로). 찍는 법은 README.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@600;700&display=block">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1280px;height:820px;overflow:hidden}
+body{background:#F6F3EC;font-family:"Google Sans Flex",sans-serif;color:#1F2328;position:relative}
+.mesh{position:absolute;inset:0;background:
+ radial-gradient(560px 380px at 6% 6%,#D9D8EC 0,transparent 70%),
+ radial-gradient(620px 460px at 98% 98%,#F7D3C3 0,transparent 70%),
+ radial-gradient(460px 320px at 90% 4%,#EFDCDD 0,transparent 70%)}
+.text{position:absolute;left:0;right:0;top:44px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.logo{display:flex;align-items:center;gap:14px;font-weight:600;font-size:36px}
+.logo svg{width:52px;height:52px;border-radius:13px;box-shadow:0 6px 18px -6px rgba(14,27,42,.45)}
+.kick{font-weight:600;font-size:24px;letter-spacing:.22em;color:#6E6A63;text-transform:uppercase}
+h1{font-weight:700;font-size:78px;letter-spacing:-1.5px;line-height:1.06}
+.mk{background:linear-gradient(transparent 62%,#F7C6B2 62%,#F7C6B2 94%,transparent 94%);padding:0 6px;margin:0 -6px}
+/* 창은 아래가 잘린다 — 헤더와 첫 줄 카드만 보이면 된다. 캡처는 readme-shots 의 창 테두리를 단 2배 PNG 다 */
+.shot{position:absolute;left:50%;top:398px;width:1040px;transform:translateX(-50%);border-radius:14px;
+ box-shadow:0 30px 60px -20px rgba(14,27,42,.42),0 8px 20px -10px rgba(14,27,42,.28)}
+.shot img{display:block;width:100%;border-radius:14px}
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+<div class="text">
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Prevue"><rect width="240" height="240" rx="54" fill="#0E1B2A"/><polygon points="120,60 172,90 120,120 68,90" fill="#CFE3FF"/><polygon points="172,90 172,150 120,180 120,120" fill="#CFE3FF" opacity=".62"/><polygon points="68,90 120,120 120,180 68,150" fill="#CFE3FF" opacity=".34"/><path d="M34 56V34H56M34 184V206H56M206 56V34H184M206 184V206H184" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><rect x=".5" y=".5" width="239" height="239" rx="53.5" fill="none" stroke="#fff" stroke-opacity=".08"/></svg> Prevue</div>
+  <div class="kick" id="kick"></div>
+  <h1><span id="l1"></span><br><span class="mk" id="l2"></span></h1>
+</div>
+<div class="shot"><img id="shot" alt=""></div>
+<script>
+const q = new URLSearchParams(location.search);
+document.getElementById("kick").textContent = q.get("kick") || "New in 0.21";
+document.getElementById("l1").textContent = q.get("l1") || "Kotlin Multiplatform,";
+document.getElementById("l2").textContent = q.get("l2") || "in your browser.";
+document.getElementById("shot").src = q.get("shot") || "shot.png";
+</script>
+</body>
+</html>
