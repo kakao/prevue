@@ -16,4 +16,4 @@ mv assets/board-kotlinconf.png <스크래치>/shot.png && git checkout assets/bo
   "file://$PWD/prototypes/release-hero/index.html?kick=New%20in%200.21&l1=Kotlin%20Multiplatform,&l2=in%20your%20browser.&shot=file://<스크래치>/shot.png"
 ```
 
-창은 아래가 잘린다 — 헤더와 첫 줄 카드가 보이면 된다. 다른 장면을 쓰면 `--bw 1040`(틀의 창 폭)을 지켜 2배 PNG가 흐려지지 않게 한다.
+창은 아래가 잘린다 — 헤더와 첫 줄 카드가 보이면 된다. 다른 장면을 쓰면 `--bw 1040`(틀의 창 폭)을 지켜 2배 PNG가 흐려지지 않게 한다. 쿼리 넷 중 하나라도 빠지면 그 자리가 빨간 `kick?` 같은 표시로 찍힌다 — 지난 판 글자로 조용히 나가지 않게. `shot` 경로에 `&`가 있으면 `%26`으로 적는다.
