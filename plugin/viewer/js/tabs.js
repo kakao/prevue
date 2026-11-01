@@ -4,15 +4,13 @@ import { $ } from "./store.js";
 import { post } from "./api.js";
 import { phrase } from "./strings.js";
 import { reduced, motionToken, motionMs } from "./motion.js";
-import { robot, kmp, kindOf } from "./platform.js";
+import { kindOf, fileIcon } from "./platform.js";
+import { showOnce } from "./capsule.js";
 
 const rail = $("rail"), list = $("railList"), glider = $("railGlider"), empty = $("railEmpty");
 let tabs = [], activeKey = null;
 
 const X = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m5 5 6 6M11 5l-6 6"/></svg>';
-const FILE = '<svg class="rt-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h5.5L12 4.5V14H4z"/></svg>';
-// 파일 아이콘 자리 — Android 전용 모듈은 문서, KMP 모듈은 소스 세트에 따라 로봇 · KMP(platform.js).
-const ICON = { file: FILE, android: robot("rt-ic"), kmp: kmp("rt-ic") };
 
 function make(t) {
   const el = document.createElement("div");
@@ -21,7 +19,7 @@ function make(t) {
   x.type = "button"; x.className = "rt-x"; x.tabIndex = -1; x.setAttribute("aria-label", phrase("tabs.close")); x.innerHTML = X;
   const name = document.createElement("span"); name.className = "rt-name";
   const mod = document.createElement("span"); mod.className = "rt-mod";
-  el.innerHTML = FILE;
+  el.innerHTML = fileIcon("file");
   el.dataset.ic = "file";
   el.append(name, mod, x);
   x.addEventListener("click", e => { e.stopPropagation(); close(el.dataset.key); });
@@ -99,12 +97,13 @@ function fill(el, t) {
   const ic = kindOf(t.sourceSet);
   if (el.dataset.ic !== ic) {
     const tpl = document.createElement("template");
-    tpl.innerHTML = ICON[ic];
+    tpl.innerHTML = fileIcon(ic);
     el.querySelector(".rt-ic").replaceWith(tpl.content.firstChild);
     el.dataset.ic = ic;
   }
   el.querySelector(".rt-mod").textContent = ((t.dim || "") + (t.module ? " · " + t.module : "")).replace(/^\s*·\s*/, "");
-  el.title = t.title;
+  // 공유 세트는 그림이 Android 빌드라는 것을 툴팁에서도 말한다 — 표식만으로는 뜻을 모른다.
+  el.title = ic === "kmp" ? t.title + "\n" + phrase("tabs.sharedTip") : t.title;
   el.classList.toggle("active", t.active);
   el.classList.toggle("stale", t.stale);
   el.setAttribute("aria-selected", String(t.active));
@@ -176,7 +175,10 @@ export function renderTabs(s) {
   }
   layout();
   tabs = next;
-  const key = (next.find(t => t.active) || {}).key || null;
+  const current = next.find(t => t.active);
+  // "공유 세트도 Android 로 그린다"는 도구의 고정 사실이라 처음 한 번만 가르친다 — 뒤로는 표식과 툴팁이 떠올리게 한다.
+  if (current && kindOf(current.sourceSet) === "kmp") showOnce("prevue.sharedOnce", phrase("capsule.sharedOnce", { sourceSet: current.sourceSet }));
+  const key = (current || {}).key || null;
   const moved = was && on && key !== activeKey && activeKey !== null;
   activeKey = key;
   glide(moved);

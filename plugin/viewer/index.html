@@ -28,7 +28,6 @@
       <div class="app" id="app">
         <span class="app-tile" id="appTile" aria-hidden="true"></span>
         <img class="app-icon" id="appIcon" alt="" hidden>
-        <span class="app-badge" id="appBadge" role="img" hidden></span>
         <div class="app-t">
           <div class="app-name" id="appName"></div>
           <div class="proj" id="proj">
@@ -145,7 +144,7 @@
 
 <!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 박스 꼬리표가 말한다(D-101). -->
 <div class="capsule" id="strip" role="status">
-  <div class="cap-main"><div id="sel"></div><div class="log" id="log"></div></div>
+  <div class="cap-main"><div class="cap-once" id="capOnce" hidden><span id="capOnceText"></span><button class="cap-x" id="capOnceX" type="button" data-t-title="capsule.dismiss" data-t-aria-label="capsule.dismiss"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6"/></svg></button></div><div id="sel"></div><div class="log" id="log"></div></div>
 </div>
 
 <!-- 작업 공간의 검사 패널(D-99) — 레일이 접힌 자리 맞은편에 크기 · 기기 · 자세 · 확대가 위에서 아래로 선다. 무대는 세로를 다 쓰고 아래는 캡슐 자리다.
