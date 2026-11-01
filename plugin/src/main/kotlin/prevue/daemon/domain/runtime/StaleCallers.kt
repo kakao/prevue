@@ -12,6 +12,7 @@ import prevue.daemon.domain.policy.CompileOrder
 import prevue.daemon.domain.policy.ExpectActual
 import prevue.daemon.domain.policy.FreshnessPolicy
 import prevue.daemon.domain.policy.LinkagePolicy
+import prevue.daemon.domain.policy.StaleReasons
 import prevue.daemon.domain.port.Compiler
 import prevue.daemon.domain.port.SourceFileRepository
 
@@ -54,8 +55,8 @@ class StaleCallers(
         val asked = files.map { it.canonicalPath }.toSet()
         val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter { it.isFile }
             .partition { FreshnessPolicy.newerThanBuild(it.lastModified(), compiler.builtAt(ws.graph.ownerOf(it))) }
-        val (held, fresh) = newer.partition { ExpectActual.declares(it, null) }
-        ed.forgetNew(built + held)
+        val fresh = holdExpectActual(ed, newer)
+        ed.forgetNew(built)
         // 읽는 사이에 또 저장되면 옛 값이 남아 기다림이 다음 저장을 기다린다.
         val seen = (files + fresh).associate { it.canonicalPath to it.lastModified() }
         val first = files + fresh
@@ -81,6 +82,26 @@ class StaleCallers(
         if (alone.ok) return done(ed, files, seen, alone)
         val asked = files.map { it.canonicalPath }.toSet()
         return if (ws.now.newFiles.any { it !in asked }) compileWithNew(ed, files, before) else Batch(files, seen, alone)
+    }
+
+    fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
+        val (held, code) = files.partition { ExpectActual.declares(it, texts[it.absolutePath]) }
+        if (held.isEmpty()) return code
+        val next = StaleReasons.expectActual(held)
+        val why = ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.let {
+            next.copy(files = (it.files + next.files).distinctBy { f -> File(f).canonicalPath }, since = it.since)
+        } ?: next
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, why)
+        ed.markCompiled(held.associate { it.canonicalPath to it.lastModified() })
+        ed.forgetNew(held)
+        return code
+    }
+
+    fun releaseHeld(ed: WorkspaceEditor, compiled: List<File>) {
+        val held = ws.now.stale[StaleReasons.EXPECT_ACTUAL] ?: return
+        val done = compiled.map { it.canonicalPath }.toSet()
+        val left = held.files.filter { File(it).canonicalPath !in done }
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, if (left.isEmpty()) null else held.copy(files = left))
     }
 
     suspend fun behindBuild(): List<File> =
