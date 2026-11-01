@@ -55,7 +55,7 @@ class KmpRenderIntegrationTest {
     private lateinit var compiler: HotCompiler
     private lateinit var resourceApk: Pair<File, File>
     private lateinit var app: ClasspathSpec
-    private lateinit var files: ProjectFiles
+    private lateinit var sourceIndex: ProjectFiles
     // 덤프만 빈 자리를 Kotlin/Native 자리로 받는다 — 머신에 이미 같은 판이 있어도 받으려 들면 여기에 생긴다
     private val konan = File(out, "konan").apply { mkdirs() }
     private val noKonan = mapOf("KONAN_DATA_DIR" to konan.path)
@@ -73,8 +73,8 @@ class KmpRenderIntegrationTest {
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
-        files = ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }
-        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), files),
+        sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }
+        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex),
             scope)
     }
 
@@ -102,17 +102,18 @@ class KmpRenderIntegrationTest {
         assertTrue(files.containsAll(listOf("PearlScreen.kt", "DrinkCard.kt", "PearlButton.kt")), "트리의 파일 — $files")
     }
 
-    // 트리는 베이스네임만 준다 — 데몬이 저장소 색인으로 풀패스를 붙인다. DrinkCard.kt 는 데몬이 보는 모듈(:feature:pearl) 밖 :core:ui 의 commonMain 이다
-    @Test @Order(4) fun `다른 모듈 commonMain 노드를 가리키면 selection이 그 commonMain 파일과 줄과 카드를 낸다`() {
+    // 트리는 베이스네임만 준다 — 데몬이 저장소 전체 색인으로 풀패스를 붙인다. DrinkCard.kt 는 데몬이 보는 모듈(:feature:pearl)의 소스 루트 밖, :core:ui 의 commonMain 이다
+    @Test @Order(4) fun `다른 모듈 commonMain 노드를 가리키면 그 commonMain 파일로 풀고 selection이 가리킨 카드를 싣는다`() {
         val list = ws.now.board!!.cards.first { it.spec.fqn.endsWith("PearlListPreview") }
         val shot = (list.result as CardResult.Drawn).shot.out
-        val node = PearlFixture.tree(shot.tree!!).nodes.first { it.file == "DrinkCard.kt" }
-        runBlocking { files.sourceFiles() }
-        val path = (uc.resolveFile(node.file) as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — ${uc.resolveFile(node.file)}")
-        val sel = runBlocking { uc.select(path, node.line, Pointed(node.name, listOf(node.name), node.sameBox, list.spec.previewId), "test") }
+        val node = PearlFixture.tree(shot.tree!!).nodes.first { it.file == "DrinkCard.kt" && it.right > it.left && it.bottom > it.top }
+        runBlocking { sourceIndex.sourceFiles() }
+        val match = uc.resolveFile(node.file)
+        val path = (match as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — $match")
         val expected = File(PearlKmpFixture.dir, "core/ui/src/commonMain/kotlin/com/example/pearl/core/ui/DrinkCard.kt")
-        assertEquals(expected.canonicalPath, File(sel.file).canonicalPath)
-        assertEquals(node.line, sel.line)
+        assertEquals(expected.canonicalPath, File(path).canonicalPath)
+        val sel = runBlocking { uc.select(path, node.line, Pointed(node.name, listOf(node.name), node.sameBox, list.spec.previewId), "test") }
+        assertEquals(list.spec, sel.preview, "가리킨 카드가 아닌 프리뷰를 실었다")
         assertEquals(shot.image!!.absolutePath, sel.image, "가리킨 카드가 아닌 그림을 실었다")
     }
 
