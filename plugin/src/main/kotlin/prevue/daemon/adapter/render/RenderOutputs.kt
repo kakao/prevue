@@ -8,6 +8,7 @@ import kotlinx.coroutines.CompletableDeferred
 import prevue.daemon.entity.PreviewSpec
 import prevue.daemon.entity.Phrase
 import prevue.daemon.entity.Verbatim
+import prevue.daemon.entity.phrase
 import prevue.daemon.domain.port.FailureKind
 import prevue.daemon.domain.port.RenderOutput
 
@@ -38,6 +39,9 @@ internal class RenderOutputs(
     fun written(
         p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, remember: Boolean = true,
     ): RenderOutput {
+        ViewInfoJson.toolingMismatch(result.rootViews)?.let {
+            return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
+        }
         val ph = timing.phases
         var t = System.nanoTime()
         val compose = if (remember) ViewInfoJson.compose(result.rootViews) else emptyList()
