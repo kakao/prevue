@@ -4,19 +4,20 @@
 
 <p align="center"><b>Your agent finally sees the Compose UI it builds.</b></p>
 
-<p align="center">Compose Previews in your browser, redrawn a second after every save.<br>No Android Studio, no build.</p>
+<p align="center">Jetpack Compose and Compose Multiplatform Previews in your browser, redrawn a second after every save.<br>No Android Studio, no build.</p>
 
 <p align="center"><b>English</b> | <a href="README.ko.md">한국어</a></p>
 
 <div align="center">
 
-[![GitHub Actions](https://img.shields.io/badge/GitHub%C2%A0Actions-build%C2%A0check-0E1B2A?logo=github&logoColor=white)](https://github.com/kakao/prevue/actions/workflows/build.yml)
-[![version](https://img.shields.io/badge/version-0.20.2-0E1B2A)](CHANGELOG.md)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-0E1B2A?logo=claude&logoColor=white)](#get-started)
-[![Codex](https://img.shields.io/badge/Codex-plugin-0E1B2A?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D)](#get-started)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-headless%20render-4285F4?logo=jetpackcompose&logoColor=white)
-![JDK](https://img.shields.io/badge/JDK-21%2B-7A8794?logo=openjdk&logoColor=white)
-[![license](https://img.shields.io/badge/license-Apache--2.0-7A8794)](LICENSE)
+[![build check](https://img.shields.io/badge/build-check-555?labelColor=0E1B2A)](https://github.com/kakao/prevue/actions/workflows/build.yml)
+[![version](https://img.shields.io/badge/version-0.20.2-555?labelColor=0E1B2A)](CHANGELOG.md)
+[![license](https://img.shields.io/badge/license-Apache--2.0-555?labelColor=0E1B2A)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code%20plugin-D97757?logo=claude&logoColor=white)](#get-started)
+[![Codex](https://img.shields.io/badge/Codex%20plugin-000000?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D)](#get-started)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-7F52FF?logo=kotlin&logoColor=white)
+![JDK](https://img.shields.io/badge/JDK%2021%2B-000000?logo=openjdk&logoColor=white)
 
 </div>
 
@@ -24,7 +25,7 @@
   <img src="assets/intro.webp" width="1000"
        alt="Prevue in 20 seconds, on the Pearl sample app. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes seven colors in Theme.kt to a dark theme, and all 30 Previews redraw each time. Interactive: the live Preview scrolls, a drink opens, and choosing size L, a topping and extra pearls changes the cup. Every screen: that drink screen steps through 320×640, 673×841 and a custom width dragged to 900, splitting into two panes from 673 wide, then iPhone Duo unfolds and folds shut to its cover screen">
 </p>
-<p align="center"><sub>Hot swap, interactive and every screen — real renders of the sample app.</sub></p>
+<p align="center"><sub>Hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
 
 ## The agent codes, you still check
 
@@ -121,6 +122,8 @@ Then tell your agent the file name. Calling the skill directly is more reliable:
 Show the Previews in ForYouScreen.kt
 ```
 
+Kotlin Multiplatform and Compose Multiplatform projects work the same way: name a file in commonMain.
+
 There's nothing to configure. The first time you run it, the agent does the setup it needs, checking with you as it goes. When it's done, your browser opens with every `@Preview` in that file.
 Prevue doesn't change your project's build files, plugins, or tasks, and it doesn't add files to your project. Gradle runs only once per module; after that, even edits to shared modules redraw right away.
 
@@ -150,9 +153,12 @@ Press `?` in the viewer for every shortcut.
 Every `@Preview` in a file is laid out on the board, grouped by function. Save, and they all redraw, with the time it took shown in the header.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom"><img src="assets/board-pearl.png" width="50%" alt="The board for ComponentPreviews.kt of the Pearl bubble tea app. The first group shows a button, filter chips, sweetness options, topping toggles, the bottom nav bar, and bag badges, with the drink detail screen below it. The page is open in a Chrome tab">
+  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time">
 </p>
-<p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a></sub></p>
+<p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf app</a>, Compose Multiplatform (Apache-2.0)</sub></p>
+
+Kotlin Multiplatform and Compose Multiplatform modules work the same way. Prevue draws their commonMain Previews from the module's Android compilation, as Android Studio does, so modules that also target iOS or the web are fine.
+Saving redraws without Gradle, and Compose Multiplatform resources (`Res`) draw as they do in the app.
 
 ### Interactive mode
 
@@ -214,6 +220,8 @@ See every command and exit code with `prevue --help`, and each command with `pre
 | Works | Doesn't work |
 |---|---|
 | Android modules (app · library) | Pure JVM modules |
+| Kotlin Multiplatform · Compose Multiplatform modules with an Android target — AGP 9's `com.android.kotlin.multiplatform.library`, or `kotlin.multiplatform` with `com.android.library` | KMP modules without an Android target, and builds other than Gradle, such as Amper |
+| Saving a commonMain file redraws it without Gradle | Files with `expect` · `actual` declarations — after a save, the old picture stays until a Gradle build |
 | Debug-type variants. Picked by Android Studio's default Build Variants rules; ask your agent for another | Release variants |
 | Top-level `@Preview` functions. Multipreview and `@PreviewParameter` are expanded too | Member Previews declared inside a class |
 | Composables that draw without a real device | Previews that need a DI container or `AndroidView` — shown with the failure kinds `DI` · `ANDROID_VIEW` |
