@@ -24,7 +24,9 @@ internal class RendererSurfaces(renderer: Renderer) {
         managerClass().getDeclaredMethod("createClassLoader", ClassLoader::class.java).apply { isAccessible = true }
     }
     val preloader = Surface("ModuleClassLoaderManager.preloader", manager) { field(managerClass(), "preloader") }
-    val preloadExecutor = Surface("ModuleClassLoaderManager.preloaderExecutor", manager) { field(managerClass(), "preloaderExecutor").get(manager.value) as Executor }
+    val preloadExecutor = Surface("ModuleClassLoaderManager.preloaderExecutor", manager) {
+        field(managerClass(), "preloaderExecutor").get(manager.value) as Executor
+    }
     val sharedClassLoaders = Surface("ModuleClassLoaderManager.sharedClassLoaders", manager) { field(managerClass(), "sharedClassLoaders").get(manager.value) }
     val invalidateAll = Surface("Cache.invalidateAll", manager) {
         Class.forName("com.google.common.cache.Cache", true, managerClass().classLoader).getMethod("invalidateAll")
