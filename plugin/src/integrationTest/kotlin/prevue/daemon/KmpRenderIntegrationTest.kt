@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -27,7 +28,9 @@ import prevue.daemon.adapter.source.SourcePreviewRepository
 import prevue.daemon.domain.Ports
 import prevue.daemon.domain.UseCases
 import prevue.daemon.domain.model.CardResult
+import prevue.daemon.domain.model.FileMatch
 import prevue.daemon.domain.model.ModuleInfo
+import prevue.daemon.domain.model.Pointed
 import prevue.daemon.domain.model.ReloadResult
 import prevue.daemon.domain.policy.StaleReasons
 import prevue.daemon.domain.port.Clock
@@ -52,6 +55,7 @@ class KmpRenderIntegrationTest {
     private lateinit var compiler: HotCompiler
     private lateinit var resourceApk: Pair<File, File>
     private lateinit var app: ClasspathSpec
+    private lateinit var files: ProjectFiles
     // 덤프만 빈 자리를 Kotlin/Native 자리로 받는다 — 머신에 이미 같은 판이 있어도 받으려 들면 여기에 생긴다
     private val konan = File(out, "konan").apply { mkdirs() }
     private val noKonan = mapOf("KONAN_DATA_DIR" to konan.path)
@@ -69,7 +73,8 @@ class KmpRenderIntegrationTest {
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
-        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }),
+        files = ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }
+        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), files),
             scope)
     }
 
@@ -97,11 +102,25 @@ class KmpRenderIntegrationTest {
         assertTrue(files.containsAll(listOf("PearlScreen.kt", "DrinkCard.kt", "PearlButton.kt")), "트리의 파일 — $files")
     }
 
-    @Test @Order(4) fun `옛 JetBrains @Preview도 직접 단 것과 멀티 프리뷰를 그린다`() {
+    // 트리는 베이스네임만 준다 — 데몬이 저장소 색인으로 풀패스를 붙인다. DrinkCard.kt 는 데몬이 보는 모듈(:feature:pearl) 밖 :core:ui 의 commonMain 이다
+    @Test @Order(4) fun `다른 모듈 commonMain 노드를 가리키면 selection이 그 commonMain 파일과 줄과 카드를 낸다`() {
+        val list = ws.now.board!!.cards.first { it.spec.fqn.endsWith("PearlListPreview") }
+        val shot = (list.result as CardResult.Drawn).shot.out
+        val node = PearlFixture.tree(shot.tree!!).nodes.first { it.file == "DrinkCard.kt" }
+        runBlocking { files.sourceFiles() }
+        val path = (uc.resolveFile(node.file) as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — ${uc.resolveFile(node.file)}")
+        val sel = runBlocking { uc.select(path, node.line, Pointed(node.name, listOf(node.name), node.sameBox, list.spec.previewId), "test") }
+        val expected = File(PearlKmpFixture.dir, "core/ui/src/commonMain/kotlin/com/example/pearl/core/ui/DrinkCard.kt")
+        assertEquals(expected.canonicalPath, File(sel.file).canonicalPath)
+        assertEquals(node.line, sel.line)
+        assertEquals(shot.image!!.absolutePath, sel.image, "가리킨 카드가 아닌 그림을 실었다")
+    }
+
+    @Test @Order(5) fun `옛 JetBrains @Preview도 직접 단 것과 멀티 프리뷰를 그린다`() {
         assertBoard(PearlKmpFixture.legacy, PearlKmpFixture.LEGACY_CARDS)
     }
 
-    @Test @Order(5) fun `common 파일을 저장하면 Gradle 없이 컴파일해 다시 그린다`() {
+    @Test @Order(6) fun `common 파일을 저장하면 Gradle 없이 컴파일해 다시 그린다`() {
         val file = PearlKmpFixture.copy(PearlKmpFixture.filter, copies)
         open(file)
         file.writeText(file.readText().replaceFirst("horizontalArrangement = Arrangement.spacedBy(8.dp)", "horizontalArrangement = Arrangement.spacedBy(10.dp)")
@@ -110,21 +129,21 @@ class KmpRenderIntegrationTest {
         assertTrue(r is ReloadResult.Rendered && r.result.ok && r.result.shot.compile != null, "컴파일해 그리지 않았다 — $r")
     }
 
-    @Test @Order(6) fun `expect actual 파일을 저장하면 컴파일하지 않고 Gradle 빌드 필요로 멈춘다`() {
+    @Test @Order(7) fun `expect actual 파일을 저장하면 컴파일하지 않고 Gradle 빌드 필요로 멈춘다`() {
         val file = PearlKmpFixture.copy(PearlKmpFixture.expectActual, copies)
         val r = runBlocking { uc.applySave(listOf(file), "test") }
         assertTrue(r is ReloadResult.NeedsGradleBuild, "멈추지 않았다 — $r")
         assertEquals(listOf(file.absolutePath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
     }
 
-    @Test @Order(7) fun `Android 타깃이 없는 모듈은 warmup이 이유를 말하고 멈춘다`() {
+    @Test @Order(8) fun `Android 타깃이 없는 모듈은 warmup이 이유를 말하고 멈춘다`() {
         val json = PearlFixture.warmupJson(PearlKmpFixture.noAndroid, env = noKonan)
         assertTrue("\"ok\": false" in json && "no Android target" in json, json)
         assertEquals(emptyList<String>(), konan.list().orEmpty().toList(), "Android 타깃 없는 모듈 덤프가 Kotlin/Native 자리에 받았다")
     }
 
     // 변형을 debug로 주면 androidMain을 못 알아봐 새 클론처럼 모듈 덤프부터 시도한다 — 덤프 스크립트가 실패에 실은 앱으로 다시 뜬다.
-    @Test @Order(8) fun `KMP 모듈 파일로 warmup하면 그 모듈을 담은 앱 덤프를 뜬다`() {
+    @Test @Order(9) fun `KMP 모듈 파일로 warmup하면 그 모듈을 담은 앱 덤프를 뜬다`() {
         for (args in listOf(emptyArray(), arrayOf("--variant", "debug"))) {
             val json = PearlFixture.warmupJson(PearlKmpFixture.board, *args, env = noKonan)
             assertTrue("\"ok\": true" in json && "\"module\": \":app\"" in json, "${args.toList()} — $json")
@@ -133,7 +152,7 @@ class KmpRenderIntegrationTest {
     }
 
     // containerSize를 처음 읽을 때 0이면 maxOf(2, (0 - 48) / 220)로 2열이 된다
-    @Test @Order(9) fun `넓은 정적 프리뷰는 첫 프레임부터 창 폭을 읽어 그 폭의 열 수로 그린다`() {
+    @Test @Order(10) fun `넓은 정적 프리뷰는 첫 프레임부터 창 폭을 읽어 그 폭의 열 수로 그린다`() {
         assertBoard(PearlKmpFixture.adaptive, 2)
         val wide = ws.now.board!!.cards.first { it.spec.fqn.endsWith("AdaptivePearlWidePreview") }
         val cards = PearlFixture.tree((wide.result as CardResult.Drawn).shot.out.tree!!).cards
@@ -141,7 +160,7 @@ class KmpRenderIntegrationTest {
     }
 
     // 덤프 스크립트는 composite 의 빌드마다 따로 돈다 — 루트 덤프가 included build 의 KMP 모듈을 못 보면 그 commonMain 이 감시 밖이다
-    @Test @Order(10) fun `included build 안 KMP 모듈도 commonMain을 감시 루트로 싣는다`() {
+    @Test @Order(11) fun `included build 안 KMP 모듈도 commonMain을 감시 루트로 싣는다`() {
         val roots = app.dependency(PearlKmpFixture.INCLUDED).sourceRoots
         assertTrue(PearlKmpFixture.includedCommon.canonicalFile in roots.map { it.canonicalFile }, "${PearlKmpFixture.INCLUDED} 감시 루트 — $roots")
     }
