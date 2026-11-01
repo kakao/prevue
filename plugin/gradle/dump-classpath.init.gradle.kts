@@ -39,25 +39,29 @@ fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n 
 
 // 옛 모양 라이브러리의 플레이버는 앱과 다를 수 있다(missingDimensionStrategy · matchingFallbacks) — 앱 변형 이름으로 짐작하면
 // 다른 플레이버의 소스를 감시한다. 그래서 Gradle 이 앱 RuntimeClasspath 에 실제로 고른 라이브러리 변형의 빌드 타입 · 플레이버를 읽는다.
-// 변형 이름은 차원 순서의 플레이버 + 빌드 타입인데 속성에 차원 순서가 없어, 빌드 타입으로 끝나고 플레이버를 다 담고 길이가 그 합인 이름을 고른다.
+// 변형 이름은 차원 순서의 플레이버 + 빌드 타입인데 속성에 차원 순서가 없어, 플레이버를 어떤 순서로 이어 붙여 빌드 타입을 단 이름과 같은 것을 고른다.
+fun <T> orders(xs: List<T>): List<List<T>> =
+    if (xs.size <= 1) listOf(xs) else xs.indices.flatMap { i -> orders(xs.filterIndexed { j, _ -> j != i }).map { listOf(xs[i]) + it } }
+
+// 같은 라이브러리에 이르는 길이 여럿이면 앱에서 가장 가까운 길의 변형을 쓴다. 프로젝트 노드만 따라간다 — 외부 모듈 아래로는 프로젝트가 없다.
 fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponentResult): Map<String, java.util.function.Predicate<String>> {
     val out = mutableMapOf<String, java.util.function.Predicate<String>>()
     val seen = mutableSetOf(root)
     val todo = ArrayDeque(listOf(root))
     while (todo.isNotEmpty()) for (d in todo.removeFirst().dependencies) {
         if (d !is org.gradle.api.artifacts.result.ResolvedDependencyResult) continue
-        val id = d.selected.id
-        if (id is ProjectComponentIdentifier) {
-            val attrs = d.resolvedVariant.attributes
-            val values = attrs.keySet().associate { k -> k.name to attrs.getAttribute(k).let { v -> (v as? Named)?.name ?: v.toString() } }
-            val buildType = values["com.android.build.api.attributes.BuildTypeAttr"]
-            if (buildType != null) {
-                val flavors = values.filterKeys { it.startsWith("com.android.build.api.attributes.ProductFlavor:") }.values.map { it.lowercase() }
-                out[buildTreePath(id) ?: id.projectPath] = java.util.function.Predicate { name ->
-                    val n = name.lowercase()
-                    n.endsWith(buildType.lowercase()) && flavors.all { n.contains(it) } && n.length == buildType.length + flavors.sumOf { it.length }
-                }
-            }
+        val id = d.selected.id as? ProjectComponentIdentifier ?: continue
+        val attrs = d.resolvedVariant.attributes
+        val values = attrs.keySet().associate { k -> k.name to attrs.getAttribute(k).let { v -> (v as? Named)?.name ?: v.toString() } }
+        val buildType = values["com.android.build.api.attributes.BuildTypeAttr"]
+        // 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
+        val key = buildTreePath(id) ?: id.projectPath.takeIf {
+            runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
+        }
+        if (buildType != null && key != null && key !in out) {
+            val flavors = values.filterKeys { it.startsWith("com.android.build.api.attributes.ProductFlavor:") }.values.toList()
+            val names = orders(flavors).map { (it + buildType).joinToString("").lowercase() }.toSet()
+            out[key] = java.util.function.Predicate { names.contains(it.lowercase()) }
         }
         if (seen.add(d.selected)) todo.add(d.selected)
     }
@@ -332,8 +336,9 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             fun norm(d: String) = File(d).toPath().normalize().toString()
             val pathByDir = moduleDirs.entries.associate { (path, dir) -> norm(dir) to path }
             val root = norm(repoRoot) + "/"
-            val pickedByDir = resolvedRoot?.orNull?.let(::pickedLibraryVariants).orEmpty()
-                .mapNotNull { (tp, picked) -> kmpDirByTreePath[tp]?.let { norm(it) to picked } }.toMap()
+            // 그래프를 걷다 실패해도 덤프를 멈추지 않는다 — 변형 이름으로 짐작하던 예전 길로 간다. KMP 모듈이 없으면 걷지 않는다
+            val pickedByDir = (if (kmpRootsByDir.isEmpty()) null else runCatching { resolvedRoot?.orNull?.let(::pickedLibraryVariants) }.getOrNull())
+                .orEmpty().mapNotNull { (tp, picked) -> kmpDirByTreePath[tp]?.let { norm(it) to picked } }.toMap()
             val kmpSourceRoots = kmpRootsByDir.mapNotNull { (at, roots) ->
                 val dir = norm(at)
                 val key = pathByDir[dir] ?: dir.takeIf { it.startsWith(root) }
