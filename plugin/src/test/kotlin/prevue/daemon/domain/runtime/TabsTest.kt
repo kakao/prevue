@@ -423,6 +423,10 @@ class TabsTest {
         assertEquals(listOf(file.canonicalPath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
         assertFalse(StaleReasons.COMPILE in ws.now.stale)
         assertEquals(file.canonicalFile, ws.now.board!!.file)
+
+        file.writeText(file.readText().replace("expect fun platform(): String\n", ""))
+        runBlocking { uc.applySave(listOf(java.io.File(fx.srcRoot.path + "/demo/../demo/Platform.kt")), "test") }
+        assertFalse(StaleReasons.EXPECT_ACTUAL in ws.now.stale, "열며 붙잡은 파일을 다른 경로 모양의 저장이 풀지 못했다")
     }
 
     @Test fun `빈 탭을 expect actual 파일 저장으로 되살리면 컴파일하지 않고 Gradle 빌드 필요로 세운다`() {

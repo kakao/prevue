@@ -63,7 +63,7 @@ class ApplySaveUseCase(
         if (code.isNotEmpty()) return compileAndRender(p, code, save.texts, save)
         if (values != null) return render(p, values, emptyList(), save.valuesSeen, save, repair = false)
         save.ed.markCompiled(save.valuesSeen)
-        return ReloadResult.NeedsGradleBuild(files, ws.now.stale.getValue(StaleReasons.EXPECT_ACTUAL).what, ws.now.stale)
+        return ReloadResult.NeedsGradleBuild(files, StaleReasons.expectActual(files).what, ws.now.stale)
     }
 
     private fun nothingShown(ed: WorkspaceEditor, valuesSeen: Map<String, Long>): ReloadResult {
@@ -150,7 +150,7 @@ class ApplySaveUseCase(
             ed.markCompiled(batch.seen + valuesSeen)
             engine.codeChanged()
             ed.markHiddenTabsStale()
-        }
+        } else ed.markCompiled(valuesSeen)
         val f = tab.file ?: return ReloadResult.NothingShown
         if (tabs.vacancy(f) != null) return ReloadResult.NothingShown
         return try { ReloadResult.Rendered(tabs.activate(ed, tab.key, null, emptyMap(), by, change?.mtimeMs ?: System.currentTimeMillis())) }
