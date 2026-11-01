@@ -102,11 +102,11 @@ class RenderIntegrationTest {
     }
 
     // NFR-5. 렌더러 · ui-tooling 판을 올리면 여기가 먼저 깨진다 — 렌더러 쪽이 어긋나면 엔진이 뜨지 않아 up()이 표면 이름과 함께 실패한다
-    @Test @Order(0) fun `고정한 렌더러와 pearl의 ui-tooling은 판이 짝이다`() = runBlocking {
+    @Test @Order(0) fun `고정한 렌더러와 pearl의 ui-tooling은 판이 짝이다`() {
         assertEquals(emptyList<String>(), RendererSurfaces.unopened(RendererSurfaces(engine.renderer).all()))
-        val out = engine.written(engine.show(ws.now.board?.focusCard?.spec ?: ws.now.current!!))
-        assertTrue(out.ok, out.message?.text)
-        val placed = PearlFixture.tree(out.tree!!).nodes.filter { it.file.endsWith(".kt") && it.line > 0 }
+        val shown = ws.now.lastResult!!
+        assertTrue(shown.ok, shown.toString())
+        val placed = PearlFixture.tree(shown.tree!!).nodes.filter { it.file.endsWith(".kt") && it.line > 0 }
         assertTrue(placed.isNotEmpty(), "Compose 트리에 파일:줄이 없다")
     }
 
