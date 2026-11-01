@@ -5,8 +5,9 @@ import { post } from "./api.js";
 import { phrase } from "./strings.js";
 import { reduced, motionToken, motionMs } from "./motion.js";
 import { kindOf, fileIcon } from "./platform.js";
-import { showOnce } from "./capsule.js";
+import { showOnce, hideOnce } from "./capsule.js";
 
+const SHARED_ONCE = "prevue.sharedOnce";
 const rail = $("rail"), list = $("railList"), glider = $("railGlider"), empty = $("railEmpty");
 let tabs = [], activeKey = null;
 
@@ -177,7 +178,9 @@ export function renderTabs(s) {
   tabs = next;
   const current = next.find(t => t.active);
   // "공유 세트도 Android 로 그린다"는 도구의 고정 사실이라 처음 한 번만 가르친다 — 뒤로는 표식과 툴팁이 떠올리게 한다.
-  if (current && kindOf(current.sourceSet) === "kmp") showOnce("prevue.sharedOnce", phrase("capsule.sharedOnce", { sourceSet: current.sourceSet }));
+  // 다른 파일로 옮기면 걷는다 — 안내가 지금 보지 않는 소스 세트를 말하지 않게.
+  if (current && kindOf(current.sourceSet) === "kmp") showOnce(SHARED_ONCE, () => phrase("capsule.sharedOnce", { sourceSet: current.sourceSet }));
+  else hideOnce(SHARED_ONCE);
   const key = (current || {}).key || null;
   const moved = was && on && key !== activeKey && activeKey !== null;
   activeKey = key;

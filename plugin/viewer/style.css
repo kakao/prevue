@@ -519,8 +519,10 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 #sel { min-width: 0; overflow-wrap: anywhere; }
 @keyframes okmark { from { opacity: 0; transform: translateY(calc(var(--motion-enter-shift) / 2)); } }
 .log { color: var(--on-surface-variant); white-space: pre-wrap; }
-/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce). 앞 문장이 요점이라 진하다. */
+/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce). 앞 문장이 요점이라 진하다.
+   오류 줄(.cap-main)과 한 줄에 서지 않고 그 위에 따로 선다 — 오류가 안내에 밀려 좁아지지 않게. */
 .cap-once { display: flex; align-items: center; gap: var(--space-8); color: var(--on-surface); }
+.cap-once:not([hidden]) + .cap-main:has(> :not(:empty)) { margin-top: var(--space-6); }
 .cap-once b { font-weight: var(--weight-semibold); }
 .cap-x { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--corner-small);
          background: none; color: var(--on-surface-variant); cursor: pointer; }

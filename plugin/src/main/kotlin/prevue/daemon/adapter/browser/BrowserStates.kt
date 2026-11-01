@@ -106,7 +106,7 @@ object BrowserStates {
             module = now.module.module.trimStart(':'), variant = now.module.variant,
             repo = repo,
             branch = side.branch,
-            sourceSet = now.module.sourceSet, kmp = now.kmp,
+            sourceSet = now.module.sourceSet,
         )
     }
 
