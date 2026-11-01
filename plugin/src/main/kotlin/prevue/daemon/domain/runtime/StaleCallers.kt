@@ -12,6 +12,7 @@ import prevue.daemon.domain.policy.CompileOrder
 import prevue.daemon.domain.policy.ExpectActual
 import prevue.daemon.domain.policy.FreshnessPolicy
 import prevue.daemon.domain.policy.LinkagePolicy
+import prevue.daemon.domain.policy.StaleReasons
 import prevue.daemon.domain.port.Compiler
 import prevue.daemon.domain.port.SourceFileRepository
 
@@ -81,6 +82,23 @@ class StaleCallers(
         if (alone.ok) return done(ed, files, seen, alone)
         val asked = files.map { it.canonicalPath }.toSet()
         return if (ws.now.newFiles.any { it !in asked }) compileWithNew(ed, files, before) else Batch(files, seen, alone)
+    }
+
+    fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
+        val (held, code) = files.partition { ExpectActual.declares(it, texts[it.absolutePath]) }
+        if (held.isEmpty()) return code
+        val next = StaleReasons.expectActual(held)
+        val why = ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.let { next.copy(files = (it.files + next.files).distinct(), since = it.since) } ?: next
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, why)
+        ed.markCompiled(held.associate { it.canonicalPath to it.lastModified() })
+        ed.forgetNew(held)
+        return code
+    }
+
+    fun releaseHeld(ed: WorkspaceEditor, compiled: List<File>) {
+        val held = ws.now.stale[StaleReasons.EXPECT_ACTUAL] ?: return
+        val left = held.files - compiled.map { it.absolutePath }.toSet()
+        ed.markStale(StaleReasons.EXPECT_ACTUAL, if (left.isEmpty()) null else held.copy(files = left))
     }
 
     suspend fun behindBuild(): List<File> =
