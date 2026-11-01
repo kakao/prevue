@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // README 그림을 다시 찍는다 — 헤드리스 Chrome 을 CDP 로 몰아 뷰어를 찍고, 창 테두리를 씌워 assets/ 에 쓴다.
 //
-//   node tools/readme-shots.mjs --nia <nowinandroid> --pearl-a <Pearl 체크아웃> --pearl-b <그 워크트리> [장면...]
+//   node tools/readme-shots.mjs --nia <nowinandroid> --pearl-a <Pearl 체크아웃> --pearl-b <그 워크트리> --kotlinconf <kotlinconf-app> [장면...]
+//
+// --kotlinconf 는 JetBrains/kotlinconf-app 체크아웃이다 — board 장면의 Compose Multiplatform 보드(commonMain)를 찍는다.
+// 덤프는 prevue warmup 으로 :app:androidApp 을 한 번 떠 둔다(공개 저장소라도 Gradle 을 돌리기 전 승인).
 //
 // --pearl-a · --pearl-b 는 fixtures/pearl 을 따로 떼어 만든 저장소와 그 워크트리다 — 픽스처를 그대로 주면 헤더의 폴더 · 브랜치가
 // 이 저장소의 것이 된다. 워크트리 장면이 헤더의 폴더 · 브랜치가 다른 두 창을 찍기 때문이다. 오른쪽 브랜치에만 1열 큰 카드를 커밋해
@@ -48,6 +51,13 @@ const PEARL = {
   showcase: `${PD}/showcase/ShowcasePreviews.kt`,
   components: `${PD}/showcase/ComponentPreviews.kt`,
 };
+const KD = "app/ui-components/src/commonMain/kotlin/org/jetbrains/kotlinconf/ui/components";
+const KC = {
+  talk: `${KD}/TalkCard.kt`,
+  speaker: `${KD}/SpeakerCard.kt`,
+  header: `${KD}/MainHeader.kt`,
+  kodee: `${KD}/Kodee.kt`,
+};
 
 const opt = {}, only = [];
 for (let a = process.argv.slice(2), i = 0; i < a.length; i++) a[i].startsWith("--") ? (opt[a[i].slice(2)] = a[++i]) : only.push(a[i]);
@@ -66,7 +76,7 @@ function prevue(cwd, ...args) {
 
 /** 그 저장소의 데몬을 files 탭으로 맞추고(마지막이 지금 탭) 뷰어 주소를 낸다. 첫 파일은 덤프가 있는 모듈이어야 한다. */
 async function viewer(repo, files) {
-  if (!repo) throw new Error("저장소 경로가 없다 — --nia · --pearl-a · --pearl-b");
+  if (!repo) throw new Error("저장소 경로가 없다 — --nia · --pearl-a · --pearl-b · --kotlinconf");
   const abs = files.map(f => join(repo, f));
   const h = prevue(repo, "health", abs[0]).json;
   if (!h) throw new Error(`${abs[0]}: health 가 답하지 않는다`);
@@ -431,10 +441,17 @@ const SCENES = {
     const url = await viewer(opt.nia, [NIA.foryou, NIA.interests, NIA.card, NIA.foryou]);
     await frame(c, "hero", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760))]);   // board 와 같은 크기 — README 한 줄에 나란히 놓인다
   },
-  // 보드 둘째 — 버블티 앱 Pearl 의 컴포넌트 쇼케이스. 화면 · 카드 · 버튼 · 내비 · 맛 패널이 한 보드에 깔린다
+  // 보드 둘째 — KotlinConf 앱의 commonMain 세션 카드. hero 의 Android 앱 옆에서 Compose Multiplatform 도 같은 보드로 그려진다는 것을 보인다.
+  // 레일의 탭 넷이 KMP 표식을 단다. 공유 세트를 처음 열면 뜨는 안내 캡슐은 걷고 찍는다
   async board(c) {
-    const url = await viewer(opt["pearl-a"], [PEARL.components]);
-    await frame(c, "board-pearl", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760))]);
+    const url = await viewer(opt.kotlinconf, [KC.speaker, KC.header, KC.kodee, KC.talk]);
+    const dismiss = async c => {
+      await c.evaluate(`localStorage.setItem("prevue.sharedOnce", "1"); location.reload(); true`);
+      await sleep(500);
+      await c.until(BOARD);
+      await sleep(500);
+    };
+    await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)]);
   },
   // 가리키기 — 작업 공간에서 ⌥+클릭한 박스와 캡슐의 파일:라인 · 사슬
   async point(c) {
