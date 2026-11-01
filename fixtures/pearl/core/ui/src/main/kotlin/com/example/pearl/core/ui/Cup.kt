@@ -26,6 +26,7 @@ import com.example.pearl.core.designsystem.FlavorColors
 import com.example.pearl.core.designsystem.PearlColors
 import com.example.pearl.core.designsystem.colors
 import com.example.pearl.core.model.Flavor
+import kotlin.math.PI
 import kotlin.math.sin
 
 /**
@@ -62,7 +63,7 @@ private fun DrawScope.drawBody(b: Body) {
             drawCircle(PearlColors.pearl.copy(alpha = a), b.r, Offset(b.x, b.y))
             drawCircle(Color.White.copy(alpha = 0.45f * a), b.r * 0.28f, Offset(b.x - b.r * 0.35f, b.y - b.r * 0.35f))
         }
-        BodyKind.ICE -> rotate(Math.toDegrees(b.angle.toDouble()).toFloat(), Offset(b.x, b.y)) {
+        BodyKind.ICE -> rotate((b.angle * (180.0 / PI)).toFloat(), Offset(b.x, b.y)) {
             val s = b.r * 1.8f
             drawRoundRect(Color.White.copy(alpha = 0.62f * a), Offset(b.x - s / 2f, b.y - s / 2f), Size(s, s), CornerRadius(3.5f))
             drawLine(Color.White.copy(alpha = 0.9f * a), Offset(b.x - s * 0.3f, b.y - s * 0.3f), Offset(b.x + s * 0.12f, b.y - s * 0.3f), 1.6f, StrokeCap.Round)
