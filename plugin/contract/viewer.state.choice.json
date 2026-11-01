@@ -66,7 +66,6 @@
     "focus": "null",
     "header": {
       "branch": "null",
-      "kmp": "boolean",
       "module": "string",
       "repo": "string",
       "repoLeaf": "string",
@@ -160,8 +159,7 @@
       "variant": "debug",
       "repo": "<repo>",
       "branch": null,
-      "sourceSet": null,
-      "kmp": false
+      "sourceSet": null
     },
     "screen": "board",
     "board": {

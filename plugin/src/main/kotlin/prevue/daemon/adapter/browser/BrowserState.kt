@@ -53,8 +53,7 @@ data class Header(val title: String, val tabTitle: String, val repoPrefix: Strin
                   val repo: String,
                   /** 대상 저장소의 지금 브랜치(detached면 짧은 해시). 저장소가 아니면 null. 폴더 이름과 따로 논다 — 워크트리에서 브랜치를 바꿀 수 있다. */
                   val branch: String? = null,
-                  val sourceSet: String? = null,
-                  val kmp: Boolean = false)
+                  val sourceSet: String? = null)
 
 data class BoardScreen(val file: String, val gen: Int, val focus: Int, val groups: List<CardGroup>)
 

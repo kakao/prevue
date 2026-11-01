@@ -12,7 +12,7 @@ fun BrowserState.toJson(): Map<String, Any?> = mapOf(
     "version" to version,
     "header" to mapOf("title" to header.title, "tabTitle" to header.tabTitle, "repoPrefix" to header.repoPrefix,
         "repoLeaf" to header.repoLeaf, "module" to header.module, "variant" to header.variant, "repo" to header.repo,
-        "branch" to header.branch, "sourceSet" to header.sourceSet, "kmp" to header.kmp),
+        "branch" to header.branch, "sourceSet" to header.sourceSet),
     "screen" to screen.name.lowercase(),
     "board" to board?.let { b ->
         mapOf("file" to b.file, "gen" to b.gen, "focus" to b.focus, "groups" to b.groups.map { g ->
