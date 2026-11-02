@@ -9,8 +9,8 @@ import kotlin_source  # noqa: E402
 import lint  # noqa: E402
 import slop  # noqa: E402
 
-DOMAIN = "plugin/src/main/kotlin/prevue/daemon/domain/A.kt"
-ADAPTER = "plugin/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
+DOMAIN = "plugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt"
+ADAPTER = "plugin/daemon/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
@@ -107,18 +107,22 @@ class Comments(unittest.TestCase):
         self.assertEqual(self.comments(text, {4}), [])
 
     def test_옮긴_파일은_옛_경로와_대조한다(self):
-        out = "R097\tplugin/src/main/kotlin/a/Old.kt\tplugin/src/main/kotlin/b/New.kt\nM\tplugin/src/main/kotlin/c/C.kt\nA\tplugin/src/main/kotlin/d/D.kt\n"
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/b/New.kt": "plugin/src/main/kotlin/a/Old.kt"})
+        out = "R097\tplugin/daemon/src/main/kotlin/a/Old.kt\tplugin/daemon/src/main/kotlin/b/New.kt\nM\tplugin/daemon/src/main/kotlin/c/C.kt\nA\tplugin/daemon/src/main/kotlin/d/D.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/b/New.kt": "plugin/daemon/src/main/kotlin/a/Old.kt"})
 
     def test_rename_으로_안_잡힌_이동은_파일_이름으로_짝짓는다(self):
-        out = ("D\tplugin/src/main/kotlin/usecase/Shot.kt\nA\tplugin/src/main/kotlin/domain/runtime/Shot.kt\n"
-               "D\tplugin/src/main/kotlin/usecase/Gone.kt\nA\tplugin/src/main/kotlin/c/Fresh.kt\n"
-               "D\tplugin/src/main/kotlin/a/Twin.kt\nD\tplugin/src/main/kotlin/b/Twin.kt\nA\tplugin/src/main/kotlin/c/Twin.kt\n")
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/domain/runtime/Shot.kt": "plugin/src/main/kotlin/usecase/Shot.kt"})
+        out = ("D\tplugin/daemon/src/main/kotlin/usecase/Shot.kt\nA\tplugin/daemon/src/main/kotlin/domain/runtime/Shot.kt\n"
+               "D\tplugin/daemon/src/main/kotlin/usecase/Gone.kt\nA\tplugin/daemon/src/main/kotlin/c/Fresh.kt\n"
+               "D\tplugin/daemon/src/main/kotlin/a/Twin.kt\nD\tplugin/daemon/src/main/kotlin/b/Twin.kt\nA\tplugin/daemon/src/main/kotlin/c/Twin.kt\n")
+        self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/domain/runtime/Shot.kt": "plugin/daemon/src/main/kotlin/usecase/Shot.kt"})
 
     def test_plugin_으로_옮기며_고친_파일은_옛_자리와_짝짓는다(self):
-        out = "D\tsrc/main/kotlin/a/Moved.kt\nA\tplugin/src/main/kotlin/a/Moved.kt\nD\tfixtures/x/Moved2.kt\nA\tplugin/src/main/kotlin/b/Moved2.kt\n"
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/a/Moved.kt": "src/main/kotlin/a/Moved.kt"})
+        out = "D\tsrc/main/kotlin/a/Moved.kt\nA\tplugin/daemon/src/main/kotlin/a/Moved.kt\nD\tfixtures/x/Moved2.kt\nA\tplugin/daemon/src/main/kotlin/b/Moved2.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/a/Moved.kt": "src/main/kotlin/a/Moved.kt"})
+
+    def test_daemon_으로_옮기며_고친_파일은_옛_자리와_짝짓는다(self):
+        out = "D\tplugin/src/main/kotlin/a/Moved.kt\nA\tplugin/daemon/src/main/kotlin/a/Moved.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/a/Moved.kt": "plugin/src/main/kotlin/a/Moved.kt"})
 
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])

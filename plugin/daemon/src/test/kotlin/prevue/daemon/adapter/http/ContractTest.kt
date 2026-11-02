@@ -22,7 +22,7 @@ import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.workspace
 
 /**
- * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `contract/<이름>.json`과 대조한다.
+ * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `src/test/contract/<이름>.json`과 대조한다.
  * CLI·스킬·뷰어가 읽는 것은 이 JSON이다 — 안쪽을 옮기는 동안 여기가 초록이면 바깥이 본 표면은 그대로다.
  * 값은 대조하지 않는다(경로·시각·ms가 매번 다르다). 예시는 문서용으로 함께 적는다.
  *
@@ -39,7 +39,7 @@ class ContractTest {
     private val viewer = server.browser
     private val events = CopyOnWriteArrayList<Map<String, Any?>>()
     private val update = System.getProperty("prevue.contract.update") == "true"
-    private val dir = File("contract")
+    private val dir = File("src/test/contract")
 
     @BeforeAll fun up() {
         server.start()
@@ -205,7 +205,7 @@ class ContractTest {
         val actual = mapOf("status" to code, "schema" to schema(body))
         val file = File(dir, "$name.json")
         if (update) { write(file, actual + mapOf("example" to normalize(body))); return emptyList() }
-        if (!file.isFile) return listOf("$name: contract/$name.json 이 없다")
+        if (!file.isFile) return listOf("$name: src/test/contract/$name.json 이 없다")
         @Suppress("UNCHECKED_CAST")
         val want = Json.parse(file.readText()) as Map<String, Any?>
         val diffs = ArrayList<String>()
@@ -232,7 +232,7 @@ class ContractTest {
             val state = listOfNotNull(known?.get("state"), byType["state"]).reduce(::union)
             return compare("events", 200, byType + ("state" to state))
         }
-        if (want == null || known == null) return listOf("events: contract/events.json 이 없다")
+        if (want == null || known == null) return listOf("events: src/test/contract/events.json 이 없다")
         val diffs = ArrayList<String>()
         diff("events:", want["schema"]!! - "state", schema(byType - "state"), diffs)
         if (byType["state"] == null) diffs += "events:state 빠짐"

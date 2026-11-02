@@ -87,13 +87,13 @@ git worktree add .worktrees/<작업명> -b worktree-<작업명> origin/develop
 
 ```sh
 git log -1 --oneline                 # origin/develop 의 끝인지 본다 — 아니면 origin/HEAD 가 main 이다(AGENTS.md 클론 직후)
-(cd plugin && ./gradlew --offline installPrevue)    # 이 체크아웃의 plugin/bin/prevue 가 쓸 실행 파일. 스킬 · 문서만 고치면 건너뛴다
+(cd plugin/daemon && ./gradlew --offline installPrevue)    # 이 체크아웃의 plugin/bin/prevue 가 쓸 실행 파일. 스킬 · 문서만 고치면 건너뛴다
 ```
 
 ## 3. 개발
 
 - **성공 기준마다 증거를 남긴다** — 무엇을 쳐서 무엇을 봤는지. 5단계의 검증 기록이 된다.
-  - 단위 테스트 `(cd plugin && ./gradlew --offline test)` · CLI 판정 `python3 -m unittest discover -s tests/cli` · 스킬 두 벌 `sh tools/gen-skills.sh --check`
+  - 단위 테스트 `(cd plugin/daemon && ./gradlew --offline test)` · CLI 판정 `python3 -m unittest discover -s tests/cli` · 스킬 두 벌 `sh tools/gen-skills.sh --check`
   - 렌더는 **이 워크트리의** `plugin/bin/prevue`로 본다(`AGENTS.md` "브랜치와 워크트리").
   - 뷰어는 헤드리스 Chrome으로 본다. 모션 느낌 · Safari처럼 사람 눈이 필요한 것은 "사람 확인 전"으로 적어 두고 막지 않는다.
 - 사용자에게 보이는 변화는 `CHANGELOG.md` `[Unreleased]`에 적는다 — 무엇을 어떤 모양으로 쓰나, 외부 제보 · 기여를 어떻게 멘션하나는 `dev-skills-src/release-notes.md`가 갖는다. 그 항목이 곧 GitHub Release 본문이다.
@@ -116,7 +116,7 @@ develop으로 가는 PR에도 빌드 검증(CI)이 돌지만 머지 관문은 �
 sh tools/gen-skills.sh --check
 sh tools/plugin-copies.sh --check   # plugin/ 의 LICENSE · NOTICE.md 가 루트 원본과 같다(D-123)
 python3 -m unittest discover -s tests/cli
-(cd plugin && ./gradlew --offline test)   # 소스 · 빌드 파일을 안 건드렸으면(문서 · 스킬만) 건너뛴다
+(cd plugin/daemon && ./gradlew --offline test)   # 소스 · 빌드 파일을 안 건드렸으면(문서 · 스킬만) 건너뛴다
 sh tools/lint.sh                     # Kotlin · 뷰어 날값 린트(D-70 · D-96) — 판단하지 말고 결과대로 고친다
 ```
 

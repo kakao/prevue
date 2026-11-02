@@ -11,7 +11,7 @@ README 상단 영상을 찍는 출발점이다. 에이전트가 프롬프트 한
 ## 판마다
 
 ```sh
-./gradlew --offline installPrevue                                   # 저장소에서 — 영상은 개발판으로 찍는다
+(cd plugin/daemon && ./gradlew --offline installPrevue)              # 저장소에서 — 영상은 개발판으로 찍는다
 VIEWER_SURFACE=<cmux 브라우저 판> sh fixtures/pearl-demo/stage.sh   # 기본 ~/Desktop/pearl
 ```
 

@@ -80,7 +80,7 @@ class Seat(Case):
         self.addCleanup(self.server.shutdown)
         daemons = os.path.join(self.home, ".prevue", "daemons")
         os.makedirs(daemons)
-        # 기록은 명령줄이 그 포트의 데몬일 때만 산 것으로 읽힌다(bin/daemon_records.py ours)
+        # 기록은 명령줄이 그 포트의 데몬일 때만 산 것으로 읽힌다(cli/daemon_records.py ours)
         stand_in = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "prevue.daemon.MainKt", "--port", str(self.port)])
         self.addCleanup(stand_in.wait)
         self.addCleanup(stand_in.kill)

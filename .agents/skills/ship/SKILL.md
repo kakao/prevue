@@ -57,7 +57,7 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 
 **실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. PR마다 본문 맨 위의 Sub-Task 키(`<!-- subtask: … -->`, 없으면 `없음`)를 읽는다 — 6단계 릴리즈 캡처의 재료다.
 
-**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
+**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
 
 이것을 한 화면으로 보이고 승인을 받는다.
 
@@ -72,7 +72,7 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 ── 외부 기여 ──  @Dwite #29 수정 · @sergei-lapin #30 제보 · #31 수정 (정리본에 멘션함) | 없음
 ── 실리는 PR ──  #44 … · #45 … · #47 …
 ── 볼트 릴리즈 캡처 ──  #44 인터랙티브 성능 측정 · #45 헤더 워드마크 · #47 없음
-── 스킬 평가 ──  스킬 · 도움말이 바뀌었다(skills-src 3 · bin/help 1) → PR을 연 뒤 CI와 나란히 Claude · Codex 평가를 돌린다(Claude 약 $4 · 5~10분, 빼려면 말씀)
+── 스킬 평가 ──  스킬 · 도움말이 바뀌었다(skills-src 3 · cli/help 1) → PR을 연 뒤 CI와 나란히 Claude · Codex 평가를 돌린다(Claude 약 $4 · 5~10분, 빼려면 말씀)
 진행할까요? 버전 커밋 → develop에 밀고 PR → CI ∥ 스킬 평가 → 모두 초록이면 main 머지(배포) → 태그 · Release → 볼트 캡처 순서로 끝까지 갑니다.
 ```
 
@@ -119,7 +119,7 @@ gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 
 **상태가 없는 head.** 평가 도중이나 실패 뒤 고침으로 PR head가 바뀌면(develop이 움직였다) 새 head에는 상태가 없다. 1단계 · 4단계 모두 같은 규칙이다:
 
 ```sh
-git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
+git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
 ```
 
 비었으면 앞 결과를 새 head에 그대로 올리고(설명 끝에 "· 앞 커밋 <짧은 sha> 결과"), 아니면 새 head에서 평가를 다시 돌린다. 앞 head는 PR 코멘트의 평가 결과나 `gh api $GHE repos/$R/commits/<sha>/status`로 찾는다.

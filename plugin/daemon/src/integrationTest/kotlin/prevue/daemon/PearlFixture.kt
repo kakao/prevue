@@ -46,7 +46,7 @@ object PearlFixture {
     /** installPrevue가 적은 툴체인 자리 하나. 값은 `$ROOT` · `$HOME` 기준이다. */
     private fun env(key: String): File? {
         val root = ROOT ?: return null
-        val line = File(root, "build/prevue-env").takeIf { it.isFile }?.readLines()?.firstOrNull { it.startsWith("$key=") } ?: return null
+        val line = File(root, "daemon/build/prevue-env").takeIf { it.isFile }?.readLines()?.firstOrNull { it.startsWith("$key=") } ?: return null
         return File(line.substringAfter('=').trim('"').replace("\$ROOT", root.path).replace("\$HOME", HOME))
     }
 

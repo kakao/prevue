@@ -20,10 +20,10 @@ import kotlin_source  # noqa: E402
 import slop  # noqa: E402
 import viewer  # noqa: E402
 
-PLUGIN = "plugin"
-ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/")
-# plugin/ 으로 옮기기 전의 자리(D-123) — 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
-OLD_ROOTS = ("src/main/kotlin/", "src/bridge/kotlin/")
+PLUGIN = "plugin/daemon"
+ROOTS = ("plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/")
+# 옮기기 전의 자리 — plugin/daemon/ 앞(D-136)과 plugin/ 앞(D-123). 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
+OLD_ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
 DETEKT_REPORTS = tuple("%s/%s/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge"))

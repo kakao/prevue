@@ -101,7 +101,7 @@ class FoundJdk(JdkCase):
         self.assertNotIn("jdk", out["missing"], out)
 
     def test_start_도_다_찾아봤다고_말한다(self):
-        p = subprocess.run(["python3", str(ROOT / "bin/prevue_plan.py"), "runtime-missing", "/nowhere", "", "", "none"],
+        p = subprocess.run(["python3", str(ROOT / "cli/prevue_plan.py"), "runtime-missing", "/nowhere", "", "", "none"],
                            capture_output=True, text=True)
         out = json.loads(p.stdout)
         self.assertEqual((out["missing"], out["jdkSearched"]), (["jdk"], True), out)

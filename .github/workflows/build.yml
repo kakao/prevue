@@ -10,7 +10,7 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
-# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/build/prevue-env)를 bash 가 아니라 sh 로 본다.
+# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/daemon/build/prevue-env)를 bash 가 아니라 sh 로 본다.
 defaults:
   run:
     shell: sh
@@ -58,16 +58,16 @@ jobs:
           distribution: temurin
           java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build.gradle.kts 가 고정한다
 
-      # 제품 빌드는 플러그인 폴더(plugin/)가 하나의 Gradle 프로젝트다 — 설치본이 그 자리에서 굽는다.
+      # 제품 빌드는 plugin/daemon/ 이 하나의 Gradle 프로젝트다 — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
-        working-directory: plugin
+        working-directory: plugin/daemon
         run: |
           set -eu
           ./gradlew installPrevue --no-daemon
 
       # 가짜 포트 위의 Session·Server 테스트. 조용히 되돌아가도 화면은 멀쩡한 규칙들이라 눈으로는 못 잡는다.
       - name: 데몬 단위 테스트
-        working-directory: plugin
+        working-directory: plugin/daemon
         run: ./gradlew test --no-daemon
 
       # 슬롭 규칙 · detekt 지표 · 새 주석(D-70). 작업 PR 마다 로컬에서 돌렸으면 깨끗하다 — 여기는 건너뛴 것을 잡는 그물이다.
@@ -83,20 +83,20 @@ jobs:
         working-directory: plugin
         run: |
           set -eu
-          test -s build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
+          test -s daemon/build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
 
       - name: 빌드 결과를 확인한다
         working-directory: plugin
         run: |
           set -eu
-          test -s build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
+          test -s daemon/build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
 
           # prevue-env 는 절대 경로를 적지 않는다 — 빌드한 머신에서만 맞는 값이 되기 때문이다.
           # 값은 ROOT(플러그인 디렉터리)와 HOME 기준이라 읽는 쪽이 ROOT 를 준다. bin/prevue 가 하는 것과 같다.
-          grep -qE '=\"/|:/[A-Za-z]' build/prevue-env \
-            && { echo "::error file=build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' build/prevue-env; exit 1; } || true
+          grep -qE '=\"/|:/[A-Za-z]' daemon/build/prevue-env \
+            && { echo "::error file=daemon/build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' daemon/build/prevue-env; exit 1; } || true
           ROOT="$PWD"
-          . build/prevue-env
+          . daemon/build/prevue-env
           # 이름으로 값을 읽는다. 이름은 아래 목록으로 한정된다.
           for NAME in PREVUE_CP PREVUE_BRIDGE PREVUE_LAYOUTLIB PREVUE_COMPILER PREVUE_VIEWER; do
             eval "VAL=\${$NAME:-}"
