@@ -61,6 +61,7 @@ class LayerRuleTest {
             "domain/O.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
             "adapter/render/M.kt" to "package prevue.daemon.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "adapter/render/V.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.adapter.compile.HotCompiler\n",
+            "domain/Z5.kt" to "package prevue.daemon.domain\nfun z5(fs: List<java.io.File>) = fs.filter(java.io.File::isFile)\n",
             "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
             "domain/runtime/W.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.policy.Pacing\nimport prevue.daemon.domain.model.Board\nimport prevue.daemon.domain.port.Clock\n",
             // entity 의 최상위 타입은 기술 어댑터가 본다 — Picked 는 입구(cli)만, Lonely 는 아무도 안 본다. 중첩 타입은 따지지 않는다.
@@ -73,7 +74,7 @@ class LayerRuleTest {
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
                 "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
-                "domain/Y2.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt",
+                "domain/Y2.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
                 "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
     }
@@ -101,7 +102,7 @@ object LayerRule {
 
     /** D-139. core 는 파일 시스템을 직접 만지지 않는다 — 읽기 · 시각 · 목록은 SourceFileRepository, 산출물 지우기는 PreviewRenderer 다. `File` 을 경로 값으로 드는 것과 canonicalPath(키 정규화)는 된다. */
     private val fileSystemCall = Regex(
-        """\.(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines)\b""")
+        """(?:\.|::)(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines)\b""")
 
     private fun fileSystemCalls(path: String, text: String): List<String> {
         if (path.substringBefore('/') !in CORE) return emptyList()

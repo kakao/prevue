@@ -17,7 +17,7 @@ data class BuildChange(
     val deps: List<File> = emptyList(),
     val resources: List<File> = emptyList(),
     val buildFiles: List<File> = emptyList(),
-    val outputsExist: Boolean = true,
+    val outputsExist: Boolean,
 ) {
     val built: List<File> get() = own + deps
 }

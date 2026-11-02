@@ -145,7 +145,7 @@ class ContractTest {
         fx.compiler.ok = true
         post("/reload", mapOf("files" to listOf(f))); ws.awaitBoardFilled()
 
-        val built = prevue.daemon.domain.port.BuildChange(own = listOf(File(fx.root, "app/build/classes")))
+        val built = prevue.daemon.domain.port.BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true)
         runBlocking { uc.externalBuild(built, done = false) }
         check("wait.build-pending", post("/wait", mapOf("files" to listOf(f), "timeoutMs" to 50)))
         runBlocking { uc.externalBuild(built, done = true) }

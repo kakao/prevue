@@ -358,7 +358,7 @@ class UseCaseTest {
     // 밖의 Gradle이 이 모듈을 다시 빌드했다 — 우리가 스스로 닫는다. 닫은 렌더의 응답이 "낡았다"고 말하면 그것을 읽는 에이전트가 속는다.
     @Test fun `밖의 빌드는 끝나면 스스로 닫고 닫은 뒤의 낡음을 싣는다`() {
         val uc = opened()
-        val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")))
+        val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
         assertEquals(ExternalResult.BuildPending, runBlocking { uc.externalBuild(built, done = false) })
         assertTrue("build" in uc.workspace.now.stale)
 
@@ -372,7 +372,7 @@ class UseCaseTest {
     // Q6. 밖의 Gradle이 의존 모듈만 빌드했으면 그 모듈의 오버레이만 버린다 — 앱 쪽 편집은 남는다(성공 기준 5). 그 모듈을 가진 엔진은 하나다(D-38).
     @Test fun `의존 모듈의 빌드는 그 모듈의 오버레이만 버리고 엔진을 새로 받게 한다`() {
         val uc = opened()
-        val r = runBlocking { uc.externalBuild(BuildChange(own = listOf(fx.libOut)), done = true) }
+        val r = runBlocking { uc.externalBuild(BuildChange(own = listOf(fx.libOut), outputsExist = true), done = true) }
         assertTrue(r is ExternalResult.Redrawn)
         assertEquals(listOf(":lib"), fx.compiler.cleared.toList())
         assertEquals(1, fx.renderer.buildChanges)
@@ -423,7 +423,7 @@ class UseCaseTest {
     // 열린 프리뷰가 없을 때 바뀐 리소스 APK를 버리면 다음 show 가 옛 APK로 그리면서 낡음을 말하지 않는다.
     @Test fun `프리뷰가 없을 때의 리소스 · 빌드 파일 변화도 다음 show 가 싣는다`() {
         val uc = fx.useCases(FakeClock())
-        val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")))
+        val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")), outputsExist = false)
         assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(change, done = true) })
         val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(setOf("resources", "build-files"), r.stale.keys)
@@ -456,7 +456,7 @@ class UseCaseTest {
     @Test fun `보여 주는 것이 없으면 저장도 밖의 변화도 거른다`() {
         val uc = fx.useCases()
         assertEquals(ReloadResult.NothingShown, uc.save("watch"))
-        val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")))
+        val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
         assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(built, done = true) })
         assertTrue(uc.workspace.now.stale.isEmpty())
     }

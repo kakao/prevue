@@ -44,7 +44,7 @@ class HotSwapRunnerTest {
     }
 
     @Test fun `밖의 빌드는 다 쓰인 뒤에만 남기고 status에 감시 비용이 실린다`() {
-        val built = BuildChange(own = listOf(File(fx.root, "app/build/classes")))
+        val built = BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true)
         val line = firstLog {
             builds.fire(built, done = false)
             builds.fire(built, done = true)

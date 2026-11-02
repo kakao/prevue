@@ -2,6 +2,8 @@ package prevue.daemon.adapter.source
 
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +53,9 @@ class ProjectFiles(private val repoRoot: File, roots: List<File>) : SourceFileRe
 
     override fun read(file: File): String? = try { file.readText() } catch (_: IOException) { null }
 
-    override fun modifiedAt(file: File): Long? = file.takeIf { it.isFile }?.lastModified()
+    override fun modifiedAt(file: File): Long? = try {
+        Files.readAttributes(file.toPath(), BasicFileAttributes::class.java).takeIf { it.isRegularFile }?.lastModifiedTime()?.toMillis()
+    } catch (_: IOException) { null }
 
     override fun valueFiles(resRoots: List<File>): List<File> =
         ValueDirs.of(resRoots).flatMap { d -> d.listFiles { f -> f.isFile }.orEmpty().sortedBy { it.name } }

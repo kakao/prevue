@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import prevue.daemon.adapter.dump.ClasspathSpec
 import prevue.daemon.adapter.dump.DumpPaths
+import prevue.daemon.adapter.render.RenderOutputs
 import prevue.daemon.adapter.source.ProjectFiles
 import prevue.daemon.adapter.source.SourcePreviewRepository
 import prevue.daemon.adapter.source.ValueDirs
@@ -217,8 +218,8 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         check(gate.await(5, TimeUnit.SECONDS)) { "awaitWritesHold가 안 풀렸다" }
     }
 
-    override fun discard(out: RenderOutput) = listOfNotNull(out.image, out.tree).forEach { it.delete() }
-    override fun lost(out: RenderOutput): Boolean = out.image?.isFile == false
+    override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
+    override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
 
     override val bootstrapMs = 0L
     override val loaderGen = 0

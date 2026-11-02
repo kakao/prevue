@@ -19,7 +19,7 @@ import prevue.daemon.fake.workspace
 
 class ExternalBuildRecoveryTest {
     private val fx = Fixture()
-    private val built get() = BuildChange(own = listOf(File(fx.root, "app/build/classes")))
+    private val built get() = BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true)
 
     @AfterEach fun tearDown() = fx.close()
 
