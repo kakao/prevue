@@ -2,7 +2,7 @@
 """Codex 스킬 평가(NFR-15 · D-55) — tools/skill-eval.sh(Claude `plugin eval`)와 같은 케이스 · 같은 가짜 prevue 를 Codex 로 돌린다.
 
 Codex 에는 plugin eval 이 없어 여기서 조립 · 실행 · 채점을 한다.
-- 조립: build/eval-codex/market 에 로컬 마켓플레이스(`prevue-eval`)를 짓는다 — 진짜 plugin/codex/skills · plugin/cli/help 에 가짜 bin/prevue.
+- 조립: build/eval-codex/market 에 로컬 마켓플레이스(`prevue-eval`)를 짓는다 — 진짜 plugin/skills/codex · plugin/cli/help 에 가짜 bin/prevue.
 - 실행: 케이스마다 임시 작업 디렉터리에 scaffold.sh 를 돌리고 `codex exec --json` 으로 프롬프트 하나를 보낸다.
   사용자 설정(`~/.codex/config.toml`)은 읽지 않는다(--ignore-user-config) — 설치된 진짜 prevue 플러그인 · 훅 · 다른 플러그인이
   섞이지 않게. 인증은 CODEX_HOME 그대로다(갱신 토큰을 복사하면 원래 Codex 의 로그인이 풀릴 수 있다).
@@ -72,7 +72,12 @@ def assemble(src=ROOT):
     # 플러그인은 plugin/ 에 있다(D-123). 그 전 판의 체크아웃은 루트가 곧 플러그인이다
     product = os.path.join(src, "plugin") if os.path.isdir(os.path.join(src, "plugin")) else src
     shutil.copy(os.path.join(product, ".codex-plugin", "plugin.json"), os.path.join(plugin, ".codex-plugin", "plugin.json"))
-    shutil.copytree(os.path.join(product, "codex"), os.path.join(plugin, "codex"))
+    # 스킬은 skills/codex/ 에 있다(D-138). 그 전 판은 codex/skills/ 다 — 복사한 매니페스트의 skills 경로와 같은 자리에 둔다
+    skills = os.path.join(product, "skills", "codex")
+    if os.path.isdir(skills):
+        shutil.copytree(skills, os.path.join(plugin, "skills", "codex"))
+    else:
+        shutil.copytree(os.path.join(product, "codex"), os.path.join(plugin, "codex"))
     # 도움말은 cli/ 에 있다(D-137). 그 전 판은 bin/help 다
     helps = os.path.join(product, "cli", "help")
     shutil.copytree(helps if os.path.isdir(helps) else os.path.join(product, "bin", "help"), os.path.join(plugin, "cli", "help"))
@@ -398,7 +403,7 @@ def main(argv):
     ap.add_argument("--regrade", metavar="REPORT", help="모델을 다시 부르지 않고 저장된 report.json 의 트레이스를 지금 채점기로 다시 채점한다(llm 채점은 그대로 둔다)")
     ap.add_argument("--clean", action="store_true", help="Codex 캐시에 둔 평가용 플러그인(plugins/cache/prevue-eval)을 지우고 끝낸다")
     ap.add_argument("--skills-from", metavar="CHECKOUT", default=ROOT,
-                    help="스킬(codex/) · 도움말(cli/help)을 이 체크아웃에서 가져온다 — 다른 판과 견줄 때. 가짜 CLI · 케이스는 이 체크아웃 것."
+                    help="스킬(skills/codex/) · 도움말(cli/help)을 이 체크아웃에서 가져온다 — 다른 판과 견줄 때. 가짜 CLI · 케이스는 이 체크아웃 것."
                          " 설치 자리(Codex 캐시)가 하나라 두 판은 차례로 돌린다")
     args = ap.parse_args(argv)
     if args.clean:

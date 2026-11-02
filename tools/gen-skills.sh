@@ -1,13 +1,14 @@
 #!/bin/sh
 # 원본 한 벌에서 에이전트별 스킬 두 벌을 만든다. 원본은 둘이다.
-#   skills-src/      → plugin/skills/ · plugin/codex/skills/   제품 — 플러그인에 실려 Prevue 사용자에게 간다
+#   skills-src/      → plugin/skills/claude/ · plugin/skills/codex/   제품 — 플러그인에 실려 Prevue 사용자에게 간다
 #   dev-skills-src/  → .claude/skills/ · .agents/skills/ 이 저장소를 개발할 때만 — 플러그인에 싣지 않는다(implement · ship)
 # 손으로 두 벌을 고치면 공통 내용이 조용히 어긋난다. 원본은 여기 하나고, 두 벌은 생성물이다.
 #
 # 원본에서 한 에이전트에만 줄 구간은 제 줄에 놓인 표시로 감싼다.
 #   <!-- only:claude -->  …  <!-- /only -->
 #   <!-- only:codex -->   …  <!-- /only -->
-# 원본은 plugin/ 밖에 둔다 — Claude Code 는 매니페스트와 무관하게 플러그인 루트의 skills/ 를 스캔해 표시째 읽는다.
+# 원본은 plugin/ 밖에 둔다 — Claude Code 는 매니페스트와 무관하게 플러그인 루트의 skills/<이름>/SKILL.md 를 스캔해 표시째 읽는다.
+# 두 벌은 skills/claude/ · skills/codex/ 한 단계 아래에 두고 매니페스트의 skills 경로로 가리킨다(D-138) — 기본 스캔에 안 잡힌다.
 #
 #   tools/gen-skills.sh           만든다
 #   tools/gen-skills.sh --check   만든 것이 커밋된 두 벌과 다르면 무엇이 다른지 말하고 1로 끝난다
@@ -40,8 +41,8 @@ gen() {  # gen <claude|codex> <원본> <출력>
 # out_dir <원본> <claude|codex>
 out_dir() {
   case "$1:$2" in
-    skills-src:claude) echo plugin/skills ;;
-    skills-src:codex) echo plugin/codex/skills ;;
+    skills-src:claude) echo plugin/skills/claude ;;
+    skills-src:codex) echo plugin/skills/codex ;;
     dev-skills-src:claude) echo .claude/skills ;;
     dev-skills-src:codex) echo .agents/skills ;;
   esac
@@ -81,4 +82,4 @@ for R in $SRCS; do
     done
   done
 done
-echo "plugin/skills/ · plugin/codex/skills/ · .claude/skills/ · .agents/skills/ 를 만들었다"
+echo "plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/ 를 만들었다"

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class SkillBudgetTest {
     @Test fun `스킬은 입구 하나이고 에이전트마다 20KB 이하다`() {
-        val over = listOf("../skills", "../codex/skills").flatMap { root ->
+        val over = listOf("../skills/claude", "../skills/codex").flatMap { root ->
             val sizes = File(root).listFiles { f -> f.isDirectory }.orEmpty()
                 .associate { it.name to File(it, "SKILL.md").length() }
             assertEquals(setOf("prevue"), sizes.keys, "$root 에 입구 말고 다른 스킬이 있다(D-86)")
