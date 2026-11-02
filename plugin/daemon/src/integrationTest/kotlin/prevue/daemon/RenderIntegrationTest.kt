@@ -1,5 +1,6 @@
 package prevue.daemon
 
+import prevue.daemon.adapter.render.toBitmap
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.CoroutineScope
@@ -940,7 +941,7 @@ class RenderIntegrationTest {
     }
 
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =
-        a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.getRGB(x, y) == b.getRGB(x, y) } }
+        samePixels(a.toBitmap(), b.toBitmap())
 
     private fun samePixels(a: prevue.daemon.entity.Bitmap, b: prevue.daemon.entity.Bitmap): Boolean =
         a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.pixels[y * a.width + x] == b.pixels[y * b.width + x] } }

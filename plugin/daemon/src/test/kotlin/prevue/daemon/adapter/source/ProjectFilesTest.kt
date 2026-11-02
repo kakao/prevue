@@ -28,6 +28,15 @@ class ProjectFilesTest {
         runBlocking { f.buildInBackground(this).join() }
     }
 
+    @Test fun `경로로 쓸 수 없는 이름은 없는 파일이다 — 사용자가 넘긴 대상이 서버 오류가 되지 않는다`() {
+        val (root, src) = repo()
+        val files = ProjectFiles(root, listOf(src))
+        val bad = File(src, "a\u0000b.kt")
+        assertNull(files.modifiedAt(bad))
+        assertFalse(files.has(bad))
+        assertNull(files.read(bad))
+    }
+
     @Test fun `띄운 뒤 만든 파일을 푼다`() {
         val (root, src) = repo()
         val files = built(root, src)

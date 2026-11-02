@@ -66,7 +66,9 @@ class LayerRuleTest {
             "domain/Z6.kt" to "package prevue.daemon.domain\nclass Z6(val img: java.awt.image.BufferedImage)\n",
             "domain/Z7.kt" to "package prevue.daemon.domain\nimport java.nio.file.Files\nfun z7() = Files.size(null)\n",
             "entity/Z8.kt" to "package prevue.daemon.entity\nfun z8(f: java.io.File) = java.io.FileReader(f).use { it.read() } + f.length().toInt()\n",
-            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    val key = \"tabs.delete\" // f.exists() 는 쓰지 않는다\n    fun n(t: String) = t.length + StringBuilder(t).apply { setLength(0) }.length\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
+            "domain/Z9.kt" to "package prevue.daemon.domain\nfun z9(f: java.io.File) = \"내용 \${f.readText()}\"\n",
+            "domain/Z10.kt" to "package prevue.daemon.domain\nfun z10(c: Char, f: java.io.File) = if (c == '\"') f.delete() else false\n",
+            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    val key = \"tabs.delete\" // f.exists() 는 쓰지 않는다\n    val quote = '\"'\n    fun say(t: String) = \"\${t.length} 글자 — f.readText() 아님\"\n    fun n(t: String) = t.length + StringBuilder(t).apply { setLength(0) }.length\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
             "domain/runtime/W.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.policy.Pacing\nimport prevue.daemon.domain.model.Board\nimport prevue.daemon.domain.port.Clock\n",
             // entity 의 최상위 타입은 기술 어댑터가 본다 — Picked 는 입구(cli)만, Lonely 는 아무도 안 본다. 중첩 타입은 따지지 않는다.
             "entity/PreviewSpec.kt" to "package prevue.daemon.entity\ndata class PreviewSpec(val id: String, val part: Part) {\n    data class Nested(val x: Int)\n}\n\ndata class Part(val n: Int)\n",
@@ -78,7 +80,7 @@ class LayerRuleTest {
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
                 "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
-                "domain/Y2.kt", "domain/L2.kt", "domain/Z6.kt", "domain/Z7.kt", "entity/Z8.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
+                "domain/Y2.kt", "domain/L2.kt", "domain/Z6.kt", "domain/Z7.kt", "entity/Z8.kt", "domain/Z9.kt", "domain/Z10.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
                 "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
     }
@@ -111,11 +113,16 @@ object LayerRule {
         """(?:\.|::)(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines|length(?=\(\)))\b""" +
             """|\b(FileInputStream|FileOutputStream|FileReader|FileWriter|RandomAccessFile)\s*\(""")
     private val stringLiteral = Regex(""""(?:\\.|[^"\\])*"""")
+    private val charLiteral = Regex("""'(?:\\.|[^'\\])'""")
+    private val template = Regex("""\$\{([^{}]*)}""")
 
-    /** 주석 줄 · 줄 끝 주석 · 문자열 안의 철자는 호출이 아니다. */
+    /** 주석 줄 · 줄 끝 주석 · 문자 · 문자열 안의 철자는 호출이 아니다. 문자열 템플릿의 `${...}` 식은 코드다. */
     private fun codeLines(text: String): Sequence<String> = text.lineSequence().map { it.trim() }
         .filterNot { it.startsWith("//") || it.startsWith("*") || it.startsWith("/*") }
-        .map { stringLiteral.replace(it, "\"\"").substringBefore("//") }
+        .map { line ->
+            stringLiteral.replace(charLiteral.replace(line, "' '")) { m -> template.findAll(m.value).joinToString(" ", "(", ")") { it.groupValues[1] } }
+                .substringBefore("//")
+        }
 
     private fun fileSystemCalls(path: String, text: String): List<String> {
         if (path.substringBefore('/') !in CORE) return emptyList()
