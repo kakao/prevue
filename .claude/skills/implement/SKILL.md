@@ -104,7 +104,7 @@ git log -1 --oneline                 # origin/develop 의 끝인지 본다 — �
 
 diff가 README · CHANGELOG · 그림뿐이면 건너뛴다.
 
-`code-review` 스킬을 `medium`으로 이 브랜치(`origin/develop...HEAD`)에 돌린다 — 짠 쪽의 가정을 모르는 눈이 본다.
+`code-review` 스킬을 `high`로 이 브랜치(`origin/develop...HEAD`)에 돌린다 — 짠 쪽의 가정을 모르는 눈이 본다.
 
 지적은 고치거나, 고치지 않으면 이유를 PR 본문에 적는다. 고쳤으면 그 고침이 닿는 3단계 증거를 다시 본다.
 

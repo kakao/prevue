@@ -111,7 +111,7 @@ git log -1 --oneline                 # origin/develop 의 끝인지 본다 — �
 diff가 README · CHANGELOG · 그림뿐이면 건너뛴다.
 
 <!-- only:claude -->
-`code-review` 스킬을 `medium`으로 이 브랜치(`origin/develop...HEAD`)에 돌린다 — 짠 쪽의 가정을 모르는 눈이 본다.
+`code-review` 스킬을 `high`로 이 브랜치(`origin/develop...HEAD`)에 돌린다 — 짠 쪽의 가정을 모르는 눈이 본다.
 <!-- /only -->
 <!-- only:codex -->
 `git diff origin/develop...HEAD`를 처음 보는 것처럼 다시 읽는다 — 동시성 · 실패 경로 · 상태 꼬임 · 계약(JSON · 종료 코드)이 바뀌었는지를 본다.
