@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Prevue release hero</title>
 <!-- 릴리즈 노트 맨 위 그림 — 폭 1280, 높이는 찍는 창(뷰포트)을 따른다. 톤은 GitHub 소셜 프리뷰(OG)를 따른다 — 배경 · 그라데이션 · 형광펜 밑줄, 글꼴은 Google Sans.
-     판마다 바꾸는 것은 주소의 쿼리뿐이다: kick(머리말, 예: New in) · ver(버전 알약, 예: 0.21) · l1 · l2(제목 두 줄, l2 에 형광펜) · shot(창 캡처 PNG 경로) — 다섯 다 필수다. 찍는 법은 README.md. -->
+     판마다 바꾸는 것은 주소의 쿼리뿐이다: kick(칩 앞말, 예: Release) · ver(버전, 예: 0.21) · l1 · l2(제목 두 줄, l2 에 형광펜) · shot(창 캡처 PNG 경로) — 다섯 다 필수다. 찍는 법은 README.md. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@600;700&display=block">
@@ -19,11 +19,9 @@ body{background:#F6F3EC;font-family:"Google Sans",sans-serif;color:#1F2328;posit
 .text{position:absolute;left:0;right:0;top:44px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
 .logo{display:flex;align-items:center;gap:14px;font-weight:600;font-size:36px}
 .logo img{width:52px;height:52px;border-radius:13px;box-shadow:0 6px 18px -6px rgba(14,27,42,.45)}
-/* 머리말 한 줄 — 회색 머리말 · 점 · 버전. 버전만 Kotlin 보라(README 의 Compose Multiplatform 배지와 같은 색)로 굵게 */
-.kick{display:flex;align-items:baseline;gap:16px;font-weight:600;font-size:28px;letter-spacing:.22em;text-transform:uppercase}
-#kick{color:#6E6A63}
-.kick .dot{color:#B8B3AA;letter-spacing:0}
-#ver{font-weight:700;color:#7F52FF}
+/* 버전은 제목의 형광펜과 같은 살구색 칩 하나 — kick(예: Release)은 옅게, ver(예: 0.21)는 굵게 */
+.kick{display:flex;align-items:center;gap:8px;font-weight:700;font-size:26px;letter-spacing:.02em;color:#6B2E17;background:#F7C6B2;border-radius:999px;padding:8px 22px 9px}
+#kick{font-weight:600;opacity:.75}
 h1{font-weight:700;font-size:78px;letter-spacing:-1.5px;line-height:1.06;white-space:nowrap}
 .missing{color:#C62828;outline:3px dashed #C62828}
 .mk{background:linear-gradient(transparent 62%,#F7C6B2 62%,#F7C6B2 94%,transparent 94%);padding:0 6px;margin:0 -6px}
@@ -38,7 +36,7 @@ h1{font-weight:700;font-size:78px;letter-spacing:-1.5px;line-height:1.06;white-s
 <div class="mesh"></div>
 <div class="text">
   <div class="logo"><img src="../../assets/icon.svg" alt=""> Prevue</div>
-  <div class="kick"><span id="kick"></span><span class="dot">·</span><span id="ver"></span></div>
+  <div class="kick"><span id="kick"></span><span id="ver"></span></div>
   <h1><span id="l1"></span><br><span class="mk" id="l2"></span></h1>
 </div>
 <div class="shot"><img id="shot" alt=""></div>
