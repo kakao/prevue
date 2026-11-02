@@ -65,7 +65,7 @@ internal class LayoutlibSession(
         val changed = h != lastHash
         lastHash = h
         val (hq, cq) = queueSizes()
-        return Frame(changed, !changed && hq == 0 && cq == 0, img.takeIf { changed || forceImage }, hq, cq, RenderOutputs.msSince(t0))
+        return Frame(changed, !changed && hq == 0 && cq == 0, img?.takeIf { changed || forceImage }?.toBitmap(), hq, cq, RenderOutputs.msSince(t0))
     }
 
     // 외부: LaunchedEffect 의 delay 는 AndroidUiDispatcher 가 Delay 가 아니라 kotlinx DefaultExecutor 의 실제 시계로 잰다

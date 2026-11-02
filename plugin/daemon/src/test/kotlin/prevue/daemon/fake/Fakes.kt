@@ -1,7 +1,6 @@
 package prevue.daemon.fake
 
 import prevue.daemon.entity.Verbatim
-import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CopyOnWriteArrayList
@@ -24,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import prevue.daemon.adapter.dump.ClasspathSpec
 import prevue.daemon.adapter.dump.DumpPaths
 import prevue.daemon.adapter.render.RenderOutputs
+import prevue.daemon.entity.Bitmap
 import prevue.daemon.adapter.source.ProjectFiles
 import prevue.daemon.adapter.source.SourcePreviewRepository
 import prevue.daemon.adapter.source.ValueDirs
@@ -137,7 +137,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         override fun tick(forceImage: Boolean): Frame {
             ticks.incrementAndGet()
             tickThrows?.let { tickThrows = null; throw it }
-            return frames.poll() ?: if (moving) Frame(true, false, BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), 0, 0, 0) else Frame(false, true, null, 0, 0, 0)
+            return frames.poll() ?: if (moving) Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) else Frame(false, true, null, 0, 0, 0)
         }
         override suspend fun look(semantics: Boolean): LiveSession.Look {
             looks.incrementAndGet()

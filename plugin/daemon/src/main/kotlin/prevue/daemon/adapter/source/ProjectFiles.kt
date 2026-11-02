@@ -3,6 +3,7 @@ package prevue.daemon.adapter.source
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.InvalidPathException
 import java.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -55,7 +56,7 @@ class ProjectFiles(private val repoRoot: File, roots: List<File>) : SourceFileRe
 
     override fun modifiedAt(file: File): Long? = try {
         Files.readAttributes(file.toPath(), BasicFileAttributes::class.java).takeIf { it.isRegularFile }?.lastModifiedTime()?.toMillis()
-    } catch (_: IOException) { null }
+    } catch (_: IOException) { null } catch (_: InvalidPathException) { null }
 
     override fun valueFiles(resRoots: List<File>): List<File> =
         ValueDirs.of(resRoots).flatMap { d -> d.listFiles { f -> f.isFile }.orEmpty().sortedBy { it.name } }

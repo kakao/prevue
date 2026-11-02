@@ -37,7 +37,7 @@ class ExternalBuildUseCase(
         val p = ws.now.let { it.board?.focusCard?.spec ?: it.current }
         val own = change.own.isNotEmpty()
         val rebuilt = ws.graph.builtBy(change.own)
-        when (val plan = ExternalPolicy.plan(change, done, p != null, change.outputsExist, rebuilt)) {
+        when (val plan = ExternalPolicy.plan(change, done, p != null, rebuilt)) {
             Plan.Noted -> ExternalResult.Noted(ws.now.stale)
             Plan.NoPreview -> ExternalResult.NoPreview
             Plan.OutputsGone -> { ed.markStale(StaleReasons.BUILD, StaleReasons.outputsGone(change.built)); ExternalResult.OutputsGone }

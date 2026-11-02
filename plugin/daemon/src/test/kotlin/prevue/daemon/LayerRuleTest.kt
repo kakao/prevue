@@ -56,13 +56,17 @@ class LayerRuleTest {
             "domain/I.kt" to "package prevue.daemon.domain\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.domain.runtime.Workspace\n",
             "domain/J.kt" to "package prevue.daemon.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "entity/K.kt" to "package prevue.daemon.entity\nimport kotlinx.serialization.Serializable\n",
-            "domain/L.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.awt.image.BufferedImage\n",
+            "domain/L.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
             "domain/N.kt" to "package prevue.daemon.domain\nimport prevue.render.Shim\n",
             "domain/O.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
             "adapter/render/M.kt" to "package prevue.daemon.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "adapter/render/V.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.adapter.compile.HotCompiler\n",
             "domain/Z5.kt" to "package prevue.daemon.domain\nfun z5(fs: List<java.io.File>) = fs.filter(java.io.File::isFile)\n",
-            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
+            "domain/L2.kt" to "package prevue.daemon.domain\nimport java.awt.image.BufferedImage\n",
+            "domain/Z6.kt" to "package prevue.daemon.domain\nclass Z6(val img: java.awt.image.BufferedImage)\n",
+            "domain/Z7.kt" to "package prevue.daemon.domain\nimport java.nio.file.Files\nfun z7() = Files.size(null)\n",
+            "entity/Z8.kt" to "package prevue.daemon.entity\nfun z8(f: java.io.File) = java.io.FileReader(f).use { it.read() } + f.length().toInt()\n",
+            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    val key = \"tabs.delete\" // f.exists() 는 쓰지 않는다\n    fun n(t: String) = t.length + StringBuilder(t).apply { setLength(0) }.length\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
             "domain/runtime/W.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.policy.Pacing\nimport prevue.daemon.domain.model.Board\nimport prevue.daemon.domain.port.Clock\n",
             // entity 의 최상위 타입은 기술 어댑터가 본다 — Picked 는 입구(cli)만, Lonely 는 아무도 안 본다. 중첩 타입은 따지지 않는다.
             "entity/PreviewSpec.kt" to "package prevue.daemon.entity\ndata class PreviewSpec(val id: String, val part: Part) {\n    data class Nested(val x: Int)\n}\n\ndata class Part(val n: Int)\n",
@@ -74,7 +78,7 @@ class LayerRuleTest {
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
                 "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
-                "domain/Y2.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
+                "domain/Y2.kt", "domain/L2.kt", "domain/Z6.kt", "domain/Z7.kt", "entity/Z8.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
                 "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
     }
@@ -90,6 +94,8 @@ object LayerRule {
     private val ref = Regex("""\bprevue\.daemon\.([A-Za-z_][\w.]*)""")
     private val CORE = setOf("entity", "domain")
     private val CORE_EXTERNAL = listOf("prevue.daemon.", "kotlin.", "kotlinx.coroutines.", "java.")
+    /** D-139. 그림은 entity `Bitmap` 값으로 든다 — AWT 는 render · browser 어댑터만 안다. 파일 시스템 API 의 다른 길(nio · kotlin.io.path)도 core 밖이다. */
+    private val CORE_FORBIDDEN = listOf("java.awt.", "javax.", "java.nio.file.", "kotlin.io.path.")
 
     fun violations(files: Map<String, String>): List<String> = files.flatMap { (path, text) ->
         val from = path.split('/')
@@ -102,15 +108,23 @@ object LayerRule {
 
     /** D-139. core 는 파일 시스템을 직접 만지지 않는다 — 읽기 · 시각 · 목록은 SourceFileRepository, 산출물 지우기는 PreviewRenderer 다. `File` 을 경로 값으로 드는 것과 canonicalPath(키 정규화)는 된다. */
     private val fileSystemCall = Regex(
-        """(?:\.|::)(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines)\b""")
+        """(?:\.|::)(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines|length(?=\(\)))\b""" +
+            """|\b(FileInputStream|FileOutputStream|FileReader|FileWriter|RandomAccessFile)\s*\(""")
+    private val stringLiteral = Regex(""""(?:\\.|[^"\\])*"""")
+
+    /** 주석 줄 · 줄 끝 주석 · 문자열 안의 철자는 호출이 아니다. */
+    private fun codeLines(text: String): Sequence<String> = text.lineSequence().map { it.trim() }
+        .filterNot { it.startsWith("//") || it.startsWith("*") || it.startsWith("/*") }
+        .map { stringLiteral.replace(it, "\"\"").substringBefore("//") }
 
     private fun fileSystemCalls(path: String, text: String): List<String> {
         if (path.substringBefore('/') !in CORE) return emptyList()
-        return text.lineSequence().map { it.trim() }
-            .filterNot { it.startsWith("//") || it.startsWith("*") || it.startsWith("/*") }
-            .flatMap { line -> fileSystemCall.findAll(line).map { it.groupValues[1] } }
-            .distinct().toList()
-            .let { calls -> if (calls.isEmpty()) emptyList() else listOf("$path → 파일 시스템 ${calls.joinToString { ".$it" }} — 포트로") }
+        val calls = codeLines(text).flatMap { line -> fileSystemCall.findAll(line).map { it.groupValues[1].ifEmpty { it.groupValues[2] } } }.distinct().toList()
+        val named = codeLines(text).filterNot { it.startsWith("import ") }.any { line -> CORE_FORBIDDEN.any { it in line } }
+        return listOfNotNull(
+            calls.takeIf { it.isNotEmpty() }?.let { "$path → 파일 시스템 ${it.joinToString()} — 포트로" },
+            "$path → AWT · nio 를 이름으로 쓴다 — Bitmap · 포트로".takeIf { named },
+        )
     }
 
     private val topLevelType = Regex("""^(?:@\w+(?:\([^)]*\))?\s+)*(?:[a-z]+\s+)*(?:class|interface|object|typealias)\s+(\w+)""", RegexOption.MULTILINE)
@@ -135,7 +149,7 @@ object LayerRule {
             .takeWhile { it.isEmpty() || it.startsWith("package ") || it.startsWith("import ") || it.startsWith("@file:") || it.startsWith("//") }
             .filter { it.startsWith("import ") }
             .map { it.removePrefix("import ").substringBefore(" as ").trim() }
-            .filterNot { name -> CORE_EXTERNAL.any(name::startsWith) }
+            .filterNot { name -> CORE_EXTERNAL.any(name::startsWith) && CORE_FORBIDDEN.none(name::startsWith) }
             .map { "$path → $it" }.toList()
     }
 

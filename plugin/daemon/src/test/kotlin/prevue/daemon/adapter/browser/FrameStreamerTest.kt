@@ -1,6 +1,7 @@
 package prevue.daemon.adapter.browser
 
 import java.awt.image.BufferedImage
+import prevue.daemon.entity.Bitmap
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
@@ -38,7 +39,7 @@ class FrameStreamerTest {
     private val watching = MutableStateFlow(false)
     private var seq = 0L
 
-    private fun image(rgb: Int) = BufferedImage(32, 32, BufferedImage.TYPE_INT_RGB).apply { for (x in 0 until 32) for (y in 0 until 32) setRGB(x, y, rgb) }
+    private fun image(rgb: Int) = Bitmap(32, 32, IntArray(32 * 32) { rgb or 0xff000000.toInt() })
 
     private fun emit(rgb: Int, rest: Boolean = false) { screen.value = LiveFrame(++seq, image(rgb), rest) }
 
@@ -147,13 +148,13 @@ class FrameStreamerTest {
         stream.viewport(300, "big")
         stream.viewport(100, "small")
         runCurrent()
-        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        screen.value = LiveFrame(++seq, Bitmap(400, 400, IntArray(400 * 400)), false)
         runCurrent()
         assertEquals(300, lastPicture(small.bytes())?.width, "마지막에 알린 작은 폭으로 모두를 줄였다")
         gone = true
-        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        screen.value = LiveFrame(++seq, Bitmap(400, 400, IntArray(400 * 400)), false)
         runCurrent()
-        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        screen.value = LiveFrame(++seq, Bitmap(400, 400, IntArray(400 * 400)), false)
         runCurrent()
         assertEquals(100, lastPicture(small.bytes())?.width, "끊긴 뷰어의 폭이 남았다")
     }
@@ -171,7 +172,7 @@ class FrameStreamerTest {
         val seen = Socket()
         stream.subscribe(seen)
         runCurrent()
-        screen.value = LiveFrame(++seq, BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB), false)
+        screen.value = LiveFrame(++seq, Bitmap(400, 400, IntArray(400 * 400)), false)
         runCurrent()
         assertEquals(200, lastPicture(seen.bytes())?.width)
     }

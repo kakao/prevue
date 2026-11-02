@@ -1,6 +1,6 @@
 package prevue.daemon.domain.runtime
 
-import java.awt.image.BufferedImage
+import prevue.daemon.entity.Bitmap
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,7 +33,7 @@ class LiveLoopTest {
     private fun TestScope.actor(): EngineActor =
         EngineActor(fake, fake, backgroundScope, StandardTestDispatcher(testScheduler), now = { testScheduler.currentTime }, log = {})
 
-    private fun changed(n: Int) = repeat(n) { fake.frames += Frame(true, false, BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), 0, 0, 0) }
+    private fun changed(n: Int) = repeat(n) { fake.frames += Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) }
 
     @Test fun `입력에 깨어 16ms마다 틱하고 잠잠 100ms면 정착해 한 장을 낸다`() = runTest {
         val a = actor()
@@ -89,7 +89,7 @@ class LiveLoopTest {
 
     @Test fun `열린 세션이 닫히면 뷰어 화면을 비운다`() = runTest {
         val a = actor()
-        fake.frames += Frame(true, false, BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), 0, 0, 0)
+        fake.frames += Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0)
         a.ensure(card, interactive = true)
         a.settled(a.touch("tap", 1, 2))
         assertTrue(a.screen.value != null)
@@ -180,7 +180,7 @@ class LiveLoopTest {
 
     @Test fun `뷰어 화면은 바뀐 그림을 내고 잠잠해지면 같은 그림을 쉰 그림으로 낸다`() = runTest {
         val a = actor()
-        val img = BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
+        val img = Bitmap(1, 1, IntArray(1))
         fake.frames += Frame(true, false, img, 0, 0, 0)
         a.ensure(card, interactive = true)
         a.settled(a.touch("tap", 1, 2))

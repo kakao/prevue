@@ -1,6 +1,5 @@
 package prevue.daemon.domain.runtime
 
-import java.awt.image.BufferedImage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.BufferOverflow
@@ -8,6 +7,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import prevue.daemon.entity.Bitmap
 import prevue.daemon.entity.PreviewSpec
 import prevue.daemon.domain.port.Frame
 import prevue.daemon.domain.port.LiveSession
@@ -24,7 +24,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
     private var inputSeq = 0L
     private var frameSeq = 0L
     private var screenSeq = 0L
-    private var lastImage: BufferedImage? = null
+    private var lastImage: Bitmap? = null
     private var lastShot: SettledShot? = null
     private var lastShotSemantics = false
     private var dirty = false
@@ -229,7 +229,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         }
     }
 
-    private fun publish(img: BufferedImage, rest: Boolean) {
+    private fun publish(img: Bitmap, rest: Boolean) {
         _screen.value = LiveFrame(++screenSeq, img, rest)
     }
 

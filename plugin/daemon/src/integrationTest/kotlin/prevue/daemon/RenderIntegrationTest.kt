@@ -826,9 +826,9 @@ class RenderIntegrationTest {
         return ws.now.current!!
     }
 
-    private fun redShare(img: java.awt.image.BufferedImage): Double {
+    private fun redShare(img: prevue.daemon.entity.Bitmap): Double {
         val y = img.height / 2
-        return (0 until img.width).count { x -> img.getRGB(x, y).let { (it shr 16 and 0xff) > 200 && (it shr 8 and 0xff) < 80 } }.toDouble() / img.width
+        return (0 until img.width).count { x -> img.pixels[y * img.width + x].let { (it shr 16 and 0xff) > 200 && (it shr 8 and 0xff) < 80 } }.toDouble() / img.width
     }
 
     private fun aside(p: prevue.daemon.entity.PreviewSpec): prevue.daemon.domain.port.RenderOutput {
@@ -941,6 +941,9 @@ class RenderIntegrationTest {
 
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =
         a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.getRGB(x, y) == b.getRGB(x, y) } }
+
+    private fun samePixels(a: prevue.daemon.entity.Bitmap, b: prevue.daemon.entity.Bitmap): Boolean =
+        a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.pixels[y * a.width + x] == b.pixels[y * b.width + x] } }
 
     companion object {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
