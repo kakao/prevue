@@ -2,7 +2,7 @@
 
 릴리즈 노트 맨 위 그림(`assets/release-<버전>.png`, 1280×820을 2배로)을 찍는 틀이다. 톤은 GitHub 소셜 프리뷰(OG)를 따르고(배경 · 그라데이션 · 형광펜 밑줄), 글꼴은 Google Sans다. 이 그림이 develop에 있으면 `/ship`이 그 판의 노트 맨 위에 건다 — 규약은 `dev-skills-src/release-notes.md`의 "판의 모양".
 
-바꾸는 것은 주소의 쿼리뿐이다: `kick`(머리말) · `ver`(버전 알약) · `l1` · `l2`(제목 두 줄, `l2`에 형광펜) · `shot`(창 캡처). 글꼴은 Google Fonts에서 읽으니 네트워크가 있어야 한다.
+바꾸는 것은 주소의 쿼리뿐이다: `kick`(머리말) · `ver`(버전, Kotlin 보라) · `l1` · `l2`(제목 두 줄, `l2`에 형광펜) · `shot`(창 캡처). 글꼴은 Google Fonts에서 읽으니 네트워크가 있어야 한다.
 
 ```sh
 # 1) 창 캡처 — readme-shots 의 장면을 넓은 창으로, 브라우저 테두리 없이 뷰어만(--bare). board 장면은 assets/board-kotlinconf.png 를 덮으니 옮기고 되돌린다
