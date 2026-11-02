@@ -10,8 +10,10 @@ cd "$(dirname "$0")/.."
 P=build/eval-plugin
 rm -rf "$P"
 mkdir -p "$P/.claude-plugin" "$P/bin" "$P/cli" "$P/fixtures" "$P/evals"
-printf '{"name":"prevue","description":"Prevue 스킬 평가용 — 가짜 prevue"}\n' > "$P/.claude-plugin/plugin.json"
-cp -R plugin/skills/claude "$P/skills"
+# 스킬 자리는 설치본과 같게 매니페스트의 skills 경로로 가리킨다(D-138) — 기본 skills/ 스캔만으로 도는 평가는 그 경로를 안 본다
+printf '{"name":"prevue","description":"Prevue 스킬 평가용 — 가짜 prevue","skills":"./skills/claude/"}\n' > "$P/.claude-plugin/plugin.json"
+mkdir -p "$P/skills"
+cp -R plugin/skills/claude "$P/skills/claude"
 cp -R plugin/cli/help "$P/cli/help"
 cp tests/evals/prevue "$P/bin/prevue" && chmod +x "$P/bin/prevue"
 # 응답의 image 가 가리킬 카드 그림. 저장소는 *.png 를 무시해 사본을 두지 않고 여기서 만든다(회색 412×915, PIL 없이).

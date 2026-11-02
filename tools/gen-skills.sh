@@ -68,6 +68,11 @@ if [ "${1:-}" = "--check" ]; then
       done
     done
   done
+  # Claude Code 는 plugin/skills/<이름>/SKILL.md 를 매니페스트와 무관하게 읽는다 — 그 자리에 스킬이 있으면 두 벌 옆에 한 번 더 실린다.
+  for O in plugin/skills/*/SKILL.md; do
+    [ -f "$O" ] || continue
+    echo "$O 는 Claude Code 가 늘 읽는 자리다 — 생성물은 plugin/skills/claude/ · plugin/skills/codex/ 아래에만 둔다"; DIFF=1
+  done
   [ "$DIFF" = 0 ] && { echo "스킬 두 벌이 원본과 맞다"; exit 0; }
   echo "skills-src/ · dev-skills-src/ 를 고치고 tools/gen-skills.sh 를 돌린다 — 생성물을 손으로 고치지 않는다"; exit 1
 fi

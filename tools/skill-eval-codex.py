@@ -72,12 +72,10 @@ def assemble(src=ROOT):
     # 플러그인은 plugin/ 에 있다(D-123). 그 전 판의 체크아웃은 루트가 곧 플러그인이다
     product = os.path.join(src, "plugin") if os.path.isdir(os.path.join(src, "plugin")) else src
     shutil.copy(os.path.join(product, ".codex-plugin", "plugin.json"), os.path.join(plugin, ".codex-plugin", "plugin.json"))
-    # 스킬은 skills/codex/ 에 있다(D-138). 그 전 판은 codex/skills/ 다 — 복사한 매니페스트의 skills 경로와 같은 자리에 둔다
-    skills = os.path.join(product, "skills", "codex")
-    if os.path.isdir(skills):
-        shutil.copytree(skills, os.path.join(plugin, "skills", "codex"))
-    else:
-        shutil.copytree(os.path.join(product, "codex"), os.path.join(plugin, "codex"))
+    # 스킬은 복사한 매니페스트의 skills 경로에서 그 자리로 옮긴다 — 판마다 자리가 다르다(D-138 전은 codex/skills/)
+    with open(os.path.join(plugin, ".codex-plugin", "plugin.json")) as f:
+        skills = os.path.normpath(json.load(f)["skills"])
+    shutil.copytree(os.path.join(product, skills), os.path.join(plugin, skills))
     # 도움말은 cli/ 에 있다(D-137). 그 전 판은 bin/help 다
     helps = os.path.join(product, "cli", "help")
     shutil.copytree(helps if os.path.isdir(helps) else os.path.join(product, "bin", "help"), os.path.join(plugin, "cli", "help"))
