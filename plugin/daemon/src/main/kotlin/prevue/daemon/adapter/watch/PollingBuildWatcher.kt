@@ -81,7 +81,9 @@ class PollingBuildWatcher(
     private fun notice(outputs: Set<File>, done: Boolean): BuildNotice {
         val changed = outputs.map(source::getValue).groupBy({ it.group }, { it.output })
         if (done) _stats.update { it + mapOf("lastAt" to Instant.now().toString(), "last" to changed.keys.toList()) }
-        val change = BuildChange(changed["own"].orEmpty(), changed["deps"].orEmpty(), changed["resources"].orEmpty(), changed["build-files"].orEmpty())
+        val own = changed["own"].orEmpty()
+        val deps = changed["deps"].orEmpty()
+        val change = BuildChange(own, deps, changed["resources"].orEmpty(), changed["build-files"].orEmpty(), outputsExist = (own + deps).any { it.exists() })
         return BuildNotice(change, done)
     }
 }

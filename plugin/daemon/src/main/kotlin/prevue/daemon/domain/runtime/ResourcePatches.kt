@@ -3,16 +3,16 @@ package prevue.daemon.domain.runtime
 import prevue.daemon.entity.Phrase
 import prevue.daemon.entity.phrase
 import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import prevue.daemon.domain.port.CompileResult
 import prevue.daemon.domain.port.ResourceKey
 import prevue.daemon.domain.port.ResourceValues
+import prevue.daemon.domain.port.SourceFileRepository
 import prevue.daemon.domain.policy.ResourcePolicy
 
-class ResourcePatches(private val values: ResourceValues?, private val reappearMs: Long = 500) {
+class ResourcePatches(private val values: ResourceValues?, private val sources: SourceFileRepository, private val reappearMs: Long = 500) {
     private val known = MutableStateFlow(emptyMap<String, String>())
 
     data class Outcome(val patched: Int, val stale: Phrase?, val compile: CompileResult?) {
@@ -20,9 +20,11 @@ class ResourcePatches(private val values: ResourceValues?, private val reappearM
     }
 
     fun remember(files: List<File>) {
-        val read = files.mapNotNull { f -> runCatching { f.readText() }.getOrElse { if (it is IOException) null else throw it }?.let { f.canonicalPath to it } }
+        val read = files.mapNotNull { f -> sources.read(f)?.let { f.canonicalPath to it } }
         known.update { it + read }
     }
+
+    fun valueFiles(resRoots: List<File>): List<File> = sources.valueFiles(resRoots).filter(::isValues)
 
     suspend fun apply(files: List<File>): Outcome {
         val t = System.nanoTime()
@@ -90,7 +92,7 @@ class ResourcePatches(private val values: ResourceValues?, private val reappearM
     private suspend fun read(f: File): String? {
         val until = System.nanoTime() + reappearMs * 1_000_000
         while (true) {
-            runCatching { f.readText() }.getOrElse { if (it is IOException) null else throw it }?.let { return it }
+            sources.read(f)?.let { return it }
             if (System.nanoTime() >= until) return null
             delay(50)
         }

@@ -127,7 +127,8 @@ class RenderEngine(
     override fun forgetShapes() = shapes.forgetAll()
 
     override suspend fun awaitWrites() = artifacts.awaitWrites()
-
+    override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
+    override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
     override suspend fun written(out: RenderOutput): RenderOutput = out.copy(phases = out.phases + out.written.await())
 
     override fun instanceCount(p: PreviewSpec): Int {

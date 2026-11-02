@@ -41,7 +41,7 @@ class ApplySaveUseCase(
     suspend operator fun invoke(asked: List<File>, by: String, change: SourceChange? = null): ReloadResult = ws.saving { ed ->
         val t = System.nanoTime()
         val values = asked.filter(ResourcePatches::isValues)
-        val valuesSeen = values.associate { it.canonicalPath to it.lastModified() }
+        val valuesSeen = modules.seen(values)
         val r = if (values.isEmpty()) null else resources.apply(values)
         r?.stale?.let { markResourcesStale(ed, values, it) }
         val shown = ws.now
@@ -51,7 +51,7 @@ class ApplySaveUseCase(
         if (r != null && values.size == asked.size) return@saving applyValues(p, r, values, save)
         val files = (asked - values.toSet()).ifEmpty { listOfNotNull(ws.now.current?.file) }
         require(files.isNotEmpty()) { "files가 없고 현재 프리뷰에 파일도 없다" }
-        val seenNow = files.associate { it.canonicalPath to it.lastModified() }
+        val seenNow = modules.seen(files)
         val texts = literals.read(files)
         val coded = save.copy(texts = texts)
         val patched = if (change == null) null else applyLiterals(p, files, texts, seenNow, r?.compile != null, coded)
@@ -113,11 +113,13 @@ class ApplySaveUseCase(
         return render(reread, batch.result, batch.files, seen, save, repair = true)
     }
 
+    private fun linesOf(files: List<File>, save: Save): Int? = Lines.of(files) { save.texts[it.absolutePath] ?: modules.text(it) }
+
     private fun compileFailed(p: PreviewSpec, batch: StaleCallers.Batch, seen: Map<String, Long>, save: Save): ReloadResult {
         val c = batch.result
         save.ed.markStale(StaleReasons.COMPILE, StaleReasons.compileFailed(batch.files, c.messages, c.hint))
         val ms = (System.nanoTime() - save.t) / 1_000_000
-        val failed = ReloadResult.CompileFailed(p, c, ws.now.stale, ms, save.by, save.timing, Lines.of(batch.files, save.texts))
+        val failed = ReloadResult.CompileFailed(p, c, ws.now.stale, ms, save.by, save.timing, linesOf(batch.files, save))
         live.failed(save.ed, failed, recordLast = true)
         save.ed.markCompiled(seen)
         return failed
@@ -135,7 +137,7 @@ class ApplySaveUseCase(
 
     private suspend fun revive(ed: WorkspaceEditor, code: List<File>, valuesSeen: Map<String, Long>, by: String, change: SourceChange?): ReloadResult? {
         val tab = ws.now.activeTabOrNull()?.takeIf { it.vacant != null } ?: return null
-        val files = modules.holdExpectActual(ed, code.ifEmpty { listOfNotNull(tab.file) }.filter { it.isFile })
+        val files = modules.holdExpectActual(ed, modules.present(code.ifEmpty { listOfNotNull(tab.file) }))
         if (files.isNotEmpty()) {
             live.compiling(ed, files, by)
             val batch = modules.compileWithNew(ed, files)
@@ -170,7 +172,7 @@ class ApplySaveUseCase(
         val r = live.finish(ed, out, c, save.t, save.by) {
             it.copy(
                 timing = save.timing, saveToScreenMs = save.change?.let { ch -> System.currentTimeMillis() - ch.mtimeMs },
-                startedAtMs = save.since, lines = c?.let { Lines.of(it.files.map(::File), save.texts) },
+                startedAtMs = save.since, lines = c?.let { linesOf(it.files.map(::File), save) },
             )
         }
         ed.update { it.copy(current = p) }

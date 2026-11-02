@@ -45,7 +45,7 @@ internal class PreviewCatalog(
     /** 목록이 바뀌었으면 참. */
     private fun scan(f: File): Boolean {
         val c = f.canonicalFile
-        return put(c, if (c.extension == "kt" && c.isFile && hosts(c)) read(c) else null)
+        return put(c, if (c.extension == "kt" && sources.has(c) && hosts(c)) read(c) else null)
     }
 
     private fun put(c: File, entry: PreviewFile?): Boolean {
@@ -60,11 +60,11 @@ internal class PreviewCatalog(
     }
 
     private fun read(f: File): PreviewFile? {
-        val text = runCatching { f.readText() }.getOrNull() ?: return null
+        val text = sources.read(f) ?: return null
         // 멀티프리뷰를 풀려면 처음 보는 애노테이션마다 클래스패스를 뒤진다. 수천 파일에 그 값을 치르지 않게 "Preview"가 없는 파일은 건너뛴다 —
         // 이름에 Preview가 없는 멀티프리뷰 애노테이션만 쓰는 파일은 놓친다(androidx 것과 AS 관례는 모두 이름에 있다).
         if (!text.contains("Preview")) return null
         val fns = runCatching { previews.inFile(f) }.getOrNull().orEmpty().map { it.functionName }.distinct()
-        return if (fns.isEmpty()) null else PreviewFile(f, ws.graph.ownerOf(f), f.lastModified(), fns)
+        return if (fns.isEmpty()) null else PreviewFile(f, ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns)
     }
 }

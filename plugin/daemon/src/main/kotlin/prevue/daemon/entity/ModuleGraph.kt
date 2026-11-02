@@ -21,10 +21,7 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
 
     val roots: List<File> get() = nodes.flatMap { it.sourceRoots }
 
-    /** D-68. 감시하는 모듈들의 `values*` 디렉터리 — 리소스 값 핫리로드가 보는 곳이다. 다른 `res`(drawable · layout)는 낡음으로 남는다. */
-    val valueDirs: List<File> get() = nodes.flatMap { it.resRoots }.flatMap { root ->
-        root.listFiles { f -> f.isDirectory && f.name.startsWith("values") }.orEmpty().sortedBy { it.name }
-    }
+    val resRoots: List<File> get() = nodes.flatMap { it.resRoots }
 
     /** 파일을 가진 모듈. 소스 루트 밖(`--watch`로 더한 복사본)은 [home]이 갖는다 — 늘 그 모듈의 인자로 컴파일해 왔다. */
     fun ownerOf(f: File): String = rootOf(f)?.first?.path ?: home

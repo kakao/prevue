@@ -29,7 +29,7 @@ class Tabs(
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
 ) {
-    fun keyOf(target: String): String = File(target).let { if (it.isFile) it.canonicalPath else target }
+    fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
     fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
 
@@ -49,7 +49,7 @@ class Tabs(
 
     private fun vacateIfLost(ed: WorkspaceEditor, tab: Tab, restoring: Boolean) {
         val f = tab.file ?: return
-        val why = if (restoring) Vacancy.DELETED.takeIf { !f.isFile } else vacancy(f)
+        val why = if (restoring) Vacancy.DELETED.takeIf { !sources.has(f) } else vacancy(f)
         why?.let { vacate(ed, tab, it) }
     }
 
@@ -77,7 +77,7 @@ class Tabs(
 
     private suspend fun restore(ed: WorkspaceEditor, tab: Tab, hidden: Board, index: Int?, by: String, since: Long?): ShowResult {
         var b = hidden.settled()
-        val gone = b.cards.indices.filter { i -> (b.cards[i].result as? CardResult.Drawn)?.shot?.out?.image?.isFile == false }
+        val gone = b.cards.indices.filter { i -> (b.cards[i].result as? CardResult.Drawn)?.shot?.out?.let(engine::lost) == true }
         b = b.forget(gone)
         if (index != null) {
             ensure(index in b.cards.indices) { phrase("tabs.noIndex", "file" to b.file.name, "n" to b.cards.size, "index" to index) }
@@ -92,7 +92,7 @@ class Tabs(
     }
 
     private suspend fun compileBeforeOpen(ed: WorkspaceEditor, key: String, by: String): Pair<StaleCallers.Batch, Long>? {
-        val f = File(key).takeIf { it.isFile && modules.dueOnOpen(it) { previewClasses(it) } }?.canonicalFile ?: return null
+        val f = File(key).takeIf { sources.has(it) && modules.dueOnOpen(it) { previewClasses(it) } }?.canonicalFile ?: return null
         if (modules.holdExpectActual(ed, listOf(f)).isEmpty()) return null
         val t = System.nanoTime()
         live.compiling(ed, listOf(f), by)
@@ -109,7 +109,7 @@ class Tabs(
         val p = runCatching { previews.inFile(f) }.getOrDefault(emptyList()).firstOrNull { it.methodParams.isEmpty() } ?: return
         try {
             val out = engine.warmIfCold(p.copy(previewId = p.previewId + WARM_SUFFIX)) ?: return
-            listOfNotNull(engine.written(out).image, out.tree).forEach { it.delete() }
+            engine.discard(engine.written(out))
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { System.err.println("[prevue] 렌더러를 미리 데우지 못했다 — 첫 그림이 데우기를 맡는다: $e") }
     }
@@ -128,7 +128,7 @@ class Tabs(
             return
         }
         ed.markStale(StaleReasons.COMPILE, StaleReasons.compileFailed(batch.files, c.messages, c.hint))
-        val failed = ReloadResult.CompileFailed(p, c, ws.now.stale, (System.nanoTime() - t) / 1_000_000, by, null, Lines.of(batch.files))
+        val failed = ReloadResult.CompileFailed(p, c, ws.now.stale, (System.nanoTime() - t) / 1_000_000, by, null, Lines.of(batch.files, sources::read))
         live.failed(ed, failed, recordLast = false)
     }
 
@@ -170,7 +170,7 @@ class Tabs(
     }
 
     fun vacancy(f: File): Vacancy? = when {
-        !f.isFile -> Vacancy.DELETED
+        !sources.has(f) -> Vacancy.DELETED
         previews.inFile(f).isEmpty() -> Vacancy.NO_PREVIEWS
         else -> null
     }
@@ -188,7 +188,7 @@ class Tabs(
 
     private suspend fun locate(target: String, index: Int?, focusId: String?, params: Map<String, String>): Pair<PreviewSpec, List<PreviewSpec>> {
         val f = File(target)
-        if (f.isFile) {
+        if (sources.has(f)) {
             val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instanceCounts(it)::getValue) }
             ensure(found.isNotEmpty()) { phrase("tabs.noPreviewFn", "file" to f.name) }
             val i = index ?: found.indexOfFirst { it.previewId == focusId }.coerceAtLeast(0)

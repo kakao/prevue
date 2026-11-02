@@ -23,6 +23,7 @@ import prevue.daemon.adapter.render.RenderEngine
 import prevue.daemon.adapter.source.GitHead
 import prevue.daemon.adapter.source.ProjectFiles
 import prevue.daemon.adapter.source.SourcePreviewRepository
+import prevue.daemon.adapter.source.ValueDirs
 import prevue.daemon.adapter.watch.PollingBuildWatcher
 import prevue.daemon.adapter.watch.PollingSourceWatcher
 import prevue.daemon.entity.ModuleGraph
@@ -196,7 +197,7 @@ private class Watches(
             val watching = args.watching
             val roots = if (!watching) emptyList() else
                 (graph.roots + args.extraWatch.filter { it.isDirectory }).map { it.canonicalFile }.distinct()
-            val valueDirs = if (!watching) emptyList() else graph.valueDirs.map { it.canonicalFile }
+            val valueDirs = if (!watching) emptyList() else ValueDirs.of(graph.resRoots).map { it.canonicalFile }
             val rJars = spec.rClassJars.map { File(it) }
             val ownOut = graph.nodes.flatMap { it.outputs }.filter { it !in rJars && it.exists() }
             val depOut = spec.projectClassPath.map { File(it) }.filter { it !in ownOut && it !in rJars && it.exists() }

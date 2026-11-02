@@ -15,4 +15,8 @@ interface SourceFileRepository {
     suspend fun sourceFiles(): List<File>
     /** 감시가 알린 생성 · 삭제를 색인에 얹는다. 색인이 바뀌었으면 true. */
     fun update(created: List<File>, deleted: List<File>): Boolean
+    fun read(file: File): String?
+    fun modifiedAt(file: File): Long?
+    fun has(file: File): Boolean = modifiedAt(file) != null
+    fun valueFiles(resRoots: List<File>): List<File>
 }

@@ -47,6 +47,10 @@ class LayerRuleTest {
             // 뿌리(조립)는 아무도 모른다 — 코덱은 prevue.json 이다.
             "adapter/render/Y.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.Json\n",
             "domain/Y2.kt" to "package prevue.daemon.domain\nimport prevue.json.Json\n",
+            // D-139. core 는 파일 시스템을 직접 만지지 않는다.
+            "domain/runtime/Z.kt" to "package prevue.daemon.domain.runtime\nclass Z { fun a(f: java.io.File) = f.readText() }\n",
+            "entity/Z2.kt" to "package prevue.daemon.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
+            "domain/Z3.kt" to "package prevue.daemon.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
             "adapter/cli/H.kt" to "package prevue.daemon.adapter.cli\nimport prevue.daemon.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.daemon.entity.Picked\n",
             "domain/I.kt" to "package prevue.daemon.domain\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.domain.runtime.Workspace\n",
@@ -57,6 +61,7 @@ class LayerRuleTest {
             "domain/O.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
             "adapter/render/M.kt" to "package prevue.daemon.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "adapter/render/V.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.adapter.compile.HotCompiler\n",
+            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
             "domain/runtime/W.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.policy.Pacing\nimport prevue.daemon.domain.model.Board\nimport prevue.daemon.domain.port.Clock\n",
             // entity 의 최상위 타입은 기술 어댑터가 본다 — Picked 는 입구(cli)만, Lonely 는 아무도 안 본다. 중첩 타입은 따지지 않는다.
             "entity/PreviewSpec.kt" to "package prevue.daemon.entity\ndata class PreviewSpec(val id: String, val part: Part) {\n    data class Nested(val x: Int)\n}\n\ndata class Part(val n: Int)\n",
@@ -68,7 +73,7 @@ class LayerRuleTest {
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
                 "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
-                "domain/Y2.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt",
+                "domain/Y2.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt",
                 "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
     }
@@ -92,7 +97,20 @@ object LayerRule {
             .filterNot { allowed(from, it.split('.')) }
             .map { "$path → prevue.daemon.$it" }
             .distinct().toList()
-    } + files.flatMap { (path, text) -> externalImports(path, text) } + unseenEntities(files)
+    } + files.flatMap { (path, text) -> externalImports(path, text) } + files.flatMap { (path, text) -> fileSystemCalls(path, text) } + unseenEntities(files)
+
+    /** D-139. core 는 파일 시스템을 직접 만지지 않는다 — 읽기 · 시각 · 목록은 SourceFileRepository, 산출물 지우기는 PreviewRenderer 다. `File` 을 경로 값으로 드는 것과 canonicalPath(키 정규화)는 된다. */
+    private val fileSystemCall = Regex(
+        """\.(readText|readLines|readBytes|writeText|writeBytes|appendText|lastModified|setLastModified|isFile|isDirectory|exists|delete|deleteRecursively|listFiles|walk\w*|mkdirs?|createNewFile|renameTo|copyTo|bufferedReader|inputStream|outputStream|forEachLine|useLines)\b""")
+
+    private fun fileSystemCalls(path: String, text: String): List<String> {
+        if (path.substringBefore('/') !in CORE) return emptyList()
+        return text.lineSequence().map { it.trim() }
+            .filterNot { it.startsWith("//") || it.startsWith("*") || it.startsWith("/*") }
+            .flatMap { line -> fileSystemCall.findAll(line).map { it.groupValues[1] } }
+            .distinct().toList()
+            .let { calls -> if (calls.isEmpty()) emptyList() else listOf("$path → 파일 시스템 ${calls.joinToString { ".$it" }} — 포트로") }
+    }
 
     private val topLevelType = Regex("""^(?:@\w+(?:\([^)]*\))?\s+)*(?:[a-z]+\s+)*(?:class|interface|object|typealias)\s+(\w+)""", RegexOption.MULTILINE)
 
