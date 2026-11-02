@@ -61,11 +61,12 @@ internal class LayoutlibSession(
         pressUnseen = false
         ripples.calm(task) { viewRoot() }
         val img = task.render().get(timeoutSec(), TimeUnit.SECONDS).renderedImage.copy
-        val h = if (img != null) RenderOutputs.pixelHash(img) else 0L
+        val bitmap = img?.toBitmap()
+        val h = bitmap?.let { RenderOutputs.pixelHash(it.pixels) } ?: 0L
         val changed = h != lastHash
         lastHash = h
         val (hq, cq) = queueSizes()
-        return Frame(changed, !changed && hq == 0 && cq == 0, img.takeIf { changed || forceImage }, hq, cq, RenderOutputs.msSince(t0))
+        return Frame(changed, !changed && hq == 0 && cq == 0, bitmap?.takeIf { changed || forceImage }, hq, cq, RenderOutputs.msSince(t0))
     }
 
     // 외부: LaunchedEffect 의 delay 는 AndroidUiDispatcher 가 Delay 가 아니라 kotlinx DefaultExecutor 의 실제 시계로 잰다

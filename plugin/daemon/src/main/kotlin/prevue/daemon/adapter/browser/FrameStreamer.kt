@@ -144,11 +144,11 @@ class FrameStreamer(
         last = f
         if (!watched || subscribers.isEmpty()) return
         if (gap > 0) conflated += gap
-        encoder.submit(f.image, png = f.rest, width)
+        encoder.submit(f.image.toImage(), png = f.rest, width)
     }
 
     private fun submitLast(encoder: FrameEncoder) {
-        if (watched && subscribers.isNotEmpty()) last?.let { encoder.submit(it.image, png = true, width) }
+        if (watched && subscribers.isNotEmpty()) last?.let { encoder.submit(it.image.toImage(), png = true, width) }
     }
 
     private suspend fun pump(sub: Subscriber) {

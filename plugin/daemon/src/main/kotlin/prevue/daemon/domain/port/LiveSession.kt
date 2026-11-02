@@ -1,6 +1,6 @@
 package prevue.daemon.domain.port
 
-import java.awt.image.BufferedImage
+import prevue.daemon.entity.Bitmap
 import prevue.daemon.entity.ListState
 import prevue.daemon.entity.LiveTree
 import prevue.daemon.entity.PreviewSpec
@@ -27,4 +27,4 @@ interface LiveSession {
     class Look(val out: RenderOutput, val tree: LiveTree)
 }
 
-class Frame(val changed: Boolean, val idle: Boolean, val image: BufferedImage?, val handlerQueue: Int, val choreographerQueue: Int, val ms: Long)
+class Frame(val changed: Boolean, val idle: Boolean, val image: Bitmap?, val handlerQueue: Int, val choreographerQueue: Int, val ms: Long)

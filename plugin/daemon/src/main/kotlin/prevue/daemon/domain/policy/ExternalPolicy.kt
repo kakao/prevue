@@ -19,11 +19,11 @@ object ExternalPolicy {
     }
 
     /** [rebuilt]는 산출물이 다시 빌드된 감시 모듈들이다(`ModuleGraph.builtBy`). */
-    fun plan(change: BuildChange, done: Boolean, hasPreview: Boolean, outputsExist: Boolean, rebuilt: List<String> = emptyList()): Plan = when {
+    fun plan(change: BuildChange, done: Boolean, hasPreview: Boolean, rebuilt: List<String> = emptyList()): Plan = when {
         change.built.isEmpty() -> Plan.Noted
         !hasPreview -> Plan.NoPreview
         !done -> Plan.BuildPending
-        !outputsExist -> Plan.OutputsGone
+        !change.outputsExist -> Plan.OutputsGone
         else -> Plan.Redraw(clear = rebuilt)
     }
 }

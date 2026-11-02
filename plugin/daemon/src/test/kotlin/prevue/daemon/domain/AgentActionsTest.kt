@@ -21,7 +21,7 @@ import prevue.daemon.domain.model.TouchResult
 import prevue.daemon.domain.model.TypeResult
 import prevue.daemon.domain.model.WorkspaceEvent
 import prevue.daemon.domain.port.Frame
-import java.awt.image.BufferedImage
+import prevue.daemon.entity.Bitmap
 
 /** D-69 · D-76. 에이전트 조작 — touch --at · type 은 겨냥한 대로 넣고 갈리면 넣지 않는다. scroll 은 겨냥 없이 화면 수만큼 굴린다. */
 class AgentActionsTest {
@@ -202,7 +202,7 @@ class AgentActionsTest {
         assertEquals(0, fx.renderer.looks.get())
     }
 
-    private fun moving(n: Int) = List(n) { Frame(true, false, BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), 0, 0, 1) }
+    private fun moving(n: Int) = List(n) { Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 1) }
 
     // D-78. 에이전트도 뷰어와 같은 루프가 정착시킨 그림을 받는다 — 루프가 돈 프레임 수를 싣는다.
     @Test fun `정착한 응답은 루프가 돈 프레임 수와 정착 여부를 싣는다`() {

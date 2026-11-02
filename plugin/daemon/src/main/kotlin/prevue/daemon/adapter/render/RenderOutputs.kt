@@ -2,8 +2,6 @@ package prevue.daemon.adapter.render
 
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
-import java.awt.image.BufferedImage
-import java.awt.image.DataBufferInt
 import kotlinx.coroutines.CompletableDeferred
 import prevue.daemon.entity.PreviewSpec
 import prevue.daemon.entity.Phrase
@@ -101,11 +99,9 @@ internal class RenderOutputs(
 
         fun lost(out: RenderOutput): Boolean = out.image?.isFile == false
 
-        fun pixelHash(img: BufferedImage): Long {
-            val data = (img.raster.dataBuffer as? DataBufferInt)?.data
-                ?: IntArray(img.width * img.height).also { img.getRGB(0, 0, img.width, img.height, it, 0, img.width) }
+        fun pixelHash(pixels: IntArray): Long {
             var h = FNV_OFFSET
-            for (v in data) h = (h xor v.toLong()) * FNV_PRIME
+            for (v in pixels) h = (h xor v.toLong()) * FNV_PRIME
             return h
         }
 

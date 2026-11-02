@@ -1,9 +1,9 @@
 package prevue.daemon.domain.model
 
-import java.awt.image.BufferedImage
+import prevue.daemon.entity.Bitmap
 import prevue.daemon.domain.port.LiveSession
 
-class LiveFrame(val seq: Long, val image: BufferedImage, val rest: Boolean)
+class LiveFrame(val seq: Long, val image: Bitmap, val rest: Boolean)
 
 class SettledShot(
     val inputSeq: Long,
