@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prevue release hero</title>
+<!-- 릴리즈 노트 맨 위 그림 — 폭 1280, 높이는 찍는 창(뷰포트)을 따른다. 톤은 GitHub 소셜 프리뷰(OG)를 따른다 — 배경 · 그라데이션 · 형광펜 밑줄, 글꼴은 Google Sans.
+     판마다 바꾸는 것은 주소의 쿼리뿐이다: kick(칩 앞말, 예: Release) · ver(버전, 예: 0.21) · l1 · l2(제목 두 줄, l2 에 형광펜) · shot(창 캡처 PNG 경로) — 다섯 다 필수다. 찍는 법은 README.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@600;700&display=block">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1280px;height:100%;overflow:hidden}
+body{background:#F6F3EC;font-family:"Google Sans",sans-serif;color:#1F2328;position:relative}
+.mesh{position:absolute;inset:0;background:
+ radial-gradient(560px 380px at 6% 6%,#D9D8EC 0,transparent 70%),
+ radial-gradient(620px 460px at 98% 98%,#F7D3C3 0,transparent 70%),
+ radial-gradient(460px 320px at 90% 4%,#EFDCDD 0,transparent 70%)}
+.text{position:absolute;left:0;right:0;top:44px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.logo{display:flex;align-items:center;gap:14px;font-weight:600;font-size:36px}
+.logo img{width:52px;height:52px;border-radius:13px;box-shadow:0 6px 18px -6px rgba(14,27,42,.45)}
+/* 버전은 제목의 형광펜과 같은 살구색 칩 하나 — kick(예: Release)은 옅게, ver(예: 0.21)는 굵게 */
+.kick{display:flex;align-items:center;gap:8px;font-weight:700;font-size:26px;letter-spacing:.02em;color:#6B2E17;background:#F7C6B2;border-radius:999px;padding:8px 22px 9px}
+#kick{font-weight:600;opacity:.75}
+h1{font-weight:700;font-size:78px;letter-spacing:-1.5px;line-height:1.06;white-space:nowrap}
+.missing{color:#C62828;outline:3px dashed #C62828}
+.mk{background:linear-gradient(transparent 62%,#F7C6B2 62%,#F7C6B2 94%,transparent 94%);padding:0 6px;margin:0 -6px}
+/* 창은 아래가 잘린다 — 헤더와 첫 줄 카드만 보이면 된다. 캡처는 readme-shots 의 창 테두리(모서리 10px · 바깥 투명)를 단 2배 PNG 라
+   모서리를 그 반경에 맞춰야 그림자와 어긋나지 않는다. 제목은 두 줄을 넘지 않게 줄바꿈을 막는다 — 넘치면 옆으로 삐져 보인다 */
+.shot{position:absolute;left:50%;top:392px;width:1040px;transform:translateX(-50%);border-radius:10px;
+ box-shadow:0 30px 60px -20px rgba(14,27,42,.42),0 8px 20px -10px rgba(14,27,42,.28)}
+.shot img{display:block;width:100%}
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+<div class="text">
+  <div class="logo"><img src="../../assets/icon.svg" alt=""> Prevue</div>
+  <div class="kick"><span id="kick"></span><span id="ver"></span></div>
+  <h1><span id="l1"></span><br><span class="mk" id="l2"></span></h1>
+</div>
+<div class="shot"><img id="shot" alt=""></div>
+<script>
+// 빠진 값은 지난 판 글자로 조용히 찍히지 않게 빨간 자리표시로 남긴다
+const q = new URLSearchParams(location.search);
+for (const k of ["kick", "ver", "l1", "l2"]) {
+  const el = document.getElementById(k);
+  if (q.get(k)) el.textContent = q.get(k); else { el.textContent = k + "?"; el.classList.add("missing"); }
+}
+document.getElementById("shot").src = q.get("shot") || "";
+</script>
+</body>
+</html>

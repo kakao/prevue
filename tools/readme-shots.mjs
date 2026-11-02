@@ -16,8 +16,8 @@
 //
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
-// 장면: hero · board · point · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --at(point 비율) · --sweet(cup 의 Sweetness 줄 비율).
+// 장면: hero · board · party · point · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out · --q(party, img2webp 필요) · --at(point 비율) · --sweet(cup 의 Sweetness 줄 비율).
 // GIF 장면(files · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
 // 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
@@ -54,6 +54,7 @@ const PEARL = {
 const KD = "app/ui-components/src/commonMain/kotlin/org/jetbrains/kotlinconf/ui/components";
 const KC = {
   talk: `${KD}/TalkCard.kt`,
+  party: `${KD}/PartyAnimation.kt`,
   speaker: `${KD}/SpeakerCard.kt`,
   header: `${KD}/MainHeader.kt`,
   kodee: `${KD}/Kodee.kt`,
@@ -212,6 +213,7 @@ async function enter(c, index) {
 /**
  * 크롬 창 테두리를 씌운 창들을 나란히 놓는 문서 — 신호등 · 탭 하나 · 주소창. 그림(data)은 PNG base64 다.
  * radius 0 이면 각진 창(GIF). iw 가 w 보다 넓으면 오른쪽을 자른다. 주소는 뷰어 주소에서 http:// 와 끝 / 를 뗀다.
+ * extra.bare 면 탭 줄 · 주소창 없이 뷰어만 둥글게 담는다 — 릴리즈 히어로처럼 제목이 이미 "브라우저"를 말하는 그림.
  */
 function windowsHtml(wins, radius = 10, extra = { bg: "transparent", css: "" }) {
   const addr = u => (u || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -235,18 +237,18 @@ function windowsHtml(wins, radius = 10, extra = { bg: "transparent", css: "" }) 
       white-space: nowrap; overflow: hidden; }
     .shot { display: block; }${extra.css}
   </style><div class="row">${wins.map(x => `<div class="win" style="width:${x.w}px">
-    <div class="strip"><span class="dots"><i></i><i></i><i></i></span>
+    ${extra.bare ? "" : `<div class="strip"><span class="dots"><i></i><i></i><i></i></span>
       <div class="tab"><img src="${FAVICON}" alt=""><span class="tt">${esc(x.title)}</span><span class="x">×</span></div><span class="plus">+</span></div>
     <div class="tools">${icon('<path d="M19 12H5M11 18l-6-6 6-6"/>')}${icon('<path d="M5 12h14M13 18l6-6-6-6"/>').replace('#5f6368', '#bdc1c6')}${icon('<path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>')}
-      <div class="omni">${icon('<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>')}<span>${esc(addr(x.url))}</span></div></div>
+      <div class="omni">${icon('<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>')}<span>${esc(addr(x.url))}</span></div></div>`}
     <img class="shot"${x.id ? ` id="${x.id}"` : ""} width="${x.iw || x.w}" height="${x.h - BAR}" src="data:image/png;base64,${x.data}">${x.after || ""}</div>`).join("")}</div>`;
 }
 
 /** 창 테두리를 씌워 나란히 놓고 assets/<name>.png 로 쓴다. 바깥은 투명이다. */
-async function frame(c, name, wins) {
+async function frame(c, name, wins, bare = false) {
   const W = wins.reduce((s, x) => s + x.w, 0) + GAP * (wins.length - 1);
-  const H = Math.max(...wins.map(x => x.h));
-  const html = windowsHtml(wins);
+  const H = Math.max(...wins.map(x => x.h)) - (bare ? BAR : 0);
+  const html = windowsHtml(wins, 10, { bg: "transparent", css: "", bare });
   await c.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: SCALE, mobile: false });
   await c.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
   await c.send("Page.navigate", { url: "about:blank" });
@@ -343,6 +345,30 @@ async function gif(c, name, title, url, frames, w, h, iw = w) {
     sink.add((await c.send("Page.captureScreenshot", { format: "png" })).data, f.d);
   }
   sink.finish(name, w, h);
+}
+
+/** 프레임마다 뷰어만 둥글게 담아(탭 줄 · 주소창 없음, 바깥 투명) 움직이는 WebP 로 묶는다(img2webp, 알파를 담는다). assets/<name>.webp */
+async function webpOf(c, name, frames, w, h) {
+  await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+  await c.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
+  await c.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
+  const { frameTree } = await c.send("Page.getFrameTree");
+  await c.send("Page.setDocumentContent", { frameId: frameTree.frame.id, html: windowsHtml([{ w, h, title: "", url: "", data: frames[0].data }], 10, { bg: "transparent", css: "", bare: true }) });
+  const dir = mkdtempSync(join(tmpdir(), "readme-webp-"));
+  const args = ["-loop", "0", "-lossy", "-q", String(opt.q || 70), "-m", "6"];
+  let secs = 0;
+  for (let i = 0; i < frames.length; i++) {
+    await c.evaluate(`(() => { const i = document.querySelector(".shot"); i.src = "data:image/png;base64,${frames[i].data}"; return i.decode().then(() => true); })()`);
+    writeFileSync(join(dir, `${i}.png`), Buffer.from((await c.send("Page.captureScreenshot", { format: "png" })).data, "base64"));
+    args.push("-d", String(Math.max(20, Math.round(frames[i].d * 1000))), join(dir, `${i}.png`));
+    secs += frames[i].d;
+  }
+  await c.send("Emulation.setDefaultBackgroundColorOverride", {});
+  const r = spawnSync("img2webp", [...args, "-o", join(OUT, `${name}.webp`)], { encoding: "utf8" });
+  rmSync(dir, { recursive: true, force: true });
+  if (r.status !== 0) throw new Error(`img2webp: ${r.error?.message || r.stderr}`);
+  console.log(`${name}.webp  ${w}×${h - BAR} · ${frames.length}장 · ${secs.toFixed(1)}초`);
 }
 
 /** GIF 프레임을 받는 대로 임시 폴더에 쓰고 finish 에서 assets/<name>.gif 로 묶는다(ffmpeg) — 프레임을 메모리에 쌓지 않는다. */
@@ -451,7 +477,70 @@ const SCENES = {
       await c.until(BOARD);
       await sleep(500);
     };
-    await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)]);
+    await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)], !!opt.bare);
+  },
+  // KMP 파티 — KotlinConf 앱 commonMain 의 PartyAnimation 보드에서 포인터가 Dark 카드의 Interactive 를 눌러 작업 공간에 들어가
+  // 파티를 보고(3초) ‹ 로 보드에 돌아온다. 처음과 끝이 같은 보드라 반복해도 이음매가 없다. 그 Preview 는 intensity 1 로 고정돼
+  // 손대지 않아도 조명 · Kodee · 색종이가 돈다. 창은 좁게(760) 둬 원래 크기 카드가 작업 공간을 채우게 하고, 크기 패널 · 치수선은 걷는다.
+  // 뷰어만 담는다(탭 줄 · 주소창 없음). 결과는 assets/<--out, kmp-party>.webp(img2webp). --kw · --kh(창) · --party(초) · --q(품질)
+  async party(c) {
+    const url = await viewer(opt.kotlinconf, [KC.talk, KC.party]);
+    const card = (prevue(opt.kotlinconf, "board").json?.cards || []).find(x => x.name === "PartyAnimationPreview" && x.params?.name === "Dark");
+    if (!card) throw new Error("PartyAnimation 의 Dark 카드가 없다");
+    const w = +(opt.kw || 760), h = +(opt.kh || 620), party = +(opt.party || 3);
+    await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+    await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "no-preference" }] });
+    try {
+      await c.send("Page.navigate", { url });
+      await c.until(BOARD);
+      await c.evaluate(`localStorage.setItem("prevue.sharedOnce", "1"); location.reload(); true`);
+      await sleep(500);
+      await c.until(BOARD);
+      await c.evaluate(`(() => { const st = document.createElement("style");
+        st.textContent = "body.ws{--panel-w:0px!important} #panel,#ruler{display:none!important}"; document.head.append(st); return true; })()`);
+      // 데운다 — 처음 들어가면 interactive 가 첫 그림을 그리느라 헤더에 Rendering… 이 뜬다. 한 번 들어갔다 나와 두고 찍는다
+      await enter(c, card.index);
+      await post(url, "/viewer/exit");
+      await c.until(BOARD, 20_000);
+      await sleep(1500);
+      await c.evaluate(POINTER);
+      await sleep(800);
+      // 포인터를 미끄러뜨려 요소 한가운데를 누른다 — hand() 는 작업 공간의 그림을 기준으로 해 보드에서는 못 쓴다
+      let x = w * 0.5, y = (h - BAR) * 0.55;
+      const mouse = (type, extra = {}) => c.send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", buttons: 0, ...extra });
+      const press = async sel => {
+        const r = await c.rect(sel);
+        if (!r) throw new Error(`${sel} 이 없다`);
+        const x0 = x, y0 = y, tx = r.x + r.w / 2, ty = r.y + r.h / 2, n = 32;
+        for (let i = 1; i <= n; i++) {
+          const k = i / n, e = k < 0.5 ? 2 * k * k : 1 - (2 - 2 * k) ** 2 / 2;
+          x = x0 + (tx - x0) * e; y = y0 + (ty - y0) * e;
+          await mouse("mouseMoved");
+          await sleep(16);
+        }
+        await sleep(160);
+        await mouse("mousePressed", { clickCount: 1 });
+        await sleep(90);
+        await mouse("mouseReleased", { clickCount: 1 });
+      };
+      await mouse("mouseMoved");
+      const go = `.card[data-i="${card.index}"] .go`;
+      await c.evaluate(`document.querySelector('${go}').scrollIntoView({ block: "center" }); true`);
+      await sleep(600);
+      const frames = await record(c, async () => {
+        await sleep(900);
+        await press(go);
+        await c.until(FOCUS, 20_000);
+        await sleep(party * 1000);
+        await press("#back");
+        await c.until(BOARD, 20_000);
+        await c.evaluate(`document.querySelector('${go}').scrollIntoView({ block: "center" }); true`);
+        await sleep(400);
+      }, 900);
+      await webpOf(c, opt.out || "kmp-party", frames, w, h);
+    } finally {
+      await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+    }
   },
   // 가리키기 — 작업 공간에서 ⌥+클릭한 박스와 캡슐의 파일:라인 · 사슬
   async point(c) {
