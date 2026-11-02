@@ -8,6 +8,20 @@ rootProject {
     // 서로 전체를 다시 컴파일하며 build/classes 를 덮어썼다 — 도중의 통합 테스트 JVM 이 클래스를 잃었다. 산출물을 따로 둔다.
     // 자리는 lint.py 가 -Pprevue.lintBuildDir 로 넘긴다 — 보고서 · 실행 기록 경로와 한 곳에서 맞춘다
     layout.buildDirectory.set(layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get()))
+    // 층 모듈(D-139)도 같은 규칙으로 본다 — 산출물은 루트 린트 디렉터리 아래 모듈 이름으로 가른다(lint.py 의 DETEKT_REPORTS)
+    subprojects {
+        layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get() + "/" + name))
+        afterEvaluate {
+            apply(plugin = "dev.detekt")
+            extensions.getByName("detekt").withGroovyBuilder {
+                @Suppress("UNCHECKED_CAST")
+                (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
+                @Suppress("UNCHECKED_CAST")
+                (getProperty("ignoreFailures") as Property<Boolean>).set(true)
+                (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
+            }
+        }
+    }
     buildscript {
         repositories {
             gradlePluginPortal()

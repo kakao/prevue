@@ -10,9 +10,7 @@ import org.junit.jupiter.api.Test
  * 카드 쓰기 완료(`recordCard`) · 채우기 완료(`recordFill`)는 줄을 서면 채우기에 밀려 굶고, 감시 스레드의 새 파일(`noteCreated`)은 같은 묶음의 저장보다 먼저 적혀야 한다.
  */
 class WorkspaceWriteRuleTest {
-    private val root = File("src/main/kotlin/prevue/daemon")
-    private val files = root.walkTopDown().filter { it.extension == "kt" }
-        .associate { it.relativeTo(root).invariantSeparatorsPath to it.readText() }
+    private val files = prevue.daemon.Sources.daemon()
 
     @Test fun `줄 밖의 쓰기는 카드 쓰기 완료 · 채우기 완료 · 감시의 새 파일 셋뿐이다`() {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")

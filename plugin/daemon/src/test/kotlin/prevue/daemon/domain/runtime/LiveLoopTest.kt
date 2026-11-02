@@ -214,9 +214,7 @@ class LiveLoopTest {
 
     // 성공 기준 1. 세션 포트의 tick 을 부르는 곳은 라이브 세션 루프 하나다.
     @Test fun `본체에서 tick 을 부르는 자리는 LiveLoop 하나다`() {
-        val root = File("src/main/kotlin/prevue/daemon")
-        val calls = root.walkTopDown().filter { it.extension == "kt" }
-            .flatMap { f -> Regex("""\.tick\(""").findAll(f.readText()).map { f.relativeTo(root).invariantSeparatorsPath } }.toList()
+        val calls = prevue.daemon.Sources.daemon().flatMap { (path, text) -> Regex("""\.tick\(""").findAll(text).map { path }.toList() }
         assertEquals(listOf("domain/runtime/LiveLoop.kt"), calls)
     }
 }

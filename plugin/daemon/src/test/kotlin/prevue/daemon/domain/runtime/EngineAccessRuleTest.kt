@@ -15,10 +15,7 @@ import org.junit.jupiter.api.Test
  */
 class EngineAccessRuleTest {
     private companion object {
-        val root = File("src/main/kotlin/prevue/daemon")
-        val files by lazy {
-            root.walkTopDown().filter { it.extension == "kt" }.associate { it.relativeTo(root).invariantSeparatorsPath to it.readText() }
-        }
+        val files by lazy { prevue.daemon.Sources.daemon() }
     }
 
     @Test fun `domain 에서 엔진 포트를 쥐는 곳은 액터 · 프레임 루프 · 조립 · status 뿐이다`() {

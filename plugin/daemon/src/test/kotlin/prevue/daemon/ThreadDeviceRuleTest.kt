@@ -14,7 +14,7 @@ class ThreadDeviceRuleTest {
     private class Allowed(val path: String, val device: String, val count: Int, val reason: String)
 
     private companion object {
-        val roots = listOf(File("src/main/kotlin"), File("src/main/java"))
+        val roots = Sources.kotlinRoots + Sources.javaRoots
         const val RENDER = "prevue/daemon/adapter/render"
         const val CLASS_LIFETIME = "JVM 클래스 수명 — 캐시를 클래스에 매단다. 클래스를 키로 쥐는 맵은 버린 로더를 붙잡는다"
         const val RENDERER_API = "렌더러 API — layoutlib 이 렌더 스레드의 ThreadLocal 과 Future 로 세션을 정리한다"
@@ -66,9 +66,7 @@ class ThreadDeviceRuleTest {
     }
 
     @Test fun `src main 의 스레드 장치는 허용 목록뿐이다`() {
-        val files = roots.flatMap { root ->
-            root.walk().filter { it.extension == "kt" || it.extension == "java" }.map { it.relativeTo(root).invariantSeparatorsPath to it.readText() }.toList()
-        }.toMap()
+        val files = Sources.under(roots, "kt", "java")
         assertTrue("prevue/daemon/Main.kt" in files && "prevue/render/Shim.java" in files, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(emptyList<String>(), ThreadDeviceRule.violations(files, allowedCounts)) {
             "허용 목록(D-89 경계)과 다르다. 지금 허용한 것:\n" + allowed.joinToString("\n") { "  ${it.path} → ${it.device} ×${it.count} — ${it.reason}" }

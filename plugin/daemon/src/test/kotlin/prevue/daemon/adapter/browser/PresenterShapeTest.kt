@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test
  * Presenter가 따로 받아 적던 진행 · 마지막 결과 · 누가 언제 · 시간 재료는 작업 공간 상태에서 읽는다.
  */
 class PresenterShapeTest {
-    private val root = File("src/main/kotlin/prevue/daemon")
-    private val presenter = File(root, "adapter/browser/BrowserPresenter.kt")
+    private val presenter = prevue.daemon.Sources.file("prevue/daemon/adapter/browser/BrowserPresenter.kt")
 
     @Test fun `Presenter의 가변 필드는 뷰어 사정뿐이다`() {
         assertTrue(presenter.isFile, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
@@ -19,7 +18,7 @@ class PresenterShapeTest {
     }
 
     @Test fun `BrowserMemo는 없다`() {
-        val users = root.walkTopDown().filter { it.extension == "kt" && "BrowserMemo" in it.readText() }.map { it.name }.toList()
+        val users = prevue.daemon.Sources.daemon().filterValues { "BrowserMemo" in it }.keys.toList()
         assertEquals(emptyList<String>(), users)
     }
 
