@@ -13,7 +13,7 @@
     "hot-reload",
     "layoutlib"
   ],
-  "skills": "./codex/skills/",
+  "skills": "./skills/codex/",
   "interface": {
     "displayName": "Prevue",
     "shortDescription": "See Compose Previews without Android Studio and point at the screen",

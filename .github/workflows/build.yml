@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 0    # 린트가 origin/main 과의 diff 로 새 주석 · 건드린 함수를 본다
 
-      # 스킬 두 벌(plugin/skills/ · plugin/codex/skills/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
+      # 스킬 두 벌(plugin/skills/claude/ · plugin/skills/codex/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
       - name: 스킬 두 벌이 원본에서 만들어졌는지 본다
         run: sh tools/gen-skills.sh --check
 

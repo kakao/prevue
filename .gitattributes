@@ -1,7 +1,6 @@
-# plugin/skills/ · plugin/codex/skills/ 는 skills-src/ 에서, .claude/skills/ · .agents/skills/ 는 dev-skills-src/ 에서 tools/gen-skills.sh 가 만든 것이다.
+# plugin/skills/claude/ · plugin/skills/codex/ 는 skills-src/ 에서, .claude/skills/ · .agents/skills/ 는 dev-skills-src/ 에서 tools/gen-skills.sh 가 만든 것이다.
 # PR 화면에서 접어 원본 변경만 보이게 한다.
 plugin/skills/** linguist-generated=true
-plugin/codex/skills/** linguist-generated=true
 # plugin/ 의 LICENSE · NOTICE.md 는 루트 원본을 tools/plugin-copies.sh 가 옮긴 것이다.
 plugin/LICENSE linguist-generated=true
 plugin/NOTICE.md linguist-generated=true
