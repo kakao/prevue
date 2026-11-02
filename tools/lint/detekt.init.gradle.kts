@@ -11,16 +11,6 @@ rootProject {
     // 층 모듈(D-139)도 같은 규칙으로 본다 — 산출물은 루트 린트 디렉터리 아래 모듈 이름으로 가른다(lint.py 의 DETEKT_REPORTS)
     subprojects {
         layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get() + "/" + name))
-        afterEvaluate {
-            apply(plugin = "dev.detekt")
-            extensions.getByName("detekt").withGroovyBuilder {
-                @Suppress("UNCHECKED_CAST")
-                (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
-                @Suppress("UNCHECKED_CAST")
-                (getProperty("ignoreFailures") as Property<Boolean>).set(true)
-                (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
-            }
-        }
     }
     buildscript {
         repositories {
@@ -31,7 +21,7 @@ rootProject {
             classpath("dev.detekt:detekt-gradle-plugin:2.0.0-alpha.6")
         }
     }
-    afterEvaluate {
+    allprojects { afterEvaluate {
         apply(plugin = "dev.detekt")
         // init script 는 플러그인 클래스 없이 컴파일된다 — 확장은 이름으로 만진다.
         extensions.getByName("detekt").withGroovyBuilder {
@@ -41,5 +31,5 @@ rootProject {
             (getProperty("ignoreFailures") as Property<Boolean>).set(true)
             (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
         }
-    }
+    } }
 }

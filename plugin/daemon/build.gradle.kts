@@ -58,11 +58,16 @@ dependencies {
     // 그 옛것은 stdlib 2.4의 @Metadata를 못 읽어 `@PreviewParameter` 경로에서 죽는다 —
     // RenderSandboxTransformTrampoline의 static 초기화가 reflect로 FilesKt.readText를 찾는다.
     // 같은 버전 reflect를 **앞에** 둬서 이기게 한다. 순서가 곧 해결책이라 이 줄은 renderer 위에 있어야 한다.
-    implementation(libs.kotlin.reflect)
-    implementation(libs.renderer)
-    implementation(libs.layoutlib)
+    // 조립(루트 본체)은 렌더러를 컴파일 때 모른다 — 렌더러 · layoutlib 은 :adapter 만 안다. 실행 차례를 위해서만 여기 둔다.
+    runtimeOnly(libs.kotlin.reflect)
+    runtimeOnly(libs.renderer)
+    runtimeOnly(libs.layoutlib)
     // 층 모듈은 서드파티 뒤에 둔다 — 서드파티의 클래스패스 차례가 모듈로 나누기 전과 같다.
     implementation(project(":adapter"))
+    // 테스트는 렌더러 · layoutlib 타입을 직접 만진다(통합 테스트 · 렌더 어댑터 테스트).
+    testImplementation(libs.kotlin.reflect)
+    testImplementation(libs.renderer)
+    testImplementation(libs.layoutlib)
     // StateFlow·SharedFlow(D-42). 실행 때는 렌더러 jar 가 품은 kotlinx.coroutines 를 쓴다 — 따로 실으면 두 벌이 되어
     // 클래스패스 순서가 렌더러 안의 코루틴을 바꿔 끼운다. 컴파일만 같은 계열의 판에 댄다.
     compileOnly(libs.kotlinx.coroutines.renderer)
@@ -208,11 +213,7 @@ val bridgeJar = tasks.register<Jar>("bridgeJar") {
 // 층 모듈의 클래스를 함께 담는다 — 클래스패스의 우리 jar 는 하나라는 bin/prevue 의 가정(jar 복사본 · 키)이 그대로다.
 tasks.jar {
     archiveFileName.set("prevue.jar")
-    layers.forEach { p ->
-        val layerJar = p.tasks.named<Jar>("jar")
-        dependsOn(layerJar)
-        from(layerJar.map { zipTree(it.archiveFile) }) { exclude("META-INF/MANIFEST.MF") }
-    }
+    layers.forEach { p -> from(p.extensions.getByType<SourceSetContainer>()["main"].output) }
 }
 
 // 서드파티만 — 층 모듈의 jar 는 위 prevue.jar 에 들어 있다. 공유 lib 의 키 · 내용 · 차례가 모듈로 나누기 전과 같아야 한다.
