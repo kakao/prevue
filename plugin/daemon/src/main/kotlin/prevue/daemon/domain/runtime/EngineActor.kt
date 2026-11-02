@@ -137,4 +137,6 @@ class EngineActor(
 
     suspend fun written(out: RenderOutput) = renderer.written(out)
     suspend fun awaitWrites() = renderer.awaitWrites()
+    fun discard(out: RenderOutput) = renderer.discard(out)
+    fun lost(out: RenderOutput): Boolean = renderer.lost(out)
 }

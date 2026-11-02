@@ -53,12 +53,12 @@ class StaleCallers(
      */
     suspend fun compileWithNew(ed: WorkspaceEditor, files: List<File>, before: Map<String, String?> = literals.read(files)): Batch {
         val asked = files.map { it.canonicalPath }.toSet()
-        val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter { it.isFile }
-            .partition { FreshnessPolicy.newerThanBuild(it.lastModified(), compiler.builtAt(ws.graph.ownerOf(it))) }
+        val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
+            .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
         val fresh = holdExpectActual(ed, newer)
         ed.forgetNew(built)
         // 읽는 사이에 또 저장되면 옛 값이 남아 기다림이 다음 저장을 기다린다.
-        val seen = (files + fresh).associate { it.canonicalPath to it.lastModified() }
+        val seen = seen(files + fresh)
         val first = files + fresh
         // 리터럴 빠른 경로(D-67)의 기준점은 컴파일 **전**에 읽은 내용이다 — 저장한 파일은 부른 쪽이 이미 읽었다.
         val texts = before + literals.read(fresh)
@@ -77,7 +77,7 @@ class StaleCallers(
 
     suspend fun compileOpening(ed: WorkspaceEditor, files: List<File>): Batch {
         val before = literals.read(files)
-        val seen = files.associate { it.canonicalPath to it.lastModified() }
+        val seen = seen(files)
         val alone = compileAll(files, before)
         if (alone.ok) return done(ed, files, seen, alone)
         val asked = files.map { it.canonicalPath }.toSet()
@@ -85,14 +85,14 @@ class StaleCallers(
     }
 
     fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
-        val (held, code) = files.partition { ExpectActual.declares(it, texts[it.absolutePath]) }
+        val (held, code) = files.partition { (texts[it.absolutePath] ?: sources.read(it))?.let(ExpectActual::declares) == true }
         if (held.isEmpty()) return code
         val next = StaleReasons.expectActual(held)
         val why = ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.let {
             next.copy(files = (it.files + next.files).distinctBy { f -> File(f).canonicalPath }, since = it.since)
         } ?: next
         ed.markStale(StaleReasons.EXPECT_ACTUAL, why)
-        ed.markCompiled(held.associate { it.canonicalPath to it.lastModified() })
+        ed.markCompiled(seen(held))
         ed.forgetNew(held)
         return code
     }
@@ -107,8 +107,16 @@ class StaleCallers(
     suspend fun behindBuild(): List<File> =
         sources.sourceFiles().map { it.canonicalFile }.groupBy { ws.graph.ownerOf(it) }.flatMap { (module, files) ->
             val built = compiler.builtAt(module) ?: return@flatMap emptyList()
-            files.filter { f -> f.lastModified().let { it > built && ws.now.compiledMtime[f.path]?.first != it } }
+            files.filter { f -> mtime(f).let { it > built && ws.now.compiledMtime[f.path]?.first != it } }
         }
+
+    fun seen(files: List<File>): Map<String, Long> = files.associate { it.canonicalPath to mtime(it) }
+
+    fun present(files: List<File>): List<File> = files.filter(sources::has)
+
+    fun text(f: File): String? = sources.read(f)
+
+    private fun mtime(f: File): Long = sources.modifiedAt(f) ?: 0L
 
     private suspend fun done(ed: WorkspaceEditor, batch: List<File>, seen: Map<String, Long>, c: CompileResult): Batch {
         ed.forgetNew(batch)
@@ -121,7 +129,7 @@ class StaleCallers(
         val c = f.canonicalFile
         val module = ws.graph.ownerOf(c)
         return c.path in ws.now.newFiles ||
-            FreshnessPolicy.compileOnOpen(c.lastModified(), ws.now.compiledMtime[c.path], compiler.builtAt(module)) {
+            FreshnessPolicy.compileOnOpen(mtime(c), ws.now.compiledMtime[c.path], compiler.builtAt(module)) {
                 previewClasses().all { compiler.hasClass(module, it) }
             }
     }

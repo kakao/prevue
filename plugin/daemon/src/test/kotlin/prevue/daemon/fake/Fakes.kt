@@ -23,8 +23,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import prevue.daemon.adapter.dump.ClasspathSpec
 import prevue.daemon.adapter.dump.DumpPaths
+import prevue.daemon.adapter.render.RenderOutputs
 import prevue.daemon.adapter.source.ProjectFiles
 import prevue.daemon.adapter.source.SourcePreviewRepository
+import prevue.daemon.adapter.source.ValueDirs
 import prevue.daemon.domain.port.BuildChange
 import prevue.daemon.domain.port.BuildNotice
 import prevue.daemon.domain.model.Card
@@ -216,6 +218,9 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         check(gate.await(5, TimeUnit.SECONDS)) { "awaitWritesHold가 안 풀렸다" }
     }
 
+    override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
+    override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
+
     override val bootstrapMs = 0L
     override val loaderGen = 0
     override val tasksOnLoader = 0
@@ -389,7 +394,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
         resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.daemon.domain.DrawPosturesUseCase.QUIET_MS,
     ) =
-        Workspace(module, clock, graph, if (watchRoots) graph.roots + graph.valueDirs else emptyList()).let { ws ->
+        Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList()).let { ws ->
             UseCases(ws, Ports(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(root, graph.roots).apply { buildInBackground(scope) },
                 resources = resources), scope, Watchers(sources, builds), postureQuietMs)
                 .also { workspaces[it] = ws }

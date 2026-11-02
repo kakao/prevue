@@ -97,6 +97,10 @@ internal class RenderOutputs(
     companion object {
         fun msSince(nanos: Long) = (System.nanoTime() - nanos) / 1_000_000
 
+        fun discard(out: RenderOutput) = listOfNotNull(out.image, out.tree).forEach { it.delete() }
+
+        fun lost(out: RenderOutput): Boolean = out.image?.isFile == false
+
         fun pixelHash(img: BufferedImage): Long {
             val data = (img.raster.dataBuffer as? DataBufferInt)?.data
                 ?: IntArray(img.width * img.height).also { img.getRGB(0, 0, img.width, img.height, it, 0, img.width) }

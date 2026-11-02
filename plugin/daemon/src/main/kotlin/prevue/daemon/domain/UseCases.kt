@@ -42,8 +42,8 @@ class UseCases(
 ) {
     private val engine = EngineActor(ports.engine, ports.sessions, scope)
     private val live = LiveShot(workspace, engine)
-    private val literals = LiteralPatches(workspace, engine)
-    private val resourcePatches = ResourcePatches(ports.resources)
+    private val literals = LiteralPatches(workspace, engine, ports.sourceFiles)
+    private val resourcePatches = ResourcePatches(ports.resources, ports.sourceFiles)
     private val callers = StaleCallers(workspace, engine, ports.compiler, literals, ports.sourceFiles)
 
     init { ports.engine.protect { workspace.now.keepIds() } }
@@ -58,9 +58,9 @@ class UseCases(
     val rerender = RerenderUseCase(workspace, engine, live)
     val renderAt = RenderAtUseCase(workspace, engine, live)
     val applySave = ApplySaveUseCase(workspace, engine, callers, literals, resourcePatches, live, fillBoard, tabs)
-    val trackTabFiles = TrackTabFilesUseCase(workspace, tabs)
+    val trackTabFiles = TrackTabFilesUseCase(workspace, tabs, ports.sourceFiles)
     val rememberValues = RememberValuesUseCase(workspace, resourcePatches)
-    val awaitRender = AwaitRenderUseCase(workspace)
+    val awaitRender = AwaitRenderUseCase(workspace, ports.sourceFiles)
     val resize = ResizeUseCase(workspace, live)
     val drawPostures = DrawPosturesUseCase(workspace, engine, live, scope, postureQuietMs)
     val focusCard = FocusCardUseCase(workspace, live, fillBoard, resize)

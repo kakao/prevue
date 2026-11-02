@@ -3,9 +3,10 @@ package prevue.daemon.domain.runtime
 import java.io.File
 import prevue.daemon.domain.port.CompileResult
 import prevue.daemon.domain.port.LiteralSite
+import prevue.daemon.domain.port.SourceFileRepository
 import prevue.daemon.domain.policy.LiteralPolicy
 
-class LiteralPatches(private val ws: Workspace, private val engine: EngineActor) {
+class LiteralPatches(private val ws: Workspace, private val engine: EngineActor, private val sources: SourceFileRepository) {
     private class Known(val text: String, val owner: String?, val sites: List<LiteralSite>, val epoch: Int)
     private val known = HashMap<String, Known>()
     private var epoch = 0
@@ -18,7 +19,7 @@ class LiteralPatches(private val ws: Workspace, private val engine: EngineActor)
     }
 
     fun read(files: List<File>): Map<String, String?> = files.associate { f ->
-        f.absolutePath to runCatching { f.readText() }.getOrNull()?.takeIf { '\r' !in it && !it.startsWith('﻿') }
+        f.absolutePath to sources.read(f)?.takeIf { '\r' !in it && !it.startsWith('﻿') }
     }
 
     suspend fun tryApply(texts: Map<String, String?>, patch: Boolean, same: Boolean): Outcome {

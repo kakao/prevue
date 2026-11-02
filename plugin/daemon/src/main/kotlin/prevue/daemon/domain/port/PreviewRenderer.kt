@@ -33,6 +33,8 @@ interface PreviewRenderer {
     suspend fun written(out: RenderOutput): RenderOutput
     /** 지금까지 넘긴 PNG·트리 쓰기가 전부 디스크에 닿기를 기다린다. */
     suspend fun awaitWrites()
+    fun discard(out: RenderOutput)
+    fun lost(out: RenderOutput): Boolean
 
     // status가 싣는 관측값. 로더 공유가 실제로 되는지(tasksOnLoader)와 산출물 상한(NFR-10)이 여기서 보인다.
     val bootstrapMs: Long

@@ -54,6 +54,8 @@ class BootingEngine(
     override fun protect(keep: () -> Set<String>) { scope.launch { await().protect(keep) } }
     override suspend fun written(out: RenderOutput): RenderOutput = await().written(out)
     override suspend fun awaitWrites() = await().awaitWrites()
+    override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
+    override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
 
     private val bootedNow: RenderEngine? get() = if (booted.isCompleted && booted.getCompletionExceptionOrNull() == null) ready else null
     override val bootstrapMs: Long get() = bootedNow?.bootstrapMs ?: 0

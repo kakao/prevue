@@ -8,7 +8,7 @@ import prevue.daemon.domain.runtime.Workspace
  */
 class RememberValuesUseCase(private val ws: Workspace, private val resources: ResourcePatches) {
     operator fun invoke(): Int {
-        val files = ws.graph.valueDirs.flatMap { d -> d.listFiles { f -> ResourcePatches.isValues(f) }.orEmpty().toList() }
+        val files = resources.valueFiles(ws.graph.resRoots)
         resources.remember(files)
         return files.size
     }

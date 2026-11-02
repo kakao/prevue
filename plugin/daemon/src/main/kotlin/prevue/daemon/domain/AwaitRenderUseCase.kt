@@ -6,16 +6,17 @@ import prevue.daemon.domain.model.VacantTab
 import prevue.daemon.domain.model.WaitResult
 import prevue.daemon.domain.policy.AwaitPolicy
 import prevue.daemon.domain.policy.StaleReasons
+import prevue.daemon.domain.port.SourceFileRepository
 import java.io.File
 import prevue.daemon.domain.runtime.Workspace
 import prevue.daemon.domain.runtime.WorkspaceState
 
-class AwaitRenderUseCase(private val ws: Workspace) {
+class AwaitRenderUseCase(private val ws: Workspace, private val sources: SourceFileRepository) {
     suspend operator fun invoke(files: List<File>, timeoutMs: Long): WaitResult {
         val t0 = ws.nowMs()
         val started = System.nanoTime()
         val want = targets(files)
-        val mtimes = want.associate { it.path to it.lastModified() }
+        val mtimes = want.associate { it.path to (sources.modifiedAt(it) ?: 0L) }
         fun waited() = ws.nowMs() - t0
         fun left() = timeoutMs - (System.nanoTime() - started) / 1_000_000
         fun compiled(s: WorkspaceState) = mtimes.all { (p, m) -> AwaitPolicy.compiled(m, s.compiledMtime[p], s.openedAtMs, t0) }
@@ -47,7 +48,7 @@ class AwaitRenderUseCase(private val ws: Workspace) {
     private fun targets(files: List<File>): List<File> {
         val want = files.ifEmpty { ws.now.let { s -> listOfNotNull(s.board?.file ?: s.current?.file ?: s.activeTabOrNull()?.file) } }.map { it.canonicalFile }
         require(want.isNotEmpty()) { "기다릴 파일이 없다 — 파일 경로로 show 한다" }
-        want.firstOrNull { !it.isFile }?.let { error("파일이 없다: $it") }
+        want.firstOrNull { !sources.has(it) }?.let { error("파일이 없다: $it") }
         require(ws.watchRoots.isNotEmpty()) { "파일 감시가 꺼져 있다(--no-watch) — reload 로 다시 그린다" }
         val outside = AwaitPolicy.outside(want, ws.watchRoots)
         require(outside.isEmpty()) {
