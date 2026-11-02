@@ -5,23 +5,22 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * 층 규칙(D-51 · D-83 · D-88) — import 는 `adapter → domain → entity`, 안쪽으로만 향한다. 본체의 import 를 훑어 규칙표와 대조한다.
- * 단일 모듈이라 컴파일러가 막아 주지 않는다. 이 표가 나중에 source set 으로 가를 때의 설계도다.
+ * 층 규칙(D-51 · D-83 · D-88 · D-139) — import 는 `adapter → domain → entity`, 안쪽으로만 향한다. 본체의 import 를 훑어 규칙표와 대조한다.
+ * 층 사이는 모듈(`:entity` · `:domain` · `:adapter`)이 컴파일 때 막는다. 이 표는 모듈이 못 막는 것 — 층 안의 규칙(입구 · 기술 어댑터 · runtime)과
+ * core 의 JDK 금지(AWT · 파일 시스템) — 를 지킨다.
  * entity 에는 기술 어댑터와 domain 이 함께 보는 값만 둔다 — domain 과 입구만 보면 `domain/model` 이다.
  */
 class LayerRuleTest {
     @Test fun `본체의 import 가 층 규칙을 지킨다`() {
-        val root = File("src/main/kotlin/prevue/daemon")
-        val files = root.walkTopDown().filter { it.extension == "kt" }
-            .associate { it.relativeTo(root).invariantSeparatorsPath to it.readText() }
+        val files = Sources.daemon()
         assertEquals(true, files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(emptyList<String>(), LayerRule.violations(files))
     }
 
     @Test fun `JSON 코덱은 본체를 모른다`() {
-        val codec = File("src/main/kotlin/prevue/json").walkTopDown().filter { it.extension == "kt" }.toList()
+        val codec = Sources.under(Sources.kotlinRoots, "kt").filterKeys { it.startsWith("prevue/json/") }
         assertEquals(true, codec.isNotEmpty(), "코덱을 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
-        assertEquals(emptyList<String>(), codec.filter { "prevue.daemon" in it.readText() }.map { it.name })
+        assertEquals(emptyList<String>(), codec.filterValues { "prevue.daemon" in it }.keys.toList())
     }
 
     @Test fun `일부러 넣은 위반을 잡는다`() {

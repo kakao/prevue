@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class ScreenTextTest {
-    private val sources = mapOf(
-        "src/main/kotlin" to Regex("""(?:screenText|phrase)(?:OrNull)?\("([\w.]+)""""),
+    private val code = Regex("""(?:screenText|phrase)(?:OrNull)?\("([\w.]+)"""")
+    private val sources = prevue.daemon.Sources.kotlinRoots.map { it.path to code } + listOf(
         "../viewer" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
         "../cli/prevue_prepare.py" to Regex("""say\("([\w.]+)"\)"""),
     )

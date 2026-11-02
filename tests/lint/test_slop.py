@@ -124,6 +124,15 @@ class Comments(unittest.TestCase):
         out = "D\tplugin/src/main/kotlin/a/Moved.kt\nA\tplugin/daemon/src/main/kotlin/a/Moved.kt\n"
         self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/a/Moved.kt": "plugin/src/main/kotlin/a/Moved.kt"})
 
+    def test_층_모듈의_본체도_범위다(self):
+        for m in ("entity", "domain", "adapter"):
+            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/daemon/%s/A.kt" % (m, m)), m)
+        self.assertFalse(lint.in_scope("plugin/daemon/domain/src/test/kotlin/A.kt"))
+
+    def test_층_모듈로_옮긴_파일은_옛_자리와_짝짓는다(self):
+        out = "R100\tplugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt\tplugin/daemon/domain/src/main/kotlin/prevue/daemon/domain/A.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/domain/src/main/kotlin/prevue/daemon/domain/A.kt": "plugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt"})
+
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])
         self.assertEqual(self.comments("// 외부: 첫 줄\n// 이어지는 줄\nval a = 1\n", {1, 2, 3}), [1, 2])

@@ -1,5 +1,8 @@
 import java.security.MessageDigest
 import java.time.Duration
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -8,16 +11,20 @@ plugins {
 // 바이트코드는 17로 고정하고 컴파일은 Gradle을 돌리는 JDK(21+)로 한다 — 툴체인을 걸면 JDK 17이 따로 깔려 있어야 해서
 // Android Studio의 JBR만 있는 맥에서 setup이 멈춘다(#22). 런타임만 21+가 필요하다 — layoutlib 17.0.x가 Java 21 바이트코드다.
 // release · jdk-release는 API도 17로 묶는다 — Gradle을 돌린 JDK가 데몬의 JDK보다 새로워도 데몬에 없는 API를 부르지 않는다.
-tasks.withType<JavaCompile>().configureEach {
-    options.release = 17
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-        freeCompilerArgs.add("-Xjdk-release=17")
+// 층 모듈(:entity · :domain · :adapter)도 같은 바이트코드로 굽는다.
+allprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.release = 17
+    }
+    tasks.withType<KotlinCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xjdk-release=17")
+        }
     }
 }
+
+val layers = listOf(":entity", ":domain", ":adapter").map { project(it) }
 
 /**
  * 상주 컴파일러 브리지. kotlin-compiler-embeddable에만 컴파일되고 데몬 본체의 클래스패스에는
@@ -45,38 +52,22 @@ val layoutlibResources: Configuration = configurations.create("layoutlibResource
     isTransitive = false
 }
 
-// 화면 문장 영어 사전(viewer/strings/en.json)을 데몬이 읽는 Kotlin 표로 옮긴다 — 데몬이 CLI 로 내는 문장은 영어 한 벌이다(D-106 · D-109).
-// 브라우저에는 키만 보내고 뷰어가 고른 언어로 채우므로 다른 언어의 사전은 데몬에 들어가지 않는다.
-val screenText = tasks.register("screenText") {
-    val dict = layout.projectDirectory.file("../viewer/strings/en.json")
-    val out = layout.buildDirectory.dir("generated/screenText")
-    inputs.file(dict)
-    outputs.dir(out)
-    doLast {
-        @Suppress("UNCHECKED_CAST")
-        val entries = groovy.json.JsonSlurper().parse(dict.asFile, "UTF-8") as Map<String, String>
-        fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$").replace("\n", "\\n")
-        // 긴 문장은 조각을 이어 붙인다 — 생성물도 린트의 줄 길이(160)를 지난다.
-        fun lit(s: String) = s.chunked(100).joinToString("\" +\n        \"", "\"", "\"") { esc(it) }
-        val file = out.get().file("prevue/daemon/entity/ScreenTextTable.kt").asFile
-        file.parentFile.mkdirs()
-        file.writeText(buildString {
-            append("package prevue.daemon.entity\n\ninternal val SCREEN_TEXT: Map<String, String> = mapOf(\n")
-            entries.toSortedMap().forEach { (k, v) -> append("    ").append(lit(k)).append(" to ").append(lit(v)).append(",\n") }
-            append(")\n")
-        })
-    }
-}
-sourceSets.main { kotlin.srcDir(screenText) }
 
 dependencies {
     // 렌더러 jar는 옛 kotlin-reflect를 섀도잉 없이 품고 있다(`kotlin.reflect.jvm.internal.*` 2,163개).
     // 그 옛것은 stdlib 2.4의 @Metadata를 못 읽어 `@PreviewParameter` 경로에서 죽는다 —
     // RenderSandboxTransformTrampoline의 static 초기화가 reflect로 FilesKt.readText를 찾는다.
     // 같은 버전 reflect를 **앞에** 둬서 이기게 한다. 순서가 곧 해결책이라 이 줄은 renderer 위에 있어야 한다.
-    implementation(libs.kotlin.reflect)
-    implementation(libs.renderer)
-    implementation(libs.layoutlib)
+    // 조립(루트 본체)은 렌더러를 컴파일 때 모른다 — 렌더러 · layoutlib 은 :adapter 만 안다. 실행 차례를 위해서만 여기 둔다.
+    runtimeOnly(libs.kotlin.reflect)
+    runtimeOnly(libs.renderer)
+    runtimeOnly(libs.layoutlib)
+    // 층 모듈은 서드파티 뒤에 둔다 — 서드파티의 클래스패스 차례가 모듈로 나누기 전과 같다.
+    implementation(project(":adapter"))
+    // 테스트는 렌더러 · layoutlib 타입을 직접 만진다(통합 테스트 · 렌더 어댑터 테스트).
+    testImplementation(libs.kotlin.reflect)
+    testImplementation(libs.renderer)
+    testImplementation(libs.layoutlib)
     // StateFlow·SharedFlow(D-42). 실행 때는 렌더러 jar 가 품은 kotlinx.coroutines 를 쓴다 — 따로 실으면 두 벌이 되어
     // 클래스패스 순서가 렌더러 안의 코루틴을 바꿔 끼운다. 컴파일만 같은 계열의 판에 댄다.
     compileOnly(libs.kotlinx.coroutines.renderer)
@@ -129,6 +120,12 @@ configurations[integrationTest.compileOnlyConfigurationName].extendsFrom(configu
 configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
 // main 의 internal 을 단위 테스트처럼 본다.
 kotlin.target.compilations.getByName("integrationTest").associateWith(kotlin.target.compilations.getByName("main"))
+// 테스트는 루트에 모여 있다 — 층 모듈의 internal 도 같은 모듈의 테스트처럼 본다. 본체끼리는 서로의 internal 을 못 본다.
+listOf("compileTestKotlin", "compileIntegrationTestKotlin").forEach { name ->
+    tasks.named<KotlinCompile>(name) {
+        friendPaths.from(layers.map { it.layout.buildDirectory.dir("classes/kotlin/main") }, layers.map { it.tasks.named<Jar>("jar").flatMap { j -> j.archiveFile } })
+    }
+}
 
 // 픽스처는 플러그인 밖(저장소 루트)에 있다 — 설치본에 실리지 않는다(D-123)
 val pearlFixture: File = rootDir.resolve("../../fixtures/pearl").canonicalFile
@@ -213,9 +210,15 @@ val bridgeJar = tasks.register<Jar>("bridgeJar") {
 }
 
 // 데몬 본체. 우리 소스라 플러그인 안에 남는다 — 172KB 다.
+// 층 모듈의 클래스를 함께 담는다 — 클래스패스의 우리 jar 는 하나라는 bin/prevue 의 가정(jar 복사본 · 키)이 그대로다.
 tasks.jar {
     archiveFileName.set("prevue.jar")
+    layers.forEach { p -> from(p.extensions.getByType<SourceSetContainer>()["main"].output) }
 }
+
+// 서드파티만 — 층 모듈의 jar 는 위 prevue.jar 에 들어 있다. 공유 lib 의 키 · 내용 · 차례가 모듈로 나누기 전과 같아야 한다.
+val externalRuntime: FileCollection = configurations.runtimeClasspath.get().incoming
+    .artifactView { componentFilter { it !is ProjectComponentIdentifier } }.files
 
 /**
  * 서드파티 jar 는 **공유 툴체인**에 둔다. layoutlib·컴파일러와 같은 이유다(NFR-10) —
@@ -228,7 +231,7 @@ tasks.jar {
  * 자리가 그대로라 조용히 섞인다. 실제로 갈리는 것은 "어떤 jar 들의 모음인가"이므로 그것을 키로 쓴다.
  */
 val depsRel: Provider<String> = provider {
-    val names = configurations.getByName("runtimeClasspath").files.map { it.name }.sorted()
+    val names = externalRuntime.files.map { it.name }.sorted()
     val key = MessageDigest.getInstance("SHA-256")
         .digest(names.joinToString("\n").toByteArray())
         .take(4).joinToString("") { "%02x".format(it) }
@@ -238,7 +241,7 @@ val depsDir: Provider<Directory> = layout.dir(depsRel.map { File(home, it) })
 
 val syncRuntimeLibs = tasks.register<Sync>("syncRuntimeLibs") {
     description = "데몬이 읽을 서드파티 jar 를 공유 툴체인에 모은다"
-    from(configurations.named("runtimeClasspath"))
+    from(externalRuntime)
     into(depsDir)
 }
 
@@ -246,7 +249,7 @@ val prevueEnv = tasks.register("prevueEnv") {
     description = "bin/prevue가 읽을 경로들을 써 둔다"
     val envFile = layout.buildDirectory.file("prevue-env")
     // 순서를 여기서 읽는다. 이 컬렉션의 차례가 곧 클래스패스의 차례다.
-    val runtimeClasspath = sourceSets.main.get().runtimeClasspath
+    val runtimeClasspath = externalRuntime
     val ownJarName = tasks.jar.flatMap { it.archiveFileName }
     val bridgeArchive = bridgeJar.flatMap { it.archiveFile }
 
