@@ -88,7 +88,7 @@ open_viewer() {
   return 0
 }
 
-# 데몬을 띄울 JDK — PREVUE_JDK, 없으면 AS 의 JBR 과 흔한 설치 자리에서 찾는다(bin/jdk_find.py, D-130). 찾는 데 python 을 한 번
+# 데몬을 띄울 JDK — PREVUE_JDK, 없으면 AS 의 JBR 과 흔한 설치 자리에서 찾는다(cli/jdk_find.py, D-130). 찾는 데 python 을 한 번
 # 부르므로(60~130ms) JDK 를 쓰는 명령만 정하고, 정한 것을 PREVUE_JDK_RESOLVED 로 자식 프로세스(start 가 다시 부르는 start)에 넘긴다.
 # JDK_FROM 은 PREVUE_JDK · ok · old · none(다 찾아봤는데 없다) · error(찾기 자체가 실패 — 다 찾아봤다고 말하지 않는다)
 JDK=""; JDK_FROM=""
@@ -141,7 +141,7 @@ require_runtime() {
 }
 
 usage() {
-  # 명령 목록 · 명령별 설명은 bin/help 가 갖는다 — 여기와 두 곳에 적으면 어긋난다
+  # 명령 목록 · 명령별 설명은 cli/help 가 갖는다 — 여기와 두 곳에 적으면 어긋난다
   cat "$ROOT/cli/help/index.txt" >&2
   exit 2
 }
@@ -223,7 +223,7 @@ shared_toolchain() {
   [ -n "$kv" ] && [ -n "$lv" ] && [ -d "$HOME/.prevue/toolchain/compiler-$kv" ] && [ -d "$HOME/.prevue/toolchain/layoutlib-$lv" ]
 }
 
-# warmup 이 Gradle 을 부를 JDK — 모듈의 최신 산출물을 구운 데몬(로그, 내려간 것도) → Prevue 가 지난번에 쓴 JDK → gradle_jdk_of 순(bin/jdk_rule.py).
+# warmup 이 Gradle 을 부를 JDK — 모듈의 최신 산출물을 구운 데몬(로그, 내려간 것도) → Prevue 가 지난번에 쓴 JDK → gradle_jdk_of 순(cli/jdk_rule.py).
 # 누가 빌드했는지(AS·터미널·Prevue)는 따지지 않는다 — 가장 최신 산출물을 재사용하는 JDK 가 답이다(이슈 #4).
 # ps 는 떠 있는지를 출처 문구에 적는 데만 쓴다. LC_ALL=C — 한국어 로캘에서는 lstart 가 "2026년 9월 28일 월요일 …"로 찍혀 못 읽는다(실측).
 gradle_version_of() {  # <repo>
@@ -291,7 +291,7 @@ key_from_args() {
   return 1
 }
 
-# 기록(pid 파일) 가운데 살아 있는 데몬을 가리킬 수 있는 것 — 한 줄에 포트 · 상태(daemon · unknown). 판정은 bin/daemon_records.py 다.
+# 기록(pid 파일) 가운데 살아 있는 데몬을 가리킬 수 있는 것 — 한 줄에 포트 · 상태(daemon · unknown). 판정은 cli/daemon_records.py 다.
 # 기록은 데몬이 끝나도 남고 pid 는 재부팅하면 다시 나눠 준다 — kill -0 만 보면 그 pid 를 물려받은 남의 프로세스를 산 데몬으로 읽어,
 # 재부팅 뒤 start 가 "닿지 못한다"로 막혔다(실측 2026-10-05: 기록의 pid 419 가 root 의 systemsoundserverd).
 # --clean 은 부팅 전에 쓴 죽은 기록을 지운다. 기록을 쓰는 start 만 준다 — 나머지 명령은 기록을 읽기만 한다.

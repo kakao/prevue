@@ -1,4 +1,3 @@
-// 유스케이스 결과 → 응답 JSON. 덧붙임 키는 그 자리에서만 싣는다 — contract/ 가 지킨다.
 package prevue.daemon.adapter.http.mapper
 
 import prevue.daemon.domain.port.FailureKind

@@ -205,7 +205,7 @@ class ContractTest {
         val actual = mapOf("status" to code, "schema" to schema(body))
         val file = File(dir, "$name.json")
         if (update) { write(file, actual + mapOf("example" to normalize(body))); return emptyList() }
-        if (!file.isFile) return listOf("$name: contract/$name.json 이 없다")
+        if (!file.isFile) return listOf("$name: src/test/contract/$name.json 이 없다")
         @Suppress("UNCHECKED_CAST")
         val want = Json.parse(file.readText()) as Map<String, Any?>
         val diffs = ArrayList<String>()
@@ -232,7 +232,7 @@ class ContractTest {
             val state = listOfNotNull(known?.get("state"), byType["state"]).reduce(::union)
             return compare("events", 200, byType + ("state" to state))
         }
-        if (want == null || known == null) return listOf("events: contract/events.json 이 없다")
+        if (want == null || known == null) return listOf("events: src/test/contract/events.json 이 없다")
         val diffs = ArrayList<String>()
         diff("events:", want["schema"]!! - "state", schema(byType - "state"), diffs)
         if (byType["state"] == null) diffs += "events:state 빠짐"
