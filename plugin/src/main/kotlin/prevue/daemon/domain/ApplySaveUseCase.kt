@@ -55,7 +55,15 @@ class ApplySaveUseCase(
         val texts = literals.read(files)
         val coded = save.copy(texts = texts)
         val patched = if (change == null) null else applyLiterals(p, files, texts, seenNow, r?.compile != null, coded)
-        patched ?: compileAndRender(p, files, texts, coded)
+        patched ?: compileOrHold(p, files, r?.compile, coded)
+    }
+
+    private suspend fun compileOrHold(p: PreviewSpec, files: List<File>, values: CompileResult?, save: Save): ReloadResult {
+        val code = modules.holdExpectActual(save.ed, files, save.texts)
+        if (code.isNotEmpty()) return compileAndRender(p, code, save.texts, save)
+        if (values != null) return render(p, values, emptyList(), save.valuesSeen, save, repair = false)
+        save.ed.markCompiled(save.valuesSeen)
+        return ReloadResult.NeedsGradleBuild(files, StaleReasons.expectActual(files).what, ws.now.stale)
     }
 
     private fun nothingShown(ed: WorkspaceEditor, valuesSeen: Map<String, Long>): ReloadResult {
@@ -98,6 +106,7 @@ class ApplySaveUseCase(
         val seen = batch.seen + save.valuesSeen
         if (!batch.result.ok) return compileFailed(p, batch, seen, save)
         ed.update { it.copy(stale = it.stale - StaleReasons.COMPILE, lastCompileFailure = null) }
+        modules.releaseHeld(ed, batch.files)
         engine.codeChanged()
         if (vacateIfPreviewLost(ed, files, seen)) return ReloadResult.NothingShown
         val reread = tabs.reread(ed, p)
@@ -126,7 +135,7 @@ class ApplySaveUseCase(
 
     private suspend fun revive(ed: WorkspaceEditor, code: List<File>, valuesSeen: Map<String, Long>, by: String, change: SourceChange?): ReloadResult? {
         val tab = ws.now.activeTabOrNull()?.takeIf { it.vacant != null } ?: return null
-        val files = code.ifEmpty { listOfNotNull(tab.file) }.filter { it.isFile }
+        val files = modules.holdExpectActual(ed, code.ifEmpty { listOfNotNull(tab.file) }.filter { it.isFile })
         if (files.isNotEmpty()) {
             live.compiling(ed, files, by)
             val batch = modules.compileWithNew(ed, files)
@@ -137,10 +146,11 @@ class ApplySaveUseCase(
                 return ReloadResult.NothingShown
             }
             ed.markStale(StaleReasons.COMPILE, null)
+            modules.releaseHeld(ed, batch.files)
             ed.markCompiled(batch.seen + valuesSeen)
             engine.codeChanged()
             ed.markHiddenTabsStale()
-        }
+        } else ed.markCompiled(valuesSeen)
         val f = tab.file ?: return ReloadResult.NothingShown
         if (tabs.vacancy(f) != null) return ReloadResult.NothingShown
         return try { ReloadResult.Rendered(tabs.activate(ed, tab.key, null, emptyMap(), by, change?.mtimeMs ?: System.currentTimeMillis())) }

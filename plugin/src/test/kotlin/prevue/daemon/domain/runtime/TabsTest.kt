@@ -24,6 +24,7 @@ import prevue.daemon.domain.model.VacantTab
 import prevue.daemon.domain.model.Vacancy
 import prevue.daemon.domain.model.ReloadResult
 import prevue.daemon.domain.model.WaitResult
+import prevue.daemon.domain.policy.StaleReasons
 import prevue.daemon.domain.policy.TabPolicy
 
 /** 뷰어 탭(D-54) — `show`는 탭을 열고 바꿔 끼우지 않는다 · 저장은 지금 보는 탭만 그린다 · 상한 10. */
@@ -407,5 +408,41 @@ class TabsTest {
         assertNull(ws.now.board)
         val failed = runCatching { runBlocking { uc.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
         assertTrue(failed != null && failed !is VacantTab, "컴파일 실패로 답한다: $failed")
+    }
+
+    // PR 28 리뷰 — 저장만 붙잡으면 열기 · 되살리기가 expect/actual 파일을 핫 컴파일로 보내 "only in multiplatform projects"로 실패했다
+    @Test fun `Gradle 빌드보다 새 expect actual 파일을 열면 컴파일하지 않고 Gradle 빌드 필요로 세운다`() {
+        val file = java.io.File(fx.srcRoot, "demo/Platform.kt").apply {
+            parentFile.mkdirs()
+            writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\nexpect fun platform(): String\n@Preview\nfun Platform0() {}\n")
+        }
+        fx.compiler.built = mapOf(":app" to file.lastModified() - 60_000)
+        fx.compiler.compiled.clear()
+        show(file)
+        assertTrue(fx.compiler.compiled.isEmpty(), "핫 컴파일로 보냈다: ${fx.compiler.compiled}")
+        assertEquals(listOf(file.canonicalPath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
+        assertFalse(StaleReasons.COMPILE in ws.now.stale)
+        assertEquals(file.canonicalFile, ws.now.board!!.file)
+
+        file.writeText(file.readText().replace("expect fun platform(): String\n", ""))
+        runBlocking { uc.applySave(listOf(java.io.File(fx.srcRoot.path + "/demo/../demo/Platform.kt")), "test") }
+        assertFalse(StaleReasons.EXPECT_ACTUAL in ws.now.stale, "열며 붙잡은 파일을 다른 경로 모양의 저장이 풀지 못했다")
+    }
+
+    @Test fun `빈 탭을 expect actual 파일 저장으로 되살리면 컴파일하지 않고 Gradle 빌드 필요로 세운다`() {
+        val card = fx.previewFile("NewsCard")
+        show(card)
+        card.writeText("package demo\nfun NewsCard0() {}\n")
+        runBlocking { uc.applySave(listOf(card), "test") }
+        assertEquals(Vacancy.NO_PREVIEWS, ws.now.tabViews(ws.graph).single().vacant)
+
+        card.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\nactual fun platform(): String = \"android\"\n@Preview\nfun NewsCard0() {}\n")
+        fx.compiler.compiled.clear()
+        val r = runBlocking { uc.applySave(listOf(card), "test") }
+        assertTrue(r is ReloadResult.Rendered, "$r")
+        assertTrue(fx.compiler.compiled.isEmpty(), "핫 컴파일로 보냈다: ${fx.compiler.compiled}")
+        assertEquals(listOf(card.absolutePath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
+        assertFalse(StaleReasons.COMPILE in ws.now.stale)
+        assertNull(ws.now.tabViews(ws.graph).single().vacant)
     }
 }

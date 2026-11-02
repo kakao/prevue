@@ -2,11 +2,14 @@
 // 데몬은 JDK 타입만으로 이 정적 메서드를 리플렉션으로 부른다 — 컴파일러의 클래스가 렌더러 쪽으로 새지 않게 하기 위해서다.
 package prevue.compiler
 
+import org.jetbrains.kotlin.cli.common.CompilerSystemProperties
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
 object CompilerBridge {
+    init { CompilerSystemProperties.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY.value = "true" }
+
     private val compiler = K2JVMCompiler()
 
     /** 첫 줄은 ExitCode 이름, 이후는 컴파일러 메시지(오류·경고)다. */

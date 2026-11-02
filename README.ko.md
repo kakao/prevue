@@ -4,19 +4,20 @@
 
 <p align="center"><b>이제 에이전트도 자기가 만든 Compose 화면을 봅니다.</b></p>
 
-<p align="center">저장하고 1초면 브라우저의 Compose Preview가 바뀝니다.<br>Android Studio도 빌드도 필요 없습니다.</p>
+<p align="center">저장하고 1초면 브라우저의 Jetpack Compose · Compose Multiplatform Preview가 바뀝니다.<br>Android Studio도 빌드도 필요 없습니다.</p>
 
 <p align="center"><a href="README.md">English</a> | <b>한국어</b></p>
 
 <div align="center">
 
-[![GitHub Actions](https://img.shields.io/badge/GitHub%C2%A0Actions-%EB%B9%8C%EB%93%9C%C2%A0%EA%B2%80%EC%A6%9D-0E1B2A?logo=github&logoColor=white)](https://github.com/kakao/prevue/actions/workflows/build.yml)
-[![version](https://img.shields.io/badge/version-0.20.2-0E1B2A)](CHANGELOG.md)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-0E1B2A?logo=claude&logoColor=white)](#시작하기)
-[![Codex](https://img.shields.io/badge/Codex-plugin-0E1B2A?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D)](#시작하기)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-headless%20render-4285F4?logo=jetpackcompose&logoColor=white)
-![JDK](https://img.shields.io/badge/JDK-21%2B-7A8794?logo=openjdk&logoColor=white)
-[![license](https://img.shields.io/badge/license-Apache--2.0-7A8794)](LICENSE)
+[![build check](https://img.shields.io/badge/build-check-555?labelColor=0E1B2A)](https://github.com/kakao/prevue/actions/workflows/build.yml)
+[![version](https://img.shields.io/badge/version-0.21.0-555?labelColor=0E1B2A)](CHANGELOG.md)
+[![license](https://img.shields.io/badge/license-Apache--2.0-555?labelColor=0E1B2A)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code%20plugin-D97757?logo=claude&logoColor=white)](#시작하기)
+[![Codex](https://img.shields.io/badge/Codex%20plugin-000000?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D)](#시작하기)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-7F52FF?logo=kotlin&logoColor=white)
+![JDK](https://img.shields.io/badge/JDK%2021%2B-000000?logo=openjdk&logoColor=white)
 
 </div>
 
@@ -24,7 +25,7 @@
   <img src="assets/intro.webp" width="1000"
        alt="Pearl 예제 앱으로 보는 20초 Prevue. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색 일곱 개를 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 인터랙티브: 라이브 Preview를 스크롤하고 음료를 열어 사이즈 L, 토핑, 펄 추가를 고르면 컵이 바뀐다. 모든 화면: 그 음료 화면이 320×640, 673×841, 커스텀 너비 900을 거치며 673부터 두 칸으로 나뉘고, 이어 iPhone Duo가 펼쳐졌다가 커버 화면으로 접힌다">
 </p>
-<p align="center"><sub>핫스왑, 인터랙티브, 모든 화면 — 예제 앱을 실제로 그린 화면입니다.</sub></p>
+<p align="center"><sub>핫스왑, 인터랙티브, 모든 화면 — 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)을 실제로 그린 화면입니다.</sub></p>
 
 ## 코드는 에이전트가, 확인은 사람이
 
@@ -101,7 +102,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 
 설치는 명령 두 줄이면 됩니다.
 
-Android Studio가 설치되어 있으면 따로 준비할 Java가 없습니다. 프로젝트가 JDK 17이어도 괜찮습니다. Android Studio가 없으면 JDK 21 이상을 설치하고 `PREVUE_JDK`에 그 경로를 넣어 주세요. macOS Command Line Tools(`python3`)도 필요한데, 없으면 에이전트가 설치 창을 열어 줍니다.
+Android Studio Ladybug(2024.2) 이상이 설치되어 있으면 따로 준비할 Java가 없습니다. 프로젝트가 JDK 17이어도 괜찮습니다. 그보다 오래된 Android Studio는 Java 17을 들고 와서 프리뷰 서버를 띄울 수 없습니다. Android Studio가 없으면 JDK 21 이상을 설치하세요. `brew install openjdk@25`는 sudo 없이 설치되고, Prevue가 그 자리(또는 `Library/Java/JavaVirtualMachines` · SDKMAN)에서 스스로 찾습니다. 25 이상이면 콜드 시작이 1초쯤 빠릅니다. 다른 JDK를 쓰고 싶을 때만 `PREVUE_JDK`에 경로를 넣어 주세요. Android SDK도 플랫폼을 하나 이상 받아 두고, `~/Library/Android/sdk`가 아니면 `ANDROID_HOME`에 그 경로를 넣어 주세요. macOS Command Line Tools(`python3`)도 필요한데, 없으면 에이전트가 설치 창을 열어 줍니다.
 
 ```sh
 # Claude Code
@@ -118,6 +119,8 @@ codex plugin add prevue@prevue
 ```
 ForYouScreen.kt Preview 실행해줘
 ```
+
+Kotlin Multiplatform · Compose Multiplatform 프로젝트도 똑같이 commonMain의 파일 이름을 말하면 됩니다.
 
 따로 설정할 것은 없습니다. 처음 실행할 때 필요한 준비는 에이전트가 확인을 받아 가며 진행합니다. 준비가 끝나면 브라우저가 열리고 그 파일의 `@Preview`가 모두 뜹니다.
 프로젝트의 빌드 파일 · 플러그인 · 태스크를 바꾸지 않고, 프로젝트 안에 파일도 만들지 않습니다. Gradle은 모듈마다 처음 한 번만 실행되고, 그 뒤로는 공용 모듈을 고쳐도 바로 다시 그립니다.
@@ -148,9 +151,12 @@ codex plugin add prevue@prevue
 파일 하나의 `@Preview`가 함수별로 묶여 보드에 펼쳐집니다. 저장하면 모두 다시 그리고, 헤더에 걸린 시간을 표시합니다.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview가 함수별 묶음으로 깔린 보드. 헤더에 앱 이름과 폴더 · 브랜치 · 모듈 · 변형, 오른쪽에 ✓ 알약이 있다. 왼쪽 열린 파일 목록에 ForYouScreen · InterestsScreen · NewsResourceCard가 있고, 묶음 머리에 장 수와 배율이 적혀 있다"><img src="assets/board-pearl.png" width="50%" alt="버블티 앱 Pearl의 ComponentPreviews.kt 보드. 첫 묶음에 버튼 · 필터 칩 · 당도 · 토핑 토글 · 바텀 내비 · 가방 배지가 있고, 그 아래에 음료 상세 화면이 놓인다">
+  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview가 함수별 묶음으로 깔린 보드. 헤더에 앱 이름과 폴더 · 브랜치 · 모듈 · 변형, 오른쪽에 ✓ 알약이 있다. 왼쪽 열린 파일 목록에 ForYouScreen · InterestsScreen · NewsResourceCard가 있고, 묶음 머리에 장 수와 배율이 적혀 있다"><img src="assets/board-kotlinconf.png" width="50%" alt="KotlinConf 앱 ui-components 모듈의 commonMain에 있는 TalkCard.kt 보드. 헤더에 KotlinConf와 kotlinconf-app · main · app:ui-components · commonMain · debug가 적혀 있다. 왼쪽 열린 파일 목록의 SpeakerCard · MainHeader · Kodee · TalkCard 파일 아이콘마다 Kotlin Multiplatform 표식이 붙어 있다. TalkCardLivePreview와 TalkCardUpcomingPreview 두 묶음에 Asynchronous Programming With Kotlin Coroutines 세션 카드가 라이트와 다크로 한 장씩 놓이고, 태그 · 연사 · 장소 · 시간이 보인다">
 </p>
-<p align="center"><sub>왼쪽: <a href="https://github.com/android/nowinandroid">Now in Android</a>(Apache-2.0) · 오른쪽: 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)</sub></p>
+<p align="center"><sub>왼쪽: <a href="https://github.com/android/nowinandroid">Now in Android</a>(Apache-2.0) · 오른쪽: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf 앱</a>, Compose Multiplatform(Apache-2.0)</sub></p>
+
+Kotlin Multiplatform · Compose Multiplatform 모듈도 똑같습니다. commonMain Preview를 Android Studio처럼 그 모듈의 Android 쪽 컴파일로 그리므로, iOS나 웹 타깃이 함께 있어도 괜찮습니다.
+저장하면 Gradle 없이 다시 그리고, Compose Multiplatform 리소스(`Res`)도 앱에서처럼 그려집니다.
 
 ### 인터랙티브 모드
 
@@ -212,6 +218,8 @@ Android Studio의 Interactive Mode처럼 클릭 · 드래그로 모션과 애니
 | 되는 것 | 안 되는 것 |
 |---|---|
 | Android 모듈(app · library) | 순수 JVM 모듈 |
+| Android 타깃이 있는 Kotlin Multiplatform · Compose Multiplatform 모듈 — AGP 9의 `com.android.kotlin.multiplatform.library`, 또는 `kotlin.multiplatform` + `com.android.library` | Android 타깃이 없는 KMP 모듈, Amper처럼 Gradle이 아닌 빌드 |
+| commonMain 파일도 저장하면 Gradle 없이 다시 그립니다 | `expect` · `actual` 선언이 든 파일 — 저장해도 Gradle 빌드 전까지 이전 그림이 남습니다 |
 | debug 계열 변형. Android Studio의 Build Variants 기본 규칙으로 고르고, 다른 것은 에이전트에게 말하면 됩니다 | release 변형 |
 | 최상위 `@Preview` 함수. Multipreview와 `@PreviewParameter`도 펼쳐서 그립니다 | 클래스 안에 선언한 멤버 Preview |
 | 실기기가 없어도 그려지는 컴포저블 | DI 컨테이너나 `AndroidView`가 필요한 Preview — 실패 종류가 `DI` · `ANDROID_VIEW`로 표시됩니다 |

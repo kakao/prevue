@@ -157,6 +157,9 @@
   --avatar-7: #3ea6b5;
   --avatar-8: #8e8e93;
   --on-avatar: var(--gray-light-0);
+  /* 레일의 KMP 표식. Kotlin 브랜드 가이드가 로고를 다른 색 · 투명도로 바꾸지 못하게 해서
+     공식 단색판(kotlin_logos.zip, Kotlin Multiplatform/Secondary)의 검정 · 흰색만 쓴다(D-134). */
+  --art-kmp: light-dark(#000, #fff);
   /* 작업 공간의 기기 몸체. 실제 기기 색이라 라이트 · 다크가 같다. */
   --device-body: #1d1d1f;
   --device-camera: #050505;

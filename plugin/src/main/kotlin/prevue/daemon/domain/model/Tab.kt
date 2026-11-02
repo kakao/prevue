@@ -40,7 +40,8 @@ class VacantTab(val tab: Tab) : IllegalArgumentException(
 enum class TabMove { OPENED, SWITCHED }
 
 /** 탭 목록을 밖에서 본 모습(`status.tabs`). */
-data class TabView(val key: String, val file: File?, val fqn: String?, val module: String, val active: Boolean, val stale: Boolean, val vacant: Vacancy? = null)
+data class TabView(val key: String, val file: File?, val fqn: String?, val module: String, val active: Boolean, val stale: Boolean, val vacant: Vacancy? = null,
+                   val sourceSet: String? = null)
 
 /** `prevue close`의 결과. 지금 보던 탭을 닫았으면 [active]가 옮겨 간 탭이다. */
 data class CloseResult(val closed: String, val active: String?, val tabs: List<TabView>)

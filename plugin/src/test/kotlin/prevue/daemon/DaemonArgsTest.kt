@@ -73,4 +73,16 @@ class DaemonArgsTest {
             sdk.deleteRecursively()
         }
     }
+
+    @Test fun `빈 ANDROID_HOME 은 없는 것 — CLI 의 SDK 확인과 같은 순서로 찾는다`() {
+        val sdk = Files.createTempDirectory("sdk").toFile()
+        try {
+            File(sdk, "platforms/android-34").mkdirs()
+            File(sdk, "platforms/android-34/android.jar").writeText("")
+            val env = mapOf("ANDROID_HOME" to "", "ANDROID_SDK_ROOT" to sdk.path)
+            assertEquals(File(sdk, "platforms/android-34/android.jar"), AndroidPlatforms.findJar(env))
+        } finally {
+            sdk.deleteRecursively()
+        }
+    }
 }

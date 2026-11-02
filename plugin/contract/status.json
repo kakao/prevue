@@ -41,6 +41,7 @@
     ],
     "frames": {},
     "interactive": "boolean",
+    "kmp": "boolean",
     "kotlinModule": "string",
     "last": {
       "by": "string",
@@ -276,6 +277,7 @@
     },
     "work": null,
     "size": null,
+    "kmp": false,
     "frames": {},
     "frameTrace": [],
     "streamSubscribers": false,

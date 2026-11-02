@@ -18,6 +18,7 @@ object StaleReasons {
     const val BUILD = "build"
     const val RESOURCES = "resources"
     const val BUILD_FILES = "build-files"
+    const val EXPECT_ACTUAL = "expect-actual"
 
     /** 오버레이는 직전 성공본 그대로다 — 화면에 남아 있는 그림은 이 저장 **이전**의 코드다. */
     fun compileFailed(files: List<File>, messages: String, hint: Phrase? = null) = reason(files,
@@ -27,6 +28,9 @@ object StaleReasons {
     /** [why]는 values 저장을 값만 넣어 닫지 못한 이유다(D-68) — 새 항목 · 다른 정의가 이기는 항목 따위. */
     fun resources(files: List<File>, shown: File?, why: Phrase? = null) = reason(files,
         phrase("stale.resources"), phrase("stale.resources.remedy", "file" to placeholder(shown)), why)
+
+    fun expectActual(files: List<File>) = reason(files,
+        phrase("stale.expectActual"), phrase("stale.expectActual.remedy"))
 
     fun buildFiles(files: List<File>) = reason(files,
         phrase("stale.buildFiles"), phrase("stale.buildFiles.remedy"))

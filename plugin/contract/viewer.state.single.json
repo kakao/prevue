@@ -24,12 +24,14 @@
     },
     "header": {
       "branch": "null",
-      "detail": "string",
+      "module": "string",
       "repo": "string",
       "repoLeaf": "string",
       "repoPrefix": "string",
+      "sourceSet": "null",
       "tabTitle": "string",
-      "title": "string"
+      "title": "string",
+      "variant": "string"
     },
     "screen": "string",
     "selection": {
@@ -72,6 +74,7 @@
         "key": "string",
         "module": "null",
         "name": "string",
+        "sourceSet": "null",
         "stale": "boolean",
         "title": "string"
       }
@@ -105,9 +108,11 @@
       "tabTitle": "<repo-name> · Card0-0",
       "repoPrefix": "<tmp>/",
       "repoLeaf": "<repo-name>",
-      "detail": " · app · debug",
+      "module": "app",
+      "variant": "debug",
       "repo": "<repo>",
-      "branch": null
+      "branch": null,
+      "sourceSet": null
     },
     "screen": "focus",
     "board": null,
@@ -198,7 +203,8 @@
         "module": null,
         "title": "app/src/main/kotlin/demo/Cards.kt",
         "active": false,
-        "stale": false
+        "stale": false,
+        "sourceSet": null
       },
       {
         "key": "<repo>/app/src/main/kotlin/demo/Other.kt",
@@ -207,7 +213,8 @@
         "module": null,
         "title": "app/src/main/kotlin/demo/Other.kt",
         "active": false,
-        "stale": false
+        "stale": false,
+        "sourceSet": null
       },
       {
         "key": "demo.CardsKt.Card0",
@@ -216,7 +223,8 @@
         "module": null,
         "title": "demo.CardsKt.Card0",
         "active": true,
-        "stale": false
+        "stale": false,
+        "sourceSet": null
       }
     ],
     "settle": null,

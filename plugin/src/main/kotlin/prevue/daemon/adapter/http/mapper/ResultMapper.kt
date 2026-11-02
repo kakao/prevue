@@ -65,6 +65,7 @@ fun ReloadResult.toJson(): Map<String, Any?> = when (this) {
     is ReloadResult.Unchanged -> mapOf("ok" to true, "unchanged" to true, "files" to files.map { it.absolutePath })
     // D-68. 그리지 않았다 — 그림은 저장 전 것이고 이유는 stale.resources.message에 있다.
     is ReloadResult.ResourcesStale -> mapOf("ok" to false, "files" to files.map { it.absolutePath }, "message" to why.text, "stale" to stale.staleJson())
+    is ReloadResult.NeedsGradleBuild -> mapOf("ok" to false, "files" to files.map { it.absolutePath }, "message" to why.text, "stale" to stale.staleJson())
 }
 
 fun FocusResult.toJson(): Map<String, Any?> = when (this) {
@@ -174,6 +175,6 @@ fun WaitResult.toJson(): Map<String, Any?> = when (this) {
 
 /** 탭 하나(D-54). FQN 탭이면 [TabView.fqn]이 있고 `file`은 그 함수의 파일이다. */
 fun TabView.toJson(): Map<String, Any?> = mapOf("file" to file?.absolutePath, "fqn" to fqn, "module" to module, "active" to active, "stale" to stale,
-    "vacant" to vacant?.name?.lowercase())
+    "vacant" to vacant?.name?.lowercase()) + (sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap())
 
 fun CloseResult.toJson(): Map<String, Any?> = mapOf("ok" to true, "closed" to closed, "active" to active, "tabs" to tabs.map { it.toJson() })

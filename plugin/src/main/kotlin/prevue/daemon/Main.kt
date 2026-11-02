@@ -17,6 +17,7 @@ import prevue.daemon.adapter.dump.WatchGraph
 import prevue.daemon.adapter.process.ProcessMemory
 import prevue.daemon.adapter.process.Respawn
 import prevue.daemon.adapter.process.Reveal
+import prevue.daemon.adapter.render.ApkWithAssets
 import prevue.daemon.adapter.render.BootingEngine
 import prevue.daemon.adapter.render.RenderEngine
 import prevue.daemon.adapter.source.GitHead
@@ -144,7 +145,13 @@ private fun PrevueDaemon.assemble(boot: Boot) {
 }
 
 private fun PrevueDaemon.bootEngine(boot: Boot, renderSpec: ClasspathSpec) = BootingEngine(scope, boot.paths.out) {
-    RenderEngine(renderSpec, boot.args.layoutlib, boot.paths.out).apply { preloadNext = boot.args.preload }.also { e ->
+    val original = File(renderSpec.resourceApkPath)
+    val t = System.nanoTime()
+    val apk = runCatching { ApkWithAssets.of(original, renderSpec.assetsDirs.map(::File), boot.paths.mine) }
+        .onFailure { log("CMP 리소스를 리소스 APK에 합치지 못해 원본으로 그린다 — Res 글꼴 · 문자열이 빠진다: $it") }
+        .getOrDefault(original)
+    if (apk != original) log("리소스 APK에 CMP 리소스를 합친 사본 ${(System.nanoTime() - t) / 1_000_000}ms: $apk")
+    RenderEngine(renderSpec, boot.args.layoutlib, boot.paths.out, apk).apply { preloadNext = boot.args.preload }.also { e ->
         log("렌더러 준비 ${e.bootstrapMs}ms" + (e.negatives?.let { " · APK 음수 치수 ${it.count}개 바로잡음 ${it.ms}ms" } ?: ""))
     }
 }
@@ -196,8 +203,9 @@ private class Watches(
             val resDirs = graph.nodes.flatMap { it.resRoots }
                 .flatMap { r -> r.walkTopDown().filter { it.isDirectory } }
                 .filter { it.canonicalFile !in valueDirs }
+            val assetDirs = ApkWithAssets.cmpRoots(spec.assetsDirs.map(::File)).flatMap { r -> r.walkTopDown().filter { it.isDirectory } }
             val resources = (listOfNotNull(spec.resourceApkPath.takeIf { it.isNotBlank() }?.let { File(it) }) + rJars)
-                .filter { it.exists() } + resDirs
+                .filter { it.exists() } + resDirs + assetDirs
             return Watches(watching, roots, valueDirs, ownOut, depOut, resources, spec.buildFiles)
         }
     }

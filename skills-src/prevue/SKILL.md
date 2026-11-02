@@ -33,8 +33,15 @@ if the sentence is already in that language, use it word for word; if not, trans
 The sentences this skill quotes for you to say (the questions and replies below) are what to say, not the words — say them in the user's language too.
 
 A response's `error` · `why` are sentences for you, the agent (the one exception is a failed prepare command — below). Never use the words **"dump" · "classpath" · "daemon" · "toolchain"** with the user, nor their equivalents in the user's language —
+<!-- only:claude -->
 say "preview server", "read the build settings", "download components" instead. Don't mention exit codes, skill names, response fields such as `missing`, or download sizes either.
 Tell the user only **what is ready and what is left**. Never mention this skill, its rules, or Prevue's procedure as a reason — just say what you'll do and ask what you need.
+<!-- /only -->
+<!-- only:codex -->
+say "preview server", "read the build settings", "download components" instead. Don't mention exit codes, skill names, response fields such as `missing`, or download sizes either.
+Tell the user only **what is ready and what is left**. Never mention this skill, its rules, or Prevue's procedure as a reason — just say what you'll do and ask what you need.
+The one exception is a note on where an approval request comes from, after the question (below). The `ask` already says why it is needed.
+<!-- /only -->
 
 ## When you don't know what to show
 
@@ -70,7 +77,12 @@ The response has the same shape as `prevue health <file>`. `missing` lists every
  "ask":"This is the first time opening this module, so the project's build settings need to be read once. It may take a few minutes, and no project files are changed. Shall I go ahead?"}
 ```
 
+<!-- only:claude -->
 - **If there is an `ask`, put that question to the user (in their language, per "Talking to the user"). That question is your whole message, starting from its first clause.** Each clause of the `ask` stays as its own claim — nothing replaced, nothing added before or after it; end your turn with that question. The choices are the `options` if there are any, otherwise **"Proceed (required)"**, and either way add **"Stop — the preview can't be used"** — both labels in the user's language. Don't mark any as Recommended — it is a required condition, not a preference
+<!-- /only -->
+<!-- only:codex -->
+- **If there is an `ask`, put that question to the user (in their language, per "Talking to the user"). The question is a paragraph of its own, starting from the `ask`'s first clause.** Each clause of the `ask` stays as its own claim — nothing replaced, nothing dropped, nothing inserted, and no text before it. The choices are the `options` if there are any, otherwise **"Proceed (required)"**, and either way add **"Stop — the preview can't be used"** — both labels in the user's language. Don't mark any as Recommended — it is a required condition, not a preference. If you also say where the request comes from, write that as one short paragraph after the question and its choices; the `ask`'s own reason stays in the question as is. Then end your turn
+<!-- /only -->
 - **If approved**, run `next` (putting the chosen `options` value in the `<…>` slot). If there is a `then`, run it next, and keep going until the last response's `next` (`prevue start … --show <file>`) — that response is the image. If an intermediate response carries another `ask` (something is left to choose after Gradle), ask it by the same rule
 - **If declined, stop.** Don't go around it (another command · bypassing permissions); only say "ask again when you need it"
 - **If the user told you in this conversation to read the build settings or prepare the preview, that is the consent** — run `next` without asking. But if `missing` has `toolchain`, ask. "Show it" · "let me see" is not an instruction to prepare

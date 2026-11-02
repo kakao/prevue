@@ -67,10 +67,19 @@ object ViewInfoJson {
 
     fun adapter(roots: List<ViewInfo>): Any? = roots.firstNotNullOfOrNull { findAdapter(it) }
 
+    fun toolingMismatch(roots: List<ViewInfo>): String? {
+        val adapter = adapter(roots) ?: return null
+        val getter = runCatching { adapter.javaClass.getMethod(TREE_GETTER) }.getOrNull()
+        return "ComposeViewAdapter.$TREE_GETTER".takeUnless { getter != null && List::class.java.isAssignableFrom(getter.returnType) }
+    }
+
     private fun findAdapter(vi: ViewInfo): Any? {
-        vi.viewObject?.takeIf { it.javaClass.name == "androidx.compose.ui.tooling.ComposeViewAdapter" }?.let { return it }
+        vi.viewObject?.takeIf { it.javaClass.name == ADAPTER }?.let { return it }
         return vi.children.orEmpty().firstNotNullOfOrNull { findAdapter(it) }
     }
+
+    private const val ADAPTER = "androidx.compose.ui.tooling.ComposeViewAdapter"
+    private const val TREE_GETTER = "getViewInfos${'$'}ui_tooling"
 
     /**
      * ComposeViewAdapter가 들고 있는 viewInfos를 리플렉션으로 읽는다.
@@ -79,8 +88,8 @@ object ViewInfoJson {
     private fun composeViewInfos(root: Any?): List<Map<String, Any?>>? {
         if (root == null) return null
         val cls = root.javaClass
-        if (cls.name != "androidx.compose.ui.tooling.ComposeViewAdapter") return null
-        val getter = runCatching { cls.getMethod("getViewInfos${'$'}ui_tooling") }.getOrNull() ?: return null
+        if (cls.name != ADAPTER) return null
+        val getter = runCatching { cls.getMethod(TREE_GETTER) }.getOrNull() ?: return null
         val infos = runCatching { getter.invoke(root) as? List<*> }.getOrNull() ?: return null
         return infos.flatMap { nodes(it) }.map { it.json }
     }

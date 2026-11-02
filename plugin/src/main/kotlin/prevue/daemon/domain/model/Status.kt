@@ -29,6 +29,7 @@ data class Status(
     val boardFill: BoardFill? = null,
     val size: ScreenSize? = null,
     val postures: Map<ScreenSize, Shot> = emptyMap(),
+    val kmp: Boolean = false,
 )
 
 /**
@@ -44,6 +45,7 @@ data class ModuleInfo(
     val borrowedCount: Int?,
     /** 이 데몬이 다시 띄우지 않고 그릴 수 있는 모듈들. 렌더러가 앱 클래스패스면 앱이 담은 모듈 전부, 아니면 [module] 하나다(D-38). */
     val modules: List<String> = listOf(module),
+    val sourceSet: String? = null,
 )
 
 /** NFR-6. 감시가 실제로 얼마를 쓰는지 — 소스 감시와 소스 밖 감시, values XML 감시(D-68). 안 보이면 다시 6%로 돌아간다. */

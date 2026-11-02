@@ -34,5 +34,6 @@ object WatchGraph {
         s.ownClassPath.filter { it !in skip }.map { File(it) },
         runCatching { s.kotlinModuleName }.getOrNull(),
         s.resourceRoots.map { it.canonicalFile },
+        s.isKmp,
     )
 }

@@ -59,7 +59,7 @@ object PreviewLocator {
         val raw = m.groupValues[1]
         val (args, after) = argsAfter(text, m.range.last + 1)
         val fqn = head.resolve(raw)
-        val direct = raw.substringAfterLast('.') == "Preview" || fqn == PREVIEW_FQN
+        val direct = raw.substringAfterLast('.') == "Preview" || fqn in PREVIEW_FQNS
         val sets = if (direct) listOf(args) else multi?.expand(fqn).orEmpty()
         if (sets.isEmpty()) return null
         val f = funRe.find(text, after) ?: return null
@@ -92,7 +92,7 @@ object PreviewLocator {
 
     private fun HashMap<String, Int>.next(key: String): Int = (this[key] ?: 0).also { this[key] = it + 1 }
 
-    private const val PREVIEW_FQN = "androidx.compose.ui.tooling.preview.Preview"
+    internal val PREVIEW_FQNS = setOf("androidx.compose.ui.tooling.preview.Preview", "org.jetbrains.compose.ui.tooling.preview.Preview")
 
     private val previewParamRe = Regex("""@(?:[\w.]+\.)?PreviewParameter\s*\(""")
 

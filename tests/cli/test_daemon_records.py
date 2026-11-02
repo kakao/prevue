@@ -22,6 +22,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
 import daemon_records as R  # noqa: E402
+from test_plan import fake_jdk, fake_sdk  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 BOOT = 1791192312.0   # 실측 머신의 부팅 시각(2026-10-05 18:25:12 KST)
@@ -526,7 +527,8 @@ class Launch(unittest.TestCase):
         self.cli = os.path.join(plugin, "bin", "prevue")
         self.daemons = os.path.join(self.home, "daemons")
         os.makedirs(self.daemons)
-        self.env = prevue_env(self.home, PREVUE_JDK=os.path.dirname(os.path.dirname(self.java)))
+        self.env = prevue_env(self.home, PREVUE_JDK=os.path.dirname(os.path.dirname(self.java)),
+                              ANDROID_HOME=fake_sdk(os.path.join(self.home, "sdk")))
         self.addCleanup(self.put_down)
 
     def put_down(self):
@@ -567,6 +569,28 @@ class Launch(unittest.TestCase):
         self.addCleanup(start.kill)
         self.launched(port)
         self.assertEqual(R.scan(self.daemons, {port}, R.boot_time()), [(port, "daemon")])
+
+    def test_java_가_없으면_start_는_데몬을_띄우지_않고_JDK_를_말한다(self):
+        port = str(free_port())
+        env = dict(self.env, PREVUE_JDK=os.path.join(self.home, "no-jdk"))
+        p = subprocess.run([self.cli, "start", "--port", port], cwd=self.home, env=env,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        out = json.loads(p.stdout.decode().splitlines()[-1])
+        self.assertEqual((p.returncode, out["ok"], out["missing"]), (3, False, ["jdk"]))
+        self.assertIn("PREVUE_JDK", out["tell"])
+        self.assertNotIn("preparationViewer", out)
+        self.assertFalse(os.path.exists(os.path.join(self.daemons, "daemon-%s.pid" % port)))
+
+    # 지킬 것: java 가 있어도 21 미만이면 띄우지 않는다 — layoutlib 이 21 바이트코드라 데몬이 UnsupportedClassVersionError 로 죽는다
+    def test_java_가_21_미만이면_start_는_데몬을_띄우지_않고_찾은_버전을_말한다(self):
+        port = str(free_port())
+        jdk = fake_jdk(os.path.join(self.home, "jdk17"), "17.0.12")
+        p = subprocess.run([self.cli, "start", "--port", port], cwd=self.home, env=dict(self.env, PREVUE_JDK=jdk),
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        out = json.loads(p.stdout.decode().splitlines()[-1])
+        self.assertEqual((p.returncode, out["missing"], out["jdkVersion"]), (3, ["jdk"], "17"))
+        self.assertIn("Java 17", out["error"])
+        self.assertFalse(os.path.exists(os.path.join(self.daemons, "daemon-%s.pid" % port)))
 
     # 지킬 것: 0 으로 시작하는 포트(--port 08792)도 그 자리다 — 포트를 글자로 견주면 닿지 못하는 산 데몬을 죽은 것으로 읽어
     # start 가 같은 자리에 둘째 데몬을 띄우고 기록을 덮어쓴다

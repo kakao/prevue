@@ -117,7 +117,7 @@ tasks.test {
 }
 
 /**
- * 통합 테스트 — 진짜 layoutlib 으로 저장소 안 픽스처(`fixtures/pearl`)를 그린다(`src/integrationTest`). 덤프는 테스트가 `bin/prevue warmup` 으로 뜬다.
+ * 통합 테스트 — 진짜 layoutlib 으로 저장소 안 픽스처(`fixtures/pearl` · KMP 복제본 `fixtures/pearl-kmp`)를 그린다(`src/integrationTest`). 덤프는 테스트가 `bin/prevue warmup` 으로 뜬다.
  * 로컬에서만 돈다: 툴체인 · Android SDK 가 있어야 하고, 없으면 건너뛴다. CI 는 단위 테스트(`test`)만 돈다. 가짜 포트(`fake/`)는 단위 쪽 것을 같이 쓴다.
  */
 val integrationTest: SourceSet by sourceSets.creating {
@@ -132,6 +132,7 @@ kotlin.target.compilations.getByName("integrationTest").associateWith(kotlin.tar
 
 // 픽스처는 플러그인 밖(저장소 루트)에 있다 — 설치본에 실리지 않는다(D-123)
 val pearlFixture: File = rootDir.resolve("../fixtures/pearl").canonicalFile
+val pearlKmpFixture: File = rootDir.resolve("../fixtures/pearl-kmp").canonicalFile
 
 tasks.register<Test>("integrationTest") {
     description = "진짜 렌더러로 로더 공유 · 인터랙티브 회귀를 본다(로컬)"
@@ -162,6 +163,8 @@ tasks.register<Test>("integrationTest") {
     // 픽스처만 바꾼 PR(버전 올리기 포함)도 다시 돌아야 한다 — 그 PR이 곧 호환성 확인이다
     inputs.files(fileTree(pearlFixture) { exclude("**/build/**", "**/.gradle/**", "**/.kotlin/**", "local.properties") })
         .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("pearlFixture")
+    inputs.files(fileTree(pearlKmpFixture) { exclude("**/build/**", "**/.gradle/**", "**/.kotlin/**", "local.properties") })
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("pearlKmpFixture")
 }
 
 /**

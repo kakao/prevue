@@ -10,10 +10,11 @@ If the person asks more
   Kept in ~/.prevue/toolchain/ and not downloaded again on plugin updates. prevue paths shows where and how much.
 
 JDK
-  Follows JAVA_HOME; without it uses the JBR bundled with Android Studio (nothing to do if AS is installed). Give another runtime with PREVUE_JDK.
-  Verified on AS's bundled JBR 25.0.2. Plain JDK 25 is not verified.
+  Follows JAVA_HOME; without it uses the daemon's JDK — PREVUE_JDK, else Android Studio's bundled JBR, else a JDK 21+ found in
+  Library/Java/JavaVirtualMachines · Homebrew's openjdk · SDKMAN (25 first, then 21–24, then 26+). Nothing to set once one is installed.
+  Previews are byte-identical on AS's JBR 25.0.2 · Temurin 21 · Temurin 25. 25 or later starts about a second faster (class cache).
 
 When it fails
-  The JDK is older than 21 — java -version. JAVA_HOME pointing at 17 is the default in the AGP world. Point it at AS's bundled JBR
+  The JDK is older than 21 — java -version. JAVA_HOME pointing at 17 is the default in the AGP world. Unset it, or install brew install openjdk@25 and Prevue finds it
   The network is blocked — it must reach dl.google.com · repo1.maven.org. Behind a proxy, Gradle reads HTTP_PROXY
   Otherwise the lines of the Gradle output starting with "> " are the cause — show them to the person as is

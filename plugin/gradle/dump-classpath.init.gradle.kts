@@ -5,6 +5,121 @@ import java.util.zip.ZipFile
 
 fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
 fun arr(v: Collection<String>) = v.joinToString(",\n    ", "[\n    ", "\n  ]") { "\"${esc(it)}\"" }
+fun obj(m: Map<String, Collection<String>>) = m.entries.joinToString(",\n    ", "{\n    ", "\n  }") { (k, v) -> "\"${esc(k)}\": ${arr(v)}" }
+    .takeIf { m.isNotEmpty() } ?: "{}"
+fun dict(m: Map<String, String>) = m.entries.joinToString(",\n    ", "{\n    ", "\n  }") { (k, v) -> "\"${esc(k)}\": \"${esc(v)}\"" }
+    .takeIf { m.isNotEmpty() } ?: "{}"
+
+// KMP 모듈은 commonMain 과 중간 소스 세트를 Android 컴파일에 함께 넣는다 — 그 목록은 AGP 가 아니라 KMP 플러그인만 안다(옛 조합은
+// AGP 소스에 commonMain 이 없다). 타입에 기대지 않으려고 리플렉션으로 읽고, KMP 가 아니거나 Android 타깃이 없으면 null.
+// 컴파일은 새 플러그인이면 main, 옛 조합이면 앱이 실제로 고른 라이브러리 변형(그래프 밖이면 변형 이름, 없으면 debug 계열 첫째)이다.
+// 확장은 프로젝트가 평가될 때 모아 두고 목록은 실행 때 읽는다 — configure-on-demand 저장소에서는 덤프 태스크가 설정될 때
+// 의존 모듈이 아직 평가 전이라 확장이 없고(DroidKaigi 2025 실측: 0개), 실행 때 Project 를 만지는 것은 Gradle 9 가 막는다.
+class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
+val kotlinModules = java.util.concurrent.ConcurrentHashMap<String, KotlinModule>()
+
+// 이 스크립트는 composite 의 빌드마다 따로 돌아 kotlinModules 도 빌드마다 따로다 — 루트 덤프가 included build(thunderbird
+// components/ui/bolt)의 KMP 모듈을 못 봐 그 commonMain 이 감시 밖이었다. 그래서 빌드 전부가 루트 Gradle 의 맵 하나에 모듈
+// 디렉터리 → ((변형, 고른 변형) → 소스 루트)를 모은다. 스크립트 인스턴스마다 클래스로더가 달라 값은 JDK 타입만 쓴다.
+val rootGradle: Gradle = generateSequence(gradle) { it.parent }.last()
+@Suppress("UNCHECKED_CAST")
+fun <V> sharedMap(key: String): java.util.concurrent.ConcurrentHashMap<String, V> = synchronized(rootGradle) {
+    val extra = (rootGradle as ExtensionAware).extensions.extraProperties
+    if (!extra.has(key)) extra.set(key, java.util.concurrent.ConcurrentHashMap<String, Any>())
+    extra.get(key)
+} as java.util.concurrent.ConcurrentHashMap<String, V>
+val kmpRootsByDir = sharedMap<java.util.function.BiFunction<String, java.util.function.Predicate<String>?, List<String>?>>("prevue.kmpRootsByDir")
+// 해석 결과의 프로젝트 컴포넌트를 모듈 디렉터리로 잇는다. 키는 빌드 트리 경로라 included build 의 같은 경로와 섞이지 않는다.
+val kmpDirByTreePath = sharedMap<String>("prevue.kmpDirByTreePath")
+
+// Gradle 8.2(컴포넌트) · 8.3(Project) 아래에는 getBuildTreePath 가 없다
+fun buildTreePath(o: Any): String? = runCatching { o.javaClass.getMethod("getBuildTreePath").invoke(o) as String }.getOrNull()
+
+fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n && it.parameterCount == 0 }.invoke(o)
+
+// 옛 모양 라이브러리의 플레이버는 앱과 다를 수 있다(missingDimensionStrategy · matchingFallbacks) — 앱 변형 이름으로 짐작하면
+// 다른 플레이버의 소스를 감시한다. 그래서 Gradle 이 앱 RuntimeClasspath 에 실제로 고른 라이브러리 변형의 빌드 타입 · 플레이버를 읽는다.
+// 변형 이름은 차원 순서의 플레이버 + 빌드 타입인데 속성에 차원 순서가 없어, 플레이버를 어떤 순서로 이어 붙여 빌드 타입을 단 이름과 같은 것을 고른다.
+fun <T> orders(xs: List<T>): List<List<T>> =
+    if (xs.size <= 1) listOf(xs) else xs.indices.flatMap { i -> orders(xs.filterIndexed { j, _ -> j != i }).map { listOf(xs[i]) + it } }
+
+// 같은 라이브러리에 이르는 길이 여럿이면 앱에서 가장 가까운 길의 변형을 쓴다. 프로젝트 노드만 따라간다 — 외부 모듈 아래로는 프로젝트가 없다.
+fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponentResult): Map<String, java.util.function.Predicate<String>> {
+    val out = mutableMapOf<String, java.util.function.Predicate<String>>()
+    val seen = mutableSetOf(root)
+    val todo = ArrayDeque(listOf(root))
+    while (todo.isNotEmpty()) for (d in todo.removeFirst().dependencies) {
+        if (d !is org.gradle.api.artifacts.result.ResolvedDependencyResult) continue
+        val id = d.selected.id as? ProjectComponentIdentifier ?: continue
+        val attrs = d.resolvedVariant.attributes
+        val values = attrs.keySet().associate { k -> k.name to attrs.getAttribute(k).let { v -> (v as? Named)?.name ?: v.toString() } }
+        val buildType = values["com.android.build.api.attributes.BuildTypeAttr"]
+        // 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
+        val key = buildTreePath(id) ?: id.projectPath.takeIf {
+            runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
+        }
+        if (buildType != null && key != null && key !in out) {
+            val flavors = values.filterKeys { it.startsWith("com.android.build.api.attributes.ProductFlavor:") }.values.toList()
+            val names = orders(flavors).map { (it + buildType).joinToString("").lowercase() }.toSet()
+            out[key] = java.util.function.Predicate { names.contains(it.lowercase()) }
+        }
+        if (seen.add(d.selected)) todo.add(d.selected)
+    }
+    return out
+}
+
+fun kmpAndroidCompilation(m: KotlinModule?, variant: String, picked: java.util.function.Predicate<String>? = null): Any? = runCatching {
+    val ext = m?.ext ?: return@runCatching null
+    val targets = (kmpCall(ext, "getTargets") as? Iterable<*>)?.filterNotNull() ?: return@runCatching null
+    val android = targets.firstOrNull { kmpCall(it, "getPlatformType").toString() == "androidJvm" } ?: return@runCatching null
+    val comps = (kmpCall(android, "getCompilations") as Iterable<*>).filterNotNull()
+    fun named(n: String) = comps.firstOrNull { kmpCall(it, "getName") == n }
+    picked?.let { p -> comps.firstOrNull { p.test(kmpCall(it, "getName") as String) } }
+        ?: named(variant) ?: named("main") ?: comps.firstOrNull { (kmpCall(it, "getName") as String).endsWith("ebug") }
+}.getOrNull()
+
+fun kmpAndroidRoots(m: KotlinModule?, variant: String, picked: java.util.function.Predicate<String>? = null): List<String>? = runCatching {
+    val comp = kmpAndroidCompilation(m, variant, picked) ?: return@runCatching null
+    (kmpCall(comp, "getAllKotlinSourceSets") as Iterable<*>).filterNotNull()
+        .flatMap { ss -> (kmpCall(kmpCall(ss, "getKotlin")!!, "getSrcDirs") as Iterable<*>).map { (it as File).absolutePath } }
+        .filterNot { File(it).toPath().startsWith(m!!.buildDir.get().asFile.toPath()) }   // 생성 코드(Res 접근자)는 Gradle 몫이다
+        .distinct()
+}.getOrNull()
+
+// 옛 모양 KMP(kotlin.multiplatform + com.android.library)의 Kotlin 컴파일은 compile<V>Kotlin 이 아니라 타깃 이름이 붙은
+// compile<V>Kotlin<타깃>이다. 타깃 이름은 바꿀 수 있어 짐작하지 않고 컴파일에게 묻는다.
+fun kmpCompileTaskName(m: KotlinModule?, variant: String): String? =
+    kmpAndroidCompilation(m, variant)?.let { runCatching { kmpCall(it, "getCompileKotlinTaskName") as String }.getOrNull() }
+
+// 새 모양 KMP 모듈은 android 확장이 없어 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 실패 문구에 그 앱들과
+// debug 계열 변형을 실어 CLI 가 Gradle 을 한 번 더 불러 앱을 뜨게 한다. 앱을 다른 곳에서 알 길이 없는 새 클론의 첫 warmup 이 이 길이다.
+// 프로젝트 의존을 따라가므로 평가된 프로젝트만 본다 — configure-on-demand 저장소에서는 앱이 평가 전이라 비어 있을 수 있다.
+fun kmpHosts(p: Project, targetPath: String): Map<String, List<String>> = runCatching {
+    // 테스트 구성(testImplementation · androidTestImplementation · commonTestImplementation …)만 뺀다 — 플레이버 이름에 든 test(latest)는 남긴다
+    val declares = Regex("(?i).*(implementation|api|runtimeOnly)$")
+    fun isTest(name: String) = name.startsWith("test") || name.contains("Test")
+    fun deps(q: Project): List<String> = q.configurations
+        .filter { declares.matches(it.name) && !isTest(it.name) }
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .mapNotNull { d ->
+            // 외부: Gradle 9 는 ProjectDependency.getDependencyProject 를 없앴고 getPath 는 8.11 부터 있다
+            runCatching { d.javaClass.getMethod("getPath").invoke(d) as String }
+                .getOrElse { runCatching { (d.javaClass.getMethod("getDependencyProject").invoke(d) as Project).path }.getOrNull() }
+        }
+    // 거꾸로 따라간다 — 프로젝트마다 구성을 한 번만 훑고, 이 모듈을 쓰는 쪽으로 올라가며 앱을 모은다
+    val users = mutableMapOf<String, MutableSet<String>>()
+    for (q in p.rootProject.allprojects) for (d in deps(q)) users.getOrPut(d) { mutableSetOf() }.add(q.path)
+    val seen = mutableSetOf(targetPath)
+    val todo = ArrayDeque(listOf(targetPath))
+    while (todo.isNotEmpty()) for (u in users[todo.removeFirst()].orEmpty()) if (seen.add(u)) todo.add(u)
+    seen.mapNotNull { p.rootProject.findProject(it) }
+        .filter { it.path != targetPath && it.plugins.hasPlugin("com.android.application") }
+        .sortedBy { it.path }
+        .associate { app ->
+            app.path to app.configurations.names.filter { it.endsWith("RuntimeClasspath") }
+                .map { it.removeSuffix("RuntimeClasspath") }.filter { it.contains("ebug") }.sorted()
+        }
+}.getOrDefault(emptyMap())
 
 // 대상은 0부터 번호 붙은 prevue.project.N · prevue.variant.N · prevue.out.N. 라이브러리 모듈과 리소스를 빌릴 앱을 Gradle 한 번에 뜬다 —
 // 모듈 덤프의 태스크는 앱 덤프의 부분집합이라 고정비(기동 · 설정)만 한 번 빠진다. 값을 한 속성에 이어 붙이지 않는다 — 출력 경로에는 어떤 글자든 온다.
@@ -30,7 +145,17 @@ fun stamp(key: String, value: Long = System.currentTimeMillis()) {
     }
 }
 stamp("initAt")
-gradle.settingsEvaluated { stamp("settingsAt") }
+// 모듈 경로와 디렉터리는 settings 가 정한다 — projectDir 을 옮긴 저장소(`:widgets` → core/design/widgets)에서는
+// 경로를 디렉터리로 바꿔 짐작할 수 없다. 설정 전의 settings 에서 읽어 Project 를 만지지 않는다.
+val moduleDirs = LinkedHashMap<String, String>()
+gradle.settingsEvaluated {
+    fun walk(d: ProjectDescriptor) {
+        moduleDirs[d.path] = d.projectDir.absolutePath
+        d.children.forEach(::walk)
+    }
+    walk(settings.rootProject)
+    stamp("settingsAt")
+}
 gradle.projectsEvaluated { stamp("configuredAt") }
 var graph: List<Task> = emptyList()
 gradle.taskGraph.whenReady { graph = allTasks; stamp("graphTasks", allTasks.size.toLong()); stamp("graphAt") }
@@ -67,6 +192,12 @@ fun countOutcomes() = runCatching {
 gradle.afterProject {
     // init script는 build-logic 같은 included build에도 적용되므로, 대상이 아니면 조용히 건너뛴다.
     val p = this
+    p.extensions.findByName("kotlin")?.let { ext ->
+        val m = KotlinModule(ext, p.layout.buildDirectory)
+        kotlinModules[p.path] = m
+        kmpRootsByDir[p.projectDir.absolutePath] = java.util.function.BiFunction { v, picked -> kmpAndroidRoots(m, v, picked) }
+        (buildTreePath(p) ?: p.path.takeIf { p.gradle.parent == null })?.let { kmpDirByTreePath[it] = p.projectDir.absolutePath }
+    }
     val t = targets.firstOrNull { it.path == p.path } ?: return@afterProject
     registerDump(p, t.path, t.variant, t.out)
 }
@@ -76,8 +207,18 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
     // (실측: "'debug' 변형이 없다 — 후보: " 가 빈 목록으로 나왔다). 아래 설정 블록은 태스크가
     // 실현될 때, 즉 모든 평가가 끝난 뒤에 돌므로 그때는 다 보인다.
     p.tasks.register("prevueDumpClasspath") {
-        val androidExt = p.extensions.findByName("android")
-            ?: error("$targetPath has no android extension")
+        val androidExt = p.extensions.findByName("android") ?: error(
+            when {
+                kmpAndroidRoots(kotlinModules[p.path], variant) != null ->
+                    "$targetPath is a KMP module — it is drawn from the dump of the Android app module that includes it. Warm up with a file of the app module and this module's previews come up from that dump" +
+                        kmpHosts(p, targetPath).takeIf { it.isNotEmpty() }?.let { hs ->
+                            " — apps that include it: " + hs.entries.joinToString("; ") { (h, vs) -> "$h [${vs.joinToString(", ")}]" }
+                        }.orEmpty()
+                p.extensions.findByName("kotlin")?.javaClass?.name.orEmpty().contains("Multiplatform") ->
+                    "$targetPath is a KMP module with no Android target — previews are drawn from the Android compilation (as in Android Studio). Add an Android library target to draw them"
+                else -> "$targetPath has no android extension"
+            }
+        )
 
         // AGP 버전 간 시그니처 드리프트를 피하려고 리플렉션으로 읽는다.
         val namespace = androidExt.javaClass.getMethod("getNamespace").invoke(androidExt) as? String ?: ""
@@ -139,14 +280,23 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val v = variant.replaceFirstChar { it.uppercase() }
         fun taskOf(n: String): Task? = p.tasks.findByName(n)
 
-        val kotlinTask = taskOf("compile${v}Kotlin")
+        val kmpTaskName = kmpCompileTaskName(kotlinModules[p.path], variant)
+        val kotlinTask = taskOf("compile${v}Kotlin") ?: kmpTaskName?.let(::taskOf)
+        val kotlinName = kotlinTask?.name ?: kmpTaskName ?: "compile${v}Kotlin"
+        // KMP 모듈인데 Kotlin 컴파일을 못 찾으면 Java 산출물만으로 덤프가 "성공"해 모든 프리뷰가 ClassNotFound 로 죽는다
+        if (kotlinTask == null && kmpAndroidRoots(kotlinModules[p.path], variant) != null) error(
+            "$targetPath is a KMP module but its Android Kotlin compile task ($kotlinName) wasn't found — stopping instead of taking a dump without its Kotlin classes"
+        )
         val javacTask = taskOf("compile${v}JavaWithJavac")
         // 앱 모듈은 process*Resources 가 **런타임** R.jar 를 낸다. 라이브러리에는 그 태스크가 없고
         // generate*RFile 만 있는데, 그것이 내는 R 은 값이 스텁인 **컴파일용**이다(실측 4156B vs 4261B).
         // 앱에서 그걸 집으면 리소스 ID 가 조용히 틀린다 — 그래서 앱에 둘 다 있어도 앞의 것만 본다.
         val resTask = taskOf("process${v}Resources")
         val rTask = resTask ?: taskOf("generate${v}RFile")
-        (listOfNotNull(kotlinTask, javacTask, resTask, rTask)).distinct().forEach { dependsOn(it) }
+        // CMP 리소스(글꼴 · 문자열 .cvr)는 res 가 아니라 에셋으로 앱에 실린다. 렌더러는 리소스 APK 안의 assets/ 를 읽는데
+        // .ap_ 에는 그것이 없어 데몬이 합친 사본을 만든다. 앱만 — 라이브러리는 앱의 리소스로 그린다.
+        val assetsTask = resTask?.let { taskOf("merge${v}Assets") }
+        (listOfNotNull(kotlinTask, javacTask, resTask, rTask, assetsTask)).distinct().forEach { dependsOn(it) }
 
         // 의존 모듈의 산출물도 우리가 만들게 한다. 여태는 런타임 클래스패스를 **해석만** 해서
         // runtime_library_classes_jar/.../classes.jar 경로를 적어 놓고, 그것을 만드는
@@ -174,11 +324,27 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         val kotlinAsked = kotlinTask == null || kotlinOut != null
         val resOutputs: FileCollection? = resTask?.outputs?.files
         val rOutputs: FileCollection? = rTask?.outputs?.files
+        val assetsOutputs: FileCollection? = assetsTask?.outputs?.files
         val depJarsSnapshot = depJars
         val depResSnapshot = depRes
         val compileJarsSnapshot = compileJars
+        val resolvedRoot = p.configurations.findByName(runtimeCfg)?.incoming?.resolutionResult?.rootComponent
         val repoRoot = p.rootProject.projectDir.absolutePath
         doLast {
+            // 키는 CLI · 데몬이 파일에서 짓는 모듈 이름이다 — 루트 빌드 모듈은 settings 의 경로, included build 모듈은 settings 에 없어
+            // 저장소 상대 디렉터리(components/ui/bolt → :components:ui:bolt). 저장소 밖 included build 는 그 파일을 열 일이 없어 뺀다.
+            fun norm(d: String) = File(d).toPath().normalize().toString()
+            val pathByDir = moduleDirs.entries.associate { (path, dir) -> norm(dir) to path }
+            val root = norm(repoRoot) + "/"
+            // 그래프를 걷다 실패해도 덤프를 멈추지 않는다 — 변형 이름으로 짐작하던 예전 길로 간다. KMP 모듈이 없으면 걷지 않는다
+            val pickedByDir = (if (kmpRootsByDir.isEmpty()) null else runCatching { resolvedRoot?.orNull?.let(::pickedLibraryVariants) }.getOrNull())
+                .orEmpty().mapNotNull { (tp, picked) -> kmpDirByTreePath[tp]?.let { norm(it) to picked } }.toMap()
+            val kmpSourceRoots = kmpRootsByDir.mapNotNull { (at, roots) ->
+                val dir = norm(at)
+                val key = pathByDir[dir] ?: dir.takeIf { it.startsWith(root) }
+                    ?.let { ":" + it.removePrefix(root).replace('/', ':') } ?: return@mapNotNull null
+                roots.apply(variant, pickedByDir[dir])?.let { key to it }
+            }.toMap()
             // 리소스 디렉터리만 아직 경로로 훑는다. 클래스와 R 은 위에서 태스크에게 물었다.
             fun intermediate(name: String): List<File> =
                 File(buildDir, "intermediates/$name/$variant")
@@ -194,12 +360,12 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             val ownClasses = listOfNotNull(kotlinOut, javacOut).filter { it.isDirectory }.map { it.absolutePath }
 
             if (!kotlinAsked) error(
-                "couldn't ask compile${v}Kotlin for its output location — no destinationDirectory.\n" +
+                "couldn't ask $kotlinName for its output location — no destinationDirectory.\n" +
                     "  AGP · KGP may have changed the task's shape. Stopping here instead of guessing the path."
             )
             if (ownClasses.isEmpty()) error(
                 "$targetPath has no compile outputs — every preview would fail.\n" +
-                    "  compile${v}Kotlin: ${kotlinOut?.absolutePath ?: "(no task)"}\n" +
+                    "  $kotlinName: ${kotlinOut?.absolutePath ?: "(no task)"}\n" +
                     "  compile${v}JavaWithJavac: ${javacOut?.absolutePath ?: "(no task)"}"
             )
 
@@ -224,6 +390,9 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                 rJars.filter { it.absolutePath.contains("/intermediates/$name/") }
                     .map { it.absolutePath }.takeIf { it.isNotEmpty() }
             } ?: rJars.firstOrNull()?.absolutePath?.let { listOf(it) }.orEmpty()
+
+            val assetsDirs = assetsOutputs?.files.orEmpty()
+                .filter { d -> d.isDirectory && d.walkTopDown().any { it.isFile } }.map { it.absolutePath }
 
             val ownRes = (intermediate("merged_res") + intermediate("packaged_res"))
                 .filter { it.isDirectory }.map { it.absolutePath }
@@ -274,8 +443,10 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             File(outPath).apply { parentFile?.mkdirs() }.writeText(
                 """
                 {
-                  "schema": 2,
+                  "schema": 3,
                   "project": "${esc(targetPath)}",
+                  "repoRoot": "${esc(repoRoot)}",
+                  "moduleDirs": ${dict(moduleDirs)},
                   "variant": "${esc(variant)}",
                   "namespace": "${esc(namespace)}",
                   "resourceApkPath": "${esc(resourceApk)}",
@@ -284,7 +455,9 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                   "compileClassPath": ${arr(compileClassPath)},
                   "rClassJars": ${arr(rClassJars)},
                   "resourceDirs": ${arr(resDirs)},
+                  "assetsDirs": ${arr(assetsDirs)},
                   "variantsKnown": ${arr(variantsKnown)},
+                  "kmpSourceRoots": ${obj(kmpSourceRoots)},
                   "defaultHint": { "buildType": "${esc(defaultBuildType)}", "flavors": ${arr(defaultFlavors)} }
                 }
                 """.trimIndent()

@@ -96,7 +96,8 @@ object AndroidPlatforms {
         platformDirs.maxByOrNull { it.name.removePrefix("android-").toDoubleOrNull() ?: 0.0 }
 
     fun findJar(env: Map<String, String> = System.getenv()): File {
-        val sdk = env["ANDROID_HOME"] ?: env["ANDROID_SDK_ROOT"] ?: "${System.getProperty("user.home")}/Library/Android/sdk"
+        val sdk = env["ANDROID_HOME"]?.ifEmpty { null } ?: env["ANDROID_SDK_ROOT"]?.ifEmpty { null }
+            ?: "${System.getProperty("user.home")}/Library/Android/sdk"
         val platforms = File(sdk, "platforms").listFiles { f -> File(f, "android.jar").isFile }.orEmpty().toList()
         return newest(platforms)?.let { File(it, "android.jar") }
             ?: error("android.jar를 찾지 못했다 — ANDROID_HOME 또는 --android-jar")

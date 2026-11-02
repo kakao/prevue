@@ -93,6 +93,7 @@ class Tabs(
 
     private suspend fun compileBeforeOpen(ed: WorkspaceEditor, key: String, by: String): Pair<StaleCallers.Batch, Long>? {
         val f = File(key).takeIf { it.isFile && modules.dueOnOpen(it) { previewClasses(it) } }?.canonicalFile ?: return null
+        if (modules.holdExpectActual(ed, listOf(f)).isEmpty()) return null
         val t = System.nanoTime()
         live.compiling(ed, listOf(f), by)
         val batch = coroutineScope {
@@ -120,6 +121,7 @@ class Tabs(
         val c = batch.result
         if (c.ok) {
             ed.markHiddenTabsStale()
+            modules.releaseHeld(ed, batch.files)
             val done = batch.files.map { it.canonicalPath }.toSet()
             if (ws.now.lastCompileFailure?.compile?.files?.all { File(it).canonicalPath in done } == true)
                 ed.update { it.copy(lastCompileFailure = null, stale = it.stale - StaleReasons.COMPILE) }
