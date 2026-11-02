@@ -11,7 +11,7 @@ REPO=$(cd "$HERE/../.." && pwd)
 PREVUE=${PREVUE:-$REPO/plugin/bin/prevue}
 # 영상은 영어판이다 — 뷰어 주소에 ?lang=en 을 실어 녹화하는 사람의 언어와 상관없이 영어로 연다
 export PREVUE_LANG=en
-[ -x "$PREVUE" ] || { echo "$PREVUE 가 없다 — 저장소에서 ./gradlew --offline installPrevue 를 먼저 돌린다" >&2; exit 2; }
+[ -x "$PREVUE" ] || { echo "$PREVUE 가 없다 — 저장소에서 (cd plugin/daemon && ./gradlew --offline installPrevue) 를 먼저 돌린다" >&2; exit 2; }
 
 # init 스크립트는 저장소를 사내 Maven으로 돌릴 수 있다 — 공개 Maven만 쓴다는 전제로 승인 없이 도는 것이라 그때는 멈춘다
 INIT_D=${GRADLE_USER_HOME:-$HOME/.gradle}/init.d

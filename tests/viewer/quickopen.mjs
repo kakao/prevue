@@ -7,7 +7,7 @@ import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const state = JSON.parse(await readFile(join(root, 'plugin/contract/viewer.state.board.json'), 'utf8')).example;
+const state = JSON.parse(await readFile(join(root, 'plugin/daemon/src/test/contract/viewer.state.board.json'), 'utf8')).example;
 state.selection = null;
 const files = [{ path: state.board.file, rel: 'app/Cards.kt', module: ':app', mtime: 1, previews: [] }];
 const streams = new Set();

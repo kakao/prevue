@@ -2,7 +2,7 @@
 .gradle/
 build/
 **/build/
-!plugin/gradle/wrapper/gradle-wrapper.jar
+!plugin/daemon/gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 local.properties
 

@@ -4,7 +4,7 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # 클래스패스와 툴체인 경로는 Gradle이 써 준다 — 여기서 버전이나 경로를 다시 적지 않는다.
-ENV_FILE="$ROOT/build/prevue-env"
+ENV_FILE="$ROOT/daemon/build/prevue-env"
 # 로그와 pid 는 플러그인 밖에 둔다. 플러그인 경로에는 버전이 박혀 있어, 안에 두면 판올림한 순간
 # 떠 있는 데몬의 흔적을 잃는다 — prevue log 도 못 찾고, 어느 데몬이 살아 있는지도 모르게 된다.
 DAEMON_DIR="${PREVUE_HOME:-$HOME/.prevue}/daemons"
@@ -96,7 +96,7 @@ jdk_resolve() {
   [ -n "$JDK_FROM" ] && return 0
   if [ -n "${PREVUE_JDK:-}" ]; then JDK="$PREVUE_JDK"; JDK_FROM=PREVUE_JDK; return 0; fi
   local line="${PREVUE_JDK_RESOLVED:-}"
-  [ -n "$line" ] || line="$(python3 "$ROOT/bin/jdk_find.py")"
+  [ -n "$line" ] || line="$(python3 "$ROOT/cli/jdk_find.py")"
   JDK="${line%%$'\t'*}"; JDK_FROM="${line##*$'\t'}"
   [ -n "$JDK" ] && [ "$JDK_FROM" != "$line" ] || { JDK="/Applications/Android Studio.app/Contents/jbr/Contents/Home"; JDK_FROM=error; }
   export PREVUE_JDK_RESOLVED="$JDK"$'\t'"$JDK_FROM"
@@ -142,7 +142,7 @@ require_runtime() {
 
 usage() {
   # 명령 목록 · 명령별 설명은 bin/help 가 갖는다 — 여기와 두 곳에 적으면 어긋난다
-  cat "$ROOT/bin/help/index.txt" >&2
+  cat "$ROOT/cli/help/index.txt" >&2
   exit 2
 }
 
@@ -162,7 +162,7 @@ jstr() { python3 -c 'import json,sys; print(json.dumps(sys.argv[1],ensure_ascii=
 # ── 관찰 ────────────────────────────────────────────────────────────────────
 # 무엇이 있는지 보고 무엇을 할지 정하는 일(모듈 · 변형 · 덤프 · 리소스 제공자 · health · Gradle 오류)은 전부 prevue_plan.py 가 한다.
 # 여기는 인자를 모아 넘기고, 자리 계산·curl·Gradle 실행만 한다 — 판정이 두 곳이면 서로 다른 답을 낸다.
-PLAN_PY="$ROOT/bin/prevue_plan.py"
+PLAN_PY="$ROOT/cli/prevue_plan.py"
 
 # 경로는 dirname · basename · tr 을 띄우지 않고 셸 문자열로 자른다 — 저장소를 찾아 올라가는 한 단계마다 4ms 라
 # 깊은 소스 파일 하나에 60ms, warmup 한 번에 0.1초를 넘었다(실측).
@@ -218,8 +218,8 @@ gradle_jdk_of() {  # <repo> -> "<경로>\t<출처>"
 # 이 플러그인 버전이 쓰는 렌더러·컴파일러가 공유 툴체인에 이미 있는가. 버전은 빌드와 같은 카탈로그에서 읽는다.
 shared_toolchain() {
   local kv lv
-  kv="$(sed -n 's/^kotlin *= *"\([^"]*\)".*/\1/p' "$ROOT/gradle/libs.versions.toml" | head -1)"
-  lv="$(sed -n 's/^layoutlib-data *= *"\([^"]*\)".*/\1/p' "$ROOT/gradle/libs.versions.toml" | head -1)"
+  kv="$(sed -n 's/^kotlin *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
+  lv="$(sed -n 's/^layoutlib-data *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
   [ -n "$kv" ] && [ -n "$lv" ] && [ -d "$HOME/.prevue/toolchain/compiler-$kv" ] && [ -d "$HOME/.prevue/toolchain/layoutlib-$lv" ]
 }
 
@@ -232,7 +232,7 @@ gradle_version_of() {  # <repo>
 gradle_jdk_pick() {  # <repo> [<모듈 디렉터리>] -> "<경로>\t<출처>"
   local v
   v="$(LC_ALL=C ps -axo pid=,lstart=,command= 2>/dev/null \
-       | python3 "$ROOT/bin/jdk_rule.py" "$(gradle_version_of "$1")" \
+       | python3 "$ROOT/cli/jdk_rule.py" "$(gradle_version_of "$1")" \
            "$HOME/.prevue/projects/$(repo_key "$1")/gradle-jdk" "$1" "${GRADLE_USER_HOME:-$HOME/.gradle}" "${2:-}" 2>/dev/null)"
   [ -n "$v" ] && { printf '%s' "$v"; return; }
   gradle_jdk_of "$1"
@@ -297,7 +297,7 @@ key_from_args() {
 # --clean 은 부팅 전에 쓴 죽은 기록을 지운다. 기록을 쓰는 start 만 준다 — 나머지 명령은 기록을 읽기만 한다.
 alive_records() {  # [--clean] [포트…]
   local clean=""; [ "${1:-}" = --clean ] && { clean=--clean; shift; }
-  python3 "$ROOT/bin/daemon_records.py" $clean "$DAEMON_DIR" "$@"
+  python3 "$ROOT/cli/daemon_records.py" $clean "$DAEMON_DIR" "$@"
 }
 # 기록은 살아 있는 데몬을 가리키는데 HTTP 로 닿지 못하는 포트들. 이 셸이 네트워크를 못 쓰는 것이다 —
 # Codex 의 기본 샌드박스(workspace-write · network_access=false)가 127.0.0.1 도 막는다(실측 2026-09-23: 같은 show 가
@@ -525,7 +525,7 @@ while [ "${1:-}" = --lang ]; do [ $# -ge 2 ] || usage; LANG_GIVEN="$2"; shift 2;
 cmd="${1:-}"; shift || usage
 
 # 명령 설명은 스킬이 아니라 CLI 가 갖는다(D-55) — 칠 때만 읽히고, 데몬 · python3 없이 답한다.
-HELP_DIR="$ROOT/bin/help"
+HELP_DIR="$ROOT/cli/help"
 case "$cmd" in
   -h|--help|help) H="${1:-index}"; [ -f "$HELP_DIR/$H.txt" ] || H=index; cat "$HELP_DIR/$H.txt"; exit 0 ;;
 esac
@@ -543,7 +543,7 @@ PY3="$(command -v python3 2>/dev/null)"
 if [ -z "$PY3" ] || { [ "$PY3" = /usr/bin/python3 ] && [ "$(uname)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; }; then
   # health 와 같은 모양으로 답하고 물을 문장(ask)도 싣는다 — python 없이 JSON 문자열로 옮기므로 \ 와 " 만 이스케이프한다.
   # 종료 코드도 health 규칙(빠진 것 있음 1)과 show 규칙(준비 안 됨 3)을 따른다.
-  ASK="$(sed 's/\\/\\\\/g; s/"/\\"/g' "$ROOT/bin/help/ask/python3.txt" | tr -d '\n')"
+  ASK="$(sed 's/\\/\\\\/g; s/"/\\"/g' "$ROOT/cli/help/ask/python3.txt" | tr -d '\n')"
   echo '{"ok":false,"missing":["python3"],"error":"No python3 — macOS Command Line Tools are needed","next":"xcode-select --install","ask":"'"$ASK"'"}'
   [ "$cmd" = health ] && exit 1 || exit 3
 fi
@@ -668,10 +668,10 @@ case "$cmd" in
     [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
-      if ! (cd "$ROOT" && ./gradlew installPrevue -q --offline) >&2; then
+      if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
         echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" with-lang; exit 1
       fi
-    elif ! (cd "$ROOT" && ./gradlew installPrevue -q) >&2; then
+    elif ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q) >&2; then
       echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
     fi
     [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE is missing\"}"; exit 1; }
@@ -680,7 +680,7 @@ case "$cmd" in
   warmup)
     if [ -z "${PREVUE_PREPARATION:-}" ]; then
       for arg in "$@"; do
-        if [ "$arg" = --show ]; then exec python3 "$ROOT/bin/prevue_prepare.py" run warmup "$PORT" "$@"; fi
+        if [ "$arg" = --show ]; then exec python3 "$ROOT/cli/prevue_prepare.py" run warmup "$PORT" "$@"; fi
       done
     fi
     # 클래스패스 덤프를 사람 대신 돌린다. init-script 주입이라 대상 저장소에는 아무것도 남지 않는다(NFR-2).
@@ -743,7 +743,7 @@ case "$cmd" in
       # Gradle 의 stderr 를 붙잡아 둔다. 덤프 스크립트가 멈춘 이유가 거기 있는데,
       # 여태 JSON 에는 "모듈 이름과 변형을 확인해라"만 실어서 — 모듈도 변형도 맞는 실패에
       # 엉뚱한 곳을 보게 했다. 사람에게는 그대로 흘려 보내고, 요지 한 줄은 JSON 에도 싣는다.
-      (cd "$ROOTDIR" && JAVA_HOME="${GRADLE_JDK:-${JAVA_HOME:-}}" ./gradlew --init-script "$ROOT/gradle/dump-classpath.init.gradle.kts" \
+      (cd "$ROOTDIR" && JAVA_HOME="${GRADLE_JDK:-${JAVA_HOME:-}}" ./gradlew --init-script "$ROOT/daemon/gradle/dump-classpath.init.gradle.kts" \
         "${props[@]}" -Dprevue.timing="$timing" "${tasks[@]}" --no-configuration-cache \
         -Dorg.gradle.isolated-projects=false -q) 2>"$GRADLE_ERR" >&2 || rc=$?
       ms="$(python3 "$PLAN_PY" gradle-run "$timing" "$t0" "$(now_ms)" "$rc" "$RUNS" "$GRADLE_JDK" "$@" 2>/dev/null)"
@@ -848,7 +848,7 @@ case "$cmd" in
         require_runtime
         case " $* " in
           *' --fg '*) ;;
-          *) exec python3 "$ROOT/bin/prevue_prepare.py" run start "$PORT" "$@" ;;
+          *) exec python3 "$ROOT/cli/prevue_prepare.py" run start "$PORT" "$@" ;;
         esac
       fi
     fi
@@ -868,7 +868,7 @@ case "$cmd" in
       fi
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
       [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
-      (cd "$ROOT" && ./gradlew installPrevue -q --offline) >&2 || true
+      (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
     [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" with-lang; exit 3; }
     . "$ENV_FILE"
@@ -918,7 +918,7 @@ case "$cmd" in
       echo "{\"ok\":false,\"error\":\"$NET_BLOCKED_MSG\",\"port\":$PORT,\"networkBlocked\":true}"; exit 3
     fi
     if [ -n "${PREVUE_PREPARATION:-}" ]; then
-      python3 "$ROOT/bin/prevue_prepare.py" stage "$PREVUE_PREPARATION" "$BASE/"
+      python3 "$ROOT/cli/prevue_prepare.py" stage "$PREVUE_PREPARATION" "$BASE/"
     fi
     ARGS+=(--port "$PORT" --root "$ROOT")
     mkdir -p "$DAEMON_DIR"
@@ -1162,7 +1162,7 @@ PY
   log) tail -n "${1:-40}" "$LOG" ;;
   stop)
     if [ "${1:-}" = "--all" ] || [ "${1:-}" = "--mine" ]; then
-      python3 "$ROOT/bin/prevue_prepare.py" stop
+      python3 "$ROOT/cli/prevue_prepare.py" stop
       # --mine 은 이 체크아웃이 띄운 데몬만이다 — 워크트리를 치울 때 다른 워크트리의 데몬은 그대로 둔다.
       MINE="$( [ "$1" = "--mine" ] && for lp in $(live_daemons | cut -f1); do printf '%s\t%s\n' "$lp" "$(daemon_status "$lp")"; done \
         | python3 "$PLAN_PY" own "$ROOT" | cut -f1 )"

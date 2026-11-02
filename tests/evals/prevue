@@ -1,11 +1,11 @@
 #!/bin/bash
 # 스킬 평가용 가짜 prevue(NFR-15). 렌더러 · 데몬 없이 상황(EVAL_PREVUE_SCENARIO)마다 정해진 JSON 과 종료 코드를 낸다.
-# 도움말은 진짜 bin/help 를 그대로 보인다 — 평가하는 것이 "도움말만 보고 맞는 명령을 고르는가"라서(D-55).
+# 도움말은 진짜 cli/help 를 그대로 보인다 — 평가하는 것이 "도움말만 보고 맞는 명령을 고르는가"라서(D-55).
 # 부른 명령은 EVAL_PREVUE_LOG 가 있으면 한 줄씩 적는다 — Codex 채점기가 target: prevue_log 로 읽으므로(권한 상승 · 실행 여부)
 # 줄 모양("<명령> <인자>" + 샌드박스 안이면 " [sandbox]")을 바꾸지 않는다. 도움말을 읽은 것은 실행이 아니라 적지 않는다.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-HELP="$HERE/help"
+HELP="$(dirname "$HERE")/cli/help"
 PNG="$HERE/../fixtures/card.png"
 SCENARIO="${EVAL_PREVUE_SCENARIO:-ready}"
 cmd="${1:-}"; shift 2>/dev/null
@@ -32,7 +32,7 @@ case "$cmd" in setup|warmup)
 esac
 
 file_of() { for a in "$@"; do case "$a" in -*) ;; *) printf '%s' "$a"; return ;; esac; done; printf '/work/app/src/main/kotlin/Screen.kt'; }
-# 사람에게 할 말은 진짜 CLI 와 같은 파일(bin/help/ask)에서 읽는다 — 평가가 실제로 나갈 문장으로 돈다(D-86).
+# 사람에게 할 말은 진짜 CLI 와 같은 파일(cli/help/ask)에서 읽는다 — 평가가 실제로 나갈 문장으로 돈다(D-86).
 # say <이름>... 은 문장들을 한 칸 띄워 잇고 JSON 문자열로 낸다. {config} · {root} 자리만 채운다.
 say() {
   local t="" n

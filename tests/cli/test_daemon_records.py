@@ -1,4 +1,4 @@
-"""bin/daemon_records.py — 데몬 기록이 살아 있는 데몬을 가리키는가. 실행: python3 -m unittest discover -s tests/cli
+"""cli/daemon_records.py — 데몬 기록이 살아 있는 데몬을 가리키는가. 실행: python3 -m unittest discover -s tests/cli
 
 판정(state)은 kill -0 · 명령줄을 주입해 본다. 끝의 CLI 묶음은 PREVUE_HOME 을 임시 디렉터리로 돌려 진짜 bin/prevue 를 친다 —
 재부팅 뒤 남은 기록이 남의 pid 를 산 데몬으로 읽어 networkBlocked 를 내던 회귀(2026-10-05)를 그대로 재현한다.
@@ -20,7 +20,7 @@ import time
 import unittest
 from unittest import mock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import daemon_records as R  # noqa: E402
 from test_plan import fake_jdk, fake_sdk  # noqa: E402
 
@@ -483,7 +483,7 @@ class Cli(unittest.TestCase):
         _, ended = self.record(99999998)                 # 이번 부팅에 끝났다
         log = old[:-len(".pid")] + ".log"
         open(log, "w").close()
-        out = subprocess.run([sys.executable, os.path.join(ROOT, "bin", "daemon_records.py"), "--clean", self.daemons],
+        out = subprocess.run([sys.executable, os.path.join(ROOT, "cli", "daemon_records.py"), "--clean", self.daemons],
                              stdout=subprocess.PIPE, timeout=60).stdout.decode()
         self.assertEqual(out, "")
         self.assertEqual((os.path.exists(old), os.path.exists(ended), os.path.exists(log)), (False, True, True))
@@ -500,11 +500,11 @@ class MainClass(unittest.TestCase):
 
     def test_데몬을_띄우는_두_곳이_같은_메인_클래스를_넘긴다(self):
         self.assertRegex(self.source("bin", "prevue"), r'-cp "\$DAEMON_CP" %s\s' % re.escape(R.DAEMON_MAIN))
-        self.assertIn('Respawn.start("%s", ' % R.DAEMON_MAIN, self.source("src", "main", "kotlin", "prevue", "daemon", "Main.kt"))
+        self.assertIn('Respawn.start("%s", ' % R.DAEMON_MAIN, self.source("daemon", "src", "main", "kotlin", "prevue", "daemon", "Main.kt"))
 
 
 class Launch(unittest.TestCase):
-    """진짜 bin/prevue start 를 친다. 플러그인 디렉터리를 임시로 꾸며 build/prevue-env 를 둔다 — CI 는 툴체인을 굽기 전에
+    """진짜 bin/prevue start 를 친다. 플러그인 디렉터리를 임시로 꾸며 daemon/build/prevue-env 를 둔다 — CI 는 툴체인을 굽기 전에
     이 테스트를 돌린다. PREVUE_JDK 의 java 는 HTTP 를 열지 않고 받은 인자를 문 채 잔다 — start 가 그것을 띄우면 뜨기를 30초
     기다리므로 기록을 보고 끊는다."""
 
@@ -512,13 +512,15 @@ class Launch(unittest.TestCase):
         self.home = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.home)
         plugin = os.path.join(self.home, "plugin")
-        shutil.copytree(os.path.join(ROOT, "bin"), os.path.join(plugin, "bin"), ignore=shutil.ignore_patterns("__pycache__"))
-        os.makedirs(os.path.join(plugin, "build"))
-        with open(os.path.join(plugin, "build", "prevue-env"), "w") as f:
+        for part in ("bin", "cli"):
+            shutil.copytree(os.path.join(ROOT, part), os.path.join(plugin, part), ignore=shutil.ignore_patterns("__pycache__"))
+        build = os.path.join(plugin, "daemon", "build")
+        os.makedirs(build)
+        with open(os.path.join(build, "prevue-env"), "w") as f:
             for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
-                f.write('%s="$ROOT/build/%s"\n' % (k, k.lower()))
+                f.write('%s="$ROOT/daemon/build/%s"\n' % (k, k.lower()))
         for jar in ("prevue_cp", "prevue_bridge"):      # start 가 데몬이 돌 복사본으로 옮긴다(D-125)
-            open(os.path.join(plugin, "build", jar), "w").close()
+            open(os.path.join(build, jar), "w").close()
         self.java = os.path.join(self.home, "jdk", "bin", "java")
         os.makedirs(os.path.dirname(self.java))
         with open(self.java, "w") as f:

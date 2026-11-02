@@ -1,4 +1,4 @@
-"""bin/jdk_rule.py — warmup 이 Gradle 을 부를 JDK. 실행: python3 -m unittest discover -s tests/cli"""
+"""cli/jdk_rule.py — warmup 이 Gradle 을 부를 JDK. 실행: python3 -m unittest discover -s tests/cli"""
 
 import os
 import shutil
@@ -7,7 +7,7 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import jdk_rule  # noqa: E402
 
 

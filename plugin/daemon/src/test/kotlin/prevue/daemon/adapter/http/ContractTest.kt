@@ -22,7 +22,7 @@ import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.workspace
 
 /**
- * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `contract/<이름>.json`과 대조한다.
+ * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `src/test/contract/<이름>.json`과 대조한다.
  * CLI·스킬·뷰어가 읽는 것은 이 JSON이다 — 안쪽을 옮기는 동안 여기가 초록이면 바깥이 본 표면은 그대로다.
  * 값은 대조하지 않는다(경로·시각·ms가 매번 다르다). 예시는 문서용으로 함께 적는다.
  *
@@ -39,7 +39,7 @@ class ContractTest {
     private val viewer = server.browser
     private val events = CopyOnWriteArrayList<Map<String, Any?>>()
     private val update = System.getProperty("prevue.contract.update") == "true"
-    private val dir = File("contract")
+    private val dir = File("src/test/contract")
 
     @BeforeAll fun up() {
         server.start()

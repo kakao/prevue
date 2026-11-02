@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 class ScreenTextTest {
     private val sources = mapOf(
         "src/main/kotlin" to Regex("""(?:screenText|phrase)(?:OrNull)?\("([\w.]+)""""),
-        "viewer" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
-        "bin/prevue_prepare.py" to Regex("""say\("([\w.]+)"\)"""),
+        "../viewer" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
+        "../cli/prevue_prepare.py" to Regex("""say\("([\w.]+)"\)"""),
     )
 
     @Test fun `부르는 키가 모두 사전에 있다`() {

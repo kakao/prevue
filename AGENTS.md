@@ -36,7 +36,7 @@
 - **`main`은 배포본, `develop`은 통합 브랜치다.** 둘 다 PR로만 움직인다 — develop은 작업 PR과 로컬 검증(`implement` 5단계), main은 릴리즈 PR과 CI(빌드 검증). 빌드 검증은 develop PR에도 돌지만 그곳의 머지 관문은 로컬 검증이다 — 외부 기여 PR을 받는 그물이다. **직접 푸시하지 않는다** — 둘 다 ruleset(PR 필수 · 승인 0개 · 삭제 · 강제 푸시 금지)이 걸려 있지만 저장소 admin은 우회하므로 에이전트의 직접 푸시는 서버가 막아 주지 않는다. main에 미는 순간 배포된다.
 - **작업 하나 = 브랜치 하나 = 워크트리 하나**(브랜치는 `worktree-<작업명>`). Claude Code와 Codex 모두 저장소 루트의 `.worktrees/<작업명>`에 워크트리를 둔다. 베이스 체크아웃은 `develop`에 두고 거기서 코드를 고치지 않는다. 절차(계획 → 워크트리 → 개발 → 리뷰 → PR → 머지 → 볼트 캡처 → 치우기)는 **`implement` 스킬**(`dev-skills-src/implement/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 - **클론 직후 한 번 `git remote set-head origin develop`.** 워크트리는 로컬 `origin/HEAD`에서 따는데 GitHub 기본 브랜치는 `main`이라(마켓플레이스가 거기서 읽힌다) 그대로 두면 워크트리가 main에서 시작한다. `git remote set-head -a`를 치면 main으로 돌아간다.
-- **워크트리에서 프리뷰를 볼 때는 그 워크트리를 `(cd plugin && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다.** CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다.
+- **워크트리에서 프리뷰를 볼 때는 그 워크트리를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다.** CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다.
 - **작은 수정은 PR 없이 develop에 바로 넣는다** — 동작이 안 바뀌는 것(문서 · 주석 · 오타)과 릴리즈의 버전 커밋. develop 위로 리베이스해 `git push origin HEAD:develop`(fast-forward만). `plugin/` · `skills-src/` · `dev-skills-src/` · `tools/` · 워크플로 · 빌드 파일을 건드리면 PR로 간다.
 - **워크트리에서 `gh pr merge` · `gh pr close`에 `--delete-branch`를 붙이지 않는다** — 로컬 브랜치를 지우고 워크트리를 `main`으로 옮긴다(그 위에서 리베이스하면 로컬 main이 develop이 된다). 원격 브랜치는 머지한 뒤 따로 지운다.
 - **PR은 `gh pr create --base develop`.** 기본 브랜치가 `main`이라 base를 빠뜨리면 main으로 간다.
@@ -55,7 +55,7 @@
 
 ## 승인이 필요한 것
 
-- **대상 저장소의 Gradle 실행**(클래스패스 덤프) — 사내 Maven에 요청이 나간다. 알리고 승인받는다. 도구 자신의 빌드는 `(cd plugin && ./gradlew --offline installPrevue)`로 충분하다. 저장소 안 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp`, 공개 Maven만)는 도구의 일부라 승인 없이 — `integrationTest`가 덤프를 스스로 뜬다. 단 Gradle 홈의 `init.d`에 스크립트가 있으면(저장소를 사내 Maven으로 돌릴 수 있다) 테스트가 뜨지 않고 멈춘다.
+- **대상 저장소의 Gradle 실행**(클래스패스 덤프) — 사내 Maven에 요청이 나간다. 알리고 승인받는다. 도구 자신의 빌드는 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 충분하다. 저장소 안 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp`, 공개 Maven만)는 도구의 일부라 승인 없이 — `integrationTest`가 덤프를 스스로 뜬다. 단 Gradle 홈의 `init.d`에 스크립트가 있으면(저장소를 사내 Maven으로 돌릴 수 있다) 테스트가 뜨지 않고 멈춘다.
 - 사내 Maven 자격을 로그·산출물·커밋에 남기지 않는다(NFR-7).
 
 ## 개발 위생 — 제품 제약이 아니다
@@ -65,10 +65,10 @@
 
 ## 코멘트 컨벤션
 
-- **Kotlin(`plugin/src/main` · `plugin/src/bridge`)에는 새 주석을 달지 않는다**(D-70) — KDoc 포함. 이유는 이름 · 테스트 · 볼트 결정 기록으로 옮긴다. 코드 밖 세계의 사실(라이브러리 버그 · 플랫폼 제약)만 `// 외부:` 한 줄로 둔다. 기존 주석은 고치지 말고 지운다 — 문구를 고쳐도 새 주석이다.
+- **Kotlin(`plugin/daemon/src/main` · `plugin/daemon/src/bridge`)에는 새 주석을 달지 않는다**(D-70) — KDoc 포함. 이유는 이름 · 테스트 · 볼트 결정 기록으로 옮긴다. 코드 밖 세계의 사실(라이브러리 버그 · 플랫폼 제약)만 `// 외부:` 한 줄로 둔다. 기존 주석은 고치지 말고 지운다 — 문구를 고쳐도 새 주석이다.
 - 판정은 `sh tools/lint.sh`가 한다 — 슬롭 규칙 · 지표 · 죽은 코드 · 새 주석 · 뷰어 날값. 규칙을 더할 때는 `tools/lint/`의 규칙과 심은 위반(`tests/lint`)을 함께 둔다.
 - 다른 파일(셸 · JS · 파이썬 · 빌드 스크립트)의 주석은 한국어로 간결하게, 이유 · 제약(why)만 적는다.
 
 ## 저장소
 
-원격은 `github.com/kakao/prevue`이고 기본 브랜치는 `main`이다(마켓플레이스가 거기서 읽힌다). `.claude/`는 작업 메모라 gitignore이고(생성물인 `.claude/skills/`만 추적한다), 제품은 **`plugin/`** 하나다 — 마켓플레이스 둘(`.claude-plugin/marketplace.json` · `.agents/plugins/marketplace.json`)이 git-subdir로 그 폴더만 받는다(D-123). 런타임 · Gradle 프로젝트 · `skills/`(Claude Code) · `codex/skills/`(Codex) · `.claude-plugin/plugin.json` · `.codex-plugin/`이 거기 있고, 밖(`fixtures/` · `assets/` · `prototypes/` · `tests/` · `tools/`)은 설치본에 실리지 않는다. `plugin/`의 `LICENSE` · `NOTICE.md`는 루트 원본의 사본이라 `tools/plugin-copies.sh`로만 옮긴다. 스킬은 **`skills-src/`만 고치고 `tools/gen-skills.sh`로 두 벌을 만든다** — `plugin/skills/`·`plugin/codex/skills/`는 생성물이라 손으로 고치지 않는다(CI가 `--check`로 막는다). 이 저장소를 개발할 때만 쓰는 스킬(`implement` · `ship`)은 **`dev-skills-src/`**에 두고, 같은 스크립트가 `.claude/skills/`·`.agents/skills/`(Codex의 저장소 스킬)로 만든다 — 플러그인에 실리지 않아 Prevue 사용자에게 가지 않는다. `skills-src/`에 넣으면 배포된다. 한 에이전트에만 줄 구간은 `<!-- only:claude -->`/`<!-- only:codex -->` … `<!-- /only -->`로 제 줄에 감싼다.
+원격은 `github.com/kakao/prevue`이고 기본 브랜치는 `main`이다(마켓플레이스가 거기서 읽힌다). `.claude/`는 작업 메모라 gitignore이고(생성물인 `.claude/skills/`만 추적한다), 제품은 **`plugin/`** 하나다 — 마켓플레이스 둘(`.claude-plugin/marketplace.json` · `.agents/plugins/marketplace.json`)이 git-subdir로 그 폴더만 받는다(D-123). 입구 `bin/prevue` · CLI 몸통 `cli/`(파이썬 · `help/`) · 데몬 Gradle 프로젝트 `daemon/` · 뷰어 `viewer/` · `skills/`(Claude Code) · `codex/skills/`(Codex) · `.claude-plugin/plugin.json` · `.codex-plugin/`이 거기 있고, 밖(`fixtures/` · `assets/` · `prototypes/` · `tests/` · `tools/`)은 설치본에 실리지 않는다. `plugin/`의 `LICENSE` · `NOTICE.md`는 루트 원본의 사본이라 `tools/plugin-copies.sh`로만 옮긴다. 스킬은 **`skills-src/`만 고치고 `tools/gen-skills.sh`로 두 벌을 만든다** — `plugin/skills/`·`plugin/codex/skills/`는 생성물이라 손으로 고치지 않는다(CI가 `--check`로 막는다). 이 저장소를 개발할 때만 쓰는 스킬(`implement` · `ship`)은 **`dev-skills-src/`**에 두고, 같은 스크립트가 `.claude/skills/`·`.agents/skills/`(Codex의 저장소 스킬)로 만든다 — 플러그인에 실리지 않아 Prevue 사용자에게 가지 않는다. `skills-src/`에 넣으면 배포된다. 한 에이전트에만 줄 구간은 `<!-- only:claude -->`/`<!-- only:codex -->` … `<!-- /only -->`로 제 줄에 감싼다.

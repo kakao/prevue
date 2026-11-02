@@ -48,7 +48,7 @@ val layoutlibResources: Configuration = configurations.create("layoutlibResource
 // 화면 문장 영어 사전(viewer/strings/en.json)을 데몬이 읽는 Kotlin 표로 옮긴다 — 데몬이 CLI 로 내는 문장은 영어 한 벌이다(D-106 · D-109).
 // 브라우저에는 키만 보내고 뷰어가 고른 언어로 채우므로 다른 언어의 사전은 데몬에 들어가지 않는다.
 val screenText = tasks.register("screenText") {
-    val dict = layout.projectDirectory.file("viewer/strings/en.json")
+    val dict = layout.projectDirectory.file("../viewer/strings/en.json")
     val out = layout.buildDirectory.dir("generated/screenText")
     inputs.file(dict)
     outputs.dir(out)
@@ -112,7 +112,7 @@ tasks.test {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
-    // 계약(contract/*.json)을 다시 쓴다. 의도한 변화일 때만 — diff 가 커밋에 실린다.
+    // 계약(src/test/contract/*.json)을 다시 쓴다. 의도한 변화일 때만 — diff 가 커밋에 실린다.
     systemProperty("prevue.contract.update", providers.gradleProperty("contractUpdate").getOrElse("false"))
 }
 
@@ -131,8 +131,8 @@ configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configu
 kotlin.target.compilations.getByName("integrationTest").associateWith(kotlin.target.compilations.getByName("main"))
 
 // 픽스처는 플러그인 밖(저장소 루트)에 있다 — 설치본에 실리지 않는다(D-123)
-val pearlFixture: File = rootDir.resolve("../fixtures/pearl").canonicalFile
-val pearlKmpFixture: File = rootDir.resolve("../fixtures/pearl-kmp").canonicalFile
+val pearlFixture: File = rootDir.resolve("../../fixtures/pearl").canonicalFile
+val pearlKmpFixture: File = rootDir.resolve("../../fixtures/pearl-kmp").canonicalFile
 
 tasks.register<Test>("integrationTest") {
     description = "진짜 렌더러로 로더 공유 · 인터랙티브 회귀를 본다(로컬)"
@@ -150,7 +150,7 @@ tasks.register<Test>("integrationTest") {
         "--add-opens=java.base/java.lang=ALL-UNNAMED", "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED", "--add-opens=java.base/java.nio=ALL-UNNAMED",
     )
-    systemProperty("prevue.root", rootDir.absolutePath)
+    systemProperty("prevue.root", rootDir.parentFile.absolutePath)
     // 멈춘 렌더 · 정착 대기가 테스트를 끝없이 붙잡았다 — 상한을 넘으면 그 자리의 스택과 함께 실패한다.
     // 별도 스레드여야 인터럽트를 안 받는 대기에서도 제때 실패한다. 준비(@BeforeAll)는 warmup 10분 + 보드 채우기를 품는다.
     systemProperty("junit.jupiter.execution.timeout.thread.mode.default", "SEPARATE_THREAD")
@@ -267,7 +267,7 @@ val prevueEnv = tasks.register("prevueEnv") {
         // 셸이 풀 변수다. 코틀린 쪽에서 풀리면 안 된다.
         val d = "${'$'}"
         // 우리 jar 가 맨 앞, 나머지는 해석 순서 그대로 — reflect 가 renderer 보다 앞이어야 한다.
-        val cp = listOf("${d}ROOT/build/libs/${ownJarName.get()}") +
+        val cp = listOf("${d}ROOT/daemon/build/libs/${ownJarName.get()}") +
             deps.map { "${d}HOME/${depsRel.get()}/$it" }
 
         envFile.get().asFile.writeText(
@@ -277,7 +277,7 @@ val prevueEnv = tasks.register("prevueEnv") {
                 appendLine("# 절대 경로를 적으면 빌드한 머신에서만 맞는다.")
                 appendLine("# 우리 것만 ${d}ROOT 다. 나머지는 플러그인 버전과 무관해 공유 툴체인에 있다.")
                 appendLine("PREVUE_CP=\"${cp.joinToString(":")}\"")
-                appendLine("PREVUE_BRIDGE=\"${d}ROOT/build/${bridgeArchive.get().asFile.name}\"")
+                appendLine("PREVUE_BRIDGE=\"${d}ROOT/daemon/build/${bridgeArchive.get().asFile.name}\"")
                 appendLine("PREVUE_LAYOUTLIB=\"${d}HOME/$layoutlibRel\"")
                 appendLine("PREVUE_COMPILER=\"${d}HOME/$compilerRel\"")
                 appendLine("PREVUE_LIB=\"${d}HOME/${depsRel.get()}\"")

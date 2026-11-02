@@ -16,7 +16,7 @@ class EvalResponses(Case):
         (self.plugin / "bin").mkdir(parents=True)
         self.cli = self.plugin / "bin/prevue"
         shutil.copy(ROOT / "tests/evals/prevue", self.cli)
-        shutil.copytree(ROOT / "plugin/bin/help", self.plugin / "bin/help")
+        shutil.copytree(ROOT / "plugin/cli/help", self.plugin / "cli/help")
 
     def invoke(self, scenario, command, file, *args):
         result = subprocess.run(

@@ -571,7 +571,7 @@ def locate_module(repo, file, for_warmup=False):
 
 
 # ── 사람에게 할 말 ───────────────────────────────────────────────────────────
-# 승인 · 고르기 문장은 bin/help/ask/ 가 갖는다 — 도움말처럼 CLI 가 하는 말이라, 문장만 고쳐도 /ship 의 스킬 평가가 돌고
+# 승인 · 고르기 문장은 cli/help/ask/ 가 갖는다 — 도움말처럼 CLI 가 하는 말이라, 문장만 고쳐도 /ship 의 스킬 평가가 돌고
 # 가짜 CLI(tests/evals/prevue)도 같은 파일을 읽는다(D-86). {이름} 자리만 채운다.
 
 ASK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "help", "ask")
