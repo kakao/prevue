@@ -17,9 +17,11 @@ object Sources {
         return all.toMap()
     }
 
-    /** `prevue/daemon` 아래 상대 경로(`domain/…` · `adapter/…`) → 내용. */
+    /** 데몬 본체 → 내용. 층은 `prevue/<층>/…` 에서 `<층>/…`(`domain/…` · `adapter/…`), 조립은 `prevue/daemon/…` 에서 그 아래 이름(`Main.kt`)으로 단다. 코덱 · 셈은 빠진다. */
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
-        .filterKeys { it.startsWith("prevue/daemon/") }.mapKeys { it.key.removePrefix("prevue/daemon/") }
+        .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
+
+    private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:entity|domain|adapter)/))""")
 
     fun file(path: String): File = kotlinRoots.map { File(it, path) }.firstOrNull { it.isFile } ?: File(kotlinRoots.last(), path)
 }

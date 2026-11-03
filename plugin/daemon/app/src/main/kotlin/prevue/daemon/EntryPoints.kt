@@ -7,14 +7,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import prevue.daemon.domain.UseCases
-import prevue.daemon.adapter.cli.CliEndpoint
-import prevue.daemon.adapter.http.Server
-import prevue.daemon.adapter.browser.BrowserEndpoint
-import prevue.daemon.adapter.browser.FrameStreamer
-import prevue.daemon.adapter.cli.CliHandler
-import prevue.daemon.adapter.browser.BrowserPresenter
-import prevue.daemon.adapter.hotswap.HotSwapRunner
+import prevue.domain.UseCases
+import prevue.adapter.cli.CliEndpoint
+import prevue.adapter.http.Server
+import prevue.adapter.browser.BrowserEndpoint
+import prevue.adapter.browser.FrameStreamer
+import prevue.adapter.cli.CliHandler
+import prevue.adapter.browser.BrowserPresenter
+import prevue.adapter.hotswap.HotSwapRunner
 
 class PrevueCheckout(val viewer: File, val root: String? = null) {
     fun version(): String? = File(viewer.absoluteFile.parentFile, "VERSION").takeIf { it.isFile }?.readText()?.trim()

@@ -9,8 +9,8 @@ import kotlin_source  # noqa: E402
 import lint  # noqa: E402
 import slop  # noqa: E402
 
-DOMAIN = "plugin/daemon/domain/src/main/kotlin/prevue/daemon/domain/A.kt"
-ADAPTER = "plugin/daemon/adapter/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
+DOMAIN = "plugin/daemon/domain/src/main/kotlin/prevue/domain/A.kt"
+ADAPTER = "plugin/daemon/adapter/src/main/kotlin/prevue/adapter/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
@@ -135,7 +135,7 @@ class Comments(unittest.TestCase):
 
     def test_층_모듈의_본체도_범위다(self):
         for m in ("entity", "domain", "adapter"):
-            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/daemon/%s/A.kt" % (m, m)), m)
+            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/%s/A.kt" % (m, m)), m)
         self.assertFalse(lint.in_scope("plugin/daemon/domain/src/test/kotlin/A.kt"))
 
     def test_층_모듈로_옮긴_파일은_옛_자리와_짝짓는다(self):

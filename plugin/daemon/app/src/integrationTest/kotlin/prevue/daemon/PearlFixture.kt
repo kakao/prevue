@@ -2,12 +2,12 @@ package prevue.daemon
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-import prevue.daemon.adapter.compile.HotCompiler
-import prevue.daemon.adapter.dump.ClasspathSpec
-import prevue.daemon.adapter.render.ViewInfoJson
-import prevue.daemon.entity.LiveTree
-import prevue.daemon.entity.ViewNode
-import prevue.daemon.domain.policy.NodeTarget
+import prevue.adapter.compile.HotCompiler
+import prevue.adapter.dump.ClasspathSpec
+import prevue.adapter.render.ViewInfoJson
+import prevue.entity.LiveTree
+import prevue.entity.ViewNode
+import prevue.domain.policy.NodeTarget
 import prevue.json.Json
 
 /**

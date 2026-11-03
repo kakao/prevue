@@ -1,6 +1,6 @@
 package prevue.daemon
 
-import prevue.daemon.adapter.render.toBitmap
+import prevue.adapter.render.toBitmap
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.CoroutineScope
@@ -20,36 +20,36 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.condition.EnabledIf
-import prevue.daemon.adapter.dump.ClasspathSpec
-import prevue.daemon.adapter.render.RenderEngine
-import prevue.daemon.adapter.render.RendererSurfaces
-import prevue.daemon.adapter.render.ResourceOverlay
-import prevue.daemon.domain.port.ResourceKey
-import prevue.daemon.domain.port.ResourceLookup
-import prevue.daemon.adapter.source.ProjectFiles
-import prevue.daemon.adapter.source.SourcePreviewRepository
-import prevue.daemon.domain.model.CardResult
-import prevue.daemon.domain.model.DeviceModel
-import prevue.daemon.domain.model.FocusResult
-import prevue.daemon.entity.ModuleGraph
-import prevue.daemon.entity.PreviewSpec
-import prevue.daemon.entity.Semantics
-import prevue.daemon.domain.model.ModuleInfo
-import prevue.daemon.domain.port.Clock
-import prevue.daemon.domain.port.FailureKind
-import prevue.daemon.domain.Ports
-import prevue.daemon.domain.UseCases
-import prevue.daemon.domain.Watchers
-import prevue.daemon.domain.runtime.Workspace
-import prevue.daemon.adapter.compile.HotCompiler
-import prevue.daemon.adapter.render.ViewInfoJson
-import prevue.daemon.adapter.watch.PollingSourceWatcher
-import prevue.daemon.entity.ViewNode
-import prevue.daemon.domain.model.ScreenSize
-import prevue.daemon.domain.model.ScrollResult
-import prevue.daemon.domain.model.TouchResult
-import prevue.daemon.domain.policy.NodeTarget
-import prevue.daemon.domain.policy.ScrollReport
+import prevue.adapter.dump.ClasspathSpec
+import prevue.adapter.render.RenderEngine
+import prevue.adapter.render.RendererSurfaces
+import prevue.adapter.render.ResourceOverlay
+import prevue.domain.port.ResourceKey
+import prevue.domain.port.ResourceLookup
+import prevue.adapter.source.ProjectFiles
+import prevue.adapter.source.SourcePreviewRepository
+import prevue.domain.model.CardResult
+import prevue.domain.model.DeviceModel
+import prevue.domain.model.FocusResult
+import prevue.entity.ModuleGraph
+import prevue.entity.PreviewSpec
+import prevue.entity.Semantics
+import prevue.domain.model.ModuleInfo
+import prevue.domain.port.Clock
+import prevue.domain.port.FailureKind
+import prevue.domain.Ports
+import prevue.domain.UseCases
+import prevue.domain.Watchers
+import prevue.domain.runtime.Workspace
+import prevue.adapter.compile.HotCompiler
+import prevue.adapter.render.ViewInfoJson
+import prevue.adapter.watch.PollingSourceWatcher
+import prevue.entity.ViewNode
+import prevue.domain.model.ScreenSize
+import prevue.domain.model.ScrollResult
+import prevue.domain.model.TouchResult
+import prevue.domain.policy.NodeTarget
+import prevue.domain.policy.ScrollReport
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.awaitState
 import prevue.daemon.fake.awaitUntil
@@ -295,9 +295,9 @@ class RenderIntegrationTest {
         runBlocking { uc.focusCard(0, on = false, by = "test") }
     }
 
-    private fun visible(at: String): List<prevue.daemon.domain.model.Numbered> =
+    private fun visible(at: String): List<prevue.domain.model.Numbered> =
         when (val t = runBlocking { uc.touch.at(at, "tap", "test", settle = true) }) {
-            is TouchResult.Missed -> (t.miss as prevue.daemon.domain.model.Miss.Choose).candidates
+            is TouchResult.Missed -> (t.miss as prevue.domain.model.Miss.Choose).candidates
             else -> error("한 화면에 카드가 하나뿐이다 — $t")
         }
 
@@ -453,7 +453,7 @@ class RenderIntegrationTest {
         assertTrue(from in text, "${file.name}에 '$from'이 없다")
         file.writeText(text.replaceFirst(from, to))
         val w = runBlocking { uc.awaitRender(listOf(file), 60_000) }
-        assertTrue(w !is prevue.daemon.domain.model.WaitResult.TimedOut && w !is prevue.daemon.domain.model.WaitResult.CompileFailed, "$w")
+        assertTrue(w !is prevue.domain.model.WaitResult.TimedOut && w !is prevue.domain.model.WaitResult.CompileFailed, "$w")
         return awaitValue({ "저장의 감시 로그 — ${logs.drop(before)}" }, 10_000, pollMs = 100) { logs.drop(before).firstOrNull { it.startsWith("reload [${file.name}]") } }
     }
 
@@ -475,7 +475,7 @@ class RenderIntegrationTest {
         for (n in 1..6) {
             wheel(settled("list", "#$n 앞"), if (n % 2 == 1) 300f else -150f)
             val list = settled("list", "#$n 앞 굴림")
-            val seen = (runBlocking { uc.touch.at(at, "tap", "test", settle = true) } as? TouchResult.Missed)?.miss as? prevue.daemon.domain.model.Miss.Choose
+            val seen = (runBlocking { uc.touch.at(at, "tap", "test", settle = true) } as? TouchResult.Missed)?.miss as? prevue.domain.model.Miss.Choose
                 ?: error("굴린 뒤 카드 줄이 하나뿐이다")
             val k = seen.candidates.getOrNull(n - 1)?.n ?: error("화면 안 카드가 ${seen.candidates.size}개라 ${n}번째가 없다")
             val t = runBlocking { uc.touch.at("$at#$k", "tap", "test", settle = true) }
@@ -724,8 +724,8 @@ class RenderIntegrationTest {
                 val prior = ws.now.lastResult
                 val out = if (viewer) {
                     runBlocking { uc.touch("tap", x, y, "viewer", settle = false) }
-                    val settled = ws.state.awaitState("뷰어 경로의 정착", 10_000) { it.lastResult.let { r -> r !== prior && r is prevue.daemon.domain.model.Settled } }
-                    (settled.lastResult as prevue.daemon.domain.model.Settled).shot.out
+                    val settled = ws.state.awaitState("뷰어 경로의 정착", 10_000) { it.lastResult.let { r -> r !== prior && r is prevue.domain.model.Settled } }
+                    (settled.lastResult as prevue.domain.model.Settled).shot.out
                 } else {
                     val t = runBlocking { uc.touch("tap", x, y, "test", settle = true) } as TouchResult.Settled
                     assertEquals(true, t.result.settled, "CLI 경로가 정착하지 않았다")
@@ -821,18 +821,18 @@ class RenderIntegrationTest {
     }
 
     /** 한 장만 연 상태의 spec — 엔진을 직접 부르기 전에 액터의 루프와 보드 채우기를 비운다. */
-    private fun single(fqn: String): prevue.daemon.entity.PreviewSpec {
+    private fun single(fqn: String): prevue.entity.PreviewSpec {
         assertTrue(runBlocking { uc.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
         runBlocking { engine.awaitWrites() }
         return ws.now.current!!
     }
 
-    private fun redShare(img: prevue.daemon.entity.Bitmap): Double {
+    private fun redShare(img: prevue.entity.Bitmap): Double {
         val y = img.height / 2
         return (0 until img.width).count { x -> img.pixels[y * img.width + x].let { (it shr 16 and 0xff) > 200 && (it shr 8 and 0xff) < 80 } }.toDouble() / img.width
     }
 
-    private fun aside(p: prevue.daemon.entity.PreviewSpec): prevue.daemon.domain.port.RenderOutput {
+    private fun aside(p: prevue.entity.PreviewSpec): prevue.domain.port.RenderOutput {
         val out = runBlocking { engine.showAside(p.copy(previewId = p.previewId + "@aside")) }
         assertTrue(out.ok, out.message?.text)
         return out
@@ -943,7 +943,7 @@ class RenderIntegrationTest {
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =
         samePixels(a.toBitmap(), b.toBitmap())
 
-    private fun samePixels(a: prevue.daemon.entity.Bitmap, b: prevue.daemon.entity.Bitmap): Boolean =
+    private fun samePixels(a: prevue.entity.Bitmap, b: prevue.entity.Bitmap): Boolean =
         a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.pixels[y * a.width + x] == b.pixels[y * b.width + x] } }
 
     companion object {
