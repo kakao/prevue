@@ -155,13 +155,14 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   const on = screen !== 'focus';
 
   // 닫힌 줄은 접히는 동안 남는다. 옮겨 놓인 줄 뒤에 선다.
-  const [seen, setSeen] = useState(current);
+  // 상태마다 새 배열이 오므로 줄이 실제로 빠지거나 돌아왔을 때만 다시 그린다.
+  const seen = useRef(current);
   const [leaving, setLeaving] = useState<Tab[]>([]);
-  if (seen !== current) {
+  if (seen.current !== current) {
     const keys = new Set(current.map(t => t.key));
-    const gone = seen.filter(t => !keys.has(t.key) && !leaving.some(l => l.key === t.key));
-    setLeaving([...leaving.filter(l => !keys.has(l.key)), ...gone]);
-    setSeen(current);
+    const gone = seen.current.filter(t => !keys.has(t.key) && !leaving.some(l => l.key === t.key));
+    if (gone.length || leaving.some(l => keys.has(l.key))) setLeaving([...leaving.filter(l => !keys.has(l.key)), ...gone]);
+    seen.current = current;
   }
   const gone = (key: string) => setLeaving(rows => rows.filter(t => t.key !== key));
 

@@ -1,11 +1,11 @@
-import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { memo, useLayoutEffect, useSyncExternalStore } from 'react';
 import { capsuleContent, dismissOnce, subscribeCapsule, type CapsuleContent } from '../../legacy/js/capsule.js';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 
 // 아래에 떠 있는 캡슐 — 오류 · 잠깐의 알림 · 처음 한 번 안내. 보드와 한 장이 함께 쓴다. 가리킨 결과는 박스 꼬리표가 말한다(D-101).
 // 내용은 capsule.js 의 저장소가 갖는다 — 기존 모듈도 그리로 알린다. content 를 주면(Storybook) 저장소 대신 그것을 그린다.
-export function NotificationCapsule({ content, host }: { content?: CapsuleContent; host?: HTMLElement | null }) {
+export const NotificationCapsule = memo(function NotificationCapsule({ content, host }: { content?: CapsuleContent; host?: HTMLElement | null }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const live = useSyncExternalStore(subscribeCapsule, capsuleContent);
@@ -26,4 +26,4 @@ export function NotificationCapsule({ content, host }: { content?: CapsuleConten
     <div className="cap-main"><div id="sel" className={error ? 'error' : ''}>{error}</div><div className="log" id="log">{log}</div></div>
   </>;
   return place(body, (ref, children) => <div className="capsule" id="strip" ref={ref} role="status">{children}</div>);
-}
+});

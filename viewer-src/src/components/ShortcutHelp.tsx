@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { memo, useLayoutEffect, useRef } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { ShortcutGroup } from '../shortcuts';
@@ -33,7 +33,7 @@ export function toggleHelp(on = !helpIsOpen, byKey = false) {
   button?.setAttribute('aria-expanded', String(on));
 }
 
-export function ShortcutHelp({ table, logo = 'prevue.svg', host }: { table: ShortcutGroup[]; logo?: string; host?: HTMLElement | null }) {
+export const ShortcutHelp = memo(function ShortcutHelp({ table, logo = 'prevue.svg', host }: { table: ShortcutGroup[]; logo?: string; host?: HTMLElement | null }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const sheet = useRef<HTMLDivElement>(null);
@@ -58,10 +58,10 @@ export function ShortcutHelp({ table, logo = 'prevue.svg', host }: { table: Shor
     ])}</div>
   </div>;
   return place(body, (ref, children) => <div className="scrim" id="help" ref={ref} hidden>{children}</div>);
-}
+});
 
 /** 헤더 오른쪽의 `?` — 도움말을 여닫는다. */
-export function HelpButton({ host }: { host?: HTMLElement | null }) {
+export const HelpButton = memo(function HelpButton({ host }: { host?: HTMLElement | null }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   useLayoutEffect(() => {
@@ -75,4 +75,4 @@ export function HelpButton({ host }: { host?: HTMLElement | null }) {
     return () => { element.removeEventListener('click', click); button = null; };
   }, [element, phrase]);
   return place('?', (ref, children) => <button className="icon-btn" id="helpBtn" ref={ref} type="button" aria-haspopup="dialog" aria-expanded="false">{children}</button>);
-}
+});

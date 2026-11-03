@@ -43,14 +43,19 @@ function statusHeld(s) {
  * 탭을 오가도 보던 자리가 남는다.
  */
 const scrolls = new Map();
-let boardFile = null;
+let boardFile = null, arrival = { wasBoard: false, arrive: false, file: null };
 
-export function drawLegacy(s) {
+// 떠나는 보드의 자리는 무엇이든 그리기 전에 적는다 — React 가 먼저 레일을 접으면(--rail-w 0) 보드가 다시 흘러 scrollY 가 바뀐다.
+function leaveBoard(s) {
   const wasBoard = !boardView.hidden;
   const file = s.board ? s.board.file : null;
   if (wasBoard && boardFile && (s.screen !== "board" || file !== boardFile)) scrolls.set(boardFile, scrollY);
-  const arrive = s.screen === "board" && (!wasBoard || file !== boardFile);
+  arrival = { wasBoard, arrive: s.screen === "board" && (!wasBoard || file !== boardFile), file };
   boardFile = file;
+}
+
+export function drawLegacy(s) {
+  const { wasBoard, arrive, file } = arrival;
   boardView.hidden = s.screen !== "board";
   // 빈 화면은 시작 화면이 갖는다(quickopen.js) — 한 장의 틀을 보이면 src 없는 그림이 깨진 상자로 남았다.
   focusView.hidden = s.screen !== "focus";
@@ -164,7 +169,7 @@ function receive(s) {
 
 /** render 는 상태와 알약을 그대로 둘지를 받는다. connection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다. */
 export function startViewer(render, onConnection) {
-  draw = s => render(s, statusHeld(s));
+  draw = s => { leaveBoard(s); render(s, statusHeld(s)); };
   connection = onConnection;
   connect({
     open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },

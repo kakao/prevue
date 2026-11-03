@@ -5,6 +5,7 @@ let summary = "", flashTimer = 0;
 const listeners = new Set();
 
 function set(next) {
+  if (Object.keys(next).every(key => content[key] === next[key])) return;
   content = { ...content, ...next };
   for (const listener of listeners) listener();
 }

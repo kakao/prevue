@@ -634,17 +634,17 @@ function k({ tab: e, leaving: n, enter: r, onGone: i, observe: a }) {
 	});
 }
 function Oe({ tabs: e, screen: t, hosts: n }) {
-	let { phrase: r } = de(), { element: i, place: a } = ce(n?.list), [o, s] = (0, w.useState)(null), [c, l] = (0, w.useState)(null), u = n?.rail ?? o, d = n?.empty ?? c, f = (0, w.useRef)(null), p = e ?? ve, m = t !== "focus", [h, g] = (0, w.useState)(p), [_, v] = (0, w.useState)([]);
-	if (h !== p) {
-		let e = new Set(p.map((e) => e.key)), t = h.filter((t) => !e.has(t.key) && !_.some((e) => e.key === t.key));
-		v([..._.filter((t) => !e.has(t.key)), ...t]), g(p);
+	let { phrase: r } = de(), { element: i, place: a } = ce(n?.list), [o, s] = (0, w.useState)(null), [c, l] = (0, w.useState)(null), u = n?.rail ?? o, d = n?.empty ?? c, f = (0, w.useRef)(null), p = e ?? ve, m = t !== "focus", h = (0, w.useRef)(p), [g, _] = (0, w.useState)([]);
+	if (h.current !== p) {
+		let e = new Set(p.map((e) => e.key)), t = h.current.filter((t) => !e.has(t.key) && !g.some((e) => e.key === t.key));
+		(t.length || g.some((t) => e.has(t.key))) && _([...g.filter((t) => !e.has(t.key)), ...t]), h.current = p;
 	}
-	let ee = (e) => v((t) => t.filter((t) => t.key !== e)), S = (0, w.useRef)(!1), C = (0, w.useRef)(null), re = S.current && m && !x.matches && !document.hidden, ie = (0, w.useRef)({
+	let v = (e) => _((t) => t.filter((t) => t.key !== e)), ee = (0, w.useRef)(!1), S = (0, w.useRef)(null), C = ee.current && m && !x.matches && !document.hidden, re = (0, w.useRef)({
 		y: 0,
 		stretch: null,
 		sliding: !1
-	}), ae = (e) => {
-		let t = f.current, n = ie.current;
+	}), ie = (e) => {
+		let t = f.current, n = re.current;
 		if (!t || !i) return;
 		let r = i.querySelector(".rt.active:not(.leaving)");
 		if (t.hidden = !r, !r) return;
@@ -655,20 +655,20 @@ function Oe({ tabs: e, screen: t, hosts: n }) {
 		})).finished.then(() => {
 			n.stretch = null, n.sliding = !1;
 		}, () => {})) : n.stretch && !e && (n.stretch.cancel(), n.stretch = null, n.sliding = !1), n.y = a, t.style.transform = `translateY(${a}px)`;
-	}, oe = (0, w.useRef)(ae);
-	oe.current = ae;
-	let [se] = (0, w.useState)(() => new ResizeObserver(() => oe.current(ie.current.sliding))), le = (e, t) => {
-		e && (t ? se.observe(e) : se.unobserve(e));
+	}, ae = (0, w.useRef)(ie);
+	ae.current = ie;
+	let [oe] = (0, w.useState)(() => new ResizeObserver(() => ae.current(re.current.sliding))), se = (e, t) => {
+		e && (t ? oe.observe(e) : oe.unobserve(e));
 	};
-	(0, w.useEffect)(() => () => se.disconnect(), [se]), (0, w.useEffect)(() => {
+	(0, w.useEffect)(() => () => oe.disconnect(), [oe]), (0, w.useEffect)(() => {
 		u && i && document.fonts?.ready.then(() => O(u, i, !0));
 	}, [u, i]), (0, w.useLayoutEffect)(() => {
 		if (!e || !u || !i) return;
 		u.hidden = !m, n && document.body.classList.toggle("rail-on", m), d && (d.hidden = e.length > 0), O(u, i), ye = e;
 		let t = e.find((e) => e.active);
 		t && pe(t.sourceSet) === "kmp" ? b(_e, () => r("capsule.sharedOnce", { sourceSet: t.sourceSet })) : y(_e);
-		let a = t?.key ?? null, o = S.current && m && a !== C.current && C.current !== null;
-		C.current = a, S.current = m, ae(o);
+		let a = t?.key ?? null, o = ee.current && m && a !== S.current && S.current !== null;
+		S.current = a, ee.current = m, ie(o);
 	}, [
 		e,
 		t,
@@ -676,25 +676,25 @@ function Oe({ tabs: e, screen: t, hosts: n }) {
 		i,
 		d
 	]);
-	let ue = [...p.map((e) => ({
+	let le = [...p.map((e) => ({
 		tab: e,
 		leaving: !1
-	})), ..._.map((e) => ({
+	})), ...g.map((e) => ({
 		tab: e,
 		leaving: !0
-	}))], fe = /* @__PURE__ */ (0, T.jsxs)(T.Fragment, { children: [/* @__PURE__ */ (0, T.jsx)("div", {
+	}))], ue = /* @__PURE__ */ (0, T.jsxs)(T.Fragment, { children: [/* @__PURE__ */ (0, T.jsx)("div", {
 		className: "rail-glider instant",
 		id: "railGlider",
 		ref: f,
 		hidden: !0
-	}), ue.map(({ tab: e, leaving: t }) => /* @__PURE__ */ (0, T.jsx)(k, {
+	}), le.map(({ tab: e, leaving: t }) => /* @__PURE__ */ (0, T.jsx)(k, {
 		tab: e,
 		leaving: t,
-		enter: re,
-		onGone: ee,
-		observe: le
+		enter: C,
+		onGone: v,
+		observe: se
 	}, e.key))] });
-	return n ? a(fe, () => null) : /* @__PURE__ */ (0, T.jsxs)("nav", {
+	return n ? a(ue, () => null) : /* @__PURE__ */ (0, T.jsxs)("nav", {
 		className: "rail",
 		id: "rail",
 		ref: s,
@@ -704,7 +704,7 @@ function Oe({ tabs: e, screen: t, hosts: n }) {
 				className: "rail-h",
 				children: r("rail.title")
 			}),
-			a(fe, (e, t) => /* @__PURE__ */ (0, T.jsx)("div", {
+			a(ue, (e, t) => /* @__PURE__ */ (0, T.jsx)("div", {
 				className: "rail-list",
 				id: "railList",
 				ref: e,
@@ -906,7 +906,7 @@ function ze(e = !Pe, t = !1) {
 		Pe || (n.hidden = !0);
 	}, 220), n.contains(document.activeElement) && document.activeElement.blur(), Fe && Fe.isConnected && Fe.focus({ preventScroll: !0 }), Fe = null), Le?.setAttribute("aria-expanded", String(e));
 }
-function Be({ table: e, logo: t = "prevue.svg", host: n }) {
+var Be = (0, w.memo)(function({ table: e, logo: t = "prevue.svg", host: n }) {
 	let { phrase: r } = de(), { element: i, place: a } = ce(n), o = (0, w.useRef)(null);
 	return (0, w.useLayoutEffect)(() => {
 		if (!i || !o.current) return;
@@ -954,8 +954,7 @@ function Be({ table: e, logo: t = "prevue.svg", host: n }) {
 		hidden: !0,
 		children: t
 	}));
-}
-function Ve({ host: e }) {
+}), Ve = (0, w.memo)(function({ host: e }) {
 	let { phrase: t } = de(), { element: n, place: r } = ce(e);
 	return (0, w.useLayoutEffect)(() => {
 		if (!n) return;
@@ -973,7 +972,7 @@ function Ve({ host: e }) {
 		"aria-expanded": "false",
 		children: t
 	}));
-}
+});
 // src/shortcuts.ts
 function He(e, t) {
 	return [
@@ -9732,8 +9731,7 @@ var Ke = /* @__PURE__ */ C(((e) => {
 		}
 	}
 	n(), t.exports = Je();
-})))();
-function Xe({ content: e, host: t }) {
+})))(), Xe = (0, w.memo)(function({ content: e, host: t }) {
 	let { phrase: n } = de(), { element: r, place: i } = ce(t), a = (0, w.useSyncExternalStore)(ee, g), { error: o, log: s, once: c } = e ?? a, l = !!(o.trim() || s.trim()) || !!c;
 	(0, w.useLayoutEffect)(() => {
 		r?.classList.toggle("on", l);
@@ -9781,7 +9779,7 @@ function Xe({ content: e, host: t }) {
 		role: "status",
 		children: t
 	}));
-}
+});
 // src/components/StaleBanner.tsx
 function Ze({ rows: e, host: t }) {
 	let { daemonText: n } = de(), { element: r, place: i } = ce(t), a = (0, w.useRef)([]);
