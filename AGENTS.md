@@ -60,7 +60,7 @@
 
 ## 개발 위생 — 제품 제약이 아니다
 
-- 검증장은 저장소 안 픽스처 `fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`다. 검증장에 실험 산출물을 남기지 않는다 — 소스를 고쳐 봐야 하면 `.cache/spike/src/` 복사본을 `--watch`로 감시한다. 저장소 밖 개인 체크아웃(nowinandroid 등 — `tools/nfr_bench.py` · `tools/resource_check.py`가 쓴다)은 고쳤다 되돌린다.
+- 검증장은 저장소 안 픽스처 `fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`와, `tools/`의 측정 · 촬영 스크립트가 쓰는 저장소 밖 공개 앱 체크아웃(nowinandroid · kotlinconf-app 등)이다. 검증장에 실험 산출물을 남기지 않는다 — 소스를 고쳐 봐야 하면 `.cache/spike/src/` 복사본을 `--watch`로 감시한다. 저장소 밖 체크아웃은 고쳤다 되돌린다.
 - 같은 대상 체크아웃을 다른 워크트리의 데몬이 이미 보고 있으면(`prevue status`의 `daemons`) `--no-watch`로 띄우고 `reload`로 잰다. 산출물 디렉터리가 대상 경로마다 하나라 저장 한 번에 두 데몬이 같은 PNG를 쓰다 깨진다 — 남의 세션 데몬도 깨운다.
 
 ## 코멘트 컨벤션
