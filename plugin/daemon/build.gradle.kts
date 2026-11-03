@@ -1,27 +1,13 @@
 import java.security.MessageDigest
 import java.time.Duration
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+// 바이트코드 17 고정과 코루틴 컴파일 판은 build-logic 의 convention plugin 이 모든 모듈에 똑같이 건다(D-140).
+// Kotlin 플러그인은 build-logic 이 컴파일 때 본 판과 같은 것을 여기서 클래스패스에 올린다.
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-}
-
-// 바이트코드는 17로 고정하고 컴파일은 Gradle을 돌리는 JDK(21+)로 한다 — 툴체인을 걸면 JDK 17이 따로 깔려 있어야 해서
-// Android Studio의 JBR만 있는 맥에서 setup이 멈춘다(#22). 런타임만 21+가 필요하다 — layoutlib 17.0.x가 Java 21 바이트코드다.
-// release · jdk-release는 API도 17로 묶는다 — Gradle을 돌린 JDK가 데몬의 JDK보다 새로워도 데몬에 없는 API를 부르지 않는다.
-// 층 모듈(:entity · :domain · :adapter)도 같은 바이트코드로 굽는다.
-allprojects {
-    tasks.withType<JavaCompile>().configureEach {
-        options.release = 17
-    }
-    tasks.withType<KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-            freeCompilerArgs.add("-Xjdk-release=17")
-        }
-    }
+    alias(libs.plugins.kotlin.jvm) apply false
+    id("prevue.coroutines")
 }
 
 val layers = listOf(":entity", ":domain", ":adapter").map { project(it) }
@@ -68,12 +54,10 @@ dependencies {
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.renderer)
     testImplementation(libs.layoutlib)
-    // StateFlow·SharedFlow(D-42). 실행 때는 렌더러 jar 가 품은 kotlinx.coroutines 를 쓴다 — 따로 실으면 두 벌이 되어
-    // 클래스패스 순서가 렌더러 안의 코루틴을 바꿔 끼운다. 컴파일만 같은 계열의 판에 댄다.
-    compileOnly(libs.kotlinx.coroutines.renderer)
-    testCompileOnly(libs.kotlinx.coroutines.renderer)
     // 가상 시계(runTest)만 싣는다 — 코어는 위와 같은 이유로 렌더러 jar 의 것을 쓴다.
     testImplementation(libs.kotlinx.coroutines.test) { isTransitive = false }
+    // 본체의 코루틴 판(prevue.coroutines)을 테스트 컴파일에도 댄다 — 테스트는 루트에만 있다.
+    testCompileOnly(libs.kotlinx.coroutines.renderer)
     // Flow 방출 단언. 코루틴 core 1.9.0 을 끌고 오면 렌더러 jar 의 것과 두 벌이 되고 오프라인 캐시에 루트 모듈도 없다 — 끊는다.
     testImplementation(libs.turbine) { isTransitive = false }
 

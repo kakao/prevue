@@ -23,7 +23,9 @@ import viewer  # noqa: E402
 PLUGIN = "plugin/daemon"
 # 층마다 모듈 하나(D-139) — 조립 · 브리지는 루트(plugin/daemon)에 남는다
 LAYERS = ("entity", "domain", "adapter")
-ROOTS = ("plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/") + tuple("plugin/daemon/%s/src/main/kotlin/" % m for m in LAYERS)
+# build-logic(D-140)의 convention plugin 도 제품 소스다 — 같은 규칙으로 본다. detekt 만 싣지 않는다(detekt.init.gradle.kts)
+ROOTS = ("plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
+    "plugin/daemon/%s/src/main/kotlin/" % m for m in LAYERS)
 # 옮기기 전의 자리 — plugin/daemon/ 앞(D-136)과 plugin/ 앞(D-123). 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
 OLD_ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
