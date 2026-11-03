@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
  * 엔진은 액터로만 부른다(D-74). 엔진의 일반 필드가 안전한 것은 스레드가 하나라서가 아니라 호출이 `EngineActor` 채널로 줄을 서서다 —
  * 통합 테스트는 전용 스레드 없이(Dispatchers.Default) 액터를 돌려도 통과한다. 그래서 줄 밖에서 엔진 포트를 부르는 길이 생기면 여기서 막는다.
  * 줄 밖에서 허락하는 것은 status 관측값(렌더가 멈춰도 답해야 한다)과 조립 때 한 번 거는 `protect`뿐이다.
- * 구체 엔진(`RenderEngine`)은 조립(`Main`)만 쥐고, 조립 때 읽는 것도 정해 둔다. 리소스 덧층(`ResourceValues`)은 렌더 스레드와 저장이
+ * 구체 엔진(`RenderEngine`)은 조립(`Infra`)만 쥐고, 조립 때 읽는 것도 정해 둔다. 리소스 덧층(`ResourceValues`)은 렌더 스레드와 저장이
  * 만나는 스레드 경계라 이 규칙 밖이다 — 그쪽은 스냅숏(StateFlow) 하나를 바꿔 끼운다.
  * 이 검사는 철자를 센다 — 별칭(`val e = ports.engine`)이나 `with(engine)`은 못 본다.
  */
