@@ -4,7 +4,7 @@
 개발자와 코딩 에이전트가 **같은 프리뷰 한 장을 보면서** UI를 고치는 것이 목표다.
 
 이 파일은 이 저장소에서 일할 때의 **규칙**만 갖는다. 왜·무엇·어떻게는 볼트 문서가 소유하고, 여기에 요약을 복사하지 않는다.
-볼트·검증장의 위치는 사람마다 달라 개인 파일에 둔다 — Claude Code는 `CLAUDE.local.md`(gitignore, `.worktreeinclude`로 워크트리에 복사된다), Codex는 `~/.codex/AGENTS.md`.
+볼트의 위치는 사람마다 달라 사용자 레벨 지시 파일에 둔다 — Claude Code는 `~/.claude/CLAUDE.md`, Codex는 `~/.codex/AGENTS.md`.
 
 ## 문서 — 시작 전에 읽는 순서
 
@@ -60,7 +60,7 @@
 
 ## 개발 위생 — 제품 제약이 아니다
 
-- 검증장(개인 파일에 적은 대상 저장소 체크아웃들)에 실험 산출물을 남기지 않는다. 소스를 고쳐 봐야 하면 `.cache/spike/src/` 복사본을 `--watch`로 감시한다. 개인 체크아웃(nowinandroid 등)은 고쳤다 되돌린다.
+- 검증장은 저장소 안 픽스처 `fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`다. 검증장에 실험 산출물을 남기지 않는다 — 소스를 고쳐 봐야 하면 `.cache/spike/src/` 복사본을 `--watch`로 감시한다. 저장소 밖 개인 체크아웃(nowinandroid 등 — `tools/nfr_bench.py` · `tools/resource_check.py`가 쓴다)은 고쳤다 되돌린다.
 - 같은 대상 체크아웃을 다른 워크트리의 데몬이 이미 보고 있으면(`prevue status`의 `daemons`) `--no-watch`로 띄우고 `reload`로 잰다. 산출물 디렉터리가 대상 경로마다 하나라 저장 한 번에 두 데몬이 같은 PNG를 쓰다 깨진다 — 남의 세션 데몬도 깨운다.
 
 ## 코멘트 컨벤션
