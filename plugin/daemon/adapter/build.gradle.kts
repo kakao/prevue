@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     api(project(":domain"))
-    // 렌더러 jar 안의 옛 kotlin-reflect 보다 앞에 둔다 — 루트의 같은 줄과 같은 이유다.
+    // 렌더러 jar 안의 옛 kotlin-reflect 보다 앞에 둔다 — :app 의 같은 줄과 같은 이유다.
     implementation(libs.kotlin.reflect)
     implementation(libs.renderer)
     implementation(libs.layoutlib)

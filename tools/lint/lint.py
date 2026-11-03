@@ -21,17 +21,18 @@ import slop  # noqa: E402
 import viewer  # noqa: E402
 
 PLUGIN = "plugin/daemon"
-# 층마다 모듈 하나(D-139) — 조립 · 브리지는 루트(plugin/daemon)에 남는다
+# 층마다 모듈 하나(D-139), 조립 · 브리지는 :app(D-140) — 루트(plugin/daemon)에는 빌드 파일만 있다
 LAYERS = ("entity", "domain", "adapter")
 # build-logic(D-140)의 convention plugin 도 제품 소스다 — 같은 규칙으로 본다. detekt 만 싣지 않는다(detekt.init.gradle.kts)
-ROOTS = ("plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
+ROOTS = ("plugin/daemon/app/src/main/kotlin/", "plugin/daemon/app/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
     "plugin/daemon/%s/src/main/kotlin/" % m for m in LAYERS)
-# 옮기기 전의 자리 — plugin/daemon/ 앞(D-136)과 plugin/ 앞(D-123). 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
-OLD_ROOTS = ("plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
+# 옮기기 전의 자리 — :app 앞(D-140)과 plugin/daemon/ 앞(D-136), plugin/ 앞(D-123). 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
+OLD_ROOTS = ("plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/",
+             "plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
-# 층 모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<모듈> 로 둔다. 보고서 속 경로는 모두 루트(PLUGIN) 기준이다
-DETEKT_REPORTS = tuple("%s/%s/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
+# 모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<모듈> 로 둔다. 소스가 없는 루트의 보고서는 기대하지 않는다
+DETEKT_REPORTS = tuple("%s/%s/app/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
     "%s/%s/%s/reports/detekt/main.xml" % (PLUGIN, LINT_BUILD, m) for m in LAYERS)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))

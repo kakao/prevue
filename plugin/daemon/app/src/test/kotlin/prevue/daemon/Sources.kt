@@ -2,10 +2,10 @@ package prevue.daemon
 
 import java.io.File
 
-/** 본체 소스의 자리 — 층마다 모듈 하나(D-139), 조립은 루트다. 규칙 테스트는 모두 여기서 읽는다. */
+/** 본체 소스의 자리 — 층마다 모듈 하나(D-139), 조립은 :app(D-140)이다. 테스트는 plugin/daemon/app 에서 돌아 "." 이 :app 이다. 규칙 테스트는 모두 여기서 읽는다. */
 object Sources {
-    val kotlinRoots: List<File> = listOf("entity", "domain", "adapter", ".").map { File(it, "src/main/kotlin") }
-    val javaRoots: List<File> = listOf("entity", "domain", "adapter", ".").map { File(it, "src/main/java") }
+    val kotlinRoots: List<File> = listOf("../entity", "../domain", "../adapter", ".").map { File(it, "src/main/kotlin") }
+    val javaRoots: List<File> = listOf("../entity", "../domain", "../adapter", ".").map { File(it, "src/main/java") }
 
     /** `src/main/kotlin` (· `java`) 아래 상대 경로 → 내용. 모듈이 갈라도 패키지 경로는 하나로 모인다. */
     fun under(roots: List<File>, vararg ext: String): Map<String, String> {

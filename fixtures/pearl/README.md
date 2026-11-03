@@ -21,6 +21,6 @@ Prevue 통합 테스트(`plugin/daemon/`에서 `./gradlew integrationTest`)가 �
 
 KMP 복제본 [`fixtures/pearl-kmp`](../pearl-kmp/README.md)이 같은 코드를 commonMain으로 갖는다 — 여기를 고치면 그쪽도 같이 본다.
 
-테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `plugin/daemon/src/integrationTest`와 `tests/viewer`도 같이 본다.
+테스트가 기대는 값(카드 수 · 음료 수 · 문자열 · 치수 · 겨냥하는 줄의 표시 주석 · 칩 글자 줄 번호)을 바꾸면 `plugin/daemon/app/src/integrationTest`와 `tests/viewer`도 같이 본다.
 
 `tests/viewer`의 데몬 테스트(tabs · workspace · content · resize · preparation)는 `AdaptivePreviews.kt`로 띄운 이 체크아웃의 데몬 하나에 연달아 돌려도 된다(`tests/viewer/daemon.mjs`).
