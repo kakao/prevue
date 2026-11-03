@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "stories", ".storybook", "legacy/js/main.d.ts"]
+  "include": ["src", "stories", ".storybook", "legacy/js/*.d.ts"]
 }

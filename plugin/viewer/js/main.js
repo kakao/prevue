@@ -9,16 +9,11 @@ import { renderFocus, renarrow, fitStage, focusImage, syncHistory, frameOf, morp
 import { renderError, setStatus, flash } from "./capsule.js";
 import { transition, transitioning } from "./motion.js";
 import { renderQuickOpen, previewFilesChanged, quickOpenOffline } from "./quickopen.js";
-import { renderTabs } from "./tabs.js";
-import { renderHeader } from "./header.js";
 import { prepareViewer } from "./preparation.js";
-// 단축키도 이 그래프로 싣는다 — 진입 모듈이 둘이면 WebKit 은 strings.js 의 최상위 await 를 기다리지 않고 지나간다.
-import "./keys.js";
 
 const preparation = prepareViewer();
 
-const boardView = $("boardView"), focusView = $("focusView"), vacantView = $("vacantView"), vacantMsg = $("vacantMsg"), staleBar = $("staleBar"), staleRows = $("staleRows");
-const bar = $("bar"), status = $("status"), statusText = $("statusText"), note = $("note"), timing = $("timing"), who = $("who"), settle = $("settle");
+const boardView = $("boardView"), focusView = $("focusView"), vacantView = $("vacantView"), vacantMsg = $("vacantMsg");
 
 
 /*
@@ -26,51 +21,21 @@ const bar = $("bar"), status = $("status"), statusText = $("statusText"), note =
  * 그 버튼이 가져갔다(도움말이 다시 열렸다). 레일의 줄 · 닫기 · 파일 열기도 같다. Safari 는 처음부터 주지 않는다. 키보드(Tab → Enter · Space)는 그대로다.
  * 빠른 열기 줄과 같은 수법이고, 글자를 고르는 자리(폴더 경로)는 버튼이 아니라 그대로 고를 수 있다.
  */
-for (const host of [bar, $("rail"), $("panel"), $("strip"), $("chooser")]) {
+for (const host of [$("bar"), $("rail"), $("panel"), $("strip"), $("chooser")]) {
   host.addEventListener("mousedown", e => { if (e.button === 0 && e.target.closest("button, [role=button]")) e.preventDefault(); });
 }
 
 /**
- * 툴바의 상태 — 점 하나와 한 줄. 일하는 중이면 무엇을 하는지(데몬의 진행 문장 · 보드가 다 찰 때까지 `12/25`), 아니면 첫 장 시간.
- * 시간 내역 · 누가 · 언제는 호버해야 보인다. 주황은 시간 줄 하나라도 그 일의 기준을 넘었을 때다(D-63).
+ * 크기를 바꾸는 동안 툴바 알약을 그대로 둔다 — 새 크기의 스트림이 붙기 전까지 오는 상태(바쁨 · 옛 스트림)는 바뀌는 중의 것이다.
+ * 알약은 React 의 StatusPill 이 그리고, 여기서는 그 상태를 그릴지만 정한다.
  */
 let resizeStatus = null;
-function renderStatus(s) {
+function statusHeld(s) {
   if (resizeStatus && !s.error && s.screen === "focus" && s.focus?.previewId === resizeStatus.id) {
-    if (s.busy || !s.focus.streamUrl || (s.focus.streamUrl === resizeStatus.stream && s.focus.imageUrl === resizeStatus.image)) return;
+    if (s.busy || !s.focus.streamUrl || (s.focus.streamUrl === resizeStatus.stream && s.focus.imageUrl === resizeStatus.image)) return true;
   }
   resizeStatus = null;
-  const head = s.timing.find(p => p.head);
-  const over = s.timing.some(p => p.over);
-  const failed = !!s.error || s.stale.length > 0 || (s.board && s.board.groups.some(g => g.failed));
-  // 모양이 뜻이다 — ✓ 끝 · 도는 표시 그리는 중 · ! 실패. 아직 그린 적이 없으면(시작 화면) 아무것도 없다.
-  status.dataset.state = s.busy ? "busy" : failed ? "error" : over ? "over" : head ? "idle" : "none";
-  statusText.textContent = s.busy ? daemonText(s.boardNote) : head ? head.text : "";
-  bar.classList.toggle("busy", s.busy);
-  note.textContent = daemonText(s.boardNote);
-  who.textContent = daemonText(s.who);
-  settle.textContent = daemonText(s.settle);
-  // 포트는 헤더에서 뺀 개발 정보 — 필요한 사람만 호버로 본다(B4). 저장소 경로는 부제의 폴더 칸이 갖는다(D-60).
-  $("where").textContent = location.host;
-  timing.replaceChildren(...s.timing.flatMap(p => {
-    const k = document.createElement("span"), v = document.createElement("b");
-    k.textContent = daemonText(p.label); v.textContent = p.text;
-    if (p.over) { k.className = "over"; v.className = "over"; }
-    return [k, v];
-  }));
-}
-
-// 그림이 소스보다 옛것이 된 이유(데몬의 stale). 이유마다 손쓸 방법이 달라 합치지 않고 그대로 보인다.
-function renderStale(rows) {
-  staleBar.classList.toggle("on", rows.length > 0);
-  document.body.classList.toggle("stale", rows.length > 0);
-  if (!rows.length) return;                  // 접히는 동안 옛 문구를 남겨 둔다 — 비우면 띠가 빈 채로 접힌다
-  staleRows.replaceChildren(...rows.map(r => {
-    const row = document.createElement("div"), head = document.createElement("span"), why = document.createElement("span");
-    row.className = "row"; head.className = "head"; why.className = "why";
-    head.textContent = daemonText(r.head); why.textContent = r.why.map(daemonText).join(" · ");
-    row.append(head, why); return row;
-  }));
+  return false;
 }
 
 /**
@@ -91,10 +56,6 @@ export function drawLegacy(s) {
   focusView.hidden = s.screen !== "focus";
   vacantView.hidden = s.screen !== "vacant";
   vacantMsg.textContent = daemonText(s.vacant);
-  renderHeader(s);
-  renderTabs(s);
-  renderStatus(s);
-  renderStale(s.stale);
   $("buildNotice").hidden = !s.buildPending;
   renderBoard(s);
   renderQuickOpen(s);
@@ -109,7 +70,7 @@ export function drawLegacy(s) {
   preparation?.update(s);
 }
 
-let draw = drawLegacy;
+let draw = s => drawLegacy(s);
 
 const tabOf = st => { const t = (st.tabs || []).find(t => t.active); return t ? t.key : null; };
 /** 옛 레일에서 본 방향 — 아래면 1. 새로 연 탭은 맨 아래에 붙고, 닫혀서 옮긴 것도 옛 레일의 자리로 견준다. */
@@ -174,7 +135,8 @@ const loadProjectFiles = () => {
 
 // 끊겼다 다시 붙으면 이전 화면을 살리지 않고 페이지를 새로 연다 — 화면은 데몬 상태가 처음부터 그린다.
 let lost = false;
-const lostView = () => { preparation?.fail(phrase("prep.lost")); setStatus(phrase("status.lost"), "error"); status.dataset.state = "error"; statusText.textContent = phrase("status.lost.short"); store.st = null; quickOpenOffline(); };
+let connection = () => {};
+const lostView = () => { preparation?.fail(phrase("prep.lost")); setStatus(phrase("status.lost"), "error"); connection("lost"); store.st = null; quickOpenOffline(); };
 
 // 데몬이 다시 뜬다(warmup · 스스로 다시 띄움, D-112). 끊김이 아니라 다시 시작이다 — 보던 화면을 그대로 두고,
 // 같은 자리에 뜬 새 데몬이 그림을 다 그리면 그때 새로 연다. 새 데몬은 상태 번호가 아니라 boot 로 알아본다 — 번호는 데몬마다 0부터 센다.
@@ -183,7 +145,7 @@ let restarting = false, restartTimer = 0, reattachTimer = 0, boot = null;
 const settled = s => !s.busy && !(s.board?.groups || []).some(g => g.cards.some(c => !c.rendered));
 function restart() {
   restarting = true;
-  status.dataset.state = "busy"; statusText.textContent = phrase("status.restarting"); bar.classList.add("busy");
+  connection("restarting");
   clearTimeout(restartTimer);
   restartTimer = setTimeout(lostView, RESTART_WAIT_MS);
 }
@@ -200,8 +162,10 @@ function receive(s) {
   apply(s);
 }
 
-export function startViewer(render) {
-  draw = render;
+/** render 는 상태와 알약을 그대로 둘지를 받는다. connection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다. */
+export function startViewer(render, onConnection) {
+  draw = s => render(s, statusHeld(s));
+  connection = onConnection;
   connect({
     open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },
     state: receive,
