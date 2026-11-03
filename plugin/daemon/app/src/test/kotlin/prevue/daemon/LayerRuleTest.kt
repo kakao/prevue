@@ -50,6 +50,9 @@ class LayerRuleTest {
             "adapter/render/F.kt" to "package prevue.adapter.render\nimport prevue.adapter.http.Server\n",
             "adapter/browser/G.kt" to "package prevue.adapter.browser\nimport prevue.daemon.Main\n",
             // ① 입구는 기술 어댑터를 모른다.
+            "adapter/entry/P2.kt" to "package prevue.adapter.entry\nimport prevue.adapter.render.RenderEngine\n",
+            "adapter/entry/P3.kt" to "package prevue.adapter.entry\nimport prevue.domain.runtime.Workspace\n",
+            "adapter/cli/P4.kt" to "package prevue.adapter.cli\nimport prevue.adapter.entry.EntryPoints\n",
             "adapter/http/P.kt" to "package prevue.adapter.http\nimport prevue.adapter.render.RenderEngine\n",
             // ② 기술 어댑터는 domain 중 port 만 안다.
             "adapter/render/Q.kt" to "package prevue.adapter.render\nimport prevue.domain.model.Status\n",
@@ -68,6 +71,7 @@ class LayerRuleTest {
             "entity/Z2.kt" to "package prevue.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
             "domain/Z3.kt" to "package prevue.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
+            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.UseCases\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliHandler\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
             "adapter/cli/H.kt" to "package prevue.adapter.cli\nimport prevue.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.entity.Picked\n",
             "domain/I.kt" to "package prevue.domain\nimport prevue.entity.PreviewSpec\nimport prevue.domain.port.Clock\nimport prevue.domain.runtime.Workspace\n",
             "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
@@ -96,7 +100,7 @@ class LayerRuleTest {
         )
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
-                "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
+                "adapter/entry/P2.kt", "adapter/entry/P3.kt", "adapter/cli/P4.kt", "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
                 "domain/Y2.kt", "domain/L2.kt", "domain/Z6.kt", "domain/Z7.kt", "entity/Z8.kt", "domain/Z9.kt", "domain/Z10.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
                 "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
@@ -106,7 +110,7 @@ class LayerRuleTest {
 /** 파일 위치(층)와 그 파일이 가리키는 데몬 패키지(`prevue.entity` · `prevue.domain` · `prevue.adapter` 와 조립 `prevue.daemon`)를 대조한다. */
 object LayerRule {
     /** 유스케이스를 부르는 쪽. cli 와 browser 는 http 만 알고, http 와 hotswap 은 다른 입구를 모른다. 기술 어댑터는 입구를 모른다. */
-    val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap")
+    val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap", "entry")
     /** domain 루트(유스케이스) 밖의 하위 패키지. */
     private val DOMAIN_PARTS = setOf("runtime", "policy", "model", "port")
 
@@ -202,6 +206,7 @@ object LayerRule {
 
     private fun adapterAllowed(from: String, to: String?): Boolean = when {
         to == null || to == from -> true
+        from == "entry" -> to in ENTRY_POINTS && to != "entry"
         from in ENTRY_POINTS -> to == "http" && from in setOf("cli", "browser")
         else -> to !in ENTRY_POINTS
     }

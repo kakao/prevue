@@ -6,19 +6,19 @@ import prevue.entity.phrase
 import kotlin.math.roundToInt
 
 /** 카드 이름표의 한 칸(이름 아래, 이름이 없으면 그 자리) — 뷰어는 [kind]를 아이콘으로 바꾸고 [text]를 옆에 둔다. */
-data class CardSpec(val kind: String, val text: Phrase) {
+internal data class CardSpec(val kind: String, val text: Phrase) {
     constructor(kind: String, text: String) : this(kind, Verbatim(text))
 }
 
 /** 그림의 dp 크기 — 보드의 묶음 배율(D-62)을 재는 입력. [guess]면 밀도를 몰라 렌더러 기본 420 으로 짐작한 크기다. */
-data class DpSize(val width: Double?, val height: Double?, val guess: Boolean)
+internal data class DpSize(val width: Double?, val height: Double?, val guess: Boolean)
 
 /**
  * `@Preview` 인자를 사람이 읽을 칸으로 옮긴다. `device=spec:width=1280dp,…` 같은 소스 표기는 그대로 두면 읽히지 않는다.
  * 뜻이 있는 것만 칸이 되고(크기 · 다크 · 글자 배율 · 로케일 · API · 시스템 UI), 나머지(`showBackground` 같은)는 인자 툴팁에만 남는다.
  * 순서는 고정이다 — 카드마다 칸 순서가 바뀌면 줄을 맞춰 읽을 수 없다.
  */
-object CardSpecs {
+internal object CardSpecs {
     /** 렌더러가 dpi 를 받지 않았을 때 쓰는 밀도. 411×891dp 가 1079×2339px 로 나온다(×2.625). */
     private const val DEFAULT_DPI = 420.0
     private const val UI_MODE_NIGHT_MASK = 0x30

@@ -29,7 +29,7 @@ import prevue.domain.port.Watchers
 import prevue.entity.ModuleGraph
 import prevue.entity.ModuleInfo
 
-class Infra(private val config: InfraConfig, private val scope: CoroutineScope, private val log: (String) -> Unit) : AutoCloseable {
+public class Infra(private val config: InfraConfig, private val scope: CoroutineScope, private val log: (String) -> Unit) : AutoCloseable {
     private val resources = ArrayDeque<AutoCloseable>()
     private val home = initialSpec(config.classpath)
     private val app = config.resourcesFrom?.let(::initialSpec)
@@ -40,14 +40,14 @@ class Infra(private val config: InfraConfig, private val scope: CoroutineScope, 
     private val engine: BootingEngine
     private val identity = (app ?: home).let { AppIdentity(it.manifests, it.resourceDirs.map(::File)) }
 
-    val graph: ModuleGraph
-    val module: ModuleInfo
-    val ports: Ports
-    val watchers: Watchers
-    val watchRoots: List<File>
-    val outDir: File get() = paths.out
-    val appName: String? get() = identity.name
-    val appIcon: ByteArray? get() = identity.icon
+    public val graph: ModuleGraph
+    public val module: ModuleInfo
+    public val ports: Ports
+    public val watchers: Watchers
+    public val watchRoots: List<File>
+    public val outDir: File get() = paths.out
+    public val appName: String? get() = identity.name
+    public val appIcon: ByteArray? get() = identity.icon
 
     init {
         try {
@@ -85,17 +85,17 @@ class Infra(private val config: InfraConfig, private val scope: CoroutineScope, 
 
     private fun <T : AutoCloseable> own(resource: T): T = resource.also { resources.addLast(it) }
 
-    override fun close() {
+    public override fun close(): Unit {
         while (resources.isNotEmpty()) {
             val resource = resources.removeLast()
             try { resource.close() } catch (e: Exception) { log("${resource.javaClass.simpleName} 정리 실패: $e") }
         }
     }
 
-    fun branch(): String? = GitHead.read(spec.repoRoot)
-    fun reveal() = Reveal.open(spec.repoRoot)
+    public fun branch(): String? = GitHead.read(spec.repoRoot)
+    public fun reveal(): Unit = Reveal.open(spec.repoRoot)
 
-    suspend fun lost(): Pair<String, File?> {
+    public suspend fun lost(): Pair<String, File?> {
         val lost = engine.await().lost.filterNotNull().first()
         return lost.reason.text to lost.preview.file
     }
@@ -129,7 +129,7 @@ class Infra(private val config: InfraConfig, private val scope: CoroutineScope, 
         )
     }
 
-    fun warmUp(file: String?, after: Job?) {
+    public fun warmUp(file: String?, after: Job?): Unit {
         scope.launch(CoroutineName("prevue-warmup")) {
             after?.join()
             val warmFile = file?.substringBefore('#')?.let { File(it) }?.takeIf { it.isFile }

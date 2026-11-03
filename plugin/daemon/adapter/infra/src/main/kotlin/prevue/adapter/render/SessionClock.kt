@@ -1,7 +1,7 @@
 package prevue.adapter.render
 
 // 외부: layoutlib 17 세션 시계는 직전 setNanosTime 과의 델타를 누적한다 — 같은 값을 두 번 넘기면 시계가 멈춘다
-class SessionClock {
+internal class SessionClock {
     private var lastReal = System.nanoTime()
     private var last = START
     private var stepped = false

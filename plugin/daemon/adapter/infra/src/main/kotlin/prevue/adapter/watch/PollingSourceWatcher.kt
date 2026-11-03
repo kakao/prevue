@@ -17,7 +17,7 @@ import prevue.domain.port.SourceChange
 import prevue.domain.port.SourceWatcher
 
 // 외부: macOS 의 WatchService 는 폴링 구현이고 감도가 초 단위다
-class PollingSourceWatcher(
+internal class PollingSourceWatcher(
     private val roots: List<File>,
     private val extension: String = "kt",
     private val context: CoroutineContext = Dispatchers.IO,

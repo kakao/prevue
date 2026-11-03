@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
+import prevue.adapter.entry.EntryPoints
+import prevue.adapter.entry.PrevueCheckout
 import prevue.adapter.compile.HotCompiler
 import prevue.adapter.dump.ClasspathSpec
 import prevue.adapter.render.RenderEngine

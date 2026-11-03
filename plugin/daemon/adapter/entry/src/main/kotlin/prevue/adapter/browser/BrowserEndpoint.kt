@@ -27,7 +27,7 @@ import prevue.adapter.http.HttpEndpoint
 import prevue.adapter.http.body
 import prevue.adapter.http.json
 
-class BrowserEndpoint(
+internal class BrowserEndpoint(
     private val presenter: BrowserPresenter,
     private val frames: FrameStreamer,
     private val scope: CoroutineScope,

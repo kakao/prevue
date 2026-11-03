@@ -7,7 +7,7 @@ import prevue.json.map
 import prevue.json.string
 import prevue.json.strings
 
-class DumpPaths(
+internal class DumpPaths(
     val classPath: List<String>,
     val projectClassPath: List<String>,
     val compileClassPath: List<String>,
@@ -18,7 +18,7 @@ class DumpPaths(
     val layout: RepoLayout = RepoLayout.UNKNOWN,
 )
 
-class RepoLayout(val root: String?, val moduleDirs: Map<String, String>) {
+internal class RepoLayout(val root: String?, val moduleDirs: Map<String, String>) {
     operator fun plus(other: RepoLayout) = RepoLayout(root ?: other.root, other.moduleDirs + moduleDirs)
 
     companion object {
@@ -26,7 +26,7 @@ class RepoLayout(val root: String?, val moduleDirs: Map<String, String>) {
     }
 }
 
-class Derivation private constructor(
+internal class Derivation private constructor(
     internal val compileOwnClassPath: List<String>?,
     val borrowedFrom: String?,
     val borrowedCount: Int,
@@ -41,7 +41,7 @@ class Derivation private constructor(
     }
 }
 
-class ClasspathSpec(
+internal class ClasspathSpec(
     val file: File,
     val project: String,
     val variant: String,

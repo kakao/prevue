@@ -32,9 +32,8 @@ import prevue.domain.port.LiveSession as SessionPort
 import prevue.domain.port.LiveSessionFactory
 import prevue.domain.port.PreviewRenderer
 import prevue.domain.port.RenderOutput
-import prevue.render.Shim
 
-class RenderEngine(
+internal class RenderEngine(
     private val spec: ClasspathSpec,
     private val layoutlibDir: File,
     override val outDir: File,

@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 /**
  * HTTP 껍데기 — 소켓 · 입구 고르기 · 정적 파일 · 활동 시각만 갖는다. 무엇을 할지는 입구([CliEndpoint] · [BrowserEndpoint])가 정한다.
  */
-class Server(
+internal class Server(
     private val port: Int,
     private val endpoints: List<HttpEndpoint>,
     viewerDir: File,

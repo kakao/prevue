@@ -41,7 +41,7 @@ import prevue.domain.model.VacantTab
 import prevue.domain.model.WorkspaceEvent
 import prevue.domain.UseCases
 
-class BrowserPresenter(
+internal class BrowserPresenter(
     private val uc: UseCases,
     private val scope: CoroutineScope,
     private val readBranch: (() -> String?)? = null,

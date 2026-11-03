@@ -56,13 +56,13 @@ object PearlFixture {
     fun layoutlib(): File? = env("PREVUE_LAYOUTLIB")?.takeIf { File(it, "data").isDirectory }
 
     /** 데몬과 같은 상주 컴파일러 — 저장을 진짜로 컴파일한다. [overlay]는 렌더 클래스패스 앞에 둔 그 자리다. */
-    fun hotCompiler(home: ClasspathSpec, overlay: File): HotCompiler {
+    internal fun hotCompiler(home: ClasspathSpec, overlay: File): HotCompiler {
         val jars = CompilerJars.find(env("PREVUE_COMPILER")!!)
         return HotCompiler({ home }, jars.jars, env("PREVUE_BRIDGE")!!, jars.composePlugin,
             AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"))
     }
 
-    fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(
+    internal fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(
         home.file, layoutlib()!!, env("PREVUE_COMPILER")!!, env("PREVUE_BRIDGE")!!, 8791,
         resourcesFrom = app?.file, cache = cache, preload = false,
         androidJar = AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)),
@@ -86,7 +86,7 @@ object PearlFixture {
     fun available(): Boolean = board?.isFile == true && layoutlib() != null && sdk != null && env("PREVUE_COMPILER")?.isDirectory == true
 
     /** `:feature:pearl` 덤프와 리소스를 빌릴 `:app` 덤프 — Gradle 한 번. */
-    fun warmup(): Pair<ClasspathSpec, ClasspathSpec> {
+    internal fun warmup(): Pair<ClasspathSpec, ClasspathSpec> {
         val json = warmupJson(board!!, "--variant", "debug", "--resources-from", ":app")
         fun field(name: String) = Regex("\"$name\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("warmup 이 덤프를 뜨지 못했다: $json")
         return ClasspathSpec.load(File(field("classpath"))) to ClasspathSpec.load(File(field("resourcesClasspath")))

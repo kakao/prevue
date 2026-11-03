@@ -3,7 +3,7 @@ package prevue.adapter.source
 import java.io.File
 import prevue.entity.PreviewSpec
 
-object PreviewLocator {
+internal object PreviewLocator {
     private val pkgRe = Regex("""^\s*package\s+([\w.]+)""", RegexOption.MULTILINE)
     private val jvmNameRe = Regex("""@file:JvmName\("([^"]+)"\)""")
     private val importRe = Regex("""^\s*import\s+([\w.]+)(?:\s+as\s+(\w+))?""", RegexOption.MULTILINE)

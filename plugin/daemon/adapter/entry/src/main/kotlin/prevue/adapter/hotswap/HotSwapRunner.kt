@@ -8,7 +8,7 @@ import kotlinx.coroutines.launch
 import prevue.adapter.hotswap.HotSwapLog.line
 import prevue.domain.UseCases
 
-class HotSwapRunner(private val uc: UseCases, private val scope: CoroutineScope) {
+internal class HotSwapRunner(private val uc: UseCases, private val scope: CoroutineScope) {
     private val _logs = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val logs: SharedFlow<String> = _logs
 

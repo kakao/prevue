@@ -7,6 +7,9 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import prevue.adapter.entry.EntryPoints
+import prevue.adapter.entry.PrevueCheckout
+import prevue.adapter.entry.TargetRepo
 import prevue.adapter.infra.Infra
 import prevue.adapter.infra.InfraConfig
 import prevue.domain.UseCases

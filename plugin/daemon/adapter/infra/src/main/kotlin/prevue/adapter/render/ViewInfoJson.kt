@@ -5,7 +5,7 @@ import prevue.entity.ViewNode
 import prevue.json.map
 
 /** layoutlib ViewInfo와 ComposeViewAdapter의 Compose 레벨 ViewInfo를 뷰어가 읽는 JSON 구조로 옮긴다. */
-object ViewInfoJson {
+internal object ViewInfoJson {
     /** layoutlib 트리. 안드로이드 View 경계만 있고 file:line은 없다. */
     fun layoutlib(vi: ViewInfo): Map<String, Any?> = mapOf(
         "className" to (vi.className ?: ""),

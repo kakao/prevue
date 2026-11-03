@@ -24,15 +24,15 @@ import prevue.domain.model.TypeResult
 import prevue.domain.model.WaitResult
 import prevue.adapter.http.artifactUrl
 
-fun Shot.toJson(): Map<String, Any?> = out.toJson() + mapOf(
+internal fun Shot.toJson(): Map<String, Any?> = out.toJson() + mapOf(
     "compile" to compile?.toJson(), "totalMs" to totalMs, "by" to by,
     "imageUrl" to artifactUrl(out.image, artifactRevision), "treeUrl" to artifactUrl(out.tree, artifactRevision),
 )
 
-fun SaveTiming.toJson(): Map<String, Any?> = mapOf("detectMs" to detectMs, "waitMs" to waitMs)
+internal fun SaveTiming.toJson(): Map<String, Any?> = mapOf("detectMs" to detectMs, "waitMs" to waitMs)
 
 /** 덧붙임은 그 자리에서만 싣는다 — FR-5 렌더에만 `atMs`, 터치에만 `frames`, 감시가 부른 저장에만 감지·대기. */
-fun ShowResult.toJson(): Map<String, Any?> = shot.toJson() +
+internal fun ShowResult.toJson(): Map<String, Any?> = shot.toJson() +
     present("atMs" to atMs, "frames" to frames, "settled" to settled) +
     (timing?.toJson() ?: emptyMap()) +
     present(
@@ -44,19 +44,19 @@ fun ShowResult.toJson(): Map<String, Any?> = shot.toJson() +
 private fun present(vararg pairs: Pair<String, Any?>): Map<String, Any?> = pairs.filter { it.second != null }.toMap()
 
 // 정착은 컴파일과 무관해 `compile` 키가 없다.
-fun Settled.toJson(): Map<String, Any?> = shot.out.toJson() + mapOf(
+internal fun Settled.toJson(): Map<String, Any?> = shot.out.toJson() + mapOf(
     "totalMs" to shot.totalMs, "by" to shot.by, "stale" to stale.staleJson(),
     "imageUrl" to artifactUrl(shot.out.image, shot.artifactRevision), "treeUrl" to artifactUrl(shot.out.tree, shot.artifactRevision), "frames" to frameStats,
 )
 
-fun ReloadResult.CompileFailed.toJson(): Map<String, Any?> = mapOf(
+internal fun ReloadResult.CompileFailed.toJson(): Map<String, Any?> = mapOf(
     "ok" to false, "failure" to FailureKind.COMPILE.name, "message" to (compile.hint?.let { "${it.text}\n" } ?: "") + compile.messages,
     "stale" to stale.staleJson(),
     "compile" to compile.toJson(), "totalMs" to totalMs, "by" to by, "preview" to preview.toJson(),
 ) + (timing?.toJson() ?: emptyMap()) +
     (lines?.let { mapOf("lines" to it) } ?: emptyMap())
 
-fun ReloadResult.toJson(): Map<String, Any?> = when (this) {
+internal fun ReloadResult.toJson(): Map<String, Any?> = when (this) {
     is ReloadResult.Rendered -> result.toJson()
     is ReloadResult.CompileFailed -> toJson()
     ReloadResult.NothingShown -> mapOf("ok" to false, "error" to "보여 주는 프리뷰가 없다 — 먼저 show")
@@ -67,12 +67,12 @@ fun ReloadResult.toJson(): Map<String, Any?> = when (this) {
     is ReloadResult.NeedsGradleBuild -> mapOf("ok" to false, "files" to files.map { it.absolutePath }, "message" to why.text, "stale" to stale.staleJson())
 }
 
-fun FocusResult.toJson(): Map<String, Any?> = when (this) {
+internal fun FocusResult.toJson(): Map<String, Any?> = when (this) {
     is FocusResult.On -> result.toJson() + mapOf("focus" to index, "interactive" to true)
     is FocusResult.Off -> mapOf("ok" to true, "focus" to index, "interactive" to false)
 }
 
-fun ScrollResult.toJson(): Map<String, Any?> = when (this) {
+internal fun ScrollResult.toJson(): Map<String, Any?> = when (this) {
     is ScrollResult.Settled -> result.toJson() + mapOf(
         "moved" to moved, "container" to container?.toJson(),
         "appeared" to appeared.map { it.toJson() }, "disappeared" to disappeared.map { it.toJson() },
@@ -81,20 +81,20 @@ fun ScrollResult.toJson(): Map<String, Any?> = when (this) {
     is ScrollResult.Missed -> miss.toJson()
 }
 
-fun Container.toJson(): Map<String, Any?> = mapOf("at" to at, "box" to box, "axis" to axis) + (list?.let {
+internal fun Container.toJson(): Map<String, Any?> = mapOf("at" to at, "box" to box, "axis" to axis) + (list?.let {
     mapOf(
         "total" to it.total, "first" to it.first, "last" to it.last,
         "canScrollForward" to it.canScrollForward, "canScrollBackward" to it.canScrollBackward,
     ).filterValues { v -> v != null }
 } ?: emptyMap())
 
-fun SeenItem.toJson(): Map<String, Any?> = mapOf(
+internal fun SeenItem.toJson(): Map<String, Any?> = mapOf(
     "index" to index, "key" to key, "box" to box, "visible" to visible, "at" to at, "semantics" to semantics?.toJson(),
 ).filterValues { it != null }
 
-fun GoneItem.toJson(): Map<String, Any?> = mapOf("index" to index, "key" to key, "semantics" to semantics?.toJson()).filterValues { it != null }
+internal fun GoneItem.toJson(): Map<String, Any?> = mapOf("index" to index, "key" to key, "semantics" to semantics?.toJson()).filterValues { it != null }
 
-fun Semantics.toJson(): Map<String, Any?> = mapOf(
+internal fun Semantics.toJson(): Map<String, Any?> = mapOf(
     "text" to text, "contentDescription" to contentDescription, "stateDescription" to stateDescription, "editableText" to editableText,
     "heading" to heading.takeIf { it }, "role" to role, "testTag" to testTag,
     "selected" to selected, "toggleableState" to toggleableState, "disabled" to disabled.takeIf { it }, "focused" to focused.takeIf { it },
@@ -107,9 +107,10 @@ private val ACTIONS = listOf("click", "longClick", "scrollBy", "setText")
 private fun Progress.toJson(): Map<String, Any> =
     mapOf("current" to current, "min" to min, "max" to max) + (if (steps > 0) mapOf("steps" to steps) else emptyMap())
 
-fun Aim.toJson(): Map<String, Any?> = mapOf("at" to at, "index" to index, "of" to of, "name" to node.name, "bounds" to node.sameBox, "point" to listOf(x, y))
+internal fun Aim.toJson(): Map<String, Any?> =
+    mapOf("at" to at, "index" to index, "of" to of, "name" to node.name, "bounds" to node.sameBox, "point" to listOf(x, y))
 
-fun Miss.toJson(): Map<String, Any?> {
+internal fun Miss.toJson(): Map<String, Any?> {
     val bare = at.substringBefore('#')
     fun list(ns: List<Numbered>, numbered: Boolean = true) = ns.map { (n, k) ->
         val name = bare + if (numbered) "#$k" else ""
@@ -139,22 +140,22 @@ private fun total(n: Int?): Array<Pair<String, Any?>> = if (n != null) arrayOf("
 private const val NOT_IN_TREE = "의 노드가 지금 화면의 트리에 없다"
 
 /** HTTP 상태 — 고를 것은 409(CLI 종료 2), 나머지 실패는 422(종료 1). */
-fun Miss.status() = if (this is Miss.Choose) 409 else 422
+internal fun Miss.status() = if (this is Miss.Choose) 409 else 422
 
-fun TypeResult.toJson(): Map<String, Any?> = when (this) {
+internal fun TypeResult.toJson(): Map<String, Any?> = when (this) {
     is TypeResult.Settled -> result.toJson()
     is TypeResult.NoField -> mapOf(
         "ok" to false, "error" to "포커스된 텍스트 필드가 없다 — 먼저 prevue touch --at <파일>:<라인> 으로 필드를 누른다", "why" to why,
     )
 }
 
-fun TouchResult.toJson(): Map<String, Any?> = when (this) {
+internal fun TouchResult.toJson(): Map<String, Any?> = when (this) {
     is TouchResult.Settled -> result.toJson() + (aim?.let { mapOf("at" to it.toJson()) } ?: emptyMap())
     is TouchResult.Missed -> miss.toJson()
     is TouchResult.Sent -> mapOf("ok" to true, "type" to type, "x" to x, "y" to y, "by" to by, "settled" to false)
 }
 
-fun WaitResult.toJson(): Map<String, Any?> = when (this) {
+internal fun WaitResult.toJson(): Map<String, Any?> = when (this) {
     is WaitResult.BoardDone -> mapOf(
         "ok" to ok, "file" to file.absolutePath, "gen" to gen, "complete" to complete,
         "waitedMs" to waitedMs, "stale" to stale.staleJson(), "cards" to cards.map { it.toJson() },
@@ -173,7 +174,7 @@ fun WaitResult.toJson(): Map<String, Any?> = when (this) {
 }
 
 /** 탭 하나(D-54). FQN 탭이면 [TabView.fqn]이 있고 `file`은 그 함수의 파일이다. */
-fun TabView.toJson(): Map<String, Any?> = mapOf("file" to file?.absolutePath, "fqn" to fqn, "module" to module, "active" to active, "stale" to stale,
+internal fun TabView.toJson(): Map<String, Any?> = mapOf("file" to file?.absolutePath, "fqn" to fqn, "module" to module, "active" to active, "stale" to stale,
     "vacant" to vacant?.name?.lowercase()) + (sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap())
 
-fun CloseResult.toJson(): Map<String, Any?> = mapOf("ok" to true, "closed" to closed, "active" to active, "tabs" to tabs.map { it.toJson() })
+internal fun CloseResult.toJson(): Map<String, Any?> = mapOf("ok" to true, "closed" to closed, "active" to active, "tabs" to tabs.map { it.toJson() })

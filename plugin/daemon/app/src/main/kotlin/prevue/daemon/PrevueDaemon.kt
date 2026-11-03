@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
+import prevue.adapter.entry.EntryPoints
 
 /** 데몬 하나의 작업·입구·자원을 소유하고 모든 종료 요청을 한 정리 경로로 모은다. */
 class PrevueDaemon(
@@ -68,7 +69,7 @@ class PrevueDaemon(
     private suspend fun stopWhenIdle(ui: EntryPoints, lastRenderMs: () -> Long) {
         while (true) {
             delay(idleCheckMs)
-            val idle = System.currentTimeMillis() - maxOf(ui.server.lastActivityMs, lastRenderMs())
+            val idle = System.currentTimeMillis() - maxOf(ui.lastActivityMs, lastRenderMs())
             if (idle >= idleTimeoutMs) return requestStop("${idle / 60_000}분 유휴 — 다시 쓰려면 prevue start")
         }
     }

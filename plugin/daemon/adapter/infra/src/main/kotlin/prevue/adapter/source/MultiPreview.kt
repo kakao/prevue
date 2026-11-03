@@ -26,7 +26,7 @@ import prevue.json.map
  * 함께 기억하고, 디렉터리 항목은 부를 때마다 다시 찾아 본다 — 멀티프리뷰 선언을 고치고 저장하면 다음 열기에 바로 맞는다.
  * jar는 데몬이 사는 동안 거의 안 바뀌고 열기가 비싸서, 찾은 jar의 mtime만 다시 본다.
  */
-class MultiPreview(classPath: List<String>) {
+internal class MultiPreview(classPath: List<String>) {
     private val dirs = classPath.map(::File).filter { it.isDirectory }
     private val jars = classPath.map(::File).filter { it.isFile && (it.name.endsWith(".jar") || it.name.endsWith(".zip")) }
 
@@ -100,7 +100,7 @@ class MultiPreview(classPath: List<String>) {
 }
 
 /** 클래스 파일에 붙은 애노테이션 하나. 값은 PreviewLocator가 소스에서 뽑는 것과 같은 문자열 꼴이다. */
-class ClassAnnotation(val type: String, val values: Map<String, String>, private val nested: Map<String, List<ClassAnnotation>>) {
+internal class ClassAnnotation(val type: String, val values: Map<String, String>, private val nested: Map<String, List<ClassAnnotation>>) {
     fun nestedArray(key: String): List<ClassAnnotation> = nested[key].orEmpty()
 }
 
@@ -108,7 +108,7 @@ class ClassAnnotation(val type: String, val values: Map<String, String>, private
  * 클래스 파일에서 클래스와 메서드에 달린 애노테이션을 읽는다. 필드는 읽지 않는다 —
  * 멀티프리뷰는 애노테이션 선언에, 직접 단 `@Preview`는 함수(파사드 클래스의 정적 메서드)에 달린다. JVMS 4장 그대로다.
  */
-object ClassAnnotations {
+internal object ClassAnnotations {
     // 조용히 빈 리스트를 내면 "멀티프리뷰가 아니다"와 "못 읽었다"가 구별되지 않는다 — 실패는 로그로 남긴다.
     /** 클래스의 애노테이션과, 메서드 이름 → 그 메서드의 애노테이션. 이름이 겹치면(오버로드) 앞의 것이다. */
     fun readAll(b: ByteArray): Pair<List<ClassAnnotation>, Map<String, List<ClassAnnotation>>> =

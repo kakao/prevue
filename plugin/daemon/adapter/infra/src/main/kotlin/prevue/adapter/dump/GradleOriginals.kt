@@ -12,7 +12,7 @@ import java.util.zip.ZipFile
  * 버전 핀: Gradle 캐시 레이아웃(`modules-2/files-2.1`). 원본이 없거나 그룹이 겹쳐 하나로 못 정하면 그 jar는 메우지 않는다 —
  * 컴파일이 실패하면 그 모듈의 덤프가 답이다(`CompileOrder.hint`).
  */
-class GradleOriginals(private val files2: File, private val outDir: File) {
+internal class GradleOriginals(private val files2: File, private val outDir: File) {
 
     /** 아티팩트 이름 → 그 이름을 가진 그룹들. 캐시 전부를 한 번만 훑는다. */
     private val groupsOf: Map<String, List<File>> by lazy {

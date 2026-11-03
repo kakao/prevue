@@ -8,7 +8,7 @@ import prevue.domain.model.Selection
  * 뷰어가 그릴 것 전부(D-41·D-42). 브라우저는 이것을 받아 그리기만 한다 — 문장 · 이름표 · 모드는 여기서 정해진다.
  * 탭이 여럿이어도 같은 상태를 본다. 구독하면 곧바로 지금 값을 받으므로 새 탭·재연결이 따로 맞출 것이 없다.
  */
-data class BrowserState(
+internal data class BrowserState(
     /** 바뀔 때마다 오른다. 뷰어가 옛 상태를 새 상태로 덮지 않게. */
     val version: Long,
     val header: Header,
@@ -49,21 +49,21 @@ data class BrowserState(
 }
 
 /** 머리말. 워크트리를 나란히 열면 파일명이 같아 탭만으로는 못 고른다 — 탭 제목에 저장소를 앞세운다. */
-data class Header(val title: String, val tabTitle: String, val repoPrefix: String, val repoLeaf: String, val module: String, val variant: String,
+internal data class Header(val title: String, val tabTitle: String, val repoPrefix: String, val repoLeaf: String, val module: String, val variant: String,
                   val repo: String,
                   /** 대상 저장소의 지금 브랜치(detached면 짧은 해시). 저장소가 아니면 null. 폴더 이름과 따로 논다 — 워크트리에서 브랜치를 바꿀 수 있다. */
                   val branch: String? = null,
                   val sourceSet: String? = null)
 
-data class BoardScreen(val file: String, val gen: Int, val focus: Int, val groups: List<CardGroup>)
+internal data class BoardScreen(val file: String, val gen: Int, val focus: Int, val groups: List<CardGroup>)
 
 /**
  * 같은 함수가 낸 카드 묶음 — 보드의 단위(D-62). 한 장뿐인 함수도 묶음이다: 배율 · 접기 · 장 수 · 실패 수가 늘 머리의 같은 자리에 오고,
  * 나란히 놓인 묶음끼리 머리 줄과 카드 윗선이 맞는다. 머리 없이 두면 옆 묶음보다 카드가 머리 높이만큼 올라앉았다(리뷰 7).
  */
-data class CardGroup(val name: String, val cards: List<CardState>, val failed: Int)
+internal data class CardGroup(val name: String, val cards: List<CardState>, val failed: Int)
 
-data class CardState(
+internal data class CardState(
     val index: Int,
     val previewId: String,
     /** `name=`만 — 함수 이름은 묶음 머리가 갖는다. 없으면 빈 문자열이다. 제공자 값이 여럿이면 몇 번째인지를 붙인다. */
@@ -98,7 +98,7 @@ data class CardState(
  * 한 장 화면. 보드의 카드 하나에 태스크를 건 인터랙티브이거나, FQN으로 연 단건이다.
  * [streamUrl]은 태스크가 걸린 **뒤에만** 찬다 — 먼저 열면 구독 순간의 마지막 프레임이 직전 프리뷰의 것이다(실측).
  */
-data class FocusScreen(
+internal data class FocusScreen(
     val previewId: String,
     val interactive: Boolean,
     /** 보드로 돌아갈 데가 있다. FQN 단건이면 없다. */
@@ -120,28 +120,28 @@ data class FocusScreen(
     val postures: List<PostureImage> = emptyList(),
 )
 
-data class PostureImage(val size: ScreenSize, val imageUrl: String, val dp: DpSize)
+internal data class PostureImage(val size: ScreenSize, val imageUrl: String, val dp: DpSize)
 
 /**
  * 탭 한 칸. 이름을 먼저 읽게 [dim](`.kt` · FQN 탭의 ` · 파일`)은 흐리게 그린다. [module]은 같은 이름의 탭이 둘 이상일 때만 찬다 —
  * 늘 붙이면 탭 10개에서 이름이 잘린다.
  */
-data class TabChip(val key: String, val name: String, val dim: String, val module: String?, val title: String, val active: Boolean, val stale: Boolean,
+internal data class TabChip(val key: String, val name: String, val dim: String, val module: String?, val title: String, val active: Boolean, val stale: Boolean,
                    val sourceSet: String? = null)
 
-data class StaleRow(val head: Phrase, val why: List<Phrase>)
+internal data class StaleRow(val head: Phrase, val why: List<Phrase>)
 
 /**
  * 상태 팝오버의 시간 한 줄. [over]는 그 일의 기준(NFR)을 넘었다 — 하나라도 넘으면 알약이 주황이다(D-63).
  * [head]인 줄의 [text]가 ✓ 옆 숫자다 — 첫 장(저장 → 화면), 데몬이 막 떴으면 콜드, 컴파일이 실패했으면 합계.
  * 새 일이 첫 장을 내기 전에는 줄이 없다 — 남은 줄은 지난 일의 것이다.
  */
-data class TimingPart(val label: Phrase, val ms: Long, val over: Boolean, val text: String = "${ms}ms", val head: Boolean = false)
+internal data class TimingPart(val label: Phrase, val ms: Long, val over: Boolean, val text: String = "${ms}ms", val head: Boolean = false)
 
-data class PathChoice(val fileName: String, val line: Int, val candidates: List<String>, val repoRoot: String)
+internal data class PathChoice(val fileName: String, val line: Int, val candidates: List<String>, val repoRoot: String)
 
 /** 일회성 알림(D-42). 지나간 것을 새 탭에 다시 보일 이유가 없어 상태에 넣지 않는다. */
-sealed interface UiEvent {
+internal sealed interface UiEvent {
     data class Flash(val text: Phrase) : UiEvent
     /** D-56. 빠른 열기의 목록이 바뀌었다 — 목록은 싣지 않는다. 뷰어가 `/preview-files.json`을 다시 받는다. */
     data object PreviewFiles : UiEvent

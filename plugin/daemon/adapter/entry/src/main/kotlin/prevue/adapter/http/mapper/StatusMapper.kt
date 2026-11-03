@@ -11,7 +11,7 @@ import prevue.domain.model.Status
 import prevue.domain.model.Work
 import prevue.json.string
 
-fun Status.toJson(): Map<String, Any?> = mapOf(
+internal fun Status.toJson(): Map<String, Any?> = mapOf(
     "repo" to module.repo, "module" to module.module, "variant" to module.variant, "kotlinModule" to module.kotlinModule,
     "borrowedFrom" to module.borrowedFrom, "borrowedCount" to module.borrowedCount,
     // CLI가 이것으로 어느 데몬에게 보낼지, 새 자리에 띄울지 정한다(D-50) — 여기 있는 모듈은 `show`만 보낸다(기준 3)
@@ -29,7 +29,7 @@ fun Status.toJson(): Map<String, Any?> = mapOf(
 ) + (module.sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap()) +
     (watch?.let { mapOf("watch" to it.source, "staleWatch" to it.build, "valuesWatch" to it.values) } ?: emptyMap())   // "stale"로 두면 낡음의 이유들을 덮는다
 
-fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
+internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     ScreenSize.Original -> null
     is ScreenSize.Dp -> mapOf("kind" to if (preset != null) "preset" else "custom", "preset" to preset, "widthDp" to widthDp, "heightDp" to heightDp)
     is ScreenSize.Device -> mapOf(
@@ -38,22 +38,22 @@ fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     )
 }
 
-fun Map<String, Any?>.toScreenSize(): ScreenSize? =
+internal fun Map<String, Any?>.toScreenSize(): ScreenSize? =
     ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true)
 
-fun LastResult.toJson(): Map<String, Any?> = when (this) {
+internal fun LastResult.toJson(): Map<String, Any?> = when (this) {
     is ShowResult -> toJson()
     is Settled -> toJson()
     is ReloadResult.CompileFailed -> toJson()
 }
 
-fun StaleReason.toJson(): Map<String, Any?> =
+internal fun StaleReason.toJson(): Map<String, Any?> =
     mapOf("files" to files, "what" to what.text) + (message?.let { mapOf("message" to it.text) } ?: emptyMap()) +
         mapOf("remedy" to remedy.text, "since" to since) + if (pending) mapOf("pending" to true) else emptyMap()
 
-fun Map<String, StaleReason>.staleJson(): Map<String, Any?> = mapValues { it.value.toJson() }
+internal fun Map<String, StaleReason>.staleJson(): Map<String, Any?> = mapValues { it.value.toJson() }
 
-fun Work.toJson(): Map<String, Any?> = when (this) {
+internal fun Work.toJson(): Map<String, Any?> = when (this) {
     is Work.Compiling -> mapOf("kind" to "compiling", "files" to files.map { it.path }, "by" to by)
     is Work.Rendering -> mapOf("kind" to "rendering", "preview" to preview.toJson(), "by" to by)
 }

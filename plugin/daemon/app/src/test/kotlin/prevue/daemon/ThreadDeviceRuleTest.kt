@@ -67,7 +67,7 @@ class ThreadDeviceRuleTest {
 
     @Test fun `src main 의 스레드 장치는 허용 목록뿐이다`() {
         val files = Sources.under(roots, "kt", "java")
-        assertTrue("prevue/daemon/Main.kt" in files && "prevue/render/Shim.java" in files, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
+        assertTrue("prevue/daemon/Main.kt" in files && "prevue/adapter/render/Shim.java" in files, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(emptyList<String>(), ThreadDeviceRule.violations(files, allowedCounts)) {
             "허용 목록(D-89 경계)과 다르다. 지금 허용한 것:\n" + allowed.joinToString("\n") { "  ${it.path} → ${it.device} ×${it.count} — ${it.reason}" }
         }
