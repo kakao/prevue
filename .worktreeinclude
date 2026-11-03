@@ -1,2 +1,0 @@
-# claude --worktree 가 새 워크트리로 복사하는 gitignore 파일. 개인 경로(볼트·검증장)라 추적하지 않지만 세션마다 필요하다.
-CLAUDE.local.md
