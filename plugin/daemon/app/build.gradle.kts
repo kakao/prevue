@@ -17,8 +17,8 @@ kotlin {
     }
 }
 
-val layers = listOf(":entity", ":domain", ":adapter").map { project(it) }
-// 아래 jar · 테스트 컴파일이 층의 sourceSets · jar 태스크를 읽는다 — 이름 순서(adapter · app · domain · entity)에 기대지 않고 먼저 구성한다.
+val layers = listOf(":entity", ":domain", ":json", ":adapter:infra", ":adapter:entry").map { project(it) }
+// 아래 jar · 테스트 컴파일이 층의 sourceSets · jar 태스크를 읽는다 — 이름 순서(adapter · app · domain · entity · json)에 기대지 않고 먼저 구성한다.
 layers.forEach { evaluationDependsOn(it.path) }
 
 /**
@@ -53,12 +53,15 @@ dependencies {
     // 그 옛것은 stdlib 2.4의 @Metadata를 못 읽어 `@PreviewParameter` 경로에서 죽는다 —
     // RenderSandboxTransformTrampoline의 static 초기화가 reflect로 FilesKt.readText를 찾는다.
     // 같은 버전 reflect를 **앞에** 둬서 이기게 한다. 순서가 곧 해결책이라 이 줄은 renderer 위에 있어야 한다.
-    // 조립(:app 본체)은 렌더러를 컴파일 때 모른다 — 렌더러 · layoutlib 은 :adapter 만 안다. 실행 차례를 위해서만 여기 둔다.
+    // 조립(:app 본체)은 렌더러를 컴파일 때 모른다 — 렌더러 · layoutlib 은 :adapter:infra 만 안다. 실행 차례를 위해서만 여기 둔다.
     runtimeOnly(libs.kotlin.reflect)
     runtimeOnly(libs.renderer)
     runtimeOnly(libs.layoutlib)
     // 층 모듈은 서드파티 뒤에 둔다 — 서드파티의 클래스패스 차례가 모듈로 나누기 전과 같다.
-    implementation(project(":adapter"))
+    implementation(project(":adapter:infra"))
+    implementation(project(":adapter:entry"))
+    // 테스트는 입구 · 기술 어댑터가 함께 쓰는 코덱을 직접 읽는다 — 본체는 :json 을 모른다.
+    testImplementation(project(":json"))
     // 테스트는 렌더러 · layoutlib 타입을 직접 만진다(통합 테스트 · 렌더 어댑터 테스트).
     testImplementation(libs.kotlin.reflect)
     testImplementation(libs.renderer)

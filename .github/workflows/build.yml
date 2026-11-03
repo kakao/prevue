@@ -58,7 +58,7 @@ jobs:
           distribution: temurin
           java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build-logic 의 convention plugin(prevue.jvm)이 고정한다
 
-      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:app 조립 · 테스트 + 층 모듈 :entity · :domain · :adapter, D-139 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
+      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:app 조립 · 테스트 + 층 모듈 :entity · :domain · :adapter:infra · :adapter:entry + 공용 코덱 :json, D-139 · D-141 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
         working-directory: plugin/daemon
         run: |
