@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import prevue.domain.model.LiveFrame
 
-data class StreamStats(
+internal data class StreamStats(
     val encoded: Long = 0,
     val encodeMs: Long = 0,
     val encoderDropped: Long = 0,
@@ -31,7 +31,7 @@ data class StreamStats(
     )
 }
 
-class FrameStreamer(
+internal class FrameStreamer(
     screen: StateFlow<LiveFrame?>,
     watching: StateFlow<Boolean>,
     parent: CoroutineScope,

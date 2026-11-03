@@ -44,7 +44,7 @@ internal const val DEFAULT_OUT_MAX_MB = 64L
 internal fun outMaxMb(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_OUT_MAX_MB
 
 /** 렌더 태스크에서 분리된 이미지·트리를 기록하고 프리뷰별 쓰기 순서와 산출물 상한을 지킨다. */
-class RenderArtifactStore(val directory: File) : AutoCloseable {
+internal class RenderArtifactStore(val directory: File) : AutoCloseable {
     private val limit = MutableStateFlow(outMaxMb(System.getenv("PREVUE_OUT_MAX_MB")) * 1024 * 1024)
     var maxBytes: Long
         get() = limit.value

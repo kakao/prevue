@@ -19,7 +19,7 @@ import prevue.adapter.http.HttpEndpoint
 import prevue.adapter.http.body
 import prevue.adapter.http.json
 
-class CliEndpoint(
+internal class CliEndpoint(
     private val handler: CliHandler,
     private val port: Int,
     private val root: String?,

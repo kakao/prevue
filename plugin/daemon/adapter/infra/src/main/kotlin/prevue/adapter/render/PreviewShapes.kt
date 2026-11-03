@@ -2,7 +2,7 @@ package prevue.adapter.render
 
 import prevue.entity.PreviewSpec
 
-class PreviewShapes {
+internal class PreviewShapes {
     private val layouts = HashMap<Triple<String, List<Map<String, String>>, Map<String, String>>, List<String>>()
     private val counts = HashMap<List<Map<String, String>>, Int>()
     private var counted = HashMap<List<Map<String, String>>, Int>()

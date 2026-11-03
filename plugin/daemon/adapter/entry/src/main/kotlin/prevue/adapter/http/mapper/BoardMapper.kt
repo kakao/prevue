@@ -7,11 +7,11 @@ import prevue.domain.model.CardResult
 import prevue.domain.model.CardView
 import prevue.domain.port.FailureKind
 
-fun BoardView.toJson(): Map<String, Any?> = mapOf(
+internal fun BoardView.toJson(): Map<String, Any?> = mapOf(
     "file" to file.absolutePath, "focus" to focus, "gen" to gen, "cards" to cards.map { it.toJson() },
 )
 
-fun CardView.toJson(): Map<String, Any?> = mapOf(
+internal fun CardView.toJson(): Map<String, Any?> = mapOf(
     "index" to index, "previewId" to previewId, "fqn" to fqn, "name" to name,
     "params" to params, "gen" to gen, "stale" to stale, "rendered" to rendered,
     "paramIndex" to paramIndex, "paramCount" to paramCount,
@@ -21,7 +21,7 @@ fun CardView.toJson(): Map<String, Any?> = mapOf(
     "taskMs" to taskMs, "renderMs" to renderMs, "phases" to phases?.toSortedMap(),
 )
 
-fun CardResult.toJson(): Map<String, Any?> = when (this) {
+internal fun CardResult.toJson(): Map<String, Any?> = when (this) {
     is CardResult.Drawn -> shot.toJson() + mapOf("index" to index) + (if (cached) mapOf("cached" to true) else emptyMap())
     is CardResult.WriteFailed -> mapOf("ok" to false, "index" to index, "failure" to FailureKind.EXCEPTION.name, "message" to message.text) +
         (if (cached) mapOf("cached" to true) else emptyMap())

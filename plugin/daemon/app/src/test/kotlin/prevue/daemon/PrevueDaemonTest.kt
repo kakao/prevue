@@ -17,6 +17,8 @@ import kotlinx.coroutines.launch
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import prevue.adapter.entry.EntryPoints
+import prevue.adapter.entry.PrevueCheckout
 import prevue.daemon.fake.Fixture
 import prevue.json.Json
 

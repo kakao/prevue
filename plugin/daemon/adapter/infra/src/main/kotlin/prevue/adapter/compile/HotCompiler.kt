@@ -21,7 +21,7 @@ import prevue.json.map
  * 모듈 디렉터리를 따로 두는 이유는 둘이다 — 한 모듈만 버릴 수 있어야 하고(Q6), 최상위 선언 색인(`META-INF/<모듈명>-N.kotlin_module`, 컴파일 회차마다
  * 하나 — [keepModuleIndex])은 모듈 사이에 이름이 겹친다(nowinandroid의 `feature:foryou:impl`·`feature:bookmarks:impl`은 둘 다 `impl`).
  */
-class HotCompiler(
+internal class HotCompiler(
     /** 모듈 경로 → 그 모듈의 컴파일 인자. 처음 컴파일할 때 한 번 부른다. */
     private val specOf: (String) -> ClasspathSpec,
     compilerJars: List<File>,

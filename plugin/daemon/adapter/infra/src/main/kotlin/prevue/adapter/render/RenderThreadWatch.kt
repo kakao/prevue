@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import prevue.entity.PreviewSpec
 
-class Lost(val reason: Phrase, val preview: PreviewSpec)
+internal class Lost(val reason: Phrase, val preview: PreviewSpec)
 
 internal class RenderThreadWatch {
     private val _lost = MutableStateFlow<Lost?>(null)

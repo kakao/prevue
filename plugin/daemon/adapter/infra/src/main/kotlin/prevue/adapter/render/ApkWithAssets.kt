@@ -6,7 +6,7 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
 // 외부: 렌더러의 StandaloneAssetFileOpener 는 리소스 APK 안의 assets/<경로>만 읽는다 — AGP 의 .ap_ 에는 assets/ 가 없다
-object ApkWithAssets {
+internal object ApkWithAssets {
     const val FILE_NAME = "resources-with-assets.ap_"
     const val CMP_DIR = "composeResources"
 

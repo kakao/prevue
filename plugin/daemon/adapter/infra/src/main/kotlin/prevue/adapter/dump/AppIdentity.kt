@@ -14,7 +14,7 @@ import javax.imageio.ImageIO
  * 그리지 않고 파일만 읽는다 — 렌더 스레드를 쓰지 않는다. 못 읽는 꼴(벡터 · WebP 전경)이면 null이고 뷰어는 Prevue 마크를 쓴다.
  * [manifests]는 앞의 것이 이긴다(flavor → main).
  */
-class AppIdentity(private val manifests: List<File>, resDirs: List<File>) {
+internal class AppIdentity(private val manifests: List<File>, resDirs: List<File>) {
     private val dirs = resDirs.filter { it.isDirectory }
 
     private fun attr(name: String): String? = manifests.asSequence().filter { it.isFile }

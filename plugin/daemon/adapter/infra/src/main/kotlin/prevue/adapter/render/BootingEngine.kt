@@ -20,7 +20,7 @@ import prevue.domain.port.ResourceValues
 import prevue.entity.PreviewSpec
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class BootingEngine(
+internal class BootingEngine(
     private val scope: CoroutineScope,
     override val outDir: File,
     boot: () -> RenderEngine,

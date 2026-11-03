@@ -55,9 +55,9 @@ import prevue.domain.port.Ports
 import prevue.domain.UseCases
 import prevue.domain.port.Watchers
 import prevue.domain.runtime.Workspace
-import prevue.daemon.EntryPoints
-import prevue.daemon.PrevueCheckout
-import prevue.daemon.TargetRepo
+import prevue.adapter.entry.EntryPoints
+import prevue.adapter.entry.PrevueCheckout
+import prevue.adapter.entry.TargetRepo
 
 /** 그림 없이 순서만 기록하는 렌더러. 막고 풀기(latch)로 락 안의 한 순간에 다른 스레드를 끼워 넣는다. */
 class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSessionFactory {
@@ -380,7 +380,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
         // 같은 베이스네임이 두 곳에 있다 — 가리키기가 사람에게 고르게 하는 경로를 계약이 본다.
         for (d in listOf("a", "b")) File(srcRoot, "$d/Dup.kt").apply { parentFile.mkdirs(); writeText("package $d\n") }
     }
-    val spec = ClasspathSpec(
+    internal val spec = ClasspathSpec(
         File(root, "dump.json"), ":app", "debug", "demo", "",
         DumpPaths(classPath = listOf(classes.path), projectClassPath = listOf(classes.path), compileClassPath = emptyList(), rClassJars = emptyList(), resourceDirs = emptyList()),
     )

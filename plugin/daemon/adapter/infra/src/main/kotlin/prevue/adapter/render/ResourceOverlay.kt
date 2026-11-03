@@ -43,7 +43,7 @@ import prevue.domain.port.ResourceValues
  * values XML은 렌더러가 쓰는 sdk-common 파서(`RepositoryLoader`, AS 프리뷰가 res 폴더를 읽는 그것)로 읽는다. 렌더러 판올림으로 저장소 관리자의
  * 모양이 바뀌면 [install]이 null이고, 저장은 지금처럼 낡음으로 간다 — 조용히 옛 값을 그리지 않는다.
  */
-class ResourceOverlay private constructor(private val base: CacheableResourceRepository, private val layered: Layered) : ResourceValues {
+internal class ResourceOverlay private constructor(private val base: CacheableResourceRepository, private val layered: Layered) : ResourceValues {
     /** 얹은 값. 다음에 같은 자리를 얹으면 덮는다. 빼는 일은 없다 — 데몬이 뜬 동안 리소스 APK는 그대로다. */
     private val items = MutableStateFlow<Map<ResourceKey, ResourceItem>>(emptyMap())
     /** 판정과 넣기가 같은 내용을 두 번 읽지 않게 마지막 것을 쥔다. */

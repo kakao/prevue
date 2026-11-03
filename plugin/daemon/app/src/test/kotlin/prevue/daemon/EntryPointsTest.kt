@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import prevue.adapter.entry.TargetRepo
 import prevue.daemon.fake.Fixture
 import prevue.json.Json
 

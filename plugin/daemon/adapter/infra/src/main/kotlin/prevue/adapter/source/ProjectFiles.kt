@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 import prevue.entity.SourceIndex
 import prevue.domain.port.SourceFileRepository
 
-class ProjectFiles(private val repoRoot: File, roots: List<File>) : SourceFileRepository {
+internal class ProjectFiles(private val repoRoot: File, roots: List<File>) : SourceFileRepository {
     private sealed interface State {
         class Building(val pending: List<List<Change>>) : State
         class Ready(val files: Map<String, List<String>>) : State

@@ -17,7 +17,7 @@ import prevue.domain.port.BuildChange
 import prevue.domain.port.BuildNotice
 import prevue.domain.port.BuildWatcher
 
-class PollingBuildWatcher(
+internal class PollingBuildWatcher(
     groups: List<Pair<String, List<File>>>,
     private val context: CoroutineContext = Dispatchers.IO,
 ) : BuildWatcher {

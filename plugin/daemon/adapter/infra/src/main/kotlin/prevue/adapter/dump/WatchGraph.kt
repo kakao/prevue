@@ -8,7 +8,7 @@ import prevue.entity.ModuleNode
  * 렌더 모듈([home])과 그 프로젝트 의존을 감시·컴파일 단위로(Q5). 의존 모듈의 인자는 [base](앱 덤프, 없으면 [home])에서 끌어낸다(Q4).
  * 의존 먼저 — 클래스패스 순서(소비자 먼저)를 뒤집는다.
  */
-object WatchGraph {
+internal object WatchGraph {
     fun of(home: ClasspathSpec, base: ClasspathSpec): ModuleGraph {
         val deps = home.projectModules.reversed().mapNotNull { m ->
             runCatching { base.dependency(m) }.recoverCatching { home.dependency(m) }.getOrNull()

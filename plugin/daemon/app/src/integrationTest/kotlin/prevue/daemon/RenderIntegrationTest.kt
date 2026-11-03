@@ -1,5 +1,7 @@
 package prevue.daemon
 
+import prevue.adapter.entry.EntryPoints
+import prevue.adapter.entry.PrevueCheckout
 import prevue.adapter.render.toBitmap
 import java.io.File
 import java.nio.file.Files

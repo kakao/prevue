@@ -156,7 +156,10 @@ class ContractTest {
 
         // D-54. 다른 파일을 show 하면 새 탭이 열리고 앞 탭은 남는다. 닫으면 직전에 보던 탭으로 돌아간다.
         val other = fx.previewFile("Other")
+        fx.renderer.hold = java.util.concurrent.CountDownLatch(1)
+        fx.renderer.holdAfter = fx.renderer.shown.size + 1
         check("show.tab", post("/show", mapOf("target" to other.path, "by" to "cli")))
+        fx.renderer.holdAfter = Int.MAX_VALUE; fx.renderer.hold.countDown()
         ws.awaitBoardFilled()
         check("status.tabs", get("/status"))
         check("viewer.tab", post("/viewer/tab", mapOf("key" to fx.file.canonicalPath)))   // 뷰어의 탭 줄 — 답은 받았다는 것뿐이다

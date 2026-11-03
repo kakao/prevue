@@ -20,7 +20,7 @@ import java.util.zip.ZipFile
 import com.google.devrel.gmscore.tools.apk.arsc.ResourceValue as BinaryValue
 
 // 외부: 렌더러(alpha16)의 BinaryXmlParser.complexToString 은 복소수 값의 24비트 가수를 부호 없이 꺼낸다(-24dp → 16777192dp)
-object ApkNegatives {
+internal object ApkNegatives {
     class Fixed(val count: Int, val ms: Long)
 
     class Negative(

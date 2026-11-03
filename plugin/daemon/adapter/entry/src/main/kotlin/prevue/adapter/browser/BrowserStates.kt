@@ -28,7 +28,7 @@ import prevue.domain.model.TabView
 import prevue.domain.model.Vacancy
 import prevue.domain.model.Work
 
-object BrowserStates {
+internal object BrowserStates {
     fun build(now: Status, side: ViewerSide, version: Long, zone: ZoneId = ZoneId.systemDefault()): BrowserState {
         val board = now.board
         val activeTab = now.tabs.firstOrNull { it.active }
@@ -354,7 +354,7 @@ object BrowserStates {
     private fun failText(kind: String?): Phrase = kind?.let { phraseOrNull("failure.$it") ?: Verbatim(it) } ?: phrase("failure")
 }
 
-data class ViewerSide(
+internal data class ViewerSide(
     val singleInteractive: String? = null,
     val streamStamp: Long = 0,
     val stillStamp: Long = 0,

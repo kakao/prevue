@@ -22,7 +22,7 @@ import prevue.domain.UseCases
  * CLI·에이전트의 명령을 실행하고 요청마다 결과를 돌려준다.
  * 유스케이스 둘을 엮는 판단(맞춘 뒤 읽기 · 연 뒤 보드)은 여기서 하고, 입구는 HTTP와 JSON만 한다.
  */
-class CliHandler(private val uc: UseCases) {
+internal class CliHandler(private val uc: UseCases) {
     /** 에이전트가 읽는 그림이 사람이 조작한 화면과 같게 — live가 바뀌었으면 읽기 전에 한 장 맞춘다. */
     suspend fun status(): Status { uc.catchUp("status"); return uc.readStatus() }
 
