@@ -3,33 +3,42 @@
 // 플러그인은 프로젝트의 buildscript 클래스패스에 싣는다. init script 자기 클래스패스에 실으면 Kotlin 플러그인의 클래스를 못 본다.
 // 판정은 스크립트가 하고 detekt 는 보고서만 쓴다(ignoreFailures).
 
-rootProject {
-    // detekt 플러그인을 buildscript 에 실으면 compileKotlin 의 구현 클래스패스가 바뀌어, 평소 빌드와 번갈아 돌 때마다
-    // 서로 전체를 다시 컴파일하며 build/classes 를 덮어썼다 — 도중의 통합 테스트 JVM 이 클래스를 잃었다. 산출물을 따로 둔다.
-    // 자리는 lint.py 가 -Pprevue.lintBuildDir 로 넘긴다 — 보고서 · 실행 기록 경로와 한 곳에서 맞춘다
-    layout.buildDirectory.set(layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get()))
-    // 층 모듈(D-139)도 같은 규칙으로 본다 — 산출물은 루트 린트 디렉터리 아래 모듈 이름으로 가른다(lint.py 의 DETEKT_REPORTS)
-    subprojects {
-        layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get() + "/" + name))
+// build-logic(included build, D-140)에는 detekt 를 싣지 않는다 — 판정 대상(데몬 소스)이 아니다.
+// 산출물만 린트 자리로 옮긴다. lint.py 의 --project-cache-dir 는 included build 에도 걸려 실행 기록이 평소 빌드와 갈린다 —
+// 같은 build-logic/build 를 두고 린트와 평소 빌드가 번갈아 서로를 다시 컴파일했다(실측).
+if (gradle.parent != null) {
+    rootProject {
+        layout.buildDirectory.set(layout.projectDirectory.dir("../" + providers.gradleProperty("prevue.lintBuildDir").get() + "/" + name))
     }
-    buildscript {
-        repositories {
-            gradlePluginPortal()
-            mavenCentral()
+} else {
+    rootProject {
+        // detekt 플러그인을 buildscript 에 실으면 compileKotlin 의 구현 클래스패스가 바뀌어, 평소 빌드와 번갈아 돌 때마다
+        // 서로 전체를 다시 컴파일하며 build/classes 를 덮어썼다 — 도중의 통합 테스트 JVM 이 클래스를 잃었다. 산출물을 따로 둔다.
+        // 자리는 lint.py 가 -Pprevue.lintBuildDir 로 넘긴다 — 보고서 · 실행 기록 경로와 한 곳에서 맞춘다
+        layout.buildDirectory.set(layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get()))
+        // 층 모듈(D-139)도 같은 규칙으로 본다 — 산출물은 루트 린트 디렉터리 아래 모듈 이름으로 가른다(lint.py 의 DETEKT_REPORTS)
+        subprojects {
+            layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(providers.gradleProperty("prevue.lintBuildDir").get() + "/" + name))
         }
-        dependencies {
-            classpath("dev.detekt:detekt-gradle-plugin:2.0.0-alpha.6")
+        buildscript {
+            repositories {
+                gradlePluginPortal()
+                mavenCentral()
+            }
+            dependencies {
+                classpath("dev.detekt:detekt-gradle-plugin:2.0.0-alpha.6")
+            }
         }
+        allprojects { afterEvaluate {
+            apply(plugin = "dev.detekt")
+            // init script 는 플러그인 클래스 없이 컴파일된다 — 확장은 이름으로 만진다.
+            extensions.getByName("detekt").withGroovyBuilder {
+                @Suppress("UNCHECKED_CAST")
+                (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
+                @Suppress("UNCHECKED_CAST")
+                (getProperty("ignoreFailures") as Property<Boolean>).set(true)
+                (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
+            }
+        } }
     }
-    allprojects { afterEvaluate {
-        apply(plugin = "dev.detekt")
-        // init script 는 플러그인 클래스 없이 컴파일된다 — 확장은 이름으로 만진다.
-        extensions.getByName("detekt").withGroovyBuilder {
-            @Suppress("UNCHECKED_CAST")
-            (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
-            @Suppress("UNCHECKED_CAST")
-            (getProperty("ignoreFailures") as Property<Boolean>).set(true)
-            (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
-        }
-    } }
 }
