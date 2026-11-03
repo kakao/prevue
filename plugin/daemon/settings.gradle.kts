@@ -1,3 +1,8 @@
+// 모듈 공통 설정(바이트코드 17 · 코루틴 판)은 build-logic 의 convention plugin 이 갖는다(D-140)
+pluginManagement {
+    includeBuild("build-logic")
+}
+
 rootProject.name = "prevue"
 
 dependencyResolutionManagement {

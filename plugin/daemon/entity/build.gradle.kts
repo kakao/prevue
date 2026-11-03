@@ -1,6 +1,6 @@
 // entity — 기술 어댑터와 domain이 함께 보는 값(D-88). 의존이 없다.
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    id("prevue.jvm")
 }
 
 // 화면 문장 영어 사전(viewer/strings/en.json)을 데몬이 읽는 Kotlin 표로 옮긴다 — 데몬이 CLI 로 내는 문장은 영어 한 벌이다(D-106 · D-109).
