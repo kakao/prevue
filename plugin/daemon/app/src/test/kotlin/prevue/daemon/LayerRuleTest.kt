@@ -14,9 +14,9 @@ class LayerRuleTest {
     @Test fun `본체의 import 가 층 규칙을 지킨다`() {
         val files = Sources.daemon()
         val where = "작업 디렉터리: ${File("").absolutePath}"
-        // 거르기가 어긋나면 층 하나가 통째로 빠진다 — 층마다 있는지와, 지금 개수(166) 가까이를 함께 본다.
-        val counts = files.keys.groupingBy { it.substringBefore('/').takeIf { k -> k in setOf("entity", "domain", "adapter") } ?: "daemon" }.eachCount()
-        assertEquals(setOf("entity", "domain", "adapter", "daemon"), counts.keys, "본체의 층을 다 못 찾았다 — $counts · $where")
+        // 거르기가 어긋나면 층 하나가 통째로 빠진다 — 층마다 있는지와 전체의 바닥(150, 옮길 때 166개)을 함께 본다.
+        val counts = files.keys.groupingBy { it.substringBefore('/').takeIf { k -> k in Sources.LAYERS } ?: "daemon" }.eachCount()
+        assertEquals((Sources.LAYERS + "daemon").toSet(), counts.keys, "본체의 층을 다 못 찾았다 — $counts · $where")
         assertEquals(true, files.size >= 150, "본체를 못 찾았다(${files.size}) — $where")
         assertEquals(emptyList<String>(), LayerRule.violations(files))
     }
@@ -63,6 +63,7 @@ class LayerRuleTest {
             "entity/K.kt" to "package prevue.entity\nimport kotlinx.serialization.Serializable\n",
             "domain/L.kt" to "package prevue.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
             "domain/N.kt" to "package prevue.domain\nimport prevue.render.Shim\n",
+            "domain/O2.kt" to "package prevue.domain\nval o2 = \"com.acme.prevue.adapter.render.X\"\n",
             "domain/O.kt" to "package prevue.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
             "adapter/render/M.kt" to "package prevue.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "adapter/render/V.kt" to "package prevue.adapter.render\nimport prevue.domain.port.Clock\nimport prevue.entity.PreviewSpec\nimport prevue.adapter.compile.HotCompiler\n",
@@ -98,8 +99,9 @@ object LayerRule {
     /** domain 루트(유스케이스) 밖의 하위 패키지. */
     private val DOMAIN_PARTS = setOf("runtime", "policy", "model", "port")
 
-    private val DAEMON_PACKAGES = listOf("entity", "domain", "adapter", "daemon")
-    private val ref = Regex("""\bprevue\.((?:${DAEMON_PACKAGES.joinToString("|")})\.[\w.]*)""")
+    private val DAEMON_PACKAGES = Sources.LAYERS + "daemon"
+    /** 앞이 글자나 점이면 남의 FQN(`com.acme.prevue.domain…`)이다 — 우리 패키지로 세지 않는다. */
+    private val ref = Regex("""(?<![\w.])prevue\.((?:${DAEMON_PACKAGES.joinToString("|")})\.[\w.]*)""")
     private val CORE = setOf("entity", "domain")
     /** 데몬 패키지는 위 ref 규칙이 가린다 — 여기서는 통과시켜 한 위반을 두 번 세지 않는다. 코덱(`prevue.json`) · 셈(`prevue.render`)은 core 밖이다. */
     private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.")

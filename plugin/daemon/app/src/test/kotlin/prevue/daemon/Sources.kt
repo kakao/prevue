@@ -21,7 +21,10 @@ object Sources {
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
         .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
 
-    private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:entity|domain|adapter)/))""")
+    /** 층 패키지 `prevue.<층>`(D-139 · D-140). 층 규칙 · 개수 단언이 모두 이 목록을 쓴다 — tools/lint/lint.py 의 LAYERS 와 같다. */
+    val LAYERS: List<String> = listOf("entity", "domain", "adapter")
+
+    private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:${LAYERS.joinToString("|")})/))""")
 
     fun file(path: String): File = kotlinRoots.map { File(it, path) }.firstOrNull { it.isFile } ?: File(kotlinRoots.last(), path)
 }
