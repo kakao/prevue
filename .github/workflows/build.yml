@@ -10,7 +10,7 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
-# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/daemon/build/prevue-env)를 bash 가 아니라 sh 로 본다.
+# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/daemon/app/build/prevue-env)를 bash 가 아니라 sh 로 본다.
 defaults:
   run:
     shell: sh
@@ -58,7 +58,7 @@ jobs:
           distribution: temurin
           java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build-logic 의 convention plugin(prevue.jvm)이 고정한다
 
-      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(루트 조립 + 층 모듈 :entity · :domain · :adapter, D-139 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
+      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:app 조립 · 테스트 + 층 모듈 :entity · :domain · :adapter, D-139 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
         working-directory: plugin/daemon
         run: |
@@ -83,20 +83,20 @@ jobs:
         working-directory: plugin
         run: |
           set -eu
-          test -s daemon/build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
+          test -s daemon/app/build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
 
       - name: 빌드 결과를 확인한다
         working-directory: plugin
         run: |
           set -eu
-          test -s daemon/build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
+          test -s daemon/app/build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
 
           # prevue-env 는 절대 경로를 적지 않는다 — 빌드한 머신에서만 맞는 값이 되기 때문이다.
           # 값은 ROOT(플러그인 디렉터리)와 HOME 기준이라 읽는 쪽이 ROOT 를 준다. bin/prevue 가 하는 것과 같다.
-          grep -qE '=\"/|:/[A-Za-z]' daemon/build/prevue-env \
-            && { echo "::error file=daemon/build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' daemon/build/prevue-env; exit 1; } || true
+          grep -qE '=\"/|:/[A-Za-z]' daemon/app/build/prevue-env \
+            && { echo "::error file=daemon/app/build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' daemon/app/build/prevue-env; exit 1; } || true
           ROOT="$PWD"
-          . daemon/build/prevue-env
+          . daemon/app/build/prevue-env
           # 이름으로 값을 읽는다. 이름은 아래 목록으로 한정된다.
           for NAME in PREVUE_CP PREVUE_BRIDGE PREVUE_LAYOUTLIB PREVUE_COMPILER PREVUE_VIEWER; do
             eval "VAL=\${$NAME:-}"

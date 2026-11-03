@@ -1,6 +1,6 @@
 """에이전트가 받는 show · wait 응답의 크기(NFR-18 카드당 1KB). 실행: python3 -m unittest discover -s tests/cli
 
-데몬 응답의 모양은 계약(plugin/daemon/src/test/contract/wait.json)의 예시를 그대로 쓴다 — 데몬이 카드에 키를 더하면 여기서 함께 잰다.
+데몬 응답의 모양은 계약(plugin/daemon/app/src/test/contract/wait.json)의 예시를 그대로 쓴다 — 데몬이 카드에 키를 더하면 여기서 함께 잰다.
 값만 실제 저장소 규모로 바꾼다: 긴 FQN · 사내 저장소 경로의 산출물 · 파라미터 프리뷰 · 단계별 시간.
 """
 
@@ -11,7 +11,7 @@ import unittest
 
 from test_plan import P   # bin 을 경로에 넣는 것은 test_plan 이다
 
-CONTRACT = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "daemon", "src", "test", "contract", "wait.json")
+CONTRACT = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "daemon", "app", "src", "test", "contract", "wait.json")
 CARD_MAX = 1000
 REPO = "/Users/someone/Desktop/Company/ShopMall/worktree-feature-route-planner"
 OUT = "/Users/someone/.prevue/projects/%s/daemon/out" % P.repo_key(REPO)

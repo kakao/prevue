@@ -500,11 +500,11 @@ class MainClass(unittest.TestCase):
 
     def test_데몬을_띄우는_두_곳이_같은_메인_클래스를_넘긴다(self):
         self.assertRegex(self.source("bin", "prevue"), r'-cp "\$DAEMON_CP" %s\s' % re.escape(R.DAEMON_MAIN))
-        self.assertIn('Respawn.start("%s", ' % R.DAEMON_MAIN, self.source("daemon", "src", "main", "kotlin", "prevue", "daemon", "Main.kt"))
+        self.assertIn('Respawn.start("%s", ' % R.DAEMON_MAIN, self.source("daemon", "app", "src", "main", "kotlin", "prevue", "daemon", "Main.kt"))
 
 
 class Launch(unittest.TestCase):
-    """진짜 bin/prevue start 를 친다. 플러그인 디렉터리를 임시로 꾸며 daemon/build/prevue-env 를 둔다 — CI 는 툴체인을 굽기 전에
+    """진짜 bin/prevue start 를 친다. 플러그인 디렉터리를 임시로 꾸며 daemon/app/build/prevue-env 를 둔다 — CI 는 툴체인을 굽기 전에
     이 테스트를 돌린다. PREVUE_JDK 의 java 는 HTTP 를 열지 않고 받은 인자를 문 채 잔다 — start 가 그것을 띄우면 뜨기를 30초
     기다리므로 기록을 보고 끊는다."""
 
@@ -514,11 +514,11 @@ class Launch(unittest.TestCase):
         plugin = os.path.join(self.home, "plugin")
         for part in ("bin", "cli"):
             shutil.copytree(os.path.join(ROOT, part), os.path.join(plugin, part), ignore=shutil.ignore_patterns("__pycache__"))
-        build = os.path.join(plugin, "daemon", "build")
+        build = os.path.join(plugin, "daemon", "app", "build")
         os.makedirs(build)
         with open(os.path.join(build, "prevue-env"), "w") as f:
             for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
-                f.write('%s="$ROOT/daemon/build/%s"\n' % (k, k.lower()))
+                f.write('%s="$ROOT/daemon/app/build/%s"\n' % (k, k.lower()))
         for jar in ("prevue_cp", "prevue_bridge"):      # start 가 데몬이 돌 복사본으로 옮긴다(D-125)
             open(os.path.join(build, jar), "w").close()
         self.java = os.path.join(self.home, "jdk", "bin", "java")
