@@ -35,3 +35,7 @@ CLAUDE.local.md
 .DS_Store
 **/.DS_Store
 __pycache__/
+
+# 뷰어 개발 도구와 Storybook 정적 출력은 설치본에 싣지 않는다.
+node_modules/
+viewer-src/storybook-static/

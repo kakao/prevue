@@ -163,6 +163,18 @@ else:
             error.exception.close()
         process.communicate(timeout=5)
 
+    def test_preparation_serves_the_shared_message_formatter(self):
+        for name in ("strings.js", "messages.js"):
+            shutil.copyfile(Path(preparation.__file__).parent.parent / "viewer/js" / name, self.root / "viewer/js" / name)
+        process = self.launch("--module", ":ui", "--show")
+        _, url = self.wait_state()
+        base = url.split("/preparation/")[0]
+        for path in ("/js/strings.js", "/js/messages.js"):
+            with urlopen(base + path, timeout=2) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn("createMessages", response.read().decode())
+        process.communicate(timeout=5)
+
     def test_fileless_start_accepts_the_existing_status_response_and_limits_cors(self):
         process = self.launch("--module", ":ui", "--show", PREPARATION_TEST_STATUS_ONLY="1")
         _, url = self.wait_state()

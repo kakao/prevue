@@ -1,0 +1,181 @@
+/* 크롬(바탕 · 글자 · 도움말 상자)은 시스템 역할이고, 그림 조각의 색은 tokens.css 의 --art-* 팔레트다. */
+#preparation {
+  position: fixed; inset: var(--prep-bar-h) 0 0; z-index: 100; overflow: hidden; background: var(--surface); color: var(--on-surface);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+#preparation * { box-sizing: border-box; }
+#preparation [hidden] { display: none !important; }
+/* 다른 화면과 같은 앱으로 읽히게 헤더 자리에 워드마크 한 줄 — 준비 중에는 앱 이름 · 상태를 아직 모른다 */
+:root { --prep-bar-h: 52px; }
+#preparation .prep-bar { position: fixed; top: 0; left: 0; right: 0; height: var(--prep-bar-h); display: flex; align-items: center; gap: var(--space-6); padding: 0 var(--space-16);
+  border-bottom: 1px solid var(--outline-variant); background: var(--surface); color: var(--on-surface-variant); font: var(--type-label-large); user-select: none; }
+#preparation .prep-bar svg { width: 18px; height: 18px; }
+/* 그림 시작 — 준비 화면 일러스트(장면 · 바닥). 시간 · 모서리 · 글자 배율 · 간격은 그림 안무라 날값 린트가 색만 본다(D-97) */
+#preparation .scene { position: absolute; inset: 0 0 auto; width: 100%; height: var(--scene-h); perspective-origin: 50% 44%; }
+#preparation .assembly { position: absolute; inset: 0; transform-style: preserve-3d; }
+#preparation .layer { position: absolute; left: 50%; width: var(--screen-w); height: calc(var(--screen-h) * .74); margin: calc(var(--screen-h) * -.37) calc(var(--screen-w) * -.5); transform-style: preserve-3d; }
+/* 3D 맥락은 .layer 까지만 — .drift 가 preserve-3d 면 WebKit 이 틀 안의 같은 평면 층(틀 배경 · 조각)을 깊이로 다시 정렬해 조각이 깜빡인다 */
+#preparation .drift { width: 100%; height: 100%; }
+#preparation .pane { position: relative; width: 100%; height: 100%; }
+#preparation .floor { position: absolute; height: 42px; background: radial-gradient(ellipse, var(--art-floor), transparent 70%); filter: blur(12px); }
+#preparation .preview { display: block; width: 100%; height: 100%; opacity: 0; border-radius: inherit; }
+/* 그림 끝 */
+#preparation .loading-copy { position: absolute; width: min(520px, calc(100% - 40px)); left: 50%; transform: translateX(-50%); text-align: center; }
+#preparation #detail { overflow-wrap: anywhere; }
+#preparation .now { margin: var(--space-8) 0 0; color: var(--on-surface-variant); font: var(--type-body-small); }
+#preparation .now .clock { font: var(--type-code-small); }
+/* 네 칸 — 준비 · 환경 · 그리기 · 완료. 지금 칸은 단계 안에서 차오르고, 실패하면 그 칸이 빨개진다 */
+#preparation .prep-progress { display: flex; gap: var(--space-6); justify-content: center; margin-top: var(--space-16); }
+#preparation .prep-progress i { position: relative; width: 56px; height: 4px; border-radius: var(--corner-full); background: var(--outline-variant); overflow: hidden; }
+#preparation .prep-progress i::after { content: ""; position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--fill, 0)); background: var(--on-surface-variant);
+  transition: transform var(--duration-short4) linear; }
+#preparation .prep-progress i.bad::after { background: var(--error); transform: none; }
+#preparation .failure-help { margin: var(--space-24) auto 0; padding: var(--space-12) var(--space-16); max-width: 410px; border: 1px solid var(--outline-variant); background: var(--surface-container-high); border-radius: var(--corner-large); text-align: left; }
+#preparation .failure-help > span { color: var(--on-surface-variant); font: var(--type-label-medium); }
+#preparation .failure-help p { font: var(--type-body-small); margin: var(--space-8) 0 0; word-break: keep-all; }
+
+/* 그림 시작 — 조각의 모양 · 단계별 자리 · 폼별 자리 */
+#preparation {
+  --solid-fill: linear-gradient(135deg, var(--art-solid-top), var(--art-solid-bottom));
+  --solid-shadow: 8px 16px 28px -8px var(--art-solid-shade);
+  --scene-h: 62vh; --copy-half: calc(var(--screen-h) * .37); --copy-gap: 48px;
+  --screen-h: min(57vh, 530px); --screen-w: calc(var(--screen-h) * .51);
+}
+#preparation .scene { perspective: 1600px; }
+#preparation .floor { top: 84%; width: 390px; left: calc(50% - 195px); opacity: .3; transform: none; }
+#preparation .layer-front { top: 52%; transform: rotateX(12deg) rotateY(-17deg) rotateZ(-9deg); }
+#preparation .drift { animation: none; transform: translateY(var(--hover-y, 0px)) rotateY(var(--hover-ry, 0deg)); }
+#preparation .pane { border: 0; background: transparent; box-shadow: none; border-radius: 21px; transition: background 900ms, border-radius var(--handoff-duration) var(--handoff-ease), box-shadow var(--handoff-duration) var(--handoff-ease), border-color 800ms; }
+#preparation .screen-outline { position: absolute; inset: 0; border: 1px solid var(--art-shape-edge); border-radius: inherit; background: var(--art-panel); box-shadow: 12px 26px 58px -18px var(--art-outline-shade); opacity: 0; transition: opacity 1100ms; }
+#preparation .blueprint { position: absolute; inset: 0; transition: opacity 260ms; }
+#preparation .piece { position: absolute; transition: left 1600ms var(--easing-decelerate), top 1600ms var(--easing-decelerate), width 1600ms var(--easing-decelerate), height 1600ms var(--easing-decelerate), opacity 800ms var(--easing-decelerate), border-radius 1600ms var(--easing-decelerate), transform 1600ms var(--easing-decelerate); }
+#preparation .solid { position: relative; width: 100%; height: 100%; border-radius: inherit; background: var(--solid-fill); border: 1px solid var(--art-shape-edge); box-shadow: var(--solid-shadow); overflow: hidden; transform: translate(var(--float-x, 0px), var(--float-y, 0px)) rotate(var(--float-r, 0deg)); transition: background 1200ms, box-shadow 1200ms, border-color 1200ms; }
+#preparation .piece-cover { left: -17%; top: 22%; width: 78%; height: 42%; border-radius: 36px; transform: rotate(-14deg); }
+#preparation .piece-title { left: 77%; top: 7%; width: 34%; height: 24%; border-radius: 25px; transform: rotate(18deg); }
+#preparation .piece-action { left: 108%; top: 65%; width: 22%; height: 15%; border-radius: 50%; }
+#preparation .piece-meta { left: -36%; top: 87%; width: 66%; height: 8%; border-radius: 25px; transform: rotate(13deg); }
+#preparation .piece-copy { left: 12%; top: -5%; width: 56%; height: 10%; border-radius: 24px; transform: rotate(-8deg); }
+#preparation .piece-tag { left: 51%; top: 87%; width: 27%; height: 10%; border-radius: 14px; transform: rotate(-17deg); }
+#preparation .piece-action .solid { background: linear-gradient(135deg, var(--art-action-a), var(--art-action-b)); }
+#preparation .piece-tag .solid { background: linear-gradient(135deg, var(--art-tag-a), var(--art-tag-b)); }
+#preparation .cover-art { position: absolute; inset: 0; opacity: 0; background: var(--art-bg); transition: opacity 1100ms, background 1100ms; }
+#preparation .art-wave { position: absolute; width: 57%; height: 42%; top: 13%; left: 8%; background: linear-gradient(125deg, var(--art-fill-a), var(--art-fill-b)); border-radius: 50% 50% 50% 0; transform: rotate(-10deg) translateX(var(--art-x, 0px)); }
+#preparation .art-orbit { position: absolute; right: 10%; top: 14%; width: 23%; aspect-ratio: 1; border: 1px solid var(--art-accent); border-radius: 50%; background: repeating-conic-gradient(from 0deg, var(--art-accent) 0deg 1deg, transparent 1deg 15deg); transform: rotate(var(--art-r, 0deg)); }
+#preparation .art-dot { position: absolute; left: 10%; bottom: 13%; width: 13%; aspect-ratio: 1; background: var(--art-dot); border-radius: 50%; }
+#preparation .art-pill { position: absolute; left: 39%; right: 10%; bottom: 15%; height: 21%; border: 1px solid var(--art-pill); border-radius: 30px; }
+#preparation .ui-title, #preparation .ui-meta, #preparation .piece-tag span { opacity: 0; transition: opacity 900ms; }
+#preparation .ui-title { position: absolute; inset: 0; color: var(--art-ink); font-size: calc(var(--screen-w) * .069); line-height: 1.35; font-weight: 500; letter-spacing: -.025em; }
+#preparation .title-lines { position: absolute; inset: 9% 0; display: flex; flex-direction: column; gap: 10px; opacity: 0; transition: opacity 800ms; }
+#preparation .title-lines i { height: 12px; background: var(--art-line); border-radius: 4px; }
+#preparation .title-lines i:last-child { width: 66%; }
+#preparation .piece-action svg { position: absolute; inset: 25%; width: 50%; height: 50%; fill: var(--art-ink); opacity: 0; transition: opacity 800ms; }
+#preparation .ui-meta { position: absolute; inset: 0; white-space: nowrap; color: var(--art-ink); font-size: calc(var(--screen-w) * .029); line-height: 1.4; }
+#preparation .piece-copy .solid { display: flex; flex-direction: column; justify-content: space-between; }
+#preparation .piece-copy i { display: block; width: 100%; height: 4px; background: var(--art-line); border-radius: 4px; opacity: 0; transition: opacity 800ms; }
+#preparation .piece-copy i:nth-child(3) { width: 87%; }
+#preparation .piece-copy i:last-child { width: 63%; }
+#preparation .piece-tag span { position: absolute; inset: 0; display: grid; place-items: center; color: var(--art-ink); font-size: calc(var(--screen-w) * .024); font-weight: 600; letter-spacing: .01em; }
+#preparation[data-phase="environment"] .layer-front { transform: rotateX(9deg) rotateY(-12deg) rotateZ(-4deg); }
+#preparation[data-phase="render"] .layer-front { transform: rotateX(2deg) rotateY(-5deg) rotateZ(-1deg); }
+#preparation:not([data-phase="project"]) .screen-outline { opacity: 1; }
+#preparation:not([data-phase="project"]) .piece { transform: none; }
+#preparation:not([data-phase="project"]) .piece-cover { left: 6%; top: 4%; width: 88%; height: 27%; border-radius: 13px 13px 0 0; }
+#preparation:not([data-phase="project"]) .piece-title { left: 10%; top: 37%; width: 64%; height: 15%; border-radius: 0; }
+#preparation:not([data-phase="project"]) .piece-action { left: 79%; top: 36%; width: 12%; height: 8%; border-radius: 50%; }
+#preparation:not([data-phase="project"]) .piece-meta { left: 10%; top: 55%; width: 50%; height: 3%; border-radius: 3px; }
+#preparation:not([data-phase="project"]) .piece-copy { left: 10%; top: 64%; width: 79%; height: 18%; border-radius: 0; }
+#preparation:not([data-phase="project"]) .piece-tag { left: 10%; top: 88%; width: 23%; height: 6%; border-radius: 30px; }
+#preparation:not([data-phase="project"]) .solid { border-color: transparent; box-shadow: none; background: var(--surface-container-high); }
+#preparation:not([data-phase="project"]) .piece-title .solid, #preparation:not([data-phase="project"]) .piece-copy .solid { background: transparent; }
+#preparation:not([data-phase="project"]) .title-lines, #preparation:not([data-phase="project"]) .piece-copy i { opacity: .7; }
+#preparation[data-phase="render"] .cover-art { opacity: 1; }
+#preparation[data-phase="render"] .ui-title, #preparation[data-phase="render"] .ui-meta, #preparation[data-phase="render"] .piece-action svg, #preparation[data-phase="render"] .piece-tag span { opacity: 1; }
+#preparation[data-phase="render"] .title-lines { opacity: .7; }
+#preparation[data-phase="render"] .piece-action .solid { background: var(--art-bg); }
+#preparation[data-phase="render"] .piece-tag .solid { background: var(--art-tag-surface); }
+#preparation[data-theme="dark"] .cover-art { background: var(--art-bg); }
+#preparation[data-theme="dark"][data-phase="render"] .piece-action .solid { background: var(--art-bg); }
+#preparation[data-theme="dark"][data-phase="render"] .piece-tag .solid { background: var(--art-tag-surface); }
+#preparation:not([data-phase="project"]) .piece-tag .solid::before { content: ""; position: absolute; width: 44%; height: 2px; top: calc(50% - 1px); left: 28%; border-radius: 2px; background: var(--art-line); }
+#preparation:not([data-phase="project"]) .layer-front {
+  top: 52%; width: var(--model-w, var(--screen-w)); height: var(--model-h, calc(var(--screen-h) * .74));
+  margin: calc(var(--model-h, calc(var(--screen-h) * .74)) * -.5) calc(var(--model-w, var(--screen-w)) * -.5);
+}
+#preparation:not([data-phase="project"]) .assembly { scale: 1; transition: scale var(--handoff-duration) var(--handoff-ease); }
+#preparation:is([data-phase="environment"], [data-phase="render"]) .loading-copy { top: var(--drawn-copy-top, calc(var(--scene-h) * .52 + var(--copy-half) + var(--copy-gap))); }
+#preparation:is([data-form="button"], [data-form="strip"]):not([data-phase="project"]) .piece { opacity: 0; }
+#preparation:is([data-form="button"], [data-form="strip"]):not([data-phase="project"]) .piece-title { opacity: 1; left: 25%; top: 44%; width: 50%; height: 12%; }
+#preparation:is([data-form="button"], [data-form="strip"]):not([data-phase="project"]) .title-lines { inset: 0; }
+#preparation:is([data-form="button"], [data-form="strip"]):not([data-phase="project"]) .title-lines i { height: 100%; flex-shrink: 0; }
+#preparation:is([data-form="button"], [data-form="strip"]):not([data-phase="project"]) .title-lines i:last-child { display: none; }
+#preparation[data-form="button"]:is([data-screen="loading"], [data-screen="drawn"]):not([data-phase="project"]) .pane { border-radius: 999px; }
+#preparation[data-form="strip"]:not([data-phase="project"]) .piece-title { left: 17%; top: 37%; width: 52%; height: 11%; }
+#preparation[data-form="strip"]:not([data-phase="project"]) .piece-action { opacity: 1; left: 6%; top: 30%; width: 6%; height: 32%; }
+#preparation[data-form="strip"]:not([data-phase="project"]) .piece-action svg { display: none; }
+#preparation[data-form="strip"]:not([data-phase="project"]) .piece-meta { opacity: 1; left: 17%; top: 61%; width: 35%; height: 5%; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-cover { left: 5%; top: 7%; width: 41%; height: 79%; border-radius: 10px; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-title { left: 51%; top: 13%; width: 32%; height: 17%; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-action { left: 87%; top: 12%; width: 7%; height: 16%; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-meta { left: 51%; top: 37%; width: 30%; height: 4%; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-copy { left: 51%; top: 49%; width: 39%; height: 24%; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-copy i:nth-child(n+5) { display: none; }
+#preparation[data-form="landscape"]:not([data-phase="project"]) .piece-tag { left: 51%; top: 83%; width: 20%; height: 7%; }
+/* 그림 끝 */
+#preparation:is([data-screen="loading"], [data-screen="drawn"]) .loading-copy { top: calc(var(--scene-h) * .52 + var(--copy-half) + var(--copy-gap)); }
+#preparation .loading-copy h1 { margin: 0; font: var(--type-title-medium); }
+#preparation .loading-copy #detail, #preparation .loading-copy .copy-detail { margin: var(--space-8) 0 0; font: var(--type-body-small); color: var(--on-surface-variant); }
+#preparation .copy-previous { position: absolute; margin: 0 !important; pointer-events: none; }
+#preparation[data-screen="failure"] .loading-copy h1 { color: var(--on-surface); }
+#preparation[data-screen="failure"] .loading-copy #detail { max-width: 380px; margin: var(--space-8) auto 0; }
+/* 그림 시작 — 다 그린 장면이 보드로 넘어가는 안무 */
+#preparation[data-screen="preview"] .layer-front, #preparation[data-screen="preview"] .drift { transform: none; }
+#preparation[data-screen="preview"] .preview { opacity: 0; object-fit: contain; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .preview, #preparation[data-board-arrival="moving"] .preview, #preparation[data-board-arrival="done"] .preview { opacity: 1; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .blueprint, #preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .screen-outline, #preparation[data-board-arrival="moving"] .blueprint, #preparation[data-board-arrival="done"] .blueprint, #preparation[data-board-arrival="moving"] .screen-outline, #preparation[data-board-arrival="done"] .screen-outline { opacity: 0; }
+#preparation[data-board-arrival="idle"][data-screen="preview"] .loading-copy { opacity: 1; visibility: visible; }
+#preparation[data-screen="preview"] .pane { border-radius: var(--board-radius, var(--corner-medium)); box-shadow: var(--board-shadow, none); }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .layer-front {
+  left: 50%; top: 52%; width: var(--drawn-w); height: var(--drawn-h);
+  margin: calc(var(--drawn-h) * -.5) calc(var(--drawn-w) * -.5); transform: none;
+}
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .drift { transform: none; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .assembly { scale: 1; transition: scale 800ms var(--easing-decelerate); }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .preview { object-fit: contain; pointer-events: auto; cursor: pointer; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .pane { box-shadow: 0 12px 28px -18px var(--art-shape-shadow); }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .floor { opacity: 0; }
+#preparation[data-screen="drawn"] .loading-copy { opacity: 1; visibility: visible; }
+#preparation[data-screen="drawn"] .scene { transition: opacity 400ms, visibility 0s; }
+#preparation[data-reduced="true"] .drift, #preparation[data-reduced="true"] .solid { transform: none; }
+@media (max-width: 600px) {
+#preparation { --screen-h: min(49vh, 430px); --scene-h: 57vh; --copy-half: calc(var(--screen-h) * .296 + .228vh); }
+#preparation .layer-front { top: 53%; }
+}
+@media (max-height: 650px) and (min-width: 601px) {
+#preparation { --screen-h: 50vh; --scene-h: 53vh; }
+}
+#preparation { --handoff-ease: var(--easing-standard); --handoff-duration: 1100ms; }
+#preparation .layer-front { transition: transform var(--handoff-duration) var(--handoff-ease), opacity 500ms, left var(--handoff-duration) var(--handoff-ease), top var(--handoff-duration) var(--handoff-ease), width var(--handoff-duration) var(--handoff-ease), height var(--handoff-duration) var(--handoff-ease), margin var(--handoff-duration) var(--handoff-ease); }
+#preparation:not([data-screen="loading"]) .drift { transition: transform var(--handoff-duration) var(--handoff-ease); }
+#preparation .blueprint { transition: opacity var(--mock-fade-duration, 520ms) var(--handoff-ease), transform 900ms var(--handoff-ease); }
+#preparation .screen-outline { transition: opacity var(--outline-fade-duration, 700ms) var(--handoff-ease); }
+#preparation .preview { object-fit: contain; filter: blur(5px); transform: scale(1.025); transition: opacity var(--image-opacity-duration, 750ms) var(--handoff-ease) var(--image-opacity-delay, 120ms), filter var(--image-filter-duration, 900ms) var(--handoff-ease), transform var(--handoff-duration) var(--handoff-ease); }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .preview { filter: blur(0); transform: none; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .blueprint { transform: scale(.985); }
+#preparation:is([data-board-arrival="moving"], [data-board-arrival="done"]) .preview { filter: none; transform: none; }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"]) .assembly { transition: scale var(--handoff-duration) var(--handoff-ease); }
+#preparation .board-frame { transition: opacity var(--board-opacity-duration, 1000ms) var(--handoff-ease) var(--board-opacity-delay, 100ms); }
+/* 그림 끝 */
+#preparation .loading-copy { transition: top var(--handoff-duration) var(--handoff-ease), opacity var(--duration-long1) var(--handoff-ease), visibility 0s linear var(--duration-long1); }
+#preparation:is([data-board-arrival="revealing"], [data-board-arrival="presenting"], [data-board-arrival="moving"], [data-board-arrival="done"]) .loading-copy { top: var(--drawn-copy-top); }
+#preparation[data-screen="drawn"] .layer-front { transform: none; }
+#preparation:is([data-phase="environment"], [data-phase="render"]):not([data-screen="failure"]) .loading-copy { top: var(--drawn-copy-top, calc(var(--scene-h) * .52 + var(--copy-half) + var(--copy-gap))); }
+
+#preparation[data-screen="failure"] .scene { opacity: .3; }
+#preparation[data-screen="failure"] .loading-copy { top: max(40vh, 160px); }
+#preparation[data-interactive="true"] { pointer-events: none; }
+#preparation[data-interactive="true"] .preview { pointer-events: auto; }
+#preparation[data-reduced="true"] *, #preparation[data-reduced="true"] *::after { transition: none !important; animation: none !important; }
+#preparation[data-reduced="true"] .layer-front { transform: none !important; }
+body.preparing > :is(header, .rail, main, .stalebar) { opacity: 0; }
+html.preparation-cover { overflow: hidden; }

@@ -42,6 +42,27 @@ jobs:
       - name: 플러그인의 고지 사본이 원본과 맞는지 본다
         run: sh tools/plugin-copies.sh --check
 
+      - name: 뷰어 개발용 Node를 맞춘다
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: viewer-src/.node-version
+          cache: npm
+          cache-dependency-path: viewer-src/package-lock.json
+
+      - name: 뷰어 개발 의존성을 설치한다
+        working-directory: viewer-src
+        run: npm ci --no-audit --no-fund
+
+      - name: 뷰어 생성물과 계약 타입을 확인한다
+        run: sh tools/gen-viewer.sh --check
+
+      - name: 뷰어 타입과 Storybook 조립을 확인한다
+        working-directory: viewer-src
+        run: |
+          set -eu
+          npm run typecheck
+          npm run build-storybook
+
       # CLI 는 macOS 기본 python3(3.9)에서 돈다 — 러너의 새 python 으로 보면 3.10+ 문법이 그대로 지나간다.
       - name: python3를 3.9로 맞춘다
         uses: actions/setup-python@v5

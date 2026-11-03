@@ -39,7 +39,7 @@ class Dictionaries(unittest.TestCase):
         self.assertEqual(mismatches({"b": "{n} y", "b.one": "{n} z", "c.one": "w"}, {"b": "{n} y"}), (["c.one"], []))
 
     def test_the_viewer_falls_back_to_english(self):
-        source = (STRINGS.parent / "js/strings.js").read_text(encoding="utf-8")
+        source = (STRINGS.parent.parent.parent / "viewer-src/legacy/js/strings.js").read_text(encoding="utf-8")
         languages = re.search(r"const LANGUAGES = \[([^\]]*)\]", source)
         self.assertEqual(sorted(re.findall(r'"(\w+)"', languages.group(1))), sorted(p.stem for p in STRINGS.glob("*.json")))
         self.assertIn(': "en";', source)

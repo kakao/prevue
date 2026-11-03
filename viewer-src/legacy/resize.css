@@ -1,0 +1,120 @@
+/* 작업 공간은 캔버스를 창 바닥까지 쓰고, 확대한 그림은 캡슐 밑으로 흐른다. 맞춤 배율만 캡슐 자리를 비운다(resize-scene.js CAPSULE_ROOM). */
+body.resizing-ui main { padding-bottom: 0; }
+.resize-scene { position: absolute; inset: 0; pointer-events: none; --resize-outline: var(--outline); }
+.resize-scene .unit { position: absolute; inset: 0; }
+.wrap.resize-wrap { padding: 0; }
+.resize-wrap #stage { position: absolute; max-width: none; min-width: 0; min-height: 0; border-radius: 0; }
+.resize-wrap #stage > #shot { width: 100% !important; height: 100%; max-width: none; max-height: none; border-radius: inherit; }
+.resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
+.resize-scene.preparing #stage { cursor: default !important; }
+.resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
+.resize-scene.preparing .ruler { opacity: .45; }
+.resize-scene input:disabled { cursor: default; }
+.workspace-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-8);
+  padding: var(--space-8); color: var(--on-surface-variant); font: var(--type-body-small); pointer-events: none; }
+.workspace-spinner { flex: 0 0 auto; width: 12px; height: 12px; border: 1.5px solid var(--outline-variant); border-top-color: var(--outline);
+  border-radius: var(--corner-full); animation: workspace-wait var(--duration-extra-long2) linear infinite; }
+.workspace-loading.failed .workspace-spinner { display: none; }
+/* 처음부터 단건 조작으로 열면 크기를 알기 전까지 임의의 기기 틀을 보이지 않는다. */
+.resize-scene.preparing.measuring #stage { background: transparent; box-shadow: none; }
+.resize-scene.measuring .ruler { visibility: hidden; }
+.resize-scene.measuring .workspace-loading { position: fixed; inset: 0; }
+@keyframes workspace-wait { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .workspace-spinner { animation: none; } }
+.resize-scene .stage { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: 0;
+         box-shadow: 0 0 0 2px var(--live), var(--elevation-2); }
+.resize-scene .ly { position: absolute; left: 0; top: 0; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+/* 그림 시작 — 기기 몸체(틀 · 버튼 · 카메라 · 접는 선). 실제 기기의 모양이라 날값 린트가 색만 본다(D-97) */
+.resize-scene .veil { position: absolute; inset: 0; background: var(--device-veil); pointer-events: none; }
+.resize-scene .outline { position: absolute; left: 0; top: 0; border: .5px solid var(--resize-outline); pointer-events: none; }
+.resize-scene .tick { position: absolute; width: 1px; height: 6px; background: var(--resize-outline); pointer-events: none; }
+.resize-scene .shell { position: absolute; left: 0; top: 0; pointer-events: none; background-color: var(--device-body);
+         background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade));
+         box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline), var(--elevation-2);
+         transition: background-color var(--duration-medium2) var(--easing-standard); }
+.resize-scene .btn { position: absolute; left: 0; top: 0; border-radius: 2px; pointer-events: none; background-color: var(--device-body);
+       box-shadow: inset 0 0 0 .5px var(--device-gloss); transition: background-color var(--duration-medium2) var(--easing-standard); }
+.resize-scene .cam { position: absolute; left: 0; top: 0; z-index: 2; background: var(--device-camera); pointer-events: none; }
+.resize-scene .crease { position: absolute; top: 0; width: 14px; margin-left: -7px; pointer-events: none;
+          background: linear-gradient(90deg, var(--device-gloss-clear), var(--device-crease-light) 36%, var(--device-crease-dark) 50%, var(--device-crease-light) 64%, var(--device-gloss-clear)); }
+.resize-scene .crease.h { width: auto; height: 14px; margin-left: 0; margin-top: -7px;
+            background: linear-gradient(180deg, var(--device-gloss-clear), var(--device-crease-light) 36%, var(--device-crease-dark) 50%, var(--device-crease-light) 64%, var(--device-gloss-clear)); }
+/* 그림 끝 */
+/* 그림 시작 — 접는 장(Duo)의 몸체와 면 */
+.resize-scene .duo { position: absolute; inset: 0; pointer-events: none; }
+.resize-scene .duo-base { position: absolute; left: 0; top: 0; box-shadow: var(--elevation-2); }
+.resize-scene .duo-scr { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 2px var(--live); }
+.resize-scene .duo-band { position: absolute; border-style: solid; box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-inset); }
+.resize-scene .duo-flap { position: absolute; inset: 0; background: var(--device-flap); }
+.resize-scene .duo-face { position: absolute; left: 0; top: 0; overflow: hidden; }
+.resize-scene .duo-ly { position: absolute; inset: 0; }
+.resize-scene .duo-dark { position: absolute; left: 0; top: 0; }
+/* 접는 장의 몸체도 멈춘 몸체(.shell)와 같은 그림자 · 외곽선 · 150° 빛을 받아 끝난 순간 바뀌지 않는다. */
+.resize-scene .duo-edge { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; filter: var(--elevation-2-filter); }
+.resize-scene .duo-edge :is(.outl, .houtl) { stroke: var(--device-hairline); }
+.resize-scene .duo-edge .rimhi { stroke: var(--device-rim); }
+.resize-scene .duo-band { background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
+            background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
+.resize-scene .duo-edge path { fill: none; stroke-linejoin: round; }
+.resize-scene .duo-edge .ring { stroke: var(--live); stroke-width: 4px; }
+/* 그림 끝 */
+/* 그림 시작 — 접기 전환의 리그(면 · 그늘 · 빛) */
+.resize-scene .rig { position: absolute; inset: 0; pointer-events: none; }
+.resize-scene .rig .lift { position: absolute; inset: 0; }
+.resize-scene .rig .plate { position: absolute; left: 0; top: 0; border-radius: var(--corner-medium); }
+.resize-scene .rig .base, .resize-scene .rig .leaf { position: absolute; left: 0; top: 0; }
+.resize-scene .rig .leaf { transform-style: preserve-3d; transform-origin: 100% 50%; }
+.resize-scene .rig .clip { position: absolute; inset: 0; overflow: hidden; }
+.resize-scene .rig .face { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.resize-scene .rig .face.outer { transform: rotateY(180deg); }
+.resize-scene .rig .shade, .resize-scene .rig .cast { position: absolute; inset: 0; pointer-events: none; }
+.resize-scene .rig .shade { background: var(--device-shade); }
+.resize-scene .rig .sheen { position: absolute; top: 0; bottom: 0; left: -60%; width: 220%; pointer-events: none;
+              background: linear-gradient(100deg, var(--device-gloss-clear) 38%, var(--device-sheen) 50%, var(--device-gloss-clear) 62%); }
+.resize-scene .rig .edge { position: absolute; pointer-events: none; border-style: solid; }
+.resize-scene .rig .ring { border-color: var(--live); }
+.resize-scene .rig .bez { border-color: var(--device-body); box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-inset); }
+/* 그림 끝 */
+.resize-scene .ruler { position: absolute; inset: 0; pointer-events: none; }
+.resize-scene .ruler svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.resize-scene .ruler .dim { fill: none; stroke: var(--on-surface); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; opacity: .28; transition: opacity var(--duration-short4) var(--easing-standard); }
+.resize-scene .ruler .ext { fill: none; stroke: var(--resize-outline); stroke-width: 1; stroke-dasharray: 2 3; opacity: .6; transition: opacity var(--duration-short4) var(--easing-standard); }
+.resize-scene .ruler.custom .dim { opacity: .72; }
+.resize-scene .ruler.custom .ext { opacity: 1; }
+.resize-scene .rl-badge { position: absolute; left: 0; top: 0; z-index: 2; width: 6.2ch; height: 22px; margin: 0; padding: 0 var(--space-4); border: 0; border-radius: var(--corner-small);
+            transform: translate(-50%, -50%); pointer-events: auto; background: var(--surface-container-high); color: var(--on-surface-variant);
+            font: var(--type-code-small); font-variant-numeric: tabular-nums; text-align: center; cursor: text;
+            transition: box-shadow var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.resize-scene .rl-badge:hover { background: var(--state-hover); color: var(--on-surface); }
+/* 기기 숫자는 바탕 없이 읽히고, 누르면 그 크기로 커스텀이 된다(D-99). 커스텀 숫자는 고른 칸과 같은 바탕이다 — 다크에서 --primary 위 흰 글자가 옅었다 */
+.resize-scene .ruler.device .rl-badge { background: transparent; }
+.resize-scene .ruler.custom .rl-badge { background: var(--primary-container); color: var(--on-surface); font-weight: var(--weight-semibold); box-shadow: var(--elevation-1); }
+.resize-scene .ruler.custom .rl-badge:hover { box-shadow: 0 0 0 3px var(--outline), var(--elevation-1); }
+.resize-scene .ruler .rl-badge:focus, .resize-scene .ruler.custom .rl-badge:focus { outline: none; background: var(--surface-container); color: var(--on-surface); box-shadow: 0 0 0 2px var(--focus-ring), var(--elevation-2); }
+
+.resize-scene .stage { min-width: 0; min-height: 0; max-width: none; transition: none; }
+.resize-scene .stage img { border-radius: 0; max-width: none; max-height: none; }
+.resize-scene .ly { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .resize-scene *, .resize-scene *::after { transition: opacity var(--duration-short4) var(--easing-standard) !important; }
+}
+
+.resize-wrap #stage { z-index: 3; pointer-events: auto; }
+.resize-scene .unit .stage { z-index: 4; }
+.resize-scene .ruler { z-index: 5; }
+.resize-scene.at-rest .unit .stage { background: transparent !important; box-shadow: none; }
+.resize-scene.at-rest .unit .stage > img, .resize-scene.at-rest .unit .stage > .veil { visibility: hidden; }
+
+.resize-geometry { position: absolute; inset: 0; transform-origin: 0 0; }
+.resize-geometry.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard); }
+
+.resize-scene.at-rest.await-live .unit .stage > img { visibility: visible; }
+
+/* 작업 공간 여닫기의 틀 모프(focus.js) — 나는 동안 실제 캔버스와 장면의 틀은 숨는다. 장식은 틀이 거의 닿은 뒤 들어오고(short4), 나갈 때는 먼저 물러난다(short2). */
+#focusView.morph-hold #stage, #focusView.morph-hold .unit .stage, .morph-target { visibility: hidden !important; }
+.resize-scene { --deco-dur: var(--duration-short4); }
+.resize-scene .unit :is(.outline, .tick, .cam), .resize-scene .ruler { transition: filter var(--deco-dur) var(--easing-standard); }
+.resize-scene .shell, .resize-scene .btn { transition: background-color var(--duration-medium2) var(--easing-standard), filter var(--deco-dur) var(--easing-standard); }
+.resize-scene.deco-off .unit :is(.shell, .btn, .outline, .tick, .cam), .resize-scene.deco-off .ruler { filter: opacity(0); }
+.morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container); }
+.morph img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 0 0; }

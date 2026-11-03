@@ -129,7 +129,10 @@ def detekt_findings(gradle_args):
 
 def viewer_findings():
     """뷰어 날값(D-96)."""
-    return [Finding(*f) for f in viewer.check(".")]
+    try:
+        return [Finding(*f) for f in viewer.check(".")]
+    except RuntimeError as error:
+        raise Unrunnable(str(error)) from error
 
 
 def changed_lines(base):

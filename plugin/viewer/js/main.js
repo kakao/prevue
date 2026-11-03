@@ -80,7 +80,7 @@ function renderStale(rows) {
 const scrolls = new Map();
 let boardFile = null;
 
-function draw(s) {
+export function drawLegacy(s) {
   const wasBoard = !boardView.hidden;
   const file = s.board ? s.board.file : null;
   if (wasBoard && boardFile && (s.screen !== "board" || file !== boardFile)) scrolls.set(boardFile, scrollY);
@@ -108,6 +108,8 @@ function draw(s) {
   applyReveal();                             // 빠른 열기에서 고른 함수 — 되살린 스크롤 위에서 그 묶음으로 간다
   preparation?.update(s);
 }
+
+let draw = drawLegacy;
 
 const tabOf = st => { const t = (st.tabs || []).find(t => t.active); return t ? t.key : null; };
 /** 옛 레일에서 본 방향 — 아래면 1. 새로 연 탭은 맨 아래에 붙고, 닫혀서 옮긴 것도 옛 레일의 자리로 견준다. */
@@ -198,15 +200,18 @@ function receive(s) {
   apply(s);
 }
 
-connect({
-  open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },
-  state: receive,
-  ui: ev => {
-    if (ev.kind === "flash") flash(daemonText(ev.text));
-    else if (ev.kind === "previewFiles") previewFilesChanged();
-    else if (ev.kind === "projectFiles") loadProjectFiles();
-    else if (ev.kind === "restart" && !preparation) restart();
-  },
-  // 끊김은 오류다 — 시작 화면이 덮지 않는다(탭 0개와 가른다, D-63). 다시 시작 중이면 기다린다.
-  error: () => { lost = true; if (!restarting) lostView(); },
-});
+export function startViewer(render) {
+  draw = render;
+  connect({
+    open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },
+    state: receive,
+    ui: ev => {
+      if (ev.kind === "flash") flash(daemonText(ev.text));
+      else if (ev.kind === "previewFiles") previewFilesChanged();
+      else if (ev.kind === "projectFiles") loadProjectFiles();
+      else if (ev.kind === "restart" && !preparation) restart();
+    },
+    // 끊김은 오류다 — 시작 화면이 덮지 않는다(탭 0개와 가른다, D-63). 다시 시작 중이면 기다린다.
+    error: () => { lost = true; if (!restarting) lostView(); },
+  });
+}
