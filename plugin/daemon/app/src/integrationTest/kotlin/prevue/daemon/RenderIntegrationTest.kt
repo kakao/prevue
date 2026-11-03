@@ -34,12 +34,12 @@ import prevue.domain.model.FocusResult
 import prevue.entity.ModuleGraph
 import prevue.entity.PreviewSpec
 import prevue.entity.Semantics
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.domain.port.Clock
 import prevue.domain.port.FailureKind
-import prevue.domain.Ports
+import prevue.domain.port.Ports
 import prevue.domain.UseCases
-import prevue.domain.Watchers
+import prevue.domain.port.Watchers
 import prevue.domain.runtime.Workspace
 import prevue.adapter.compile.HotCompiler
 import prevue.adapter.render.ViewInfoJson

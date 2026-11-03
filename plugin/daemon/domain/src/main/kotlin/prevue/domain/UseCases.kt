@@ -4,17 +4,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import prevue.domain.port.Ports
+import prevue.domain.port.Watchers
 import prevue.domain.model.LiveFrame
 import prevue.domain.model.SettledShot
-import prevue.domain.port.BuildWatcher
-import prevue.domain.port.Compiler
-import prevue.domain.port.LiveSessionFactory
-import prevue.domain.port.MemoryMeter
-import prevue.domain.port.PreviewRepository
-import prevue.domain.port.PreviewRenderer
-import prevue.domain.port.ResourceValues
-import prevue.domain.port.SourceWatcher
-import prevue.domain.port.SourceFileRepository
 import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.LiteralPatches
 import prevue.domain.runtime.LiveLoop
@@ -24,18 +17,6 @@ import prevue.domain.runtime.ResourcePatches
 import prevue.domain.runtime.StaleCallers
 import prevue.domain.runtime.Tabs
 import prevue.domain.runtime.Workspace
-
-class Ports(
-    val engine: PreviewRenderer,
-    val sessions: LiveSessionFactory,
-    val compiler: Compiler,
-    val previews: PreviewRepository,
-    val sourceFiles: SourceFileRepository,
-    val memory: MemoryMeter = MemoryMeter { null },
-    val resources: ResourceValues? = null,
-)
-
-class Watchers(val sources: SourceWatcher? = null, val builds: BuildWatcher? = null, val values: SourceWatcher? = null)
 
 class UseCases(
     workspace: Workspace, ports: Ports, scope: CoroutineScope, watchers: Watchers = Watchers(), postureQuietMs: Long = DrawPosturesUseCase.QUIET_MS,

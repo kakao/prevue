@@ -37,7 +37,7 @@ import prevue.domain.port.LiteralTable
 import prevue.domain.port.LiveSession
 import prevue.domain.port.LiveSessionFactory
 import prevue.entity.ModuleGraph
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.entity.ModuleNode
 import prevue.entity.PreviewSpec
 import prevue.domain.port.RenderOutput
@@ -51,9 +51,9 @@ import prevue.domain.port.ResourceKey
 import prevue.domain.port.ResourceLookup
 import prevue.domain.port.ResourceValues
 import prevue.domain.port.Clock
-import prevue.domain.Ports
+import prevue.domain.port.Ports
 import prevue.domain.UseCases
-import prevue.domain.Watchers
+import prevue.domain.port.Watchers
 import prevue.domain.runtime.Workspace
 import prevue.daemon.EntryPoints
 import prevue.daemon.PrevueCheckout

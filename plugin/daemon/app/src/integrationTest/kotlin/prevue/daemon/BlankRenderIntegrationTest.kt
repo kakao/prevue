@@ -23,10 +23,10 @@ import prevue.adapter.render.RenderEngine
 import prevue.adapter.source.ProjectFiles
 import prevue.adapter.source.SourcePreviewRepository
 import prevue.adapter.watch.PollingSourceWatcher
-import prevue.domain.Ports
+import prevue.domain.port.Ports
 import prevue.domain.UseCases
-import prevue.domain.Watchers
-import prevue.domain.model.ModuleInfo
+import prevue.domain.port.Watchers
+import prevue.entity.ModuleInfo
 import prevue.domain.port.Clock
 import prevue.domain.port.FailureKind
 import prevue.domain.runtime.Workspace

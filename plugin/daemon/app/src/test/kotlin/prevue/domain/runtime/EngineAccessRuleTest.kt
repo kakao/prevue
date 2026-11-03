@@ -21,7 +21,7 @@ class EngineAccessRuleTest {
     @Test fun `domain 에서 엔진 포트를 쥐는 곳은 액터 · 프레임 루프 · 조립 · status 뿐이다`() {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(
-            listOf("domain/ReadStatusUseCase.kt", "domain/UseCases.kt", "domain/runtime/EngineActor.kt", "domain/runtime/LiveLoop.kt"),
+            listOf("domain/ReadStatusUseCase.kt", "domain/runtime/EngineActor.kt", "domain/runtime/LiveLoop.kt"),
             EngineRule.holders(files),
         )
     }
@@ -31,7 +31,7 @@ class EngineAccessRuleTest {
     }
 
     @Test fun `구체 엔진은 조립만 쥐고 조립 때 읽는 것만 읽는다`() {
-        assertEquals(listOf("Main.kt"), EngineRule.concreteHolders(files))
+        assertEquals(listOf("adapter/infra/Infra.kt"), EngineRule.concreteHolders(files))
     }
 
     @Test fun `일부러 넣은 위반을 잡는다`() {
@@ -39,15 +39,15 @@ class EngineAccessRuleTest {
             "domain/A.kt" to "class A(private val r: PreviewRenderer) { fun a() = r.show(p) }\n",
             "domain/ReadStatusUseCase.kt" to "val s = engine.loaderGen + engine.codeChanged()\n",
             "domain/UseCases.kt" to "init { ports.engine.protect { k }; ports.engine.buildChanged() }\n",
-            "Main.kt" to "val engine = RenderEngine(s, l, o)\nlog(engine.bootstrapMs); engine.codeChanged()\n",
+            "adapter/infra/Infra.kt" to "val engine = RenderEngine(s, l, o)\nlog(engine.bootstrapMs); engine.codeChanged()\n",
             "adapter/http/Server.kt" to "// RenderEngine 은 액터가 쥔다\nclass Server(private val e: RenderEngine)\n",
         )
         assertEquals(listOf("domain/A.kt"), EngineRule.holders(planted))
         assertEquals(
-            listOf("domain/ReadStatusUseCase.kt → codeChanged", "domain/UseCases.kt → buildChanged", "Main.kt → codeChanged"),
+            listOf("domain/ReadStatusUseCase.kt → codeChanged", "domain/UseCases.kt → buildChanged", "adapter/infra/Infra.kt → codeChanged"),
             EngineRule.outOfQueue(planted),
         )
-        assertEquals(listOf("Main.kt", "adapter/http/Server.kt"), EngineRule.concreteHolders(planted))
+        assertEquals(listOf("adapter/http/Server.kt", "adapter/infra/Infra.kt"), EngineRule.concreteHolders(planted))
     }
 }
 
@@ -57,7 +57,7 @@ object EngineRule {
     private val outside = mapOf(
         "domain/ReadStatusUseCase.kt" to (Regex("""\bengine\.(\w+)""") to observed),
         "domain/UseCases.kt" to (Regex("""\bports\.(?:engine|sessions)\.(\w+)""") to setOf("protect")),
-        "Main.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives", "await", "resources")),
+        "adapter/infra/Infra.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives", "await", "resources")),
     )
     private val concrete = Regex("""\bRenderEngine\b""")
     private fun code(text: String) = text.lineSequence().filterNot { it.trimStart().let { l -> l.startsWith("*") || l.startsWith("//") || l.startsWith("/*") } }

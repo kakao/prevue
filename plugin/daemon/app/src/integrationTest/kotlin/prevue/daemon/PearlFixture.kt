@@ -1,5 +1,8 @@
 package prevue.daemon
 
+import prevue.adapter.infra.InfraConfig
+import prevue.adapter.infra.CompilerJars
+import prevue.adapter.infra.AndroidPlatforms
 import java.io.File
 import java.util.concurrent.TimeUnit
 import prevue.adapter.compile.HotCompiler
@@ -58,6 +61,12 @@ object PearlFixture {
         return HotCompiler({ home }, jars.jars, env("PREVUE_BRIDGE")!!, jars.composePlugin,
             AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"))
     }
+
+    fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(
+        home.file, layoutlib()!!, env("PREVUE_COMPILER")!!, env("PREVUE_BRIDGE")!!, 8791,
+        resourcesFrom = app?.file, cache = cache, preload = false,
+        androidJar = AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)),
+    )
 
     /** 목록 ↔ 상세 앱의 소스 둘을 [dir] 아래 패키지 경로 그대로 복사한다 — 저장은 복사본에 하고 커밋된 픽스처는 건드리지 않는다. 복사본의 `PearlApp.kt`. */
     fun appCopy(dir: File): File {
