@@ -18,6 +18,8 @@ kotlin {
 }
 
 val layers = listOf(":entity", ":domain", ":adapter").map { project(it) }
+// 아래 jar · 테스트 컴파일이 층의 sourceSets · jar 태스크를 읽는다 — 이름 순서(adapter · app · domain · entity)에 기대지 않고 먼저 구성한다.
+layers.forEach { evaluationDependsOn(it.path) }
 
 /**
  * 상주 컴파일러 브리지. kotlin-compiler-embeddable에만 컴파일되고 데몬 본체의 클래스패스에는
@@ -241,7 +243,9 @@ val prevueEnv = tasks.register("prevueEnv") {
     val envFile = layout.buildDirectory.file("prevue-env")
     // 순서를 여기서 읽는다. 이 컬렉션의 차례가 곧 클래스패스의 차례다.
     val runtimeClasspath = externalRuntime
-    val ownJarName = tasks.jar.flatMap { it.archiveFileName }
+    // 산출물 자리는 태스크가 쓰는 곳에서 읽어 플러그인 디렉터리 기준으로 적는다 — 모듈을 옮겨도 여기를 고치지 않는다.
+    val pluginDir = rootDir.parentFile
+    val ownJar = tasks.jar.flatMap { it.archiveFile }
     val bridgeArchive = bridgeJar.flatMap { it.archiveFile }
 
     // tasks.jar 를 빼먹으면 안 된다. 서드파티 jar 를 공유 툴체인으로 옮기면서 syncRuntimeLibs 에서
@@ -261,7 +265,7 @@ val prevueEnv = tasks.register("prevueEnv") {
         // 셸이 풀 변수다. 코틀린 쪽에서 풀리면 안 된다.
         val d = "${'$'}"
         // 우리 jar 가 맨 앞, 나머지는 해석 순서 그대로 — reflect 가 renderer 보다 앞이어야 한다.
-        val cp = listOf("${d}ROOT/daemon/app/build/libs/${ownJarName.get()}") +
+        val cp = listOf("${d}ROOT/${ownJar.get().asFile.relativeTo(pluginDir).invariantSeparatorsPath}") +
             deps.map { "${d}HOME/${depsRel.get()}/$it" }
 
         envFile.get().asFile.writeText(
@@ -271,7 +275,7 @@ val prevueEnv = tasks.register("prevueEnv") {
                 appendLine("# 절대 경로를 적으면 빌드한 머신에서만 맞는다.")
                 appendLine("# 우리 것만 ${d}ROOT 다. 나머지는 플러그인 버전과 무관해 공유 툴체인에 있다.")
                 appendLine("PREVUE_CP=\"${cp.joinToString(":")}\"")
-                appendLine("PREVUE_BRIDGE=\"${d}ROOT/daemon/app/build/${bridgeArchive.get().asFile.name}\"")
+                appendLine("PREVUE_BRIDGE=\"${d}ROOT/${bridgeArchive.get().asFile.relativeTo(pluginDir).invariantSeparatorsPath}\"")
                 appendLine("PREVUE_LAYOUTLIB=\"${d}HOME/$layoutlibRel\"")
                 appendLine("PREVUE_COMPILER=\"${d}HOME/$compilerRel\"")
                 appendLine("PREVUE_LIB=\"${d}HOME/${depsRel.get()}\"")

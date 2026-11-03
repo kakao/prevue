@@ -9,8 +9,8 @@ import kotlin_source  # noqa: E402
 import lint  # noqa: E402
 import slop  # noqa: E402
 
-DOMAIN = "plugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt"
-ADAPTER = "plugin/daemon/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
+DOMAIN = "plugin/daemon/domain/src/main/kotlin/prevue/daemon/domain/A.kt"
+ADAPTER = "plugin/daemon/adapter/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
