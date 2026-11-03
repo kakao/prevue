@@ -9,6 +9,7 @@ const source = dirname(fileURLToPath(import.meta.url));
 const destination = resolve(source, '../plugin/viewer');
 const check = process.argv.includes('--check');
 const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
+const legacy = join(source, 'legacy/js/');
 const handWritten = name => name === 'tokens.css' || name === 'js/resize-scene.js' || name === 'prevue.svg' || name.startsWith('strings/');
 
 async function files(directory, prefix = '') {
@@ -30,9 +31,10 @@ try {
       target: 'es2022',
       minify: true,
       lib: { entry: join(source, 'src/main.tsx'), formats: ['es'], fileName: () => 'js/viewer.js' },
+      // 기존 모듈은 같은 URL의 한 벌만 쓴다 — 번들에 사본이 들면 사전 · 마지막 상태 · 캡슐이 두 벌이 된다.
       rolldownOptions: {
-        external: [join(source, 'legacy/js/main.js')],
-        output: { paths: { [join(source, 'legacy/js/main.js')]: './js/main.js' } },
+        external: id => id.startsWith(legacy),
+        output: { paths: id => id.startsWith(legacy) ? './js/' + id.slice(legacy.length) : id },
       },
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },

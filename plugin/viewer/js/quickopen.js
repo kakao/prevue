@@ -275,7 +275,7 @@ document.addEventListener("visibilitychange", () => { if (docked && !document.hi
 openBtn.addEventListener("click", e => (open ? closeQuickOpen(false, true) : openQuickOpen(e.detail === 0 ? openBtn : null)));
 q.addEventListener("input", () => { sel = q.value.trim() ? 0 : -1; render(); });
 q.addEventListener("keydown", e => {
-  // 입력 중에는 단축키가 죽으므로(keys.js) 패널의 키는 여기서 받는다.
+  // 입력 중에는 단축키가 죽으므로(shortcuts.ts) 패널의 키는 여기서 받는다.
   if (e.isComposing) return;
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();

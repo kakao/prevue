@@ -267,14 +267,14 @@ body.rail-on { --rail-w: 200px; }
       transition: height var(--duration-medium2) var(--easing-standard), opacity var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
 .rt:hover { background: var(--state-hover); }
 .rt:hover, .rt.active { color: var(--on-surface); }
-/* 18px — 문서 모서리의 소스 세트 표식(platform.js)이 16px 에서는 덩어리로 읽혔다. */
+/* 18px — 문서 모서리의 소스 세트 표식(FileIcon)이 16px 에서는 덩어리로 읽혔다. */
 .rt-ic { flex: 0 0 auto; width: 18px; height: 18px; color: var(--on-surface-variant); }
 /* 표식은 문서 선보다 한 단계 진하다. */
 .rt-ic .mk-android { color: var(--on-surface); }
 /* 그림 시작 — KMP 표식. 공식 단색판의 색 그대로라 크롬 역할 색으로 칠하지 않는다(D-134) */
 .rt-ic .mk-kmp { color: var(--art-kmp); }
 /* 그림 끝 */
-/* 이름은 남은 칸을 다 갖고(바탕 폭 0 에서 시작) 그 칸에서 tabs.js 가 꼬리를 남기고 가운데를 줄인다. 모듈 폭은 tabs.js 가 이름이 남긴 만큼 준다. */
+/* 이름은 남은 칸을 다 갖고(바탕 폭 0 에서 시작) 그 칸에서 FileRail 이 꼬리를 남기고 가운데를 줄인다. 모듈 폭은 FileRail 이 이름이 남긴 만큼 준다. */
 .rt-name { flex: 1 1 0; min-width: 0; overflow: hidden; }
 .rt-mod { flex: 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--on-surface-variant); font: var(--type-label-small); }
 .rt-mod:empty { display: none; }
@@ -519,7 +519,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 #sel { min-width: 0; overflow-wrap: anywhere; }
 @keyframes okmark { from { opacity: 0; transform: translateY(calc(var(--motion-enter-shift) / 2)); } }
 .log { color: var(--on-surface-variant); white-space: pre-wrap; }
-/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce). 앞 문장이 요점이라 진하다.
+/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce · NotificationCapsule). 앞 문장이 요점이라 진하다.
    오류 줄(.cap-main)과 한 줄에 서지 않고 그 위에 따로 선다 — 오류가 안내에 밀려 좁아지지 않게. */
 .cap-once { display: flex; align-items: center; gap: var(--space-8); color: var(--on-surface); }
 .cap-once:not([hidden]) + .cap-main:has(> :not(:empty)) { margin-top: var(--space-6); }

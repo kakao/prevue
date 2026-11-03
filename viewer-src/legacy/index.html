@@ -12,7 +12,8 @@
 </head>
 <body>
 <script>if (new URL(location.href).searchParams.has('prepare')) document.body.classList.add('preparing');</script>
-<!-- 헤더는 프로젝트 한 줄이다(D-98) — 어느 앱 · 무슨 일이. 어느 파일인지는 왼쪽 레일의 지금 줄이 말한다 — 파일명을 두 번 쓰지 않는다. -->
+<!-- 헤더는 프로젝트 한 줄이다(D-98) — 어느 앱 · 무슨 일이. 어느 파일인지는 왼쪽 레일의 지금 줄이 말한다 — 파일명을 두 번 쓰지 않는다.
+     React 가 그리는 영역(#app · #status · #helpBtn)은 바깥 요소만 둔다. 작업 공간의 칸(#back · #wsTitle · #seg)은 focus.js 가 처음부터 쥔다. -->
 <header class="bar" id="bar">
   <div class="bar-row">
     <div class="bar-l">
@@ -24,22 +25,8 @@
       </span>
       <span class="brand-sep" aria-hidden="true"></span>
       <!-- 주인공은 대상 앱(B1) — 폰에서 보이는 런처 아이콘 · 이름이 제목, 폴더 · 브랜치 · 모듈 · 변형이 부제다(macOS 창 제목 + 부제).
-           아이콘을 못 읽으면 이름 첫 글자 타일(B7). 부제에서 누를 수 있는 칸(폴더 · 브랜치)만 올리면 바탕이 생긴다(Xcode 스킴 선택기). -->
-      <div class="app" id="app">
-        <span class="app-tile" id="appTile" aria-hidden="true"></span>
-        <img class="app-icon" id="appIcon" alt="" hidden>
-        <div class="app-t">
-          <div class="app-name" id="appName"></div>
-          <div class="proj" id="proj">
-            <button class="pj" id="pjDir" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="dirPop"></button><button class="pj pj-br" id="pjBr" type="button" data-t-title="brand.copyBranch" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 2.5-6 2-6 4"/></svg><span id="pjBrName"></span></button><span class="pj-rest" id="pjRest"></span>
-          </div>
-        </div>
-        <!-- 부제는 말줄임(overflow: hidden)이라 팝오버를 그 밖에 둔다. 가로 자리는 header.js 가 폴더 칸에 맞춘다. -->
-        <div class="pop dir-pop" id="dirPop" role="dialog" data-t-aria-label="header.dir">
-          <div class="dir-path" id="dirPath"></div>
-          <div class="dir-act"><button type="button" id="dirCopy" data-t="header.dir.copy"></button><button type="button" id="dirReveal" data-t="header.dir.reveal"></button></div>
-        </div>
-      </div>
+           안은 React 의 ProjectHeader 가 그린다. -->
+      <div class="app" id="app"></div>
       <!-- 작업 공간(D-57)의 내비게이션 바 — 돌아갈 곳(파일 탭 이름)과 이 장의 이름. iOS 처럼 뒤로 버튼이 이전 화면의 제목을 갖는다. -->
       <button class="back" id="back" type="button" hidden>
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg><span id="backName"></span>
@@ -48,16 +35,10 @@
     <!-- 이 장의 이름 두 줄(D-63) — 위 프리뷰 이름(name=), 아래 함수 이름(macOS 창 제목 + 부제). 이름이 없으면 함수 이름 한 줄. -->
     <div class="ws-title" id="wsTitle" hidden><span class="ws-name" id="wsName"></span><span class="ws-fn" id="wsFn"></span></div>
     <div class="bar-r" id="barR">
-      <div class="status" id="status" tabindex="0" data-state="none">
-        <span class="st-ic" aria-hidden="true">
-          <svg class="i-ok" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg>
-          <svg class="i-busy" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 2.5a5.5 5.5 0 1 1-5.5 5.5"/></svg>
-          <svg class="i-bad" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="currentColor"/><path class="mark" d="M8 4.8v3.8" stroke-width="1.7" stroke-linecap="round"/><circle class="mark" cx="8" cy="11.2" r=".95"/></svg>
-        </span><span class="st-text" id="statusText"></span>
-        <div class="pop" role="tooltip"><div class="note" id="note"></div><div class="who" id="who"></div><div class="settle" id="settle"></div><div class="timing" id="timing"></div><div class="where" id="where"></div></div>
-      </div>
+      <!-- 상태 알약의 안은 React 의 StatusPill 이 그린다. -->
+      <div class="status" id="status" tabindex="0" data-state="none"></div>
       <div class="seg" id="seg" hidden><button type="button" data-on="false" data-t="mode.view"></button><button type="button" data-on="true" data-t="mode.interact"></button></div>
-      <button class="icon-btn" id="helpBtn" type="button" data-t-title="header.help.tip" data-t-aria-label="header.help" aria-haspopup="dialog" aria-expanded="false">?</button>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-expanded="false"></button>
     </div>
   </div>
   <div class="progress"></div>
@@ -66,13 +47,14 @@
 <!-- 열린 파일 레일(D-54 · D-98). 지금 파일은 떠 있는 바탕이 가리킨다. 작업 공간에서는 접힌다(D-99). 빠른 열기의 입구는 맨 아래 "파일 열기"와 / · ⌘K 다. -->
 <nav class="rail" id="rail" data-t-aria-label="rail.title" hidden>
   <h4 class="rail-h" data-t="rail.title"></h4>
-  <div class="rail-list" id="railList" role="tablist" aria-orientation="vertical"><div class="rail-glider" id="railGlider" hidden></div></div>
+  <!-- 줄들은 React 의 FileRail 이 그린다. 머리 · 빈 안내 · 파일 열기(quickopen.js)는 마크업이다. -->
+  <div class="rail-list" id="railList" role="tablist" aria-orientation="vertical"></div>
   <p class="rail-empty" id="railEmpty" data-t="rail.empty" hidden></p>
   <button class="rail-open" id="railOpen" type="button" data-t-title="rail.open.tip" data-t-aria-label="rail.open.label" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg><span class="rail-open-t" data-t="rail.open"></span><kbd>⌘K</kbd></button>
 </nav>
 
-<!-- 그림이 소스보다 옛것이다. 보드와 한 장 모두에 걸리므로 두 섹션 밖에 둔다. -->
-<div class="stalebar" id="staleBar"><div class="in"><div class="rows" id="staleRows"></div></div></div>
+<!-- 그림이 소스보다 옛것이다. 보드와 한 장 모두에 걸리므로 두 섹션 밖에 둔다. 안은 React 의 StaleBanner 가 그린다. -->
+<div class="stalebar" id="staleBar"></div>
 <aside class="build-notice" id="buildNotice" role="status" data-t="build.notice" hidden></aside>
 
 <main>
@@ -142,11 +124,8 @@
   </section>
 </main>
 
-<!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 박스 꼬리표가 말한다(D-101). -->
-<div class="capsule" id="strip" role="status">
-  <div class="cap-once" id="capOnce" hidden><span id="capOnceText"></span><button class="cap-x" id="capOnceX" type="button" data-t-title="capsule.dismiss" data-t-aria-label="capsule.dismiss"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6"/></svg></button></div>
-  <div class="cap-main"><div id="sel"></div><div class="log" id="log"></div></div>
-</div>
+<!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 박스 꼬리표가 말한다(D-101). 안은 React 의 NotificationCapsule 이 그린다. -->
+<div class="capsule" id="strip" role="status"></div>
 
 <!-- 작업 공간의 검사 패널(D-99) — 레일이 접힌 자리 맞은편에 크기 · 기기 · 자세 · 확대가 위에서 아래로 선다. 무대는 세로를 다 쓰고 아래는 캡슐 자리다.
      칸 이름 · 윤곽 · dp 는 resize-scene.js 가 기기 표에서 채운다. 확대 줄은 맨 아래이고 배율 메뉴는 그 위로 열린다. -->
@@ -229,14 +208,8 @@
   </div>
 </div>
 
-<!-- 단축키 도움말. 내용은 keys.js 의 표가 채운다 — 디스패치와 같은 표라 둘이 어긋나지 않는다. -->
-<div class="scrim" id="help" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle" tabindex="-1">
-    <div class="sheet-brand"><img src="prevue.svg" alt="">Prevue</div>
-    <h2 id="helpTitle" data-t="help.title"></h2>
-    <div class="sheet-body"></div>
-  </div>
-</div>
+<!-- 단축키 도움말. 안은 React 의 ShortcutHelp 가 단축키 표에서 그린다 — 디스패치와 같은 표라 둘이 어긋나지 않는다. -->
+<div class="scrim" id="help" hidden></div>
 
 <script type="module" src="js/viewer.js"></script>
 </body>
