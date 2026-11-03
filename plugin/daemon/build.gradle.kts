@@ -56,6 +56,8 @@ dependencies {
     testImplementation(libs.layoutlib)
     // 가상 시계(runTest)만 싣는다 — 코어는 위와 같은 이유로 렌더러 jar 의 것을 쓴다.
     testImplementation(libs.kotlinx.coroutines.test) { isTransitive = false }
+    // 본체의 코루틴 판(prevue.coroutines)을 테스트 컴파일에도 댄다 — 테스트는 루트에만 있다.
+    testCompileOnly(libs.kotlinx.coroutines.renderer)
     // Flow 방출 단언. 코루틴 core 1.9.0 을 끌고 오면 렌더러 jar 의 것과 두 벌이 되고 오프라인 캐시에 루트 모듈도 없다 — 끊는다.
     testImplementation(libs.turbine) { isTransitive = false }
 
