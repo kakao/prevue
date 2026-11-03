@@ -2,6 +2,7 @@ package prevue.daemon
 
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +25,7 @@ import prevue.domain.UseCases
 import prevue.domain.model.ReloadResult
 import prevue.domain.port.Clock
 import prevue.domain.runtime.Workspace
+import prevue.json.Json
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @EnabledIf("prevue.daemon.InfraIntegrationTest#available")
@@ -72,11 +74,37 @@ class InfraIntegrationTest {
         }
     }
 
-    @Test fun `렌더러 부트 실패가 lost 대기까지 전파되어 수명 주인이 정리할 수 있다`() = runBlocking {
-        withInfra(config.copy(layoutlib = File(dir, "missing-layoutlib"), watching = false)) { infra ->
-            val failed = runCatching { infra.lost() }
-            assertTrue(failed.isFailure)
-            assertTrue(runCatching { infra.ports.engine.ready() }.isFailure)
+    @Test fun `렌더러 부트의 IO 실패를 수명 주인이 받아 종료 코드 3으로 정리한다`() {
+        val apk = File(dir, "broken.ap_").apply { writeText("not an APK") }
+        val original = Json.parse(config.resourcesFrom!!.readText()) as Map<*, *>
+        val dump = File(dir, "broken-app.json").apply { writeText(Json.str(original + ("resourceApkPath" to apk.path))) }
+        val output = runMain(3, "--resources-from", dump.path)
+        assertTrue(output.contains("데몬 종료 요청: 렌더러를 띄우지 못했다"), output)
+    }
+
+    @Test fun `초기 덤프 읽기 실패는 기존과 같은 종료 코드 1이다`() {
+        val output = runMain(1, "--classpath", File(dir, "missing.json").path)
+        assertTrue(output.contains("missing.json"), output)
+    }
+
+    private fun runMain(exitCode: Int, vararg extra: String): String {
+        val output = File(dir, "failed-daemon.log")
+        val args = listOf(
+            File(System.getProperty("java.home"), "bin/java").path, "-Djava.awt.headless=true",
+            "-cp", System.getProperty("java.class.path"), "prevue.daemon.MainKt",
+            "--classpath", config.classpath.path, "--resources-from", config.resourcesFrom!!.path,
+            "--layoutlib", config.layoutlib.path, "--compiler", config.compiler.path, "--bridge", config.bridge.path,
+            "--viewer", PearlFixture.viewer!!.path, "--android-jar", config.androidJar!!.path,
+            "--out", File(dir, "failed-out").path, "--overlay", File(dir, "failed-overlay").path,
+            "--port", "0", "--no-watch",
+        ) + extra
+        val process = ProcessBuilder(args).redirectErrorStream(true).redirectOutput(output).start()
+        try {
+            assertTrue(process.waitFor(60, TimeUnit.SECONDS), "실패한 데몬이 끝나지 않았다: ${output.readText()}")
+            assertEquals(exitCode, process.exitValue(), output.readText())
+            return output.readText()
+        } finally {
+            if (process.isAlive) { process.destroyForcibly(); process.waitFor() }
         }
     }
 

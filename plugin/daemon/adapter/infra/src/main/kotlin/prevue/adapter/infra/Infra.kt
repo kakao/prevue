@@ -1,6 +1,8 @@
 package prevue.adapter.infra
 
 import java.io.File
+import java.io.IOException
+import java.io.UncheckedIOException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -29,8 +31,8 @@ import prevue.entity.ModuleInfo
 
 class Infra(private val config: InfraConfig, private val scope: CoroutineScope, private val log: (String) -> Unit) : AutoCloseable {
     private val resources = ArrayDeque<AutoCloseable>()
-    private val home = ClasspathSpec.load(config.classpath)
-    private val app = config.resourcesFrom?.let(ClasspathSpec::load)
+    private val home = initialSpec(config.classpath)
+    private val app = config.resourcesFrom?.let(::initialSpec)
     private val spec = app?.let { home.withResourcesFrom(it) } ?: home
     private val paths = DaemonPaths.of(config, spec.project)
     private val androidJar = config.androidJar ?: AndroidPlatforms.findJar()
@@ -97,6 +99,9 @@ class Infra(private val config: InfraConfig, private val scope: CoroutineScope, 
         val lost = engine.await().lost.filterNotNull().first()
         return lost.reason.text to lost.preview.file
     }
+
+    private fun initialSpec(file: File): ClasspathSpec = try { ClasspathSpec.load(file) }
+        catch (e: IOException) { throw UncheckedIOException(e) }
 
     private fun specOf(module: String): ClasspathSpec = when {
         module == home.project -> home
