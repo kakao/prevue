@@ -2,10 +2,11 @@ package prevue.daemon
 
 import java.io.File
 
-/** 본체 소스의 자리 — 층마다 모듈 하나(D-139), 조립은 :app(D-140)이다. 테스트는 plugin/daemon/app 에서 돌아 "." 이 :app 이다. 규칙 테스트는 모두 여기서 읽는다. */
+/** 본체 소스의 자리 — 층마다 모듈 하나(D-139)이고 adapter 는 입구 · 기술 둘과 공용 코덱 :json 으로 갈린다(D-141), 조립은 :app(D-140)이다. 테스트는 plugin/daemon/app 에서 돌아 "." 이 :app 이다. 규칙 테스트는 모두 여기서 읽는다. */
 object Sources {
-    val kotlinRoots: List<File> = listOf("../entity", "../domain", "../adapter", ".").map { File(it, "src/main/kotlin") }
-    val javaRoots: List<File> = listOf("../entity", "../domain", "../adapter", ".").map { File(it, "src/main/java") }
+    private val modules: List<String> = listOf("../entity", "../domain", "../json", "../adapter/infra", "../adapter/entry", ".")
+    val kotlinRoots: List<File> = modules.map { File(it, "src/main/kotlin") }
+    val javaRoots: List<File> = modules.map { File(it, "src/main/java") }
 
     /** `src/main/kotlin` (· `java`) 아래 상대 경로 → 내용. 모듈이 갈라도 패키지 경로는 하나로 모인다. */
     fun under(roots: List<File>, vararg ext: String): Map<String, String> {
@@ -21,7 +22,7 @@ object Sources {
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
         .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
 
-    /** 층 패키지 `prevue.<층>`(D-139 · D-140). 층 규칙 · 개수 단언이 모두 이 목록을 쓴다 — tools/lint/lint.py 의 LAYERS 와 같다. */
+    /** 층 패키지 `prevue.<층>`(D-139 · D-140). 층 규칙 · 개수 단언이 모두 이 목록을 쓴다 — 모듈 폴더(위 modules · tools/lint/lint.py 의 MODULES)가 아니라 패키지다. */
     val LAYERS: List<String> = listOf("entity", "domain", "adapter")
 
     private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:${LAYERS.joinToString("|")})/))""")

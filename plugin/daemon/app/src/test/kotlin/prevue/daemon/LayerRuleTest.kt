@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test
 
 /**
  * 층 규칙(D-51 · D-83 · D-88 · D-139) — import 는 `adapter → domain → entity`, 안쪽으로만 향한다. 본체의 import 를 훑어 규칙표와 대조한다.
- * 층 사이는 모듈(`:entity` · `:domain` · `:adapter`)이 컴파일 때 막는다. 이 표는 모듈이 못 막는 것 — 층 안의 규칙(입구 · 기술 어댑터 · runtime)과
- * core 의 JDK 금지(AWT · 파일 시스템) — 를 지킨다.
+ * 층 사이와 입구 ↔ 기술 어댑터는 모듈(`:entity` · `:domain` · `:adapter:entry` · `:adapter:infra`, D-141)이 컴파일 때 막는다 — 패키지가 제 모듈에 있어야 그렇다.
+ * 이 표는 모듈이 못 막는 것 — 입구 안(cli · browser → http만, hotswap 은 다른 입구를 모른다) · 기술 어댑터는 domain 중 port 만 · runtime 의 규칙과
+ * core 의 JDK 금지(AWT · 파일 시스템) — 를 지킨다. 입구 ↔ 기술 어댑터 칸도 남겨 둔다 — 패키지를 다른 모듈로 옮겼을 때 모듈과 표가 어긋나면 여기서 드러난다.
  * entity 에는 기술 어댑터와 domain 이 함께 보는 값만 둔다 — domain 과 입구만 보면 `domain/model` 이다.
  */
 class LayerRuleTest {
@@ -19,6 +20,16 @@ class LayerRuleTest {
         assertEquals((Sources.LAYERS + "daemon").toSet(), counts.keys, "본체의 층을 다 못 찾았다 — $counts · $where")
         assertEquals(true, files.size >= 150, "본체를 못 찾았다(${files.size}) — $where")
         assertEquals(emptyList<String>(), LayerRule.violations(files))
+    }
+
+    @Test fun `adapter 패키지는 역할의 모듈에 있다`() {
+        fun packages(module: String) = Sources.under(listOf(File(module, "src/main/kotlin")), "kt").keys
+            .map { it.removePrefix("prevue/adapter/").substringBefore('/') }.toSet()
+        val entry = packages("../adapter/entry")
+        val infra = packages("../adapter/infra")
+        assertEquals(LayerRule.ENTRY_POINTS, entry, "입구 모듈에 입구 아닌 패키지가 있거나 입구가 빠졌다 — 작업 디렉터리: ${File("").absolutePath}")
+        assertEquals(true, infra.isNotEmpty(), "기술 어댑터 모듈을 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
+        assertEquals(emptySet<String>(), infra intersect LayerRule.ENTRY_POINTS, "입구 패키지가 기술 어댑터 모듈에 있다 — 렌더러를 볼 수 있게 된다")
     }
 
     @Test fun `JSON 코덱은 본체를 모른다`() {
@@ -95,7 +106,7 @@ class LayerRuleTest {
 /** 파일 위치(층)와 그 파일이 가리키는 데몬 패키지(`prevue.entity` · `prevue.domain` · `prevue.adapter` 와 조립 `prevue.daemon`)를 대조한다. */
 object LayerRule {
     /** 유스케이스를 부르는 쪽. cli 와 browser 는 http 만 알고, http 와 hotswap 은 다른 입구를 모른다. 기술 어댑터는 입구를 모른다. */
-    private val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap")
+    val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap")
     /** domain 루트(유스케이스) 밖의 하위 패키지. */
     private val DOMAIN_PARTS = setOf("runtime", "policy", "model", "port")
 

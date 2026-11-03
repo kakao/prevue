@@ -10,7 +10,7 @@ import lint  # noqa: E402
 import slop  # noqa: E402
 
 DOMAIN = "plugin/daemon/domain/src/main/kotlin/prevue/domain/A.kt"
-ADAPTER = "plugin/daemon/adapter/src/main/kotlin/prevue/adapter/render/A.kt"
+ADAPTER = "plugin/daemon/adapter/infra/src/main/kotlin/prevue/adapter/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
@@ -134,9 +134,16 @@ class Comments(unittest.TestCase):
         self.assertFalse(lint.in_scope("plugin/daemon/app/src/test/kotlin/prevue/daemon/A.kt"))
 
     def test_층_모듈의_본체도_범위다(self):
-        for m in ("entity", "domain", "adapter"):
-            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/%s/A.kt" % (m, m)), m)
+        for m, pkg in (("entity", "entity"), ("domain", "domain"), ("json", "json"), ("adapter/infra", "adapter/render"), ("adapter/entry", "adapter/http")):
+            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/%s/A.kt" % (m, pkg)), m)
         self.assertFalse(lint.in_scope("plugin/daemon/domain/src/test/kotlin/A.kt"))
+        self.assertFalse(lint.in_scope("plugin/daemon/adapter/src/main/kotlin/prevue/adapter/http/A.kt"))
+
+    def test_adapter_를_둘로_가르며_옮긴_파일은_옛_자리와_짝짓는다(self):
+        old = "plugin/daemon/adapter/src/main/kotlin/prevue/adapter/render/A.kt"
+        new = "plugin/daemon/adapter/infra/src/main/kotlin/prevue/adapter/render/A.kt"
+        self.assertEqual(lint.renames("R100\t%s\t%s\n" % (old, new)), {new: old})
+        self.assertTrue(old.startswith(lint.OLD_ROOTS))
 
     def test_층_모듈로_옮긴_파일은_옛_자리와_짝짓는다(self):
         out = "R100\tplugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt\tplugin/daemon/domain/src/main/kotlin/prevue/daemon/domain/A.kt\n"
