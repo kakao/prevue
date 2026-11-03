@@ -25,11 +25,11 @@ import prevue.adapter.render.ApkWithAssets
 import prevue.adapter.render.RenderEngine
 import prevue.adapter.source.ProjectFiles
 import prevue.adapter.source.SourcePreviewRepository
-import prevue.domain.Ports
+import prevue.domain.port.Ports
 import prevue.domain.UseCases
 import prevue.domain.model.CardResult
 import prevue.domain.model.FileMatch
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.domain.model.Pointed
 import prevue.domain.model.ReloadResult
 import prevue.domain.policy.StaleReasons

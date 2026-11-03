@@ -16,7 +16,7 @@ import prevue.domain.model.BoardEpoch
 import prevue.domain.model.CardResult
 import prevue.domain.model.LastResult
 import prevue.entity.ModuleGraph
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.entity.PreviewSpec
 import prevue.domain.model.ReloadResult
 import prevue.domain.model.Tab

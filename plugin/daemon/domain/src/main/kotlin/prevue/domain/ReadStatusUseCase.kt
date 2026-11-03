@@ -1,7 +1,7 @@
 package prevue.domain
 
 import prevue.domain.model.EngineStats
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.domain.model.ScreenSize
 import prevue.domain.model.Status
 import prevue.domain.model.WatchStats

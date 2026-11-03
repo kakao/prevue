@@ -20,7 +20,7 @@ import prevue.domain.model.BoardView
 import prevue.domain.model.CardView
 import prevue.domain.model.EngineStats
 import prevue.domain.model.LastResult
-import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleInfo
 import prevue.domain.model.ReloadResult
 import prevue.domain.model.SaveTiming
 import prevue.domain.model.Settled

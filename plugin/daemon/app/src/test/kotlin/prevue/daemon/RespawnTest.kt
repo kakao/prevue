@@ -1,4 +1,4 @@
-package prevue.adapter.process
+package prevue.daemon
 
 import java.io.File
 import java.nio.file.Files
