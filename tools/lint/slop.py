@@ -41,7 +41,7 @@ def _matching(code, k, open_c="{", close_c="}"):
 
 
 def domain_blocking(code, text, path):
-    if "/prevue/daemon/domain/" not in path:
+    if "/prevue/domain/" not in path:
         return []
     return [(i, "slop/domain-blocking", "domain 에서 스레드 · 퓨처 · runBlocking — 기다림은 suspend(delay)로 하거나 포트 뒤 adapter 로 옮긴다")
             for i, ln in enumerate(_lines(code), 1) if _BLOCKING.search(ln)]

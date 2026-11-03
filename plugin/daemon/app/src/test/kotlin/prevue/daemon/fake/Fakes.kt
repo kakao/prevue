@@ -1,6 +1,6 @@
 package prevue.daemon.fake
 
-import prevue.daemon.entity.Verbatim
+import prevue.entity.Verbatim
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CopyOnWriteArrayList
@@ -12,7 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import prevue.daemon.domain.model.WorkspaceEvent
+import prevue.domain.model.WorkspaceEvent
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
@@ -20,41 +20,41 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import prevue.daemon.adapter.dump.ClasspathSpec
-import prevue.daemon.adapter.dump.DumpPaths
-import prevue.daemon.adapter.render.RenderOutputs
-import prevue.daemon.entity.Bitmap
-import prevue.daemon.adapter.source.ProjectFiles
-import prevue.daemon.adapter.source.SourcePreviewRepository
-import prevue.daemon.adapter.source.ValueDirs
-import prevue.daemon.domain.port.BuildChange
-import prevue.daemon.domain.port.BuildNotice
-import prevue.daemon.domain.model.Card
-import prevue.daemon.domain.port.CompileResult
-import prevue.daemon.domain.port.FailureKind
-import prevue.daemon.domain.port.Frame
-import prevue.daemon.domain.port.LiteralTable
-import prevue.daemon.domain.port.LiveSession
-import prevue.daemon.domain.port.LiveSessionFactory
-import prevue.daemon.entity.ModuleGraph
-import prevue.daemon.domain.model.ModuleInfo
-import prevue.daemon.entity.ModuleNode
-import prevue.daemon.entity.PreviewSpec
-import prevue.daemon.domain.port.RenderOutput
-import prevue.daemon.domain.port.SourceChange
-import prevue.daemon.domain.port.BuildWatcher
-import prevue.daemon.domain.port.Compiler
-import prevue.daemon.domain.port.PreviewRenderer
-import prevue.daemon.domain.port.SourceWatcher
-import prevue.daemon.domain.port.ResourceEntry
-import prevue.daemon.domain.port.ResourceKey
-import prevue.daemon.domain.port.ResourceLookup
-import prevue.daemon.domain.port.ResourceValues
-import prevue.daemon.domain.port.Clock
-import prevue.daemon.domain.Ports
-import prevue.daemon.domain.UseCases
-import prevue.daemon.domain.Watchers
-import prevue.daemon.domain.runtime.Workspace
+import prevue.adapter.dump.ClasspathSpec
+import prevue.adapter.dump.DumpPaths
+import prevue.adapter.render.RenderOutputs
+import prevue.entity.Bitmap
+import prevue.adapter.source.ProjectFiles
+import prevue.adapter.source.SourcePreviewRepository
+import prevue.adapter.source.ValueDirs
+import prevue.domain.port.BuildChange
+import prevue.domain.port.BuildNotice
+import prevue.domain.model.Card
+import prevue.domain.port.CompileResult
+import prevue.domain.port.FailureKind
+import prevue.domain.port.Frame
+import prevue.domain.port.LiteralTable
+import prevue.domain.port.LiveSession
+import prevue.domain.port.LiveSessionFactory
+import prevue.entity.ModuleGraph
+import prevue.domain.model.ModuleInfo
+import prevue.entity.ModuleNode
+import prevue.entity.PreviewSpec
+import prevue.domain.port.RenderOutput
+import prevue.domain.port.SourceChange
+import prevue.domain.port.BuildWatcher
+import prevue.domain.port.Compiler
+import prevue.domain.port.PreviewRenderer
+import prevue.domain.port.SourceWatcher
+import prevue.domain.port.ResourceEntry
+import prevue.domain.port.ResourceKey
+import prevue.domain.port.ResourceLookup
+import prevue.domain.port.ResourceValues
+import prevue.domain.port.Clock
+import prevue.domain.Ports
+import prevue.domain.UseCases
+import prevue.domain.Watchers
+import prevue.domain.runtime.Workspace
 import prevue.daemon.EntryPoints
 import prevue.daemon.PrevueCheckout
 import prevue.daemon.TargetRepo
@@ -145,8 +145,8 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
             val out = rerender(preview).let { o -> lookFails?.let { o.copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: o }
             return LiveSession.Look(out, liveTree)
         }
-        override fun lists(): List<prevue.daemon.entity.ListState> { probes.incrementAndGet(); return liveTree.states }
-        override fun semantics(): List<prevue.daemon.entity.SemanticNode> { probes.incrementAndGet(); return liveTree.semantics }
+        override fun lists(): List<prevue.entity.ListState> { probes.incrementAndGet(); return liveTree.states }
+        override fun semantics(): List<prevue.entity.SemanticNode> { probes.incrementAndGet(); return liveTree.semantics }
         override suspend fun renderAt(ms: Long, frameMs: Long): RenderOutput = rerender(preview)
         override fun close() { closes.incrementAndGet() }
     }
@@ -157,7 +157,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 세션의 [LiveSession.look]이 그리기 전에 부른다 — 렌더 스레드 상실 감시처럼 그리는 중의 대기 자리다. */
     @Volatile var onLook: suspend () -> Unit = {}
     /** [look]이 낼 지금 화면. 굴림([scroll])마다 [onScroll]이 바꾼다. */
-    @Volatile var liveTree = prevue.daemon.entity.LiveTree(1080, 1920, emptyList())
+    @Volatile var liveTree = prevue.entity.LiveTree(1080, 1920, emptyList())
     val looks = java.util.concurrent.atomic.AtomicInteger()
     val probes = java.util.concurrent.atomic.AtomicInteger()
     /** 걸어 두면 [look]이 그 문구의 렌더 예외로 실패한다 — 지금 화면을 못 그린 자리다. */
@@ -392,7 +392,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     /** `Main`과 같은 조립. 채우기·쓰기 기록은 진짜 디스패처에서 돈다 — 줄 서기의 경합이 실제와 같아야 한다. */
     fun useCases(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
-        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.daemon.domain.DrawPosturesUseCase.QUIET_MS,
+        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.domain.DrawPosturesUseCase.QUIET_MS,
     ) =
         Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList()).let { ws ->
             UseCases(ws, Ports(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(root, graph.roots).apply { buildInBackground(scope) },

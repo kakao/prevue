@@ -15,7 +15,7 @@ class ThreadDeviceRuleTest {
 
     private companion object {
         val roots = Sources.kotlinRoots + Sources.javaRoots
-        const val RENDER = "prevue/daemon/adapter/render"
+        const val RENDER = "prevue/adapter/render"
         const val CLASS_LIFETIME = "JVM 클래스 수명 — 캐시를 클래스에 매단다. 클래스를 키로 쥐는 맵은 버린 로더를 붙잡는다"
         const val RENDERER_API = "렌더러 API — layoutlib 이 렌더 스레드의 ThreadLocal 과 Future 로 세션을 정리한다"
         val allowed = listOf(
@@ -36,11 +36,11 @@ class ThreadDeviceRuleTest {
         val sleepAllowed = listOf(
             Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", SLEEP, 3, "이 검사 — 심은 위반과 세는 철자"),
             Allowed("prevue/daemon/PrevueDaemonTest.kt", SLEEP, 2, "$WALL_CLOCK — 유휴 상한이 벽시계다(CLI 폴링 간격 · 상한을 넘기는 렌더)"),
-            Allowed("prevue/daemon/adapter/http/ContractTest.kt", SLEEP, 1, "$WALL_CLOCK — SSE 는 끝을 알리지 않는다"),
-            Allowed("prevue/daemon/adapter/http/ServerTest.kt", SLEEP, 2, "$WALL_CLOCK — Server 가 활동을 벽시계 ms 로 적는다"),
-            Allowed("prevue/daemon/adapter/browser/FrameStreamerTest.kt", SLEEP, 2, "$WALL_CLOCK — 애니메이션의 프레임 간격 · 느린 연결"),
-            Allowed("prevue/daemon/domain/runtime/ResourcePatchesTest.kt", SLEEP, 1, "$WALL_CLOCK — 다시 나타남 유예가 벽시계다"),
-            Allowed("prevue/daemon/domain/UseCaseTest.kt", SLEEP, 3, "부정 확인 — 보드 채우기는 끝을 알리지 않아 일어나지 않음을 볼 신호가 없다"),
+            Allowed("prevue/adapter/http/ContractTest.kt", SLEEP, 1, "$WALL_CLOCK — SSE 는 끝을 알리지 않는다"),
+            Allowed("prevue/adapter/http/ServerTest.kt", SLEEP, 2, "$WALL_CLOCK — Server 가 활동을 벽시계 ms 로 적는다"),
+            Allowed("prevue/adapter/browser/FrameStreamerTest.kt", SLEEP, 2, "$WALL_CLOCK — 애니메이션의 프레임 간격 · 느린 연결"),
+            Allowed("prevue/domain/runtime/ResourcePatchesTest.kt", SLEEP, 1, "$WALL_CLOCK — 다시 나타남 유예가 벽시계다"),
+            Allowed("prevue/domain/UseCaseTest.kt", SLEEP, 3, "부정 확인 — 보드 채우기는 끝을 알리지 않아 일어나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", SLEEP, 5, "$WALL_CLOCK — 정착 간격 · 휠 칸 간격 · 전환 도중의 탭 · GC · 정착 기록의 수집"),
         )
         const val COLLECT = ".collect"
@@ -50,8 +50,8 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", ".collectLatest", 1, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", ".launchIn", 1, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/fake/Fakes.kt", COLLECT, 1, "onEvent — 알림을 낸 스레드에서 그 순간의 상태를 읽는 콜백"),
-            Allowed("prevue/daemon/adapter/watch/PollingBuildWatcherTest.kt", COLLECT, 2, VIRTUAL_CLOCK),
-            Allowed("prevue/daemon/domain/runtime/LiveLoopTest.kt", COLLECT, 1, VIRTUAL_CLOCK),
+            Allowed("prevue/adapter/watch/PollingBuildWatcherTest.kt", COLLECT, 2, VIRTUAL_CLOCK),
+            Allowed("prevue/domain/runtime/LiveLoopTest.kt", COLLECT, 1, VIRTUAL_CLOCK),
         )
         fun testFiles(): Map<String, String> = testRoots.flatMap { root ->
             root.walk().filter { it.extension == "kt" }.map { it.relativeTo(root).invariantSeparatorsPath to it.readText() }.toList()

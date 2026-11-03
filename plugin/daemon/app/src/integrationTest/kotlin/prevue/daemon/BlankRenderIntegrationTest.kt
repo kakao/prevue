@@ -17,20 +17,20 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
-import prevue.daemon.adapter.compile.HotCompiler
-import prevue.daemon.adapter.dump.ClasspathSpec
-import prevue.daemon.adapter.render.RenderEngine
-import prevue.daemon.adapter.source.ProjectFiles
-import prevue.daemon.adapter.source.SourcePreviewRepository
-import prevue.daemon.adapter.watch.PollingSourceWatcher
-import prevue.daemon.domain.Ports
-import prevue.daemon.domain.UseCases
-import prevue.daemon.domain.Watchers
-import prevue.daemon.domain.model.ModuleInfo
-import prevue.daemon.domain.port.Clock
-import prevue.daemon.domain.port.FailureKind
-import prevue.daemon.domain.runtime.Workspace
-import prevue.daemon.entity.ModuleGraph
+import prevue.adapter.compile.HotCompiler
+import prevue.adapter.dump.ClasspathSpec
+import prevue.adapter.render.RenderEngine
+import prevue.adapter.source.ProjectFiles
+import prevue.adapter.source.SourcePreviewRepository
+import prevue.adapter.watch.PollingSourceWatcher
+import prevue.domain.Ports
+import prevue.domain.UseCases
+import prevue.domain.Watchers
+import prevue.domain.model.ModuleInfo
+import prevue.domain.port.Clock
+import prevue.domain.port.FailureKind
+import prevue.domain.runtime.Workspace
+import prevue.entity.ModuleGraph
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.eventually
 import prevue.json.Json
@@ -113,7 +113,7 @@ class BlankRenderIntegrationTest {
         val before = compiler.recompiled
         stub.writeText(FILLED.replace("Color.Blue", "Color.Green"))
         val w = runBlocking { uc.awaitRender(listOf(stub), 60_000) }
-        assertTrue(w !is prevue.daemon.domain.model.WaitResult.TimedOut && w !is prevue.daemon.domain.model.WaitResult.CompileFailed, "$w")
+        assertTrue(w !is prevue.domain.model.WaitResult.TimedOut && w !is prevue.domain.model.WaitResult.CompileFailed, "$w")
         assertEquals(before, compiler.recompiled)
     }
 
@@ -122,7 +122,7 @@ class BlankRenderIntegrationTest {
         val before = compiler.recompiled
         stub.writeText(FILLED.replace("fun BlankStub(modifier: Modifier = Modifier)", "fun BlankStub(modifier: Modifier = Modifier, tall: Boolean = true)"))
         val w = runBlocking { uc.awaitRender(listOf(stub), 60_000) }
-        assertTrue(w !is prevue.daemon.domain.model.WaitResult.TimedOut && w !is prevue.daemon.domain.model.WaitResult.CompileFailed, "$w")
+        assertTrue(w !is prevue.domain.model.WaitResult.TimedOut && w !is prevue.domain.model.WaitResult.CompileFailed, "$w")
         runBlocking { engine.awaitWrites() }
         val last = ws.now.lastResult!!
         val tree = Json.parse(last.tree!!.readText()) as Map<*, *>

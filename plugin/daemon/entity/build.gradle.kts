@@ -16,10 +16,12 @@ val screenText = tasks.register("screenText") {
         fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$").replace("\n", "\\n")
         // 긴 문장은 조각을 이어 붙인다 — 생성물도 린트의 줄 길이(160)를 지난다.
         fun lit(s: String) = s.chunked(100).joinToString("\" +\n        \"", "\"", "\"") { esc(it) }
-        val file = out.get().file("prevue/daemon/entity/ScreenTextTable.kt").asFile
+        // 출력 자리를 비우고 쓴다 — 패키지를 옮기자 옛 자리의 표가 남아 함께 컴파일됐다(실측).
+        out.get().asFile.deleteRecursively()
+        val file = out.get().file("prevue/entity/ScreenTextTable.kt").asFile
         file.parentFile.mkdirs()
         file.writeText(buildString {
-            append("package prevue.daemon.entity\n\ninternal val SCREEN_TEXT: Map<String, String> = mapOf(\n")
+            append("package prevue.entity\n\ninternal val SCREEN_TEXT: Map<String, String> = mapOf(\n")
             entries.toSortedMap().forEach { (k, v) -> append("    ").append(lit(k)).append(" to ").append(lit(v)).append(",\n") }
             append(")\n")
         })

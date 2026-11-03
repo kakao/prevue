@@ -15,8 +15,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
-import prevue.daemon.adapter.compile.HotCompiler
-import prevue.daemon.adapter.dump.ClasspathSpec
+import prevue.adapter.compile.HotCompiler
+import prevue.adapter.dump.ClasspathSpec
 import prevue.json.Json
 
 /**

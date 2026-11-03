@@ -13,68 +13,75 @@ import org.junit.jupiter.api.Test
 class LayerRuleTest {
     @Test fun `본체의 import 가 층 규칙을 지킨다`() {
         val files = Sources.daemon()
-        assertEquals(true, files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
+        val where = "작업 디렉터리: ${File("").absolutePath}"
+        // 거르기가 어긋나면 층 하나가 통째로 빠진다 — 층마다 있는지와 전체의 바닥(150, 옮길 때 166개)을 함께 본다.
+        val counts = files.keys.groupingBy { it.substringBefore('/').takeIf { k -> k in Sources.LAYERS } ?: "daemon" }.eachCount()
+        assertEquals((Sources.LAYERS + "daemon").toSet(), counts.keys, "본체의 층을 다 못 찾았다 — $counts · $where")
+        assertEquals(true, files.size >= 150, "본체를 못 찾았다(${files.size}) — $where")
         assertEquals(emptyList<String>(), LayerRule.violations(files))
     }
 
     @Test fun `JSON 코덱은 본체를 모른다`() {
         val codec = Sources.under(Sources.kotlinRoots, "kt").filterKeys { it.startsWith("prevue/json/") }
         assertEquals(true, codec.isNotEmpty(), "코덱을 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
-        assertEquals(emptyList<String>(), codec.filterValues { "prevue.daemon" in it }.keys.toList())
+        assertEquals(emptyList<String>(), codec.filterValues(LayerRule::mentionsDaemon).keys.toList())
+        val planted = listOf("package prevue.json\nimport prevue.entity.Px\n", "package prevue.json\nval d = prevue.daemon.Main\n", "package prevue.json\nimport kotlin.math.abs\n")
+        assertEquals(listOf(true, true, false), planted.map(LayerRule::mentionsDaemon))
     }
 
     @Test fun `일부러 넣은 위반을 잡는다`() {
         val files = mapOf(
-            "entity/A.kt" to "package prevue.daemon.entity\nimport prevue.daemon.domain.model.Status\n",
-            "domain/B.kt" to "package prevue.daemon.domain\nval x = prevue.daemon.adapter.render.RenderEngine::class\n",
-            "domain/C.kt" to "package prevue.daemon.domain\nimport prevue.daemon.Json\n",
-            "adapter/http/D.kt" to "package prevue.daemon.adapter.http\nimport prevue.daemon.adapter.cli.CliHandler\n",
-            "adapter/cli/E.kt" to "package prevue.daemon.adapter.cli\nimport prevue.daemon.adapter.browser.BrowserState\n",
-            "adapter/render/F.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.adapter.http.Server\n",
-            "adapter/browser/G.kt" to "package prevue.daemon.adapter.browser\nimport prevue.daemon.Main\n",
+            "entity/A.kt" to "package prevue.entity\nimport prevue.domain.model.Status\n",
+            "domain/B.kt" to "package prevue.domain\nval x = prevue.adapter.render.RenderEngine::class\n",
+            "domain/C.kt" to "package prevue.domain\nimport prevue.daemon.Json\n",
+            "adapter/http/D.kt" to "package prevue.adapter.http\nimport prevue.adapter.cli.CliHandler\n",
+            "adapter/cli/E.kt" to "package prevue.adapter.cli\nimport prevue.adapter.browser.BrowserState\n",
+            "adapter/render/F.kt" to "package prevue.adapter.render\nimport prevue.adapter.http.Server\n",
+            "adapter/browser/G.kt" to "package prevue.adapter.browser\nimport prevue.daemon.Main\n",
             // ① 입구는 기술 어댑터를 모른다.
-            "adapter/http/P.kt" to "package prevue.daemon.adapter.http\nimport prevue.daemon.adapter.render.RenderEngine\n",
+            "adapter/http/P.kt" to "package prevue.adapter.http\nimport prevue.adapter.render.RenderEngine\n",
             // ② 기술 어댑터는 domain 중 port 만 안다.
-            "adapter/render/Q.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.domain.model.Status\n",
-            "adapter/compile/Q2.kt" to "package prevue.daemon.adapter.compile\nimport prevue.daemon.domain.UseCases\n",
+            "adapter/render/Q.kt" to "package prevue.adapter.render\nimport prevue.domain.model.Status\n",
+            "adapter/compile/Q2.kt" to "package prevue.adapter.compile\nimport prevue.domain.UseCases\n",
             // ③ runtime 은 유스케이스(domain 루트)를 모른다.
-            "domain/runtime/R.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.FillBoardUseCase\n",
+            "domain/runtime/R.kt" to "package prevue.domain.runtime\nimport prevue.domain.FillBoardUseCase\n",
             // ④ 입구는 runtime 을 모른다.
-            "adapter/cli/S.kt" to "package prevue.daemon.adapter.cli\nimport prevue.daemon.domain.runtime.Workspace\n",
+            "adapter/cli/S.kt" to "package prevue.adapter.cli\nimport prevue.domain.runtime.Workspace\n",
             // hotswap 은 다른 입구를 모른다.
-            "adapter/hotswap/U.kt" to "package prevue.daemon.adapter.hotswap\nimport prevue.daemon.adapter.http.Server\n",
+            "adapter/hotswap/U.kt" to "package prevue.adapter.hotswap\nimport prevue.adapter.http.Server\n",
             // 뿌리(조립)는 아무도 모른다 — 코덱은 prevue.json 이다.
-            "adapter/render/Y.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.Json\n",
-            "domain/Y2.kt" to "package prevue.daemon.domain\nimport prevue.json.Json\n",
+            "adapter/render/Y.kt" to "package prevue.adapter.render\nimport prevue.daemon.Json\n",
+            "domain/Y2.kt" to "package prevue.domain\nimport prevue.json.Json\n",
             // D-139. core 는 파일 시스템을 직접 만지지 않는다.
-            "domain/runtime/Z.kt" to "package prevue.daemon.domain.runtime\nclass Z { fun a(f: java.io.File) = f.readText() }\n",
-            "entity/Z2.kt" to "package prevue.daemon.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
-            "domain/Z3.kt" to "package prevue.daemon.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
+            "domain/runtime/Z.kt" to "package prevue.domain.runtime\nclass Z { fun a(f: java.io.File) = f.readText() }\n",
+            "entity/Z2.kt" to "package prevue.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
+            "domain/Z3.kt" to "package prevue.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
-            "adapter/cli/H.kt" to "package prevue.daemon.adapter.cli\nimport prevue.daemon.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.daemon.entity.Picked\n",
-            "domain/I.kt" to "package prevue.daemon.domain\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.domain.runtime.Workspace\n",
-            "domain/J.kt" to "package prevue.daemon.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
-            "entity/K.kt" to "package prevue.daemon.entity\nimport kotlinx.serialization.Serializable\n",
-            "domain/L.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
-            "domain/N.kt" to "package prevue.daemon.domain\nimport prevue.render.Shim\n",
-            "domain/O.kt" to "package prevue.daemon.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
-            "adapter/render/M.kt" to "package prevue.daemon.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
-            "adapter/render/V.kt" to "package prevue.daemon.adapter.render\nimport prevue.daemon.domain.port.Clock\nimport prevue.daemon.entity.PreviewSpec\nimport prevue.daemon.adapter.compile.HotCompiler\n",
-            "domain/Z5.kt" to "package prevue.daemon.domain\nfun z5(fs: List<java.io.File>) = fs.filter(java.io.File::isFile)\n",
-            "domain/L2.kt" to "package prevue.daemon.domain\nimport java.awt.image.BufferedImage\n",
-            "domain/Z6.kt" to "package prevue.daemon.domain\nclass Z6(val img: java.awt.image.BufferedImage)\n",
-            "domain/Z7.kt" to "package prevue.daemon.domain\nimport java.nio.file.Files\nfun z7() = Files.size(null)\n",
-            "entity/Z8.kt" to "package prevue.daemon.entity\nfun z8(f: java.io.File) = java.io.FileReader(f).use { it.read() } + f.length().toInt()\n",
-            "domain/Z9.kt" to "package prevue.daemon.domain\nfun z9(f: java.io.File) = \"내용 \${f.readText()}\"\n",
-            "domain/Z10.kt" to "package prevue.daemon.domain\nfun z10(c: Char, f: java.io.File) = if (c == '\"') f.delete() else false\n",
-            "domain/Z4.kt" to "package prevue.daemon.domain\nclass Z4(private val s: prevue.daemon.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    val key = \"tabs.delete\" // f.exists() 는 쓰지 않는다\n    val quote = '\"'\n    fun say(t: String) = \"\${t.length} 글자 — f.readText() 아님\"\n    fun n(t: String) = t.length + StringBuilder(t).apply { setLength(0) }.length\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
-            "domain/runtime/W.kt" to "package prevue.daemon.domain.runtime\nimport prevue.daemon.domain.policy.Pacing\nimport prevue.daemon.domain.model.Board\nimport prevue.daemon.domain.port.Clock\n",
+            "adapter/cli/H.kt" to "package prevue.adapter.cli\nimport prevue.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.entity.Picked\n",
+            "domain/I.kt" to "package prevue.domain\nimport prevue.entity.PreviewSpec\nimport prevue.domain.port.Clock\nimport prevue.domain.runtime.Workspace\n",
+            "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
+            "entity/K.kt" to "package prevue.entity\nimport kotlinx.serialization.Serializable\n",
+            "domain/L.kt" to "package prevue.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
+            "domain/N.kt" to "package prevue.domain\nimport prevue.render.Shim\n",
+            "domain/O2.kt" to "package prevue.domain\nval o2 = \"com.acme.prevue.adapter.render.X\"\n",
+            "domain/O.kt" to "package prevue.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
+            "adapter/render/M.kt" to "package prevue.adapter.render\nimport com.android.ide.common.rendering.api.RenderSession\n",
+            "adapter/render/V.kt" to "package prevue.adapter.render\nimport prevue.domain.port.Clock\nimport prevue.entity.PreviewSpec\nimport prevue.adapter.compile.HotCompiler\n",
+            "domain/Z5.kt" to "package prevue.domain\nfun z5(fs: List<java.io.File>) = fs.filter(java.io.File::isFile)\n",
+            "domain/L2.kt" to "package prevue.domain\nimport java.awt.image.BufferedImage\n",
+            "domain/Z6.kt" to "package prevue.domain\nclass Z6(val img: java.awt.image.BufferedImage)\n",
+            "domain/Z7.kt" to "package prevue.domain\nimport java.nio.file.Files\nfun z7() = Files.size(null)\n",
+            "entity/Z8.kt" to "package prevue.entity\nfun z8(f: java.io.File) = java.io.FileReader(f).use { it.read() } + f.length().toInt()\n",
+            "domain/Z9.kt" to "package prevue.domain\nfun z9(f: java.io.File) = \"내용 \${f.readText()}\"\n",
+            "domain/Z10.kt" to "package prevue.domain\nfun z10(c: Char, f: java.io.File) = if (c == '\"') f.delete() else false\n",
+            "domain/Z4.kt" to "package prevue.domain\nclass Z4(private val s: prevue.domain.port.SourceFileRepository) {\n    // f.readText() 는 포트로 간다\n    val key = \"tabs.delete\" // f.exists() 는 쓰지 않는다\n    val quote = '\"'\n    fun say(t: String) = \"\${t.length} 글자 — f.readText() 아님\"\n    fun n(t: String) = t.length + StringBuilder(t).apply { setLength(0) }.length\n    fun a(f: java.io.File) = s.has(f) && f.canonicalPath.isNotEmpty() && s.read(f) != null\n}\n",
+            "domain/runtime/W.kt" to "package prevue.domain.runtime\nimport prevue.domain.policy.Pacing\nimport prevue.domain.model.Board\nimport prevue.domain.port.Clock\n",
             // entity 의 최상위 타입은 기술 어댑터가 본다 — Picked 는 입구(cli)만, Lonely 는 아무도 안 본다. 중첩 타입은 따지지 않는다.
-            "entity/PreviewSpec.kt" to "package prevue.daemon.entity\ndata class PreviewSpec(val id: String, val part: Part) {\n    data class Nested(val x: Int)\n}\n\ndata class Part(val n: Int)\n",
-            "entity/Px.kt" to "package prevue.daemon.entity\n@JvmInline value class Px(val v: Int)\n",
-            "entity/Picked.kt" to "package prevue.daemon.entity\ndata class Picked(val id: String)\n",
-            "entity/Lonely.kt" to "package prevue.daemon.entity\nsealed interface Lonely\n",
-            "adapter/hotswap/X.kt" to "package prevue.daemon.adapter.hotswap\nimport prevue.daemon.domain.UseCases\nimport prevue.daemon.domain.model.ReloadResult\nimport prevue.daemon.domain.port.SourceChange\n",
+            "entity/PreviewSpec.kt" to "package prevue.entity\ndata class PreviewSpec(val id: String, val part: Part) {\n    data class Nested(val x: Int)\n}\n\ndata class Part(val n: Int)\n",
+            "entity/Px.kt" to "package prevue.entity\n@JvmInline value class Px(val v: Int)\n",
+            "entity/Picked.kt" to "package prevue.entity\ndata class Picked(val id: String)\n",
+            "entity/Lonely.kt" to "package prevue.entity\nsealed interface Lonely\n",
+            "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.UseCases\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
         )
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
@@ -85,16 +92,21 @@ class LayerRuleTest {
     }
 }
 
-/** 파일 위치(층)와 그 파일이 가리키는 `prevue.daemon.*` 를 대조한다. */
+/** 파일 위치(층)와 그 파일이 가리키는 데몬 패키지(`prevue.entity` · `prevue.domain` · `prevue.adapter` 와 조립 `prevue.daemon`)를 대조한다. */
 object LayerRule {
     /** 유스케이스를 부르는 쪽. cli 와 browser 는 http 만 알고, http 와 hotswap 은 다른 입구를 모른다. 기술 어댑터는 입구를 모른다. */
     private val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap")
     /** domain 루트(유스케이스) 밖의 하위 패키지. */
     private val DOMAIN_PARTS = setOf("runtime", "policy", "model", "port")
 
-    private val ref = Regex("""\bprevue\.daemon\.([A-Za-z_][\w.]*)""")
+    private val DAEMON_PACKAGES = Sources.LAYERS + "daemon"
+    /** 앞이 글자나 점이면 남의 FQN(`com.acme.prevue.domain…`)이다 — 우리 패키지로 세지 않는다. */
+    private val ref = Regex("""(?<![\w.])prevue\.((?:${DAEMON_PACKAGES.joinToString("|")})\.[\w.]*)""")
     private val CORE = setOf("entity", "domain")
-    private val CORE_EXTERNAL = listOf("prevue.daemon.", "kotlin.", "kotlinx.coroutines.", "java.")
+    /** 데몬 패키지는 위 ref 규칙이 가린다 — 여기서는 통과시켜 한 위반을 두 번 세지 않는다. 코덱(`prevue.json`) · 셈(`prevue.render`)은 core 밖이다. */
+    private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.")
+
+    fun mentionsDaemon(text: String): Boolean = text.lineSequence().filterNot { it.startsWith("package ") }.any(ref::containsMatchIn)
     /** D-139. 그림은 entity `Bitmap` 값으로 든다 — AWT 는 render · browser 어댑터만 안다. 파일 시스템 API 의 다른 길(nio · kotlin.io.path)도 core 밖이다. */
     private val CORE_FORBIDDEN = listOf("java.awt.", "javax.", "java.nio.file.", "kotlin.io.path.")
 
@@ -103,7 +115,7 @@ object LayerRule {
         text.lineSequence().filterNot { it.startsWith("package ") }
             .flatMap { line -> ref.findAll(line).map { it.groupValues[1] } }
             .filterNot { allowed(from, it.split('.')) }
-            .map { "$path → prevue.daemon.$it" }
+            .map { "$path → prevue.$it" }
             .distinct().toList()
     } + files.flatMap { (path, text) -> externalImports(path, text) } + files.flatMap { (path, text) -> fileSystemCalls(path, text) } + unseenEntities(files)
 
