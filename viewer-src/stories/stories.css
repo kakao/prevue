@@ -1,0 +1,12 @@
+body { margin: 0; background: var(--surface); color: var(--on-surface); font: var(--type-body-medium); }
+.story-surface { box-sizing: border-box; min-height: 100vh; background: var(--surface); color: var(--on-surface); font: var(--type-body-medium); padding: var(--space-24); }
+.story-surface h1 { font: var(--type-title-medium); }
+.story-surface h2 { font: var(--type-title-small); }
+.story-surface pre, .story-surface code { font: var(--type-code-small); white-space: pre-wrap; overflow-wrap: anywhere; }
+.story-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-16); }
+.story-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+.story-stack { display: grid; gap: var(--space-12); }
+.story-swatch { display: grid; gap: var(--space-8); padding: var(--space-12); border: 1px solid var(--outline-variant); border-radius: var(--corner-medium); background: var(--surface-container); }
+.story-color { height: 48px; border: 1px solid var(--outline-variant); }
+.story-surface table { width: 100%; border-collapse: collapse; }
+.story-surface th, .story-surface td { padding: var(--space-8); border-bottom: 1px solid var(--outline-variant); text-align: left; vertical-align: top; }

@@ -21,6 +21,45 @@ def js(text):
     return [rule for _, rule, _ in viewer.js_findings(text)]
 
 
+class ReactStyles(unittest.TestCase):
+    def test_jsx_style의_날값을_모두_잡는다(self):
+        cases = {
+            'color: "red"': "viewer/raw-color",
+            'fontSize: 13': "viewer/raw-type",
+            'borderRadius: 5': "viewer/raw-corner",
+            'boxShadow: "0 2px 4px var(--outline)"': "viewer/raw-shadow",
+            'transition: "opacity 200ms ease"': "viewer/raw-motion",
+            'padding: 9': "viewer/raw-space",
+            'color: "var(--gray-light-5)"': "viewer/primitive",
+            'color: "var(--art-bg)"': "viewer/art-token",
+        }
+        source = "\n".join("const C%d = () => <div style={{ %s }} />;" % (i, body) for i, body in enumerate(cases))
+        found = viewer.jsx_findings({"seed.tsx": source})
+        for line, rule in enumerate(cases.values(), 1):
+            self.assertIn(("seed.tsx", line, rule), [(p, n, r) for p, n, r, _ in found])
+
+    def test_style_변수와_펼침과_조건도_검사한다(self):
+        text = 'const raw = "red"; const base = {color: raw}; const style = {...base, padding: 9}; const C = () => <div style={true ? style : {fontSize: 13}} />;'
+        found = [r for _, _, r, _ in viewer.jsx_findings({"seed.tsx": text})]
+        for rule in ("viewer/raw-color", "viewer/raw-space", "viewer/raw-type"):
+            self.assertIn(rule, found)
+
+    def test_역할_토큰과_계산_치수는_둔다(self):
+        source = 'const C = ({width}: {width: number}) => <div style={{color: "var(--on-surface)", font: "var(--type-body-medium)", padding: "var(--space-8)", borderRadius: "var(--corner-medium)", boxShadow: "var(--elevation-1)", transition: "opacity var(--duration-short4) var(--easing-standard)", width}} />;'
+        self.assertEqual(viewer.jsx_findings({"good.tsx": source}), [])
+
+    def test_원본만_훑고_번들과_개발_출력은_뺀다(self):
+        with tempfile.TemporaryDirectory() as root:
+            paths = ("viewer-src/a.css", "viewer-src/a.ts", "viewer-src/a.tsx", "viewer-src/legacy/js/a.js",
+                     "viewer-src/node_modules/a.ts", "viewer-src/storybook-static/a.js", "plugin/viewer/js/viewer.js", "plugin/viewer/js/resize-scene.js", "plugin/viewer/tokens.css")
+            for path in paths:
+                full = os.path.join(root, path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w") as f:
+                    f.write("")
+            self.assertEqual(set(viewer.files(root)), set(paths[:4]) | {"plugin/viewer/js/resize-scene.js"})
+
+
 class Color(unittest.TestCase):
     def test_날색(self):
         for bad in ("color: #fff", "background: #1f232880", "border: 1px solid red", "color: rgb(0 0 0 / .5)",
@@ -249,10 +288,10 @@ class Data(unittest.TestCase):
         viewer.DATA = self.data
 
     def test_데이터_예외는_그_자리만_놓아주고_가리키는_곳이_없으면_실패다(self):
-        viewer.DATA = (("plugin/viewer/js/m.js", 'stop-color="white"', "마스크 휘도"),)
-        root = self.tree({"plugin/viewer/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
+        viewer.DATA = (("viewer-src/legacy/js/m.js", 'stop-color="white"', "마스크 휘도"),)
+        root = self.tree({"viewer-src/legacy/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/raw-color"])
-        root = self.tree({"plugin/viewer/js/m.js": "const a = 1;\n"})
+        root = self.tree({"viewer-src/legacy/js/m.js": "const a = 1;\n"})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/data-stale"])
 
 

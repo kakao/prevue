@@ -11,8 +11,11 @@
 
 import os
 import re
+import json
+import subprocess
 
 VIEWER = "plugin/viewer"
+SOURCES = "viewer-src"
 TOKENS = "plugin/viewer/tokens.css"
 
 # 데이터라 날값이 아닌 것 — (경로, 그 줄에 있는 조각, 이유). 가리키는 곳이 사라지면 실패한다.
@@ -479,12 +482,34 @@ def js_findings(text):
 
 def files(root):
     out = []
-    for d, _, names in os.walk(os.path.join(root, VIEWER)):
+    for d, dirs, names in os.walk(os.path.join(root, SOURCES)):
+        dirs[:] = [name for name in dirs if name not in ("node_modules", "storybook-static", ".git")]
         for f in names:
             path = os.path.relpath(os.path.join(d, f), root)
-            if path != TOKENS and f.endswith((".css", ".js", ".html")):
+            if f.endswith((".css", ".js", ".html", ".ts", ".tsx")) and not f.endswith(".d.ts"):
                 out.append(path)
+    # 번들 밖에 남긴 장면은 여전히 손으로 고치는 원본이다.
+    scene = VIEWER + "/js/resize-scene.js"
+    if os.path.isfile(os.path.join(root, scene)):
+        out.append(scene)
     return sorted(out)
+
+
+def jsx_findings(texts):
+    sources = {p: t for p, t in texts.items() if p.endswith((".ts", ".tsx"))}
+    if not sources:
+        return []
+    parser = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../viewer-src/lint-styles.mjs")
+    result = subprocess.run(["node", parser], input=json.dumps(sources), text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError("JSX style을 검사하지 못했다 — viewer-src에서 npm ci를 실행한다\n" + result.stderr)
+    out = []
+    for path, groups in json.loads(result.stdout).items():
+        for group in groups:
+            css = ".jsx {\n" + "\n".join(item["css"] for item in group) + "\n}"
+            for line, rule, evidence in css_findings(css):
+                out.append((path, group[max(0, min(line - 2, len(group) - 1))]["line"], rule, evidence))
+    return out
 
 
 def scan(root="."):
@@ -502,6 +527,7 @@ def scan(root="."):
             found += [(path, line, r, e) for line, r, e in html_findings(t, uses)]
         else:
             found += [(path, line, r, e) for line, r, e in js_findings(t)]
+    found += jsx_findings(texts)
     return found, texts
 
 

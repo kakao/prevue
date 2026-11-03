@@ -112,7 +112,7 @@ def serve(directory):
                 self.send_header("Content-Length", str(len(payload)))
                 self.end_headers()
                 self.wfile.write(payload)
-            elif path == "/" or path == "/prepare.html" or path in ("/tokens.css", "/preparation.css", "/js/strings.js") or path.startswith(("/js/preparation", "/strings/")):
+            elif path == "/" or path == "/prepare.html" or path in ("/tokens.css", "/preparation.css", "/js/strings.js", "/js/messages.js") or path.startswith(("/js/preparation", "/strings/")):
                 requested = (ROOT / "viewer" / path.lstrip("/")).resolve()
                 if not requested.is_relative_to(ROOT / "viewer"):
                     self.send_error(404)

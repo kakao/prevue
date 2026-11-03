@@ -8,13 +8,15 @@ import org.junit.jupiter.api.Test
 class ScreenTextTest {
     private val code = Regex("""(?:screenText|phrase)(?:OrNull)?\("([\w.]+)"""")
     private val sources = prevue.daemon.Sources.kotlinRoots.map { it.path to code } + listOf(
-        "../../viewer" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
+        "../../../viewer-src" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
+        "../../viewer/js/resize-scene.js" to Regex("""phrase\(['"]([\w.]+)['"]"""),
         "../../cli/prevue_prepare.py" to Regex("""say\("([\w.]+)"\)"""),
     )
 
     @Test fun `부르는 키가 모두 사전에 있다`() {
         val used = sources.flatMap { (dir, pattern) ->
-            File(dir).walkTopDown().filter { it.isFile && it.extension in setOf("kt", "js", "html", "py") }.flatMap { f ->
+            File(dir).walkTopDown().onEnter { it.name !in setOf("node_modules", "storybook-static") }
+                .filter { it.isFile && it.extension in setOf("kt", "js", "html", "py", "ts", "tsx") }.flatMap { f ->
                 pattern.findAll(f.readText()).map { m -> m.groupValues.drop(1).first { it.isNotEmpty() } to f.path }
             }.toList()
         }
