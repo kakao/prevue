@@ -216,11 +216,14 @@ gradle_jdk_of() {  # <repo> -> "<경로>\t<출처>"
 }
 
 # 이 플러그인 버전이 쓰는 렌더러·컴파일러가 공유 툴체인에 이미 있는가. 버전은 빌드와 같은 카탈로그에서 읽는다.
+# Metro(컴파일러 플러그인)는 공유 툴체인이 아니라 Gradle 캐시에만 있다 — 없으면 start 의 오프라인 굽기가 실패하므로 health 가 여기서 미리 가린다.
 shared_toolchain() {
-  local kv lv
+  local kv lv mv
   kv="$(sed -n 's/^kotlin *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
   lv="$(sed -n 's/^layoutlib-data *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
-  [ -n "$kv" ] && [ -n "$lv" ] && [ -d "$HOME/.prevue/toolchain/compiler-$kv" ] && [ -d "$HOME/.prevue/toolchain/layoutlib-$lv" ]
+  mv="$(sed -n 's/^metro *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
+  [ -n "$kv" ] && [ -n "$lv" ] && [ -n "$mv" ] && [ -d "$HOME/.prevue/toolchain/compiler-$kv" ] && [ -d "$HOME/.prevue/toolchain/layoutlib-$lv" ] \
+    && [ -d "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/$mv" ]
 }
 
 # warmup 이 Gradle 을 부를 JDK — 모듈의 최신 산출물을 구운 데몬(로그, 내려간 것도) → Prevue 가 지난번에 쓴 JDK → gradle_jdk_of 순(cli/jdk_rule.py).
@@ -664,8 +667,8 @@ case "$cmd" in
       exit 2
     fi
     HAD=false; [ -s "$ENV_FILE" ] && HAD=true
-    # 래퍼는 JAVA_HOME 을 따른다. 없으면 데몬이 쓰는 것과 같은 JBR 을 준다 — 셸의 java 가 17 인 것이 AGP 세계의 기본값이다.
-    [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
+    # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
+    have_java && export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
       if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
@@ -867,7 +870,7 @@ case "$cmd" in
         exit 1
       fi
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
-      [ -n "${JAVA_HOME:-}" ] || { have_java && export JAVA_HOME="$JDK"; }
+      have_java && export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
     [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" with-lang; exit 3; }

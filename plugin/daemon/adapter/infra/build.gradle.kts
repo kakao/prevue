@@ -1,6 +1,6 @@
 // adapter:infra — 포트를 구현하는 기술(render · compile · watch · source · dump · process). 렌더러 · layoutlib은 여기만 안다(D-141).
 plugins {
-    id("prevue.coroutines")
+    id("prevue.metro")
 }
 
 dependencies {

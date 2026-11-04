@@ -20,6 +20,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
 import prevue.adapter.infra.Infra
 import prevue.adapter.infra.InfraConfig
+import prevue.adapter.process.ProcessMemory
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.domain.UseCases
 import prevue.domain.model.ReloadResult
@@ -112,7 +113,7 @@ class InfraIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         var infra: Infra? = null
         try {
-            infra = Infra(config, scope) {}
+            infra = Infra(config, scope, ProcessMemory()) {}
             scope.block(infra)
         } finally {
             scope.cancel()

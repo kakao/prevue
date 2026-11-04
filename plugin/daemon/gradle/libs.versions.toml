@@ -14,6 +14,8 @@ annotations = "13.0"
 junit = "6.0.3"
 # 테스트만. 오프라인 캐시에 있는 판이다(1.2.1 은 메타데이터가 없다). 끌고 오는 코루틴은 끊는다 — build.gradle.kts
 turbine = "1.2.0"
+# 컴파일 시점 DI(D-144). Kotlin 컴파일러 플러그인이라 Kotlin 을 올릴 때 호환표(docs/compatibility.md)를 먼저 본다 — 2.4.10 은 1.0.0-RC3 이상.
+metro = "1.5.2"
 
 [libraries]
 renderer = { module = "com.android.tools.compose:compose-preview-renderer", version.ref = "renderer" }
@@ -43,3 +45,4 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
