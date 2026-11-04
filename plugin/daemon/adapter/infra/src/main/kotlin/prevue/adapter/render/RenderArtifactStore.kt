@@ -10,7 +10,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
@@ -19,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import prevue.domain.port.PrevueDispatchers
 import prevue.json.Json
 
 /**
@@ -44,7 +44,7 @@ internal const val DEFAULT_OUT_MAX_MB = 64L
 internal fun outMaxMb(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_OUT_MAX_MB
 
 /** 렌더 태스크에서 분리된 이미지·트리를 기록하고 프리뷰별 쓰기 순서와 산출물 상한을 지킨다. */
-internal class RenderArtifactStore(val directory: File) : AutoCloseable {
+internal class RenderArtifactStore(val directory: File, dispatchers: PrevueDispatchers) : AutoCloseable {
     private val limit = MutableStateFlow(outMaxMb(System.getenv("PREVUE_OUT_MAX_MB")) * 1024 * 1024)
     var maxBytes: Long
         get() = limit.value
@@ -54,7 +54,7 @@ internal class RenderArtifactStore(val directory: File) : AutoCloseable {
 
     // 같은 프리뷰는 같은 줄에 보낸다 — 이전 그림의 느린 인코딩이 최신 파일을 덮지 않게 한다.
     private val lanes = List(3) { Channel<Write>(Channel.UNLIMITED) }
-    private val drains = CoroutineScope(SupervisorJob() + Dispatchers.IO).let { scope ->
+    private val drains = CoroutineScope(SupervisorJob() + dispatchers.io).let { scope ->
         lanes.mapIndexed { i, lane -> scope.launch(CoroutineName("prevue-writer-$i")) { for (w in lane) w.run() } }
     }
 

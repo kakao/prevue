@@ -4,7 +4,6 @@ import java.io.File
 import java.lang.management.ManagementFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import dev.zacsweers.metro.createGraphFactory
@@ -63,8 +62,9 @@ private fun respawn(args: List<String>) {
 }
 
 private fun PrevueDaemon.assemble(boot: Boot) {
+    val hooks = DaemonHooks(::log) { requestStop("HTTP /shutdown") }
     val graph = createGraphFactory<PrevueGraph.Factory>()
-        .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), DaemonHooks(::log) { requestStop("HTTP /shutdown") }, closer)
+        .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), hooks, closer, dispatchers)
     val renderer = graph.rendererLoss
     graph.startDaemon()
     log("values XML ${graph.rememberValues()}개")
@@ -88,7 +88,7 @@ private fun PrevueDaemon.watchRenderer(loss: RendererLoss, boot: Boot, graph: Pr
 }
 
 private fun PrevueDaemon.indexPreviewFiles(graph: PrevueGraph) {
-    scope.launch(Dispatchers.IO + CoroutineName("prevue-preview-files")) {
+    scope.launch(dispatchers.io + CoroutineName("prevue-preview-files")) {
         val t = System.nanoTime()
         runCatching { graph.indexPreviewFiles() }.onSuccess {
             log("프리뷰 파일 ${graph.readPreviewFiles()?.size ?: 0}개 (${(System.nanoTime() - t) / 1_000_000}ms)")

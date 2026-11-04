@@ -24,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import prevue.daemon.fake.Fixture
 import prevue.adapter.entry.EntryHooks
+import prevue.daemon.fake.realDispatchers
 
 class ServerTest {
     private val fx = Fixture()
@@ -55,7 +56,7 @@ class ServerTest {
         for (n in listOf("index.html", "a.png", "a.json", "a.js", "a.css", "a.svg", "a.bin")) File(viewer, n).writeText(n)
         File(out, "a.json").writeText("from out")
         val port = ServerSocket(0).use { it.localPort }
-        val server = Server(port, emptyList(), viewer, out, EmptyCoroutineContext) {}
+        val server = Server(port, emptyList(), viewer, out, EmptyCoroutineContext, realDispatchers) {}
         server.start()
         try {
             fun get(path: String) = (URI("http://127.0.0.1:$port$path").toURL().openConnection() as HttpURLConnection).run {
@@ -82,7 +83,7 @@ class ServerTest {
         File(fx.root, "viewer-static-evil").mkdirs(); File(fx.root, "viewer-static-evil/x.txt").writeText("SECRET")
         Files.createSymbolicLink(File(out, "link").toPath(), fx.root.toPath())
         val port = ServerSocket(0).use { it.localPort }
-        val server = Server(port, emptyList(), viewer, out, EmptyCoroutineContext) {}
+        val server = Server(port, emptyList(), viewer, out, EmptyCoroutineContext, realDispatchers) {}
         server.start()
         try {
             fun raw(target: String) = Socket("127.0.0.1", port).use { s ->
@@ -112,7 +113,7 @@ class ServerTest {
             true
         }
         val port = ServerSocket(0).use { it.localPort }
-        val server = Server(port, listOf(slow), fx.root, fx.root, EmptyCoroutineContext) {}
+        val server = Server(port, listOf(slow), fx.root, fx.root, EmptyCoroutineContext, realDispatchers) {}
         server.start()
         val client = getAsync(port, "/slow")
         try {
@@ -136,7 +137,7 @@ class ServerTest {
     @Test fun `부모 스코프가 먼저 취소돼도 멈추면 포트를 놓는다`() {
         val parent = Job()
         val port = ServerSocket(0).use { it.localPort }
-        val server = Server(port, emptyList(), fx.root, fx.root, parent) {}
+        val server = Server(port, emptyList(), fx.root, fx.root, parent, realDispatchers) {}
         server.start()
         parent.cancel()
         runBlocking { withTimeout(5_000) { server.stop() } }

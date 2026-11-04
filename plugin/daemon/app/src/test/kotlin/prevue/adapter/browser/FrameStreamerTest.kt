@@ -27,6 +27,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import prevue.domain.model.LiveFrame
 import prevue.daemon.fake.awaitUntil
+import prevue.daemon.fake.realDispatchers
+import prevue.daemon.fake.dispatchersOn
+import kotlinx.coroutines.CoroutineDispatcher
 
 /**
  * 스트림은 루프가 낸 화면을 인코딩만 한다 — 성질 넷: 마지막 프레임 · 정착 PNG는 나간다, 보는 사람이 없으면 인코딩하지 않는다,
@@ -43,9 +46,9 @@ class FrameStreamerTest {
 
     private fun emit(rgb: Int, rest: Boolean = false) { screen.value = LiveFrame(++seq, image(rgb), rest) }
 
-    private fun TestScope.streamer(write: CoroutineContext? = null): FrameStreamer {
+    private fun TestScope.streamer(write: CoroutineDispatcher? = null): FrameStreamer {
         val d = StandardTestDispatcher(testScheduler)
-        return FrameStreamer(screen, watching, backgroundScope, {}, state = d, encode = d, write = write ?: d)
+        return FrameStreamer(screen, watching, backgroundScope, {}, dispatchersOn(d, io = write ?: d))
     }
 
     private class Socket : OutputStream() {
@@ -209,7 +212,7 @@ class FrameStreamerTest {
     // 구독자를 목록에 먼저 넣으면 첫 경계·마지막 그림을 쓰는 사이에 다른 파트가 끼어든다 — 끝나지 않는 애니메이션 화면에서 첫 화면이 안 떴다.
     @Test fun `그림이 쉼 없이 바뀌어도 느린 구독자의 MJPEG가 깨지지 않는다`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val stream = FrameStreamer(screen, watching, scope, {})
+        val stream = FrameStreamer(screen, watching, scope, {}, realDispatchers)
         watching.value = true
         val warm = ByteArrayOutputStream().also(stream::subscribe)
         val busy = Thread {

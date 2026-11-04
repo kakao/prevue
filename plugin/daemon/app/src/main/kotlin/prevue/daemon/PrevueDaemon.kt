@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import prevue.adapter.entry.EntryPoints
 import prevue.adapter.infra.Closer
+import prevue.domain.port.PrevueDispatchers
 
 /** 데몬 하나의 작업·입구·자원을 소유하고 모든 종료 요청을 한 정리 경로로 모은다. */
 class PrevueDaemon(
@@ -23,13 +24,14 @@ class PrevueDaemon(
     private val shutdownTimeoutMs: Long = 30_000,
     private val log: (String) -> Unit = {},
     private val forceExit: (Int) -> Unit = { Runtime.getRuntime().halt(it) },
+    val dispatchers: PrevueDispatchers = PrevueDispatchers(Dispatchers.IO, Dispatchers.Default),
 ) : AutoCloseable {
     private enum class Phase { READY, RUNNING, CLOSING }
     private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null)
     private class StopRequest(val reason: String, val respawn: List<String>? = null, val failure: Throwable? = null)
 
     private val job = SupervisorJob()
-    val scope = CoroutineScope(job + Dispatchers.Default + CoroutineExceptionHandler { _, e -> log("데몬 작업 실패: $e") })
+    val scope = CoroutineScope(job + dispatchers.default + CoroutineExceptionHandler { _, e -> log("데몬 작업 실패: $e") })
     private val requested = CompletableDeferred<StopRequest>()
     private val life = MutableStateFlow(Life())
     private val closed = CompletableDeferred<Unit>()

@@ -4,7 +4,6 @@ import java.io.File
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -12,6 +11,7 @@ import kotlinx.coroutines.launch
 import prevue.domain.port.LiveSession
 import prevue.domain.port.LiveSessionFactory
 import prevue.domain.port.PreviewRenderer
+import prevue.domain.port.PrevueDispatchers
 import prevue.domain.port.RenderOutput
 import prevue.domain.port.ResourceKey
 import prevue.domain.port.ResourceLookup
@@ -23,11 +23,12 @@ import prevue.entity.PreviewSpec
 internal class BootingEngine(
     private val scope: CoroutineScope,
     override val outDir: File,
+    dispatchers: PrevueDispatchers,
     boot: () -> RenderEngine,
 ) : PreviewRenderer, LiveSessionFactory, AutoCloseable {
     private class Booted(val engine: RenderEngine, val overlay: ResourceOverlay?)
 
-    private val booted: Deferred<Booted> = scope.async(Dispatchers.IO + NonCancellable + CoroutineName("prevue-renderer-boot")) {
+    private val booted: Deferred<Booted> = scope.async(dispatchers.io + NonCancellable + CoroutineName("prevue-renderer-boot")) {
         boot().let { Booted(it, ResourceOverlay.install(it.renderer)) }
     }
 

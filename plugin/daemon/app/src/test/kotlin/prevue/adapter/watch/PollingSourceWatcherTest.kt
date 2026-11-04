@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import prevue.domain.port.SourceChange
 import prevue.daemon.fake.awaitUntil
+import prevue.daemon.fake.realDispatchers
 
 /** D-56. 생성 · 삭제는 저장(files)이 아니라 따로 알린다 — 저장 → 화면은 그대로 수정된 파일만 받는다. */
 class PollingSourceWatcherTest {
@@ -35,7 +36,7 @@ class PollingSourceWatcherTest {
     @Test fun `새 파일과 지운 파일을 저장과 갈라 알린다`() {
         val root = directory.toFile().canonicalFile
         val old = File(root, "a/Old.kt").apply { parentFile.mkdirs(); writeText("package a\n") }
-        PollingSourceWatcher(listOf(root)).watch(only = { it.created.isNotEmpty() || it.deleted.isNotEmpty() }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).watch(only = { it.created.isNotEmpty() || it.deleted.isNotEmpty() }) {
             val fresh = File(root, "a/New.kt").apply { writeText("package a\n") }   // 첫 틱 뒤다 — 처음 등록은 생성이 아니다
             val c1 = awaitItem()
             assertEquals(listOf(fresh), c1.created)
@@ -54,7 +55,7 @@ class PollingSourceWatcherTest {
     @Test fun `보여 주는 파일의 제자리 덮어쓰기를 저장으로 알린다`() {
         val root = directory.toFile().canonicalFile
         val shown = File(root, "a/Shown.kt").apply { parentFile.mkdirs(); writeText("package a\n") }
-        PollingSourceWatcher(listOf(root)).apply { periodMs = 60_000 }.watch({ listOf(shown) }, only = { it.files.isNotEmpty() }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).apply { periodMs = 60_000 }.watch({ listOf(shown) }, only = { it.files.isNotEmpty() }) {
             overwrite(shown)
             val c = awaitItem()
             assertEquals(listOf(shown), c.files)
@@ -66,7 +67,7 @@ class PollingSourceWatcherTest {
         val root = directory.toFile().canonicalFile
         val quiet = File(root, "a/Quiet.kt").apply { parentFile.mkdirs(); writeText("package a\n") }
         val dirMtime = quiet.parentFile.lastModified()
-        PollingSourceWatcher(listOf(root)).apply { statSliceTicks = 1 }.watch(only = { it.files.isNotEmpty() }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).apply { statSliceTicks = 1 }.watch(only = { it.files.isNotEmpty() }) {
             overwrite(quiet)
             quiet.parentFile.setLastModified(dirMtime)
             assertEquals(listOf(quiet), awaitItem().files)
@@ -76,7 +77,7 @@ class PollingSourceWatcherTest {
     @Test fun `임시 파일을 옮겨 쓴 저장은 디렉터리 mtime 으로 잡는다`() {
         val root = directory.toFile().canonicalFile
         val target = File(root, "a/Saved.kt").apply { parentFile.mkdirs(); writeText("package a\n") }
-        PollingSourceWatcher(listOf(root)).apply { statSliceTicks = 1_000 }.watch(only = { it.files.isNotEmpty() }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).apply { statSliceTicks = 1_000 }.watch(only = { it.files.isNotEmpty() }) {
             val tmp = File(root, "a/Saved.kt.tmp").apply { writeText("package a\n// saved\n"); setLastModified(target.lastModified() + 2_000) }
             Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
             val c = awaitItem()
@@ -88,7 +89,7 @@ class PollingSourceWatcherTest {
     @Test fun `디렉터리째 지운 파일을 지운 것으로 알린다`() {
         val root = directory.toFile().canonicalFile
         val deep = File(root, "b/c/Deep.kt").apply { parentFile.mkdirs(); writeText("package c\n") }
-        PollingSourceWatcher(listOf(root)).watch(only = { it.deleted.isNotEmpty() }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).watch(only = { it.deleted.isNotEmpty() }) {
             File(root, "b").deleteRecursively()
             assertEquals(listOf(deep), awaitItem().deleted)
         }
@@ -98,7 +99,7 @@ class PollingSourceWatcherTest {
         val root = directory.toFile().canonicalFile
         val dir = File(root, "a").apply { mkdirs() }
         val gone = File(dir, "Gone.kt").apply { writeText("package a\n") }
-        PollingSourceWatcher(listOf(root)).apply { rewalkMs = 400; statSliceTicks = 1_000 }.watch(only = { true }) {
+        PollingSourceWatcher(listOf(root), realDispatchers).apply { rewalkMs = 400; statSliceTicks = 1_000 }.watch(only = { true }) {
             val dirMtime = dir.lastModified()
             gone.delete()
             val born = File(dir, "Born.kt").apply { writeText("package a\n") }
@@ -114,7 +115,7 @@ class PollingSourceWatcherTest {
     @Test fun `status 가 읽는 감시 비용을 낸다`() {
         val root = directory.toFile().canonicalFile
         File(root, "a/One.kt").apply { parentFile.mkdirs(); writeText("package a\n") }
-        val w = PollingSourceWatcher(listOf(root))
+        val w = PollingSourceWatcher(listOf(root), realDispatchers)
         w.watch(only = { false }) {
             val s = w.stats
             assertEquals(setOf("files", "dirs", "hotSet", "ticks", "hotPeriodMs", "periodMs", "cpuPct", "usPerTick"), s.keys)

@@ -38,6 +38,7 @@ import prevue.daemon.fake.TestGraph
 import prevue.adapter.entry.TargetRepo
 import prevue.daemon.fake.TestPorts
 import prevue.daemon.fake.testGraph
+import prevue.daemon.fake.realDispatchers
 
 /**
  * 빌드에 이미 있는 프리뷰 없는 스텁 파일에 본문과 `@Preview`를 더해 저장하자마자 연다(README 영상 take 7의 `HomeScreen.kt`).
@@ -61,14 +62,14 @@ class BlankRenderIntegrationTest {
     @BeforeAll fun up() {
         val (home, app) = PearlFixture.warmup()
         val (spec, _) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
-        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out)
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         stub = PearlFixture.stubCopy(appRoot)
         val watched = listOf(appRoot)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) },
-            sources = PollingSourceWatcher(watched)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) },
+            sources = PollingSourceWatcher(watched, realDispatchers)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
         ui = uc.entryPoints.also { it.startWatching() }
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)

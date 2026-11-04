@@ -2,8 +2,6 @@ package prevue.adapter.watch
 
 import java.io.File
 import java.time.Instant
-import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -16,10 +14,11 @@ import kotlinx.coroutines.flow.update
 import prevue.domain.port.BuildChange
 import prevue.domain.port.BuildNotice
 import prevue.domain.port.BuildWatcher
+import prevue.domain.port.PrevueDispatchers
 
 internal class PollingBuildWatcher(
     groups: List<Pair<String, List<File>>>,
-    private val context: CoroutineContext = Dispatchers.IO,
+    private val dispatchers: PrevueDispatchers,
 ) : BuildWatcher {
     var periodMs = 2_000L
     var quietMs = 1_500L
@@ -58,7 +57,7 @@ internal class PollingBuildWatcher(
             awaitQuiet(seen, all)
             emit(notice(all, done = true))
         }
-    }.buffer(Channel.RENDEZVOUS).flowOn(context)
+    }.buffer(Channel.RENDEZVOUS).flowOn(dispatchers.io)
 
     private suspend fun FlowCollector<BuildNotice>.awaitQuiet(seen: Seen, all: MutableSet<File>) {
         var quiet = 0L

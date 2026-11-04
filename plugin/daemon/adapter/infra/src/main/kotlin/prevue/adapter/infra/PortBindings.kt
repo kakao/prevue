@@ -13,6 +13,7 @@ import prevue.domain.port.BuildWatcher
 import prevue.domain.port.Compiler
 import prevue.domain.port.LiveSessionFactory
 import prevue.domain.port.PreviewRenderer
+import prevue.domain.port.PrevueDispatchers
 import prevue.domain.port.ResourceValues
 import prevue.domain.port.SourceWatcher
 import prevue.domain.port.ValueFiles
@@ -33,12 +34,14 @@ public object PortBindings {
     internal fun resources(engine: BootingEngine): ResourceValues? = engine.resources
 
     @Provides @SingleIn(AppScope::class)
-    internal fun sources(watches: Watches): SourceWatcher? = if (watches.watching) PollingSourceWatcher(watches.roots) else null
+    internal fun sources(watches: Watches, dispatchers: PrevueDispatchers): SourceWatcher? =
+        if (watches.watching) PollingSourceWatcher(watches.roots, dispatchers) else null
 
     @Provides @SingleIn(AppScope::class)
-    internal fun builds(watches: Watches): BuildWatcher? = if (watches.watching) PollingBuildWatcher(watches.buildGroups()) else null
+    internal fun builds(watches: Watches, dispatchers: PrevueDispatchers): BuildWatcher? =
+        if (watches.watching) PollingBuildWatcher(watches.buildGroups(), dispatchers) else null
 
     @Provides @SingleIn(AppScope::class) @ValueFiles
-    internal fun values(watches: Watches): SourceWatcher? =
-        if (watches.watching) PollingSourceWatcher(watches.valueDirs, extension = "xml").apply { statSliceTicks = 1 } else null
+    internal fun values(watches: Watches, dispatchers: PrevueDispatchers): SourceWatcher? =
+        if (watches.watching) PollingSourceWatcher(watches.valueDirs, dispatchers, extension = "xml").apply { statSliceTicks = 1 } else null
 }

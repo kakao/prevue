@@ -21,6 +21,7 @@ import prevue.daemon.fake.FakePreviewRenderer
 import prevue.domain.port.LiveSession
 import prevue.domain.port.Frame
 import prevue.domain.model.SettledShot
+import prevue.daemon.fake.dispatchersOn
 
 /** D-75 · D-78. 시계는 루프 하나가 돌린다 — 가상 시계로 입력에 대한 틱 · 정착의 순서와 시각을 단언한다. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,7 +32,7 @@ class LiveLoopTest {
     @AfterEach fun down() { fake.outDir.deleteRecursively() }
 
     private fun TestScope.actor(): EngineActor =
-        EngineActor(fake, fake, backgroundScope, StandardTestDispatcher(testScheduler), now = { testScheduler.currentTime }, log = {})
+        EngineActor(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), now = { testScheduler.currentTime }, log = {})
 
     private fun changed(n: Int) = repeat(n) { fake.frames += Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) }
 

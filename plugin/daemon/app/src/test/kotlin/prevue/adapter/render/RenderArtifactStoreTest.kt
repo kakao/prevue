@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import prevue.json.Json
+import prevue.daemon.fake.realDispatchers
 
 class RenderArtifactStoreTest {
     @TempDir lateinit var directory: Path
@@ -18,7 +19,7 @@ class RenderArtifactStoreTest {
     }
 
     @Test fun `같은 프리뷰의 마지막 이미지와 트리가 남고 완료 뒤 읽을 수 있다`() = runBlocking {
-        RenderArtifactStore(directory.toFile()).use { store ->
+        RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             store.write("card", image(Color.RED), mapOf("revision" to 1), false)
             store.write("card", image(Color.BLUE), mapOf("revision" to 2), false).await()
             store.awaitWrites()
@@ -29,7 +30,7 @@ class RenderArtifactStoreTest {
     }
 
     @Test fun `보호한 산출물은 상한을 넘어도 남는다`() = runBlocking {
-        RenderArtifactStore(directory.toFile()).use { store ->
+        RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             store.maxBytes = 0
             store.protect { setOf("keep") }
             store.write("keep", image(Color.RED), emptyMap(), false).await()
@@ -42,7 +43,7 @@ class RenderArtifactStoreTest {
     }
 
     @Test fun `쓰기 실패를 완료 대기에서 전달한다`() {
-        RenderArtifactStore(directory.toFile()).use { store ->
+        RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             store.imageFile("broken").mkdirs()
             assertThrows(Exception::class.java) {
                 runBlocking { store.write("broken", image(Color.RED), emptyMap(), false).await() }
@@ -51,7 +52,7 @@ class RenderArtifactStoreTest {
     }
 
     @Test fun `성공 뒤 실패도 같은 줄에서 처리하여 이전 그림을 남기지 않는다`() = runBlocking {
-        RenderArtifactStore(directory.toFile()).use { store ->
+        RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             store.write("card", image(Color.RED), emptyMap(), false)
             store.write("card", null, mapOf("failure" to "EXCEPTION"), true).await()
             assertFalse(store.imageFile("card").exists())
@@ -60,14 +61,14 @@ class RenderArtifactStoreTest {
     }
 
     @Test fun `쓰기 단계를 쓰기의 결과로 돌려준다`() = runBlocking {
-        RenderArtifactStore(directory.toFile()).use { store ->
+        RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             val phases = store.write("card", image(Color.RED), emptyMap(), false).await()
             assertEquals(setOf("writeQueueMs", "pngMs", "jsonMs", "pruneMs"), phases.keys)
         }
     }
 
     @Test fun `닫으면 남은 쓰기를 마치고 그 뒤의 쓰기는 받지 않는다`() {
-        val store = RenderArtifactStore(directory.toFile())
+        val store = RenderArtifactStore(directory.toFile(), realDispatchers)
         val pending = (0 until 6).map { store.write("card$it", image(Color.RED), mapOf("i" to it), false) }
         store.close()
         assertTrue(pending.all { it.isCompleted })

@@ -15,6 +15,7 @@ import prevue.adapter.http.LiveStats
 import prevue.adapter.http.Relay
 import prevue.adapter.http.Server
 import prevue.domain.ObserveScreenUseCase
+import prevue.domain.port.PrevueDispatchers
 
 @ContributesTo(AppScope::class)
 @BindingContainer
@@ -30,8 +31,8 @@ public object EntryBindings {
         ViewerTarget(target.app, checkout.version(), target.branch, target.reveal)
 
     @Provides @SingleIn(AppScope::class)
-    internal fun frames(screen: ObserveScreenUseCase, relay: Relay, log: EntryLog): FrameStreamer =
-        FrameStreamer(screen.screen, screen.watching, relay.scope, log::invoke)
+    internal fun frames(screen: ObserveScreenUseCase, relay: Relay, log: EntryLog, dispatchers: PrevueDispatchers): FrameStreamer =
+        FrameStreamer(screen.screen, screen.watching, relay.scope, log::invoke, dispatchers)
 
     @Provides
     internal fun liveStats(screen: ObserveScreenUseCase, frames: FrameStreamer, browser: BrowserEndpoint): LiveStats = LiveStats {
@@ -47,7 +48,7 @@ public object EntryBindings {
     internal fun server(
         endpoints: Set<HttpEndpoint>, hooks: EntryHooks, checkout: PrevueCheckout, target: TargetRepo, relay: Relay, browser: BrowserEndpoint,
     ): Server =
-        Server(hooks.port, endpoints.toList(), checkout.viewer, target.outDir, relay.scope.coroutineContext) { restart ->
+        Server(hooks.port, endpoints.toList(), checkout.viewer, target.outDir, relay.scope.coroutineContext, relay.dispatchers) { restart ->
             if (restart) browser.announceRestart()
             hooks.onShutdown()
         }

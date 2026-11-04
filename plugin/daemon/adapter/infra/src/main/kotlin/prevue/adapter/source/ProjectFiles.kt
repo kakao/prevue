@@ -7,7 +7,6 @@ import java.nio.file.InvalidPathException
 import java.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,8 +16,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import prevue.entity.SourceIndex
 import prevue.domain.port.SourceFileRepository
+import prevue.domain.port.PrevueDispatchers
 
-internal class ProjectFiles(private val repoRoot: File, roots: List<File>) : SourceFileRepository {
+internal class ProjectFiles(private val repoRoot: File, roots: List<File>, private val dispatchers: PrevueDispatchers) : SourceFileRepository {
     private sealed interface State {
         class Building(val pending: List<List<Change>>) : State
         class Ready(val files: Map<String, List<String>>) : State
@@ -32,7 +32,7 @@ internal class ProjectFiles(private val repoRoot: File, roots: List<File>) : Sou
     override val sourceRoots: List<String> = roots.map { it.absolutePath }
 
     fun buildInBackground(scope: CoroutineScope) = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-        runCatching { withContext(Dispatchers.IO) { walk() } }
+        runCatching { withContext(dispatchers.io) { walk() } }
             .onSuccess { walked -> state.update { s -> State.Ready(s.pendingOrEmpty().fold(walked) { m, changes -> m.applied(changes) ?: m }) } }
             .onFailure { state.value = State.Failed(IllegalStateException("소스 색인을 짓지 못했다", it)) }
     }

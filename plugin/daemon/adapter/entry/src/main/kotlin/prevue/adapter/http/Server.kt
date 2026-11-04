@@ -9,11 +9,11 @@ import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import prevue.domain.port.PrevueDispatchers
 
 /**
  * HTTP 껍데기 — 소켓 · 입구 고르기 · 정적 파일 · 활동 시각만 갖는다. 무엇을 할지는 입구([CliEndpoint] · [BrowserEndpoint])가 정한다.
@@ -24,11 +24,12 @@ internal class Server(
     viewerDir: File,
     outDir: File,
     requestContext: CoroutineContext,
+    dispatchers: PrevueDispatchers,
     private val onShutdown: (restart: Boolean) -> Unit,
 ) {
     private val server = HttpServer.create()
     private val requests = SupervisorJob(requestContext[Job])
-    private val scope = CoroutineScope(requestContext + requests + Dispatchers.IO.limitedParallelism(64, "prevue-http") + CoroutineName("prevue-http"))
+    private val scope = CoroutineScope(requestContext + requests + dispatchers.io.limitedParallelism(64, "prevue-http") + CoroutineName("prevue-http"))
     private val stopped = MutableStateFlow(false)
     private val staticRoots = listOf(outDir, viewerDir).map { it.canonicalFile.toPath() }
 

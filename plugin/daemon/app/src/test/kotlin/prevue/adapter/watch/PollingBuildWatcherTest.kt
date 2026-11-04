@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import prevue.domain.port.BuildNotice
+import prevue.daemon.fake.dispatchersOn
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PollingBuildWatcherTest {
@@ -26,7 +27,7 @@ class PollingBuildWatcherTest {
     private fun file(name: String) = File(directory.toFile(), name).apply { writeText(name); setLastModified(1_000_000) }
 
     private fun TestScope.watcher(own: File, res: File) =
-        PollingBuildWatcher(listOf("own" to listOf(own), "resources" to listOf(res)), StandardTestDispatcher(testScheduler))
+        PollingBuildWatcher(listOf("own" to listOf(own), "resources" to listOf(res)), dispatchersOn(StandardTestDispatcher(testScheduler)))
 
     @Test fun `처음 본 순간과 조용해진 뒤를 나눠 알리고 그 사이의 변경은 한 번에 묶는다`() = runTest {
         val own = file("own.jar")

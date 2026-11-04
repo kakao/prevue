@@ -27,6 +27,7 @@ import prevue.adapter.infra.InfraConfig
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.domain.model.ReloadResult
 import prevue.json.Json
+import prevue.daemon.fake.realDispatchers
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @EnabledIf("prevue.daemon.InfraIntegrationTest#available")
@@ -123,7 +124,7 @@ class InfraIntegrationTest {
         val logs = CopyOnWriteArrayList<String>()
         val closer = Closer { logs += it }
         try {
-            val graph = createGraphFactory<InfraGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), DaemonHooks({}) {}, closer)
+            val graph = createGraphFactory<InfraGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), DaemonHooks({}) {}, closer, realDispatchers)
             scope.block(graph)
         } finally {
             scope.cancel()

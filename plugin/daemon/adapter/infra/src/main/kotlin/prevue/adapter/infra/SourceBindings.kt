@@ -10,6 +10,7 @@ import dev.zacsweers.metro.Qualifier
 import dev.zacsweers.metro.SingleIn
 import prevue.adapter.source.ProjectFiles
 import prevue.domain.port.SourceFileRepository
+import prevue.domain.port.PrevueDispatchers
 import prevue.entity.ModuleGraph
 
 @Qualifier
@@ -19,8 +20,8 @@ public annotation class WatchRoots
 @BindingContainer
 public object SourceBindings {
     @Provides @SingleIn(AppScope::class)
-    internal fun sourceFiles(dumps: Dumps, graph: ModuleGraph, scope: CoroutineScope): SourceFileRepository =
-        ProjectFiles(dumps.target.repoRoot, graph.roots).apply { buildInBackground(scope) }
+    internal fun sourceFiles(dumps: Dumps, graph: ModuleGraph, scope: CoroutineScope, dispatchers: PrevueDispatchers): SourceFileRepository =
+        ProjectFiles(dumps.target.repoRoot, graph.roots, dispatchers).apply { buildInBackground(scope) }
 
     @Provides @SingleIn(AppScope::class)
     internal fun watches(config: InfraConfig, graph: ModuleGraph, dumps: Dumps, log: InfraLog): Watches =
