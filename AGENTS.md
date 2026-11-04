@@ -15,7 +15,7 @@
 | `Atlas/Notes/Prevue 결정 기록.md` | 정한 것을 건드릴 때. D-xx · 대안 · 뒤집을 조건 |
 | `Efforts/On/Prevue *.md`와 그 폴더(`Efforts/On/Prevue <작업>/`) | **어느 작업을 시작·이어 갈 때.** 노트는 조각 · 순서 · 성공 기준 · 뺀 것과 이유, 폴더는 작업 하나당 하나인 Sub-Task 노트(PR로 끝나든 아니든)와 그 결과. 만들고 닫는 것은 볼트 쪽이다 |
 | `Atlas/Notes/Prevue 개발 문서.md` | **코드를 고치기 전에.** 지금 구조 · 구현 결정의 이유 · **되돌리지 말 것** · 버전 핀. 지금 코드의 스냅숏이라 변경 이력을 적지 않는다 |
-| `Atlas/Notes/Prevue 디자인 시스템.md` | **뷰어를 고치기 전에.** 두 층(원시값 · 역할 이름) · 단계 규칙 · 하지 않는 것. 값은 `plugin/viewer/tokens.css`, 눈으로 보는 곳은 `prototypes/design-system/` |
+| `Atlas/Notes/Prevue 디자인 시스템.md` | **뷰어를 고치기 전에.** 두 층(원시값 · 역할 이름) · 단계 규칙 · 하지 않는 것. 값은 `plugin/viewer/tokens.css`, 눈으로 보는 곳은 Storybook `재료/Tokens`(`viewer-src/`) |
 | `Atlas/Notes/Prevue 성능 실측.md` | 숫자를 말할 때. 회차별 원 기록 |
 | `Atlas/Notes/Compose Preview 렌더 파이프라인 분석.md` | AS·렌더러의 일반 구조가 필요할 때 |
 | `Atlas/Notes/AI 에이전트 시대의 Android 개발 도구 이탈 수요.md` | 시장·경쟁 근거가 필요할 때 |
@@ -28,7 +28,7 @@
 - **하드 제약은 기획의 결정 기록이 갖는다.** 빌드 무침습(대상 저장소의 빌드 파일·플러그인·태스크를 건드리지 않는다) · 뷰어는 브라우저 · Gradle은 부트스트랩 1회 · debug 산출물만. 뒤집을 조건이 "없음"인 것은 뒤집지 않는다.
 - **`README.md` 벤치마크가 바뀌면 그 숫자 · 조건 · 명령을 머지 캡처의 실측으로 넘긴다.** README는 사람용 요약, 볼트가 원 기록이다.
 - **`CHANGELOG.md`에는 사용자에게 보이는 변화만** `[Unreleased]` 아래에 적는다. 작업 PR에서 적는다 — 병렬 PR이 같은 자리에 적어도 `merge=union`이 둘 다 남긴다. 쓰는 법과 외부 기여 · 제보 멘션은 `dev-skills-src/release-notes.md` — 외부 PR을 머지할 때도 본다.
-- **뷰어의 색 · 글자 · 모서리 · 그림자 · 시간 · 간격은 `plugin/viewer/tokens.css`의 역할 이름으로만 쓴다**(D-96) — `sh tools/lint.sh`가 날값을 막는다. 새 값이 필요하면 `tokens.css`와 견본(`prototypes/design-system/`)을 같은 PR에서 고친다.
+- **뷰어의 색 · 글자 · 모서리 · 그림자 · 시간 · 간격은 `plugin/viewer/tokens.css`의 역할 이름으로만 쓴다**(D-96) — `sh tools/lint.sh`가 날값을 막는다. 새 값이 필요하면 `tokens.css`와 Storybook `재료/Tokens`(`viewer-src/stories/Tokens.stories.tsx`)를 같은 PR에서 고치고, 색 역할이면 대비 쌍(`tests/viewer/contrast-pairs.json`)도 고친다.
 - **버전 숫자(`plugin.json`의 `version` · README 버전 배지 · CHANGELOG 제목)는 손으로 고치지 않는다.** `plugin/VERSION`만 올리고 `tools/sync-version.sh`로 옮긴다. 마켓플레이스의 플러그인 소스는 `main` 브랜치라 main에 머지되는 순간 배포된다.
 
 ## 브랜치와 워크트리

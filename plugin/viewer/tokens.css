@@ -207,7 +207,7 @@
   --art-tag-surface: var(--surface-container-high);
 }
 
-/* 시스템 설정을 따른다. 뷰어 · 견본이 한 영역만 고정할 때 data-theme를 단다. */
+/* 시스템 설정을 따른다. 뷰어 · Storybook이 한 영역만 고정할 때 data-theme를 단다. */
 [data-theme="light"] { color-scheme: light; }
 [data-theme="dark"] { color-scheme: dark; }
 
