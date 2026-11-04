@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The first start after this update asks to download once more.** Prevue now assembles its daemon with Metro, a compile-time dependency injection library, so the daemon build that `start` runs after an update needs about 11 MB it did not need before. It used to rebuild silently from what was already downloaded; this once, `health` · `start` answer with `missing: ["toolchain"]` and `prevue setup` fetches it. Previews are drawn exactly as before.
+
 ## [0.21.0] — 2026-11-02
 
 ![Prevue 0.21 — Kotlin Multiplatform, in your browser](https://raw.githubusercontent.com/kakao/prevue/v0.21.0/assets/release-0.21.0.png)
