@@ -1,0 +1,21 @@
+[
+  { "fg": ["on-surface"], "bg": ["surface"], "need": 4.5 },
+  { "fg": ["on-surface"], "bg": ["surface-container"], "need": 4.5 },
+  { "fg": ["on-surface"], "bg": ["primary-container", "surface-container"], "need": 4.5 },
+  { "fg": ["on-surface-variant"], "bg": ["surface"], "need": 4.5 },
+  { "fg": ["on-surface-variant"], "bg": ["surface-container"], "need": 4.5 },
+  { "fg": ["on-surface-variant"], "bg": ["surface-container-high", "surface-container"], "need": 4.5 },
+  { "fg": ["on-primary"], "bg": ["primary"], "need": 4.5 },
+  { "fg": ["on-pick"], "bg": ["pick"], "need": 4.5 },
+  { "fg": ["error"], "bg": ["surface-container"], "need": 4.5 },
+  { "fg": ["error"], "bg": ["error-container", "surface-container"], "need": 4.5 },
+  { "fg": ["warning"], "bg": ["surface-container"], "need": 4.5 },
+  { "fg": ["warning"], "bg": ["surface"], "need": 4.5 },
+  { "fg": ["success"], "bg": ["surface-container"], "need": 4.5 },
+  { "fg": ["outline"], "bg": ["surface"], "need": 3 },
+  { "fg": ["outline"], "bg": ["surface-container"], "need": 3 },
+  { "fg": ["focus-ring"], "bg": ["surface"], "need": 3 },
+  { "fg": ["pick"], "bg": ["surface-container"], "need": 3 },
+  { "fg": ["live"], "bg": ["surface"], "need": 3 },
+  { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 }
+]
