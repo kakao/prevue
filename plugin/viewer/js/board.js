@@ -1,5 +1,5 @@
 // 보드(FR-17)의 브라우저 쪽 상태 — 키보드 커서 · 돌아온 카드 · 빠른 열기에서 고른 함수 · 카드 트리. 그리는 것은 React 의 PreviewBoard 다.
-// 기존 모듈(main · quickopen)이 그리로 알리므로 DOM 없는 저장소로 둔다. 카드를 찾을 때만 그려진 #cards 를 읽는다.
+// 기존 모듈(main)과 React 의 빠른 열기가 그리로 알리므로 DOM 없는 저장소로 둔다. 카드를 찾을 때만 그려진 #cards 를 읽는다.
 import { store } from "./store.js";
 import { reduced } from "./motion.js";
 

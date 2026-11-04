@@ -6,6 +6,7 @@ import { hideReactKeys, useHost } from '../host';
 import { useMessages } from '../messages';
 import type { ViewerState } from '../state';
 import { FileIcon, kindOf } from './FileIcon';
+import { QuickOpenButton } from './QuickOpen';
 
 // 뷰어 탭(D-54) — 왼쪽 레일의 열린 파일 줄(D-98). 파일 보드가 있으면 하나여도 이 줄이 파일명을 말한다(H4). 열기 · 옮기기 · 닫기는 데몬이 정하고 여기는 그리고 의도만 보낸다.
 // 지금 파일은 글자가 아니라 그 아래 떠 있는 바탕(glider)이 가리키고, 옮기면 바탕이 미끄러진다.
@@ -141,7 +142,7 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
   </div>;
 }
 
-export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement };
+export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement; open: HTMLElement };
 
 export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: ViewerState['screen'] | null; hosts?: RailHosts }) {
   const { phrase } = useMessages();
@@ -227,10 +228,11 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
     {/* enter 는 처음 그려지는 줄만 읽는다 — 이미 있는 줄은 그대로다. */}
     {rows.map(({ tab, leaving }) => <RailRow key={tab.key} tab={tab} leaving={leaving} enter={enter} onGone={gone} observe={observe} />)}
   </>;
-  if (hosts) return place(body, () => null);
+  if (hosts) return <>{place(body, () => null)}<QuickOpenButton host={hosts.open} /></>;
   return <nav className="rail" id="rail" ref={setRail} aria-label={phrase('rail.title')}>
     <h4 className="rail-h">{phrase('rail.title')}</h4>
     {place(body, (ref, children) => <div className="rail-list" id="railList" ref={ref} role="tablist" aria-orientation="vertical">{children}</div>)}
     <p className="rail-empty" id="railEmpty" ref={setEmpty} hidden>{phrase('rail.empty')}</p>
+    <QuickOpenButton />
   </nav>;
 }

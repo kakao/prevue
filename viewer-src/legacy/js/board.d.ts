@@ -9,3 +9,6 @@ export function syncBoard(board: Board | null): void;
 export function setCursor(index: number): void;
 export function moveCursor(direction: number): void;
 export function onRelayout(relayout: () => void): void;
+export function reveal(file: string, fn: string | null): void;
+export function cancelReveal(): void;
+export function applyReveal(): void;

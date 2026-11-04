@@ -12,3 +12,4 @@ body { margin: 0; background: var(--surface); color: var(--on-surface); font: va
 .story-surface th, .story-surface td { padding: var(--space-8); border-bottom: 1px solid var(--outline-variant); text-align: left; vertical-align: top; }
 .story-shell { position: relative; --rail-w: 200px; }
 .story-shell .rail { position: absolute; top: 0; bottom: auto; }
+.story-search { width: min(var(--qo-w), 100%); }

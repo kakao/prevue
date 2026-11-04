@@ -3,11 +3,11 @@ import { boardMarks, moveCursor } from '../legacy/js/board.js';
 import { pointCard } from '../legacy/js/board-point.js';
 import { closeZoomMenu, enterFocus, exitFocus, toggleInteractive, zoomFit, zoomIn, zoomOut } from '../legacy/js/focus.js';
 import { drawLegacy, startViewer } from '../legacy/js/main.js';
-import { openQuickOpen } from '../legacy/js/quickopen.js';
 import { store } from '../legacy/js/store.js';
 import { daemonText, phrase } from '../legacy/js/strings.js';
 import { jumpTab, stepTab, tabCount } from './components/FileRail';
 import { closeDirPop } from './components/ProjectHeader';
+import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
 import { createViewerRoot, findHosts } from './ViewerRoot';
@@ -27,4 +27,7 @@ installShortcuts(shortcuts, actions, {
   closeDirPop,
 });
 const viewer = createViewerRoot({ renderLegacy: drawLegacy, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts, board: { open: enterFocus, point: pointCard } });
-startViewer(viewer.apply, viewer.connection);
+startViewer(viewer.apply, viewer.connection, previewFilesChanged);
+
+// 옛 카드 거르기의 검색어(파일별) — 거르기가 없어졌으니 한 번 치운다.
+try { for (const k of Object.keys(localStorage)) if (k.startsWith('prevue.search:')) localStorage.removeItem(k); } catch { /* 못 치워도 쓰이지 않는다 */ }

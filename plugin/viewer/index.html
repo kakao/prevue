@@ -47,10 +47,10 @@
 <!-- 열린 파일 레일(D-54 · D-98). 지금 파일은 떠 있는 바탕이 가리킨다. 작업 공간에서는 접힌다(D-99). 빠른 열기의 입구는 맨 아래 "파일 열기"와 / · ⌘K 다. -->
 <nav class="rail" id="rail" data-t-aria-label="rail.title" hidden>
   <h4 class="rail-h" data-t="rail.title"></h4>
-  <!-- 줄들은 React 의 FileRail 이 그린다. 머리 · 빈 안내 · 파일 열기(quickopen.js)는 마크업이다. -->
+  <!-- 줄들과 파일 열기의 안은 React 의 FileRail 이 그린다. 머리 · 빈 안내는 마크업이다. -->
   <div class="rail-list" id="railList" role="tablist" aria-orientation="vertical"></div>
   <p class="rail-empty" id="railEmpty" data-t="rail.empty" hidden></p>
-  <button class="rail-open" id="railOpen" type="button" data-t-title="rail.open.tip" data-t-aria-label="rail.open.label" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg><span class="rail-open-t" data-t="rail.open"></span><kbd>⌘K</kbd></button>
+  <button class="rail-open" id="railOpen" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet"></button>
 </nav>
 
 <!-- 그림이 소스보다 옛것이다. 보드와 한 장 모두에 걸리므로 두 섹션 밖에 둔다. 안은 React 의 StaleBanner 가 그린다. -->
@@ -59,12 +59,8 @@
 
 <main>
   <!-- 시작 화면(D-63 · D-100) — 열린 탭이 없을 때. 빠른 열기의 상자(입력 · 최근 바뀐 · 최근 연 파일)를 막 없이 본문 가운데에 둔다 —
-       오류가 아니라 할 수 있는 일 위에 선다. 상자는 quickopen.js 가 팔레트에서 옮겨 온다(한 벌). -->
-  <section id="startView" class="start" hidden>
-    <div class="start-in">
-      <p class="start-lead" data-t="start.lead"></p>
-    </div>
-  </section>
+       오류가 아니라 할 수 있는 일 위에 선다. 안은 React 의 StartScreen 이 그리고, 상자는 팔레트와 한 벌이라 둘 중 한 곳에만 선다. -->
+  <section id="startView" class="start" hidden></section>
 
   <!-- 빈 탭 — 탭의 파일이 지워졌거나 @Preview 를 잃었다. 옛 카드를 그 파일의 지금 모습인 척 두지 않는다. 프리뷰가 돌아오면 데몬이 다시 연다. -->
   <section id="vacantView" class="vacant" hidden>
@@ -191,22 +187,9 @@
 <!-- 후보 고르기 — 가리킨 꼬리표에서 내려오는 팝오버(D-101). 자리는 point.js 가 꼬리표에서 잰다. -->
 <div class="chooser" id="chooser" role="dialog" data-t-aria-label="choose.label" aria-hidden="true"></div>
 
-<!-- 빠른 열기의 팔레트와 막(D-100) — 팔레트는 창 위 가운데에 뜨고, 막은 레일 오른쪽 본문을 가린다. -->
+<!-- 빠른 열기의 팔레트와 막(D-100) — 팔레트는 창 위 가운데에 뜨고, 막은 레일 오른쪽 본문을 가린다. 팔레트의 안(검색 상자)은 React 의 QuickOpen 이 그린다. -->
 <div class="qo-curtain" id="qoCurtain" hidden></div>
-<div class="qo-sheet" id="qoSheet" hidden>
-  <div class="qo-col">
-    <label class="qo-field">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
-      <input id="q" type="search" data-t-placeholder="quickopen.placeholder" autocomplete="off" spellcheck="false" data-t-aria-label="quickopen.field" aria-controls="qoIn">
-      <kbd class="qo-esc" aria-hidden="true">esc</kbd>
-    </label>
-    <div class="qo-in" id="qoIn" role="listbox" data-t-aria-label="quickopen.list"></div>
-    <div class="qo-hint">
-      <span class="qo-keys" aria-hidden="true"><span data-t="quickopen.keys.move"></span><span data-t="quickopen.keys.open"></span><span data-t="quickopen.keys.close"></span></span>
-      <span class="qo-term"><span data-t="quickopen.term"></span> <code>prevue show &lt;<span data-t="quickopen.term.file"></span>&gt;</code></span>
-    </div>
-  </div>
-</div>
+<div class="qo-sheet" id="qoSheet" hidden></div>
 
 <!-- 단축키 도움말. 안은 React 의 ShortcutHelp 가 단축키 표에서 그린다 — 디스패치와 같은 표라 둘이 어긋나지 않는다. -->
 <div class="scrim" id="help" hidden></div>

@@ -8,7 +8,6 @@ import { clearTrees, applyReveal, cardAt, returnCard, cardStage, ringCard } from
 import { renderFocus, renarrow, fitStage, focusImage, syncHistory, frameOf, morphIn, morphOut } from "./focus.js";
 import { renderError, setStatus, flash } from "./capsule.js";
 import { transition, transitioning } from "./motion.js";
-import { renderQuickOpen, previewFilesChanged, quickOpenOffline } from "./quickopen.js";
 import { prepareViewer } from "./preparation.js";
 
 const preparation = prepareViewer();
@@ -57,12 +56,11 @@ function leaveBoard(s) {
 export function drawLegacy(s) {
   const { wasBoard, arrive, file } = arrival;
   // 보드(#boardView)는 React 의 PreviewBoard 가 이미 그렸다 — 그 효과가 먼저 돈다.
-  // 빈 화면은 시작 화면이 갖는다(quickopen.js) — 한 장의 틀을 보이면 src 없는 그림이 깨진 상자로 남았다.
+  // 빈 화면은 React 의 시작 화면이 갖는다 — 한 장의 틀을 보이면 src 없는 그림이 깨진 상자로 남았다. 팔레트도 React 가 이미 걷었다.
   focusView.hidden = s.screen !== "focus";
   vacantView.hidden = s.screen !== "vacant";
   vacantMsg.textContent = daemonText(s.vacant);
   $("buildNotice").hidden = !s.buildPending;
-  renderQuickOpen(s);
   renderFocus(s.screen === "focus" ? s.focus : null);
   syncHistory(s);
   renderError(daemonText(s.error));
@@ -140,7 +138,7 @@ const loadProjectFiles = () => {
 // 끊겼다 다시 붙으면 이전 화면을 살리지 않고 페이지를 새로 연다 — 화면은 데몬 상태가 처음부터 그린다.
 let lost = false;
 let connection = () => {};
-const lostView = () => { preparation?.fail(phrase("prep.lost")); setStatus(phrase("status.lost"), "error"); connection("lost"); store.st = null; quickOpenOffline(); };
+const lostView = () => { preparation?.fail(phrase("prep.lost")); setStatus(phrase("status.lost"), "error"); connection("lost"); store.st = null; };
 
 // 데몬이 다시 뜬다(warmup · 스스로 다시 띄움, D-112). 끊김이 아니라 다시 시작이다 — 보던 화면을 그대로 두고,
 // 같은 자리에 뜬 새 데몬이 그림을 다 그리면 그때 새로 연다. 새 데몬은 상태 번호가 아니라 boot 로 알아본다 — 번호는 데몬마다 0부터 센다.
@@ -166,8 +164,11 @@ function receive(s) {
   apply(s);
 }
 
-/** render 는 상태와 알약을 그대로 둘지를 받는다. connection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다. */
-export function startViewer(render, onConnection) {
+/**
+ * render 는 상태와 알약을 그대로 둘지를 받는다. connection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다.
+ * previewFiles 는 빠른 열기의 목록이 바뀌었다는 데몬의 알림을 받는다.
+ */
+export function startViewer(render, onConnection, onPreviewFiles) {
   draw = s => { leaveBoard(s); render(s, statusHeld(s)); };
   connection = onConnection;
   connect({
@@ -175,7 +176,7 @@ export function startViewer(render, onConnection) {
     state: receive,
     ui: ev => {
       if (ev.kind === "flash") flash(daemonText(ev.text));
-      else if (ev.kind === "previewFiles") previewFilesChanged();
+      else if (ev.kind === "previewFiles") onPreviewFiles();
       else if (ev.kind === "projectFiles") loadProjectFiles();
       else if (ev.kind === "restart" && !preparation) restart();
     },
