@@ -1,4 +1,4 @@
-import { useLayoutEffect, type ReactNode } from 'react';
+import { useLayoutEffect, useState, type ReactNode } from 'react';
 import '../legacy/style.css';
 import '../legacy/resize.css';
 import { createResizeScene } from '../legacy/js/resize-scene.js';
@@ -27,8 +27,8 @@ export function WorkspaceBody({ children }: { children: ReactNode }) {
 
 /** 브라우저 쪽 표시 상태(배율 · 첫 장 대기 · 꼬리표)를 스토리 동안만 넣고, 끝나면 처음 값으로 돌린다. */
 export function WithView<T extends object>({ store, value, children }: { store: Store<T>; value: Partial<T>; children: ReactNode }) {
-  const initial = store.get();
-  store.set(value);
+  // 첫 렌더에 한 번만 넣는다 — 자식이 붙기 전이라 구독자가 없다. 다시 그려도 뷰어 코드가 바꾼 값을 덮지 않는다.
+  const [initial] = useState(() => { const before = store.get(); store.set(value); return before; });
   useLayoutEffect(() => () => store.set(initial), []);
   return <>{children}</>;
 }

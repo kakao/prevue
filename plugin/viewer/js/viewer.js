@@ -3648,7 +3648,7 @@ function ki({ state: e, hosts: t, actions: n = bi }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = o(t?.seg), l = e?.screen === "focus" ? e.focus : null, u = l ? (e.tabs || []).find((e) => e.active) : void 0, d = l?.fromBoard && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0, f = !!l?.interactive;
 	(0, F.useLayoutEffect)(() => {
 		document.body.classList.toggle("ws", !!l), i.element && (i.element.hidden = !(l && l.fromBoard)), c.element && (c.element.hidden = !(l && !l.fromBoard)), a.element && (a.element.hidden = !l, a.element.title = l ? d ? d.title : u ? u.title : l.previewId : ""), i.element && a.element && Di(i.element, a.element);
-	}), (0, F.useLayoutEffect)(() => {
+	}), (0, F.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, F.useLayoutEffect)(() => {
 		let e = i.element, t = a.element, n = e?.parentElement?.parentElement, r = document.getElementById("barR");
 		if (!e || !t) return;
 		let o = new ResizeObserver(() => Di(e, t));
@@ -3879,7 +3879,7 @@ function Ni({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 	};
 }
 // src/main.tsx
-var Pi = zt(), $, Fi = (e) => {
+var Pi = zt(), $ = Bn(zn()), Fi = (e) => {
 	nr(e), Pi?.update(e);
 }, Ii = () => {
 	let { cursor: e } = p();
@@ -3887,11 +3887,11 @@ var Pi = zt(), $, Fi = (e) => {
 }, Li = {
 	exit: Kn,
 	setInteractive: Jn,
-	zoomIn: () => $.zoomIn(),
-	zoomOut: () => $.zoomOut(),
-	zoomFit: () => $.zoomFit(),
-	zoomMenuPick: (e) => $.zoomMenuPick(e),
-	toggleZoomMenu: (e) => $.toggleZoomMenu(e)
+	zoomIn: $.zoomIn,
+	zoomOut: $.zoomOut,
+	zoomFit: $.zoomFit,
+	zoomMenuPick: $.zoomMenuPick,
+	toggleZoomMenu: $.toggleZoomMenu
 }, Ri = {
 	openFile: Cn,
 	choose: On,
@@ -3917,7 +3917,7 @@ var Pi = zt(), $, Fi = (e) => {
 Tr(Bi, zi, {
 	chooserOpen: () => !!document.getElementById("chooser")?.classList.contains("on"),
 	cancelChoice: kn,
-	closeZoomMenu: () => $.closeZoomMenu(),
+	closeZoomMenu: $.closeZoomMenu,
 	closeDirPop: Lt
 });
 var Vi = Ni({
@@ -3935,7 +3935,7 @@ var Vi = Ni({
 	workspace: Li,
 	point: Ri
 });
-$ = Bn(zn()), xr({
+xr({
 	workspace: $,
 	render: Vi.apply,
 	onConnection: Vi.connection,

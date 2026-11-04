@@ -12,20 +12,20 @@ import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcu
 import { store } from '../legacy/js/store.js';
 import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
-import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, setInteractive, toggleInteractive, type Workspace } from './workspace/focus';
+import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, setInteractive, toggleInteractive} from './workspace/focus';
 import { cancelChoice, choose, followChooser, openFile, pointCard } from './workspace/point';
 
 // 남은 기존 모듈(api · store · board · capsule · motion · strings)은 이 번들보다 먼저 평가된다(외부 import). 그 모듈들은 DOM 을 쥐지 않는다.
 // 준비 화면은 첫 상태보다 먼저 서서 본문을 막는다. 그 상태는 화면이 보드를 다 놓은 뒤에 읽는다 — 가운데 카드를 배치로 고른다.
 const preparation = prepareViewer();
-// 한 장의 요소는 React 가 처음 그린 뒤에야 있다 — 동작은 그 뒤에 만든 작업 공간에 넘긴다. 상태는 연결을 연 뒤에야 오므로 그 전에 불리지 않는다.
-let workspace: Workspace;
+// 한 장의 요소는 빌드가 index.html 에 미리 그린 껍데기라 처음부터 있다 — 작업 공간을 먼저 만들어 React 루트와 연결에 넘긴다.
+const workspace = createWorkspace(findWorkspaceParts());
 const renderScreens = (state: ViewerState) => { drawScreens(state); preparation?.update(state); };
 const openCursor = () => { const { cursor } = boardMarks(); if (cursor != null) enterFocus(cursor); };
 const workspaceActions: WorkspaceActions = {
   exit: exitFocus, setInteractive,
-  zoomIn: () => workspace.zoomIn(), zoomOut: () => workspace.zoomOut(), zoomFit: () => workspace.zoomFit(),
-  zoomMenuPick: z => workspace.zoomMenuPick(z), toggleZoomMenu: byKey => workspace.toggleZoomMenu(byKey),
+  zoomIn: workspace.zoomIn, zoomOut: workspace.zoomOut, zoomFit: workspace.zoomFit,
+  zoomMenuPick: workspace.zoomMenuPick, toggleZoomMenu: workspace.toggleZoomMenu,
 };
 const pointActions: PointActions = { openFile, choose, cancel: cancelChoice, follow: followChooser };
 const actions: ShortcutActions = {
@@ -38,12 +38,11 @@ const shortcuts = shortcutTable(phrase, actions);
 installShortcuts(shortcuts, actions, {
   chooserOpen: () => !!document.getElementById('chooser')?.classList.contains('on'),
   cancelChoice,
-  closeZoomMenu: () => workspace.closeZoomMenu(),
+  closeZoomMenu: workspace.closeZoomMenu,
   closeDirPop,
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
-workspace = createWorkspace(findWorkspaceParts());
 startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: previewFilesChanged, prepared: preparation });
 
 /*

@@ -118,6 +118,8 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
     if (title.element) { title.element.hidden = !f; title.element.title = f ? (card ? card.title : tab ? tab.title : f.previewId) : ''; }
     if (back.element && title.element) fitTitle(back.element, title.element);
   });
+  // 내비게이션 바는 이 컴포넌트가 있는 동안만이다 — Storybook 에서 다음 스토리로 body.ws 가 새지 않게 걷는다.
+  useLayoutEffect(() => () => document.body.classList.remove('ws'), []);
   // 창 폭 · 알약 글자가 바뀌면 자리가 움직인다. 뒤로 버튼은 보지 않는다 — 여기서 줄이므로 보면 줄일 때마다 다시 불린다.
   useLayoutEffect(() => {
     const b = back.element, t = title.element, row = b?.parentElement?.parentElement, right = document.getElementById('barR');
