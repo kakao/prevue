@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
  * 층 규칙(D-51 · D-83 · D-88 · D-139) — import 는 `adapter → domain → entity`, 안쪽으로만 향한다. 본체의 import 를 훑어 규칙표와 대조한다.
  * 층 사이와 입구 ↔ 기술 어댑터는 모듈(`:entity` · `:domain` · `:adapter:entry` · `:adapter:infra`, D-141)이 컴파일 때 막는다 — 패키지가 제 모듈에 있어야 그렇다.
  * 이 표는 모듈이 못 막는 것 — 입구 안(cli · browser → http만, hotswap 은 다른 입구를 모른다) · 기술 어댑터는 domain 중 port 만 · runtime 의 규칙과
- * core 의 JDK 금지(AWT · 파일 시스템) — 를 지킨다. 입구 ↔ 기술 어댑터 칸도 남겨 둔다 — 패키지를 다른 모듈로 옮겼을 때 모듈과 표가 어긋나면 여기서 드러난다.
+ * core 의 JDK 금지(AWT · 파일 시스템) · 조립(:app)은 adapter 중 조립 면(entry · infra)만 안다(구현 타입은 그래프가 잇는다) — 를 지킨다. 입구 ↔ 기술 어댑터 칸도 남겨 둔다 — 패키지를 다른 모듈로 옮겼을 때 모듈과 표가 어긋나면 여기서 드러난다.
  * entity 에는 기술 어댑터와 domain 이 함께 보는 값만 둔다 — domain 과 입구만 보면 `domain/model` 이다.
  */
 class LayerRuleTest {
@@ -97,12 +97,15 @@ class LayerRuleTest {
             "entity/Picked.kt" to "package prevue.entity\ndata class Picked(val id: String)\n",
             "entity/Lonely.kt" to "package prevue.entity\nsealed interface Lonely\n",
             "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.UseCases\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
+            // 조립은 구현 타입을 모른다 — 공개여도(ProcessMemory) 그래프가 잇는다.
+            "Wiring.kt" to "package prevue.daemon\nimport prevue.adapter.process.ProcessMemory\n",
+            "Graph.kt" to "package prevue.daemon\nimport prevue.adapter.infra.Closer\nimport prevue.adapter.entry.EntryPoints\nimport prevue.domain.UseCases\nimport prevue.entity.ModuleInfo\n",
         )
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
                 "adapter/entry/P2.kt", "adapter/entry/P3.kt", "adapter/cli/P4.kt", "adapter/http/P.kt", "adapter/render/Q.kt", "adapter/compile/Q2.kt", "domain/runtime/R.kt", "adapter/cli/S.kt", "adapter/hotswap/U.kt", "adapter/render/Y.kt",
                 "domain/Y2.kt", "domain/L2.kt", "domain/Z6.kt", "domain/Z7.kt", "entity/Z8.kt", "domain/Z9.kt", "domain/Z10.kt", "domain/J.kt", "entity/K.kt", "domain/N.kt", "domain/runtime/Z.kt", "entity/Z2.kt", "domain/Z3.kt", "domain/Z5.kt",
-                "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt").sorted(),
+                "entity/Px.kt", "entity/Picked.kt", "entity/Lonely.kt", "Wiring.kt").sorted(),
             LayerRule.violations(files).map { it.substringBefore(" ") }.sorted())
     }
 }
@@ -111,6 +114,8 @@ class LayerRuleTest {
 object LayerRule {
     /** 유스케이스를 부르는 쪽. cli 와 browser 는 http 만 알고, http 와 hotswap 은 다른 입구를 모른다. 기술 어댑터는 입구를 모른다. */
     val ENTRY_POINTS = setOf("http", "cli", "browser", "hotswap", "entry")
+    /** 조립이 adapter 에서 아는 곳 — 입구 묶음과 기술 어댑터의 바인딩 · 설정. 구현 패키지는 그래프가 잇는다. */
+    private val ASSEMBLY_FACES = setOf("entry", "infra")
     /** domain 루트(유스케이스) 밖의 하위 패키지. */
     private val DOMAIN_PARTS = setOf("runtime", "policy", "model", "port")
 
@@ -197,7 +202,7 @@ object LayerRule {
                 "adapter" -> adapterAllowed(from[1], to.getOrNull(1))
                 else -> false
             }
-            else -> true   // 뿌리 — 조립 · 수명
+            else -> target != "adapter" || to.getOrNull(1) in ASSEMBLY_FACES   // 뿌리 — 조립 · 수명
         }
     }
 
