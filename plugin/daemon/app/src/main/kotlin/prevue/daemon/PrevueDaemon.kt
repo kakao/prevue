@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import prevue.adapter.entry.EntryPoints
+import prevue.adapter.infra.Closer
 
 /** 데몬 하나의 작업·입구·자원을 소유하고 모든 종료 요청을 한 정리 경로로 모은다. */
 class PrevueDaemon(
@@ -24,7 +25,7 @@ class PrevueDaemon(
     private val forceExit: (Int) -> Unit = { Runtime.getRuntime().halt(it) },
 ) : AutoCloseable {
     private enum class Phase { READY, RUNNING, CLOSING }
-    private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null, val resources: List<AutoCloseable> = emptyList())
+    private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null)
     private class StopRequest(val reason: String, val respawn: List<String>? = null, val failure: Throwable? = null)
 
     private val job = SupervisorJob()
@@ -32,6 +33,7 @@ class PrevueDaemon(
     private val requested = CompletableDeferred<StopRequest>()
     private val life = MutableStateFlow(Life())
     private val closed = CompletableDeferred<Unit>()
+    val closer = Closer(log)
 
     init { require(shutdownTimeoutMs > 0 && idleCheckMs > 0) }
 
@@ -42,12 +44,11 @@ class PrevueDaemon(
     }
 
     fun <T : AutoCloseable> own(resource: T): T {
-        val before = life.getAndUpdate { if (it.phase == Phase.CLOSING) it else it.copy(resources = it.resources + resource) }
-        if (before.phase == Phase.CLOSING) {
+        if (life.value.phase == Phase.CLOSING) {
             resource.close()
             error("종료 중인 데몬에는 자원을 추가할 수 없다")
         }
-        return resource
+        return closer.own(resource)
     }
 
     fun requestStop(reason: String) { requested.complete(StopRequest(reason)) }
@@ -107,7 +108,7 @@ class PrevueDaemon(
             clean("입구") { ui?.stopInputs() }
             scope.cancel()
             clean("데몬 작업·프레임·HTTP") { runBlocking { job.join(); ui?.awaitStopped() } }
-            for (resource in before.resources.asReversed()) clean(resource.javaClass.simpleName, resource::close)
+            closer.close()
         } finally {
             closed.complete(Unit)
         }
