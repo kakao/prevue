@@ -67,16 +67,21 @@ try {
 
   await send('Page.enable');
   await send('Page.navigate', { url: origin + '/' });
-  for (const end = Date.now() + 5000; Date.now() < end; await pause(50)) {
-    if (await evaluate(`document.readyState==='complete' && getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()!==''`)) break;
+  let loaded = false;
+  for (const end = Date.now() + 5000; Date.now() < end && !loaded; await pause(50)) {
+    loaded = await evaluate(`document.readyState==='complete' && getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()!==''`);
   }
-  const { rows, missing } = await evaluate(`(${measureContrast})(${JSON.stringify(pairs)}, [...document.querySelectorAll('.sheet')])`);
+  assert(loaded, 'tokens.css 를 읽지 못했다');
+  const { rows, missing, unbacked } = await evaluate(`(${measureContrast})(${JSON.stringify(pairs)}, [...document.querySelectorAll('.sheet')])`);
   for (const row of rows) {
-    const verdict = row.need === 0 ? '면제' : row.ratio >= row.need ? '통과' : '미달';
-    console.log(`${verdict}  ${row.theme.padEnd(5)}  --${row.fg} 위 --${row.bg}  ${row.ratio.toFixed(2)}:1${row.need ? ` (기준 ${row.need}:1)` : ''}`);
+    // NaN 은 CDP 를 지나며 null 이 된다.
+    const measured = Number.isFinite(row.ratio);
+    const verdict = !measured ? '못 잼' : row.need === 0 ? '면제' : row.ratio >= row.need ? '통과' : '미달';
+    console.log(`${verdict}  ${row.theme.padEnd(5)}  --${row.fg} 위 --${row.bg}  ${measured ? `${row.ratio.toFixed(2)}:1` : '—'}${row.need ? ` (기준 ${row.need}:1)` : ''}`);
   }
-  const misses = rows.filter(r => r.need > 0 && r.ratio < r.need);
+  const misses = rows.filter(r => Number.isFinite(r.ratio) && r.need > 0 && r.ratio < r.need);
   if (missing.length) { failed = true; console.error(`tokens.css 에 없는 역할: ${missing.map(r => `--${r}`).join(' · ')}`); }
+  if (unbacked.length) { failed = true; console.error(`바탕이 끝까지 반투명해 잴 수 없는 쌍(bg 끝에 불투명한 면을 둔다): ${unbacked.join(' · ')}`); }
   if (misses.length) { failed = true; console.error(`미달 ${misses.length}개`); }
   if (!failed) console.log(`완료: ${rows.length}개 쌍, 미달 0`);
 } finally {

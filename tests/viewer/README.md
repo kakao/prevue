@@ -69,11 +69,11 @@ Apple M4 Max · macOS arm64 · Chrome 156.0.8078.80 · Node 25.9.0에서 재었�
 
 ## 대비 실측
 
-`contrast.mjs`는 `plugin/viewer/tokens.css`의 역할 색을 라이트 · 다크 면에서 풀어 `contrast-pairs.json`의 쌍마다 기준을 넘는지 잰다. 데몬 없이 Chrome만 쓰며, 계산을 `contrast-measure.ts`에서 타입을 지운 채 읽으므로 Node 22.18 이상이 필요하다. 미달이 하나라도 있거나 쌍의 역할이 `tokens.css`에 없으면 종료 1이다.
+`contrast.mjs`는 `plugin/viewer/tokens.css`의 역할 색을 라이트 · 다크 면에서 풀어 `contrast-pairs.json`의 쌍마다 기준을 넘는지 잰다. 데몬 없이 Chrome만 쓰며, 계산을 `contrast-measure.ts`에서 타입을 지운 채 읽으므로 Node 22.18 이상이 필요하다. 미달이 하나라도 있거나, 쌍의 역할이 `tokens.css`에 없거나, 바탕이 끝까지 반투명해 잴 수 없으면 종료 1이다 — 잴 수 없는 쌍은 가짜 색으로 통과시키지 않고 `못 잼`으로 적는다.
 
 ```sh
 node tests/viewer/contrast.mjs
 node tests/viewer/contrast.mjs --plant on-surface=surface   # 미달을 심는다 — 종료 1이어야 맞다
 ```
 
-기준은 본문 글자 4.5:1, 큰 글자 · 조작 테두리 · 가리킨 박스 3:1이다. 구분선(`need` 0)은 장식이라 면제하고 값만 보인다. 반투명한 바탕은 `bg`의 순서대로(위에서 아래) 겹친 색으로 잰다. 색 역할을 더하거나 바꾸면 이 쌍도 같은 PR에서 고친다. Storybook `재료/Tokens`의 Contrast가 같은 쌍과 계산으로 표를 그린다. CI에는 Chrome이 없어 로컬에서 돌린다.
+기준은 본문 글자 4.5:1, 큰 글자 · 조작 테두리 · 가리킨 박스 3:1이다. 구분선(`need` 0)은 장식이라 면제하고 값만 보인다. 반투명한 바탕은 `bg`의 순서대로(위에서 아래) 겹친 색으로, 반투명한 글자는 그 바탕에 겹친 색으로 잰다. `bg`의 끝은 불투명한 면이어야 한다. 색 역할을 더하거나 바꾸면 이 쌍도 같은 PR에서 고친다. Storybook `재료/Tokens`의 Contrast가 같은 쌍과 계산으로 표를 그린다. CI에는 Chrome이 없어 로컬에서 돌린다.
