@@ -12,7 +12,6 @@ import prevue.adapter.entry.EntryPoints
 import prevue.adapter.entry.PrevueCheckout
 import prevue.adapter.infra.InfraConfig
 import prevue.adapter.infra.RendererLoss
-import prevue.domain.UseCases
 
 private fun usage(): Nothing {
     System.err.println(
@@ -67,38 +66,38 @@ private fun PrevueDaemon.assemble(boot: Boot) {
     val graph = createGraphFactory<PrevueGraph.Factory>()
         .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), DaemonHooks(::log) { requestStop("HTTP /shutdown") }, closer)
     val renderer = graph.rendererLoss
-    val uc = graph.useCases
-    log("values XML ${uc.rememberValues()}개")
-    indexPreviewFiles(uc)
+    graph.startDaemon()
+    log("values XML ${graph.rememberValues()}개")
+    indexPreviewFiles(graph)
     val ui = graph.entryPoints
-    watchRenderer(renderer, boot, uc, ui)
-    serve(ui) { uc.readStatus().lastRenderMs }
+    watchRenderer(renderer, boot, graph, ui)
+    serve(ui) { graph.readStatus().lastRenderMs }
     log("http://127.0.0.1:${boot.args.port}/  (${(System.nanoTime() - boot.startedNs) / 1_000_000}ms)")
-    val initial = boot.args.show?.let { showInitial(it, uc) }
+    val initial = boot.args.show?.let { showInitial(it, graph) }
     graph.compilerWarmUp.start(boot.args.show, after = initial)
 }
 
-private fun PrevueDaemon.watchRenderer(loss: RendererLoss, boot: Boot, uc: UseCases, ui: EntryPoints) {
+private fun PrevueDaemon.watchRenderer(loss: RendererLoss, boot: Boot, graph: PrevueGraph, ui: EntryPoints) {
     scope.launch(CoroutineName("prevue-lost")) {
         val lost = try { loss.await() }
             catch (e: CancellationException) { throw e }
             catch (e: Throwable) { requestFailure("렌더러를 띄우지 못했다", e); return@launch }
-        respawnLater(boot.argv, uc, ui, lost.first, lost.second)
+        respawnLater(boot.argv, graph, ui, lost.first, lost.second)
     }
 }
 
-private fun PrevueDaemon.indexPreviewFiles(uc: UseCases) {
+private fun PrevueDaemon.indexPreviewFiles(graph: PrevueGraph) {
     scope.launch(Dispatchers.IO + CoroutineName("prevue-preview-files")) {
         val t = System.nanoTime()
-        runCatching { uc.indexPreviewFiles() }.onSuccess {
-            log("프리뷰 파일 ${uc.readPreviewFiles()?.size ?: 0}개 (${(System.nanoTime() - t) / 1_000_000}ms)")
+        runCatching { graph.indexPreviewFiles() }.onSuccess {
+            log("프리뷰 파일 ${graph.readPreviewFiles()?.size ?: 0}개 (${(System.nanoTime() - t) / 1_000_000}ms)")
         }.onFailure { if (it is CancellationException) throw it else log("프리뷰 파일 색인 실패: $it") }
     }
 }
 
 private fun PrevueDaemon.respawnLater(
     argv: List<String>,
-    uc: UseCases,
+    graph: PrevueGraph,
     ui: EntryPoints,
     reason: String,
     hung: File?,
@@ -106,19 +105,19 @@ private fun PrevueDaemon.respawnLater(
     log(reason)
     scope.launch(CoroutineName("prevue-respawn")) {
         kotlinx.coroutines.delay(500)
-        val board = runCatching { uc.readStatus().board?.file }.getOrNull()
+        val board = runCatching { graph.readStatus().board?.file }.getOrNull()
         val respawn = if (Respawn.allowed()) Respawn.args(argv, board, hung) else null
         if (respawn != null) { ui.announceRestart(); requestRestart(reason, respawn) }
         else requestStop("1분 안에 또 렌더 스레드를 잃었다 — 다시 띄우지 않는다. 루프를 고치고 prevue start")
     }
 }
 
-private fun PrevueDaemon.showInitial(target: String, uc: UseCases): Job =
+private fun PrevueDaemon.showInitial(target: String, graph: PrevueGraph): Job =
     scope.launch(CoroutineName("prevue-initial-preview")) {
         val (t, idx) = target.substringBefore('#') to target.substringAfter('#', "").toIntOrNull()
         try {
-            val r = uc.openPreview(t, idx, emptyMap(), "cli", since = ManagementFactory.getRuntimeMXBean().startTime).shot.out
-            val n = uc.readStatus().board?.cards?.size
+            val r = graph.openPreview(t, idx, emptyMap(), "cli", since = ManagementFactory.getRuntimeMXBean().startTime).shot.out
+            val n = graph.readStatus().board?.cards?.size
             log("show ${r.preview.previewId}: ok=${r.ok} task=${r.taskMs}ms render=${r.renderMs}ms" +
                 (n?.let { " board=${it}장" } ?: "") + " ${r.failure ?: ""} ${r.image ?: r.message?.text}")
         } catch (e: CancellationException) { throw e }

@@ -2,9 +2,6 @@ package prevue.adapter.hotswap
 
 import app.cash.turbine.test
 import java.io.File
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -16,16 +13,14 @@ import prevue.daemon.fake.FakeSourceWatcher
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitUntil
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 
 /** 감시가 부른 렌더는 응답 대신 로그 한 줄이다. 그 줄을 실측 스크립트가 정규식으로 읽는다 — 모양이 조용히 바뀌면 실측이 빈다. */
 class HotSwapRunnerTest {
     private val fx = Fixture()
     private val sources = FakeSourceWatcher()
     private val builds = FakeBuildWatcher()
-    private val uc = fx.useCases(sources = sources, builds = builds)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val vm = HotSwapRunner(uc, scope)
+    private val uc = fx.graph(sources = sources, builds = builds)
+    private val vm = uc.hotSwap
 
     init {
         vm.start()

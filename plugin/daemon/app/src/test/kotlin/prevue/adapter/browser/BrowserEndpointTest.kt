@@ -30,13 +30,17 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import prevue.json.Json
 import prevue.daemon.fake.Fixture
+import prevue.adapter.entry.EntryHooks
+import prevue.adapter.http.EntryLog
+import prevue.adapter.http.Relay
 
 @Timeout(20)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BrowserEndpointTest {
     private val fx = Fixture(previews = 1)
     private val port = ServerSocket(0).use { it.localPort }
-    private val server = fx.entryPoints(fx.useCases(), port)
+    private val g = fx.graph(hooks = EntryHooks(port))
+    private val server = fx.entryPoints(g)
 
     @BeforeAll fun up() = server.start()
 
@@ -83,7 +87,7 @@ class BrowserEndpointTest {
     @Test fun `SSE 는 연결하자마자 지금 상태를 받고 입구를 닫으면 끝난다`() {
         Fixture(previews = 1).use { own ->
             val p = ServerSocket(0).use { it.localPort }
-            val module = own.entryPoints(own.useCases(), p)
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
             module.start()
             val c = URI("http://127.0.0.1:$p/events").toURL().openConnection() as HttpURLConnection
             assertEquals("text/event-stream", c.contentType)
@@ -98,8 +102,8 @@ class BrowserEndpointTest {
     @Test fun `뷰어가 새로 붙어도 인터랙티브는 그대로다`() {
         Fixture(previews = 2).use { own ->
             val p = ServerSocket(0).use { it.localPort }
-            val uc = own.useCases()
-            val module = own.entryPoints(uc, p)
+            val uc = own.graph(hooks = EntryHooks(p))
+            val module = own.entryPoints(uc)
             module.start()
             runBlocking { uc.openPreview(own.file.path, null, emptyMap(), "test"); uc.focusCard(1, on = true, by = "cli") }
             val c = URI("http://127.0.0.1:$p/events").toURL().openConnection() as HttpURLConnection
@@ -114,7 +118,7 @@ class BrowserEndpointTest {
 
     @Test fun `멈춘 뷰어 연결이 다른 뷰어의 알림을 막지 않는다`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val endpoint = BrowserEndpoint(server.browser, server.frames, scope)
+        val endpoint = sideEndpoint(scope)
         val stuck = StuckStream()
         val live = Lines()
         try {
@@ -132,7 +136,7 @@ class BrowserEndpointTest {
 
     @Test fun `다시 시작 알림은 바로 닫아도 뷰어에 닿고 상태는 데몬 실행 id 를 싣는다`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val endpoint = BrowserEndpoint(server.browser, server.frames, scope)
+        val endpoint = sideEndpoint(scope)
         val live = Lines()
         try {
             runBlocking { endpoint.route(FakeExchange(live), "/events", "GET") }
@@ -144,6 +148,9 @@ class BrowserEndpointTest {
             assertTrue(live.next()?.contains("\"kind\":\"restart\"") == true, "닫기 전에 보낸 다시 시작 알림이 뷰어에 닿지 않았다")
         } finally { endpoint.close(); scope.cancel() }
     }
+
+    private fun sideEndpoint(scope: CoroutineScope) = BrowserEndpoint(g.presenter, g.browserTabs, g.browserInput, g.browserPointing, server.frames,
+        Relay(scope), ViewerTarget({ null to null }, null, null, null), EntryLog {})
 
     /** 놓아 줄 때까지 쓰기가 멈춘다 — 읽지 않는 브라우저 탭. */
     private class StuckStream : OutputStream() {

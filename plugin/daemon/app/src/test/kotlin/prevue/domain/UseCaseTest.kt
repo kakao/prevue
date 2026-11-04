@@ -35,7 +35,8 @@ import prevue.domain.model.WorkspaceEvent
 import prevue.daemon.fake.FakeClock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
+import prevue.daemon.fake.TestGraph
+import prevue.daemon.fake.awaitSettled
 
 /** 개발 문서 "되돌리지 말 것" 중 논리인 것들. 조용히 되돌아가도 화면은 대개 멀쩡해 눈으로는 못 잡는다. */
 class UseCaseTest {
@@ -43,10 +44,10 @@ class UseCaseTest {
 
     @AfterEach fun tearDown() = fx.close()
 
-    private fun opened(clock: FakeClock = FakeClock()): UseCases =
-        fx.useCases(clock).also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
+    private fun opened(clock: FakeClock = FakeClock()): TestGraph =
+        fx.graph(clock).also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
 
-    private fun UseCases.save(by: String = "test"): ReloadResult = runBlocking { applySave(listOf(fx.file), by) }
+    private fun TestGraph.save(by: String = "test"): ReloadResult = runBlocking { applySave(listOf(fx.file), by) }
 
     // 뷰어와 에이전트가 같은 사실을 본다 — 진행(`work`)과 마지막으로 그린 쪽(`shownBy`)은 status 하나에서 나온다.
     @Test fun `저장하는 동안 status는 컴파일 중이고 끝나면 저장한 쪽이 마지막으로 그린 쪽이다`() {
@@ -71,7 +72,7 @@ class UseCaseTest {
         assertTrue(s.lastShown is ReloadResult.CompileFailed)
         assertEquals("watch", s.shownBy)
     }
-    private fun UseCases.boardFills(): Flow<BoardFill> = workspace.state.map { it.boardFill }.distinctUntilChanged().filterNotNull()
+    private fun TestGraph.boardFills(): Flow<BoardFill> = workspace.state.map { it.boardFill }.distinctUntilChanged().filterNotNull()
     private fun <T> async(block: suspend () -> T): CompletableFuture<T> = CompletableFuture.supplyAsync { runBlocking { block() } }
     /** 첫 멈춤(줄 · 기다림)까지 이 스레드에서 가고 돌아온다 — 돌아오면 줄에 섰거나 첫 판단을 마쳤다. */
     private fun <T> queued(block: suspend () -> T): CompletableFuture<T> = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { block() }
@@ -100,7 +101,7 @@ class UseCaseTest {
         assertTrue(ws.now.newFiles.isEmpty(), "지운 새 파일은 싣지 않는다")
     }
 
-    private fun watched(): UseCases = opened().also { runBlocking { it.observeSourceChanges.noteBehindBuild() } }
+    private fun watched(): TestGraph = opened().also { runBlocking { it.observeSourceChanges.noteBehindBuild() } }
 
     @Test fun `감시가 시작될 때 빌드 뒤로 바뀐 소스는 새 파일처럼 다음 컴파일에 함께 실린다`() {
         val before = java.io.File(fx.srcRoot, "demo/Shape.kt").apply { writeText("package demo\nval blob = 1\n") }
@@ -217,7 +218,7 @@ class UseCaseTest {
     // FQN 경로는 애노테이션을 읽지 않아 `widthDp` · `device`를 몰랐다. 소스 파일을 찾아 파일 탭과 같은 spec을 쓴다.
     @Test fun `FQN으로 연 한 장도 애노테이션 인자로 그리고 저장하면 다시 읽는다`() {
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card1", "@Preview(widthDp = 480)\nfun Card1"))
-        val uc = fx.useCases()
+        val uc = fx.graph()
         runBlocking { uc.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
         assertEquals("480", uc.workspace.now.current!!.params["widthDp"])
 
@@ -244,7 +245,7 @@ class UseCaseTest {
     }
 
     @Test fun `FQN의 index가 그 함수의 프리뷰 수를 넘으면 첫 장으로 바꾸지 않고 거절한다`() {
-        val uc = fx.useCases()
+        val uc = fx.graph()
         val e = runCatching { runBlocking { uc.openPreview("demo.CardsKt.Card1", 5, emptyMap(), "test") } }.exceptionOrNull()
         assertTrue(e is IllegalArgumentException, "$e")
     }
@@ -298,7 +299,7 @@ class UseCaseTest {
 
     // FR-22. 오지 않을 저장을 시간이 다 갈 때까지 기다리지 않는다 — 기다릴 수 없는 것은 바로 거절한다.
     @Test fun `기다릴 수 없는 파일은 기다리지 않고 거절한다`() {
-        val idle = fx.useCases()
+        val idle = fx.graph()
         val none = runCatching { runBlocking { idle.awaitRender(emptyList(), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(none is IllegalArgumentException && "기다릴 파일이 없다" in none.message!!, "$none")
 
@@ -309,7 +310,7 @@ class UseCaseTest {
         val out = runCatching { runBlocking { uc.awaitRender(listOf(outside), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(out is IllegalArgumentException && "감시하지 않는 파일" in out.message!! && "Out.kt" in out.message!!, "$out")
 
-        val unwatched = fx.useCases(watchRoots = false)
+        val unwatched = fx.graph(watchRoots = false)
         val off = runCatching { runBlocking { unwatched.awaitRender(listOf(fx.file), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(off is IllegalArgumentException && "감시가 꺼져 있다" in off.message!!, "$off")
     }
@@ -329,7 +330,7 @@ class UseCaseTest {
     }
 
     @Test fun `FQN 단건의 기다림은 그 한 장으로 답한다`() {
-        val uc = fx.useCases()
+        val uc = fx.graph()
         runBlocking { uc.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
         uc.save()
         val w = runBlocking { uc.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
@@ -398,7 +399,7 @@ class UseCaseTest {
 
     // 이슈 #152 — 모듈을 개명한 뒤의 낡은 덤프는 옛 R 을 찾다 터진다. 그냥 EXCEPTION 이면 에이전트가 덤프를 다시 뜰 줄 모른다.
     @Test fun `R 클래스를 못 찾은 렌더는 덤프가 낡았다고 세우고 warmup 을 말한다`() {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         fx.renderer.exceptions += "java.lang.ClassNotFoundException: com.example.share.common.R\$color\n    at com.example.domain.line.LineResUtils.getLineBgColorId(LineResUtils.kt:62)"
         val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(FailureKind.EXCEPTION, r.shot.out.failure)
@@ -414,7 +415,7 @@ class UseCaseTest {
     }
 
     @Test fun `R 이 아닌 클래스를 못 찾은 렌더는 낡음이 아니다`() {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         fx.renderer.exceptions += "java.lang.ClassNotFoundException: com.foo.Rx\$color"
         val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertTrue(r.stale.isEmpty(), r.stale.toString())
@@ -422,7 +423,7 @@ class UseCaseTest {
 
     // 열린 프리뷰가 없을 때 바뀐 리소스 APK를 버리면 다음 show 가 옛 APK로 그리면서 낡음을 말하지 않는다.
     @Test fun `프리뷰가 없을 때의 리소스 · 빌드 파일 변화도 다음 show 가 싣는다`() {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")), outputsExist = false)
         assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(change, done = true) })
         val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
@@ -454,7 +455,7 @@ class UseCaseTest {
     // 감시는 데몬과 함께 뜬다 — 첫 show 전의 저장·빌드가 그리거나 낡음을 세우면 안 된다. 거르기는 감시 입구가 아니라 여기다.
     // 리소스 · 빌드 파일은 예외다 — 렌더러가 감시보다 먼저 부트스트랩해 쥐었으므로 그 뒤의 변화는 첫 show 의 그림도 낡게 한다(이슈 #152).
     @Test fun `보여 주는 것이 없으면 저장도 밖의 변화도 거른다`() {
-        val uc = fx.useCases()
+        val uc = fx.graph()
         assertEquals(ReloadResult.NothingShown, uc.save("watch"))
         val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
         assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(built, done = true) })
@@ -643,7 +644,7 @@ class UseCaseTest {
     }
 
     @Test fun `채우기는 다 쓴 뒤 연 시각 기점으로 보드 시간을 한 번 알린다`() {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         runBlocking {
             uc.boardFills().test {
                 val shown = uc.openPreview(fx.file.path, null, emptyMap(), "test")
@@ -657,7 +658,7 @@ class UseCaseTest {
     }
 
     @Test fun `쓰기를 기다리는 사이 다시 열린 보드에는 옛 채우기의 보드 시간을 알리지 않는다`() {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         val ws = uc.workspace
         val gate = CountDownLatch(1)
         fx.renderer.awaitWritesHold = gate

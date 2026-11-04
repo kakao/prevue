@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import prevue.daemon.fake.Fixture
+import prevue.adapter.entry.EntryHooks
 
 class ServerTest {
     private val fx = Fixture()
@@ -32,7 +33,7 @@ class ServerTest {
     // ⑥ 의 절반. prevue 가 /daemon 으로 살아 있나를 폴링한다 — 이것까지 세면 유휴가 영영 안 온다.
     @Test fun `daemon 확인은 활동이 아니고 다른 요청은 활동이다`() {
         val port = ServerSocket(0).use { it.localPort }
-        val ui = fx.entryPoints(fx.useCases(), port)
+        val ui = fx.entryPoints(fx.graph(hooks = EntryHooks(port)))
         val server = ui.server
         ui.start()
         try {

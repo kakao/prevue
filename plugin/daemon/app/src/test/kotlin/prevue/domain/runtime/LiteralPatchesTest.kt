@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 import prevue.domain.port.BuildChange
 import prevue.domain.port.CompileResult
 import prevue.domain.port.LiteralSite
@@ -16,7 +15,7 @@ import prevue.domain.port.LiteralTable
 import prevue.domain.port.SourceChange
 import prevue.domain.model.ReloadResult
 import prevue.domain.model.WaitResult
-import prevue.domain.UseCases
+import prevue.daemon.fake.TestGraph
 
 /**
  * D-67. 감시가 부른 저장이 내용이 같으면 아무것도 안 하고, 리터럴만 바꿨으면 컴파일 없이 값을 넣는다.
@@ -39,17 +38,17 @@ class LiteralPatchesTest {
             listOf(LiteralSite(key, m.groups[1]!!.range.first, "Int", true, m.groupValues[1].toInt())))
     }
 
-    private fun opened(): UseCases {
+    private fun opened(): TestGraph {
         fx.file.writeText(source(16))
         fx.compiler.literals = ::table
-        return fx.useCases().also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
+        return fx.graph().also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
     }
 
-    private fun UseCases.write(text: String, f: File = fx.file) { f.writeText(text); f.setLastModified(f.lastModified() + 1_000) }
-    private fun UseCases.watch(vararg files: File = arrayOf(fx.file)): ReloadResult = runBlocking {
+    private fun TestGraph.write(text: String, f: File = fx.file) { f.writeText(text); f.setLastModified(f.lastModified() + 1_000) }
+    private fun TestGraph.watch(vararg files: File = arrayOf(fx.file)): ReloadResult = runBlocking {
         applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
     }
-    private fun UseCases.waited(): WaitResult = runBlocking { awaitRender(listOf(fx.file), timeoutMs = 5_000) }
+    private fun TestGraph.waited(): WaitResult = runBlocking { awaitRender(listOf(fx.file), timeoutMs = 5_000) }
 
     @Test fun `같은 내용의 감시 저장은 컴파일도 렌더도 하지 않는다`() {
         val uc = opened()

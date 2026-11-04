@@ -56,7 +56,7 @@ class LayerRuleTest {
             "adapter/http/P.kt" to "package prevue.adapter.http\nimport prevue.adapter.render.RenderEngine\n",
             // ② 기술 어댑터는 domain 중 port 만 안다.
             "adapter/render/Q.kt" to "package prevue.adapter.render\nimport prevue.domain.model.Status\n",
-            "adapter/compile/Q2.kt" to "package prevue.adapter.compile\nimport prevue.domain.UseCases\n",
+            "adapter/compile/Q2.kt" to "package prevue.adapter.compile\nimport prevue.domain.ReadStatusUseCase\n",
             // ③ runtime 은 유스케이스(domain 루트)를 모른다.
             "domain/runtime/R.kt" to "package prevue.domain.runtime\nimport prevue.domain.FillBoardUseCase\n",
             // ④ 입구는 runtime 을 모른다.
@@ -71,7 +71,7 @@ class LayerRuleTest {
             "entity/Z2.kt" to "package prevue.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
             "domain/Z3.kt" to "package prevue.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
-            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.UseCases\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliHandler\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
+            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.ReadStatusUseCase\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliHandler\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
             "adapter/cli/H.kt" to "package prevue.adapter.cli\nimport prevue.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.entity.Picked\n",
             "domain/I.kt" to "package prevue.domain\nimport prevue.entity.PreviewSpec\nimport prevue.domain.port.Clock\nimport prevue.domain.runtime.Workspace\n",
             "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
@@ -97,10 +97,10 @@ class LayerRuleTest {
             "entity/Px.kt" to "package prevue.entity\n@JvmInline value class Px(val v: Int)\n",
             "entity/Picked.kt" to "package prevue.entity\ndata class Picked(val id: String)\n",
             "entity/Lonely.kt" to "package prevue.entity\nsealed interface Lonely\n",
-            "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.UseCases\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
+            "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.ReadStatusUseCase\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
             // 조립은 구현 타입을 모른다 — 공개여도(ProcessMemory) 그래프가 잇는다.
             "Wiring.kt" to "package prevue.daemon\nimport prevue.adapter.process.ProcessMemory\n",
-            "Graph.kt" to "package prevue.daemon\nimport prevue.adapter.infra.Closer\nimport prevue.adapter.entry.EntryPoints\nimport prevue.domain.UseCases\nimport prevue.entity.ModuleInfo\n",
+            "Graph.kt" to "package prevue.daemon\nimport prevue.adapter.infra.Closer\nimport prevue.adapter.entry.EntryPoints\nimport prevue.domain.ReadStatusUseCase\nimport prevue.entity.ModuleInfo\n",
         )
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",

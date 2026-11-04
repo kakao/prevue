@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 import prevue.domain.model.CardResult
 import prevue.domain.model.TabMove
 import prevue.domain.model.WorkspaceEvent
@@ -30,7 +29,7 @@ import prevue.domain.policy.TabPolicy
 /** 뷰어 탭(D-54) — `show`는 탭을 열고 바꿔 끼우지 않는다 · 저장은 지금 보는 탭만 그린다 · 상한 10. */
 class TabsTest {
     private val fx = Fixture()
-    private val uc = fx.useCases()
+    private val uc = fx.graph()
     private val ws = uc.workspace
 
     @AfterEach fun tearDown() = fx.close()

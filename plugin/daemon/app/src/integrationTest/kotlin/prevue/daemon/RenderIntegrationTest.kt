@@ -39,9 +39,6 @@ import prevue.entity.Semantics
 import prevue.entity.ModuleInfo
 import prevue.domain.port.Clock
 import prevue.domain.port.FailureKind
-import prevue.domain.port.Ports
-import prevue.domain.UseCases
-import prevue.domain.port.Watchers
 import prevue.domain.runtime.Workspace
 import prevue.adapter.compile.HotCompiler
 import prevue.adapter.render.ViewInfoJson
@@ -57,6 +54,13 @@ import prevue.daemon.fake.awaitState
 import prevue.daemon.fake.awaitUntil
 import prevue.daemon.fake.awaitValue
 import prevue.daemon.fake.eventually
+import prevue.daemon.fake.TestGraph
+import prevue.daemon.fake.awaitSettled
+import prevue.daemon.fake.frames
+import prevue.adapter.entry.EntryHooks
+import prevue.adapter.entry.TargetRepo
+import prevue.daemon.fake.TestPorts
+import prevue.daemon.fake.testGraph
 
 /**
  * 진짜 layoutlib으로 저장소 안 픽스처 `fixtures/pearl`를 그린다(`./gradlew integrationTest`, 로컬만).
@@ -71,7 +75,7 @@ import prevue.daemon.fake.eventually
 class RenderIntegrationTest {
     private val out = Files.createTempDirectory("prevue-slow").toFile()
     private lateinit var engine: RenderEngine
-    private lateinit var uc: UseCases
+    private lateinit var uc: TestGraph
     private lateinit var ws: Workspace
     private lateinit var repo: File
     private lateinit var compiler: HotCompiler
@@ -97,8 +101,8 @@ class RenderIntegrationTest {
         val watched = listOf(appRoot)
         watcher = PollingSourceWatcher(watched)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
-        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }),
-            scope, Watchers(sources = watcher))
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) },
+            sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)
@@ -367,7 +371,7 @@ class RenderIntegrationTest {
     /** 뷰어가 앱 카드를 켜고 스트림을 보는 상태 — 프레임 루프가 실제로 돌고, 감시가 복사본의 저장을 받는다. 엣지마다 부르고, 그 엣지의 로그는 여기서부터 본다. */
     private fun openApp() {
         if (app == null) {
-            val ui = EntryPoints(uc, 0, PrevueCheckout(PearlFixture.viewer!!), out, scope, {}, log = { logs += it })
+            val ui = uc.entryPoints
             app = ui
             ui.hotSwap.start()
             val r = runBlocking { uc.openPreview(appFile.path, null, emptyMap(), "test") }

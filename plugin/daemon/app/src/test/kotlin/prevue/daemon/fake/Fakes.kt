@@ -51,10 +51,8 @@ import prevue.domain.port.ResourceKey
 import prevue.domain.port.ResourceLookup
 import prevue.domain.port.ResourceValues
 import prevue.domain.port.Clock
-import prevue.domain.port.Ports
-import prevue.domain.UseCases
-import prevue.domain.port.Watchers
 import prevue.domain.runtime.Workspace
+import prevue.adapter.entry.EntryHooks
 import prevue.adapter.entry.EntryPoints
 import prevue.adapter.entry.PrevueCheckout
 import prevue.adapter.entry.TargetRepo
@@ -389,20 +387,21 @@ class Fixture(previews: Int = 3) : AutoCloseable {
 
     private val module = ModuleInfo(root.absolutePath, spec.project, spec.variant, spec.kotlinModuleName, null, null)
 
-    /** `Main`과 같은 조립. 채우기·쓰기 기록은 진짜 디스패처에서 돈다 — 줄 서기의 경합이 실제와 같아야 한다. */
-    fun useCases(
+    /** `Main`과 같은 조립 — 운영 그래프의 기여에 가짜 포트를 끼운다. 채우기·쓰기 기록은 진짜 디스패처에서 돈다 — 줄 서기의 경합이 실제와 같아야 한다. */
+    @Suppress("LongParameterList")
+    internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
         resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.domain.DrawPosturesUseCase.QUIET_MS,
-    ) =
-        Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList()).let { ws ->
-            UseCases(ws, Ports(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(root, graph.roots).apply { buildInBackground(scope) },
-                resources = resources), scope, Watchers(sources, builds), postureQuietMs)
-                .also { workspaces[it] = ws }
-        }
+        hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
+    ): TestGraph {
+        val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())
+        val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
+            ProjectFiles(root, graph.roots).apply { buildInBackground(scope) }, resources = resources, sources = sources, builds = builds)
+        return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)
+    }
 
-    /** `Main`과 같은 입구 한 벌. 감시 포트는 주지 않는다 — 저장은 테스트가 유스케이스를 직접 부른다. */
-    fun entryPoints(uc: UseCases, port: Int, target: TargetRepo = TargetRepo()) =
-        EntryPoints(uc, port, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), renderer.outDir, scope, {}, target = target).also { openedEntryPoints += it }
+    /** 입구 한 벌을 띄울 그래프. 감시 포트는 주지 않는다 — 저장은 테스트가 유스케이스를 직접 부른다. */
+    internal fun entryPoints(g: TestGraph): EntryPoints = g.entryPoints.also { openedEntryPoints += it }
 
     override fun close() {
         runBlocking {
@@ -427,7 +426,3 @@ fun Workspace.onEvent(l: (WorkspaceEvent) -> Unit): () -> Unit {
     val job = CoroutineScope(Dispatchers.Unconfined).launch(start = CoroutineStart.UNDISPATCHED) { events.collect { l(it) } }
     return { job.cancel() }
 }
-
-/** 테스트만 상태를 들여다본다 — 입구(EntryPoints)에는 [Workspace]가 건네지지 않는다. [Fixture.useCases]가 만든 것만 있다. */
-private val workspaces = java.util.Collections.synchronizedMap(java.util.WeakHashMap<UseCases, Workspace>())
-val UseCases.workspace: Workspace get() = workspaces[this] ?: error("Fixture.useCases로 만든 UseCases가 아니다")

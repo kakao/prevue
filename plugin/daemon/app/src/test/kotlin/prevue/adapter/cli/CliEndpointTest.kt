@@ -16,14 +16,14 @@ import prevue.entity.LiveTree
 import prevue.entity.ViewNode
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
+import prevue.adapter.entry.EntryHooks
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CliEndpointTest {
     private val fx = Fixture(previews = 2)
     private val port = ServerSocket(0).use { it.localPort }
-    private val uc = fx.useCases()
-    private val server = fx.entryPoints(uc, port)
+    private val uc = fx.graph(hooks = EntryHooks(port))
+    private val server = fx.entryPoints(uc)
 
     @BeforeAll fun up() {
         server.start()

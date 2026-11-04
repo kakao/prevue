@@ -2,7 +2,6 @@ package prevue.adapter.browser
 
 import app.cash.turbine.test
 import prevue.domain.model.Pointed
-import java.net.ServerSocket
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -26,13 +25,15 @@ import prevue.daemon.fake.awaitUntil
 import prevue.daemon.fake.awaitValue
 import prevue.daemon.fake.eventually
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
+import prevue.daemon.fake.watching
 
 /** 화면 조작의 비즈니스(D-41). 브라우저에 있을 때는 테스트 밖이었던 것들이다. */
 class BrowserPresenterTest {
     private val fx = Fixture()
-    private val uc = fx.useCases()
-    private val presenter = fx.entryPoints(uc, ServerSocket(0).use { it.localPort }).browser
+    private val uc = fx.graph()
+    private val presenter = fx.entryPoints(uc).let { uc.presenter }
+    private val input = uc.browserInput
+    private val pointing = uc.browserPointing
 
     @AfterEach fun tearDown() = fx.close()
 
@@ -59,7 +60,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()                                   // 보드를 여는 동안 쌓인 것 — 이번 태스크의 신호만 기다린다
-        presenter.enterFocus(1)
+        input.enterFocus(1)
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))   // 포커스 카드의 태스크를 거는 중
         assertNull(now().focus?.streamUrl, "태스크가 걸리기 전에 스트림 주소가 나왔다")
 
@@ -70,21 +71,21 @@ class BrowserPresenterTest {
         assertEquals("Card1", s.focus!!.previewId)
         assertNotNull(s.focus!!.streamUrl)
 
-        presenter.exitFocus(); runBlocking { presenter.drain() }
+        input.exitFocus(); runBlocking { presenter.drain() }
         assertEquals(BrowserState.Screen.BOARD, now().screen)
     }
 
     @Test fun `크기 연타는 그리는 동안 들어온 마지막 크기 하나만 그린다`() {
         opened()
-        presenter.enterFocus(0); runBlocking { presenter.drain() }
+        input.enterFocus(0); runBlocking { presenter.drain() }
         val before = fx.renderer.opened.size
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        presenter.resize(ScreenSize.Dp(320, 640))
+        input.resize(ScreenSize.Dp(320, 640))
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
-        presenter.resize(ScreenSize.Dp(400, 700))
-        presenter.resize(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
+        input.resize(ScreenSize.Dp(400, 700))
+        input.resize(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
         gate.countDown(); fx.renderer.showGate = null
         awaitUntil("마지막 크기로 다시 연다") { fx.renderer.opened.size == before + 2 && now().focus?.streamUrl != null }
         assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), now().focus?.size)
@@ -129,7 +130,7 @@ class BrowserPresenterTest {
     // 정착할 때마다 렌더 도장이 바뀐다. 스트림 주소까지 따라 바뀌면 그때마다 MJPEG를 다시 연다.
     @Test fun `인터랙티브 중 다시 그려도 스트림 주소는 그대로다`() {
         opened()
-        presenter.enterFocus(0); runBlocking { presenter.drain() }
+        input.enterFocus(0); runBlocking { presenter.drain() }
         val url = now().focus!!.streamUrl
         runBlocking { uc.rerender("test") }
         assertEquals(url, now().focus!!.streamUrl)
@@ -138,7 +139,7 @@ class BrowserPresenterTest {
 
     @Test fun `이름이 하나뿐인 파일은 바로 풀패스로 남는다`() {
         opened(); awaitIndex()
-        val r = runBlocking { presenter.point("Cards.kt", 3, Pointed("Text", listOf("Text"), null, "Card0")) }
+        val r = runBlocking { pointing.point("Cards.kt", 3, Pointed("Text", listOf("Text"), null, "Card0")) }
         assertTrue(r is BrowserPresenter.PointResult.Selected)
         assertEquals("@${fx.file.path}#L3", (r as BrowserPresenter.PointResult.Selected).selection.ref)
     }
@@ -146,16 +147,16 @@ class BrowserPresenterTest {
     // 조용히 하나 찍지 않는다. 사람이 한 번 고르면 같은 데몬에서는 다시 묻지 않는다.
     @Test fun `이름이 갈리면 고르게 하고 고른 것은 기억한다`() {
         opened(); awaitIndex()
-        assertEquals(BrowserPresenter.PointResult.NeedChoice, runBlocking { presenter.point("Dup.kt", 1, Pointed(null, emptyList(), null, "Card0")) })
+        assertEquals(BrowserPresenter.PointResult.NeedChoice, runBlocking { pointing.point("Dup.kt", 1, Pointed(null, emptyList(), null, "Card0")) })
         val choice = now().choice!!
         assertEquals(2, choice.candidates.size)
 
         val picked = choice.candidates.last()
-        val r = runBlocking { presenter.choose(picked) } as BrowserPresenter.PointResult.Selected
+        val r = runBlocking { pointing.choose(picked) } as BrowserPresenter.PointResult.Selected
         assertEquals("@$picked#L1", r.selection.ref)
         assertNull(now().choice)
 
-        val again = runBlocking { presenter.point("Dup.kt", 7, Pointed(null, emptyList(), null, "Card0")) } as BrowserPresenter.PointResult.Selected
+        val again = runBlocking { pointing.point("Dup.kt", 7, Pointed(null, emptyList(), null, "Card0")) } as BrowserPresenter.PointResult.Selected
         assertEquals("@$picked#L7", again.selection.ref)
     }
 
@@ -175,9 +176,9 @@ class BrowserPresenterTest {
         runBlocking {
             uc.watching.test {
                 assertEquals(false, awaitItem())
-                presenter.enterFocus(0); presenter.drain()
+                input.enterFocus(0); presenter.drain()
                 assertEquals(true, awaitItem())
-                presenter.exitFocus(); presenter.drain()
+                input.exitFocus(); presenter.drain()
                 assertEquals(false, awaitItem())
             }
         }
@@ -188,8 +189,8 @@ class BrowserPresenterTest {
         opened()
         runBlocking {
             presenter.events.filterIsInstance<UiEvent.Flash>().test {
-                presenter.enterFocus(99)                                                   // 없는 카드
-                presenter.enterFocus(1)
+                input.enterFocus(99)                                                   // 없는 카드
+                input.enterFocus(1)
                 presenter.drain()
                 assertEquals("Card1", presenter.current().focus!!.previewId)
                 val flash = awaitItem()
@@ -207,10 +208,10 @@ class BrowserPresenterTest {
         val agent = CoroutineScope(Dispatchers.Default).launch { uc.rerender("cli") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))   // 에이전트가 줄을 쥐고 그리는 중
-            presenter.enterFocus(1)
-            presenter.exitFocus()
-            presenter.enterFocus(2)
-            presenter.exitFocus()
+            input.enterFocus(1)
+            input.exitFocus()
+            input.enterFocus(2)
+            input.exitFocus()
         } finally { gate.countDown(); fx.renderer.showGate = null }
         runBlocking { agent.join(); presenter.drain() }
         val s = now()
@@ -220,7 +221,7 @@ class BrowserPresenterTest {
 
     @Test fun `줄이 막힌 동안 던진 터치는 던진 순서대로 닿는다`() {
         opened()
-        presenter.enterFocus(0); runBlocking { presenter.drain() }
+        input.enterFocus(0); runBlocking { presenter.drain() }
         fx.renderer.touches.clear()
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
@@ -228,7 +229,7 @@ class BrowserPresenterTest {
         val agent = CoroutineScope(Dispatchers.Default).launch { uc.focusCard(1, on = true, by = "cli") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
-            for (i in 0 until 20) presenter.touch(if (i % 2 == 0) "press" else "release", i, i)
+            for (i in 0 until 20) input.touch(if (i % 2 == 0) "press" else "release", i, i)
             assertTrue(fx.renderer.touches.isEmpty(), "줄을 쥔 에이전트보다 먼저 닿았다")
         } finally { gate.countDown(); fx.renderer.showGate = null }
         runBlocking { agent.join(); presenter.drain() }
@@ -250,8 +251,8 @@ class BrowserPresenterTest {
         runBlocking {
             presenter.events.test {
                 uc.applySave(listOf(fx.file), "watch"); uc.workspace.awaitBoardFilled()
-                presenter.enterFocus(0); presenter.drain()
-                presenter.touch("tap", 1, 1); presenter.drain()
+                input.enterFocus(0); presenter.drain()
+                input.touch("tap", 1, 1); presenter.drain()
                 eventually(2_000) { now().settle != null }
                 expectNoEvents()
             }

@@ -8,14 +8,13 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
-import prevue.daemon.fake.workspace
 import prevue.domain.port.SourceChange
 import prevue.domain.model.WorkspaceEvent
 
 /** D-56. 빠른 열기의 목록 — 이 데몬이 열 수 있는 프리뷰 파일만, 목록이 바뀔 때만 알린다. */
 class PreviewCatalogTest {
     private val fx = Fixture(previews = 2)
-    private val uc = fx.useCases()
+    private val uc = fx.graph()
 
     @AfterEach fun tearDown() = fx.close()
 
