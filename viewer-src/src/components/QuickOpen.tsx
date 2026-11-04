@@ -21,6 +21,7 @@ type BestFn = { fn: string; idx: Set<number>; more: number };
 export type SearchRow = { f: FileEntry; m?: FileMatch; fn: BestFn | null };
 type Section = { title?: string; rows: SearchRow[] };
 
+const NO_RECENT: string[] = [];
 const named = (files: PreviewFile[]): FileEntry[] => files.map(f => ({ ...f, name: f.rel.split('/').pop()! }));
 
 /** 검색어가 맞은 함수 중 가장 많이 맞은 것 — 줄에는 이것 하나만 글자로 붙는다(R1). 파일명으로 맞았으면 없다. */
@@ -79,7 +80,8 @@ addEventListener('mousemove', e => { real = e.screenX !== px || e.screenY !== py
  * 입력은 React 가 값을 갖지 않는다 — 사람이 친 글자도, 브라우저 검사가 넣은 값도 같은 input 이벤트로 온다.
  * 고른 줄(sel)은 쉬는 동안(막 열었고 아무것도 안 했다) -1 이다. ↓ · 입력 · 포인터가 움직이면 생긴다(R5). 그래도 Enter 의 기본값은 첫 줄이다.
  */
-export function FileSearch({ files, ready, query, sel, recent = [], fieldRef, onQuery, onSelect, onPick, onEscape, onLeave }: {
+// 뷰어는 상태마다 다시 그린다 — 상자는 받은 것이 바뀔 때만 다시 센다.
+export const FileSearch = memo(function FileSearch({ files, ready, query, sel, recent = NO_RECENT, fieldRef, onQuery, onSelect, onPick, onEscape, onLeave }: {
   files: PreviewFile[] | null;
   ready: boolean;
   query: string;
@@ -102,9 +104,11 @@ export function FileSearch({ files, ready, query, sel, recent = [], fieldRef, on
   latest.current = { fieldRef, onQuery };
   const bind = useCallback((el: HTMLInputElement | null) => { setField(el); latest.current.fieldRef?.(el); }, []);
   const entries = useMemo(() => files && named(files), [files]);
-  const { sections, more, empty, loading } = compute(entries, query, recent);
-  const items = sections.flatMap(s => s.rows);
+  const { sections, more, empty, loading } = useMemo(() => compute(entries, query, recent), [entries, query, recent]);
+  const items = useMemo(() => sections.flatMap(s => s.rows), [sections]);
   const at = Math.min(sel, items.length - 1);
+  // 목록이 줄면 고른 줄도 끝으로 당긴다 — 다시 늘어도 옛 자리로 튀지 않는다.
+  useLayoutEffect(() => { if (sel > at) onSelect(at); }, [sel, at]);
 
   useLayoutEffect(() => {
     if (!field) return;
@@ -176,7 +180,7 @@ export function FileSearch({ files, ready, query, sel, recent = [], fieldRef, on
       <span className="qo-term"><span>{phrase('quickopen.term')}</span> <code>prevue show &lt;<span>{phrase('quickopen.term.file')}</span>&gt;</code></span>
     </div>
   </div>;
-}
+});
 
 /** 팔레트 — 창 위 가운데에 뜨고, 막은 레일 오른쪽 본문을 가린다(D-100). 여닫는 움직임은 openQuickOpen · closeQuickOpen 이 바깥 요소에 건다. */
 export function QuickOpenPalette({ hosts, children }: { hosts?: { sheet: HTMLElement; curtain: HTMLElement }; children?: ReactNode }) {
@@ -201,7 +205,7 @@ export type QuickOpenHosts = { sheet: HTMLElement; curtain: HTMLElement; start: 
 type Search = { open: boolean; files: PreviewFile[] | null; ready: boolean; query: string; sel: number; recent: string[] };
 let search: Search = { open: false, files: null, ready: false, query: '', sel: -1, recent: [] };
 const listeners = new Set<() => void>();
-/** quiet 면 다시 그리지 않는다 — 닫히는 팔레트는 흐려지는 동안 보던 줄을 그대로 둔다. */
+/** quiet 면 다시 그리지 않는다 — 고르는 동안 최근 연 파일을 적어도 팔레트의 줄이 바뀌지 않는다. */
 function update(next: Partial<Search>, quiet = false) {
   if ((Object.keys(next) as Array<keyof Search>).every(k => search[k] === next[k])) return;
   search = { ...search, ...next };
@@ -212,7 +216,8 @@ const snapshot = () => search;
 
 let parts: QuickOpenHosts | null = null, field: HTMLInputElement | null = null, button: HTMLElement | null = null;
 // docked — 상자가 시작 화면에 있다. returnTo — 키보드로 연 자리. 닫을 때 그리로 포커스를 돌려준다(마우스로 열었으면 없다).
-let docked = false, returnTo: HTMLElement | null = null, closeOnDraw = 0, entering = false, lastActive: string | null = null;
+let docked = false, returnTo: HTMLElement | null = null, closeOnDraw = 0, entering = false, settling = false, lastActive: string | null = null;
+let asked = 0;
 
 /* 최근 연 파일 — 저장소별로 브라우저에만 남는다(표시 취향, 데몬은 모른다). */
 const recentSlot = () => 'prevue.recent:' + (store.st?.header.repo || '');
@@ -224,8 +229,11 @@ function remember(path: string | null | undefined, quiet = false) {
   update({ recent: l }, quiet);
 }
 
+// 겹친 요청은 마지막 것만 받는다 — 늦게 온 옛 응답이 새 목록을 덮지 않게.
 async function load() {
-  try { const d = await fetchPreviewFiles(); update({ ready: d.ready, files: d.files }); } catch { update({ files: [], ready: true }); }
+  const n = ++asked;
+  const next = await fetchPreviewFiles().then(d => ({ ready: d.ready, files: d.files }), () => ({ files: [], ready: true }));
+  if (n === asked) update(next);
 }
 
 /** opener 는 키보드로 연 자리다 — 그냥 닫으면(Esc · 커튼) 그리로 포커스가 돌아간다. 마우스로 열었으면 null 이다(D-63). */
@@ -239,7 +247,7 @@ export function openQuickOpen(opener: Element | null = null) {
     returnTo = opener && opener !== document.body ? opener as HTMLElement : null;
     button?.setAttribute('aria-expanded', 'true');
     sheet.hidden = false; curtain.hidden = false; sheet.classList.remove('closing');   // 닫히는 중에 다시 열면 흐려 둔 팔레트를 되살린다
-    update({ open: true, sel: -1, recent: readRecent() });
+    update({ open: true, query: '', sel: -1, recent: readRecent() });
     requestAnimationFrame(() => { if (search.open) { curtain.classList.add('on'); sheet.classList.add('on'); } });
     load();
   }
@@ -258,7 +266,8 @@ export function closeQuickOpen(instant = false, back = false) {
   if (field) { field.value = ''; field.blur(); }
   if (back && returnTo?.isConnected) returnTo.focus({ preventScroll: true });
   returnTo = null;
-  update({ open: false, query: '' }, true);
+  // 검색어는 다음에 열 때 비운다 — 닫히는 팔레트는 흐려지는 동안 보던 줄을 그대로 둔다.
+  update({ open: false });
   button?.setAttribute('aria-expanded', 'false');
   curtain.classList.remove('on'); sheet.classList.remove('on');
   if (instant) { sheet.hidden = true; curtain.hidden = true; return; }
@@ -299,6 +308,14 @@ async function pick(it: SearchRow, { phrase, daemonText }: Messages) {
   closeOnDraw = 0; cancelReveal();
   flash(daemonText(r.message) || phrase('open.cannot'));
 }
+
+const bindField = (el: HTMLInputElement | null) => { if (el) field = el; else if (field && !field.isConnected) field = null; };
+const setQuery = (query: string, sel: number) => update({ query, sel });
+const setSel = (sel: number) => update({ sel });
+// 시작 화면은 닫을 것이 없다 — 빈 필드면 필드를 떠난다.
+const escape = () => { if (docked) field?.blur(); else closeQuickOpen(false, true); };
+// 키보드로 팔레트 밖에 나가도 닫는다 — 막이 레일 · 헤더를 덮지 않아 Tab 으로 닿는다. 입구 단추로 가는 것은 그 단추가 닫는다.
+const leave = (to: Element | null) => { if (search.open && parts && to && !parts.sheet.contains(to) && to !== button) closeQuickOpen(); };
 
 /** 레일 맨 아래 "파일 열기"(D-98) — 빠른 열기의 눈에 보이는 입구. */
 export const QuickOpenButton = memo(function QuickOpenButton({ host }: { host?: HTMLElement | null }) {
@@ -349,7 +366,7 @@ export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerSta
       document.removeEventListener('pointerdown', outside, true);
       hosts.curtain.removeEventListener('click', curtain);
       document.removeEventListener('visibilitychange', back);
-      parts = null;
+      parts = null; docked = false;
     };
   }, [hosts]);
   useLayoutEffect(() => {
@@ -369,19 +386,19 @@ export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerSta
   }, [draw]);
   useLayoutEffect(() => { if (connection === 'lost') closeQuickOpen(true); }, [connection]);
   // 펼친 뒤 처음 그릴 때만 줄이 계단으로 떠오른다. 움직임 줄이기면 계단 대신 페이드다(style.css).
+  // 펼친 커밋 뒤 같은 틀의 커밋(입력 비우기 · 최근 연 파일)은 걷지 않는다 — 한 프레임이 지난 뒤의 다음 그리기에서 걷는다.
   useLayoutEffect(() => {
-    hosts.sheet.classList.toggle('enter', !docked && entering);
-    hosts.start.classList.toggle('enter', docked && entering);
-    entering = false;
+    if (entering) {
+      (docked ? hosts.start : hosts.sheet).classList.add('enter');
+      (docked ? hosts.sheet : hosts.start).classList.remove('enter');
+      entering = false; settling = true;
+      requestAnimationFrame(() => { settling = false; });
+    } else if (!settling) { hosts.sheet.classList.remove('enter'); hosts.start.classList.remove('enter'); }
   });
 
+  const onPick = useCallback((it: SearchRow) => pick(it, messages), [messages]);
   const box = <FileSearch files={s.files} ready={s.ready} query={s.query} sel={s.sel} recent={s.recent}
-    fieldRef={el => { if (el) field = el; }}
-    onQuery={(query, sel) => update({ query, sel })} onSelect={sel => update({ sel })} onPick={it => pick(it, messages)}
-    // 시작 화면은 닫을 것이 없다 — 빈 필드면 필드를 떠난다.
-    onEscape={() => { if (docked) field?.blur(); else closeQuickOpen(false, true); }}
-    // 키보드로 팔레트 밖에 나가도 닫는다 — 막이 레일 · 헤더를 덮지 않아 Tab 으로 닿는다. 입구 단추로 가는 것은 그 단추가 닫는다.
-    onLeave={to => { if (search.open && to && !hosts.sheet.contains(to) && to !== button) closeQuickOpen(); }} />;
+    fieldRef={bindField} onQuery={setQuery} onSelect={setSel} onPick={onPick} onEscape={escape} onLeave={leave} />;
   return <>
     <QuickOpenPalette hosts={hosts}>{!dock && box}</QuickOpenPalette>
     <StartScreen host={hosts.start}>{dock && box}</StartScreen>

@@ -27,6 +27,10 @@ try {
   const drawn = s => s.screen === 'board' && s.board?.file === file && !s.busy && s.board.groups.every(g => g.cards.every(c => c.rendered && c.ok));
   for (const end = Date.now() + 120_000; !drawn(state) && Date.now() < end; state = await read()) await new Promise(r => setTimeout(r, 200));
   if (!drawn(state)) throw Error('PearlPreviews.kt 보드를 다 그리지 못했다');
+  // 목록까지 받은 뒤에 비운다 — 도중에 멈춰도 담아 둔 재료가 반만 남지 않는다.
+  let files = await fetch(url('/preview-files.json')).then(r => r.json());
+  for (const end = Date.now() + 60_000; !files.ready && Date.now() < end; files = await fetch(url('/preview-files.json')).then(r => r.json())) await new Promise(r => setTimeout(r, 200));
+  if (!files.ready) throw Error('빠른 열기 목록이 다 지어지지 않았다');
   await mkdir(out, { recursive: true });
   for (const name of await readdir(out)) await rm(join(out, name));
   for (const card of state.board.groups.flatMap(g => g.cards)) {
@@ -35,9 +39,6 @@ try {
     const width = Math.ceil(card.widthDp * 5 / 3);
     execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '75', '--resampleWidth', String(width), png, '--out', join(out, `${card.index}.jpg`)], { stdio: 'ignore' });
   }
-  let files = await fetch(url('/preview-files.json')).then(r => r.json());
-  for (const end = Date.now() + 60_000; !files.ready && Date.now() < end; files = await fetch(url('/preview-files.json')).then(r => r.json())) await new Promise(r => setTimeout(r, 200));
-  if (!files.ready) throw Error('빠른 열기 목록이 다 지어지지 않았다');
   for (const [name, value] of [['board.json', state.board], ['preview-files.json', files]]) {
     const text = JSON.stringify(value, null, 2).replaceAll(root, '<repo>');
     if (text.includes(homedir()) || text.includes(homedir().slice(1).replaceAll('/', '_'))) throw Error(`${name}에 이 머신의 경로가 남았다`);
