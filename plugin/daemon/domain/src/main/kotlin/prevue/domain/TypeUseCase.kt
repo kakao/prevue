@@ -1,11 +1,13 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.TypeResult
 import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 
 /** D-69. 포커스된 텍스트 필드에 글자를 넣고, 정착한 그림을 돌려준다. 포커스된 필드가 없으면 넣지 않고 이유를 돌려준다. */
+@Inject
 class TypeUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

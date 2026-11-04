@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import prevue.entity.ensure
 import prevue.entity.phrase
 import java.io.File
@@ -20,12 +23,14 @@ import prevue.domain.model.WorkspaceEvent
 import prevue.domain.policy.PreviewExpansion
 import prevue.domain.policy.StaleReasons
 
+@SingleIn(AppScope::class)
+@Inject
 class Tabs(
     private val ws: Workspace,
     private val engine: EngineActor,
     private val previews: PreviewRepository,
     private val live: LiveShot,
-    private val fillBoard: (by: String, since: Long?) -> Unit,
+    private val fillBoard: BoardFiller,
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
 ) {

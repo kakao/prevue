@@ -116,6 +116,8 @@ configurations[integrationTest.compileOnlyConfigurationName].extendsFrom(configu
 configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
 // main 의 internal 을 단위 테스트처럼 본다.
 kotlin.target.compilations.getByName("integrationTest").associateWith(kotlin.target.compilations.getByName("main"))
+// 단위 쪽 가짜 포트와 테스트 그래프(`fake/`)의 internal 도 같이 쓴다.
+kotlin.target.compilations.getByName("integrationTest").associateWith(kotlin.target.compilations.getByName("test"))
 // 테스트는 :app 에 모여 있다 — 층 모듈의 internal 도 같은 모듈의 테스트처럼 본다. 본체끼리는 서로의 internal 을 못 본다.
 listOf("compileTestKotlin", "compileIntegrationTestKotlin").forEach { name ->
     tasks.named<KotlinCompile>(name) {

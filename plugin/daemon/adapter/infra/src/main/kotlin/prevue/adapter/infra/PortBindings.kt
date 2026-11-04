@@ -9,25 +9,36 @@ import prevue.adapter.compile.HotCompiler
 import prevue.adapter.render.BootingEngine
 import prevue.adapter.watch.PollingBuildWatcher
 import prevue.adapter.watch.PollingSourceWatcher
-import prevue.domain.port.MemoryMeter
-import prevue.domain.port.Ports
-import prevue.domain.port.PreviewRepository
-import prevue.domain.port.SourceFileRepository
-import prevue.domain.port.Watchers
+import prevue.domain.port.BuildWatcher
+import prevue.domain.port.Compiler
+import prevue.domain.port.LiveSessionFactory
+import prevue.domain.port.PreviewRenderer
+import prevue.domain.port.ResourceValues
+import prevue.domain.port.SourceWatcher
+import prevue.domain.port.ValueFiles
 
 @ContributesTo(AppScope::class)
 @BindingContainer
 public object PortBindings {
-    @Provides @SingleIn(AppScope::class)
-    internal fun ports(
-        engine: BootingEngine, compiler: HotCompiler, previews: PreviewRepository, sourceFiles: SourceFileRepository, memory: MemoryMeter,
-    ): Ports =
-        Ports(engine, engine, compiler, previews, sourceFiles, memory = memory, resources = engine.resources)
+    @Provides
+    internal fun renderer(engine: BootingEngine): PreviewRenderer = engine
+
+    @Provides
+    internal fun sessions(engine: BootingEngine): LiveSessionFactory = engine
+
+    @Provides
+    internal fun compiler(compiler: HotCompiler): Compiler = compiler
+
+    @Provides
+    internal fun resources(engine: BootingEngine): ResourceValues? = engine.resources
 
     @Provides @SingleIn(AppScope::class)
-    internal fun watchers(watches: Watches): Watchers = if (!watches.watching) Watchers() else Watchers(
-        sources = PollingSourceWatcher(watches.roots),
-        builds = PollingBuildWatcher(watches.buildGroups()),
-        values = PollingSourceWatcher(watches.valueDirs, extension = "xml").apply { statSliceTicks = 1 },
-    )
+    internal fun sources(watches: Watches): SourceWatcher? = if (watches.watching) PollingSourceWatcher(watches.roots) else null
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun builds(watches: Watches): BuildWatcher? = if (watches.watching) PollingBuildWatcher(watches.buildGroups()) else null
+
+    @Provides @SingleIn(AppScope::class) @ValueFiles
+    internal fun values(watches: Watches): SourceWatcher? =
+        if (watches.watching) PollingSourceWatcher(watches.valueDirs, extension = "xml").apply { statSliceTicks = 1 } else null
 }

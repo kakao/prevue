@@ -13,7 +13,6 @@ import prevue.entity.Semantics
 import prevue.entity.ViewNode
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 import prevue.domain.model.Container
 import prevue.domain.model.Miss
 import prevue.domain.model.ScrollResult
@@ -22,6 +21,7 @@ import prevue.domain.model.TypeResult
 import prevue.domain.model.WorkspaceEvent
 import prevue.domain.port.Frame
 import prevue.entity.Bitmap
+import prevue.daemon.fake.TestGraph
 
 /** D-69 · D-76. 에이전트 조작 — touch --at · type 은 겨냥한 대로 넣고 갈리면 넣지 않는다. scroll 은 겨냥 없이 화면 수만큼 굴린다. */
 class AgentActionsTest {
@@ -29,7 +29,7 @@ class AgentActionsTest {
 
     @AfterEach fun tearDown() = fx.close()
 
-    private fun opened(): UseCases = fx.useCases().also {
+    private fun opened(): TestGraph = fx.graph().also {
         runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
         runBlocking { it.focusCard(0, on = true, by = "test") }

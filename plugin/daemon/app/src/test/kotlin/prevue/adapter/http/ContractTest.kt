@@ -19,7 +19,7 @@ import prevue.daemon.fake.awaitState
 import prevue.daemon.fake.awaitUntil
 import prevue.daemon.fake.eventually
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
+import prevue.adapter.entry.EntryHooks
 
 /**
  * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `src/test/contract/<이름>.json`과 대조한다.
@@ -33,10 +33,10 @@ import prevue.daemon.fake.workspace
 class ContractTest {
     private val fx = Fixture(previews = 2)
     private val port = ServerSocket(0).use { it.localPort }
-    private val uc = fx.useCases(Clock(System::currentTimeMillis))
+    private val uc = fx.graph(Clock(System::currentTimeMillis), hooks = EntryHooks(port))
     private val ws = uc.workspace
-    private val server = fx.entryPoints(uc, port)
-    private val viewer = server.browser
+    private val server = fx.entryPoints(uc)
+    private val viewer = uc.presenter
     private val events = CopyOnWriteArrayList<Map<String, Any?>>()
     private val update = System.getProperty("prevue.contract.update") == "true"
     private val dir = File("src/test/contract")

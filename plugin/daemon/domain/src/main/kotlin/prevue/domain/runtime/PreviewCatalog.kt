@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -16,11 +19,12 @@ import prevue.domain.model.WorkspaceEvent
  * 다시 본다([update]). 목록(파일 · 함수)이 실제로 바뀔 때만 알린다 — 저장마다 바뀌는 mtime은 조용히 고친다.
  * 작업 공간의 줄을 서지 않는다. 화면이 아니라 색인이고, 줄을 서면 저장 → 화면 뒤로 밀린다.
  */
+@SingleIn(AppScope::class)
+@Inject
 internal class PreviewCatalog(
     private val ws: Workspace,
     private val previews: PreviewRepository,
     private val sources: SourceFileRepository,
-    private val hosts: (File) -> Boolean,
 ) {
     private class Catalog(val byFile: Map<File, PreviewFile> = emptyMap(), val ready: Boolean = false)
 
@@ -45,7 +49,7 @@ internal class PreviewCatalog(
     /** 목록이 바뀌었으면 참. */
     private fun scan(f: File): Boolean {
         val c = f.canonicalFile
-        return put(c, if (c.extension == "kt" && sources.has(c) && hosts(c)) read(c) else null)
+        return put(c, if (c.extension == "kt" && sources.has(c) && ws.hosts(c)) read(c) else null)
     }
 
     private fun put(c: File, entry: PreviewFile?): Boolean {

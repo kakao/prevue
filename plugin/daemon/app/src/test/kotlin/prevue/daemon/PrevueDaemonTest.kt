@@ -17,8 +17,7 @@ import kotlinx.coroutines.launch
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import prevue.adapter.entry.EntryPoints
-import prevue.adapter.entry.PrevueCheckout
+import prevue.adapter.entry.EntryHooks
 import prevue.daemon.fake.Fixture
 import prevue.json.Json
 
@@ -70,8 +69,7 @@ class PrevueDaemonTest {
                 assertThrows(java.net.BindException::class.java) {
                     daemon.run {
                         closer.own(AutoCloseable { closed.incrementAndGet() })
-                        val uc = fx.useCases(scope = scope)
-                        serve(EntryPoints(uc, occupied.localPort, PrevueCheckout(File(fx.root, "viewer")), fx.renderer.outDir, scope, {})) { 0 }
+                        serve(fx.graph(scope = scope, hooks = EntryHooks(occupied.localPort)).entryPoints) { 0 }
                     }
                 }
                 assertFalse(daemon.scope.isActive)
@@ -90,8 +88,7 @@ class PrevueDaemonTest {
                 try {
                     daemon.run {
                         closer.own(AutoCloseable { closed.incrementAndGet() })
-                        val uc = fx.useCases(scope = scope)
-                        val ui = EntryPoints(uc, 0, PrevueCheckout(File(fx.root, "viewer")), fx.renderer.outDir, scope, { requestStop("HTTP") })
+                        val ui = fx.graph(scope = scope, hooks = EntryHooks(0, onShutdown = { requestStop("HTTP") })).entryPoints
                         serve(ui) { 0 }
                         port.complete(ui.server.boundPort)
                     }
@@ -160,7 +157,7 @@ class PrevueDaemonTest {
         val thread = Thread {
             try {
                 daemon.run {
-                    val ui = EntryPoints(fx.useCases(scope = scope), 0, PrevueCheckout(File(fx.root, "viewer")), fx.renderer.outDir, scope, {})
+                    val ui = fx.graph(scope = scope).entryPoints
                     serve(ui, lastRender)
                     port.complete(ui.server.boundPort)
                 }

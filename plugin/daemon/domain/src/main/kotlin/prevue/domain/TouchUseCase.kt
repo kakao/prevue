@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.Aim
 import prevue.domain.model.Miss
 import prevue.domain.model.TouchResult
@@ -11,6 +12,7 @@ import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 import prevue.domain.runtime.WorkspaceEditor
 
+@Inject
 class TouchUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

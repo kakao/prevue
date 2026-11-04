@@ -11,11 +11,10 @@ import prevue.entity.LiveTree
 import prevue.entity.ViewNode
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 import prevue.domain.model.Miss
 import prevue.domain.model.ScrollResult
 import prevue.domain.model.TouchResult
-import prevue.domain.UseCases
+import prevue.daemon.fake.TestGraph
 
 /** 게으른 목록 안의 `#N` 은 목록 전체에서 N번째다 — 같은 줄이 아이템마다 있어도 화면 밖까지 이름이 된다. */
 class LazyListAimTest {
@@ -23,7 +22,7 @@ class LazyListAimTest {
 
     @AfterEach fun tearDown() = fx.close()
 
-    private fun opened(): UseCases = fx.useCases().also {
+    private fun opened(): TestGraph = fx.graph().also {
         runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
         runBlocking { it.focusCard(0, on = true, by = "test") }

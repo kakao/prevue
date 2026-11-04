@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -10,15 +11,16 @@ import prevue.domain.port.SourceChange
 import prevue.domain.port.SourceFileRepository
 import prevue.domain.port.SourceWatcher
 import prevue.domain.model.WorkspaceEvent
+import prevue.domain.runtime.StaleCallers
 import prevue.domain.runtime.Workspace
 
 /**
  * 모듈 소스의 저장을 흐름으로 낸다. 감시를 안 하면(`--no-watch`) 빈 흐름이다.
  * 보여 주는 프리뷰 파일은 아직 안 바뀌었어도 핫셋에 둔다 — 사람이 다음에 저장할 파일이 대개 그것이다.
  */
+@Inject
 class ObserveSourceChangesUseCase(
-    private val ws: Workspace, private val sources: SourceWatcher?, private val files: SourceFileRepository,
-    private val behindBuild: suspend () -> List<File> = { emptyList() },
+    private val ws: Workspace, private val sources: SourceWatcher?, private val files: SourceFileRepository, private val callers: StaleCallers,
 ) {
     operator fun invoke(): Flow<SourceChange> = sources?.let { repo ->
         repo.changes { listOfNotNull(ws.now.board?.file ?: ws.now.current?.file) }.onStart { noteBehindBuild() }.onEach {
@@ -35,7 +37,7 @@ class ObserveSourceChangesUseCase(
 
     suspend fun noteBehindBuild() {
         try {
-            val behind = behindBuild()
+            val behind = callers.behindBuild()
             if (behind.size > MAX_BEHIND_BUILD) {
                 System.err.println("[prevue] 빌드 뒤에 바뀐 소스가 ${behind.size}개라 함께 싣지 않는다 — 부르는 쪽이 저장될 때 실린다")
                 return

@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -22,6 +25,8 @@ import prevue.domain.port.RenderOutput
 import prevue.domain.model.LiveFrame
 import prevue.domain.model.SettledShot
 
+@SingleIn(AppScope::class)
+@Inject
 class EngineActor(
     private val renderer: PreviewRenderer,
     sessions: LiveSessionFactory,

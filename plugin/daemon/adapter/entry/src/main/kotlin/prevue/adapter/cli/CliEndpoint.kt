@@ -1,6 +1,9 @@
 package prevue.adapter.cli
 
 import com.sun.net.httpserver.HttpExchange
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
 import java.io.File
 import prevue.domain.model.CardResult
 import prevue.domain.model.FocusResult
@@ -16,15 +19,22 @@ import prevue.adapter.http.mapper.toScreenSize
 import prevue.json.string
 import prevue.json.strings
 import prevue.adapter.http.HttpEndpoint
+import prevue.adapter.http.HttpSeat
+import prevue.adapter.http.LiveStats
 import prevue.adapter.http.body
 import prevue.adapter.http.json
 
-internal class CliEndpoint(
-    private val handler: CliHandler,
-    private val port: Int,
-    private val root: String?,
-    private val observed: () -> Map<String, Any?>,
+@ContributesIntoSet(AppScope::class)
+public class CliEndpoint @Inject internal constructor(
+    private val tabs: CliTabs,
+    private val render: CliRender,
+    private val input: CliInput,
+    seat: HttpSeat,
+    private val live: LiveStats,
 ) : HttpEndpoint {
+    private val port = seat.port
+    private val root = seat.root
+
     override suspend fun route(ex: HttpExchange, path: String, method: String): Boolean =
         (method == "POST" && routePost(ex, path)) || routeAnyMethod(ex, path)
 
@@ -59,14 +69,14 @@ internal class CliEndpoint(
     }
 
     private suspend fun status(ex: HttpExchange) {
-        val seat = mapOf("port" to port, "viewer" to "http://127.0.0.1:$port/", "root" to root)
-        ex.json(200, handler.status().toJson() + observed() + seat)
+        val where = mapOf("port" to port, "viewer" to "http://127.0.0.1:$port/", "root" to root)
+        ex.json(200, tabs.status().toJson() + live.observed() + where)
     }
 
     private suspend fun show(ex: HttpExchange) {
         val b = ex.body()
         val target = b.string("target") ?: b.string("file") ?: b.string("fqn") ?: error("target(파일 경로 또는 FQN)이 필요하다")
-        val (r, board) = handler.show(target, (b["index"] as? Number)?.toInt(), b.map("params"), b.string("by") ?: "http")
+        val (r, board) = tabs.show(target, (b["index"] as? Number)?.toInt(), b.map("params"), b.string("by") ?: "http")
         val previews = board?.previews?.map { it.toJson() } ?: emptyList()
         ex.json(okOr422(r.ok), r.toJson() + mapOf("board" to board?.toJson(), "previews" to previews))
     }
@@ -74,12 +84,12 @@ internal class CliEndpoint(
     private suspend fun close(ex: HttpExchange) {
         val b = ex.body()
         val target = b.string("target") ?: b.string("file") ?: error("target(파일 경로 또는 FQN)이 필요하다")
-        ex.json(200, handler.close(target, b.string("by") ?: "http").toJson())
+        ex.json(200, tabs.close(target, b.string("by") ?: "http").toJson())
     }
 
     private suspend fun card(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.card((b["index"] as Number).toInt(), b["force"] == true, b.string("by") ?: "viewer")
+        val r = tabs.card((b["index"] as Number).toInt(), b["force"] == true, b.string("by") ?: "viewer")
         ex.json(cardCode(r), r.toJson())
     }
 
@@ -92,47 +102,47 @@ internal class CliEndpoint(
 
     private suspend fun focus(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.focus((b["index"] as Number).toInt(), b["interactive"] == true, b.string("by") ?: "viewer", b.toScreenSize())
+        val r = tabs.focus((b["index"] as Number).toInt(), b["interactive"] == true, b.string("by") ?: "viewer", b.toScreenSize())
         ex.json(okOr422(r !is FocusResult.On || r.result.ok), r.toJson())
     }
 
     private fun board(ex: HttpExchange) =
-        ex.json(200, handler.board()?.toJson() ?: mapOf("ok" to false, "error" to "보드가 없다 — 파일 경로로 show 한다"))
+        ex.json(200, tabs.board()?.toJson() ?: mapOf("ok" to false, "error" to "보드가 없다 — 파일 경로로 show 한다"))
 
     private suspend fun select(ex: HttpExchange) {
         val b = ex.body()
         val file = b.string("file")?.takeIf { it.isNotBlank() } ?: error("file(풀패스)이 필요하다")
         val line = (b["line"] as? Number)?.toInt()?.takeIf { it > 0 } ?: error("line이 필요하다")
-        val sel = handler.select(file, line, b.toPointed(), b.string("by") ?: "viewer")
+        val sel = input.select(file, line, b.toPointed(), b.string("by") ?: "viewer")
         ex.json(200, sel.toJson())
     }
 
     private fun selection(ex: HttpExchange) {
-        val sel = handler.selection()
+        val sel = input.selection()
         ex.json(if (sel == null) 404 else 200, sel?.toJson() ?: mapOf("ok" to false, "error" to "선택이 없다 — 뷰어에서 화면의 요소를 클릭한다"))
     }
 
     private fun previews(ex: HttpExchange) {
         val f = File(ex.body().string("file") ?: error("file이 필요하다"))
-        ex.json(200, mapOf("file" to f.absolutePath, "previews" to handler.previews(f).map { it.toJson() }))
+        ex.json(200, mapOf("file" to f.absolutePath, "previews" to tabs.previews(f).map { it.toJson() }))
     }
 
     private suspend fun render(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.render((b["at"] as? Number)?.toLong(), b["fresh"] == true, b.string("by") ?: "http")
+        val r = render.render((b["at"] as? Number)?.toLong(), b["fresh"] == true, b.string("by") ?: "http")
         ex.json(okOr422(r.ok), r.toJson())
     }
 
     private suspend fun reload(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.reload(b.strings("files").map { File(it) }, b.string("by") ?: "http")
+        val r = render.reload(b.strings("files").map { File(it) }, b.string("by") ?: "http")
         ex.json(okOr422(r.ok), r.toJson())
     }
 
     private suspend fun await(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.await(b.strings("files").map { File(it) }, (b["timeoutMs"] as? Number)?.toLong() ?: 30_000)
-        ex.json(okOr422(r.ok), r.toJson() + mapOf("tab" to handler.activeTab()))
+        val r = render.await(b.strings("files").map { File(it) }, (b["timeoutMs"] as? Number)?.toLong() ?: 30_000)
+        ex.json(okOr422(r.ok), r.toJson() + mapOf("tab" to tabs.activeTab()))
     }
 
     private suspend fun touch(ex: HttpExchange) {
@@ -140,8 +150,8 @@ internal class CliEndpoint(
         val type = b.string("type") ?: "tap"
         val by = b.string("by") ?: "viewer"
         val settle = b["settle"] != false
-        val r = b.string("at")?.let { handler.touchAt(it, type, by, settle) }
-            ?: handler.touch(type, (b["x"] as Number).toInt(), (b["y"] as Number).toInt(), by, settle)
+        val r = b.string("at")?.let { input.touchAt(it, type, by, settle) }
+            ?: input.touch(type, (b["x"] as Number).toInt(), (b["y"] as Number).toInt(), by, settle)
         ex.json(touchCode(r), r.toJson())
     }
 
@@ -155,7 +165,7 @@ internal class CliEndpoint(
         val b = ex.body()
         val until = b.string("until")
         val screens = (b["screens"] as? Number)?.toDouble() ?: if (until != null) ScrollUseCase.MAX_SCREENS else 1.0
-        val r = handler.scroll(screens, b["horizontal"] == true, b.string("at"), b.string("by") ?: "cli", until)
+        val r = input.scroll(screens, b["horizontal"] == true, b.string("at"), b.string("by") ?: "cli", until)
         val code = when (r) {
             is ScrollResult.Missed -> r.miss.status()
             is ScrollResult.Settled -> if (r.result.ok && r.sought && r.found == null) 404 else okOr422(r.result.ok)
@@ -165,7 +175,7 @@ internal class CliEndpoint(
 
     private suspend fun type(ex: HttpExchange) {
         val b = ex.body()
-        val r = handler.type(b.string("text") ?: "", b.string("by") ?: "cli")
+        val r = input.type(b.string("text") ?: "", b.string("by") ?: "cli")
         ex.json(okOr422(r is TypeResult.Settled && r.result.ok), r.toJson())
     }
 

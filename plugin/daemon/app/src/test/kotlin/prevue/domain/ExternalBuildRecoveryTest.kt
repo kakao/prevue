@@ -15,7 +15,6 @@ import prevue.domain.port.FailureKind
 import prevue.daemon.fake.FakeClock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
-import prevue.daemon.fake.workspace
 
 class ExternalBuildRecoveryTest {
     private val fx = Fixture()
@@ -23,7 +22,7 @@ class ExternalBuildRecoveryTest {
 
     @AfterEach fun tearDown() = fx.close()
 
-    private fun opened() = fx.useCases(FakeClock()).also {
+    private fun opened() = fx.graph(FakeClock()).also {
         fx.file.setLastModified(1)
         runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
@@ -111,7 +110,7 @@ class ExternalBuildRecoveryTest {
     }
 
     @Test fun `외부 빌드와 관계없는 클래스 누락은 즉시 실패한다`() = runBlocking {
-        val uc = fx.useCases(FakeClock())
+        val uc = fx.graph(FakeClock())
         fx.renderer.failures += FailureKind.NOT_FOUND
         val result = uc.openPreview(fx.file.path, null, emptyMap(), "test")
         assertFalse(result.ok)

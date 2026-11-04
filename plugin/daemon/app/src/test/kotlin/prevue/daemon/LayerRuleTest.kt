@@ -45,7 +45,7 @@ class LayerRuleTest {
             "entity/A.kt" to "package prevue.entity\nimport prevue.domain.model.Status\n",
             "domain/B.kt" to "package prevue.domain\nval x = prevue.adapter.render.RenderEngine::class\n",
             "domain/C.kt" to "package prevue.domain\nimport prevue.daemon.Json\n",
-            "adapter/http/D.kt" to "package prevue.adapter.http\nimport prevue.adapter.cli.CliHandler\n",
+            "adapter/http/D.kt" to "package prevue.adapter.http\nimport prevue.adapter.cli.CliTabs\n",
             "adapter/cli/E.kt" to "package prevue.adapter.cli\nimport prevue.adapter.browser.BrowserState\n",
             "adapter/render/F.kt" to "package prevue.adapter.render\nimport prevue.adapter.http.Server\n",
             "adapter/browser/G.kt" to "package prevue.adapter.browser\nimport prevue.daemon.Main\n",
@@ -56,7 +56,7 @@ class LayerRuleTest {
             "adapter/http/P.kt" to "package prevue.adapter.http\nimport prevue.adapter.render.RenderEngine\n",
             // ② 기술 어댑터는 domain 중 port 만 안다.
             "adapter/render/Q.kt" to "package prevue.adapter.render\nimport prevue.domain.model.Status\n",
-            "adapter/compile/Q2.kt" to "package prevue.adapter.compile\nimport prevue.domain.UseCases\n",
+            "adapter/compile/Q2.kt" to "package prevue.adapter.compile\nimport prevue.domain.ReadStatusUseCase\n",
             // ③ runtime 은 유스케이스(domain 루트)를 모른다.
             "domain/runtime/R.kt" to "package prevue.domain.runtime\nimport prevue.domain.FillBoardUseCase\n",
             // ④ 입구는 runtime 을 모른다.
@@ -71,12 +71,13 @@ class LayerRuleTest {
             "entity/Z2.kt" to "package prevue.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
             "domain/Z3.kt" to "package prevue.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
-            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.UseCases\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliHandler\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
+            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.ReadStatusUseCase\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliTabs\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
             "adapter/cli/H.kt" to "package prevue.adapter.cli\nimport prevue.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.entity.Picked\n",
             "domain/I.kt" to "package prevue.domain\nimport prevue.entity.PreviewSpec\nimport prevue.domain.port.Clock\nimport prevue.domain.runtime.Workspace\n",
             "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "entity/K.kt" to "package prevue.entity\nimport kotlinx.serialization.Serializable\n",
             "domain/L.kt" to "package prevue.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
+            "domain/L3.kt" to "package prevue.domain\nimport dev.zacsweers.metro.Inject\nimport dev.zacsweers.metro.SingleIn\n",
             "domain/N.kt" to "package prevue.domain\nimport prevue.render.Shim\n",
             "domain/O2.kt" to "package prevue.domain\nval o2 = \"com.acme.prevue.adapter.render.X\"\n",
             "domain/O.kt" to "package prevue.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
@@ -96,10 +97,10 @@ class LayerRuleTest {
             "entity/Px.kt" to "package prevue.entity\n@JvmInline value class Px(val v: Int)\n",
             "entity/Picked.kt" to "package prevue.entity\ndata class Picked(val id: String)\n",
             "entity/Lonely.kt" to "package prevue.entity\nsealed interface Lonely\n",
-            "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.UseCases\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
+            "adapter/hotswap/X.kt" to "package prevue.adapter.hotswap\nimport prevue.domain.ReadStatusUseCase\nimport prevue.domain.model.ReloadResult\nimport prevue.domain.port.SourceChange\n",
             // 조립은 구현 타입을 모른다 — 공개여도(ProcessMemory) 그래프가 잇는다.
             "Wiring.kt" to "package prevue.daemon\nimport prevue.adapter.process.ProcessMemory\n",
-            "Graph.kt" to "package prevue.daemon\nimport prevue.adapter.infra.Closer\nimport prevue.adapter.entry.EntryPoints\nimport prevue.domain.UseCases\nimport prevue.entity.ModuleInfo\n",
+            "Graph.kt" to "package prevue.daemon\nimport prevue.adapter.infra.Closer\nimport prevue.adapter.entry.EntryPoints\nimport prevue.domain.ReadStatusUseCase\nimport prevue.entity.ModuleInfo\n",
         )
         assertEquals(
             listOf("entity/A.kt", "domain/B.kt", "domain/C.kt", "adapter/http/D.kt", "adapter/cli/E.kt", "adapter/render/F.kt", "adapter/browser/G.kt",
@@ -124,7 +125,7 @@ object LayerRule {
     private val ref = Regex("""(?<![\w.])prevue\.((?:${DAEMON_PACKAGES.joinToString("|")})\.[\w.]*)""")
     private val CORE = setOf("entity", "domain")
     /** 데몬 패키지는 위 ref 규칙이 가린다 — 여기서는 통과시켜 한 위반을 두 번 세지 않는다. 코덱(`prevue.json`) · 셈(`prevue.render`)은 core 밖이다. */
-    private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.")
+    private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.", "dev.zacsweers.metro.")
 
     fun mentionsDaemon(text: String): Boolean = text.lineSequence().filterNot { it.startsWith("package ") }.any(ref::containsMatchIn)
     /** D-139. 그림은 entity `Bitmap` 값으로 든다 — AWT 는 render · browser 어댑터만 안다. 파일 시스템 API 의 다른 길(nio · kotlin.io.path)도 core 밖이다. */

@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.ShowResult
 import prevue.domain.model.TabMove
 import prevue.domain.model.WorkspaceEvent
@@ -14,6 +15,7 @@ import prevue.domain.runtime.Workspace
  * 선택은 지우지 않는다 — `파일:라인`은 탭이 바뀌어도 맞는 정보다.
  * [since]는 이 열기가 시작된 시각(epoch ms) — 데몬을 띄우며 연 것이면 조립이 JVM 시작을 준다(뷰어의 콜드 시간, D-63).
  */
+@Inject
 class OpenPreviewUseCase(private val ws: Workspace, private val tabs: Tabs) {
     suspend operator fun invoke(target: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult = ws.exclusive { ed ->
         val key = tabs.keyOf(target)

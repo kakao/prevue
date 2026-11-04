@@ -25,9 +25,6 @@ import prevue.adapter.render.RenderEngine
 import prevue.adapter.source.ProjectFiles
 import prevue.adapter.source.SourcePreviewRepository
 import prevue.adapter.watch.PollingSourceWatcher
-import prevue.domain.port.Ports
-import prevue.domain.UseCases
-import prevue.domain.port.Watchers
 import prevue.entity.ModuleInfo
 import prevue.domain.port.Clock
 import prevue.domain.port.FailureKind
@@ -37,6 +34,10 @@ import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.eventually
 import prevue.json.Json
 import javax.imageio.ImageIO
+import prevue.daemon.fake.TestGraph
+import prevue.adapter.entry.TargetRepo
+import prevue.daemon.fake.TestPorts
+import prevue.daemon.fake.testGraph
 
 /**
  * 빌드에 이미 있는 프리뷰 없는 스텁 파일에 본문과 `@Preview`를 더해 저장하자마자 연다(README 영상 take 7의 `HomeScreen.kt`).
@@ -49,7 +50,7 @@ import javax.imageio.ImageIO
 class BlankRenderIntegrationTest {
     private val out = Files.createTempDirectory("prevue-blank").toFile()
     private lateinit var engine: RenderEngine
-    private lateinit var uc: UseCases
+    private lateinit var uc: TestGraph
     private lateinit var ws: Workspace
     private lateinit var compiler: HotCompiler
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -66,9 +67,9 @@ class BlankRenderIntegrationTest {
         stub = PearlFixture.stubCopy(appRoot)
         val watched = listOf(appRoot)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
-        uc = UseCases(ws, Ports(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) }),
-            scope, Watchers(sources = PollingSourceWatcher(watched)))
-        ui = EntryPoints(uc, 0, PrevueCheckout(PearlFixture.viewer!!), out, scope, {}, log = {}).also { it.hotSwap.start() }
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) },
+            sources = PollingSourceWatcher(watched)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
+        ui = uc.entryPoints.also { it.startWatching() }
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)

@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.Resize
 import prevue.domain.model.ScreenSize
 import prevue.domain.model.ShowResult
@@ -8,6 +9,7 @@ import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 import prevue.domain.runtime.WorkspaceEditor
 
+@Inject
 class ResizeUseCase(private val ws: Workspace, private val live: LiveShot) {
     suspend operator fun invoke(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> within(ed, size, by) }
 

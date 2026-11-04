@@ -13,7 +13,7 @@ import prevue.domain.model.Status
 
 class WorkspaceSnapshotTest {
     private val fx = Fixture()
-    private val uc = fx.useCases()
+    private val uc = fx.graph()
 
     @AfterEach fun tearDown() = fx.close()
 

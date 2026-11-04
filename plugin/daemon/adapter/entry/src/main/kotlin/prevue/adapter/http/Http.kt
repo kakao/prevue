@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets.UTF_8
 import prevue.json.Json
 
 /** [Server]에 싣는 HTTP 입구 하나. 제 길이 아니면 false를 돌려 다음 입구에 넘긴다. */
-internal fun interface HttpEndpoint {
-    suspend fun route(ex: HttpExchange, path: String, method: String): Boolean
+public fun interface HttpEndpoint {
+    public suspend fun route(ex: HttpExchange, path: String, method: String): Boolean
 }
 
 @Suppress("UNCHECKED_CAST")

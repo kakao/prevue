@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import prevue.domain.model.VacantTab
@@ -11,6 +12,7 @@ import java.io.File
 import prevue.domain.runtime.Workspace
 import prevue.domain.runtime.WorkspaceState
 
+@Inject
 class AwaitRenderUseCase(private val ws: Workspace, private val sources: SourceFileRepository) {
     suspend operator fun invoke(files: List<File>, timeoutMs: Long): WaitResult {
         val t0 = ws.nowMs()

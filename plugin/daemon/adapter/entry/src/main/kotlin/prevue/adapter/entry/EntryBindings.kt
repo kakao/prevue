@@ -1,0 +1,54 @@
+package prevue.adapter.entry
+
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.BindingContainer
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import prevue.adapter.browser.BrowserEndpoint
+import prevue.adapter.browser.FrameStreamer
+import prevue.adapter.browser.ViewerTarget
+import prevue.adapter.http.EntryLog
+import prevue.adapter.http.HttpEndpoint
+import prevue.adapter.http.HttpSeat
+import prevue.adapter.http.LiveStats
+import prevue.adapter.http.Relay
+import prevue.adapter.http.Server
+import prevue.domain.ObserveScreenUseCase
+
+@ContributesTo(AppScope::class)
+@BindingContainer
+public object EntryBindings {
+    @Provides
+    internal fun seat(hooks: EntryHooks, checkout: PrevueCheckout): HttpSeat = HttpSeat(hooks.port, checkout.root)
+
+    @Provides
+    internal fun log(hooks: EntryHooks): EntryLog = EntryLog(hooks.log)
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun viewerTarget(target: TargetRepo, checkout: PrevueCheckout): ViewerTarget =
+        ViewerTarget(target.app, checkout.version(), target.branch, target.reveal)
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun frames(screen: ObserveScreenUseCase, relay: Relay, log: EntryLog): FrameStreamer =
+        FrameStreamer(screen.screen, screen.watching, relay.scope, log::invoke)
+
+    @Provides
+    internal fun liveStats(screen: ObserveScreenUseCase, frames: FrameStreamer, browser: BrowserEndpoint): LiveStats = LiveStats {
+        val report = screen.frames.value
+        mapOf(
+            "frames" to report.stats, "frameTrace" to report.trace,
+            "streamSubscribers" to frames.hasSubscribers, "stream" to frames.stats.value.toJson(),
+            "viewers" to browser.viewerCount,
+        )
+    }
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun server(
+        endpoints: Set<HttpEndpoint>, hooks: EntryHooks, checkout: PrevueCheckout, target: TargetRepo, relay: Relay, browser: BrowserEndpoint,
+    ): Server =
+        Server(hooks.port, endpoints.toList(), checkout.viewer, target.outDir, relay.scope.coroutineContext) { restart ->
+            if (restart) browser.announceRestart()
+            hooks.onShutdown()
+        }
+}

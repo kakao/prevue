@@ -48,10 +48,11 @@ class InfraIntegrationTest {
             assertEquals(":feature:pearl", ws.module.module)
             assertTrue(ws.module.modules.containsAll(listOf(":feature:pearl", ":app")))
             assertEquals(1, ws.watchRoots.count { it == copy.parentFile.canonicalFile })
-            val uc = graph.useCases
+            graph.startDaemon()
+            val uc = graph
             assertNotNull(uc.readStatus().watch)
-            assertNotNull(graph.watchers.builds)
-            assertNotNull(graph.watchers.values)
+            assertNotNull(graph.builds)
+            assertNotNull(graph.values)
             assertEquals(graph.target.outDir.absolutePath, uc.readStatus().engine.out)
             uc.rememberValues()
             val first = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
@@ -70,10 +71,11 @@ class InfraIntegrationTest {
         val copy = PearlFixture.appCopy(File(dir, "no-watch"))
         withGraph(config.copy(watching = false, extraWatch = listOf(dir))) { graph ->
             assertTrue(graph.workspace.watchRoots.isEmpty())
-            val uc = graph.useCases
+            graph.startDaemon()
+            val uc = graph
             assertNull(uc.readStatus().watch)
-            assertNull(graph.watchers.builds)
-            assertNull(graph.watchers.values)
+            assertNull(graph.builds)
+            assertNull(graph.values)
             val shown = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(shown.ok, shown.message.toString())
         }
@@ -116,12 +118,12 @@ class InfraIntegrationTest {
         }
     }
 
-    private suspend fun withGraph(config: InfraConfig, block: suspend CoroutineScope.(PrevueGraph) -> Unit): List<String> {
+    private suspend fun withGraph(config: InfraConfig, block: suspend CoroutineScope.(InfraGraph) -> Unit): List<String> {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val logs = CopyOnWriteArrayList<String>()
         val closer = Closer { logs += it }
         try {
-            val graph = createGraphFactory<PrevueGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), DaemonHooks({}) {}, closer)
+            val graph = createGraphFactory<InfraGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), DaemonHooks({}) {}, closer)
             scope.block(graph)
         } finally {
             scope.cancel()

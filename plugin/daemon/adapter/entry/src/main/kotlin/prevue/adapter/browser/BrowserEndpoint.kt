@@ -1,13 +1,16 @@
 package prevue.adapter.browser
 
 import com.sun.net.httpserver.HttpExchange
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.IOException
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -23,21 +26,29 @@ import prevue.adapter.http.mapper.toJson
 import prevue.adapter.http.mapper.toPointed
 import prevue.adapter.http.mapper.toScreenSize
 import prevue.json.string
+import prevue.adapter.http.EntryLog
 import prevue.adapter.http.HttpEndpoint
+import prevue.adapter.http.Relay
 import prevue.adapter.http.body
 import prevue.adapter.http.json
 
-internal class BrowserEndpoint(
+@SingleIn(AppScope::class)
+@ContributesIntoSet(AppScope::class)
+public class BrowserEndpoint @Inject internal constructor(
     private val presenter: BrowserPresenter,
+    private val tabs: BrowserTabs,
+    input: BrowserInput,
+    private val pointing: BrowserPointing,
     private val frames: FrameStreamer,
-    private val scope: CoroutineScope,
-    app: () -> Pair<String?, ByteArray?> = { null to null },
-    private val version: String? = null,
-    private val reveal: (() -> Unit)? = null,
-    private val log: (String) -> Unit = {},
-    private val write: CoroutineContext = Dispatchers.IO,
+    relay: Relay,
+    target: ViewerTarget,
+    private val log: EntryLog,
 ) : HttpEndpoint {
-    private val identity by lazy(app)
+    private val scope = relay.scope
+    private val write: CoroutineContext = Dispatchers.IO
+    private val identity by lazy(target.app)
+    private val version = target.version
+    private val reveal = target.reveal
 
     private class Viewer(val out: OutputStream) {
         val state = Channel<ByteArray>(Channel.CONFLATED)
@@ -48,23 +59,23 @@ internal class BrowserEndpoint(
     private val viewers = MutableStateFlow<List<Viewer>?>(emptyList())
     private val boot = UUID.randomUUID().toString()
 
-    val viewerCount: Int get() = viewers.value.orEmpty().size
+    internal val viewerCount: Int get() = viewers.value.orEmpty().size
 
-    fun announceRestart() {
+    internal fun announceRestart() {
         val line = line(mapOf("type" to "ui", "event" to mapOf("kind" to "restart")))
         for (v in viewers.value.orEmpty()) v.ui.trySend(line)
     }
 
-    fun close() {
+    internal fun close() {
         viewers.getAndUpdate { null }?.forEach(Viewer::hangUp)
     }
 
-    fun pushState(st: BrowserState) {
+    internal fun pushState(st: BrowserState) {
         val line = stateLine(st)
         for (v in viewers.value.orEmpty()) v.state.trySend(line)
     }
 
-    fun pushUi(ev: UiEvent) {
+    internal fun pushUi(ev: UiEvent) {
         val line = line(mapOf("type" to "ui", "event" to ev.toJson()))
         for (v in viewers.value.orEmpty()) if (v.ui.trySend(line).isFailure) drop(v)
     }
@@ -85,8 +96,8 @@ internal class BrowserEndpoint(
 
     private suspend fun routeData(ex: HttpExchange, path: String, method: String): Boolean {
         when {
-            path == "/project-files.json" -> ex.json(200, presenter.sourceIndex()?.toJson() ?: emptyMap<String, Any?>())
-            path == "/preview-files.json" -> ex.json(200, presenter.previewFiles())
+            path == "/project-files.json" -> ex.json(200, tabs.sourceIndex()?.toJson() ?: emptyMap<String, Any?>())
+            path == "/preview-files.json" -> ex.json(200, tabs.previewFiles())
             path == "/viewer/state" -> ex.json(200, presenter.current().toJson())
             path == "/app.json" -> ex.json(200, appJson())
             path == "/app-icon.png" && method == "GET" -> png(ex, identity.second, "max-age=3600")
@@ -140,26 +151,26 @@ internal class BrowserEndpoint(
     }
 
     private val fireAndForget: Map<String, (Map<String, Any?>) -> Unit> = mapOf(
-        "focus" to { b -> presenter.enterFocus(b.int("index")) },
-        "exit" to { _ -> presenter.exitFocus() },
-        "interactive" to { b -> presenter.setSingleInteractive(b["on"] == true) },
-        "touch" to { b -> presenter.touch(b.string("type") ?: "tap", b.int("x"), b.int("y")) },
-        "wheel" to { b -> presenter.wheel(b.int("x"), b.int("y"), b.float("dx"), b.float("dy")) },
-        "cancel" to { _ -> presenter.cancelChoice() },
-        "resize" to { b -> presenter.resize(b.toScreenSize() ?: error("size나 device가 필요하다")) },
-        "tab" to { b -> presenter.switchTab(b.string("key") ?: error("key가 필요하다")) },
-        "close" to { b -> presenter.closeTab(b.string("key") ?: error("key가 필요하다")) },
+        "focus" to { b -> input.enterFocus(b.int("index")) },
+        "exit" to { _ -> input.exitFocus() },
+        "interactive" to { b -> input.setSingleInteractive(b["on"] == true) },
+        "touch" to { b -> input.touch(b.string("type") ?: "tap", b.int("x"), b.int("y")) },
+        "wheel" to { b -> input.wheel(b.int("x"), b.int("y"), b.float("dx"), b.float("dy")) },
+        "cancel" to { _ -> pointing.cancelChoice() },
+        "resize" to { b -> input.resize(b.toScreenSize() ?: error("size나 device가 필요하다")) },
+        "tab" to { b -> tabs.switchTab(b.string("key") ?: error("key가 필요하다")) },
+        "close" to { b -> tabs.closeTab(b.string("key") ?: error("key가 필요하다")) },
     )
 
     private suspend fun answer(ex: HttpExchange, intent: String, b: Map<String, Any?>) {
         when (intent) {
-            "point" -> ex.json(200, presenter.point(
+            "point" -> ex.json(200, pointing.point(
                 b.string("fileName") ?: error("fileName이 필요하다"), (b["line"] as? Number)?.toInt() ?: error("line이 필요하다"), b.toPointed(),
             ).toJson())
-            "choose" -> ex.json(200, presenter.choose(b.string("path") ?: error("path가 필요하다")).toJson())
-            "open" -> ex.json(200, presenter.open(b.string("file") ?: error("file(풀패스)이 필요하다")).toJson())
+            "choose" -> ex.json(200, pointing.choose(b.string("path") ?: error("path가 필요하다")).toJson())
+            "open" -> ex.json(200, tabs.open(b.string("file") ?: error("file(풀패스)이 필요하다")).toJson())
             "reveal" -> revealRepo(ex)
-            "catchup" -> ex.json(200, mapOf("ok" to true, "treeUrl" to presenter.catchUp()))
+            "catchup" -> ex.json(200, mapOf("ok" to true, "treeUrl" to pointing.catchUp()))
             else -> ex.json(404, mapOf("ok" to false, "error" to "no intent $intent"))
         }
     }

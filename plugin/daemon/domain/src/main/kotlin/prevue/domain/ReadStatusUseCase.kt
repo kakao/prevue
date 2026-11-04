@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.EngineStats
 import prevue.entity.ModuleInfo
 import prevue.domain.model.ScreenSize
@@ -10,10 +11,12 @@ import prevue.domain.port.Compiler
 import prevue.domain.port.MemoryMeter
 import prevue.domain.port.PreviewRenderer
 import prevue.domain.port.SourceWatcher
+import prevue.domain.port.ValueFiles
 import prevue.domain.runtime.Workspace
 import prevue.domain.runtime.WorkspaceState
 
 /** 데몬이 지금 무엇을 보여 주고 어떤 상태인가 — 에이전트의 `prevue status`. 줄을 서지 않는다: 저장 중에도 물을 수 있어야 한다. */
+@Inject
 class ReadStatusUseCase(
     private val ws: Workspace,
     private val engine: PreviewRenderer,
@@ -21,7 +24,7 @@ class ReadStatusUseCase(
     private val sources: SourceWatcher?,
     private val builds: BuildWatcher?,
     private val memory: MemoryMeter,
-    private val values: SourceWatcher? = null,
+    @ValueFiles private val values: SourceWatcher?,
 ) {
     operator fun invoke(): Status {
         val rt = Runtime.getRuntime()

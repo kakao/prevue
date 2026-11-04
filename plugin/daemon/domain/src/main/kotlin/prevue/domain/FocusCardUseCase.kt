@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.FocusResult
 import prevue.domain.model.Resize
 import prevue.domain.model.ScreenSize
@@ -13,6 +14,7 @@ import prevue.domain.runtime.WorkspaceEditor
  * **들고 날 때 모두 새 태스크로 그린다** — on/off에 상태가 초기화되는 것이 명세다(D-11). 들어갈 때 살려 두려다 보드 채우기가
  * 가져간 태스크를 잘못 물려받는 쪽이 더 나쁘고, 나올 때 조작한 화면(상세로 넘어간 목록)이 카드에 남으면 보드가 그 파일의 첫 화면이 아니다.
  */
+@Inject
 class FocusCardUseCase(
     private val ws: Workspace, private val live: LiveShot, private val fillBoard: FillBoardUseCase, private val resize: ResizeUseCase,
 ) {

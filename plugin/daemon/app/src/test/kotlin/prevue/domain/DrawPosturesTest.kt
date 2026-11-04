@@ -14,7 +14,7 @@ import prevue.domain.port.Clock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.awaitUntil
-import prevue.daemon.fake.workspace
+import prevue.daemon.fake.TestGraph
 
 /** 자세별 그림 미리 그리기 — 지금 기기의 다른 자세와 크기 막대의 칸을 라이브 옆 태스크로 그려 뷰어 상태에 싣는다. */
 class DrawPosturesTest {
@@ -25,19 +25,19 @@ class DrawPosturesTest {
     private val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
     private val bar = listOf("original", "narrow", "foldable", "s26", "pixel9", "ip17", "ipair", "ip17pm", "duo", "fold8", "ultra", "pixelfold", "tablet")
 
-    private fun opened(quietMs: Long = 0): UseCases =
-        fx.useCases(Clock(System::currentTimeMillis), postureQuietMs = quietMs).also {
+    private fun opened(quietMs: Long = 0): TestGraph =
+        fx.graph(Clock(System::currentTimeMillis), postureQuietMs = quietMs).also {
             runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
             it.workspace.awaitBoardFilled()
         }
 
-    private fun UseCases.pick(size: ScreenSize?) = runBlocking { focusCard(0, on = true, by = "test", size = size) }
+    private fun TestGraph.pick(size: ScreenSize?) = runBlocking { focusCard(0, on = true, by = "test", size = size) }
 
-    private fun UseCases.drawn(): Map<ScreenSize, String> = readStatus().postures.mapValues { it.value.out.preview.previewId }
+    private fun TestGraph.drawn(): Map<ScreenSize, String> = readStatus().postures.mapValues { it.value.out.preview.previewId }
 
-    private fun UseCases.awaitDrawn(n: Int) = awaitUntil("자세별 그림 ${n}장 — 지금 ${drawn().keys}") { drawn().size == n }
+    private fun TestGraph.awaitDrawn(n: Int) = awaitUntil("자세별 그림 ${n}장 — 지금 ${drawn().keys}") { drawn().size == n }
 
-    private fun UseCases.id() = workspace.now.board!!.focusCard.spec.previewId
+    private fun TestGraph.id() = workspace.now.board!!.focusCard.spec.previewId
 
     private fun asideKeys(): List<String> = fx.renderer.asides.map { it.previewId.substringAfter('@') }
 
