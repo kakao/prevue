@@ -68,7 +68,7 @@
     const target = document.querySelector('.cd[data-i="0"]'), stage = target.querySelector(".st");
     const host = scene.host, d = handoffMs(false);
     if (mode === "hero") {
-      // 지금 뷰어(preparation.js finish)와 같은 흐름
+      // 지금 뷰어(viewer-src/src/preparation/PreparationScreen.ts finish)와 같은 흐름
       const from = scene.image.getBoundingClientRect(), to = stage.getBoundingClientRect();
       const flight = scene.image.cloneNode(); flight.className = "flight";
       Object.assign(flight.style, { left: `${from.x}px`, top: `${from.y}px`, width: `${from.width}px`, height: `${from.height}px` });

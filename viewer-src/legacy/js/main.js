@@ -8,10 +8,6 @@ import { clearTrees, applyReveal, cardAt, returnCard, cardStage, ringCard } from
 import { renderFocus, renarrow, fitStage, focusImage, syncHistory, frameOf, morphIn, morphOut } from "./focus.js";
 import { renderError, setStatus, flash } from "./capsule.js";
 import { transition, transitioning } from "./motion.js";
-import { prepareViewer } from "./preparation.js";
-
-const preparation = prepareViewer();
-
 const boardView = $("boardView"), focusView = $("focusView"), vacantView = $("vacantView"), vacantMsg = $("vacantMsg");
 
 
@@ -60,7 +56,6 @@ export function drawLegacy(s) {
   focusView.hidden = s.screen !== "focus";
   vacantView.hidden = s.screen !== "vacant";
   vacantMsg.textContent = daemonText(s.vacant);
-  $("buildNotice").hidden = !s.buildPending;
   renderFocus(s.screen === "focus" ? s.focus : null);
   syncHistory(s);
   renderError(daemonText(s.error));
@@ -69,7 +64,6 @@ export function drawLegacy(s) {
   if (arrive) scrollTo(0, scrolls.get(file) || 0);
   else if (wasBoard && s.screen !== "board") scrollTo(0, 0);
   applyReveal();                             // 빠른 열기에서 고른 함수 — 되살린 스크롤 위에서 그 묶음으로 간다
-  preparation?.update(s);
 }
 
 let draw = s => drawLegacy(s);
@@ -137,7 +131,7 @@ const loadProjectFiles = () => {
 
 // 끊겼다 다시 붙으면 이전 화면을 살리지 않고 페이지를 새로 연다 — 화면은 데몬 상태가 처음부터 그린다.
 let lost = false;
-let connection = () => {};
+let connection = () => {}, preparation = null;
 const lostView = () => { preparation?.fail(phrase("prep.lost")); setStatus(phrase("status.lost"), "error"); connection("lost"); store.st = null; };
 
 // 데몬이 다시 뜬다(warmup · 스스로 다시 띄움, D-112). 끊김이 아니라 다시 시작이다 — 보던 화면을 그대로 두고,
@@ -167,10 +161,12 @@ function receive(s) {
 /**
  * render 는 상태와 알약을 그대로 둘지를 받는다. connection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다.
  * previewFiles 는 빠른 열기의 목록이 바뀌었다는 데몬의 알림을 받는다.
+ * prepared 는 준비 화면이 이어받은 요청이다 — 있으면 끊김을 그 화면의 실패로 알리고, 다시 시작 알림은 받지 않는다.
  */
-export function startViewer(render, onConnection, onPreviewFiles) {
+export function startViewer(render, onConnection, onPreviewFiles, prepared = null) {
   draw = s => { leaveBoard(s); render(s, statusHeld(s)); };
   connection = onConnection;
+  preparation = prepared;
   connect({
     open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },
     state: receive,

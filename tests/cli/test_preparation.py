@@ -175,6 +175,15 @@ else:
                 self.assertIn("createMessages", response.read().decode())
         process.communicate(timeout=5)
 
+    def test_preparation_serves_the_shared_react_chunk(self):
+        # 준비 장면은 뷰어와 같은 React 한 벌(js/react.js)을 import 한다 — 못 받으면 준비 화면이 뜨지 않는다.
+        (self.root / "viewer/js/react.js").write_text("export const react = 1;\n")
+        process = self.launch("--module", ":ui", "--show")
+        _, url = self.wait_state()
+        with urlopen(url.split("/preparation/")[0] + "/js/react.js", timeout=2) as response:
+            self.assertEqual(response.status, 200)
+        process.communicate(timeout=5)
+
     def test_fileless_start_accepts_the_existing_status_response_and_limits_cors(self):
         process = self.launch("--module", ":ui", "--show", PREPARATION_TEST_STATUS_ONLY="1")
         _, url = self.wait_state()

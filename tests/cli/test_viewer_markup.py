@@ -84,9 +84,10 @@ class PreparationNames(unittest.TestCase):
     # 2단계부터는 뷰어 페이지(index.html)가 준비 장면을 이어받아 그 페이지의 스타일과 한 페이지에 선다. 준비 장면의 클래스 · id 가
     # 뷰어 스타일의 선택자에 나오면 그 규칙을 함께 받는다 — .progress 가 헤더 진행 줄(opacity 0)을 받아 네 칸 막대가 사라졌다.
     def test_preparation_names_do_not_appear_in_viewer_styles(self):
-        viewer = Path(__file__).resolve().parents[2] / "plugin/viewer"
-        markup = (viewer / "js/preparation-markup.js").read_text()
-        names = [r"\." + re.escape(c) for attr in re.findall(r'class="([^"]+)"', markup) for c in attr.split()]
+        root = Path(__file__).resolve().parents[2]
+        viewer = root / "plugin/viewer"
+        markup = "".join(p.read_text() for p in sorted((root / "viewer-src/src/preparation").glob("*.tsx")))
+        names = [r"\." + re.escape(c) for attr in re.findall(r'className="([^"]+)"', markup) for c in attr.split()]
         names += ["#" + re.escape(i) for i in re.findall(r'id="([^"]+)"', markup)]
         sheets = [h for h in re.findall(r'<link rel="stylesheet" href="([^"]+)"', (viewer / "index.html").read_text()) if h != "preparation.css"]
         self.assertIn("style.css", sheets)
