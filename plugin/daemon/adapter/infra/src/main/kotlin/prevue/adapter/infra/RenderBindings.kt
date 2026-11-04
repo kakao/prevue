@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import prevue.adapter.compile.HotCompiler
@@ -15,10 +16,6 @@ import prevue.adapter.render.RenderEngine
 import prevue.adapter.source.SourcePreviewRepository
 import prevue.domain.port.PreviewRepository
 import prevue.domain.port.PrevueDispatchers
-
-internal fun interface EngineBoot {
-    fun boot(): RenderEngine
-}
 
 @ContributesTo(AppScope::class)
 @BindingContainer
@@ -35,14 +32,18 @@ public object RenderBindings {
     internal fun engine(boot: EngineBoot, paths: DaemonPaths, scope: CoroutineScope, closer: Closer, dispatchers: PrevueDispatchers): BootingEngine =
         closer.own(BootingEngine(scope, paths.out, dispatchers, boot::boot))
 
-    @Provides
-    internal fun engineBoot(config: InfraConfig, renderSpec: ClasspathSpec, paths: DaemonPaths, log: InfraLog, dispatchers: PrevueDispatchers): EngineBoot =
-        EngineBoot { boot(config, renderSpec, paths, log, dispatchers) }
-
     @Provides @SingleIn(AppScope::class)
     internal fun previews(renderSpec: ClasspathSpec): PreviewRepository = SourcePreviewRepository(renderSpec.classPath)
+}
 
-    private fun boot(config: InfraConfig, renderSpec: ClasspathSpec, paths: DaemonPaths, log: InfraLog, dispatchers: PrevueDispatchers): RenderEngine {
+public class EngineBoot @Inject internal constructor(
+    private val config: InfraConfig,
+    private val renderSpec: ClasspathSpec,
+    private val paths: DaemonPaths,
+    private val log: InfraLog,
+    private val dispatchers: PrevueDispatchers,
+) {
+    internal fun boot(): RenderEngine {
         val original = File(renderSpec.resourceApkPath)
         val t = System.nanoTime()
         val apk = runCatching { ApkWithAssets.of(original, renderSpec.assetsDirs.map(::File), paths.mine) }

@@ -17,7 +17,7 @@ public object CompileBindings {
     ): HotCompiler {
         val spec = dumps.target
         log("부트스트랩: ${spec.project} ${spec.variant} / kotlin module '${spec.kotlinModuleName}' / android.jar ${toolchain.androidJar.name}")
-        val jars = toolchain.jars
+        val jars = CompilerJars.find(toolchain.compilerDir)
         return closer.own(HotCompiler({ dumps.specOf(it, paths) }, jars.jars, toolchain.bridge, jars.composePlugin, toolchain.androidJar,
             paths.overlay, paths.overlayModules, dispatchers))
     }

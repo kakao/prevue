@@ -11,7 +11,7 @@ import prevue.adapter.dump.WatchGraph
 import prevue.entity.ModuleGraph
 import prevue.entity.ModuleInfo
 
-internal class CompilerToolchain(val jars: CompilerJars, val bridge: File, val androidJar: File)
+internal class CompilerToolchain(val compilerDir: File, val bridge: File, val androidJar: File)
 
 @ContributesTo(AppScope::class)
 @BindingContainer
@@ -21,7 +21,7 @@ public object TargetBindings {
 
     @Provides @SingleIn(AppScope::class)
     internal fun toolchain(config: InfraConfig): CompilerToolchain =
-        CompilerToolchain(CompilerJars.find(config.compiler), config.bridge, config.androidJar ?: AndroidPlatforms.findJar())
+        CompilerToolchain(config.compiler, config.bridge, config.androidJar ?: AndroidPlatforms.findJar())
 
     @Provides @SingleIn(AppScope::class)
     internal fun paths(config: InfraConfig, dumps: Dumps): DaemonPaths =

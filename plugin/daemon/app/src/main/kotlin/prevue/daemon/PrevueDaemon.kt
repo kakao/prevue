@@ -24,7 +24,7 @@ class PrevueDaemon(
     private val shutdownTimeoutMs: Long = 30_000,
     private val log: (String) -> Unit = {},
     private val forceExit: (Int) -> Unit = { Runtime.getRuntime().halt(it) },
-    val dispatchers: PrevueDispatchers = PrevueDispatchers(Dispatchers.IO, Dispatchers.Default),
+    val dispatchers: PrevueDispatchers = realDispatchers,
 ) : AutoCloseable {
     private enum class Phase { READY, RUNNING, CLOSING }
     private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null)
@@ -43,6 +43,7 @@ class PrevueDaemon(
         /** NFR-6. 다시 띄우는 값(첫 그림까지 4초대)이 RSS를 잡아 두는 값보다 싸다. `PREVUE_IDLE_MIN`으로 바꾸고 `0`이면 끈다. */
         const val DEFAULT_IDLE_MIN = 10L
         fun idleMinutes(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_IDLE_MIN
+        val realDispatchers = PrevueDispatchers(Dispatchers.IO, Dispatchers.Default)
     }
 
     fun requestStop(reason: String) { requested.complete(StopRequest(reason)) }
