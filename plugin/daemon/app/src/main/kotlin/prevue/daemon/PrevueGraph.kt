@@ -32,6 +32,7 @@ internal interface PrevueGraph {
     val useCases: UseCases
     val entryPoints: EntryPoints
     val target: TargetCheckout
+    val watchers: Watchers
     val rendererLoss: RendererLoss
     val compilerWarmUp: CompilerWarmUp
 

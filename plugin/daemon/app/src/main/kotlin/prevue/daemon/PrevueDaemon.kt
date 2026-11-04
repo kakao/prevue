@@ -43,14 +43,6 @@ class PrevueDaemon(
         fun idleMinutes(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_IDLE_MIN
     }
 
-    fun <T : AutoCloseable> own(resource: T): T {
-        if (life.value.phase == Phase.CLOSING) {
-            resource.close()
-            error("종료 중인 데몬에는 자원을 추가할 수 없다")
-        }
-        return closer.own(resource)
-    }
-
     fun requestStop(reason: String) { requested.complete(StopRequest(reason)) }
 
     fun requestFailure(reason: String, failure: Throwable) { requested.complete(StopRequest(reason, failure = failure)) }

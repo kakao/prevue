@@ -28,8 +28,8 @@ class PrevueDaemonTest {
         val events = CopyOnWriteArrayList<String>()
         val daemon = PrevueDaemon(forceExit = { fail("강제 종료 없이 정리해야 한다") })
         daemon.run {
-            own(AutoCloseable { events += "compiler" })
-            own(AutoCloseable { events += "renderer" })
+            closer.own(AutoCloseable { events += "compiler" })
+            closer.own(AutoCloseable { events += "renderer" })
             scope.launch(start = CoroutineStart.UNDISPATCHED) {
                 try { awaitCancellation() } finally { events += "work" }
             }
@@ -57,7 +57,7 @@ class PrevueDaemonTest {
         val daemon = PrevueDaemon(forceExit = { fail("정리가 멈췄다") })
         daemon.close()
         val closed = AtomicInteger()
-        assertThrows(IllegalStateException::class.java) { daemon.own(AutoCloseable { closed.incrementAndGet() }) }
+        assertThrows(IllegalStateException::class.java) { daemon.closer.own(AutoCloseable { closed.incrementAndGet() }) }
         assertEquals(1, closed.get())
         assertThrows(IllegalStateException::class.java) { daemon.run {} }
     }
@@ -69,7 +69,7 @@ class PrevueDaemonTest {
                 val daemon = PrevueDaemon(forceExit = { fail("시작 실패 정리가 멈췄다") })
                 assertThrows(java.net.BindException::class.java) {
                     daemon.run {
-                        own(AutoCloseable { closed.incrementAndGet() })
+                        closer.own(AutoCloseable { closed.incrementAndGet() })
                         val uc = fx.useCases(scope = scope)
                         serve(EntryPoints(uc, occupied.localPort, PrevueCheckout(File(fx.root, "viewer")), fx.renderer.outDir, scope, {})) { 0 }
                     }
@@ -89,7 +89,7 @@ class PrevueDaemonTest {
             val thread = Thread {
                 try {
                     daemon.run {
-                        own(AutoCloseable { closed.incrementAndGet() })
+                        closer.own(AutoCloseable { closed.incrementAndGet() })
                         val uc = fx.useCases(scope = scope)
                         val ui = EntryPoints(uc, 0, PrevueCheckout(File(fx.root, "viewer")), fx.renderer.outDir, scope, { requestStop("HTTP") })
                         serve(ui) { 0 }
@@ -121,7 +121,7 @@ class PrevueDaemonTest {
         val release = CountDownLatch(1)
         val calls = AtomicInteger()
         val daemon = PrevueDaemon(forceExit = { fail("중복 종료가 멈췄다") })
-        daemon.own(AutoCloseable { calls.incrementAndGet(); entered.countDown(); release.await() })
+        daemon.closer.own(AutoCloseable { calls.incrementAndGet(); entered.countDown(); release.await() })
         val first = CompletableFuture.runAsync { daemon.close() }
         assertTrue(entered.await(2, TimeUnit.SECONDS))
         val second = CompletableFuture.runAsync { daemon.close() }
@@ -137,7 +137,7 @@ class PrevueDaemonTest {
         val release = CountDownLatch(1)
         val forced = CompletableFuture<Int>()
         val daemon = PrevueDaemon(shutdownTimeoutMs = 100, forceExit = { forced.complete(it) })
-        daemon.own(AutoCloseable { release.await() })
+        daemon.closer.own(AutoCloseable { release.await() })
         val closing = CompletableFuture.runAsync { daemon.close() }
         try { assertEquals(1, forced.get(2, TimeUnit.SECONDS)) }
         finally { release.countDown() }

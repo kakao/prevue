@@ -1,5 +1,6 @@
 package prevue.adapter.infra
 
+import java.io.File
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
@@ -9,6 +10,8 @@ import prevue.adapter.dump.ClasspathSpec
 import prevue.adapter.dump.WatchGraph
 import prevue.entity.ModuleGraph
 import prevue.entity.ModuleInfo
+
+internal class AndroidJar(val file: File)
 
 @ContributesTo(AppScope::class)
 @BindingContainer

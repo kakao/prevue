@@ -11,7 +11,7 @@ import prevue.adapter.compile.HotCompiler
 @BindingContainer
 public object CompileBindings {
     @Provides @SingleIn(AppScope::class)
-    internal fun compiler(config: InfraConfig, dumps: Dumps, paths: DaemonPaths, androidJar: AndroidJar, closer: Closer, log: InfraLog): HotCompiler {
+    internal fun compiler(config: InfraConfig, dumps: Dumps, androidJar: AndroidJar, paths: DaemonPaths, closer: Closer, log: InfraLog): HotCompiler {
         val spec = dumps.target
         log("부트스트랩: ${spec.project} ${spec.variant} / kotlin module '${spec.kotlinModuleName}' / android.jar ${androidJar.file.name}")
         val jars = CompilerJars.find(config.compiler)

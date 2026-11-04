@@ -50,6 +50,8 @@ class InfraIntegrationTest {
             assertEquals(1, ws.watchRoots.count { it == copy.parentFile.canonicalFile })
             val uc = graph.useCases
             assertNotNull(uc.readStatus().watch)
+            assertNotNull(graph.watchers.builds)
+            assertNotNull(graph.watchers.values)
             assertEquals(graph.target.outDir.absolutePath, uc.readStatus().engine.out)
             uc.rememberValues()
             val first = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
@@ -70,6 +72,8 @@ class InfraIntegrationTest {
             assertTrue(graph.workspace.watchRoots.isEmpty())
             val uc = graph.useCases
             assertNull(uc.readStatus().watch)
+            assertNull(graph.watchers.builds)
+            assertNull(graph.watchers.values)
             val shown = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(shown.ok, shown.message.toString())
         }

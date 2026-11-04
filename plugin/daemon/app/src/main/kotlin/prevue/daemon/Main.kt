@@ -66,11 +66,12 @@ private fun respawn(args: List<String>) {
 private fun PrevueDaemon.assemble(boot: Boot) {
     val graph = createGraphFactory<PrevueGraph.Factory>()
         .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), DaemonHooks(::log) { requestStop("HTTP /shutdown") }, closer)
+    val renderer = graph.rendererLoss
     val uc = graph.useCases
     log("values XML ${uc.rememberValues()}개")
     indexPreviewFiles(uc)
     val ui = graph.entryPoints
-    watchRenderer(graph.rendererLoss, boot, uc, ui)
+    watchRenderer(renderer, boot, uc, ui)
     serve(ui) { uc.readStatus().lastRenderMs }
     log("http://127.0.0.1:${boot.args.port}/  (${(System.nanoTime() - boot.startedNs) / 1_000_000}ms)")
     val initial = boot.args.show?.let { showInitial(it, uc) }

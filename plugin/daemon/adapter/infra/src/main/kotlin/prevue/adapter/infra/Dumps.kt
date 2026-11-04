@@ -29,5 +29,3 @@ internal class Dumps(val home: ClasspathSpec, val app: ClasspathSpec?) {
             catch (e: IOException) { throw UncheckedIOException(e) }
     }
 }
-
-internal class AndroidJar(val file: File)
