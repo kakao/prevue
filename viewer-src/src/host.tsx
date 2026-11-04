@@ -13,6 +13,6 @@ export function useHost<T extends HTMLElement>(given?: T | null) {
 
 // 외부: React 는 그린 요소에 내부 키(__reactFiber$… · __reactProps$…)를 열거되는 속성으로 단다. 브라우저 검사(CDP)가
 // 그 요소를 값으로 돌려받으면 파이버 사슬을 따라가다 "Object reference chain is too long"으로 실패한다. 값은 그대로 두고 열거만 끈다.
-export function hideReactKeys(element: HTMLElement) {
+export function hideReactKeys(element: Element) {
   for (const key of Object.keys(element)) if (key.startsWith('__react')) Object.defineProperty(element, key, { enumerable: false });
 }

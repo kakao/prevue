@@ -8,6 +8,7 @@ import { ProjectHeader, type AppInfo } from './components/ProjectHeader';
 import { HelpButton, ShortcutHelp } from './components/ShortcutHelp';
 import { NotificationCapsule } from './components/NotificationCapsule';
 import { PreviewBoard, type BoardActions, type BoardHosts } from './components/PreviewBoard';
+import { QuickOpen, type QuickOpenHosts } from './components/QuickOpen';
 import { StaleBanner } from './components/StaleBanner';
 import { StatusPill } from './components/StatusPill';
 import { MessagesContext, type Messages } from './messages';
@@ -17,15 +18,16 @@ import type { ViewerState } from './state';
 /** index.html 이 두는 영역의 바깥 요소 — 기존 모듈이 처음부터 쥐는 요소가 그 안에 섞여 있어 바깥은 마크업이 갖는다. */
 export type Hosts = {
   bar: HTMLElement; brand: HTMLElement; app: HTMLElement; status: HTMLElement; helpButton: HTMLElement;
-  rail: RailHosts; stale: HTMLElement; board: BoardHosts; capsule: HTMLElement; help: HTMLElement;
+  rail: RailHosts; stale: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
 };
 
 export function findHosts(): Hosts {
   const $ = (id: string) => document.getElementById(id)!;
   return {
     bar: $('bar'), brand: $('brand'), app: $('app'), status: $('status'), helpButton: $('helpBtn'),
-    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty') },
-    stale: $('staleBar'), board: { view: $('boardView'), cards: $('cards') }, capsule: $('strip'), help: $('help'),
+    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen') },
+    stale: $('staleBar'), board: { view: $('boardView'), cards: $('cards') },
+    quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
   };
 }
 
@@ -52,6 +54,8 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
     {/* 레일이 접히고 펴진 뒤에 잰다 — 보드의 배율은 레일을 뺀 폭으로 정한다. */}
     <PreviewBoard board={state?.board ?? null} screen={state?.screen ?? null} hosts={hosts.board} actions={board} />
+    {/* 빈 화면은 시작 화면이 갖는다. 팔레트는 새 화면을 그리는 이 커밋에서 걷힌다. */}
+    <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <NotificationCapsule host={hosts.capsule} />
     <ShortcutHelp table={shortcuts} host={hosts.help} />
   </>;
