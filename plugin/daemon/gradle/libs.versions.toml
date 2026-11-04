@@ -31,8 +31,6 @@ kotlin-script-runtime = { module = "org.jetbrains.kotlin:kotlin-script-runtime",
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 # build-logic 의 convention plugin 이 컴파일 때만 본다 — 실행 때는 데몬 빌드가 plugins {} 로 올린 것을 쓴다.
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-# build-logic 의 convention plugin 이 컴파일 때만 본다 — kotlin-gradlePlugin 과 같은 방식.
-metro-gradlePlugin = { module = "dev.zacsweers.metro:gradle-plugin", version.ref = "metro" }
 kotlin-daemon-embeddable = { module = "org.jetbrains.kotlin:kotlin-daemon-embeddable", version.ref = "kotlin" }
 kotlinx-coroutines-core-jvm = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 kotlinx-coroutines-renderer = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines-renderer" }

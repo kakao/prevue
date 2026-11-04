@@ -14,7 +14,8 @@ import prevue.domain.port.MemoryMeter
  */
 @ContributesBinding(AppScope::class)
 @SingleIn(AppScope::class)
-public class ProcessMemory @Inject internal constructor() : MemoryMeter {
+@Inject
+public class ProcessMemory internal constructor() : MemoryMeter {
     private val cached = MutableStateFlow<Pair<Long, Long?>?>(null)
 
     override fun rssMb(): Long? {

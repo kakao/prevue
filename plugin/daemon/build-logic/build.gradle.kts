@@ -22,12 +22,9 @@ kotlin {
 }
 
 dependencies {
+    // Metro 의 Gradle 플러그인은 여기 두지 않는다 — prevue.metro 는 id 로만 적용해 클래스를 안 보고, 실행 클래스패스는 데몬 빌드의 plugins {} 가 올린다.
+    // (그 플러그인은 Java 21 클래스라 17 호환을 찾는 이 컴파일 클래스패스에는 잡히지도 않는다.)
     compileOnly(libs.kotlin.gradlePlugin)
-    // Metro 의 Gradle 플러그인은 Java 21 클래스라 17 호환 변형을 찾는 이 컴파일 클래스패스에 안 잡힌다 — 이 의존만 21 변형을 받는다.
-    // 실행은 문제없다: Gradle 은 bin/prevue 가 고른 JDK 21+(CI 도 21)로 돌고 이 jar 는 그 JVM 에 올라간다.
-    compileOnly(libs.metro.gradlePlugin) {
-        attributes { attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21) }
-    }
 }
 
 // prevue.jvm — 바이트코드는 17로 고정하고 컴파일은 Gradle을 돌리는 JDK(21+)로 한다. 툴체인을 걸면 JDK 17이 따로 깔려 있어야 해서
