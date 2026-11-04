@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 // app — 조립(Main · 입구 묶기) · 브리지 · 테스트와 설치 산출물(prevue.jar · prevue-env). 루트(plugin/daemon)에는 빌드 파일만 둔다(D-140).
 // 바이트코드 17 고정과 코루틴 컴파일 판은 build-logic 의 convention plugin 이 건다.
 plugins {
-    id("prevue.coroutines")
+    id("prevue.metro")
 }
 
 // Kotlin 모듈 이름은 프로젝트 이름을 따른다 — :app 으로 옮기며 prevue_app 이 되면 internal 이름 장식과 .kotlin_module 이

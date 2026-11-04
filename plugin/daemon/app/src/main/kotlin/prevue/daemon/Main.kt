@@ -7,14 +7,12 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import dev.zacsweers.metro.createGraphFactory
 import prevue.adapter.entry.EntryPoints
 import prevue.adapter.entry.PrevueCheckout
-import prevue.adapter.entry.TargetRepo
 import prevue.adapter.infra.Infra
 import prevue.adapter.infra.InfraConfig
 import prevue.domain.UseCases
-import prevue.domain.runtime.Workspace
-import prevue.domain.port.Clock
 
 private fun usage(): Nothing {
     System.err.println(
@@ -66,12 +64,13 @@ private fun respawn(args: List<String>) {
 }
 
 private fun PrevueDaemon.assemble(boot: Boot) {
-    val infra = own(Infra(boot.infra, scope, ::log))
-    val ws = Workspace(infra.module, Clock(System::currentTimeMillis), infra.graph, infra.watchRoots)
-    val uc = UseCases(ws, infra.ports, scope, infra.watchers)
+    val graph = createGraphFactory<PrevueGraph.Factory>()
+        .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), DaemonHooks(::log) { requestStop("HTTP /shutdown") })
+    val infra = own(graph.infra)
+    val uc = graph.useCases
     log("values XML ${uc.rememberValues()}개")
     indexPreviewFiles(uc)
-    val ui = entryPoints(uc, boot, infra)
+    val ui = graph.entryPoints
     watchRenderer(infra, boot, uc, ui)
     serve(ui) { uc.readStatus().lastRenderMs }
     log("http://127.0.0.1:${boot.args.port}/  (${(System.nanoTime() - boot.startedNs) / 1_000_000}ms)")
@@ -96,16 +95,6 @@ private fun PrevueDaemon.indexPreviewFiles(uc: UseCases) {
         }.onFailure { if (it is CancellationException) throw it else log("프리뷰 파일 색인 실패: $it") }
     }
 }
-
-private fun PrevueDaemon.entryPoints(uc: UseCases, boot: Boot, infra: Infra): EntryPoints =
-    EntryPoints(uc, boot.args.port,
-        checkout = PrevueCheckout(boot.args.viewer, root = boot.args.root),
-        outDir = infra.outDir,
-        parentScope = scope,
-        onShutdown = { requestStop("HTTP /shutdown") },
-        log = ::log,
-        target = TargetRepo(app = { infra.appName to infra.appIcon }, branch = infra::branch, reveal = infra::reveal),
-    )
 
 private fun PrevueDaemon.respawnLater(
     argv: List<String>,

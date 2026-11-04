@@ -1,5 +1,9 @@
 package prevue.adapter.process
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import prevue.domain.port.MemoryMeter
@@ -8,7 +12,9 @@ import prevue.domain.port.MemoryMeter
  * `ps`로 이 프로세스의 RSS를 읽는다. JVM은 네이티브를 포함한 RSS를 내주지 않는다(NMT는 layoutlib의 할당을 못 본다).
  * `status`는 뷰어·CLI가 자주 부르므로 1초 동안 같은 값을 돌려준다 — `ps` 한 번이 수 ms다.
  */
-internal object ProcessMemory : MemoryMeter {
+@ContributesBinding(AppScope::class)
+@SingleIn(AppScope::class)
+public class ProcessMemory @Inject internal constructor() : MemoryMeter {
     private val cached = MutableStateFlow<Pair<Long, Long?>?>(null)
 
     override fun rssMb(): Long? {

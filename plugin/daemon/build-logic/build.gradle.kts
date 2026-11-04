@@ -23,6 +23,11 @@ kotlin {
 
 dependencies {
     compileOnly(libs.kotlin.gradlePlugin)
+    // Metro 의 Gradle 플러그인은 Java 21 클래스라 17 호환 변형을 찾는 이 컴파일 클래스패스에 안 잡힌다 — 이 의존만 21 변형을 받는다.
+    // 실행은 문제없다: Gradle 은 bin/prevue 가 고른 JDK 21+(CI 도 21)로 돌고 이 jar 는 그 JVM 에 올라간다.
+    compileOnly(libs.metro.gradlePlugin) {
+        attributes { attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21) }
+    }
 }
 
 // prevue.jvm — 바이트코드는 17로 고정하고 컴파일은 Gradle을 돌리는 JDK(21+)로 한다. 툴체인을 걸면 JDK 17이 따로 깔려 있어야 해서
@@ -30,6 +35,7 @@ dependencies {
 // release · jdk-release는 API도 17로 묶는다 — Gradle을 돌린 JDK가 데몬의 JDK보다 새로워도 데몬에 없는 API를 부르지 않는다.
 // prevue.coroutines — StateFlow·SharedFlow(D-42). 실행 때는 렌더러 jar 가 품은 kotlinx.coroutines 를 쓴다 — 따로 실으면 두 벌이 되어
 // 클래스패스 순서가 렌더러 안의 코루틴을 바꿔 끼운다. 컴파일만 같은 계열의 판에 댄다. entity 는 코루틴도 모른다.
+// prevue.metro — 그 위에 Metro 컴파일러 플러그인(D-144). 그래프가 있는 :app 과 바인딩을 기여하는 adapter 모듈만 건다 — :domain · :entity 는 Metro 를 모른다.
 gradlePlugin {
     plugins {
         register("prevueJvm") {
@@ -39,6 +45,10 @@ gradlePlugin {
         register("prevueCoroutines") {
             id = "prevue.coroutines"
             implementationClass = "prevue.convention.PrevueCoroutinesPlugin"
+        }
+        register("prevueMetro") {
+            id = "prevue.metro"
+            implementationClass = "prevue.convention.PrevueMetroPlugin"
         }
     }
 }

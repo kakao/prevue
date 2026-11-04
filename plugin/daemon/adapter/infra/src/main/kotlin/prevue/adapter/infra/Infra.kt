@@ -14,7 +14,6 @@ import prevue.adapter.compile.HotCompiler
 import prevue.adapter.dump.AppIdentity
 import prevue.adapter.dump.ClasspathSpec
 import prevue.adapter.dump.WatchGraph
-import prevue.adapter.process.ProcessMemory
 import prevue.adapter.process.Reveal
 import prevue.adapter.render.ApkWithAssets
 import prevue.adapter.render.BootingEngine
@@ -24,12 +23,18 @@ import prevue.adapter.source.ProjectFiles
 import prevue.adapter.source.SourcePreviewRepository
 import prevue.adapter.watch.PollingBuildWatcher
 import prevue.adapter.watch.PollingSourceWatcher
+import prevue.domain.port.MemoryMeter
 import prevue.domain.port.Ports
 import prevue.domain.port.Watchers
 import prevue.entity.ModuleGraph
 import prevue.entity.ModuleInfo
 
-public class Infra(private val config: InfraConfig, private val scope: CoroutineScope, private val log: (String) -> Unit) : AutoCloseable {
+public class Infra(
+    private val config: InfraConfig,
+    private val scope: CoroutineScope,
+    memory: MemoryMeter,
+    private val log: (String) -> Unit,
+) : AutoCloseable {
     private val resources = ArrayDeque<AutoCloseable>()
     private val home = initialSpec(config.classpath)
     private val app = config.resourcesFrom?.let(::initialSpec)
@@ -70,7 +75,7 @@ public class Infra(private val config: InfraConfig, private val scope: Coroutine
             val watches = Watches.of(config, graph, spec)
             watchRoots = watches.roots + watches.valueDirs
             ports = Ports(engine, engine, compiler, SourcePreviewRepository(renderSpec.classPath), files,
-                memory = ProcessMemory, resources = engine.resources)
+                memory = memory, resources = engine.resources)
             watchers = Watchers(
                 sources = if (watches.watching) PollingSourceWatcher(watches.roots) else null,
                 builds = if (watches.watching) PollingBuildWatcher(watches.buildGroups()) else null,
