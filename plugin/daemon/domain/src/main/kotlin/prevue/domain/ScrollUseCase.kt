@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -21,6 +22,7 @@ import prevue.domain.runtime.LiveLoop
 import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 
+@Inject
 class ScrollUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

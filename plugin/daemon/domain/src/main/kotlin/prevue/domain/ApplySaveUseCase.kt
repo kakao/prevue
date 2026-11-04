@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.entity.Phrase
 import java.io.File
 import prevue.entity.PreviewSpec
@@ -20,6 +21,7 @@ import prevue.domain.runtime.Tabs
 import prevue.domain.runtime.Workspace
 import prevue.domain.runtime.WorkspaceEditor
 
+@Inject
 class ApplySaveUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

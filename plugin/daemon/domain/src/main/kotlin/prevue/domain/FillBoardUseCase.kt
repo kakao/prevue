@@ -1,5 +1,8 @@
 package prevue.domain
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
@@ -7,18 +10,21 @@ import prevue.domain.model.Board
 import prevue.domain.model.CardResult
 import prevue.domain.model.SkipReason
 import prevue.domain.model.BoardFill
+import prevue.domain.runtime.BoardFiller
 import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.Workspace
 
+@ContributesBinding(AppScope::class)
+@Inject
 class FillBoardUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,
     private val drawCard: DrawCardUseCase,
     private val scope: CoroutineScope,
-) {
+) : BoardFiller {
     private class Filled(val drawn: Int, val renderNs: Long)
 
-    operator fun invoke(by: String, since: Long? = null) {
+    override operator fun invoke(by: String, since: Long?) {
         val b = ws.now.board ?: return
         val t0 = System.nanoTime()
         scope.launch {

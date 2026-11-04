@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import java.io.File
 import prevue.domain.model.Card
 import prevue.domain.model.CardResult
@@ -9,6 +10,7 @@ import java.time.Instant
 import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 
+@Inject
 class SelectUseCase(private val ws: Workspace, private val live: LiveShot) {
     suspend operator fun invoke(file: String, line: Int, at: Pointed, by: String): Selection = ws.exclusive { ed ->
         val onLive = (ws.now.interactive || ws.now.board == null) && (at.previewId == null || at.previewId == ws.now.current?.previewId)

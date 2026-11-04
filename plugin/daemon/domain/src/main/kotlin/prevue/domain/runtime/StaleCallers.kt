@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import prevue.domain.port.CompileResult
 import prevue.domain.port.FailureKind
@@ -19,6 +22,8 @@ import prevue.domain.port.SourceFileRepository
 /**
  * 모듈마다 컴파일하기 · 함께 실을 파일 고르기 · 옛 호출자 고치기. 유스케이스가 아니다 — 저장 · 열기 · 카드 그리기가 **줄 안에서** 함께 쓴다([LiveShot]과 같다).
  */
+@SingleIn(AppScope::class)
+@Inject
 class StaleCallers(
     private val ws: Workspace,
     private val engine: EngineActor,

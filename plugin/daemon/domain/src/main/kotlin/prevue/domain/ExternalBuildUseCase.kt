@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.entity.Phrase
 import prevue.entity.Verbatim
 import prevue.entity.phrase
@@ -21,6 +22,7 @@ import prevue.domain.runtime.Workspace
  * 소스 밖의 변화가 그림을 낡게 했다. 닫을 수 있는 것(밖에서 돈 Gradle의 산출물)은 스스로 닫고, 못 닫는 것(리소스 · 빌드 파일)은
  * 낡음으로 세워 사람에게 할 일을 말한다 — 판정은 [ExternalPolicy]가 한다.
  */
+@Inject
 class ExternalBuildUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

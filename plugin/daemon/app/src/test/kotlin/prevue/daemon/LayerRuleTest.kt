@@ -77,6 +77,7 @@ class LayerRuleTest {
             "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
             "entity/K.kt" to "package prevue.entity\nimport kotlinx.serialization.Serializable\n",
             "domain/L.kt" to "package prevue.domain\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
+            "domain/L3.kt" to "package prevue.domain\nimport dev.zacsweers.metro.Inject\nimport dev.zacsweers.metro.SingleIn\n",
             "domain/N.kt" to "package prevue.domain\nimport prevue.render.Shim\n",
             "domain/O2.kt" to "package prevue.domain\nval o2 = \"com.acme.prevue.adapter.render.X\"\n",
             "domain/O.kt" to "package prevue.domain\nimport kotlin.math.abs\n\nclass O { val src = \"\"\"\nimport com.android.Foo\n\"\"\" }\n",
@@ -124,7 +125,7 @@ object LayerRule {
     private val ref = Regex("""(?<![\w.])prevue\.((?:${DAEMON_PACKAGES.joinToString("|")})\.[\w.]*)""")
     private val CORE = setOf("entity", "domain")
     /** 데몬 패키지는 위 ref 규칙이 가린다 — 여기서는 통과시켜 한 위반을 두 번 세지 않는다. 코덱(`prevue.json`) · 셈(`prevue.render`)은 core 밖이다. */
-    private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.")
+    private val CORE_EXTERNAL = DAEMON_PACKAGES.map { "prevue.$it." } + listOf("kotlin.", "kotlinx.coroutines.", "java.", "dev.zacsweers.metro.")
 
     fun mentionsDaemon(text: String): Boolean = text.lineSequence().filterNot { it.startsWith("package ") }.any(ref::containsMatchIn)
     /** D-139. 그림은 entity `Bitmap` 값으로 든다 — AWT 는 render · browser 어댑터만 안다. 파일 시스템 API 의 다른 길(nio · kotlin.io.path)도 core 밖이다. */

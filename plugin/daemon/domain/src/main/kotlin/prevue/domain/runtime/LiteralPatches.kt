@@ -1,11 +1,16 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import prevue.domain.port.CompileResult
 import prevue.domain.port.LiteralSite
 import prevue.domain.port.SourceFileRepository
 import prevue.domain.policy.LiteralPolicy
 
+@SingleIn(AppScope::class)
+@Inject
 class LiteralPatches(private val ws: Workspace, private val engine: EngineActor, private val sources: SourceFileRepository) {
     private class Known(val text: String, val owner: String?, val sites: List<LiteralSite>, val epoch: Int)
     private val known = HashMap<String, Known>()

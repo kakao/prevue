@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.CloseResult
 import prevue.domain.model.VacantTab
 import prevue.domain.policy.TabPolicy
@@ -7,6 +8,7 @@ import prevue.domain.runtime.Tabs
 import prevue.domain.runtime.Workspace
 
 /** D-54. 탭을 닫는다(`prevue close` · 뷰어 ×). 지금 보던 탭이면 직전에 보던 탭으로 옮기고, 남은 탭이 없으면 빈 화면이다. */
+@Inject
 class CloseTabUseCase(private val ws: Workspace, private val tabs: Tabs) {
     suspend operator fun invoke(target: String, by: String): CloseResult = ws.exclusive { ed ->
         val key = tabs.keyOf(target)

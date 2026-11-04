@@ -145,6 +145,11 @@ class Workspace(
 
     fun nowMs(): Long = clock.nowMs()
 
+    fun hosts(f: File): Boolean {
+        val c = f.canonicalFile
+        return graph.contains(c) || watchRoots.any { c.path.startsWith(it.path + File.separator) }
+    }
+
     fun recordCard(epoch: BoardEpoch, index: Int, gen: Int, r: CardResult) {
         _state.update { s -> s.board?.takeIf { it.epoch == epoch }?.let { s.copy(board = it.record(index, gen, r)) } ?: s }
     }

@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
@@ -21,6 +24,8 @@ import prevue.domain.policy.StaleReasons
  * live 태스크에 한 장을 그리고 그 결과를 [Workspace]에 적는 단계들. 유스케이스가 아니다 — 여러 유스케이스가 **줄 안에서** 함께 쓰고,
  * 스스로 줄을 서지 않는다(줄은 재진입이 안 된다).
  */
+@SingleIn(AppScope::class)
+@Inject
 class LiveShot(private val ws: Workspace, private val engine: EngineActor) {
     /** 새 태스크로 그려 live로 삼는다. [since]는 이 렌더를 부른 일의 시작(epoch ms)이고, 없으면 그리기 시작이다(D-63). */
     suspend fun show(

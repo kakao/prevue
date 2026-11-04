@@ -1,5 +1,8 @@
 package prevue.domain.runtime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import prevue.entity.Phrase
 import prevue.entity.phrase
 import java.io.File
@@ -12,6 +15,8 @@ import prevue.domain.port.ResourceValues
 import prevue.domain.port.SourceFileRepository
 import prevue.domain.policy.ResourcePolicy
 
+@SingleIn(AppScope::class)
+@Inject
 class ResourcePatches(private val values: ResourceValues?, private val sources: SourceFileRepository, private val reappearMs: Long = 500) {
     private val known = MutableStateFlow(emptyMap<String, String>())
 

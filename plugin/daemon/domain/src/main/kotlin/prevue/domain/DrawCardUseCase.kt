@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.entity.phrase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,7 @@ import prevue.domain.runtime.Workspace
  * 주소를 알리기 전에 파일이 있어야 한다. 그 기록은 **줄을 서지 않는다** — 채우기가 다음 카드를 그리며 줄을 쥐고 있어,
  * 기다리면 쓰기가 밀린다(실측 1.4초).
  */
+@Inject
 class DrawCardUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,

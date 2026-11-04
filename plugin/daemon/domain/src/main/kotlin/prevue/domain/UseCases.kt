@@ -1,9 +1,7 @@
 package prevue.domain
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import prevue.domain.port.Ports
 import prevue.domain.port.Watchers
 import prevue.domain.model.LiveFrame
@@ -27,12 +25,10 @@ class UseCases(
     private val resourcePatches = ResourcePatches(ports.resources, ports.sourceFiles)
     private val callers = StaleCallers(workspace, engine, ports.compiler, literals, ports.sourceFiles)
 
-    init { ports.engine.protect { workspace.now.keepIds() } }
-
     val listPreviews = ListPreviewsUseCase(ports.previews)
     val drawCard = DrawCardUseCase(workspace, engine, live, callers, scope)
     val fillBoard = FillBoardUseCase(workspace, engine, drawCard, scope)
-    private val tabs = Tabs(workspace, engine, ports.previews, live, fillBoard::invoke, callers, ports.sourceFiles)
+    private val tabs = Tabs(workspace, engine, ports.previews, live, fillBoard, callers, ports.sourceFiles)
     val openPreview = OpenPreviewUseCase(workspace, tabs)
     val closeTab = CloseTabUseCase(workspace, tabs)
     val showPreview = ShowPreviewUseCase(workspace, live)
@@ -54,13 +50,13 @@ class UseCases(
     val observeWorkspace = ObserveWorkspaceUseCase(workspace)
     val externalBuild = ExternalBuildUseCase(workspace, engine, ports.compiler, literals, live, fillBoard)
     val readStatus = ReadStatusUseCase(workspace, ports.engine, ports.compiler, watchers.sources, watchers.builds, ports.memory, watchers.values)
-    val observeSourceChanges = ObserveSourceChangesUseCase(workspace, watchers.sources, ports.sourceFiles, callers::behindBuild)
+    val observeSourceChanges = ObserveSourceChangesUseCase(workspace, watchers.sources, ports.sourceFiles, callers)
     val observeBuildChanges = ObserveBuildChangesUseCase(watchers.builds)
     val observeResourceChanges = ObserveResourceChangesUseCase(watchers.values)
     val resolveFile = ResolveFileUseCase(ports.sourceFiles)
     val hostsFile = HostsFileUseCase(workspace)
     val readSourceIndex = ReadSourceIndexUseCase(ports.sourceFiles)
-    private val catalog = PreviewCatalog(workspace, ports.previews, ports.sourceFiles, hostsFile::invoke)
+    private val catalog = PreviewCatalog(workspace, ports.previews, ports.sourceFiles)
     val indexPreviewFiles = IndexPreviewFilesUseCase(catalog)
     val readPreviewFiles = ReadPreviewFilesUseCase(catalog)
 
@@ -70,15 +66,5 @@ class UseCases(
     suspend fun watchScreen(on: Boolean) = engine.watch(on)
     suspend fun awaitSettled(): SettledShot = engine.settledLatest()
 
-    init {
-        scope.launch {
-            engine.shots.collect { shot ->
-                if (shot.claimed) return@collect
-                try { settle(shot) } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    System.err.println("[prevue] 정착을 기록하지 못했다: $e")
-                }
-            }
-        }
-    }
+    init { StartDaemonUseCase(workspace, ports.engine, engine, settle, drawPostures, scope)() }
 }

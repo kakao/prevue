@@ -1,5 +1,6 @@
 package prevue.domain
 
+import dev.zacsweers.metro.Inject
 import prevue.domain.model.CardResult
 import prevue.domain.model.Settled
 import prevue.domain.model.SettledShot
@@ -7,6 +8,7 @@ import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 
+@Inject
 class SettleUseCase(private val ws: Workspace, private val engine: EngineActor, private val live: LiveShot) {
     suspend operator fun invoke(settled: SettledShot): Unit = ws.exclusive { ed ->
         val current = ws.now.current ?: return@exclusive

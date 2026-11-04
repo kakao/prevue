@@ -1,5 +1,6 @@
 package prevue.domain.port
 
+import dev.zacsweers.metro.Qualifier
 import java.io.File
 import kotlinx.coroutines.flow.Flow
 
@@ -10,6 +11,9 @@ interface SourceWatcher {
     /** NFR-6. 감시가 실제로 얼마를 쓰는지. */
     val stats: Map<String, Any?>
 }
+
+@Qualifier
+annotation class ValueFiles
 
 class SourceChange(
     val files: List<File>, val mtimeMs: Long, val firedMs: Long, val firedNs: Long,

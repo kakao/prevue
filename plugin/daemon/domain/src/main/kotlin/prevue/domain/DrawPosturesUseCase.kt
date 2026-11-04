@@ -1,5 +1,9 @@
 package prevue.domain
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
+import dev.zacsweers.metro.SingleIn
 import prevue.entity.phrase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -16,14 +20,16 @@ import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.LiveShot
 import prevue.domain.runtime.Workspace
 
+@SingleIn(AppScope::class)
+@Inject
 class DrawPosturesUseCase(
     private val ws: Workspace,
     private val engine: EngineActor,
     private val live: LiveShot,
-    scope: CoroutineScope,
-    private val quietMs: Long = QUIET_MS,
+    private val scope: CoroutineScope,
+    @Named(QUIET) private val quietMs: Long = QUIET_MS,
 ) {
-    init {
+    fun start() {
         scope.launch {
             ws.state.map { it.livePostures()?.round }.distinctUntilChanged().collectLatest { round ->
                 if (round == null) return@collectLatest
@@ -77,5 +83,6 @@ class DrawPosturesUseCase(
 
     companion object {
         const val QUIET_MS = 1_000L
+        const val QUIET = "postureQuietMs"
     }
 }
