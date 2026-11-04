@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import prevue.domain.model.LiveFrame
+import prevue.domain.port.PrevueDispatchers
 
 internal data class StreamStats(
     val encoded: Long = 0,
@@ -36,9 +36,7 @@ internal class FrameStreamer(
     watching: StateFlow<Boolean>,
     parent: CoroutineScope,
     private val log: (String) -> Unit,
-    state: CoroutineContext = Dispatchers.Default.limitedParallelism(1, "prevue-frames"),
-    encode: CoroutineContext = Dispatchers.Default.limitedParallelism(2, "prevue-encode"),
-    private val write: CoroutineContext = Dispatchers.IO,
+    dispatchers: PrevueDispatchers,
 ) {
     private sealed interface Cmd
     private class Show(val frame: LiveFrame?) : Cmd
@@ -68,8 +66,11 @@ internal class FrameStreamer(
     private var conflated = 0L
     private var sent = 0L
     private lateinit var writers: CoroutineScope
+    private val write = dispatchers.io
 
-    private val job = parent.launch(state + CoroutineName("prevue-frames"), CoroutineStart.ATOMIC) { run(screen, watching, encode) }
+    private val job = parent.launch(dispatchers.default.limitedParallelism(1, "prevue-frames") + CoroutineName("prevue-frames"), CoroutineStart.ATOMIC) {
+        run(screen, watching, dispatchers.default.limitedParallelism(2, "prevue-encode"))
+    }
 
     fun subscribe(out: OutputStream, viewer: String? = null) { if (cmds.trySend(Subscribe(out, viewer)).isFailure) closeQuietly(out) }
 

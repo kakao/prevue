@@ -9,11 +9,9 @@ import java.io.IOException
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.UUID
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
@@ -45,7 +43,7 @@ public class BrowserEndpoint @Inject internal constructor(
     private val log: EntryLog,
 ) : HttpEndpoint {
     private val scope = relay.scope
-    private val write: CoroutineContext = Dispatchers.IO
+    private val write = relay.dispatchers.io
     private val identity by lazy(target.app)
     private val version = target.version
     private val reveal = target.reveal

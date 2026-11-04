@@ -19,6 +19,7 @@ import prevue.domain.model.ReloadResult
 import prevue.domain.model.WaitResult
 import prevue.domain.policy.StaleReasons
 import prevue.daemon.fake.TestGraph
+import prevue.daemon.fake.realDispatchers
 
 /**
  * D-68. values XML을 저장하면 컴파일하지 않고 값만 렌더러에 얹어 다시 그린다 — Gradle도 재시작도 없다.
@@ -49,7 +50,7 @@ class ResourcePatchesTest {
     @Test fun `한 묶음의 판정은 넣기 전의 값과 견준다 — 앞 파일에 넣은 값이 뒤 파일의 지금 값이 되지 않는다`() {
         val a = fx.valuesFile(xml("title" to "A"))
         val b = File(fx.root, "app/src/debug/res/values/strings.xml").apply { parentFile.mkdirs(); writeText(xml("title" to "A")) }
-        val patches = ResourcePatches(values, ProjectFiles(fx.root, emptyList()))
+        val patches = ResourcePatches(values, ProjectFiles(fx.root, emptyList(), realDispatchers))
         patches.remember(listOf(a, b))
         a.writeText(xml("title" to "B"))
         b.writeText(xml("title" to "C"))

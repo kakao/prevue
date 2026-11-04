@@ -33,6 +33,7 @@ import prevue.daemon.fake.Fixture
 import prevue.adapter.entry.EntryHooks
 import prevue.adapter.http.EntryLog
 import prevue.adapter.http.Relay
+import prevue.daemon.fake.realDispatchers
 
 @Timeout(20)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -150,7 +151,7 @@ class BrowserEndpointTest {
     }
 
     private fun sideEndpoint(scope: CoroutineScope) = BrowserEndpoint(g.presenter, g.browserTabs, g.browserInput, g.browserPointing, server.frames,
-        Relay(scope), ViewerTarget({ null to null }, null, null, null), EntryLog {})
+        Relay(scope, realDispatchers), ViewerTarget({ null to null }, null, null, null), EntryLog {})
 
     /** 놓아 줄 때까지 쓰기가 멈춘다 — 읽지 않는 브라우저 탭. */
     private class StuckStream : OutputStream() {

@@ -3,8 +3,6 @@ package prevue.adapter.watch
 import java.io.File
 import java.nio.file.Files
 import java.util.Locale
-import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -15,12 +13,13 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import prevue.domain.port.SourceChange
 import prevue.domain.port.SourceWatcher
+import prevue.domain.port.PrevueDispatchers
 
 // 외부: macOS 의 WatchService 는 폴링 구현이고 감도가 초 단위다
 internal class PollingSourceWatcher(
     private val roots: List<File>,
+    private val dispatchers: PrevueDispatchers,
     private val extension: String = "kt",
-    private val context: CoroutineContext = Dispatchers.IO,
 ) : SourceWatcher {
     var hotPeriodMs = 100L
     var periodMs = 300L
@@ -35,7 +34,7 @@ internal class PollingSourceWatcher(
     override val stats: Map<String, Any?> get() = _stats.value
 
     override fun changes(hot: () -> List<File>): Flow<SourceChange> =
-        flow { Scan(hot).run(this) }.buffer(Channel.RENDEZVOUS).flowOn(context)
+        flow { Scan(hot).run(this) }.buffer(Channel.RENDEZVOUS).flowOn(dispatchers.io)
 
     private class Batch {
         val changed = LinkedHashSet<File>()

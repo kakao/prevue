@@ -4,7 +4,6 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -15,6 +14,7 @@ import prevue.domain.ResizeUseCase
 import prevue.domain.ScrollUseCase
 import prevue.domain.TouchUseCase
 import prevue.domain.model.ScreenSize
+import prevue.domain.port.PrevueDispatchers
 
 @SingleIn(AppScope::class)
 @Inject
@@ -25,12 +25,13 @@ internal class BrowserInput(
     private val touchScreen: TouchUseCase,
     private val scroll: ScrollUseCase,
     private val readStatus: ReadStatusUseCase,
+    dispatchers: PrevueDispatchers,
 ) {
     private val sizes = Channel<ScreenSize>(Channel.CONFLATED)
     private var wheelWarned = false
 
     init {
-        core.scope.launch(Dispatchers.Default) {
+        core.scope.launch(dispatchers.default) {
             for (s in sizes) {
                 try { resized(s) } catch (e: CancellationException) { throw e }
                 catch (e: Exception) { core.flash(phrase("resize.failed", "why" to core.why(e))) }

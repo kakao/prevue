@@ -10,7 +10,6 @@ import prevue.entity.phrase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.joinAll
@@ -39,6 +38,7 @@ import prevue.domain.model.Status
 import prevue.domain.model.Tab
 import prevue.domain.model.VacantTab
 import prevue.domain.model.WorkspaceEvent
+import prevue.domain.port.PrevueDispatchers
 
 @SingleIn(AppScope::class)
 @Inject
@@ -48,8 +48,9 @@ internal class BrowserPresenter(
     private val readStatus: ReadStatusUseCase,
     private val screen: ObserveScreenUseCase,
     target: ViewerTarget,
+    private val dispatchers: PrevueDispatchers,
 ) {
-    val scope = CoroutineScope(relay.scope.coroutineContext + Dispatchers.Default.limitedParallelism(1, "prevue-viewer"))
+    val scope = CoroutineScope(relay.scope.coroutineContext + dispatchers.default.limitedParallelism(1, "prevue-viewer"))
     val side = MutableStateFlow(ViewerSide(stillStamp = System.currentTimeMillis()))
     private var version = 0L
 
@@ -74,11 +75,11 @@ internal class BrowserPresenter(
 
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) { observeWorkspace().collect { onDomainEvent(it) } }
-        scope.launch(Dispatchers.Default) { watchWanted.collect { screen.watch(it) } }
+        scope.launch(dispatchers.default) { watchWanted.collect { screen.watch(it) } }
         val readBranch = target.branch
         if (readBranch != null) scope.launch {
             while (true) {
-                val now = withContext(Dispatchers.IO) { readBranch() }
+                val now = withContext(dispatchers.io) { readBranch() }
                 side.update { if (it.branch == now) it else it.copy(branch = now) }
                 delay(2_000)
             }
@@ -112,7 +113,7 @@ internal class BrowserPresenter(
         if (on != (before?.state?.focus?.streamUrl != null)) watchWanted.value = on
     }
 
-    fun post(intent: suspend () -> Unit): Job = scope.launch(inputs + Dispatchers.Default, CoroutineStart.UNDISPATCHED) {
+    fun post(intent: suspend () -> Unit): Job = scope.launch(inputs + dispatchers.default, CoroutineStart.UNDISPATCHED) {
         try { intent() } catch (e: CancellationException) { throw e }
         catch (e: Exception) { if (e !is VacantTab) flash(phrase("request.failed", "why" to why(e))) }
     }

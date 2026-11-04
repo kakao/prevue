@@ -17,6 +17,7 @@ import prevue.domain.port.BuildWatcher
 import prevue.domain.port.SourceWatcher
 import prevue.domain.port.ValueFiles
 import prevue.domain.runtime.Workspace
+import prevue.domain.port.PrevueDispatchers
 
 /** 운영과 같은 기여(`DaemonBindings` · 기술 어댑터의 바인딩 컨테이너 포함)를 그대로 모으고, 테스트가 들여다볼 것만 꺼내 준다. */
 @DependencyGraph(AppScope::class)
@@ -39,6 +40,7 @@ internal interface InfraGraph {
             @Provides checkout: PrevueCheckout,
             @Provides hooks: DaemonHooks,
             @Provides closer: Closer,
+            @Provides dispatchers: PrevueDispatchers,
         ): InfraGraph
     }
 }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import prevue.adapter.entry.EntryPoints
 import prevue.adapter.infra.Closer
+import prevue.domain.port.PrevueDispatchers
 
 /** 데몬 하나의 작업·입구·자원을 소유하고 모든 종료 요청을 한 정리 경로로 모은다. */
 class PrevueDaemon(
@@ -23,13 +24,14 @@ class PrevueDaemon(
     private val shutdownTimeoutMs: Long = 30_000,
     private val log: (String) -> Unit = {},
     private val forceExit: (Int) -> Unit = { Runtime.getRuntime().halt(it) },
+    val dispatchers: PrevueDispatchers = realDispatchers,
 ) : AutoCloseable {
     private enum class Phase { READY, RUNNING, CLOSING }
     private data class Life(val phase: Phase = Phase.READY, val inputs: EntryPoints? = null)
     private class StopRequest(val reason: String, val respawn: List<String>? = null, val failure: Throwable? = null)
 
     private val job = SupervisorJob()
-    val scope = CoroutineScope(job + Dispatchers.Default + CoroutineExceptionHandler { _, e -> log("데몬 작업 실패: $e") })
+    val scope = CoroutineScope(job + dispatchers.default + CoroutineExceptionHandler { _, e -> log("데몬 작업 실패: $e") })
     private val requested = CompletableDeferred<StopRequest>()
     private val life = MutableStateFlow(Life())
     private val closed = CompletableDeferred<Unit>()
@@ -41,6 +43,7 @@ class PrevueDaemon(
         /** NFR-6. 다시 띄우는 값(첫 그림까지 4초대)이 RSS를 잡아 두는 값보다 싸다. `PREVUE_IDLE_MIN`으로 바꾸고 `0`이면 끈다. */
         const val DEFAULT_IDLE_MIN = 10L
         fun idleMinutes(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_IDLE_MIN
+        val realDispatchers = PrevueDispatchers(Dispatchers.IO, Dispatchers.Default)
     }
 
     fun requestStop(reason: String) { requested.complete(StopRequest(reason)) }

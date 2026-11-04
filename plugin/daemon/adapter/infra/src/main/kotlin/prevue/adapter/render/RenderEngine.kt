@@ -28,6 +28,7 @@ import prevue.entity.Phrase
 import prevue.entity.phrase
 import prevue.domain.port.FailureKind
 import prevue.domain.port.Frame
+import prevue.domain.port.PrevueDispatchers
 import prevue.domain.port.LiveSession as SessionPort
 import prevue.domain.port.LiveSessionFactory
 import prevue.domain.port.PreviewRenderer
@@ -37,6 +38,7 @@ internal class RenderEngine(
     private val spec: ClasspathSpec,
     private val layoutlibDir: File,
     override val outDir: File,
+    dispatchers: PrevueDispatchers,
     private val resourceApk: File = File(spec.resourceApkPath),
 ) : PreviewRenderer, LiveSessionFactory, AutoCloseable {
     val renderer: Renderer
@@ -51,11 +53,9 @@ internal class RenderEngine(
     override val loaderGen: Int get() = loaderCount.value.gen
     override val tasksOnLoader: Int get() = loaderCount.value.tasks
 
-    private val artifacts = RenderArtifactStore(outDir)
+    private val artifacts = RenderArtifactStore(outDir, dispatchers)
     private val outputs = RenderOutputs(artifacts) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
-    override var outMaxBytes: Long
-        get() = artifacts.maxBytes
-        set(value) { artifacts.maxBytes = value }
+    override var outMaxBytes: Long by artifacts::maxBytes
     override val outBytes: Long get() = artifacts.bytes
     override fun protect(keep: () -> Set<String>) = artifacts.protect(keep)
 

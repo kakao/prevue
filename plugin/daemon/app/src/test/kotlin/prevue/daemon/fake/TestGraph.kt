@@ -76,6 +76,7 @@ import prevue.domain.port.ValueFiles
 import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.LiveLoop
 import prevue.domain.runtime.Workspace
+import prevue.domain.port.PrevueDispatchers
 
 /**
  * 테스트의 조립 — 운영과 같은 `AppScope` 기여(domain 의 `@Inject` · 입구의 `@ContributesIntoSet` · `EntryBindings`)를 Metro 가 잇고,
@@ -162,6 +163,7 @@ internal class TestPorts(
     private val builds: BuildWatcher? = null,
     private val values: SourceWatcher? = null,
     private val memory: MemoryMeter = MemoryMeter { null },
+    private val dispatchers: PrevueDispatchers = realDispatchers,
 ) {
     @Provides fun renderer(): PreviewRenderer = renderer
     @Provides fun sessions(): LiveSessionFactory = sessions
@@ -173,6 +175,7 @@ internal class TestPorts(
     @Provides fun builds(): BuildWatcher? = builds
     @Provides @ValueFiles fun values(): SourceWatcher? = values
     @Provides fun memory(): MemoryMeter = memory
+    @Provides fun dispatchers(): PrevueDispatchers = dispatchers
 }
 
 @Suppress("LongParameterList")

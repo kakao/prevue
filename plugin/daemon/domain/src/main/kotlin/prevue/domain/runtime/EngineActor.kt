@@ -3,12 +3,10 @@ package prevue.domain.runtime
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +18,7 @@ import kotlinx.coroutines.selects.select
 import prevue.entity.PreviewSpec
 import prevue.domain.port.LiveSession
 import prevue.domain.port.LiveSessionFactory
+import prevue.domain.port.PrevueDispatchers
 import prevue.domain.port.PreviewRenderer
 import prevue.domain.port.RenderOutput
 import prevue.domain.model.LiveFrame
@@ -31,7 +30,7 @@ class EngineActor(
     private val renderer: PreviewRenderer,
     sessions: LiveSessionFactory,
     scope: CoroutineScope,
-    context: CoroutineContext = Dispatchers.IO.limitedParallelism(1, "prevue-engine"),
+    dispatchers: PrevueDispatchers,
     private val now: () -> Long = { System.nanoTime() / 1_000_000 },
     private val log: (String) -> Unit = { System.err.println("[prevue] $it") },
 ) {
@@ -39,7 +38,7 @@ class EngineActor(
     private val loop = LiveLoop(sessions, now, log)
 
     init {
-        scope.launch(context + CoroutineName("prevue-engine")) {
+        scope.launch(dispatchers.io.limitedParallelism(1, "prevue-engine") + CoroutineName("prevue-engine")) {
             try {
                 renderer.ready()
                 while (isActive) {

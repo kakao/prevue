@@ -12,6 +12,7 @@ import prevue.entity.LiveTree
 import prevue.entity.ViewNode
 import prevue.domain.policy.NodeTarget
 import prevue.json.Json
+import prevue.daemon.fake.realDispatchers
 
 /**
  * 통합 테스트의 대상 `fixtures/pearl`. 덤프는 이 체크아웃의 `bin/prevue warmup`이 뜬다 — 덤프 자리가 체크아웃 경로로 정해져 워크트리마다
@@ -59,7 +60,7 @@ object PearlFixture {
     internal fun hotCompiler(home: ClasspathSpec, overlay: File): HotCompiler {
         val jars = CompilerJars.find(env("PREVUE_COMPILER")!!)
         return HotCompiler({ home }, jars.jars, env("PREVUE_BRIDGE")!!, jars.composePlugin,
-            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"))
+            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"), realDispatchers)
     }
 
     internal fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(

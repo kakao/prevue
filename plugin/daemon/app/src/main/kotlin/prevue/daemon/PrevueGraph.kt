@@ -16,6 +16,7 @@ import prevue.domain.ReadPreviewFilesUseCase
 import prevue.domain.ReadStatusUseCase
 import prevue.domain.RememberValuesUseCase
 import prevue.domain.StartDaemonUseCase
+import prevue.domain.port.PrevueDispatchers
 
 @DependencyGraph(AppScope::class)
 internal interface PrevueGraph {
@@ -37,6 +38,7 @@ internal interface PrevueGraph {
             @Provides checkout: PrevueCheckout,
             @Provides hooks: DaemonHooks,
             @Provides closer: Closer,
+            @Provides dispatchers: PrevueDispatchers,
         ): PrevueGraph
     }
 }

@@ -3,12 +3,12 @@ package prevue.adapter.compile
 import java.io.File
 import java.net.URLClassLoader
 import java.util.zip.ZipFile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import prevue.adapter.dump.ClasspathSpec
 import prevue.domain.port.CompileResult
 import prevue.domain.port.Compiler
+import prevue.domain.port.PrevueDispatchers
 import prevue.json.map
 
 /**
@@ -30,6 +30,7 @@ internal class HotCompiler(
     private val androidJar: File,
     override val overlayDir: File,
     private val stagingDir: File,
+    dispatchers: PrevueDispatchers,
 ) : Compiler, AutoCloseable {
     private val loader = URLClassLoader(
         (compilerJars + bridgeClasses).map { it.toURI().toURL() }.toTypedArray(),
@@ -40,7 +41,7 @@ internal class HotCompiler(
 
     override fun close() { loader.close() }
 
-    private val confined = Dispatchers.IO.limitedParallelism(1, "prevue-compiler")
+    private val confined = dispatchers.io.limitedParallelism(1, "prevue-compiler")
 
     private val warmed = MutableStateFlow(false)
     override val warm: Boolean get() = warmed.value

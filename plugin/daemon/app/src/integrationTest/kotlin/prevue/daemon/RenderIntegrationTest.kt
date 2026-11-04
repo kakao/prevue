@@ -61,6 +61,7 @@ import prevue.adapter.entry.EntryHooks
 import prevue.adapter.entry.TargetRepo
 import prevue.daemon.fake.TestPorts
 import prevue.daemon.fake.testGraph
+import prevue.daemon.fake.realDispatchers
 
 /**
  * 진짜 layoutlib으로 저장소 안 픽스처 `fixtures/pearl`를 그린다(`./gradlew integrationTest`, 로컬만).
@@ -93,15 +94,15 @@ class RenderIntegrationTest {
         repo = home.repoRoot
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
-        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out)
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         appFile = PearlFixture.appCopy(appRoot)
         screenFile = File(appFile.parentFile, "PearlScreen.kt")
         val watched = listOf(appRoot)
-        watcher = PollingSourceWatcher(watched)
+        watcher = PollingSourceWatcher(watched, realDispatchers)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) },
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) },
             sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)

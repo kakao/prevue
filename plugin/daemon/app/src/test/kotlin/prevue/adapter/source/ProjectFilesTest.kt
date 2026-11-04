@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import prevue.daemon.fake.realDispatchers
 
 /** 띄울 때 한 번 걷고, 그 뒤의 생성 · 삭제는 감시가 알린 대로 얹는다 — 서버가 뜬 뒤 만든 파일도 가리키기가 푼다. */
 class ProjectFilesTest {
@@ -24,13 +25,13 @@ class ProjectFilesTest {
         return root to src
     }
 
-    private fun built(root: File, src: File) = ProjectFiles(root, listOf(src)).also { f ->
+    private fun built(root: File, src: File) = ProjectFiles(root, listOf(src), realDispatchers).also { f ->
         runBlocking { f.buildInBackground(this).join() }
     }
 
     @Test fun `경로로 쓸 수 없는 이름은 없는 파일이다 — 사용자가 넘긴 대상이 서버 오류가 되지 않는다`() {
         val (root, src) = repo()
-        val files = ProjectFiles(root, listOf(src))
+        val files = ProjectFiles(root, listOf(src), realDispatchers)
         val bad = File(src, "a\u0000b.kt")
         assertNull(files.modifiedAt(bad))
         assertFalse(files.has(bad))
@@ -63,7 +64,7 @@ class ProjectFilesTest {
         val (root, src) = repo()
         repeat(2000) { File(src, "d${it % 50}/F$it.kt").apply { parentFile.mkdirs(); writeText("") } }
         val late = File(src, "Late.kt").apply { writeText("") }
-        val files = ProjectFiles(root, listOf(src))
+        val files = ProjectFiles(root, listOf(src), realDispatchers)
         val t = thread { repeat(500) { files.update(listOf(late), emptyList()) } }
         runBlocking { files.buildInBackground(this).join() }
         t.join()
@@ -92,7 +93,7 @@ class ProjectFilesTest {
 
     @Test fun `짓기가 취소되면 기다리던 쪽이 멈추지 않고 실패를 받는다`() {
         val (root, src) = repo()
-        val files = ProjectFiles(root, listOf(src))
+        val files = ProjectFiles(root, listOf(src), realDispatchers)
         files.buildInBackground(CoroutineScope(Job()).apply { cancel() })
         assertThrows(IllegalStateException::class.java) { runBlocking { withTimeout(5_000) { files.sourceFiles() } } }
         assertNull(files.index())

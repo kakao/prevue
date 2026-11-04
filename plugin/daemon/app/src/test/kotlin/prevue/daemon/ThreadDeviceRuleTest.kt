@@ -73,6 +73,15 @@ class ThreadDeviceRuleTest {
         }
     }
 
+    // 디스패처는 PrevueDispatchers 로 주입받는다 — 직접 쓰면 테스트가 바꿔 끼우지 못한다. 만드는 자리는 데몬 하나다.
+    @Test fun `src main 은 Dispatchers 를 PrevueDaemon 에서만 쓴다`() {
+        val found = ThreadDeviceRule.counts(Sources.under(roots, "kt", "java"), ThreadDeviceRule.dispatchers, imports = true)
+        assertEquals(mapOf("prevue/daemon/PrevueDaemon.kt → Dispatchers" to 3), found)
+        val planted = "import kotlinx.coroutines.Dispatchers.IO\nimport kotlinx.coroutines.Dispatchers as D\nval a = Dispatchers\n    .IO\n" +
+            "val b = PrevueDispatchers(x, y)\nval c = dispatchers.io\n// Dispatchers.Default\n"
+        assertEquals(mapOf("H.kt → Dispatchers" to 3), ThreadDeviceRule.counts(mapOf("H.kt" to planted), ThreadDeviceRule.dispatchers, imports = true))
+    }
+
     // 테스트는 틈을 sleep 으로 두지 않고 fake/Await.kt 로 기다린다. 남은 것은 실제 시간이 필요한 곳뿐이다.
     @Test fun `테스트의 Thread sleep 은 허용 목록뿐이다`() {
         val found = ThreadDeviceRule.counts(testFiles()).filterKeys { it.endsWith(" → $SLEEP") }
@@ -135,9 +144,10 @@ object ThreadDeviceRule {
     private val plainImport = Regex("""^\s*import\s+[\w.*]+\s*;?\s*$""")
 
     val collect = Regex("""\.(?:collect\w*|launchIn)(?=\s*[({])""")
+    val dispatchers = Regex("""\bDispatchers\b""")
 
-    fun counts(files: Map<String, String>, pattern: Regex = device): Map<String, Int> = files.flatMap { (path, text) ->
-        text.lineSequence().filterNot { comment.containsMatchIn(it) || plainImport.matches(it) }
+    fun counts(files: Map<String, String>, pattern: Regex = device, imports: Boolean = false): Map<String, Int> = files.flatMap { (path, text) ->
+        text.lineSequence().filterNot { comment.containsMatchIn(it) || (!imports && plainImport.matches(it)) }
             .flatMap { line -> pattern.findAll(line).map { "$path → ${it.value}" } }.toList()
     }.groupingBy { it }.eachCount()
 

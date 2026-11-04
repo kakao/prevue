@@ -396,7 +396,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     ): TestGraph {
         val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
-            ProjectFiles(root, graph.roots).apply { buildInBackground(scope) }, resources = resources, sources = sources, builds = builds)
+            ProjectFiles(root, graph.roots, realDispatchers).apply { buildInBackground(scope) }, resources = resources, sources = sources, builds = builds)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)
     }
 
