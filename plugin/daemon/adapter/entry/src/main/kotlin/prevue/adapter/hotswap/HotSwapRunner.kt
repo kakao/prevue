@@ -27,12 +27,11 @@ internal class HotSwapRunner(
     private val observeBuildChanges: ObserveBuildChangesUseCase,
     private val externalBuild: ExternalBuildUseCase,
     private val observeResourceChanges: ObserveResourceChangesUseCase,
-    private val scope: CoroutineScope,
 ) {
     private val _logs = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val logs: SharedFlow<String> = _logs
 
-    fun start() {
+    fun start(scope: CoroutineScope) {
         scope.launch {
             observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, applySave(change.files, "watch", change)) }

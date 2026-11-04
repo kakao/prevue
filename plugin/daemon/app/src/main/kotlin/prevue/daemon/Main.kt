@@ -71,7 +71,8 @@ private fun PrevueDaemon.assemble(boot: Boot) {
     indexPreviewFiles(graph)
     val ui = graph.entryPoints
     watchRenderer(renderer, boot, graph, ui)
-    serve(ui) { graph.readStatus().lastRenderMs }
+    val readStatus = graph.readStatus
+    serve(ui) { readStatus().lastRenderMs }
     log("http://127.0.0.1:${boot.args.port}/  (${(System.nanoTime() - boot.startedNs) / 1_000_000}ms)")
     val initial = boot.args.show?.let { showInitial(it, graph) }
     graph.compilerWarmUp.start(boot.args.show, after = initial)

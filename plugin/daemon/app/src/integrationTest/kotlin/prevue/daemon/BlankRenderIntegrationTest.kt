@@ -69,7 +69,7 @@ class BlankRenderIntegrationTest {
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots).apply { buildInBackground(scope) },
             sources = PollingSourceWatcher(watched)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
-        ui = uc.entryPoints.also { it.hotSwap.start() }
+        ui = uc.entryPoints.also { it.startWatching() }
         val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)

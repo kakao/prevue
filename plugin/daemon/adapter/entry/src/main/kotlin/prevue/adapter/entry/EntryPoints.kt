@@ -49,7 +49,8 @@ public class EntryPoints @Inject internal constructor(
 
     public val lastActivityMs: Long get() = server.lastActivityMs
 
-    public fun start(): Unit { server.start(); hotSwap.start() }
+    public fun start(): Unit { server.start(); startWatching() }
+    internal fun startWatching() = hotSwap.start(relay.scope)
     public fun announceRestart(): Unit = browser.announceRestart()
     public fun stopInputs(): Unit {
         try { server.stopAccepting() } finally {

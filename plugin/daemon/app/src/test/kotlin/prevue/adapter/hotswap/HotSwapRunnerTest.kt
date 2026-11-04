@@ -3,6 +3,9 @@ package prevue.adapter.hotswap
 import app.cash.turbine.test
 import java.io.File
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineScope
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,10 +23,11 @@ class HotSwapRunnerTest {
     private val sources = FakeSourceWatcher()
     private val builds = FakeBuildWatcher()
     private val uc = fx.graph(sources = sources, builds = builds)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val vm = uc.hotSwap
 
     init {
-        vm.start()
+        vm.start(scope)
         runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
         uc.workspace.awaitBoardFilled()
         // 감시가 붙는 것(start)은 모으기가 시작될 때다 — 핫셋 함수가 꽂힐 때까지 기다린다.

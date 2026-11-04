@@ -373,7 +373,7 @@ class RenderIntegrationTest {
         if (app == null) {
             val ui = uc.entryPoints
             app = ui
-            ui.hotSwap.start()
+            ui.startWatching()
             val r = runBlocking { uc.openPreview(appFile.path, null, emptyMap(), "test") }
             assertTrue(r.ok, r.shot.out.message?.text)
             ws.awaitBoardFilled(timeoutMs = 60_000)

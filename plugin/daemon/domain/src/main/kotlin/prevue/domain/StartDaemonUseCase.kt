@@ -1,13 +1,17 @@
 package prevue.domain
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import prevue.domain.port.PreviewRenderer
 import prevue.domain.runtime.EngineActor
 import prevue.domain.runtime.Workspace
 
+@SingleIn(AppScope::class)
 @Inject
 class StartDaemonUseCase(
     private val ws: Workspace,
@@ -17,7 +21,10 @@ class StartDaemonUseCase(
     private val postures: DrawPosturesUseCase,
     private val scope: CoroutineScope,
 ) {
+    private val started = MutableStateFlow(false)
+
     operator fun invoke() {
+        if (!started.compareAndSet(expect = false, update = true)) return
         renderer.protect { ws.now.keepIds() }
         postures.start()
         scope.launch {

@@ -45,7 +45,7 @@ class LayerRuleTest {
             "entity/A.kt" to "package prevue.entity\nimport prevue.domain.model.Status\n",
             "domain/B.kt" to "package prevue.domain\nval x = prevue.adapter.render.RenderEngine::class\n",
             "domain/C.kt" to "package prevue.domain\nimport prevue.daemon.Json\n",
-            "adapter/http/D.kt" to "package prevue.adapter.http\nimport prevue.adapter.cli.CliHandler\n",
+            "adapter/http/D.kt" to "package prevue.adapter.http\nimport prevue.adapter.cli.CliTabs\n",
             "adapter/cli/E.kt" to "package prevue.adapter.cli\nimport prevue.adapter.browser.BrowserState\n",
             "adapter/render/F.kt" to "package prevue.adapter.render\nimport prevue.adapter.http.Server\n",
             "adapter/browser/G.kt" to "package prevue.adapter.browser\nimport prevue.daemon.Main\n",
@@ -71,7 +71,7 @@ class LayerRuleTest {
             "entity/Z2.kt" to "package prevue.entity\nval Z2 = java.io.File(\"res\").listFiles { f -> f.isDirectory }\n",
             "domain/Z3.kt" to "package prevue.domain\nclass Z3 { fun a(f: java.io.File) = f.lastModified() }\n",
             // 지켜진 것 — 잡히면 안 된다.
-            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.ReadStatusUseCase\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliHandler\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
+            "adapter/entry/H2.kt" to "package prevue.adapter.entry\nimport prevue.domain.ReadStatusUseCase\nimport prevue.adapter.http.Server\nimport prevue.adapter.cli.CliTabs\nimport prevue.adapter.browser.BrowserPresenter\nimport prevue.adapter.hotswap.HotSwapRunner\n",
             "adapter/cli/H.kt" to "package prevue.adapter.cli\nimport prevue.adapter.http.mapper.toJson\nimport prevue.json.Json\nimport prevue.json.string\nimport prevue.entity.Picked\n",
             "domain/I.kt" to "package prevue.domain\nimport prevue.entity.PreviewSpec\nimport prevue.domain.port.Clock\nimport prevue.domain.runtime.Workspace\n",
             "domain/J.kt" to "package prevue.domain\nimport com.android.ide.common.rendering.api.RenderSession\n",
