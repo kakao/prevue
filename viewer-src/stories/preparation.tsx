@@ -15,8 +15,15 @@ export function SceneStory({ phase = 'environment', failure, drawn, file }: Scen
     const parent = place.current!;
     // 장면은 페이지(:root)의 테마를 따른다 — 툴바가 고른 테마를 그동안 페이지에 둔다.
     const root = document.documentElement, before = root.dataset.theme;
-    const theme = parent.closest<HTMLElement>('[data-theme]')?.dataset.theme;
-    if (theme && theme !== 'system') root.dataset.theme = theme;
+    const surface = parent.closest<HTMLElement>('[data-theme]');
+    const follow = () => {
+      const theme = surface?.dataset.theme;
+      if (theme && theme !== 'system') root.dataset.theme = theme;
+      else if (before === undefined) delete root.dataset.theme; else root.dataset.theme = before;
+    };
+    follow();
+    const toolbar = new MutationObserver(follow);
+    if (surface) toolbar.observe(surface, { attributes: true, attributeFilter: ['data-theme'] });
     // 장면은 마크업을 동기로 한 번 그린다 — Storybook 의 커밋 안(이 효과)에서는 그럴 수 없어 커밋이 끝난 뒤 띄운다.
     let scene: ReturnType<typeof mountScene> | null = null, gone = false;
     queueMicrotask(() => {
@@ -31,6 +38,7 @@ export function SceneStory({ phase = 'environment', failure, drawn, file }: Scen
     });
     return () => {
       gone = true;
+      toolbar.disconnect();
       scene?.destroy(); scene = null;
       if (before === undefined) delete root.dataset.theme; else root.dataset.theme = before;
     };

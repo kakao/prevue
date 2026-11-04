@@ -51,10 +51,24 @@ try {
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   });
+  const built = new Set(await files(temporary));
   for (const name of await files(join(source, 'legacy'))) {
     if (name.endsWith('.d.ts')) continue;
+    // 청크 이름에 해시가 없어 기존 모듈과 같은 이름이면 그 청크를 덮는다.
+    if (built.has(name)) throw Error(`번들 청크와 기존 모듈의 이름이 겹친다: ${name}`);
     await mkdir(dirname(join(temporary, name)), { recursive: true });
     await writeFile(join(temporary, name), await readFile(join(source, 'legacy', name)));
+  }
+  // 준비 페이지는 데몬이 뜨기 전 준비 서버가 내준다 — 그 서버가 아는 JS만 불러야 한다(plugin/cli/prevue_prepare.py).
+  const served = name => /^js\/preparation[^/]*\.js$/.test(name) || ['js/strings.js', 'js/messages.js', 'js/react.js'].includes(name);
+  const reached = new Set(), pending = ['js/preparation-start.js'];
+  while (pending.length) {
+    const name = pending.pop();
+    if (reached.has(name)) continue;
+    reached.add(name);
+    if (!served(name)) throw Error(`준비 페이지가 준비 서버가 내주지 않는 ${name} 을 부른다`);
+    const code = await readFile(join(temporary, name), 'utf8');
+    for (const [, path] of code.matchAll(/(?:from|import)\s*["'](\.\/[^"']+)["']/g)) pending.push(join(dirname(name), path));
   }
   const expected = await files(temporary);
   const actual = (await files(destination)).filter(name => !handWritten(name));

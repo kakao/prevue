@@ -204,14 +204,15 @@ function C(e, t, n = document.body) {
 	let { phrase: r } = e, i = document.createElement("section");
 	i.id = "preparation", i.dataset.screen = "loading", i.dataset.phase = t.phase || "environment", i.dataset.boardArrival = "idle";
 	let a = (0, p.createRoot)(i);
-	u(i), (0, c.flushSync)(() => a.render(/* @__PURE__ */ (0, m.jsxs)(d.Provider, {
+	if (u(i), (0, c.flushSync)(() => a.render(/* @__PURE__ */ (0, m.jsxs)(d.Provider, {
 		value: e,
 		children: [
 			/* @__PURE__ */ (0, m.jsx)(g, {}),
 			/* @__PURE__ */ (0, m.jsx)(_, {}),
 			/* @__PURE__ */ (0, m.jsx)(h, {})
 		]
-	}))), n.append(i);
+	}))), !i.firstChild) throw Error("준비 장면은 React 커밋 밖에서 띄운다 — 커밋 안의 flushSync 는 그리지 않는다");
+	n.append(i);
 	let o = (e) => i.querySelector(e), s = o(".preview"), l = matchMedia("(prefers-reduced-motion: reduce)"), f = matchMedia("(prefers-color-scheme: dark)"), C = ["#headline", "#detail"].map((e) => ({
 		element: o(e),
 		text: "",

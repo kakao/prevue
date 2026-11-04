@@ -37,6 +37,7 @@ export function mountScene(messages: Messages, initial: SceneRequest, parent: HT
     <PreparationScene />
     <PreparationProgress />
   </MessagesContext.Provider>));
+  if (!host.firstChild) throw Error('준비 장면은 React 커밋 밖에서 띄운다 — 커밋 안의 flushSync 는 그리지 않는다');
   parent.append(host);
   const find = <T extends Element = HTMLElement>(selector: string) => host.querySelector<T>(selector)!;
   const image = find<HTMLImageElement>('.preview');
