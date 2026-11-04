@@ -30,11 +30,23 @@ try {
       emptyOutDir: false,
       target: 'es2022',
       minify: true,
-      lib: { entry: join(source, 'src/main.tsx'), formats: ['es'], fileName: () => 'js/viewer.js' },
+      // 준비 페이지(prepare.html)와 뷰어가 진입점을 따로 갖는다. 준비 장면은 브라우저 검사가 그 주소를 직접 import 한다.
+      lib: {
+        entry: { viewer: join(source, 'src/main.tsx'), 'preparation-start': join(source, 'src/preparation/entry-start.ts'), 'preparation-scene': join(source, 'src/preparation/entry-scene.ts') },
+        formats: ['es'],
+        fileName: (_, name) => `js/${name}.js`,
+      },
       // 기존 모듈은 같은 URL의 한 벌만 쓴다 — 번들에 사본이 들면 사전 · 마지막 상태 · 캡슐이 두 벌이 된다.
+      // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
         external: id => id.startsWith(legacy),
-        output: { paths: id => id.startsWith(legacy) ? './js/' + id.slice(legacy.length) : id },
+        // 준비 장면은 뷰어와 함께 쓰는 모듈(사전 맥락 등)을 덧붙여 내보낸다 — 진입점 겉면 파일을 따로 두면 준비 서버가 모르는 이름이 생긴다.
+        preserveEntrySignatures: 'allow-extension',
+        output: {
+          paths: id => id.startsWith(legacy) ? './js/' + id.slice(legacy.length) : id,
+          chunkFileNames: 'js/[name].js',
+          codeSplitting: { groups: [{ name: 'react', test: /node_modules/ }] },
+        },
       },
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },

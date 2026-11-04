@@ -1,26 +1,32 @@
-import { createScene, sceneEasing, sceneMs, handoffMs } from './preparation-scene.js';
-import { phrase, daemonText } from './strings.js';
+import { daemonText, phrase } from '../../legacy/js/strings.js';
+import type { Card, ViewerState } from '../state';
+import { createScene, handoffMs, sceneEasing, sceneMs } from './entry-scene';
 
-export function prepareViewer() {
+export type Preparation = { update(state: ViewerState): void; fail(reason: string): void };
+type Chosen = { card: Card; stage: HTMLElement; distance: number };
+
+// 준비 서버가 넘긴 요청(?prepare=…)을 뷰어가 이어받는다. 보드는 처음부터 이 장면 아래에 있고, 실제 PNG를 디코드한 뒤 보이며,
+// 회차(요청 식별자 · 파일 · 렌더 세대)로 중단 뒤 늦은 결과를 거른다.
+export function prepareViewer(): Preparation | null {
   const query = new URL(location.href).searchParams;
   if (!query.has('prepare')) return null;
   const request = Object.fromEntries(query);
   const scene = createScene(request);
-  const content = [...document.querySelectorAll('body > header, #rail, body > main, #staleBar')];
-  let active = true, ready = false, key = null, latest = null, selection = null, leaving = false;
-  let timers = [], revision = 0;
+  const content = [...document.querySelectorAll<HTMLElement>('body > header, #rail, body > main, #staleBar')];
+  let active = true, ready = false, key: string | null = null, latest: ViewerState | null = null, selection: Chosen | null = null, leaving = false;
+  let timers: number[] = [], revision = 0;
   let failed = false;
   let failedGen = 0;
   const failureRequest = new AbortController();
-  const waiting = new Set();
-  const nextFrame = () => new Promise(resolve => {
+  const waiting = new Set<() => void>();
+  const nextFrame = () => new Promise<void>(resolve => {
     waiting.add(resolve);
     requestAnimationFrame(() => { waiting.delete(resolve); resolve(); });
   });
-  const boardKey = s => s.board ? JSON.stringify([s.board.file, s.board.gen, s.board.groups.flatMap(g => g.cards.map(c => [c.previewId, c.imageUrl]))]) : null;
-  const schedule = (fn, ms) => { const timer = setTimeout(fn, ms); timers.push(timer); };
+  const boardKey = (s: ViewerState | null) => s?.board ? JSON.stringify([s.board.file, s.board.gen, s.board.groups.flatMap(g => g.cards.map(c => [c.previewId, c.imageUrl]))]) : null;
+  const schedule = (fn: () => void, ms: number) => { timers.push(window.setTimeout(fn, ms)); };
 
-  function block(on) {
+  function block(on: boolean) {
     document.body.classList.toggle('preparing', on);
     content.forEach(element => {
       element.inert = on;
@@ -46,7 +52,7 @@ export function prepareViewer() {
     history.replaceState(null, '', url);
   }
 
-  // 보드는 처음부터 준비 화면 아래에 있다 — 준비 화면이 걷히며 화면 안 카드가 차례로 떠오른다(D-102)
+  // 준비 화면이 걷히며 화면 안 카드가 차례로 떠오른다(D-102)
   function finish(immediate = false) {
     if (!active || !ready) return;
     if (immediate || !selection) { dispose(); return; }
@@ -70,7 +76,7 @@ export function prepareViewer() {
       .finished.then(dispose, dispose);
   }
 
-  function keyboard(event) {
+  function keyboard(event: KeyboardEvent) {
     if (ready && !leaving && ['Enter', ' '].includes(event.key)) {
       event.preventDefault(); event.stopImmediatePropagation(); finish(true);
     }
@@ -80,7 +86,7 @@ export function prepareViewer() {
     if (selection && !leaving) scene.fit(selection.card.widthDp || scene.image.naturalWidth, selection.card.heightDp || scene.image.naturalHeight);
   }
 
-  function fail(reason) {
+  function fail(reason: string) {
     if (!active || ready) return;
     failed = true;
     failedGen = latest?.board?.gen ?? 0;
@@ -100,33 +106,33 @@ export function prepareViewer() {
     schedule(watchFailure, 300);
   }
 
-  function center(s, rendered) {
+  function center(s: ViewerState, rendered: boolean): Chosen | null {
     const cards = s.board?.groups.flatMap(group => group.cards) || [];
-    const stages = cards.map(card => ({ card, stage: document.querySelector(`.card[data-i="${card.index}"] .cstage`) }))
-      .filter(item => item.stage?.offsetWidth && (!rendered || (item.card.ok && item.card.imageUrl)));
+    const stages = cards.map(card => ({ card, stage: document.querySelector<HTMLElement>(`.card[data-i="${card.index}"] .cstage`) }))
+      .filter((item): item is { card: Card; stage: HTMLElement } => !!item.stage?.offsetWidth && (!rendered || !!(item.card.ok && item.card.imageUrl)));
     if (!stages.length) return null;
     const bounds = stages.map(item => item.stage.getBoundingClientRect());
     const x = (Math.min(...bounds.map(r => r.left)) + Math.max(...bounds.map(r => r.right))) / 2;
     const y = (Math.min(...bounds.map(r => r.top)) + Math.max(...bounds.map(r => r.bottom))) / 2;
-    return stages.reduce((best, item, i) => {
+    return stages.reduce<Chosen | null>((best, item, i) => {
       const r = bounds[i], distance = Math.hypot(r.x + r.width / 2 - x, r.y + r.height / 2 - y);
       return !best || distance < best.distance ? { ...item, distance } : best;
     }, null);
   }
 
-  async function present(s, turn) {
+  async function present(s: ViewerState, turn: number) {
     await nextFrame(); await nextFrame();
     if (!active || turn !== revision) return;
     const chosen = center(s, true);
     if (!chosen) { fail(phrase('prep.image.missing')); return; }
     const decoded = new Image();
-    decoded.src = chosen.card.imageUrl;
+    decoded.src = chosen.card.imageUrl!;
     try { await decoded.decode(); }
     catch { if (active && turn === revision) fail(phrase('prep.image.unreadable')); return; }
     if (!active || turn !== revision || boardKey(latest) !== boardKey(s)) return;
     selection = chosen;
     scene.image.src = decoded.src;
-    scene.image.dataset.index = chosen.card.index;
+    scene.image.dataset.index = String(chosen.card.index);
     scene.image.alt = chosen.card.title;
     scene.fit(chosen.card.widthDp || decoded.naturalWidth, chosen.card.heightDp || decoded.naturalHeight);
     const fast = Date.now() - Number(request.started) < 1500;

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { get } from '../legacy/js/api.js';
 import type { Connection } from '../legacy/js/main.js';
+import { BuildNotice } from './components/BuildNotice';
 import { FileRail, type RailHosts } from './components/FileRail';
 import { ProjectHeader, type AppInfo } from './components/ProjectHeader';
 import { HelpButton, ShortcutHelp } from './components/ShortcutHelp';
@@ -18,7 +19,7 @@ import type { ViewerState } from './state';
 /** index.html 이 두는 영역의 바깥 요소 — 기존 모듈이 처음부터 쥐는 요소가 그 안에 섞여 있어 바깥은 마크업이 갖는다. */
 export type Hosts = {
   bar: HTMLElement; brand: HTMLElement; app: HTMLElement; status: HTMLElement; helpButton: HTMLElement;
-  rail: RailHosts; stale: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
+  rail: RailHosts; stale: HTMLElement; buildNotice: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
 };
 
 export function findHosts(): Hosts {
@@ -26,7 +27,7 @@ export function findHosts(): Hosts {
   return {
     bar: $('bar'), brand: $('brand'), app: $('app'), status: $('status'), helpButton: $('helpBtn'),
     rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen') },
-    stale: $('staleBar'), board: { view: $('boardView'), cards: $('cards') },
+    stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
     quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
   };
 }
@@ -52,6 +53,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <HelpButton host={hosts.helpButton} />
     <FileRail tabs={state?.tabs ?? null} screen={state?.screen ?? null} hosts={hosts.rail} />
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
+    <BuildNotice pending={!!state?.buildPending} host={hosts.buildNotice} />
     {/* 레일이 접히고 펴진 뒤에 잰다 — 보드의 배율은 레일을 뺀 폭으로 정한다. */}
     <PreviewBoard board={state?.board ?? null} screen={state?.screen ?? null} hosts={hosts.board} actions={board} />
     {/* 빈 화면은 시작 화면이 갖는다. 팔레트는 새 화면을 그리는 이 커밋에서 걷힌다. */}
