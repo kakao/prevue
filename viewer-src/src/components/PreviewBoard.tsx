@@ -1,10 +1,10 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { boardMarks, clearTrees, onRelayout, setCursor, subscribeBoard, syncBoard, type BoardMarks } from '../../legacy/js/board.js';
-import type { CardParts } from '../../legacy/js/board-point.js';
 import { swapImage } from '../../legacy/js/motion.js';
 import { useHost } from '../host';
 import { useMessages, type Messages } from '../messages';
 import type { Board, Card } from '../state';
+import type { CardParts } from '../workspace/point';
 
 // 보드(FR-17) — 파일 하나의 프리뷰를 함수별로 묶은 카드. 카드는 정적 이미지이고 인터랙티브는 한 장에만 걸린다.
 // 함수 하나가 묶음 하나다(D-62) — 한 장뿐인 함수도 머리를 가져, 배율 · 장 수가 늘 같은 자리에 온다. 접지 않는다.
@@ -12,7 +12,7 @@ type Group = Board['groups'][number];
 export type BoardActions = {
   /** 카드의 재생 버튼 — 그 카드를 한 장으로 연다. */
   open(index: number): void;
-  /** 카드 위의 가리키기. 박스 · 꼬리표는 아직 point.js 가 그려서 자리만 넘긴다. */
+  /** 카드 위의 가리키기. 박스의 자리는 workspace/point.ts 가 재서 그리므로 자리만 넘긴다 — 꼬리표의 안은 PointOverlay 가 그린다. */
   point(index: number, parts: CardParts, signal: AbortSignal): void;
 };
 export type BoardHosts = { view: HTMLElement; cards: HTMLElement };
@@ -170,7 +170,7 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
     // 이름(name=)이 없으면 크기 칸이 첫 줄에 선다 — 함수 이름은 묶음 머리가 갖는다(D-62).
     className={['card', c.isFocus && 'focus', c.stale && 'stale', !c.label && 'noname', cursor && 'cursor', returned && 'returned'].filter(Boolean).join(' ')}>
     <div className="cstage" ref={stage}>
-      {/* 박스 · 꼬리표는 point.js 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. */}
+      {/* 박스는 workspace/point.ts 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. 꼬리표의 안은 PointOverlay 의 포털이다. */}
       <img alt="" hidden ref={img} /><div className="box" hidden ref={box} /><div className="box pick" hidden ref={pick}><span className="tag" /></div>
       <div className={failure ? 'ph bad' : 'ph'} hidden={ok} title={failure ?? ''}>{failure ? <span className="why">{failure}</span> : phrase('card.waiting')}</div>
     </div>

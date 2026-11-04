@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Connection } from '../../legacy/js/main.js';
+import type { Connection } from '../session';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { ViewerState } from '../state';

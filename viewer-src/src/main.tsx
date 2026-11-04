@@ -1,37 +1,59 @@
-import { post } from '../legacy/js/api.js';
 import { boardMarks, moveCursor } from '../legacy/js/board.js';
-import { pointCard } from '../legacy/js/board-point.js';
-import { closeZoomMenu, enterFocus, exitFocus, toggleInteractive, zoomFit, zoomIn, zoomOut } from '../legacy/js/focus.js';
-import { drawLegacy, startViewer } from '../legacy/js/main.js';
-import { store } from '../legacy/js/store.js';
 import { daemonText, phrase } from '../legacy/js/strings.js';
 import { jumpTab, stepTab, tabCount } from './components/FileRail';
+import type { PointActions } from './components/PointOverlay';
 import { closeDirPop } from './components/ProjectHeader';
+import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
+import { drawScreens, startViewer } from './session';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
+import { store } from '../legacy/js/store.js';
+import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
+import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, setInteractive, toggleInteractive, type Workspace } from './workspace/focus';
+import { cancelChoice, choose, followChooser, openFile, pointCard } from './workspace/point';
 
-// 기존 모듈은 이 번들보다 먼저 평가된다(외부 import) — 그 모듈이 쥐는 바깥 요소는 index.html 에 있고, 안은 여기서 그린다.
-// 준비 화면은 첫 상태보다 먼저 서서 본문을 막는다. 그 상태는 기존 화면이 보드를 다 놓은 뒤에 읽는다 — 가운데 카드를 배치로 고른다.
+// 남은 기존 모듈(api · store · board · capsule · motion · strings)은 이 번들보다 먼저 평가된다(외부 import). 그 모듈들은 DOM 을 쥐지 않는다.
+// 준비 화면은 첫 상태보다 먼저 서서 본문을 막는다. 그 상태는 화면이 보드를 다 놓은 뒤에 읽는다 — 가운데 카드를 배치로 고른다.
 const preparation = prepareViewer();
-const renderLegacy = (state: Parameters<typeof drawLegacy>[0]) => { drawLegacy(state); preparation?.update(state); };
+// 한 장의 요소는 React 가 처음 그린 뒤에야 있다 — 동작은 그 뒤에 만든 작업 공간에 넘긴다. 상태는 연결을 연 뒤에야 오므로 그 전에 불리지 않는다.
+let workspace: Workspace;
+const renderScreens = (state: ViewerState) => { drawScreens(state); preparation?.update(state); };
 const openCursor = () => { const { cursor } = boardMarks(); if (cursor != null) enterFocus(cursor); };
+const workspaceActions: WorkspaceActions = {
+  exit: exitFocus, setInteractive,
+  zoomIn: () => workspace.zoomIn(), zoomOut: () => workspace.zoomOut(), zoomFit: () => workspace.zoomFit(),
+  zoomMenuPick: z => workspace.zoomMenuPick(z), toggleZoomMenu: byKey => workspace.toggleZoomMenu(byKey),
+};
+const pointActions: PointActions = { openFile, choose, cancel: cancelChoice, follow: followChooser };
 const actions: ShortcutActions = {
   screen: () => store.st ? store.st.screen : 'offline',
   fromBoard: () => !!store.st?.focus?.fromBoard,
-  tabCount, moveCursor, openCursor, exitFocus, toggleInteractive, zoomIn, zoomOut, zoomFit, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
+  tabCount, moveCursor, openCursor, exitFocus, toggleInteractive, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
+  zoomIn: workspaceActions.zoomIn, zoomOut: workspaceActions.zoomOut, zoomFit: workspaceActions.zoomFit,
 };
 const shortcuts = shortcutTable(phrase, actions);
 installShortcuts(shortcuts, actions, {
   chooserOpen: () => !!document.getElementById('chooser')?.classList.contains('on'),
-  cancelChoice: () => { post('/viewer/cancel'); },
-  closeZoomMenu,
+  cancelChoice,
+  closeZoomMenu: () => workspace.closeZoomMenu(),
   closeDirPop,
 });
-const viewer = createViewerRoot({ renderLegacy, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts, board: { open: enterFocus, point: pointCard } });
-startViewer(viewer.apply, viewer.connection, previewFilesChanged, preparation);
+const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
+  board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
+workspace = createWorkspace(findWorkspaceParts());
+startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: previewFilesChanged, prepared: preparation });
+
+/*
+ * 마우스로 누른 버튼은 포커스를 쥐지 않는다(D-63) — Chromium 은 누른 버튼에 포커스를 줘서, 다음 Enter(고른 카드 열기)를
+ * 그 버튼이 가져갔다(도움말이 다시 열렸다). 레일의 줄 · 닫기 · 파일 열기도 같다. Safari 는 처음부터 주지 않는다. 키보드(Tab → Enter · Space)는 그대로다.
+ * 빠른 열기 줄과 같은 수법이고, 글자를 고르는 자리(폴더 경로)는 버튼이 아니라 그대로 고를 수 있다.
+ */
+for (const id of ['bar', 'rail', 'panel', 'strip', 'chooser']) {
+  document.getElementById(id)?.addEventListener('mousedown', e => { if (e.button === 0 && (e.target as Element).closest('button, [role=button]')) e.preventDefault(); });
+}
 
 // 옛 카드 거르기의 검색어(파일별) — 거르기가 없어졌으니 한 번 치운다.
 try { for (const k of Object.keys(localStorage)) if (k.startsWith('prevue.search:')) localStorage.removeItem(k); } catch { /* 못 치워도 쓰이지 않는다 */ }
