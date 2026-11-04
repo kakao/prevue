@@ -57,6 +57,10 @@ body.resizing-ui main { padding-bottom: 0; }
             background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
 .resize-scene .duo-edge path { fill: none; stroke-linejoin: round; }
 .resize-scene .duo-edge .ring { stroke: var(--live); stroke-width: 4px; }
+/* 테 · 경첩의 150° 빛 — 몸체 띠(.duo-band)의 그러데이션과 같은 세 색이다. */
+.resize-scene #duoSheen stop:nth-child(1) { stop-color: var(--device-gloss); }
+.resize-scene #duoSheen stop:nth-child(2) { stop-color: var(--device-gloss-clear); }
+.resize-scene #duoSheen stop:nth-child(3) { stop-color: var(--device-gloss-shade); }
 /* 그림 끝 */
 /* 그림 시작 — 접기 전환의 리그(면 · 그늘 · 빛) */
 .resize-scene .rig { position: absolute; inset: 0; pointer-events: none; }
@@ -110,7 +114,7 @@ body.resizing-ui main { padding-bottom: 0; }
 
 .resize-scene.at-rest.await-live .unit .stage > img { visibility: visible; }
 
-/* 작업 공간 여닫기의 틀 모프(focus.js) — 나는 동안 실제 캔버스와 장면의 틀은 숨는다. 장식은 틀이 거의 닿은 뒤 들어오고(short4), 나갈 때는 먼저 물러난다(short2). */
+/* 작업 공간 여닫기의 틀 모프(workspace/focus.ts) — 나는 동안 실제 캔버스와 장면의 틀은 숨는다. 장식은 틀이 거의 닿은 뒤 들어오고(short4), 나갈 때는 먼저 물러난다(short2). */
 #focusView.morph-hold #stage, #focusView.morph-hold .unit .stage, .morph-target { visibility: hidden !important; }
 .resize-scene { --deco-dur: var(--duration-short4); }
 .resize-scene .unit :is(.outline, .tick, .cam), .resize-scene .ruler { transition: filter var(--deco-dur) var(--easing-standard); }

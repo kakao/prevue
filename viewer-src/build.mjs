@@ -2,13 +2,14 @@ import { build } from 'vite';
 import { readFile, readdir, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateState } from './generate-state.mjs';
 
 const source = dirname(fileURLToPath(import.meta.url));
 const destination = resolve(source, '../plugin/viewer');
 const check = process.argv.includes('--check');
 const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
+const server = await mkdtemp(join(tmpdir(), 'prevue-prerender-'));
 const legacy = join(source, 'legacy/js/');
 const handWritten = name => name === 'tokens.css' || name === 'js/resize-scene.js' || name === 'prevue.svg' || name.startsWith('strings/');
 
@@ -36,7 +37,8 @@ try {
         formats: ['es'],
         fileName: (_, name) => `js/${name}.js`,
       },
-      // 기존 모듈은 같은 URL의 한 벌만 쓴다 — 번들에 사본이 들면 사전 · 마지막 상태 · 캡슐이 두 벌이 된다.
+      // 기존 모듈은 같은 URL의 한 벌만 쓴다 — 번들에 사본이 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
+      // 손으로 고치는 resize-scene.js 도 같다 — 타입만 legacy/js 에 두고 본체는 plugin/viewer/js 의 그 주소로 부른다.
       // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
         external: id => id.startsWith(legacy),
@@ -51,13 +53,35 @@ try {
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   });
+  // 한 장의 정적 껍데기(WorkspaceShell)를 index.html 에 미리 그린다 — resize-scene.js 와 접기 하네스가 페이지의 그 마크업을 쥔다.
+  await build({
+    configFile: false,
+    root: source,
+    publicDir: false,
+    logLevel: 'warn',
+    ssr: { noExternal: true },
+    build: { ssr: join(source, 'src/prerender.tsx'), outDir: server, emptyOutDir: true, target: 'node22', minify: false,
+      rolldownOptions: { output: { entryFileNames: 'prerender.mjs' } } },
+    define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  });
+  const { prerendered } = await import(pathToFileURL(join(server, 'prerender.mjs')).href);
+  const shells = prerendered();
   const built = new Set(await files(temporary));
   for (const name of await files(join(source, 'legacy'))) {
     if (name.endsWith('.d.ts')) continue;
     // 청크 이름에 해시가 없어 기존 모듈과 같은 이름이면 그 청크를 덮는다.
     if (built.has(name)) throw Error(`번들 청크와 기존 모듈의 이름이 겹친다: ${name}`);
     await mkdir(dirname(join(temporary, name)), { recursive: true });
-    await writeFile(join(temporary, name), await readFile(join(source, 'legacy', name)));
+    let body = await readFile(join(source, 'legacy', name));
+    if (name === 'index.html') {
+      let html = body.toString('utf8');
+      for (const [slot, markup] of Object.entries(shells)) {
+        if (!html.includes(`<!-- prerender:${slot} -->`)) throw Error(`index.html 에 prerender:${slot} 자리가 없다`);
+        html = html.replace(`<!-- prerender:${slot} -->`, () => markup);
+      }
+      body = Buffer.from(html);
+    }
+    await writeFile(join(temporary, name), body);
   }
   // 준비 페이지는 데몬이 뜨기 전 준비 서버가 내준다 — 그 서버가 아는 JS만 불러야 한다(plugin/cli/prevue_prepare.py).
   const served = name => /^js\/preparation[^/]*\.js$/.test(name) || ['js/strings.js', 'js/messages.js', 'js/react.js'].includes(name);
@@ -87,4 +111,5 @@ try {
   console.log(check ? '뷰어 생성물이 원본과 맞다' : `뷰어 생성물 ${changed.length}개를 갱신했다`);
 } finally {
   await rm(temporary, { recursive: true, force: true });
+  await rm(server, { recursive: true, force: true });
 }

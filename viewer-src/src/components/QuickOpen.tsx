@@ -2,7 +2,7 @@ import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncE
 import { fetchPreviewFiles, post } from '../../legacy/js/api.js';
 import { applyReveal, cancelReveal, reveal } from '../../legacy/js/board.js';
 import { flash } from '../../legacy/js/capsule.js';
-import type { Connection } from '../../legacy/js/main.js';
+import type { Connection } from '../session';
 import { store } from '../../legacy/js/store.js';
 import { hideReactKeys, useHost } from '../host';
 import { matchFile, type FileEntry, type FileMatch, type PreviewFile } from '../match';

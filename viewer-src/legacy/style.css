@@ -1,6 +1,6 @@
 /* 값은 tokens.css 한 곳에 있고 여기는 역할 이름만 쓴다. 크롬은 무채색이고 색은 사건(pick · live)과 문제(error · warning · success)에만 둔다(D-93).
    프리뷰 그림이 주인공이라 크롬은 블러 · 유리 없이 불투명한 면 · 선 · 그림자 단계로 가른다. */
-/* 캡슐 자리는 토큰의 합이다 — 등록해 두면 계산된 값이 px 로 풀려 focus.js 가 읽는다. */
+/* 캡슐 자리는 토큰의 합이다 — 등록해 두면 계산된 값이 px 로 풀려 workspace/focus.ts 가 읽는다. */
 @property --cap-room { syntax: '<length>'; inherits: true; initial-value: 0px; }
 :root {
   /* 아래 구분선 1px 를 더해 52 — 헤더 시안(layout/header.html 안 C)과 같은 높이다. */
@@ -13,7 +13,7 @@
   --stage-min-h: 260px;
   /* 떠 있는 캡슐 자리 = 캡슐 바닥 여백 + 한 줄 캡슐 높이 + 간격. 그림이 캡슐 밑으로 들어가지 않게 늘 비워 둔다 — 캡슐이 뜰 때마다 그림이 줄면 출렁인다. */
   --cap-room: calc(var(--space-20) + var(--control-xlarge) + var(--space-16));
-  --tag-h: 20px;        /* 가리킨 박스 꼬리표 높이 — point.js tagRoom 은 이 높이 + 간격이다 */
+  --tag-h: 20px;        /* 가리킨 박스 꼬리표 높이 — workspace/point.ts tagRoom 은 이 높이 + 간격이다 */
   --tag-max-w: 360px;   /* 꼬리표가 그림을 가리는 폭의 상한 — 넘치면 파일명이 말줄임된다 */
   --chooser-w: 420px;   /* 후보 고르기 팝오버 폭(구조 시안 layers.html 안 3) */
 }
@@ -98,7 +98,7 @@ body.ws .app { flex-shrink: 0; }
 .back span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 /* 이 장의 이름 두 줄(D-63) — 위 프리뷰 이름 14 굵게, 아래 함수 이름 12 회색(창 제목 + 부제). 이름이 없으면 함수 이름 한 줄.
    줄마다 따로 줄인다 — 한 줄로 이으면 34% 칸에서 긴 함수 이름이 이름을 밀어냈다. 바 높이(44)는 그대로다.
-   자리와 폭은 focus.js fitTitle 이 양옆을 재서 준다(--ws-left · --ws-max) — 뒤로 버튼 · 알약을 덮지 않는다.
+   자리와 폭은 WorkspaceHeader 의 fitTitle 이 양옆을 재서 준다(--ws-left · --ws-max) — 뒤로 버튼 · 알약을 덮지 않는다.
    .bar-l(z 1) 위에 둔다 — 아래에 깔리면 바의 빈 칸이 호버를 먹어 툴팁(FQN)이 뜨지 않았다. */
 .ws-title { position: absolute; left: var(--ws-left, 50%); top: 0; z-index: 1; height: var(--bar-h); max-width: var(--ws-max, 34%); transform: translateX(-50%);
             display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0;
@@ -160,7 +160,7 @@ body.ws { --panel-w: 264px; }
 .panel { position: fixed; top: calc(var(--bar-h) + 1px); right: 0; bottom: 0; z-index: 16; width: var(--panel-w); display: flex; flex-direction: column; gap: var(--space-16);
          padding: var(--space-16) var(--space-12); overflow-y: auto; border-left: 1px solid var(--outline-variant); background: var(--surface);
          transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
-/* 작업 공간을 여닫는 모프 동안은 패널이 물러났다 들어온다(focus.js decorations) */
+/* 작업 공간을 여닫는 모프 동안은 패널이 물러났다 들어온다(workspace/focus.ts decorations) */
 .panel.deco-off { opacity: 0; pointer-events: none; }
 body:not(.resizing-ui) .pn-pick { display: none; }
 .pn-pick { display: flex; flex-direction: column; gap: var(--space-16); }
@@ -383,7 +383,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
   background: var(--live); vertical-align: 2px; }
 /* 칸 사이(10px)에서 덜어 이름 앞 점과 같은 6px. 칸이 없으면 덜지 않는다 — 덜면 칸 줄이 점보다 좁아져 점이 반쯤 잘린다. */
 .card.noname.focus:not(.cursor) .specs:not(:empty)::before { margin-right: calc(var(--space-4) * -1); }
-/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기가 표시 폭 하나로 배율을 낸다(point.js scaleOf). */
+/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기가 표시 폭 하나로 배율을 낸다(workspace/point.ts scaleOf). */
 .cstage img { display: block; max-width: 100%; height: auto; cursor: crosshair; }
 .cstage img.ghost, .stage img.ghost { position: absolute; pointer-events: none; transition: opacity var(--duration-medium2) var(--easing-standard); }
 .card.stale .cstage img { opacity: .4; }
@@ -456,7 +456,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .box { position: absolute; pointer-events: none; border: 1px solid var(--pick); background: var(--pick-container); border-radius: var(--corner-small); }
 /* 가리킨 것 — 사건이라 색(pick)을 쓴다. 빨강은 오류 전용이다. 굵기 · 이름 태그 · 한 번의 펄스로 호버와 가른다. */
 .box.pick { border: 2px solid var(--pick); background: var(--pick-container); z-index: 2; animation: pick var(--duration-medium2) var(--easing-standard); }
-/* 꼬리표가 가리킨 결과를 말한다(D-101) — `파일명:라인 · ✓ 복사됨`, 막히면 끝에 "눌러서 복사". 단추가 있어 누름을 받는다(point.js 가 아래로 새지 않게 막는다). */
+/* 꼬리표가 가리킨 결과를 말한다(D-101) — `파일명:라인 · ✓ 복사됨`, 막히면 끝에 "눌러서 복사". 단추가 있어 누름을 받는다(workspace/point.ts 가 아래로 새지 않게 막는다). */
 .box.pick .tag { position: absolute; left: -2px; bottom: calc(100% + var(--space-4)); display: inline-flex; align-items: center; gap: var(--space-6);
                  max-width: var(--tag-max-w); height: var(--tag-h); padding: 0 var(--space-6); border-radius: var(--corner-small);
                  background: var(--pick); color: var(--on-pick); font: var(--type-code-small); white-space: nowrap; pointer-events: auto; cursor: default; }
@@ -531,7 +531,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .error { color: var(--error); white-space: pre-wrap; font: var(--type-code-small); font-weight: var(--weight-medium); }
 .error::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: var(--space-6); border-radius: var(--corner-full); background: currentColor; vertical-align: 1px; }
 
-/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 꼬리표에서 내려오는 팝오버(D-101). 조용히 하나 찍지 않는다. 자리(left · top)는 point.js 가 잰다. */
+/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 꼬리표에서 내려오는 팝오버(D-101). 조용히 하나 찍지 않는다. 자리(left · top)는 workspace/point.ts 가 잰다. */
 .chooser { position: fixed; left: 0; top: 0; z-index: 22; width: min(var(--chooser-w), calc(100vw - 32px)); padding: var(--space-16);
            border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface);
            opacity: 0; visibility: hidden; transform: translateY(calc(var(--motion-enter-shift) * -1)) scale(var(--motion-enter-scale)); transform-origin: top left;

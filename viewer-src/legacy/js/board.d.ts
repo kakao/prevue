@@ -12,3 +12,7 @@ export function onRelayout(relayout: () => void): void;
 export function reveal(file: string, fn: string | null): void;
 export function cancelReveal(): void;
 export function applyReveal(): void;
+export function cardAt(index: number | null): HTMLElement | null;
+export function returnCard(index: number | null): HTMLElement | null;
+export function cardStage(card: HTMLElement | null): HTMLElement | null;
+export function ringCard(card: HTMLElement | null): void;
