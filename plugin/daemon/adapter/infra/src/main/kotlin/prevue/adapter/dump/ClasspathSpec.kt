@@ -227,8 +227,10 @@ internal class ClasspathSpec(
         }
 
     companion object {
+        fun appHolds(home: ClasspathSpec, app: ClasspathSpec): Boolean = app.classPath.any { it.startsWith(home.moduleDir.path + "/build/") }
+
         fun forRender(home: ClasspathSpec, app: ClasspathSpec?, overlay: File): Pair<ClasspathSpec, Boolean> {
-            val onApp = app != null && app.classPath.any { it.startsWith(home.moduleDir.path + "/build/") }
+            val onApp = app != null && appHolds(home, app)
             val r = if (onApp) app!! else app?.let { home.withResourcesFrom(it) } ?: home
             val ownFirst = if (onApp) home.ownClassPath.filter { it !in home.rClassJars } else emptyList()
             val front = listOf(overlay.absolutePath) + ownFirst

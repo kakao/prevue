@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
  * 엔진은 액터로만 부른다(D-74). 엔진의 일반 필드가 안전한 것은 스레드가 하나라서가 아니라 호출이 `EngineActor` 채널로 줄을 서서다 —
  * 통합 테스트는 전용 스레드 없이(Dispatchers.Default) 액터를 돌려도 통과한다. 그래서 줄 밖에서 엔진 포트를 부르는 길이 생기면 여기서 막는다.
  * 줄 밖에서 허락하는 것은 status 관측값(렌더가 멈춰도 답해야 한다)과 조립 때 한 번 거는 `protect`뿐이다.
- * 구체 엔진(`RenderEngine`)은 조립(`Infra`)만 쥐고, 조립 때 읽는 것도 정해 둔다. 리소스 덧층(`ResourceValues`)은 렌더 스레드와 저장이
+ * 구체 엔진(`RenderEngine`)은 조립(`RenderBindings`)만 쥐고, 조립 · 렌더러 잃음 · 포트 묶음에서 읽는 것도 정해 둔다. 리소스 덧층(`ResourceValues`)은 렌더 스레드와 저장이
  * 만나는 스레드 경계라 이 규칙 밖이다 — 그쪽은 스냅숏(StateFlow) 하나를 바꿔 끼운다.
  * 이 검사는 철자를 센다 — 별칭(`val e = ports.engine`)이나 `with(engine)`은 못 본다.
  */
@@ -31,7 +31,7 @@ class EngineAccessRuleTest {
     }
 
     @Test fun `구체 엔진은 조립만 쥐고 조립 때 읽는 것만 읽는다`() {
-        assertEquals(listOf("adapter/infra/Infra.kt"), EngineRule.concreteHolders(files))
+        assertEquals(listOf("adapter/infra/RenderBindings.kt"), EngineRule.concreteHolders(files))
     }
 
     @Test fun `일부러 넣은 위반을 잡는다`() {
@@ -39,15 +39,17 @@ class EngineAccessRuleTest {
             "domain/A.kt" to "class A(private val r: PreviewRenderer) { fun a() = r.show(p) }\n",
             "domain/ReadStatusUseCase.kt" to "val s = engine.loaderGen + engine.codeChanged()\n",
             "domain/UseCases.kt" to "init { ports.engine.protect { k }; ports.engine.buildChanged() }\n",
-            "adapter/infra/Infra.kt" to "val engine = RenderEngine(s, l, o)\nlog(engine.bootstrapMs); engine.codeChanged()\n",
+            "adapter/infra/RenderBindings.kt" to "val engine = RenderEngine(s, l, o)\nlog(engine.bootstrapMs); engine.codeChanged()\n",
+            "adapter/infra/RendererLoss.kt" to "engine.await().lost; engine.buildChanged()\n",
             "adapter/http/Server.kt" to "// RenderEngine 은 액터가 쥔다\nclass Server(private val e: RenderEngine)\n",
         )
         assertEquals(listOf("domain/A.kt"), EngineRule.holders(planted))
         assertEquals(
-            listOf("domain/ReadStatusUseCase.kt → codeChanged", "domain/UseCases.kt → buildChanged", "adapter/infra/Infra.kt → codeChanged"),
+            listOf("domain/ReadStatusUseCase.kt → codeChanged", "domain/UseCases.kt → buildChanged", "adapter/infra/RenderBindings.kt → codeChanged",
+                "adapter/infra/RendererLoss.kt → buildChanged"),
             EngineRule.outOfQueue(planted),
         )
-        assertEquals(listOf("adapter/http/Server.kt", "adapter/infra/Infra.kt"), EngineRule.concreteHolders(planted))
+        assertEquals(listOf("adapter/http/Server.kt", "adapter/infra/RenderBindings.kt"), EngineRule.concreteHolders(planted))
     }
 }
 
@@ -57,7 +59,9 @@ object EngineRule {
     private val outside = mapOf(
         "domain/ReadStatusUseCase.kt" to (Regex("""\bengine\.(\w+)""") to observed),
         "domain/UseCases.kt" to (Regex("""\bports\.(?:engine|sessions)\.(\w+)""") to setOf("protect")),
-        "adapter/infra/Infra.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives", "await", "resources")),
+        "adapter/infra/RenderBindings.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives")),
+        "adapter/infra/RendererLoss.kt" to (Regex("""\bengine\.(\w+)""") to setOf("await")),
+        "adapter/infra/PortBindings.kt" to (Regex("""\bengine\.(\w+)""") to setOf("resources")),
     )
     private val concrete = Regex("""\bRenderEngine\b""")
     private fun code(text: String) = text.lineSequence().filterNot { it.trimStart().let { l -> l.startsWith("*") || l.startsWith("//") || l.startsWith("/*") } }
