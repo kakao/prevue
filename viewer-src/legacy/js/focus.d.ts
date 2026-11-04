@@ -4,3 +4,4 @@ export function zoomIn(): void;
 export function zoomOut(): void;
 export function zoomFit(): void;
 export function closeZoomMenu(): boolean;
+export function enterFocus(index: number): void;

@@ -4,7 +4,7 @@ import { $, store } from "./store.js";
 import { phrase, daemonText } from "./strings.js";
 import { connect, fetchProjectFiles } from "./api.js";
 import { renderChoice, clearPick } from "./point.js";
-import { renderBoard, clearTrees, applyReveal, cardAt, returnCard, cardStage, ringCard } from "./board.js";
+import { clearTrees, applyReveal, cardAt, returnCard, cardStage, ringCard } from "./board.js";
 import { renderFocus, renarrow, fitStage, focusImage, syncHistory, frameOf, morphIn, morphOut } from "./focus.js";
 import { renderError, setStatus, flash } from "./capsule.js";
 import { transition, transitioning } from "./motion.js";
@@ -56,13 +56,12 @@ function leaveBoard(s) {
 
 export function drawLegacy(s) {
   const { wasBoard, arrive, file } = arrival;
-  boardView.hidden = s.screen !== "board";
+  // 보드(#boardView)는 React 의 PreviewBoard 가 이미 그렸다 — 그 효과가 먼저 돈다.
   // 빈 화면은 시작 화면이 갖는다(quickopen.js) — 한 장의 틀을 보이면 src 없는 그림이 깨진 상자로 남았다.
   focusView.hidden = s.screen !== "focus";
   vacantView.hidden = s.screen !== "vacant";
   vacantMsg.textContent = daemonText(s.vacant);
   $("buildNotice").hidden = !s.buildPending;
-  renderBoard(s);
   renderQuickOpen(s);
   renderFocus(s.screen === "focus" ? s.focus : null);
   syncHistory(s);
