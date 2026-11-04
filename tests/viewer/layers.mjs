@@ -41,7 +41,7 @@ const server = createServer(async (request, response) => {
   } else if (path === '/preview-files.json') json({ ready: true, files: [] });
   else if (path === '/project-files.json') json({ files: {} });
   else if (path === '/tree.json') json(tree);
-  else if (path === '/shot.jpg') { response.setHeader('Content-Type', 'image/jpeg'); response.end(await readFile(join(root, 'prototypes/design-system/img/pearl/PearlListPreview.jpg'))); }
+  else if (path === '/shot.jpg') { response.setHeader('Content-Type', 'image/jpeg'); response.end(await readFile(join(root, 'tests/viewer/img/PearlListPreview.jpg'))); }
   else if (path === '/viewer/point') {
     const b = await body(request); calls.point++;
     await new Promise(ok => setTimeout(ok, delays.get(b.line) || 0));

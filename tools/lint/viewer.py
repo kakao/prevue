@@ -21,7 +21,7 @@ TOKENS = "plugin/viewer/tokens.css"
 # 데이터라 날값이 아닌 것 — (경로, 그 줄에 있는 조각, 이유). 가리키는 곳이 사라지면 실패한다.
 DATA = ()
 
-NEW_VALUE = "새 값이 필요하면 tokens.css 와 견본(prototypes/design-system)을 같은 PR 에서 고친다"
+NEW_VALUE = "새 값이 필요하면 tokens.css 와 Storybook 재료/Tokens(viewer-src/stories/Tokens.stories.tsx)를 같은 PR 에서 고친다. 색 역할이면 tests/viewer/contrast-pairs.json 도"
 ADVICE = {
     "viewer/raw-color": ("날색", "역할 이름(--surface · --on-surface · --outline · --pick …)을 쓴다"),
     "viewer/raw-type": ("글자 날값", "font: var(--type-*) 한 줄로 쓴다. 굵기만 바꿀 때는 --weight-*"),

@@ -66,3 +66,14 @@ JavaScript 예외나 Promise 거부가 있으면 실패한다. Chrome의 `Resize
 Apple M4 Max · macOS arm64 · Chrome 156.0.8078.80 · Node 25.9.0에서 재었다. 각 시나리오는 예열 5회 + 측정 30회이며, 두 회차 모두 JavaScript 예외·ResizeObserver 통지가 없었다. 실제 실행 파일·판은 JSON의 `environment`가 기준이다.
 
 기준선의 큰 p90을 1ms 단위로 올린 4·2·35ms로 처음 비교했을 때, 같은 소스의 보드 p90이 5.0ms로 실패했다(중앙값 2.1ms). 이 검증에서는 ResizeObserver 통지가 1건 있었다. 원값은 `baseline.json`의 `initialStrictCheck`에 보존했다. 이 변동을 보고 프레임 단위 상한으로 조정하기로 합의했다. 따라서 시간 판정은 프레임 예산을 지키는지를 뜻하며, 기준선의 소수점 수치보다 느려지지 않았음을 뜻하지 않는다. 여기의 프레임 단위는 시간 예산이며 paint 완료나 실제 화면 주사율을 측정한 값은 아니다.
+
+## 대비 실측
+
+`contrast.mjs`는 `plugin/viewer/tokens.css`의 역할 색을 라이트 · 다크 면에서 풀어 `contrast-pairs.json`의 쌍마다 기준을 넘는지 잰다. 데몬 없이 Chrome만 쓰며, 계산을 `contrast-measure.ts`에서 타입을 지운 채 읽으므로 Node 22.18 이상이 필요하다. 미달이 하나라도 있거나, 쌍의 역할이 `tokens.css`에 없거나, 바탕이 끝까지 반투명해 잴 수 없으면 종료 1이다 — 잴 수 없는 쌍은 가짜 색으로 통과시키지 않고 `못 잼`으로 적는다.
+
+```sh
+node tests/viewer/contrast.mjs
+node tests/viewer/contrast.mjs --plant on-surface=surface   # 미달을 심는다 — 종료 1이어야 맞다
+```
+
+기준은 본문 글자 4.5:1, 큰 글자 · 조작 테두리 · 가리킨 박스 3:1이다. 구분선(`need` 0)은 장식이라 면제하고 값만 보인다. 반투명한 바탕은 `bg`의 순서대로(위에서 아래) 겹친 색으로, 반투명한 글자는 그 바탕에 겹친 색으로 잰다. `bg`의 끝은 불투명한 면이어야 한다. 색 역할을 더하거나 바꾸면 이 쌍도 같은 PR에서 고친다. Storybook `재료/Tokens`의 Contrast가 같은 쌍과 계산으로 표를 그린다. CI에는 Chrome이 없어 로컬에서 돌린다.
