@@ -1,0 +1,13 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import '../legacy/style.css';
+import { PreviewBoard } from '../src/components/PreviewBoard';
+import { exampleArgs, examples } from './examples';
+import { pearlBoard } from './pearl';
+
+const meta = { title: '보드/PreviewBoard', ...exampleArgs } satisfies Meta<{ example: number }>;
+export default meta;
+type Story = StoryObj<{ example: number }>;
+// 묶음마다 배율 하나(D-62) — 창 폭을 바꾸면 한 줄에 안 드는 묶음만 줄어들고 머리에 배율이 붙는다.
+export const Pearl: Story = { render: () => <PreviewBoard board={pearlBoard} screen="board" /> };
+// 계약 예제의 그림 주소는 데몬의 것이라 Storybook 에서는 비어 보인다. 보드가 없는 예제(single)는 빈 보드다.
+export const Contract: Story = { render: ({ example }) => <PreviewBoard board={examples[example].board} screen="board" /> };
