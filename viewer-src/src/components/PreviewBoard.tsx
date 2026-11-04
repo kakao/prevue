@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { boardMarks, clearTrees, setCursor, subscribeBoard, syncBoard, type BoardMarks } from '../../legacy/js/board.js';
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { boardMarks, clearTrees, onRelayout, setCursor, subscribeBoard, syncBoard, type BoardMarks } from '../../legacy/js/board.js';
 import type { CardParts } from '../../legacy/js/board-point.js';
 import { swapImage } from '../../legacy/js/motion.js';
 import { useHost } from '../host';
@@ -17,7 +17,7 @@ export type BoardActions = {
 };
 export type BoardHosts = { view: HTMLElement; cards: HTMLElement };
 
-const NO_MARKS: BoardMarks = { cursor: null, returned: null, ring: 0 };
+const NO_MARKS: BoardMarks = { cursor: null, returned: null };
 const cardIn = (b: Board, i: number | null) => b.groups.flatMap(g => g.cards).find(c => c.index === i);
 
 /*
@@ -134,16 +134,17 @@ function Specs({ card }: { card: Card }) {
   })}</span>;
 }
 
-export function PreviewCard({ card: c, fn, cursor = false, returned = 0, actions }: {
+// 커서가 옮겨도 바뀐 두 장만 다시 그린다.
+export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = false, returned = false, actions }: {
   card: Card;
   fn: string;
   cursor?: boolean;
-  /** 돌아온 카드면 강조를 튼 횟수 — 같은 카드로 다시 돌아오면 처음부터 다시 튼다. 아니면 0. */
-  returned?: number;
+  /** 작업 공간에서 돌아온 카드 — 강조를 처음부터 다시 트는 것은 ringCard 가 한다. */
+  returned?: boolean;
   actions?: BoardActions;
 }) {
   const { phrase, daemonText } = useMessages();
-  const el = useRef<HTMLElement>(null), stage = useRef<HTMLDivElement>(null), img = useRef<HTMLImageElement>(null);
+  const stage = useRef<HTMLDivElement>(null), img = useRef<HTMLImageElement>(null);
   const box = useRef<HTMLDivElement>(null), pick = useRef<HTMLDivElement>(null);
   const ok = !!(c.ok && c.imageUrl);
 
@@ -162,17 +163,10 @@ export function PreviewCard({ card: c, fn, cursor = false, returned = 0, actions
       image.hidden = false;
     } else image.hidden = true;
   }, [ok, c.imageUrl]);
-  useLayoutEffect(() => {
-    if (!returned) return;
-    const card = el.current!;
-    card.classList.remove('returned');
-    void card.offsetWidth;
-    card.classList.add('returned');
-  }, [returned]);
 
   // 판에 드는 줄까지만 보인다(layoutGroups 의 --lines) — 실패 문장은 400자까지라 작은 판을 넘친다.
   const failure = !ok && c.failure ? daemonText(c.failure) : null;
-  return <article ref={el} data-i={c.index} data-fn={fn}
+  return <article data-i={c.index} data-fn={fn}
     // 이름(name=)이 없으면 크기 칸이 첫 줄에 선다 — 함수 이름은 묶음 머리가 갖는다(D-62).
     className={['card', c.isFocus && 'focus', c.stale && 'stale', !c.label && 'noname', cursor && 'cursor', returned && 'returned'].filter(Boolean).join(' ')}>
     <div className="cstage" ref={stage}>
@@ -187,7 +181,7 @@ export function PreviewCard({ card: c, fn, cursor = false, returned = 0, actions
       <div className="sub"><Specs card={c} /><span className="meta">{ok ? daemonText(c.meta) : ''}</span></div>
     </div>
   </article>;
-}
+});
 
 export function PreviewGroup({ group, marks = NO_MARKS, actions }: { group: Group; marks?: BoardMarks; actions?: BoardActions }) {
   const { phrase } = useMessages();
@@ -198,7 +192,7 @@ export function PreviewGroup({ group, marks = NO_MARKS, actions }: { group: Grou
       <span className="bad">{group.failed ? `· ${phrase('board.failed', { n: group.failed })}` : ''}</span>
     </span></div>
     <div className="gbody"><div className="board">{group.cards.map(c =>
-      <PreviewCard key={c.index} card={c} fn={group.name} cursor={marks.cursor === c.index} returned={marks.returned === c.index ? marks.ring : 0} actions={actions} />)}</div></div>
+      <PreviewCard key={c.index} card={c} fn={group.name} cursor={marks.cursor === c.index} returned={marks.returned === c.index} actions={actions} />)}</div></div>
   </section>;
 }
 
@@ -216,16 +210,16 @@ export function PreviewBoard({ board, screen, hosts, actions }: {
 
   // 한 장에 있는 동안은 보던 보드를 그대로 둔다. 복귀 직후의 상태에는 아직 조작한 그림이 남아 있어,
   // 원래 그림이 오기까지 보던 보드의 배치를 보존한다.
+  // 상태가 올 때마다 한 번만 정한다 — 커서 같은 다른 까닭의 렌더에서는 같은 보드를 그대로 쓴다.
   const rest = useRef<{ board: Board | null; live: string | null }>({ board: null, live: null });
-  let shown: Board | null;
-  if (screen === 'focus' && board) {
-    rest.current.live = cardIn(board, board.focus)?.imageUrl ?? null;
-    shown = rest.current.board;
-  } else {
-    const r = rest.current, current = board && cardIn(board, board.focus);
-    if (board && r.board?.file === board.file && r.live && current?.imageUrl === r.live) shown = { ...r.board, focus: board.focus };
-    else { r.board = board; r.live = null; shown = board; }
-  }
+  const shown = useMemo(() => {
+    const r = rest.current;
+    if (screen === 'focus' && board) { r.live = cardIn(board, board.focus)?.imageUrl ?? null; return r.board; }
+    const current = board && cardIn(board, board.focus);
+    if (board && r.board?.file === board.file && r.live && current?.imageUrl === r.live) return { ...r.board, focus: board.focus };
+    r.board = board; r.live = null;
+    return board;
+  }, [board, screen]);
   // 카드 구성이 바뀌었을 때만 새로 짓는다 — 다시 지으면 스크롤 위치와 받아 둔 트리가 날아가고, 다른 파일의 그림에서 크로스페이드한다.
   const key = shown ? shown.file + '|' + shown.groups.map(g => g.cards.map(c => c.previewId).join(',')).join('|') : '';
   useLayoutEffect(() => { clearTrees(); }, [key]);
@@ -242,12 +236,11 @@ export function PreviewBoard({ board, screen, hosts, actions }: {
   // 폭이 바뀔 때만 다시 잰다 — 그림이 와서 높이만 바뀔 때마다 돌 이유가 없다.
   useEffect(() => {
     if (!cards) return;
-    const observer = new ResizeObserver(() => {
-      const W = cards.clientWidth;
-      if (W && W !== laid.current && latest.current) laid.current = layoutGroups(cards, latest.current, words.current);
-    });
+    const relayout = () => { if (latest.current) laid.current = layoutGroups(cards, latest.current, words.current) || laid.current; };
+    const observer = new ResizeObserver(() => { const W = cards.clientWidth; if (W && W !== laid.current) relayout(); });
     observer.observe(cards);
-    return () => observer.disconnect();
+    onRelayout(relayout);
+    return () => { observer.disconnect(); onRelayout(() => {}); };
   }, [cards]);
 
   const body = shown && <Fragment key={key}>{shown.groups.map((g, gi) => <PreviewGroup key={gi} group={g} marks={marks} actions={actions} />)}</Fragment>;

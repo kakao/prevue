@@ -8,8 +8,8 @@ function cardEl(i) { return cardsEl()?.querySelector(`.card[data-i="${i}"]`) || 
 /** 지금 눈에 보이는 카드인가. */
 function isShown(el) { return !!el.offsetParent; }
 
-// 카드의 표시 — 커서와 돌아온 카드. ring 은 같은 카드로 다시 돌아와도 강조를 처음부터 다시 틀게 센다.
-let marks = { cursor: null, returned: null, ring: 0 };
+// 카드의 표시 — 커서와 돌아온 카드.
+let marks = { cursor: null, returned: null };
 const listeners = new Set();
 function mark(next) {
   if (Object.keys(next).every(key => marks[key] === next[key])) return;
@@ -56,9 +56,12 @@ export function moveCursor(d) {
  * 함수 없이 파일만 골랐으면 보던 자리(탭의 스크롤)를 그대로 둔다. 다른 파일이면 탭이 열린 뒤에 적용되므로 기다렸다 건다.
  */
 let pending = null, revealed = null, revealedAt = 0;
+// 묶음 배율을 지금 폭으로 다시 잰다 — PreviewBoard 가 건다.
+let relayout = () => {};
+export function onRelayout(f) { relayout = f; }
 export function reveal(file, fn) { pending = { file, fn }; }
 export function cancelReveal() { pending = null; }
-/** main 이 화면을 다 그린 뒤(스크롤 자리를 되살린 뒤) 부른다. 묶음 배율 · 줄은 PreviewBoard 가 그 전에 새 폭으로 쟀다. */
+/** main 이 화면을 다 그린 뒤(스크롤 자리를 되살린 뒤) 부른다. */
 export function applyReveal() {
   if (!pending || pending.file !== drawnFile || !store.st || store.st.screen !== "board") return;
   const { fn } = pending;
@@ -70,6 +73,8 @@ export function applyReveal() {
   if (!first) return;
   mark({ cursor: Number(first.dataset.i) });
   revealed = marks.cursor; revealedAt = performance.now();
+  // 작업 공간에서 막 돌아왔으면 PreviewBoard 가 잰 폭은 작업 공간의 것이다(body.ws 를 걷기 전) — 먼저 다시 재야 잰 자리가 맞는다.
+  relayout();
   // 묶음 머리가 헤더 아래 붙는다(sticky) — 머리째 보이게 그만큼 띄운다.
   pin(d);
 }
@@ -118,6 +123,10 @@ let returnTimer = null;
 export function ringCard(el) {
   if (!el) return;
   clearTimeout(returnTimer);
-  mark({ returned: Number(el.dataset.i), ring: marks.ring + 1 });
+  // 클래스는 React 가 marks 로 그리지만 다음 렌더를 기다리면 모프가 끝난 뒤에 붙는다 — 여기서 바로 붙이고 강조를 처음부터 다시 튼다.
+  el.classList.remove("returned");
+  void el.offsetWidth;
+  el.classList.add("returned");
+  mark({ returned: Number(el.dataset.i) });
   returnTimer = setTimeout(() => mark({ returned: null }), 900);
 }
