@@ -1,5 +1,6 @@
 package prevue.daemon
 
+import prevue.infrastructure.store.InMemoryWorkspace
 import java.io.File
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.BindingContainer
@@ -13,7 +14,7 @@ import prevue.infrastructure.bindings.InfraLog
 import prevue.infrastructure.bindings.TargetCheckout
 import prevue.infrastructure.bindings.WatchRoots
 import prevue.application.port.Clock
-import prevue.application.service.Workspace
+import prevue.application.port.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.ModuleInfo
 
@@ -27,7 +28,7 @@ internal object DaemonBindings {
 
     @Provides @SingleIn(AppScope::class)
     fun workspace(module: ModuleInfo, graph: ModuleGraph, @WatchRoots roots: List<File>): Workspace =
-        Workspace(module, Clock(System::currentTimeMillis), graph, roots)
+        InMemoryWorkspace(module, Clock(System::currentTimeMillis), graph, roots)
 
     @Provides
     fun entryHooks(config: InfraConfig, hooks: DaemonHooks): EntryHooks = EntryHooks(config.port, hooks.log, hooks.onShutdown)

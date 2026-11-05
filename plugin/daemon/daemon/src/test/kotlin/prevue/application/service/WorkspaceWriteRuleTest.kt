@@ -20,18 +20,18 @@ class WorkspaceWriteRuleTest {
         )
     }
 
-    @Test fun `편집기는 Workspace만 만든다`() {
+    @Test fun `편집기는 InMemoryWorkspace만 만든다`() {
         assertEquals(emptyList<String>(), WriteRule.leaks(files))
     }
 
-    @Test fun `Workspace에 흩어진 가변 필드가 없다`() {
-        val ws = files.getValue("application/service/Workspace.kt")
+    @Test fun `InMemoryWorkspace에 흩어진 가변 필드가 없다`() {
+        val ws = files.getValue("infrastructure/store/InMemoryWorkspace.kt")
         assertEquals(emptyList<String>(), listOf("@Volatile", "AtomicReference", "internal set", "private set").filter { it in ws })
     }
 
     @Test fun `일부러 넣은 위반을 잡는다`() {
         val planted = mapOf(
-            "application/service/Workspace.kt" to "private val _state = MutableStateFlow(WorkspaceState())\nval ed = WorkspaceEditor(clock) { f -> _state.updateAndGet(f) }\n",
+            "infrastructure/store/InMemoryWorkspace.kt" to "private val _state = MutableStateFlow(WorkspaceState())\nval ed = WorkspaceEditor(clock) { f -> _state.updateAndGet(f) }\n",
             "application/service/A.kt" to "fun a() { ws.recordCard(1, 0, 0, r) }\n",
             "application/service/B.kt" to "fun b() { ws.noteCreated(c, d); ws.noteCreated(c, d) }\n",
             "application/service/C.kt" to "val ed = WorkspaceEditor(clock) { it }\n",
@@ -44,11 +44,12 @@ class WorkspaceWriteRuleTest {
 object WriteRule {
     private val outside = Regex("""\.(recordCard|noteCreated|recordFill)\(""")
     private const val EDITOR = "WorkspaceEditor("
+    private val MAKERS = setOf("application/port/Workspace.kt", "infrastructure/store/InMemoryWorkspace.kt")
 
     fun outOfQueue(files: Map<String, String>): List<String> =
         files.entries.sortedBy { it.key }.flatMap { (path, text) -> outside.findAll(text).map { "$path → ${it.groupValues[1]}" } }
 
     fun leaks(files: Map<String, String>): List<String> = files.flatMap { (path, text) ->
-        if (path == "application/service/Workspace.kt") emptyList() else listOfNotNull(EDITOR.takeIf { it in text }).map { "$path → $it" }
+        if (path in MAKERS) emptyList() else listOfNotNull(EDITOR.takeIf { it in text }).map { "$path → $it" }
     }
 }

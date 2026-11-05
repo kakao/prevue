@@ -1,5 +1,6 @@
 package prevue.application.service
 
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.ShowResult
 /** 보여 주는 한 장을 새 태스크로 다시 그린다 — 앞의 터치·시계 진행을 버리고 처음 상태로. */

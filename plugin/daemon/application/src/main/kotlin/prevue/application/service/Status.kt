@@ -1,5 +1,7 @@
 package prevue.application.service
 
+import prevue.application.domain.model.WorkspaceState
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop

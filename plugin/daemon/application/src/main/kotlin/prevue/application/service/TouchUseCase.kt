@@ -1,5 +1,7 @@
 package prevue.application.service
 
+import prevue.application.port.WorkspaceEditor
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.Aim
 import prevue.application.domain.model.Miss

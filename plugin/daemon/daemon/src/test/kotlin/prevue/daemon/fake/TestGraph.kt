@@ -67,7 +67,7 @@ import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
 import prevue.application.service.EngineActor
 import prevue.application.service.LiveLoop
-import prevue.application.service.Workspace
+import prevue.application.port.Workspace
 import prevue.application.port.PrevueDispatchers
 
 /**

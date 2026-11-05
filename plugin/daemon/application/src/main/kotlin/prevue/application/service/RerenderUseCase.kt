@@ -1,5 +1,6 @@
 package prevue.application.service
 
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.ShowResult
 /** 코드가 바뀌지 않았을 때 — 보여 주는 한 장을 같은 태스크로 다시 그린다. */

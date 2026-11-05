@@ -1,5 +1,6 @@
 package prevue.application.service
 
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.ShowResult
 /** FR-5. 새 태스크에서 시계를 ms만큼 결정적으로 진행시킨 한 장. 시작점이 같아야 재현되므로 매번 새 태스크부터 한다. */

@@ -1,5 +1,6 @@
 package prevue.application.service
 
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow

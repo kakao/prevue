@@ -1,5 +1,6 @@
 package prevue.application.service
 
+import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject

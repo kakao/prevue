@@ -1,5 +1,6 @@
 package prevue.daemon.fake
 
+import prevue.infrastructure.store.InMemoryWorkspace
 import prevue.application.domain.model.Verbatim
 import java.io.File
 import java.nio.file.Files
@@ -51,7 +52,7 @@ import prevue.application.port.ResourceKey
 import prevue.application.port.ResourceLookup
 import prevue.application.port.ResourceValues
 import prevue.application.port.Clock
-import prevue.application.service.Workspace
+import prevue.application.port.Workspace
 import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
@@ -394,7 +395,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
         resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.DrawPosturesUseCase.QUIET_MS,
         hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
     ): TestGraph {
-        val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())
+        val ws = InMemoryWorkspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
             ProjectFiles(root, graph.roots, realDispatchers).apply { buildInBackground(scope) }, resources = resources, sources = sources, builds = builds)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)

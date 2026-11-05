@@ -1,5 +1,6 @@
 package prevue.daemon
 
+import prevue.infrastructure.store.InMemoryWorkspace
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +33,7 @@ import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Clock
-import prevue.application.service.Workspace
+import prevue.application.port.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.TestGraph
@@ -76,7 +77,7 @@ class KmpRenderIntegrationTest {
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers, resourceApk.second)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
-        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
+        ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
         sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) }
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))
