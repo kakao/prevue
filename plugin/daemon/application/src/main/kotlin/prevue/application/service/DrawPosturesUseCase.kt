@@ -21,7 +21,7 @@ import prevue.application.port.RenderOutput
 @Inject
 class DrawPosturesUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
     private val scope: CoroutineScope,
     @Named(QUIET) private val quietMs: Long = QUIET_MS,

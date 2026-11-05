@@ -16,7 +16,7 @@ import prevue.application.domain.rule.StaleReasons
 @Inject
 class ApplySaveUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val modules: StaleCallers,
     private val literals: LiteralPatches,
     private val resources: ResourcePatches,

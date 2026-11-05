@@ -26,7 +26,7 @@ import prevue.application.domain.model.SettledShot
 
 @SingleIn(AppScope::class)
 @Inject
-class EngineActor(
+class Engine(
     private val renderer: PreviewRenderer,
     sessions: LiveSessionFactory,
     scope: CoroutineScope,

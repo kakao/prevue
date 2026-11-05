@@ -15,7 +15,7 @@ import prevue.application.domain.model.BoardFill
 @Inject
 class FillBoardUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val drawCard: DrawCardUseCase,
     private val scope: CoroutineScope,
 ) : BoardFiller {

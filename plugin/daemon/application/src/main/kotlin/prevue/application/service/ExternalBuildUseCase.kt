@@ -21,7 +21,7 @@ import prevue.application.domain.model.PreviewSpec
 @Inject
 class ExternalBuildUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val compiler: Compiler,
     private val literals: LiteralPatches,
     private val live: LiveShot,

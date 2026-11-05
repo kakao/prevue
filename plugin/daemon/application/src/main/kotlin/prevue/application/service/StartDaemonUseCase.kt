@@ -14,7 +14,7 @@ import prevue.application.port.PreviewRenderer
 class StartDaemonUseCase(
     private val ws: Workspace,
     private val renderer: PreviewRenderer,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val settle: SettleUseCase,
     private val postures: DrawPosturesUseCase,
     private val scope: CoroutineScope,

@@ -12,7 +12,7 @@ import prevue.application.domain.rule.Aiming
 @Inject
 class TouchUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
 ) {
     suspend operator fun invoke(type: String, x: Int, y: Int, by: String, settle: Boolean): TouchResult = ws.exclusive { ed ->

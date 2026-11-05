@@ -29,7 +29,7 @@ import prevue.application.domain.rule.StaleReasons
 @Inject
 class Tabs(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val previews: PreviewRepository,
     private val live: LiveShot,
     private val fillBoard: BoardFiller,

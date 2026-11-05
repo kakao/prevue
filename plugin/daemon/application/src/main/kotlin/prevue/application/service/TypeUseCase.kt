@@ -7,7 +7,7 @@ import prevue.application.domain.model.TypeResult
 @Inject
 class TypeUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
 ) {
     suspend operator fun invoke(text: String, by: String): TypeResult = ws.exclusive { ed ->

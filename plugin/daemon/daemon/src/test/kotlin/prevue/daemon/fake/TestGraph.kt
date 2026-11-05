@@ -65,7 +65,7 @@ import prevue.application.port.ResourceValues
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
-import prevue.application.service.EngineActor
+import prevue.application.service.Engine
 import prevue.application.service.LiveLoop
 import prevue.application.port.Workspace
 import prevue.application.port.PrevueDispatchers
@@ -82,7 +82,7 @@ import prevue.application.port.PrevueDispatchers
 )
 internal interface TestGraph {
     val workspace: Workspace
-    val engine: EngineActor
+    val engine: Engine
     val startDaemon: StartDaemonUseCase
 
     val drawCard: DrawCardUseCase

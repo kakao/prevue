@@ -21,7 +21,7 @@ import prevue.application.domain.rule.ScrollUntil
 @Inject
 class ScrollUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
     private val sources: SourceFileRepository,
 ) {

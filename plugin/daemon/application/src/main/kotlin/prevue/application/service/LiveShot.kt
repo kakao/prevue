@@ -28,7 +28,7 @@ import prevue.application.domain.rule.StaleReasons
  */
 @SingleIn(AppScope::class)
 @Inject
-class LiveShot(private val ws: Workspace, private val engine: EngineActor) {
+class LiveShot(private val ws: Workspace, private val engine: Engine) {
     /** 새 태스크로 그려 live로 삼는다. [since]는 이 렌더를 부른 일의 시작(epoch ms)이고, 없으면 그리기 시작이다(D-63). */
     suspend fun show(
         ed: WorkspaceEditor, spec: PreviewSpec, by: String, since: Long? = null, keepPostures: Boolean = false, deferMissing: Boolean = false,

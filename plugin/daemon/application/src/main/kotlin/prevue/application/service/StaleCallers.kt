@@ -28,7 +28,7 @@ import prevue.application.port.SourceFileRepository
 @Inject
 class StaleCallers(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val compiler: Compiler,
     private val literals: LiteralPatches,
     private val sources: SourceFileRepository,

@@ -21,7 +21,7 @@ import prevue.application.domain.rule.CardPolicy.Decision
 @Inject
 class DrawCardUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
     private val callers: StaleCallers,
     private val scope: CoroutineScope,
