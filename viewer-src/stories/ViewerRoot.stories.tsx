@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import board from '../../plugin/daemon/app/src/test/contract/viewer.state.board.json';
+import board from '../../plugin/daemon/daemon/src/test/contract/viewer.state.board.json';
 import { ViewerRoot } from '../src/ViewerRoot';
 import type { ViewerState } from '../src/state';
 

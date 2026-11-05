@@ -1,8 +1,8 @@
-import board from '../../plugin/daemon/app/src/test/contract/viewer.state.board.json';
-import focus from '../../plugin/daemon/app/src/test/contract/viewer.state.focus.json';
-import single from '../../plugin/daemon/app/src/test/contract/viewer.state.single.json';
-import tabs from '../../plugin/daemon/app/src/test/contract/viewer.state.tabs.json';
-import choice from '../../plugin/daemon/app/src/test/contract/viewer.state.choice.json';
+import board from '../../plugin/daemon/daemon/src/test/contract/viewer.state.board.json';
+import focus from '../../plugin/daemon/daemon/src/test/contract/viewer.state.focus.json';
+import single from '../../plugin/daemon/daemon/src/test/contract/viewer.state.single.json';
+import tabs from '../../plugin/daemon/daemon/src/test/contract/viewer.state.tabs.json';
+import choice from '../../plugin/daemon/daemon/src/test/contract/viewer.state.choice.json';
 import type { ViewerState } from '../src/state';
 
 // 화면 스토리의 재료는 계약 예제뿐이다 — 가짜 상태를 손으로 짓지 않는다. screen만 JSON import에서 string으로 넓어진다.

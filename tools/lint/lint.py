@@ -21,21 +21,23 @@ import slop  # noqa: E402
 import viewer  # noqa: E402
 
 PLUGIN = "plugin/daemon"
-# 층 모듈의 폴더(plugin/daemon 기준) — 층마다 모듈 하나(D-139)이고 adapter 는 입구 · 기술 둘과 공용 코덱 :json 으로 갈린다(D-141).
-# 조립 · 브리지는 :app(D-140) — 루트(plugin/daemon)에는 빌드 파일만 있다
-MODULES = ("entity", "domain", "json", "adapter/infra", "adapter/entry")
+# 층 모듈의 폴더(plugin/daemon 기준) — 안쪽 :application, 바깥 :infrastructure(D-148).
+# 조립 · 브리지는 :daemon(D-140 · D-148) — 루트(plugin/daemon)에는 빌드 파일만 있다
+MODULES = ("application", "infrastructure")
 # build-logic(D-140)의 convention plugin 도 제품 소스다 — 같은 규칙으로 본다. detekt 만 싣지 않는다(detekt.init.gradle.kts)
-ROOTS = ("plugin/daemon/app/src/main/kotlin/", "plugin/daemon/app/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
+ROOTS = ("plugin/daemon/daemon/src/main/kotlin/", "plugin/daemon/daemon/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
     "plugin/daemon/%s/src/main/kotlin/" % m for m in MODULES)
-# 옮기기 전의 자리 — adapter 를 둘로 가르기 앞(D-141), :app 앞(D-140)과 plugin/daemon/ 앞(D-136), plugin/ 앞(D-123).
+# 옮기기 전의 자리 — 헥사고날 두 원 앞(D-148), adapter 를 둘로 가르기 앞(D-141), :app 앞(D-140)과 plugin/daemon/ 앞(D-136), plugin/ 앞(D-123).
 # 그 판과 견주는 diff 에서 옮긴 파일의 옛 경로가 여기 있다
-OLD_ROOTS = ("plugin/daemon/adapter/src/main/kotlin/", "plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/",
+OLD_ROOTS = tuple("plugin/daemon/%s/src/main/kotlin/" % m for m in ("entity", "domain", "json", "adapter/infra", "adapter/entry", "app")) + (
+             "plugin/daemon/app/src/bridge/kotlin/",
+             "plugin/daemon/adapter/src/main/kotlin/", "plugin/daemon/src/main/kotlin/", "plugin/daemon/src/bridge/kotlin/",
              "plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
-# 모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<모듈 이름> 으로 둔다 — 이름은 폴더의 끝 칸이다(adapter/infra → infra).
-# 소스가 없는 루트 · 빈 부모 :adapter 의 보고서는 기대하지 않는다
-DETEKT_REPORTS = tuple("%s/%s/app/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
+# 모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<모듈 이름> 으로 둔다 — 이름은 폴더의 끝 칸이다.
+# 소스가 없는 루트의 보고서는 기대하지 않는다
+DETEKT_REPORTS = tuple("%s/%s/daemon/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
     "%s/%s/%s/reports/detekt/main.xml" % (PLUGIN, LINT_BUILD, m.rsplit("/", 1)[-1]) for m in MODULES)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))

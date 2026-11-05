@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const contracts = resolve(root, '../plugin/daemon/app/src/test/contract');
+const contracts = resolve(root, '../plugin/daemon/daemon/src/test/contract');
 
 function shape(schemas) {
   const parts = new Set();

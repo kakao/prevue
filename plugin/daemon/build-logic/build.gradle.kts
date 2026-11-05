@@ -32,7 +32,7 @@ dependencies {
 // release · jdk-release는 API도 17로 묶는다 — Gradle을 돌린 JDK가 데몬의 JDK보다 새로워도 데몬에 없는 API를 부르지 않는다.
 // prevue.coroutines — StateFlow·SharedFlow(D-42). 실행 때는 렌더러 jar 가 품은 kotlinx.coroutines 를 쓴다 — 따로 실으면 두 벌이 되어
 // 클래스패스 순서가 렌더러 안의 코루틴을 바꿔 끼운다. 컴파일만 같은 계열의 판에 댄다. entity 는 코루틴도 모른다.
-// prevue.metro — 그 위에 Metro 컴파일러 플러그인(D-144). 그래프가 있는 :app 과 바인딩을 기여하는 adapter 모듈만 건다 — :domain · :entity 는 Metro 를 모른다.
+// prevue.metro — 그 위에 Metro 컴파일러 플러그인(D-144). 그래프가 있는 :daemon 과 :application · :infrastructure 에 건다(D-148).
 gradlePlugin {
     plugins {
         register("prevueJvm") {

@@ -4,7 +4,7 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # 클래스패스와 툴체인 경로는 Gradle이 써 준다 — 여기서 버전이나 경로를 다시 적지 않는다.
-ENV_FILE="$ROOT/daemon/app/build/prevue-env"
+ENV_FILE="$ROOT/daemon/daemon/build/prevue-env"
 # 로그와 pid 는 플러그인 밖에 둔다. 플러그인 경로에는 버전이 박혀 있어, 안에 두면 판올림한 순간
 # 떠 있는 데몬의 흔적을 잃는다 — prevue log 도 못 찾고, 어느 데몬이 살아 있는지도 모르게 된다.
 DAEMON_DIR="${PREVUE_HOME:-$HOME/.prevue}/daemons"

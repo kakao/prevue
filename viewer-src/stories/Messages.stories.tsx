@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { createMessages } from '../src/messages';
 import en from '../../plugin/viewer/strings/en.json';
 import ko from '../../plugin/viewer/strings/ko.json';
-import board from '../../plugin/daemon/app/src/test/contract/viewer.state.board.json';
+import board from '../../plugin/daemon/daemon/src/test/contract/viewer.state.board.json';
 
 const meta = { title: '재료/Messages' } satisfies Meta;
 export default meta;
