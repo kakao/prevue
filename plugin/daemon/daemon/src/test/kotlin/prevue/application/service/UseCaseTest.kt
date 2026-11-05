@@ -52,12 +52,12 @@ class UseCaseTest {
     // 뷰어와 에이전트가 같은 사실을 본다 — 진행(`work`)과 마지막으로 그린 쪽(`shownBy`)은 status 하나에서 나온다.
     @Test fun `저장하는 동안 status는 컴파일 중이고 끝나면 저장한 쪽이 마지막으로 그린 쪽이다`() {
         val uc = opened()
-        assertEquals("test", uc.readStatus().shownBy)
+        assertEquals("test", uc.status.read().shownBy)
         val during = CopyOnWriteArrayList<Any?>()
-        fx.compiler.fails = { _, _ -> during += uc.readStatus().work; false }
+        fx.compiler.fails = { _, _ -> during += uc.status.read().work; false }
         uc.save(by = "watch")
         assertEquals(listOf(prevue.application.domain.model.Work.Compiling(listOf(fx.file), "watch")), during.distinct())
-        val after = uc.readStatus()
+        val after = uc.status.read()
         assertEquals("watch", after.shownBy)
         assertEquals(null, after.work)
         assertTrue(after.lastShown is prevue.application.domain.model.ShowResult)
@@ -67,7 +67,7 @@ class UseCaseTest {
         val uc = opened()
         fx.compiler.ok = false
         uc.save(by = "watch")
-        val s = uc.readStatus()
+        val s = uc.status.read()
         assertEquals(null, s.work)
         assertTrue(s.lastShown is ReloadResult.CompileFailed)
         assertEquals("watch", s.shownBy)
@@ -284,14 +284,14 @@ class UseCaseTest {
         uc.save()
 
         fx.file.setLastModified(40_000_000)                  // 옛 내용이 옛 mtime 그대로 돌아왔다
-        val stale = runBlocking { uc.awaitRender(listOf(fx.file), timeoutMs = 20) }
+        val stale = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 20) }
         assertTrue(stale is WaitResult.TimedOut)
 
         uc.save()
-        assertTrue(runBlocking { uc.awaitRender(listOf(fx.file), timeoutMs = 5_000) }.ok)
+        assertTrue(runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }.ok)
 
         // 요청 뒤의 컴파일이 더 새 저장을 읽었으면 이 저장도 들어간 것이다.
-        val waiting = queued { uc.awaitRender(listOf(fx.file), timeoutMs = 5_000) }   // 요청 시각(t0)이 먼저 서야 한다
+        val waiting = queued { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }   // 요청 시각(t0)이 먼저 서야 한다
         fx.file.setLastModified(60_000_000)
         uc.save()
         assertTrue(waiting.get(5, TimeUnit.SECONDS).ok)
@@ -300,18 +300,18 @@ class UseCaseTest {
     // FR-22. 오지 않을 저장을 시간이 다 갈 때까지 기다리지 않는다 — 기다릴 수 없는 것은 바로 거절한다.
     @Test fun `기다릴 수 없는 파일은 기다리지 않고 거절한다`() {
         val idle = fx.graph()
-        val none = runCatching { runBlocking { idle.awaitRender(emptyList(), timeoutMs = 5_000) } }.exceptionOrNull()
+        val none = runCatching { runBlocking { idle.status.awaitRender(emptyList(), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(none is IllegalArgumentException && "기다릴 파일이 없다" in none.message!!, "$none")
 
         val uc = opened()
-        val gone = runCatching { runBlocking { uc.awaitRender(listOf(java.io.File(fx.srcRoot, "demo/Gone.kt")), timeoutMs = 5_000) } }.exceptionOrNull()
+        val gone = runCatching { runBlocking { uc.status.awaitRender(listOf(java.io.File(fx.srcRoot, "demo/Gone.kt")), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(gone is IllegalStateException && "파일이 없다" in gone.message!!, "$gone")
         val outside = java.io.File(fx.root, "elsewhere/Out.kt").apply { parentFile.mkdirs(); writeText("package x\n") }
-        val out = runCatching { runBlocking { uc.awaitRender(listOf(outside), timeoutMs = 5_000) } }.exceptionOrNull()
+        val out = runCatching { runBlocking { uc.status.awaitRender(listOf(outside), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(out is IllegalArgumentException && "감시하지 않는 파일" in out.message!! && "Out.kt" in out.message!!, "$out")
 
         val unwatched = fx.graph(watchRoots = false)
-        val off = runCatching { runBlocking { unwatched.awaitRender(listOf(fx.file), timeoutMs = 5_000) } }.exceptionOrNull()
+        val off = runCatching { runBlocking { unwatched.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) } }.exceptionOrNull()
         assertTrue(off is IllegalArgumentException && "감시가 꺼져 있다" in off.message!!, "$off")
     }
 
@@ -325,7 +325,7 @@ class UseCaseTest {
     @Test fun `파일 없이 기다리면 보고 있는 보드의 파일을 기다린다`() {
         val uc = opened()
         uc.save()
-        val w = runBlocking { uc.awaitRender(emptyList(), timeoutMs = 5_000) }
+        val w = runBlocking { uc.status.awaitRender(emptyList(), timeoutMs = 5_000) }
         assertEquals(fx.file.canonicalFile, (w as WaitResult.BoardDone).file.canonicalFile)
     }
 
@@ -333,7 +333,7 @@ class UseCaseTest {
         val uc = fx.graph()
         runBlocking { uc.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
         uc.save()
-        val w = runBlocking { uc.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
+        val w = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
         assertTrue(w is WaitResult.Single, "$w")
         assertEquals(uc.workspace.now.lastResult, (w as WaitResult.Single).last)
     }
@@ -346,7 +346,7 @@ class UseCaseTest {
         val reload = async { uc.applySave(listOf(fx.file), "test") }
         assertTrue(fx.renderer.codeEntered.tryAcquire(5, TimeUnit.SECONDS))
 
-        val waiting = queued { uc.awaitRender(listOf(fx.file), timeoutMs = 5_000) }   // 첫 판단까지 하고 돌아온다
+        val waiting = queued { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }   // 첫 판단까지 하고 돌아온다
         assertFalse(waiting.isDone, "세대가 오르기 전에 await가 답했다")
 
         gate.countDown()
@@ -518,11 +518,11 @@ class UseCaseTest {
         val ws = uc.workspace
         runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
         assertEquals("320", fx.renderer.opened.last().params["widthDp"])
-        assertEquals(ScreenSize.Dp(320, 640), uc.readStatus().size)
+        assertEquals(ScreenSize.Dp(320, 640), uc.status.read().size)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["widthDp"])
         runBlocking { uc.focusCard(0, on = false, by = "test") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown.first { it.previewId == ws.now.board!!.focusCard.spec.previewId && it.params.isEmpty() })
-        assertEquals(null, uc.readStatus().size)
+        assertEquals(null, uc.status.read().size)
     }
 
     @Test fun `켜진 카드의 크기를 바꿔도 인터랙티브는 켜져 있고 저장해도 크기가 남는다`() {
@@ -536,11 +536,11 @@ class UseCaseTest {
         assertEquals("spec:width=2448px,height=1848px,dpi=420,orientation=landscape", ws.now.current!!.params["device"])
         uc.save()
         assertEquals("spec:width=2448px,height=1848px,dpi=420,orientation=landscape", fx.renderer.opened.last().params["device"])
-        assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.readStatus().size)
+        assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.status.read().size)
         runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)) }
         assertEquals(opens + 2, fx.renderer.opened.size)
         runBlocking { uc.focusCard(0, on = true, by = "test") }
-        assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.readStatus().size)
+        assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.status.read().size)
         runBlocking { uc.resize(ScreenSize.Original, "viewer") }
         assertEquals(null, ws.now.current!!.params["device"])
         assertTrue(ws.now.interactive)
@@ -559,7 +559,7 @@ class UseCaseTest {
         val other = fx.previewFile("Other")
         runBlocking { uc.openPreview(other.path, null, emptyMap(), "test") }
         assertEquals(null, uc.workspace.now.resize)
-        assertEquals(null, uc.readStatus().size)
+        assertEquals(null, uc.status.read().size)
     }
 
     // D-11. 나올 때 새 태스크로 처음 화면을 다시 그린다 — 조작한 화면(상세로 넘어간 목록)이 카드에 남지 않는다.
@@ -614,14 +614,14 @@ class UseCaseTest {
     // 기준 3 · D-37. 같은 앱의 다른 모듈은 보드만 바꾼다 — status의 module이 그 모듈이 되고, 들어온 모듈은 나가지 않는다.
     @Test fun `다른 모듈의 파일을 열면 그 모듈이 보이고 렌더 모듈에 남는다`() {
         val uc = opened()
-        assertEquals(":app" to listOf(":app"), uc.readStatus().let { it.module.module to it.renderModules })
+        assertEquals(":app" to listOf(":app"), uc.status.read().let { it.module.module to it.renderModules })
         val lib = java.io.File(fx.libRoot, "lib/LibCards.kt").apply {
             parentFile.mkdirs(); writeText("package lib\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun LibCard() {}\n")
         }
         runBlocking { uc.openPreview(lib.path, null, emptyMap(), "test") }
-        assertEquals(":lib" to listOf(":app", ":lib"), uc.readStatus().let { it.module.module to it.renderModules })
+        assertEquals(":lib" to listOf(":app", ":lib"), uc.status.read().let { it.module.module to it.renderModules })
         runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
-        assertEquals(":app" to listOf(":app", ":lib"), uc.readStatus().let { it.module.module to it.renderModules })
+        assertEquals(":app" to listOf(":app", ":lib"), uc.status.read().let { it.module.module to it.renderModules })
     }
 
     // 다른 모듈에서 남긴 실패가 새로 연 보드의 show·wait를 실패로 만들면 안 된다. 연 뒤의 실패와 기다리는 파일의 실패는 그대로 받는다.
@@ -630,17 +630,17 @@ class UseCaseTest {
         fx.compiler.ok = false
         runBlocking { uc.applySave(listOf(fx.libFile), "test") }
         fx.compiler.ok = true
-        assertTrue(runBlocking { uc.awaitRender(listOf(fx.libFile), timeoutMs = 2_000) } is WaitResult.CompileFailed)
+        assertTrue(runBlocking { uc.status.awaitRender(listOf(fx.libFile), timeoutMs = 2_000) } is WaitResult.CompileFailed)
 
         fx.file.setLastModified(1_000)                       // 연 뒤로 안 바뀐 파일이다 — 가짜 시계는 1970년이다
         runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
-        val r = runBlocking { uc.awaitRender(listOf(fx.file), timeoutMs = 2_000) }
+        val r = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 2_000) }
         assertTrue(r is WaitResult.BoardDone, "$r")
         assertTrue("compile" in (r as WaitResult.BoardDone).stale)                // 실패는 낡음으로 남는다
 
         fx.compiler.ok = false
         runBlocking { uc.applySave(listOf(fx.libFile), "test") }                     // 연 뒤의 실패 — 파일 없이 기다려도 받는다
-        assertTrue(runBlocking { uc.awaitRender(emptyList(), timeoutMs = 2_000) } is WaitResult.CompileFailed)
+        assertTrue(runBlocking { uc.status.awaitRender(emptyList(), timeoutMs = 2_000) } is WaitResult.CompileFailed)
     }
 
     @Test fun `채우기는 다 쓴 뒤 연 시각 기점으로 보드 시간을 한 번 알린다`() {

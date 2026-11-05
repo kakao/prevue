@@ -33,7 +33,7 @@ class DrawPosturesTest {
 
     private fun TestGraph.pick(size: ScreenSize?) = runBlocking { focusCard(0, on = true, by = "test", size = size) }
 
-    private fun TestGraph.drawn(): Map<ScreenSize, String> = readStatus().postures.mapValues { it.value.out.preview.previewId }
+    private fun TestGraph.drawn(): Map<ScreenSize, String> = status.read().postures.mapValues { it.value.out.preview.previewId }
 
     private fun TestGraph.awaitDrawn(n: Int) = awaitUntil("자세별 그림 ${n}장 — 지금 ${drawn().keys}") { drawn().size == n }
 

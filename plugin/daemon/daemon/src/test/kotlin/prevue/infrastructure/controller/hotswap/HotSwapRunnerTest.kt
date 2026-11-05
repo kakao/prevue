@@ -49,17 +49,17 @@ class HotSwapRunnerTest {
             builds.fire(built, done = true)
         }
         assertTrue(line.startsWith("밖의 변화 own 1 · deps 0 · res 0 · build 0: ok=true"), line)
-        val w = uc.readStatus().watch!!
+        val w = uc.status.read().watch!!
         assertEquals(mapOf("files" to 1), w.source)
         assertEquals(mapOf("watched" to 1), w.build)
     }
 
     @Test fun `생성만 있는 묶음은 저장 → 화면을 돌리지 않고 빠른 열기의 목록만 고친다`() {
-        runBlocking { uc.indexPreviewFiles() }
+        runBlocking { uc.status.indexPreviewFiles() }
         val fresh = fx.previewFile("Fresh")
         val line = firstLog {
             sources.fireStructure(created = listOf(fresh))
-            awaitUntil("목록에 오기") { uc.readPreviewFiles()!!.any { it.file == fresh.canonicalFile } }
+            awaitUntil("목록에 오기") { uc.status.readPreviewFiles()!!.any { it.file == fresh.canonicalFile } }
             sources.fire(fx.file)                            // 감시는 한 줄로 받는다 — 이 저장의 로그가 첫 줄이면 앞 묶음은 로그를 내지 않았다
         }
         assertTrue(line.startsWith("reload [${fx.file.name}]"), line)

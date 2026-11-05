@@ -1,21 +1,90 @@
 package prevue.application.service
 
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
+import prevue.application.domain.model.EngineStats
+import prevue.application.domain.model.FileMatch
+import prevue.application.domain.model.ModuleInfo
+import prevue.application.domain.model.PreviewFile
+import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SourceIndex
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WaitResult
+import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.AwaitPolicy
+import prevue.application.domain.rule.FilePolicy
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Compiler
+import prevue.application.port.MemoryMeter
+import prevue.application.port.PreviewRenderer
+import prevue.application.port.PreviewRepository
+import prevue.application.port.SourceChange
 import prevue.application.port.SourceFileRepository
 import java.io.File
-@Inject
-class AwaitRenderUseCase(private val ws: Workspace, private val sources: SourceFileRepository) {
-    suspend operator fun invoke(files: List<File>, timeoutMs: Long): WaitResult {
+import prevue.application.domain.model.Status as StatusView
+
+class Status @Inject internal constructor(
+    private val ws: Workspace,
+    private val engine: PreviewRenderer,
+    private val compiler: Compiler,
+    private val memory: MemoryMeter,
+    private val watchers: Watchers,
+    private val sourceFiles: SourceFileRepository,
+    private val previews: PreviewRepository,
+    private val catalog: PreviewCatalog,
+) {
+    fun read(): StatusView {
+        val rt = Runtime.getRuntime()
+        val s = ws.now
+        return StatusView(
+            module = shownModule(s),
+            preview = s.current, shownBy = s.shownBy, shownAt = s.shownAt,
+            board = s.board?.view(), interactive = s.interactive, reloadPending = ws.reloadPending,
+            selection = s.selection, tabs = s.tabViews(ws.graph), renderModules = s.renderModules.toList(), stale = s.stale, last = s.lastResult,
+            engine = EngineStats(
+                compilerWarm = compiler.warm, bootstrapMs = engine.bootstrapMs,
+                loaderGen = engine.loaderGen, tasksOnLoader = engine.tasksOnLoader,
+                overlay = compiler.overlayDir.absolutePath, out = engine.outDir.absolutePath,
+                outBytes = engine.outBytes, outMaxBytes = engine.outMaxBytes, touchModeError = engine.touchModeError,
+                heapUsedMb = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024, heapMaxMb = rt.maxMemory() / 1024 / 1024,
+                rssMb = memory.rssMb(),
+            ),
+            watch = watchers.stats(),
+            lastRenderMs = s.lastRenderMs,
+            focusAttachedAt = s.focusAttachedAt,
+            work = s.work, lastShown = s.lastShown, boardFill = s.boardFill, size = s.shownSize(),
+            postures = s.livePostures()?.drawn(s.shownTarget()?.second).orEmpty(),
+            kmp = ws.graph.kmp,
+        )
+    }
+
+    fun hosts(f: File): Boolean = ws.hosts(f)
+
+    fun observe(): Flow<WorkspaceEvent> = ws.events
+
+    fun observeChanges(): Flow<Unit> = ws.state.drop(1).map { }
+
+    fun listPreviews(file: File): List<PreviewSpec> = previews.inFile(file)
+
+    fun readPreviewFiles(): List<PreviewFile>? = catalog.list()
+
+    suspend fun indexPreviewFiles(change: SourceChange? = null) {
+        if (change == null) catalog.build() else catalog.update(change.files + change.created, change.deleted)
+    }
+
+    fun readSourceIndex(): SourceIndex? = sourceFiles.index()
+
+    fun resolveFile(fileName: String): FileMatch = FilePolicy.match(sourceFiles.candidates(fileName), sourceFiles.sourceRoots)
+
+    suspend fun awaitRender(files: List<File>, timeoutMs: Long): WaitResult {
         val t0 = ws.nowMs()
         val started = System.nanoTime()
         val want = targets(files)
-        val mtimes = want.associate { it.path to (sources.modifiedAt(it) ?: 0L) }
+        val mtimes = want.associate { it.path to (sourceFiles.modifiedAt(it) ?: 0L) }
         fun waited() = ws.nowMs() - t0
         fun left() = timeoutMs - (System.nanoTime() - started) / 1_000_000
         fun compiled(s: WorkspaceState) = mtimes.all { (p, m) -> AwaitPolicy.compiled(m, s.compiledMtime[p], s.openedAtMs, t0) }
@@ -27,6 +96,13 @@ class AwaitRenderUseCase(private val ws: Workspace, private val sources: SourceF
             ?: return timedOut(timeoutMs, waited(), "보드를 다 그리지 못했다")
         failedOrVacant(want, waited())?.let { return it }
         return drawn(s, waited())
+    }
+
+    private fun shownModule(s: WorkspaceState): ModuleInfo {
+        val file = s.board?.file ?: s.current?.file ?: return ws.module
+        val m = ws.graph.ownerOf(file)
+        val owner = if (m == ws.module.module) ws.module else ws.module.copy(module = m, kotlinModule = ws.graph.node(m)?.kotlinModule ?: "")
+        return owner.copy(sourceSet = ws.graph.sourceSetOf(file))
     }
 
     private fun failed(s: WorkspaceState, want: List<File>) = s.lastCompileFailure?.let {
@@ -47,7 +123,7 @@ class AwaitRenderUseCase(private val ws: Workspace, private val sources: SourceF
     private fun targets(files: List<File>): List<File> {
         val want = files.ifEmpty { ws.now.let { s -> listOfNotNull(s.board?.file ?: s.current?.file ?: s.activeTabOrNull()?.file) } }.map { it.canonicalFile }
         require(want.isNotEmpty()) { "기다릴 파일이 없다 — 파일 경로로 show 한다" }
-        want.firstOrNull { !sources.has(it) }?.let { error("파일이 없다: $it") }
+        want.firstOrNull { !sourceFiles.has(it) }?.let { error("파일이 없다: $it") }
         require(ws.watchRoots.isNotEmpty()) { "파일 감시가 꺼져 있다(--no-watch) — reload 로 다시 그린다" }
         val outside = AwaitPolicy.outside(want, ws.watchRoots)
         require(outside.isEmpty()) {

@@ -111,7 +111,7 @@ class BrowserEndpointTest {
             val reader = c.inputStream.bufferedReader(UTF_8)
             val first = generateSequence { reader.readLine() }.first { it.startsWith("data: ") }
             assertEquals("state", (Json.parse(first.removePrefix("data: ")) as Map<*, *>)["type"])
-            assertTrue(uc.readStatus().interactive)
+            assertTrue(uc.status.read().interactive)
             module.stopInputs()
             try { reader.readLines() } catch (_: IOException) { }
         }

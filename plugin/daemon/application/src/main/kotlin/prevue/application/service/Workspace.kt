@@ -67,7 +67,6 @@ data class WorkspaceState(
     /** NFR-6. 감시가 부른 리로드도 활동이다 — HTTP만 보면 에디터로만 일하는 사람의 데몬이 유휴로 죽는다. */
     val lastRenderMs: Long = 0L,
     /**
-     * 파일마다 컴파일이 마지막으로 읽은 내용의 (mtime, 컴파일 시각). `AwaitRenderUseCase`의 기준이다.
      * 세대를 올린 **뒤에** 적는다. 먼저 적으면 기다림이 옛 세대의 카드를 보고 "다 그렸다"고 답한다.
      */
     val compiledMtime: Map<String, Pair<Long, Long>> = emptyMap(),

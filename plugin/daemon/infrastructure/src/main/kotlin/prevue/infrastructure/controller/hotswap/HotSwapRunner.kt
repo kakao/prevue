@@ -11,17 +11,17 @@ import kotlinx.coroutines.launch
 import prevue.infrastructure.controller.hotswap.HotSwapLog.line
 import prevue.application.service.ApplySaveUseCase
 import prevue.application.service.ExternalBuildUseCase
-import prevue.application.service.IndexPreviewFilesUseCase
 import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
 import prevue.application.service.ObserveSourceChangesUseCase
+import prevue.application.service.Status
 import prevue.application.service.TrackTabFilesUseCase
 
 @SingleIn(AppScope::class)
 @Inject
 internal class HotSwapRunner(
     private val applySave: ApplySaveUseCase,
-    private val indexPreviewFiles: IndexPreviewFilesUseCase,
+    private val status: Status,
     private val trackTabFiles: TrackTabFilesUseCase,
     private val observeSourceChanges: ObserveSourceChangesUseCase,
     private val observeBuildChanges: ObserveBuildChangesUseCase,
@@ -35,7 +35,7 @@ internal class HotSwapRunner(
         scope.launch {
             observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, applySave(change.files, "watch", change)) }
-                guarded("preview-files") { indexPreviewFiles(change); null }
+                guarded("preview-files") { status.indexPreviewFiles(change); null }
                 if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { trackTabFiles(change.created, change.deleted); null }
             }
         }

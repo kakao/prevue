@@ -116,7 +116,7 @@ class BlankRenderIntegrationTest {
     @Test @Order(3) fun `같은 파일의 다음 저장은 한 번만 컴파일한다`() {
         val before = compiler.recompiled
         stub.writeText(FILLED.replace("Color.Blue", "Color.Green"))
-        val w = runBlocking { uc.awaitRender(listOf(stub), 60_000) }
+        val w = runBlocking { uc.status.awaitRender(listOf(stub), 60_000) }
         assertTrue(w !is prevue.application.domain.model.WaitResult.TimedOut && w !is prevue.application.domain.model.WaitResult.CompileFailed, "$w")
         assertEquals(before, compiler.recompiled)
     }
@@ -125,7 +125,7 @@ class BlankRenderIntegrationTest {
     @Test @Order(4) fun `핫 컴파일한 함수의 시그니처를 또 바꿔도 제 그림이다`() {
         val before = compiler.recompiled
         stub.writeText(FILLED.replace("fun BlankStub(modifier: Modifier = Modifier)", "fun BlankStub(modifier: Modifier = Modifier, tall: Boolean = true)"))
-        val w = runBlocking { uc.awaitRender(listOf(stub), 60_000) }
+        val w = runBlocking { uc.status.awaitRender(listOf(stub), 60_000) }
         assertTrue(w !is prevue.application.domain.model.WaitResult.TimedOut && w !is prevue.application.domain.model.WaitResult.CompileFailed, "$w")
         runBlocking { engine.awaitWrites() }
         val last = ws.now.lastResult!!

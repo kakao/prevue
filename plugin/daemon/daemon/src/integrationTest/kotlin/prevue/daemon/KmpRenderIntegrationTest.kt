@@ -112,7 +112,7 @@ class KmpRenderIntegrationTest {
         val shot = (list.result as CardResult.Drawn).shot.out
         val node = PearlFixture.tree(shot.tree!!).nodes.first { it.file == "DrinkCard.kt" && it.right > it.left && it.bottom > it.top }
         runBlocking { sourceIndex.sourceFiles() }
-        val match = uc.resolveFile(node.file)
+        val match = uc.status.resolveFile(node.file)
         val path = (match as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — $match")
         val expected = File(PearlKmpFixture.dir, "core/ui/src/commonMain/kotlin/com/example/pearl/core/ui/DrinkCard.kt")
         assertEquals(expected.canonicalPath, File(path).canonicalPath)

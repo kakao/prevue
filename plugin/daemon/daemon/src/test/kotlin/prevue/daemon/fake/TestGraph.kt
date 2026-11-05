@@ -28,7 +28,6 @@ import prevue.infrastructure.bindings.TargetBindings
 import prevue.infrastructure.process.ProcessMemory
 import prevue.daemon.DaemonBindings
 import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.AwaitRenderUseCase
 import prevue.application.service.CatchUpUseCase
 import prevue.application.service.CloseTabUseCase
 import prevue.application.service.DrawCardUseCase
@@ -36,28 +35,21 @@ import prevue.application.service.DrawPosturesUseCase
 import prevue.application.service.ExternalBuildUseCase
 import prevue.application.service.FillBoardUseCase
 import prevue.application.service.FocusCardUseCase
-import prevue.application.service.HostsFileUseCase
-import prevue.application.service.IndexPreviewFilesUseCase
-import prevue.application.service.ListPreviewsUseCase
 import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
 import prevue.application.service.ObserveScreenUseCase
 import prevue.application.service.ObserveSourceChangesUseCase
-import prevue.application.service.ObserveWorkspaceUseCase
 import prevue.application.service.OpenPreviewUseCase
-import prevue.application.service.ReadPreviewFilesUseCase
-import prevue.application.service.ReadSourceIndexUseCase
-import prevue.application.service.ReadStatusUseCase
 import prevue.application.service.RememberValuesUseCase
 import prevue.application.service.RenderAtUseCase
 import prevue.application.service.RerenderUseCase
 import prevue.application.service.ResizeUseCase
-import prevue.application.service.ResolveFileUseCase
 import prevue.application.service.ScrollUseCase
 import prevue.application.service.SelectUseCase
 import prevue.application.service.SettleUseCase
 import prevue.application.service.ShowPreviewUseCase
 import prevue.application.service.StartDaemonUseCase
+import prevue.application.service.Status
 import prevue.application.service.TouchUseCase
 import prevue.application.service.TrackTabFilesUseCase
 import prevue.application.service.TypeUseCase
@@ -93,7 +85,6 @@ internal interface TestGraph {
     val engine: EngineActor
     val startDaemon: StartDaemonUseCase
 
-    val listPreviews: ListPreviewsUseCase
     val drawCard: DrawCardUseCase
     val fillBoard: FillBoardUseCase
     val openPreview: OpenPreviewUseCase
@@ -104,7 +95,6 @@ internal interface TestGraph {
     val applySave: ApplySaveUseCase
     val trackTabFiles: TrackTabFilesUseCase
     val rememberValues: RememberValuesUseCase
-    val awaitRender: AwaitRenderUseCase
     val resize: ResizeUseCase
     val drawPostures: DrawPosturesUseCase
     val focusCard: FocusCardUseCase
@@ -114,18 +104,12 @@ internal interface TestGraph {
     val settle: SettleUseCase
     val select: SelectUseCase
     val catchUp: CatchUpUseCase
-    val observeWorkspace: ObserveWorkspaceUseCase
     val observeScreen: ObserveScreenUseCase
     val externalBuild: ExternalBuildUseCase
-    val readStatus: ReadStatusUseCase
     val observeSourceChanges: ObserveSourceChangesUseCase
     val observeBuildChanges: ObserveBuildChangesUseCase
     val observeResourceChanges: ObserveResourceChangesUseCase
-    val resolveFile: ResolveFileUseCase
-    val hostsFile: HostsFileUseCase
-    val readSourceIndex: ReadSourceIndexUseCase
-    val indexPreviewFiles: IndexPreviewFilesUseCase
-    val readPreviewFiles: ReadPreviewFilesUseCase
+    val status: Status
 
     val entryPoints: EntryPoints
     val presenter: BrowserPresenter

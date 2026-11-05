@@ -48,7 +48,7 @@ class LiteralPatchesTest {
     private fun TestGraph.watch(vararg files: File = arrayOf(fx.file)): ReloadResult = runBlocking {
         applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
     }
-    private fun TestGraph.waited(): WaitResult = runBlocking { awaitRender(listOf(fx.file), timeoutMs = 5_000) }
+    private fun TestGraph.waited(): WaitResult = runBlocking { status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
 
     @Test fun `같은 내용의 감시 저장은 컴파일도 렌더도 하지 않는다`() {
         val uc = opened()
