@@ -45,6 +45,7 @@ class LayerRuleTest {
             "infrastructure/render/N.kt" to "package prevue.infrastructure.render\nimport prevue.infrastructure.compile.HotCompiler\nimport prevue.infrastructure.controller.http.Server\n",
             "infrastructure/bindings/O.kt" to "package prevue.infrastructure.bindings\nimport prevue.infrastructure.controller.http.Server\nimport prevue.infrastructure.render.RenderEngine\n",
             "infrastructure/controller/http/P.kt" to "package prevue.infrastructure.controller.http\nval p = \"com.acme.prevue.infrastructure.render.X\"\n",
+            "infrastructure/controller/http/P2.kt" to "package prevue.infrastructure.controller.http\n// prevue.infrastructure.render 는 모른다\nval p2 = \"prevue.infrastructure.render.RenderEngine\"\n",
             "infrastructure/render/Q.kt" to "package prevue.infrastructure.render\nimport java.awt.image.BufferedImage\nfun q(f: java.io.File) = f.readText()\n",
             "application/service/R.kt" to "package prevue.application.service\nimport kotlin.math.abs\nimport kotlinx.coroutines.flow.Flow\nimport java.io.File\n",
             "application/service/T.kt" to "package prevue.application.service\nclass T(private val s: prevue.application.port.SourceFileRepository) {\n" +
@@ -80,7 +81,7 @@ object LayerRule {
     }
 
     private fun technicalRefs(path: String, text: String): List<String> =
-        text.lineSequence().filterNot { it.startsWith("package ") }
+        codeLines(text).filterNot { it.startsWith("package ") }
             .flatMap { line -> infrastructureRef.findAll(line).map { it.groupValues[1] } }
             .filterNot { it in CONTROLLER_SEES }
             .distinct().map { "$path → prevue.infrastructure.$it" }.toList()
