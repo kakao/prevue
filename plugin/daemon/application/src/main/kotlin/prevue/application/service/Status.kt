@@ -1,7 +1,5 @@
 package prevue.application.service
 
-import prevue.application.domain.model.WorkspaceState
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
@@ -17,15 +15,18 @@ import prevue.application.domain.model.SourceIndex
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WaitResult
 import prevue.application.domain.model.WorkspaceEvent
+import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.rule.AwaitPolicy
 import prevue.application.domain.rule.FilePolicy
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.domain.rule.buildPending
 import prevue.application.port.Compiler
 import prevue.application.port.MemoryMeter
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceChange
 import prevue.application.port.SourceFileRepository
+import prevue.application.port.Workspace
 import java.io.File
 import prevue.application.domain.model.Status as StatusView
 

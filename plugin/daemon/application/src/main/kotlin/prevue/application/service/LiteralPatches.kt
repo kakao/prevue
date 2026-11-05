@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -9,6 +8,7 @@ import prevue.application.port.CompileResult
 import prevue.application.port.LiteralSite
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.rule.LiteralPolicy
+import prevue.application.port.Workspace
 
 @SingleIn(AppScope::class)
 @Inject

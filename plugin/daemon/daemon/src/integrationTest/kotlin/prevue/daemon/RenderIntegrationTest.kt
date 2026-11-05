@@ -1,6 +1,6 @@
 package prevue.daemon
 
-import prevue.infrastructure.store.InMemoryWorkspace
+import prevue.application.port.Workspace
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.render.toBitmap
@@ -40,9 +40,9 @@ import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.port.Clock
 import prevue.application.port.FailureKind
-import prevue.application.port.Workspace
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.render.ViewInfoJson
+import prevue.infrastructure.store.InMemoryWorkspace
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.domain.model.ViewNode
 import prevue.application.domain.model.ScreenSize

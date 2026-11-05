@@ -1,12 +1,12 @@
 package prevue.application.service
 
-import prevue.application.port.WorkspaceEditor
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 /**
  * FR-18. 카드 하나에 태스크를 걸어 인터랙티브로 들어가고, 끄면 보드로 돌아간다. 켜져 있는 동안 다른 카드는 그리지 않는다.
  * **들고 날 때 모두 새 태스크로 그린다** — on/off에 상태가 초기화되는 것이 명세다(D-11). 들어갈 때 살려 두려다 보드 채우기가

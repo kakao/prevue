@@ -1,7 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.WorkspaceEditor
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.Aim
 import prevue.application.domain.model.Miss
@@ -9,6 +7,8 @@ import prevue.application.domain.model.TouchResult
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.NodeTarget
 import prevue.application.domain.rule.Aiming
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 @Inject
 class TouchUseCase(
     private val ws: Workspace,

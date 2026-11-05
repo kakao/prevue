@@ -1,6 +1,5 @@
 package prevue.application.domain.model
 
-import prevue.infrastructure.store.InMemoryWorkspace
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.FakeClock
+import prevue.infrastructure.store.InMemoryWorkspace
 
 /** 보드와 카드는 불변 값이다(D-51). 바꾸면 새 값이 나오고, `Workspace`가 CAS로 갈아 끼운다. */
 class BoardTest {

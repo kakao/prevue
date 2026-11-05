@@ -1,7 +1,5 @@
 package prevue.application.domain.model
 
-import prevue.application.domain.rule.StaleReasons
-
 data class WorkspaceState(
     val current: PreviewSpec? = null,
     val shownBy: String = "",
@@ -30,8 +28,6 @@ data class WorkspaceState(
     val postures: Postures? = null,
     val postureRound: Long = 0,
 ) {
-    val buildPending: Boolean get() = stale[StaleReasons.BUILD]?.pending == true
-
     fun sized(p: PreviewSpec): PreviewSpec = resize?.takeIf { it.previewId == p.previewId }?.size?.applyTo(p) ?: p
 
     fun shownSize(): ScreenSize? = resize?.takeIf { it.previewId == (board?.focusCard?.spec ?: current)?.previewId }?.size

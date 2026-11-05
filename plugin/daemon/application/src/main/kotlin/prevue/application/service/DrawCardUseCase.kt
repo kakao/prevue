@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.phrase
 import kotlinx.coroutines.CompletableDeferred
@@ -10,6 +9,7 @@ import kotlinx.coroutines.launch
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.rule.CardPolicy
 import prevue.application.domain.rule.CardPolicy.Decision
+import prevue.application.port.Workspace
 /**
  * FR-17. 보드의 카드 한 장을 그린다. 데몬의 채우기([FillBoardUseCase])와 뷰어의 요청이 둘 다 여기로 온다 —
  * 같은 세대의 그림이 이미 있거나 쓰이는 중이면 다시 그리지 않으므로 누가 몇 번 청해도 렌더는 세대마다 한 번이다.

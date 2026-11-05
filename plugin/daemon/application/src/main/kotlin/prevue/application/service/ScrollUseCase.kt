@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -18,6 +17,7 @@ import prevue.application.domain.rule.NodeTarget
 import prevue.application.domain.rule.ScrollPassed
 import prevue.application.domain.rule.ScrollReport
 import prevue.application.domain.rule.ScrollUntil
+import prevue.application.port.Workspace
 @Inject
 class ScrollUseCase(
     private val ws: Workspace,

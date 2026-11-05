@@ -1,7 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.WorkspaceEditor
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -20,6 +18,8 @@ import prevue.application.domain.rule.LinkagePolicy
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Compiler
 import prevue.application.port.SourceFileRepository
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 /**
  * 모듈마다 컴파일하기 · 함께 실을 파일 고르기 · 옛 호출자 고치기. 유스케이스가 아니다 — 저장 · 열기 · 카드 그리기가 **줄 안에서** 함께 쓴다([LiveShot]과 같다).

@@ -1,7 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.WorkspaceEditor
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -12,6 +10,7 @@ import prevue.application.domain.model.Postures
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.Work
 import prevue.application.domain.model.CardResult
+import prevue.application.domain.rule.buildPending
 import prevue.application.port.CompileResult
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.RenderOutput
@@ -21,6 +20,8 @@ import prevue.application.domain.model.Shot
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 /**
  * live 태스크에 한 장을 그리고 그 결과를 [Workspace]에 적는 단계들. 유스케이스가 아니다 — 여러 유스케이스가 **줄 안에서** 함께 쓰고,

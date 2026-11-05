@@ -1,7 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.WorkspaceEditor
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -24,6 +22,8 @@ import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.PreviewExpansion
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
 @Inject

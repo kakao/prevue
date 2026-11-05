@@ -1,6 +1,5 @@
 package prevue.daemon
 
-import prevue.infrastructure.store.InMemoryWorkspace
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
+import prevue.application.port.Workspace
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.compile.HotCompiler
@@ -25,11 +25,11 @@ import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderEngine
 import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
+import prevue.infrastructure.store.InMemoryWorkspace
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.port.Clock
 import prevue.application.port.FailureKind
-import prevue.application.port.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.eventually

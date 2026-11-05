@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -11,6 +10,7 @@ import prevue.application.domain.model.Board
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.SkipReason
 import prevue.application.domain.model.BoardFill
+import prevue.application.port.Workspace
 @ContributesBinding(AppScope::class)
 @Inject
 class FillBoardUseCase(

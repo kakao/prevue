@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -12,6 +11,7 @@ import prevue.application.port.SourceChange
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.domain.model.WorkspaceEvent
+import prevue.application.port.Workspace
 /**
  * 모듈 소스의 저장을 흐름으로 낸다. 감시를 안 하면(`--no-watch`) 빈 흐름이다.
  * 보여 주는 프리뷰 파일은 아직 안 바뀌었어도 핫셋에 둔다 — 사람이 다음에 저장할 파일이 대개 그것이다.

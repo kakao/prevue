@@ -1,10 +1,10 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.CloseResult
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.rule.TabPolicy
+import prevue.application.port.Workspace
 /** D-54. 탭을 닫는다(`prevue close` · 뷰어 ×). 지금 보던 탭이면 직전에 보던 탭으로 옮기고, 남은 탭이 없으면 빈 화면이다. */
 @Inject
 class CloseTabUseCase(private val ws: Workspace, private val tabs: Tabs) {

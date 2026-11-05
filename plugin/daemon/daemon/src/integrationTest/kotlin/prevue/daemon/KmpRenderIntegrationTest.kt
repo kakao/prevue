@@ -1,6 +1,5 @@
 package prevue.daemon
 
-import prevue.infrastructure.store.InMemoryWorkspace
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.condition.EnabledIf
+import prevue.application.port.Workspace
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
@@ -33,7 +33,6 @@ import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Clock
-import prevue.application.port.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.TestGraph
@@ -42,6 +41,7 @@ import prevue.infrastructure.bindings.TargetRepo
 import prevue.daemon.fake.TestPorts
 import prevue.daemon.fake.testGraph
 import prevue.daemon.fake.realDispatchers
+import prevue.infrastructure.store.InMemoryWorkspace
 
 /**
  * 진짜 layoutlib으로 `fixtures/pearl-kmp`의 commonMain 프리뷰를 그린다(`./gradlew integrationTest`, 로컬만).

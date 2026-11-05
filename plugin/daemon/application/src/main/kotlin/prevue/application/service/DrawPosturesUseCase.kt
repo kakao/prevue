@@ -1,6 +1,5 @@
 package prevue.application.service
 
-import prevue.application.port.Workspace
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
@@ -17,6 +16,7 @@ import prevue.application.domain.model.Postures
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.Shot
 import prevue.application.port.RenderOutput
+import prevue.application.port.Workspace
 @SingleIn(AppScope::class)
 @Inject
 class DrawPosturesUseCase(
