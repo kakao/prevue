@@ -6,9 +6,8 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.update
 import prevue.application.domain.model.phrase
 import prevue.application.service.CatchUpUseCase
-import prevue.application.service.ReadStatusUseCase
-import prevue.application.service.ResolveFileUseCase
 import prevue.application.service.SelectUseCase
+import prevue.application.service.Status
 import prevue.application.domain.model.FileMatch
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.Selection
@@ -18,20 +17,19 @@ import prevue.infrastructure.controller.browser.BrowserPresenter.PointResult
 @Inject
 internal class BrowserPointing(
     private val core: BrowserPresenter,
-    private val resolveFile: ResolveFileUseCase,
+    private val status: Status,
     private val select: SelectUseCase,
     private val catchUpLive: CatchUpUseCase,
-    private val readStatus: ReadStatusUseCase,
 ) {
     private var pending: Pointed? = null
     private val chosen = HashMap<String, String>()
 
     suspend fun point(fileName: String, line: Int, at: Pointed): PointResult {
-        val path = core.onLine { chosen[fileName] } ?: when (val r = resolveFile(fileName)) {
+        val path = core.onLine { chosen[fileName] } ?: when (val r = status.resolveFile(fileName)) {
             is FileMatch.Path -> r.path
             is FileMatch.Ambiguous -> return core.onLine {
                 pending = at
-                core.side.update { it.copy(choice = PathChoice(fileName, line, r.candidates, readStatus().module.repo)) }
+                core.side.update { it.copy(choice = PathChoice(fileName, line, r.candidates, status.read().module.repo)) }
                 PointResult.NeedChoice
             }
             FileMatch.Unknown -> return PointResult.Unknown(phrase("point.unindexed", "file" to fileName, "line" to line))
@@ -53,7 +51,7 @@ internal class BrowserPointing(
 
     suspend fun catchUp(): String? {
         catchUpLive("viewer")
-        return core.onLine { core.peek(readStatus()).focus?.treeUrl }
+        return core.onLine { core.peek(status.read()).focus?.treeUrl }
     }
 
     private suspend fun selected(path: String, line: Int, at: Pointed): Selection = select(path, line, at, "viewer")

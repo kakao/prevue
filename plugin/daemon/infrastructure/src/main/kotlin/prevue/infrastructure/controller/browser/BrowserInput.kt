@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
 import prevue.application.service.FocusCardUseCase
-import prevue.application.service.ReadStatusUseCase
 import prevue.application.service.ResizeUseCase
 import prevue.application.service.ScrollUseCase
+import prevue.application.service.Status
 import prevue.application.service.TouchUseCase
 import prevue.application.domain.model.ScreenSize
 import prevue.application.port.PrevueDispatchers
@@ -24,7 +24,7 @@ internal class BrowserInput(
     private val resizeScreen: ResizeUseCase,
     private val touchScreen: TouchUseCase,
     private val scroll: ScrollUseCase,
-    private val readStatus: ReadStatusUseCase,
+    private val status: Status,
     dispatchers: PrevueDispatchers,
 ) {
     private val sizes = Channel<ScreenSize>(Channel.CONFLATED)
@@ -57,10 +57,10 @@ internal class BrowserInput(
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
     private suspend fun resized(s: ScreenSize) {
-        val single = readStatus().board == null
+        val single = status.read().board == null
         if (single && s != ScreenSize.Original && core.onLine { core.side.value.singleInteractive } == null) return
         resizeScreen(s, by = "viewer") ?: return
-        if (readStatus().board != null) return
+        if (status.read().board != null) return
         core.onLine {
             val at = System.currentTimeMillis()
             core.side.update { if (it.singleInteractive != null) it.copy(streamStamp = at) else it }

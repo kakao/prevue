@@ -124,7 +124,7 @@ class TabsTest {
         val card = fx.previewFile("NewsCard")
         show(card); show(screen)
         runBlocking { uc.applySave(listOf(card), "test") }
-        val r = runBlocking { uc.awaitRender(listOf(card), 2_000) }
+        val r = runBlocking { uc.status.awaitRender(listOf(card), 2_000) }
         assertTrue(r is WaitResult.BoardDone, "$r")
         assertEquals(screen.canonicalFile, (r as WaitResult.BoardDone).file)
     }
@@ -305,7 +305,7 @@ class TabsTest {
         ws.noteCreated(listOf(card), emptyList())
         fx.compiler.ok = false
         show(card)
-        val r = runBlocking { uc.awaitRender(listOf(card), 2_000) }
+        val r = runBlocking { uc.status.awaitRender(listOf(card), 2_000) }
         assertTrue(r is WaitResult.CompileFailed, "$r")
         assertEquals(setOf(card.canonicalPath), ws.now.newFiles, "남의 탓일 수 있는 실패면 다음 컴파일이 다시 싣는다")
 
@@ -397,7 +397,7 @@ class TabsTest {
         show(card)
         card.writeText("package demo\nfun NewsCard0() {}\n")
         runBlocking { uc.applySave(listOf(card), "test") }
-        val vacant = runCatching { runBlocking { uc.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
+        val vacant = runCatching { runBlocking { uc.status.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
         assertTrue(vacant is VacantTab, "빈 탭은 지난 그림이 아니라 그 까닭으로 답한다: $vacant")
 
         fx.compiler.ok = false
@@ -405,7 +405,7 @@ class TabsTest {
         assertEquals(ReloadResult.NothingShown, runBlocking { uc.applySave(listOf(card), "test") })
         assertTrue("compile" in ws.now.stale)
         assertNull(ws.now.board)
-        val failed = runCatching { runBlocking { uc.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
+        val failed = runCatching { runBlocking { uc.status.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
         assertTrue(failed != null && failed !is VacantTab, "컴파일 실패로 답한다: $failed")
     }
 

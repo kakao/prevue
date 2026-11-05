@@ -216,7 +216,7 @@ class BrowserPresenterTest {
         runBlocking { agent.join(); presenter.drain() }
         val s = now()
         assertEquals(BrowserState.Screen.BOARD, s.screen)
-        assertEquals(2, runBlocking { uc.readStatus() }.board!!.focus)
+        assertEquals(2, runBlocking { uc.status.read() }.board!!.focus)
     }
 
     @Test fun `줄이 막힌 동안 던진 터치는 던진 순서대로 닿는다`() {
@@ -341,7 +341,7 @@ class BrowserPresenterTest {
         val before = presenter.state.value.version
         runBlocking {
             presenter.events.test {
-                uc.indexPreviewFiles()
+                uc.status.indexPreviewFiles()
                 assertEquals(UiEvent.PreviewFiles, awaitItem())
                 assertEquals(before, presenter.state.value.version)
             }
@@ -365,5 +365,5 @@ class BrowserPresenterTest {
     private fun awaitState(timeoutMs: Long = 5_000, ok: (BrowserState) -> Boolean): BrowserState =
         awaitValue({ now().let { s -> "상태: busy=${s.busy} note=${s.boardNote} timing=${s.timing}" } }, timeoutMs) { now().takeIf(ok) }
 
-    private fun awaitIndex() = awaitUntil("색인이 서기") { uc.readSourceIndex() != null }   // 색인은 따로 스레드에서 짓는다
+    private fun awaitIndex() = awaitUntil("색인이 서기") { uc.status.readSourceIndex() != null }   // 색인은 따로 스레드에서 짓는다
 }

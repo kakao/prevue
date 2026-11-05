@@ -92,7 +92,7 @@ class ResourcePatchesTest {
         val (uc, f) = opened()
         write(f, xml("title" to "B", "done" to "Done"))
         uc.watch(f)
-        val w = runBlocking { uc.awaitRender(listOf(f), timeoutMs = 5_000) }
+        val w = runBlocking { uc.status.awaitRender(listOf(f), timeoutMs = 5_000) }
         assertTrue(w is WaitResult.BoardDone && w.complete, "$w")
     }
 
@@ -107,7 +107,7 @@ class ResourcePatchesTest {
         assertTrue("new entry" in s.message?.text.orEmpty(), s.message?.text)
         assertTrue(fx.renderer.shown.isEmpty(), "다시 그렸다")
         // 그래도 기다림은 바로 답한다 — 저장을 읽었고 그림은 낡음을 달고 있다.
-        val w = runBlocking { uc.awaitRender(listOf(f), timeoutMs = 2_000) }
+        val w = runBlocking { uc.status.awaitRender(listOf(f), timeoutMs = 2_000) }
         assertTrue(w is WaitResult.BoardDone && w.stale.containsKey(StaleReasons.RESOURCES), "$w")
     }
 

@@ -31,10 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import prevue.infrastructure.controller.http.Relay
 import prevue.application.service.ObserveScreenUseCase
-import prevue.application.service.ObserveWorkspaceUseCase
-import prevue.application.service.ReadStatusUseCase
+import prevue.application.service.Status
 import prevue.application.domain.model.Selection
-import prevue.application.domain.model.Status
+import prevue.application.domain.model.Status as StatusView
 import prevue.application.domain.model.Tab
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WorkspaceEvent
@@ -44,8 +43,7 @@ import prevue.application.port.PrevueDispatchers
 @Inject
 internal class BrowserPresenter(
     relay: Relay,
-    observeWorkspace: ObserveWorkspaceUseCase,
-    private val readStatus: ReadStatusUseCase,
+    private val status: Status,
     private val screen: ObserveScreenUseCase,
     target: ViewerTarget,
     private val dispatchers: PrevueDispatchers,
@@ -54,9 +52,9 @@ internal class BrowserPresenter(
     val side = MutableStateFlow(ViewerSide(stillStamp = System.currentTimeMillis()))
     private var version = 0L
 
-    private val statuses = observeWorkspace.changes().onStart { emit(Unit) }.map { readStatus() }
+    private val statuses = status.observeChanges().onStart { emit(Unit) }.map { status.read() }
 
-    private class Frame(val state: BrowserState, val now: Status)
+    private class Frame(val state: BrowserState, val now: StatusView)
 
     val state: StateFlow<BrowserState> = combine(statuses, side) { now, viewer -> Frame(BrowserStates.build(now, viewer, ++version), now) }
         .runningFold(null as Frame?) { before, frame -> frame.also { published(before, it) } }
@@ -74,7 +72,7 @@ internal class BrowserPresenter(
     private val watchWanted = MutableStateFlow(false)
 
     init {
-        scope.launch(start = CoroutineStart.UNDISPATCHED) { observeWorkspace().collect { onDomainEvent(it) } }
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { status.observe().collect { onDomainEvent(it) } }
         scope.launch(dispatchers.default) { watchWanted.collect { screen.watch(it) } }
         val readBranch = target.branch
         if (readBranch != null) scope.launch {
@@ -86,9 +84,9 @@ internal class BrowserPresenter(
         }
     }
 
-    suspend fun current(): BrowserState = onLine { BrowserStates.build(readStatus(), side.value, ++version) }
+    suspend fun current(): BrowserState = onLine { BrowserStates.build(status.read(), side.value, ++version) }
 
-    fun peek(now: Status): BrowserState = BrowserStates.build(now, side.value, version)
+    fun peek(now: StatusView): BrowserState = BrowserStates.build(now, side.value, version)
 
     private fun onDomainEvent(ev: WorkspaceEvent) {
         when (ev) {

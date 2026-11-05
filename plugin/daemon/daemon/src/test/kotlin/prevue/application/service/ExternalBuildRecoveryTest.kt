@@ -31,7 +31,7 @@ class ExternalBuildRecoveryTest {
     @Test fun `완료된 옛 보드가 있어도 빌드 대기 중 wait는 복구를 기다린다`() = runBlocking {
         val uc = opened()
         uc.externalBuild(built, done = false)
-        val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.awaitRender(listOf(fx.file), 5_000) }
+        val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.status.awaitRender(listOf(fx.file), 5_000) }
         assertFalse(waiting.isDone)
         assertTrue(uc.workspace.now.buildPending)
         uc.externalBuild(built, done = true)
@@ -42,7 +42,7 @@ class ExternalBuildRecoveryTest {
     @Test fun `갱신이 끝나지 않으면 실패한 프리뷰 대신 빌드 대기 시간 초과를 답한다`() = runBlocking {
         val uc = opened()
         uc.externalBuild(built, done = false)
-        val result = uc.awaitRender(listOf(fx.file), 20) as WaitResult.TimedOut
+        val result = uc.status.awaitRender(listOf(fx.file), 20) as WaitResult.TimedOut
         assertTrue(result.message.contains("빌드 산출물 갱신"))
         assertTrue(result.stale.getValue("build").pending)
         assertFalse(result.stale.getValue("build").remedy.text.contains("재시작"))
@@ -58,10 +58,10 @@ class ExternalBuildRecoveryTest {
         assertSame(before, uc.workspace.now.lastResult)
         assertEquals(shown, fx.renderer.shown.size)
         assertTrue(uc.workspace.now.stale.getValue("build").message!!.text.contains(name))
-        assertTrue(uc.awaitRender(listOf(fx.file), 20) is WaitResult.TimedOut)
+        assertTrue(uc.status.awaitRender(listOf(fx.file), 20) is WaitResult.TimedOut)
         fx.compiler.unbuilt = emptySet()
         assertTrue((uc.externalBuild(built, done = true) as ExternalResult.Redrawn).result.ok)
-        assertTrue(uc.awaitRender(listOf(fx.file), 5_000).ok)
+        assertTrue(uc.status.awaitRender(listOf(fx.file), 5_000).ok)
     }
 
     @Test fun `외부 빌드 직후 렌더에서 클래스를 못 찾아도 성공한 보드를 실패로 바꾸지 않는다`() = runBlocking {
@@ -79,7 +79,7 @@ class ExternalBuildRecoveryTest {
     @Test fun `빌드 대기 중 새 소스 컴파일 오류는 기다리는 wait에 바로 전달한다`() = runBlocking {
         val uc = opened()
         uc.externalBuild(built, done = false)
-        val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.awaitRender(listOf(fx.file), 5_000) }
+        val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.status.awaitRender(listOf(fx.file), 5_000) }
         assertFalse(waiting.isDone)
         fx.compiler.ok = false
         uc.applySave(listOf(fx.file), "test")
@@ -93,7 +93,7 @@ class ExternalBuildRecoveryTest {
         val result = uc.externalBuild(built, done = true) as ExternalResult.Redrawn
         assertFalse(result.result.ok)
         assertFalse(uc.workspace.now.buildPending)
-        val waiting = uc.awaitRender(listOf(fx.file), 5_000)
+        val waiting = uc.status.awaitRender(listOf(fx.file), 5_000)
         assertFalse(waiting.ok)
         assertTrue(waiting is WaitResult.BoardDone)
         assertFalse(uc.workspace.now.stale.getValue("build").remedy.text.contains("재시작"))
@@ -106,7 +106,7 @@ class ExternalBuildRecoveryTest {
         assertTrue(uc.workspace.now.buildPending)
         assertTrue(uc.applySave(listOf(fx.file), "reload").ok)
         assertFalse(uc.workspace.now.buildPending)
-        assertTrue(uc.awaitRender(listOf(fx.file), 5_000).ok)
+        assertTrue(uc.status.awaitRender(listOf(fx.file), 5_000).ok)
     }
 
     @Test fun `외부 빌드와 관계없는 클래스 누락은 즉시 실패한다`() = runBlocking {

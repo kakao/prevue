@@ -27,7 +27,7 @@ class WorkspaceSnapshotTest {
         val torn = java.util.concurrent.CopyOnWriteArrayList<String>()
         val reader = thread {
             while (!done.get()) {
-                torn(uc.readStatus())?.let { torn += it }
+                torn(uc.status.read())?.let { torn += it }
                 reads.incrementAndGet()
             }
         }
@@ -52,7 +52,7 @@ class WorkspaceSnapshotTest {
 
         val done = AtomicBoolean(false)
         val torn = java.util.concurrent.CopyOnWriteArrayList<String>()
-        val reader = thread { while (!done.get()) torn(uc.readStatus())?.let { torn += it } }
+        val reader = thread { while (!done.get()) torn(uc.status.read())?.let { torn += it } }
         runBlocking {
             repeat(ROUNDS) {
                 uc.openPreview(card.path, null, emptyMap(), "test")

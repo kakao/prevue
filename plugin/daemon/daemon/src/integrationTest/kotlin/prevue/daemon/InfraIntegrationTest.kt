@@ -51,10 +51,10 @@ class InfraIntegrationTest {
             assertEquals(1, ws.watchRoots.count { it == copy.parentFile.canonicalFile })
             graph.startDaemon()
             val uc = graph
-            assertNotNull(uc.readStatus().watch)
+            assertNotNull(uc.status.read().watch)
             assertNotNull(graph.builds)
             assertNotNull(graph.values)
-            assertEquals(graph.target.outDir.absolutePath, uc.readStatus().engine.out)
+            assertEquals(graph.target.outDir.absolutePath, uc.status.read().engine.out)
             uc.rememberValues()
             val first = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(first.ok, first.message.toString())
@@ -74,7 +74,7 @@ class InfraIntegrationTest {
             assertTrue(graph.workspace.watchRoots.isEmpty())
             graph.startDaemon()
             val uc = graph
-            assertNull(uc.readStatus().watch)
+            assertNull(uc.status.read().watch)
             assertNull(graph.builds)
             assertNull(graph.values)
             val shown = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
