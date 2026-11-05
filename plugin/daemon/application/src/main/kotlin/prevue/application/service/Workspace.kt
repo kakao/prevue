@@ -66,9 +66,6 @@ data class WorkspaceState(
     val stale: Map<String, StaleReason> = emptyMap(),
     /** NFR-6. 감시가 부른 리로드도 활동이다 — HTTP만 보면 에디터로만 일하는 사람의 데몬이 유휴로 죽는다. */
     val lastRenderMs: Long = 0L,
-    /**
-     * 세대를 올린 **뒤에** 적는다. 먼저 적으면 기다림이 옛 세대의 카드를 보고 "다 그렸다"고 답한다.
-     */
     val compiledMtime: Map<String, Pair<Long, Long>> = emptyMap(),
     /**
      * 감시가 생성으로 알렸고 아직 컴파일이 성공한 적 없는 새 파일(정규 경로). 생성은 저장이 아니라(D-56) 그대로는 아무도 컴파일하지 않는다 —
