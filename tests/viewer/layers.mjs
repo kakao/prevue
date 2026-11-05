@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 // 가짜 데몬이라 데몬 없이 돈다: node tests/viewer/layers.mjs
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const REPO = '/repo';
-const state = JSON.parse(JSON.stringify(JSON.parse(await readFile(join(root, 'plugin/daemon/app/src/test/contract/viewer.state.board.json'), 'utf8')).example).replaceAll('<repo>', REPO));
+const state = JSON.parse(JSON.stringify(JSON.parse(await readFile(join(root, 'plugin/daemon/daemon/src/test/contract/viewer.state.board.json'), 'utf8')).example).replaceAll('<repo>', REPO));
 state.selection = null;
 for (const g of state.board.groups) for (const c of g.cards) Object.assign(c, { widthDp: 360, heightDp: 780, imageUrl: `/shot.jpg?c=${c.index}`, treeUrl: `/tree.json?c=${c.index}` });
 const FILE = state.board.file;

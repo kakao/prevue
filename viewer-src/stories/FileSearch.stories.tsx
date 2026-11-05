@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 import '../legacy/style.css';
-import files from '../../plugin/daemon/app/src/test/contract/preview-files.json';
-import pending from '../../plugin/daemon/app/src/test/contract/preview-files.pending.json';
+import files from '../../plugin/daemon/daemon/src/test/contract/preview-files.json';
+import pending from '../../plugin/daemon/daemon/src/test/contract/preview-files.pending.json';
 import { pearlFiles, pearlRecent } from './pearl';
 import { Search } from './search';
 

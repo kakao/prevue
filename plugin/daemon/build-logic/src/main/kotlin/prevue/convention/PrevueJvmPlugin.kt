@@ -12,7 +12,7 @@ private const val BYTECODE = 17
 class PrevueJvmPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         target.pluginManager.apply("org.jetbrains.kotlin.jvm")
-        if (target.path in setOf(":adapter:infra", ":adapter:entry")) target.extensions.getByType(KotlinJvmProjectExtension::class.java).explicitApi()
+        if (target.path == ":infrastructure") target.extensions.getByType(KotlinJvmProjectExtension::class.java).explicitApi()
         target.tasks.withType(JavaCompile::class.java).configureEach {
             it.options.release.set(BYTECODE)
         }

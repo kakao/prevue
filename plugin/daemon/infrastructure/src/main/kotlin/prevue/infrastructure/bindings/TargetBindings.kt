@@ -1,0 +1,43 @@
+package prevue.infrastructure.bindings
+
+import java.io.File
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.BindingContainer
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import prevue.infrastructure.dump.ClasspathSpec
+import prevue.infrastructure.dump.WatchGraph
+import prevue.application.domain.model.ModuleGraph
+import prevue.application.domain.model.ModuleInfo
+
+internal class CompilerToolchain(val compilerDir: File, val bridge: File, val androidJar: File)
+
+@ContributesTo(AppScope::class)
+@BindingContainer
+public object TargetBindings {
+    @Provides @SingleIn(AppScope::class)
+    internal fun dumps(config: InfraConfig): Dumps = Dumps.load(config)
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun toolchain(config: InfraConfig): CompilerToolchain =
+        CompilerToolchain(config.compiler, config.bridge, config.androidJar ?: AndroidPlatforms.findJar())
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun paths(config: InfraConfig, dumps: Dumps): DaemonPaths =
+        DaemonPaths.of(config, dumps.target.project).apply { reset(); thumbs.deleteRecursively() }
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun graph(dumps: Dumps): ModuleGraph =
+        dumps.renderedApp?.let { WatchGraph.ofApp(dumps.home, it) } ?: WatchGraph.of(dumps.home, dumps.app ?: dumps.home)
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun module(dumps: Dumps, renderSpec: ClasspathSpec, graph: ModuleGraph): ModuleInfo {
+        val spec = dumps.target
+        return ModuleInfo(
+            spec.repoRoot.absolutePath, spec.project, spec.variant, spec.kotlinModuleName,
+            renderSpec.borrowedFrom, renderSpec.borrowedCount.takeIf { it > 0 },
+            modules = if (dumps.renderedApp != null) graph.nodes.map { it.path } else listOf(dumps.home.project),
+        )
+    }
+}
