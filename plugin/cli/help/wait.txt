@@ -6,7 +6,8 @@ If an external build is updating the outputs, it waits for the new result within
 
   exit 0   cards[]'s image · tree are the images of this save
   exit 1   read failure — COMPILE comes right away without waiting (the image is from before the save). TIMEOUT means message says what it couldn't wait for
-           complete:false means the interactive card is interactive, so every other card is an image from before the save — read message
+           complete:false means a card is interactive and some other cards are still images from before the save — they're redrawn
+           once input is quiet for a second, so wait again a little later; complete:true means every card is new. Read message
   exit 3   couldn't reach the daemon. networkBlocked:true means the daemon is alive and this shell can't reach it (don't run start)
 
 The verdict (ok · complete · interactive · message · failure) comes first and cards last — reading just the start shows the verdict.

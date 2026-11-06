@@ -1268,7 +1268,7 @@ def main(argv):
         except ValueError:
             shown = None
         print(json.dumps(agent_view(d, a[0] if a else "", shown), ensure_ascii=False))
-        # complete:false 는 인터랙티브 중이라 다른 카드가 저장 전 그림이다 — 0 으로 끝내면 에이전트가 옛 그림을 새 그림으로 믿는다
+        # complete:false 는 인터랙티브 중이라 다른 카드에 저장 전 그림이 남았다 — 0 으로 끝내면 에이전트가 옛 그림을 새 그림으로 믿는다
         if isinstance(d, dict) and d.get("complete") is False:
             sys.exit(1)
     elif cmd == "with-lang":                 # stdin: 셸이 지은 응답 — next · then 에 --lang

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.Workspace
+import prevue.application.service.Boards
 import prevue.application.service.Engine
 import prevue.application.service.Live
 
@@ -19,6 +20,7 @@ internal class StartDaemon(
     private val renderer: PreviewRenderer,
     private val engine: Engine,
     private val live: Live,
+    private val boards: Boards,
     private val scope: CoroutineScope,
 ) {
     private val started = MutableStateFlow(false)
@@ -27,6 +29,7 @@ internal class StartDaemon(
         if (!started.compareAndSet(expect = false, update = true)) return
         renderer.protect { ws.now.keepIds() }
         live.startPostures()
+        boards.startQuietFill()
         scope.launch {
             engine.shots.collect { shot ->
                 if (shot.claimed) return@collect

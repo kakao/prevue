@@ -10,7 +10,7 @@ Response
             failure · message when not ok. paramIndex · paramCount when one function makes several cards,
             paramLabel when that value has a short name (an enum · number · short string)
   viewer    the viewer address — show doesn't open the browser. Give the person this address as a link
-  complete  false means a card is interactive, so the other cards are old images (prevue wait --help)
+  complete  false means a card is interactive and some other cards are still old images (prevue wait --help)
   started   true means there was no daemon and this show started it — the viewer opened in the browser
   The verdict (ok · complete · message) comes first and cards last — reading just the start shows the verdict
 

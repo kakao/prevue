@@ -9,7 +9,7 @@ import prevue.application.domain.model.PreviewSpec
 interface PreviewRenderer {
     suspend fun ready() {}
     suspend fun show(p: PreviewSpec, ownLoader: Boolean = false): RenderOutput
-    suspend fun showAside(p: PreviewSpec): RenderOutput
+    suspend fun showAside(p: PreviewSpec, tree: Boolean = false): RenderOutput
     fun copyImage(out: RenderOutput, previewId: String): RenderOutput
 
     /** 오버레이가 바뀌었다(컴파일 성공). 지금 세대의 공유 로더를 버린다. */
