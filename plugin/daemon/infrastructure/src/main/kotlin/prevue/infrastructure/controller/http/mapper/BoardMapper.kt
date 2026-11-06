@@ -14,7 +14,7 @@ internal fun BoardView.toJson(): Map<String, Any?> = mapOf(
 internal fun CardView.toJson(): Map<String, Any?> = mapOf(
     "index" to index, "previewId" to previewId, "fqn" to fqn, "name" to name,
     "params" to params, "gen" to gen, "stale" to stale, "rendered" to rendered,
-    "paramIndex" to paramIndex, "paramCount" to paramCount,
+    "paramIndex" to paramIndex, "paramCount" to paramCount, "paramLabel" to paramLabel,
     "ok" to ok, "failure" to failure?.name, "message" to message?.text,
     "width" to width, "height" to height, "imageUrl" to artifactUrl(image, artifactRevision), "treeUrl" to artifactUrl(tree, artifactRevision),
     "image" to image?.absolutePath, "tree" to tree?.absolutePath,

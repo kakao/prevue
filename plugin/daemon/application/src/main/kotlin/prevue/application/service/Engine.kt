@@ -124,8 +124,8 @@ class Engine(
     suspend fun dropLiterals(owners: Collection<String>) = call { renderer.dropLiterals(owners) }
     suspend fun buildChanged() = call { loop.close(); renderer.buildChanged() }
     suspend fun forgetShapes() = call { renderer.forgetShapes() }
-    suspend fun instanceCounts(found: List<PreviewSpec>): Map<PreviewSpec, Int> =
-        if (found.none { it.methodParams.isNotEmpty() }) found.associateWith { 1 } else call { found.associateWith(renderer::instanceCount) }
+    suspend fun instances(found: List<PreviewSpec>): Map<PreviewSpec, List<String?>> =
+        if (found.none { it.methodParams.isNotEmpty() }) found.associateWith { listOf(null) } else call { found.associateWith(renderer::instances) }
 
     suspend fun ensure(p: PreviewSpec, interactive: Boolean): RenderOutput? = call { drewOnce = true; loop.ensure(p, interactive) }
     suspend fun changed(): Boolean = call { loop.changed }

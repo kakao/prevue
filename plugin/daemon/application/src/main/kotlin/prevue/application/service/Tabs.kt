@@ -213,7 +213,7 @@ class Tabs(
 
     private suspend fun rereadBoard(ed: WorkspaceEditor, b: Board): Board? {
         val kept = ws.now.activeTabOrNull()?.params.orEmpty()
-        val found = previews.inFile(b.file).let { PreviewExpansion.expand(it, engine.instanceCounts(it)::getValue) }.map { it.copy(params = it.params + kept) }
+        val found = previews.inFile(b.file).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }.map { it.copy(params = it.params + kept) }
         if (found.isEmpty() || found == b.cards.map { it.spec }) return b
         return ed.updateBoard(b.epoch) { it.reread(found) }
     }
@@ -238,7 +238,7 @@ class Tabs(
     private suspend fun locate(target: String, index: Int?, focusId: String?, params: Map<String, String>): Pair<PreviewSpec, List<PreviewSpec>> {
         val f = File(target)
         if (sources.has(f)) {
-            val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instanceCounts(it)::getValue) }
+            val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }
             ensure(found.isNotEmpty()) { phrase("tabs.noPreviewFn", "file" to f.name) }
             val i = index ?: found.indexOfFirst { it.previewId == focusId }.coerceAtLeast(0)
             ensure(i in found.indices) { phrase("tabs.noIndex", "file" to f.name, "n" to found.size, "index" to i) }

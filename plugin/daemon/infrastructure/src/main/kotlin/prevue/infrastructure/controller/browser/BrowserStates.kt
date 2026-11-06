@@ -117,8 +117,8 @@ internal object BrowserStates {
         val stamp = maxOf(drawnAt(now), side.stillStamp)
         val card = board?.cards?.getOrNull(board.focus)
         val (name, fn) = when {
-            card != null -> titleLines(card.name, card.params, card.paramIndex, card.paramCount)
-            board == null && current != null -> titleLines(current.functionName, current.params, current.paramIndex, current.paramCount)
+            card != null -> titleLines(card.name, card.params, card.paramIndex, card.paramCount, card.paramLabel)
+            board == null && current != null -> titleLines(current.functionName, current.params, current.paramIndex, current.paramCount, current.paramLabel)
             else -> null to id
         }
         return FocusScreen(
@@ -184,8 +184,8 @@ internal object BrowserStates {
     fun vacantText(name: String, why: Vacancy): Phrase =
         if (why == Vacancy.DELETED) phrase("vacant.deleted", "file" to name) else phrase("vacant.noPreview", "file" to name)
 
-    private fun titleLines(fn: String, params: Map<String, String>, paramIndex: Int, paramCount: Int): Pair<String?, String> =
-        params["name"] to (if (paramCount > 1) "$fn · $paramIndex" else fn)
+    private fun titleLines(fn: String, params: Map<String, String>, paramIndex: Int, paramCount: Int, paramLabel: String?): Pair<String?, String> =
+        params["name"] to (if (paramCount > 1) "$fn · ${paramLabel ?: paramIndex}" else fn)
 
     private fun tabs(views: List<TabView>, repo: String): List<TabChip> {
         fun base(t: TabView) = t.fqn?.substringAfterLast('.') ?: t.file?.nameWithoutExtension ?: t.key
@@ -221,8 +221,8 @@ internal object BrowserStates {
         val nth = c.paramIndex.takeIf { c.paramCount > 1 }
         val label = when {
             nth == null -> named.orEmpty()
-            named == null -> "#$nth"
-            else -> "$named · $nth"
+            named == null -> c.paramLabel ?: "#$nth"
+            else -> "$named · ${c.paramLabel ?: nth}"
         }
         val drawn = c.ok == true && c.image != null
         val w = c.width?.takeIf { it > 0 }

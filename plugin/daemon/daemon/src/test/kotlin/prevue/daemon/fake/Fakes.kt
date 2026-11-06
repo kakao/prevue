@@ -190,10 +190,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     override fun forgetShapes() {}
     /** 제공자마다 내는 값의 개수. 엔진처럼 다음 [codeChanged]까지 처음 센 값을 쥔다. */
     val providerValues = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val counted = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    override fun instanceCount(p: PreviewSpec): Int {
-        val provider = p.methodParams.firstOrNull()?.get("provider") ?: return 1
-        return counted.getOrPut(provider) { providerValues[provider] ?: 1 }
+    val providerLabels = java.util.concurrent.ConcurrentHashMap<String, List<String?>>()
+    private val counted = java.util.concurrent.ConcurrentHashMap<String, List<String?>>()
+    override fun instances(p: PreviewSpec): List<String?> {
+        val provider = p.methodParams.firstOrNull()?.get("provider") ?: return listOf(null)
+        return counted.getOrPut(provider) { providerLabels[provider] ?: List(providerValues[provider] ?: 1) { null } }
     }
     /** 걸어 두면 [previewId]의 다음 쓰기 한 번이 그 자리에서 멈춘다 — 렌더는 끝났고 PNG가 디스크로 가는 중인 순간이다. */
     @Volatile var writeHold: Pair<String, CountDownLatch>? = null
