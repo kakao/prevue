@@ -112,7 +112,7 @@ internal object BrowserStates {
         val card = board?.cards?.getOrNull(board.focus)
         val (name, fn) = card?.let { titleLines(it.name, it.params, it.paramIndex, it.paramCount, it.paramLabel) } ?: (null to id)
         return FocusScreen(
-            previewId = id, interactive = now.interactive, fromBoard = true,
+            previewId = id, interactive = now.interactive,
             imageUrl = "/$id-0.png?t=$stamp", treeUrl = "/$id-0.viewinfo.json?t=$stamp",
             streamUrl = now.focusAttachedAt?.takeIf { now.interactive }?.let { "/stream?t=$it" },
             pxPerDp = CardSpecs.pxPerDp((if (now.size != null) current?.params else card?.params) ?: current?.params.orEmpty()),

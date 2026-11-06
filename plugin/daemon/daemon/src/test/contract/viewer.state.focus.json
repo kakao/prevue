@@ -50,7 +50,6 @@
     "error": "null",
     "focus": {
       "fn": "string",
-      "fromBoard": "boolean",
       "imageUrl": "string",
       "interactive": "boolean",
       "name": "null",
@@ -224,7 +223,6 @@
     "focus": {
       "previewId": "Card0",
       "interactive": true,
-      "fromBoard": true,
       "imageUrl": "/Card0-0.png?t=<t>",
       "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
       "streamUrl": "/stream?t=<t>",

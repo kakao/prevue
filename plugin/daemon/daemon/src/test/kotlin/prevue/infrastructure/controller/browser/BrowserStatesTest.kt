@@ -132,7 +132,7 @@ class BrowserStatesTest {
         val st = status(board = board(card(0, "A"), card(1, "B"), focus = 1), interactive = true, focusAttachedAt = 22)
         val s = build(st)
         assertEquals(BrowserState.Screen.FOCUS, s.screen)
-        assertEquals(FocusScreen("B", interactive = true, fromBoard = true, imageUrl = "/B-0.png?t=11", treeUrl = "/B-0.viewinfo.json?t=11", streamUrl = "/stream?t=22",
+        assertEquals(FocusScreen("B", interactive = true, imageUrl = "/B-0.png?t=11", treeUrl = "/B-0.viewinfo.json?t=11", streamUrl = "/stream?t=22",
             pxPerDp = 420.0 / 160, name = null, fn = "B"), s.focus)
         assertNull(build(st.copy(focusAttachedAt = null)).focus!!.streamUrl)
     }
