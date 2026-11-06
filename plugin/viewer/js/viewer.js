@@ -1677,7 +1677,7 @@ function Rn({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 	}
 	function ie() {
 		if (f || p) {
-			v++, f = !1, p = h = g = _ = null, m = null, y = null, b = x = !1, C?.cancel(), C = null, O(!1), i.append(r), D.enable(!1), w.clear(), T.clear(), e.classList.remove("measuring"), t.style.transform = "", t.style.removeProperty("--z"), document.body.classList.remove("resizing-ui"), i.classList.remove("resize-wrap"), r.classList.remove("resize-hidden"), n.onload = null;
+			v++, f = !1, p = h = g = _ = null, m = null, y = null, b = x = !1, C?.cancel(), C = null, O(!1), i.append(r), D.enable(!1), w.clear(), T.clear(), e.classList.remove("measuring"), t.style.transform = "", document.body.classList.remove("resizing-ui"), i.classList.remove("resize-wrap"), r.classList.remove("resize-hidden"), n.onload = null;
 			for (let e of [
 				"left",
 				"top",
@@ -1690,7 +1690,7 @@ function Rn({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 	function ae() {
 		if (!d) return;
 		let e = c(), n = d.cx - d.w / 2, r = d.y;
-		t.style.transform = `translate(${e.x + (1 - e.z) * n}px, ${e.y + (1 - e.z) * r}px) scale(${e.z})`, t.style.setProperty("--z", String(e.z));
+		t.style.transform = `translate(${e.x + (1 - e.z) * n}px, ${e.y + (1 - e.z) * r}px) scale(${e.z})`;
 	}
 	return {
 		update: re,
@@ -1852,8 +1852,9 @@ function Bn({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, scen
 		V.suspend(), j(!1, he("--duration-short2"));
 		let u = g() && r.naturalWidth ? pe(r) : null;
 		Promise.all([u, new Promise((e) => setTimeout(e, he("--duration-short2")))]).then(() => {
+			n.style.setProperty("--z", "1");
 			let e = Wn(n);
-			l(), s() ? ye(() => {
+			n.style.removeProperty("--z"), l(), s() ? ye(() => {
 				t(), j(!0, 0);
 				let n = a(), r = n && Wn(n);
 				if (!n || !r || !r.rect.width || !e.url) {
@@ -1966,8 +1967,8 @@ function Bn({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, scen
 			Math.min(c / 2 - u, Math.max(c / 2 - u - o, i))
 		];
 	}
-	function B(e, t, r, i) {
-		V.preparing() || ([L.z, L.x, L.y] = ke(Math.min(Oe(), Math.max(De(), e)), t, r), n.classList.toggle("zoom-anim", !!i), n.style.transform = V.zoom(i) || L.z === 1 ? "" : `translate(${L.x}px, ${L.y}px) scale(${L.z})`, n.style.setProperty("--z", String(L.z)), n.classList.toggle("zoomed", L.z > 1), Ae(), x());
+	function B(e, r, i, a) {
+		V.preparing() || ([L.z, L.x, L.y] = ke(Math.min(Oe(), Math.max(De(), e)), r, i), n.classList.toggle("zoom-anim", !!a), n.style.transform = V.zoom(a) || L.z === 1 ? "" : `translate(${L.x}px, ${L.y}px) scale(${L.z})`, t.style.setProperty("--z", String(L.z)), n.classList.toggle("zoomed", L.z > 1), Ae(), x());
 	}
 	function Ae() {
 		let e = Ee();

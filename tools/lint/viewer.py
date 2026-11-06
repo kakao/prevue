@@ -62,8 +62,8 @@ _EASE = re.compile(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|step-start|s
                    r"|(?<![\w-])(?:cubic-bezier|steps|linear)\(", re.I)
 _MATH = re.compile(r"(?<![\w-])(?:calc|min|max|clamp)\(", re.I)
 _RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+(?:\d+\.?\d*|\.\d+)[a-z]*\s*(?:inset\s*)?")
-# 확대를 되돌리는 고리 — 두께를 변수 배율로만 나눈다(calc(1px / var(--z, 1))). 변수를 걷기 전의 원문에서 본다
-_ZOOM_RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+calc\(\s*(?:\d+\.?\d*|\.\d+)[a-z]+\s*/\s*var\(--[\w-]+(?:\s*,\s*1)?\s*\)\s*\)"
+# 확대를 되돌리는 고리 — 두께를 확대 배율 --z 로만 나눈다(calc(1px / var(--z, 1))). 변수를 걷기 전의 원문에서 본다
+_ZOOM_RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+calc\(\s*(?:\d+\.?\d*|\.\d+)[a-z]+\s*/\s*var\(--z(?:\s*,\s*1)?\s*\)\s*\)"
                         r"\s+var\(--[\w-]+\)\s*(?:inset\s*)?")
 _DECL = re.compile(r"\s*(--[\w-]+|-?[A-Za-z][\w-]*)\s*:(.*)", re.S)
 _GROUP = ("@media", "@supports", "@container", "@layer", "@scope")

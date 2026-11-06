@@ -477,14 +477,15 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 무대도 바닥이다 — 반경 · 그림자 없이 카드와 같은 헤어라인(D-153). 확대해도 가늘게 --z 로 되돌린다. */
 .stage { position: relative; line-height: 0; background: var(--surface-container);
          box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant); max-width: 100%; min-width: 120px; min-height: 60px;
-         transition: box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+         transition: background-color var(--duration-medium2) var(--easing-standard); }
 /* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 너비/naturalWidth 로 배율을 내므로 축소해도 그대로 맞는다.
    min-height 를 이미지에 걸면 945x184 같은 납작한 프리뷰가 세로로 늘어난다. 하한은 --stage-max-h 를 계산할 때 둔다. */
 .stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px); }
 /* stage 는 넘침을 자르지 않는다 — 고른 박스의 이름 태그가 그림 가장자리 밖으로 나가야 한다. */
 /* 조작 중 — 말 대신 표면으로 알린다. */
 .stage { transform-origin: 0 0; }
-.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+/* 선 · 링은 --z 를 따라 바로 바뀐다 — 전이를 걸면 확대보다 늦게 굵어졌다 가늘어진다. */
+.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
 .stage.grab { cursor: grab !important; }
 .stage.panning { cursor: grabbing !important; }
 .stage.grab img, .stage.panning img { pointer-events: none; }

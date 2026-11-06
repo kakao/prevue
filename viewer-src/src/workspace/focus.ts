@@ -218,7 +218,10 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
     decorations(false, motionMs('--duration-short2'));
     const frozen = streaming() && shot.naturalWidth ? freeze(shot) : null;
     Promise.all([frozen, new Promise(r => setTimeout(r, motionMs('--duration-short2')))]).then(() => {
+      // 나는 틀은 확대되지 않는다 — 링 굵기는 확대를 되돌리기 전(--z 1)의 값으로 잰다
+      stage.style.setProperty('--z', '1');
       const src = frameOf(stage)!;
+      stage.style.removeProperty('--z');
       unlock();
       // 기다리는 사이 다시 들어왔으면 나가지 않는다 — 장식을 되돌리고 지금 상태를 그린다(멈춘 스트림은 다시 붙는다)
       if (!still()) { decorations(true, 0); update(); done(); return; }
@@ -346,7 +349,8 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
     [zoom.z, zoom.x, zoom.y] = clamp(Math.min(zMax(), Math.max(zMin(), z)), x, y);
     stage.classList.toggle('zoom-anim', !!animate);
     stage.style.transform = resizeUI.zoom(animate) || zoom.z === 1 ? '' : `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.z})`;
-    stage.style.setProperty('--z', String(zoom.z));
+    // 장면의 무대(.unit .stage)도 함께 받게 공통 틀에 건다
+    wrap.style.setProperty('--z', String(zoom.z));
     stage.classList.toggle('zoomed', zoom.z > 1);
     showZoom();
     reportViewport();

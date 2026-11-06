@@ -197,7 +197,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     wrap.append(stage);
     scene.enable(false); decoded.clear(); edges.clear();
     root.classList.remove('measuring');
-    geometry.style.transform = ''; geometry.style.removeProperty('--z');
+    geometry.style.transform = '';
     document.body.classList.remove('resizing-ui'); wrap.classList.remove('resize-wrap'); stage.classList.remove('resize-hidden');
     shot.onload = null;
     for (const name of ['left', 'top', 'width', 'height', 'border-radius']) stage.style.removeProperty(name);
@@ -207,8 +207,6 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     const zoom = zoomState();
     const left = frameRect.cx - frameRect.w / 2, top = frameRect.y;
     geometry.style.transform = `translate(${zoom.x + (1 - zoom.z) * left}px, ${zoom.y + (1 - zoom.z) * top}px) scale(${zoom.z})`;
-    // 장면의 무대(전환 중 유닛 포함)도 확대한 채 링을 같은 굵기로 되돌린다
-    geometry.style.setProperty('--z', String(zoom.z));
   }
   return {
     update, disable,
