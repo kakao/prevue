@@ -442,10 +442,11 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .specs { flex: 0 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-8); height: 1.45em; overflow: hidden; white-space: nowrap;
          color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; }
 .spec { display: inline-flex; align-items: center; gap: var(--space-4); flex: 0 0 auto; }
-/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 빼고, 들어가기는 ▶만 남긴다(뜻은 툴팁이 갖는다).
+/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 빼고, 들어가기는 ▶만 남기고 좌우 여백으로 누르는 자리를 23px 로 지킨다(뜻은 툴팁이 갖는다).
    첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘린다 — 말줄임한다. */
 .card { container-type: inline-size; }
 @container (max-width: 139px) {
+  .go { padding: 0 var(--space-4); }
   .go-t { display: none; }
   .spec svg { display: none; }
   .spec:first-child { flex-shrink: 1; min-width: 0; }
