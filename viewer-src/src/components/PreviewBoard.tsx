@@ -169,16 +169,17 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
   return <article data-i={c.index} data-fn={fn}
     // 이름(name=)이 없으면 크기 칸이 첫 줄에 선다 — 함수 이름은 묶음 머리가 갖는다(D-62).
     className={['card', c.isFocus && 'focus', c.stale && 'stale', !c.label && 'noname', cursor && 'cursor', returned && 'returned'].filter(Boolean).join(' ')}>
-    <div className="cstage" ref={stage}>
-      {/* 박스는 workspace/point.ts 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. 꼬리표의 안은 PointOverlay 의 포털이다. */}
-      <img alt="" hidden ref={img} /><div className="box" hidden ref={box} /><div className="box pick" hidden ref={pick}><span className="tag" /></div>
-      <div className={failure ? 'ph bad' : 'ph'} hidden={ok} title={failure ?? ''}>{failure ? <span className="why">{failure}</span> : phrase('card.waiting')}</div>
-    </div>
+    {/* 이름표가 그림 위에 온다(D-151) — 큰 카드의 윗부분만 보여도 어느 변형인지 읽히고 ▶ 를 누를 수 있다. */}
     <div className="label">
       {/* 좁은 칸에서 이름이 말줄임되므로 툴팁 첫 줄에 이름 전체를 둔다. */}
       <span className="fn" title={c.label ? c.label + '\n' + c.title : c.title}>{c.label}</span>
       <button className="go" type="button" title={phrase('card.go.tip')} onClick={() => { setCursor(c.index); actions?.open(c.index); }}>{GO}<span className="go-t">{phrase('card.go')}</span></button>
-      <div className="sub"><Specs card={c} /><span className="meta">{ok ? daemonText(c.meta) : ''}</span></div>
+      <div className="sub"><Specs card={c} /></div>
+    </div>
+    <div className="cstage" ref={stage}>
+      {/* 박스는 workspace/point.ts 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. 꼬리표의 안은 PointOverlay 의 포털이다. */}
+      <img alt="" hidden ref={img} /><div className="box" hidden ref={box} /><div className="box pick" hidden ref={pick}><span className="tag" /></div>
+      <div className={failure ? 'ph bad' : 'ph'} hidden={ok} title={failure ?? ''}>{failure ? <span className="why">{failure}</span> : phrase('card.waiting')}</div>
     </div>
   </article>;
 });
