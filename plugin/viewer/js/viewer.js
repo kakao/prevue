@@ -3644,17 +3644,26 @@ var Oi = /* @__PURE__ */ (0, L.jsx)("svg", {
 });
 function ki(e) {
 	let t = e.querySelector("button[aria-pressed=\"true\"]");
-	if (!t?.offsetWidth) return;
-	let n = !e.style.getPropertyValue("--seg-w");
-	e.classList.toggle("instant", n), e.style.setProperty("--seg-x", `${t.offsetLeft}px`), e.style.setProperty("--seg-w", `${t.offsetWidth}px`), n && (getComputedStyle(e, "::after").width, e.classList.remove("instant"));
+	if (!t?.offsetWidth) {
+		e.style.removeProperty("--seg-x"), e.style.removeProperty("--seg-w");
+		return;
+	}
+	let n = !e.style.getPropertyValue("--seg-w"), r = e.getBoundingClientRect(), i = t.getBoundingClientRect();
+	e.classList.toggle("instant", n), e.style.setProperty("--seg-x", `${i.left - r.left}px`), e.style.setProperty("--seg-w", `${i.width}px`), n && (getComputedStyle(e, "::after").width, e.classList.remove("instant"));
 }
 function Ai({ state: e, hosts: t, actions: n = bi }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = o(t?.seg), l = e?.screen === "focus" ? e.focus : null, u = l ? (e.tabs || []).find((e) => e.active) : void 0, d = l?.fromBoard && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0, f = !!l?.interactive;
 	(0, I.useLayoutEffect)(() => {
 		document.body.classList.toggle("ws", !!l), i.element && (i.element.hidden = !(l && l.fromBoard)), c.element && (c.element.hidden = !(l && !l.fromBoard)), a.element && (a.element.hidden = !l, a.element.title = l ? d ? d.title : u ? u.title : l.previewId : ""), i.element && a.element && Di(i.element, a.element);
-	}), (0, I.useLayoutEffect)(() => {
+	});
+	let p = !!l && !l.fromBoard;
+	(0, I.useLayoutEffect)(() => {
 		c.element && ki(c.element);
-	}), (0, I.useLayoutEffect)(() => {
+	}, [
+		c.element,
+		p,
+		f
+	]), (0, I.useLayoutEffect)(() => {
 		let e = c.element;
 		if (!e) return;
 		let t = new ResizeObserver(() => ki(e));
@@ -3666,10 +3675,10 @@ function Ai({ state: e, hosts: t, actions: n = bi }) {
 		for (let e of [n, r]) e && o.observe(e);
 		return () => o.disconnect();
 	}, [i.element, a.element]);
-	let p = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [Oi, /* @__PURE__ */ (0, L.jsx)("span", {
+	let m = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [Oi, /* @__PURE__ */ (0, L.jsx)("span", {
 		id: "backName",
 		children: u ? u.name : r("nav.board")
-	})] }), m = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("span", {
+	})] }), h = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("span", {
 		className: "ws-name",
 		id: "wsName",
 		children: l ? l.name || l.fn || l.previewId : ""
@@ -3678,7 +3687,7 @@ function Ai({ state: e, hosts: t, actions: n = bi }) {
 		id: "wsFn",
 		hidden: !l?.name,
 		children: l?.name ? l.fn : ""
-	})] }), h = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("button", {
+	})] }), g = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("button", {
 		type: "button",
 		"data-on": "false",
 		"aria-pressed": !f,
@@ -3697,20 +3706,20 @@ function Ai({ state: e, hosts: t, actions: n = bi }) {
 		let t = () => n.exit();
 		return e.addEventListener("click", t), () => e.removeEventListener("click", t);
 	}, [i.element, n]), /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
-		i.place(p, (e, t) => /* @__PURE__ */ (0, L.jsx)("button", {
+		i.place(m, (e, t) => /* @__PURE__ */ (0, L.jsx)("button", {
 			className: "back",
 			id: "back",
 			type: "button",
 			ref: e,
 			children: t
 		})),
-		a.place(m, (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
+		a.place(h, (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
 			className: "ws-title",
 			id: "wsTitle",
 			ref: e,
 			children: t
 		})),
-		c.place(h, (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
+		c.place(g, (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
 			className: "seg",
 			id: "seg",
 			ref: e,

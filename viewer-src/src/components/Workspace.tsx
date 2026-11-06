@@ -99,11 +99,14 @@ const BACK = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWi
 
 function placeSegBar(seg: HTMLElement) {
   const on = seg.querySelector<HTMLElement>('button[aria-pressed="true"]');
-  if (!on?.offsetWidth) return;
+  // 숨으면 자리를 잊는다 — 남겨 두면 다시 보일 때 옛 칸에서 미끄러져 온다
+  if (!on?.offsetWidth) { seg.style.removeProperty('--seg-x'); seg.style.removeProperty('--seg-w'); return; }
   const first = !seg.style.getPropertyValue('--seg-w');
+  // 칸 폭은 글자 폭이라 소수다 — offset* 은 정수로 잘라 막대가 1px 어긋난다
+  const box = seg.getBoundingClientRect(), r = on.getBoundingClientRect();
   seg.classList.toggle('instant', first);
-  seg.style.setProperty('--seg-x', `${on.offsetLeft}px`);
-  seg.style.setProperty('--seg-w', `${on.offsetWidth}px`);
+  seg.style.setProperty('--seg-x', `${r.left - box.left}px`);
+  seg.style.setProperty('--seg-w', `${r.width}px`);
   // 첫 자리는 전환 없이 — 스타일을 한 번 확정한 뒤 풀어야 폭 0 에서 자라지 않는다
   if (first) { getComputedStyle(seg, '::after').width; seg.classList.remove('instant'); }
 }
@@ -130,7 +133,8 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
     if (back.element && title.element) fitTitle(back.element, title.element);
   });
   // 보기 | 조작의 막대를 눌린 칸 밑으로 — 칸 폭이 언어마다 달라 잰다. 숨었다 처음 보일 때는 전환 없이 그 자리에 선다.
-  useLayoutEffect(() => { if (seg.element) placeSegBar(seg.element); });
+  const segShown = !!f && !f.fromBoard;
+  useLayoutEffect(() => { if (seg.element) placeSegBar(seg.element); }, [seg.element, segShown, interactive]);
   useLayoutEffect(() => {
     const s = seg.element;
     if (!s) return;

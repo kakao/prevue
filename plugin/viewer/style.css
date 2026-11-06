@@ -173,10 +173,10 @@ body:not(.resizing-ui) .pn-pick { display: none; }
 .pn-g { margin: var(--space-8) var(--space-8) var(--space-2); color: var(--on-surface-disabled); font: var(--type-label-small); }
 .pn-list { display: flex; flex-direction: column; gap: var(--space-2); }
 .pn-seg { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.pn-it { position: relative; display: flex; align-items: center; gap: var(--space-8); width: 100%; height: var(--control-large); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium);
+.pn-it { position: relative; display: flex; align-items: center; gap: var(--space-8); width: 100%; height: var(--control-large); padding: 0 var(--space-8); border: 0;
          background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); white-space: nowrap; text-align: left; cursor: pointer;
-         transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
-.pn-seg .pn-it { width: auto; }
+         transition: color var(--duration-short4) var(--easing-standard); }
+.pn-seg .pn-it { width: auto; border-radius: var(--corner-medium); transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
 /* 고르는 줄은 호버에 글자만 진해진다. 자세 줄(접기 · 돌리기 · 힌지)은 누르는 버튼이라 호버 바탕을 둔다. */
 .pn-it:hover, .pn-it[aria-checked="true"], .pn-it[aria-pressed="true"] { color: var(--on-surface); }
 .pn-seg .pn-it:hover { background: var(--state-hover); }
@@ -270,8 +270,10 @@ body.rail-on { --rail-w: 200px; }
 .rail-h { margin: 0 var(--space-8) var(--space-6); color: var(--on-surface-variant); font: var(--type-label-medium); }
 .rail-list { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
 .rail-empty { margin: 0; padding: 0 var(--space-8); color: var(--on-surface-variant); font: var(--type-body-small); }
-.rail-glider { position: absolute; left: 0; top: var(--space-6); width: 2px; height: 16px; pointer-events: none;
-               background: var(--on-surface); transition: transform var(--duration-medium2) var(--easing-standard); }
+.rail-glider { position: absolute; left: 0; top: 0; width: 2px; height: var(--control-medium); pointer-events: none;
+               transition: transform var(--duration-medium2) var(--easing-standard); }
+/* 줄 높이를 따라가고 막대는 위아래를 비운다 — 패널의 고른 줄 막대와 같은 모양 */
+.rail-glider::before { content: ""; position: absolute; left: 0; right: 0; top: var(--space-6); bottom: var(--space-6); background: var(--on-surface); }
 .rail-glider.instant { transition: none; }
 /* 굵기는 지금 줄도 같다 — 지금 줄은 막대와 글자색으로만 다르다. 호버도 바탕 없이 글자만 진해진다. */
 .rt { position: relative; z-index: 1; flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-6); height: var(--control-medium); padding: 0 var(--space-4) 0 var(--space-8);
