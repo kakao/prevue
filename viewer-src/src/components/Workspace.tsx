@@ -97,6 +97,17 @@ function fitTitle(back: HTMLElement, title: HTMLElement) {
 
 const BACK = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5" /></svg>;
 
+function placeSegBar(seg: HTMLElement) {
+  const on = seg.querySelector<HTMLElement>('button[aria-pressed="true"]');
+  if (!on?.offsetWidth) return;
+  const first = !seg.style.getPropertyValue('--seg-w');
+  seg.classList.toggle('instant', first);
+  seg.style.setProperty('--seg-x', `${on.offsetLeft}px`);
+  seg.style.setProperty('--seg-w', `${on.offsetWidth}px`);
+  // 첫 자리는 전환 없이 — 스타일을 한 번 확정한 뒤 풀어야 폭 0 에서 자라지 않는다
+  if (first) { getComputedStyle(seg, '::after').width; seg.classList.remove('instant'); }
+}
+
 /**
  * 헤더가 내비게이션 바가 된다(W2) — 앱 록업 · 파일 레일 · 보드 도구가 물러나고, 돌아갈 곳 · 이 장의 이름이 남는다.
  * 보드에서 들어왔으면 뒤로 버튼이 그 파일(탭 이름)을 갖고, FQN 단건이면 돌아갈 데가 없어 보기 | 조작이 그 자리다(W8).
@@ -118,6 +129,15 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
     if (title.element) { title.element.hidden = !f; title.element.title = f ? (card ? card.title : tab ? tab.title : f.previewId) : ''; }
     if (back.element && title.element) fitTitle(back.element, title.element);
   });
+  // 보기 | 조작의 막대를 눌린 칸 밑으로 — 칸 폭이 언어마다 달라 잰다. 숨었다 처음 보일 때는 전환 없이 그 자리에 선다.
+  useLayoutEffect(() => { if (seg.element) placeSegBar(seg.element); });
+  useLayoutEffect(() => {
+    const s = seg.element;
+    if (!s) return;
+    const observer = new ResizeObserver(() => placeSegBar(s));
+    observer.observe(s);
+    return () => observer.disconnect();
+  }, [seg.element]);
   // 내비게이션 바는 이 컴포넌트가 있는 동안만이다 — Storybook 에서 다음 스토리로 body.ws 가 새지 않게 걷는다.
   useLayoutEffect(() => () => document.body.classList.remove('ws'), []);
   // 창 폭 · 알약 글자가 바뀌면 자리가 움직인다. 뒤로 버튼은 보지 않는다 — 여기서 줄이므로 보면 줄일 때마다 다시 불린다.
