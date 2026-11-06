@@ -16,8 +16,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.port.EngineLog
 import prevue.application.port.LiveSession
 import prevue.application.port.LiveSessionFactory
+import prevue.application.port.MonotonicClock
 import prevue.application.port.PrevueDispatchers
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.RenderOutput
@@ -32,11 +34,11 @@ class Engine(
     sessions: LiveSessionFactory,
     scope: CoroutineScope,
     dispatchers: PrevueDispatchers,
-    private val now: () -> Long = { System.nanoTime() / 1_000_000 },
-    private val log: (String) -> Unit = { System.err.println("[prevue] $it") },
+    private val clock: MonotonicClock,
+    private val log: EngineLog,
 ) {
     private val inbox = Channel<Command<*>>(Channel.UNLIMITED) { it.reply.cancel() }
-    private val loop = LiveLoop(sessions, now, log)
+    private val loop = LiveLoop(sessions, clock::nowMs, log::invoke)
 
     init {
         scope.launch(dispatchers.io.limitedParallelism(1, "prevue-engine") + CoroutineName("prevue-engine")) {
@@ -117,7 +119,7 @@ class Engine(
     suspend fun showAside(p: PreviewSpec, tree: Boolean = false): RenderOutput = call { drewOnce = true; renderer.showAside(p, tree) }
     suspend fun warmIfCold(p: PreviewSpec): RenderOutput? = call { if (drewOnce) null else { drewOnce = true; renderer.showAside(p) } }
     fun keepImage(out: RenderOutput, previewId: String): RenderOutput = renderer.copyImage(out, previewId)
-    fun msSinceInput(): Long = loop.lastInputAt.value?.let { now() - it } ?: Long.MAX_VALUE
+    fun msSinceInput(): Long = loop.lastInputAt.value?.let { clock.nowMs() - it } ?: Long.MAX_VALUE
     suspend fun rerender(p: PreviewSpec): RenderOutput = call { drewOnce = true; if (loop.preview != null) loop.look(false).out else renderer.show(p) }
     suspend fun renderAt(p: PreviewSpec, ms: Long): RenderOutput = call { drewOnce = true; loop.renderAt(p, ms) }
     suspend fun codeChanged() = call { loop.close(); renderer.codeChanged() }
