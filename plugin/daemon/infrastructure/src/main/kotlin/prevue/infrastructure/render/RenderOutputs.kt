@@ -50,7 +50,7 @@ internal class RenderOutputs(
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
         if (verdict.failure == null) ViewInfoJson.toolingMismatch(result.rootViews)?.let {
-            forgetTree(tree)
+            forgetLiveTree(tree)
             return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
         }
         if (afterBuild && verdict.failure == FailureKind.NOT_FOUND)
@@ -69,7 +69,7 @@ internal class RenderOutputs(
             "renderResult" to status, "failure" to verdict.failure?.name, "message" to verdict.message?.text, "warnings" to verdict.warnings,
             "timings" to mapOf("taskMs" to timing.taskMs, "renderMs" to timing.renderMs, "freshLoader" to timing.freshLoader),
             "layoutlibViewInfo" to if (tree.written) result.rootViews.map { ViewInfoJson.layoutlib(it) } else emptyList(),
-            "composeViewInfo" to if (tree.written) kept(tree, compose, result) else emptyList(),
+            "composeViewInfo" to if (tree.written) keptForLive(tree, compose, result) else emptyList(),
         )
         ph["treeMs"] = msSince(t)
         val ok = verdict.failure == null
@@ -80,11 +80,11 @@ internal class RenderOutputs(
         )
     }
 
-    private fun forgetTree(tree: TreeOut) {
+    private fun forgetLiveTree(tree: TreeOut) {
         if (tree == TreeOut.KEPT) forgetTree()
     }
 
-    private fun kept(tree: TreeOut, compose: List<Map<String, Any?>>, result: RenderResult): List<Map<String, Any?>> {
+    private fun keptForLive(tree: TreeOut, compose: List<Map<String, Any?>>, result: RenderResult): List<Map<String, Any?>> {
         if (tree == TreeOut.KEPT) keepTree(compose, result)
         return compose
     }

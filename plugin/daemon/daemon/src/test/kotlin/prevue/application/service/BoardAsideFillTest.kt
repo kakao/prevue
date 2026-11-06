@@ -99,12 +99,24 @@ class BoardAsideFillTest {
     @Test fun `옆 그림이 옛 호출자의 링크 오류면 적지 않고 비워 나갈 때 고쳐 그리게 둔다`() {
         val uc = opened(quietMs = 60_000)
         uc.focus()
+        fx.compiler.overlay = setOf("demo.CardsKt")
         fx.renderer.asideFails = "java.lang.NoSuchMethodError: 'void demo.CardsKt.Shape(int)'"
 
         val r = runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
 
         assertEquals(CardResult.Skipped(1, SkipReason.INTERACTIVE), r)
         assertEquals(null, uc.workspace.now.board!!.cards[1].result)
+        assertTrue(uc.workspace.now.interactive)
+    }
+
+    @Test fun `앱 자신의 링크 오류는 오버레이 탓이 아니라 그대로 실패로 적는다`() {
+        val uc = opened(quietMs = 60_000)
+        uc.focus()
+        fx.renderer.asideFails = "java.lang.NoSuchMethodError: 'void lib.Outside.call(int)'"
+
+        val r = runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
+
+        assertTrue(r is CardResult.Drawn && !r.shot.ok, "$r")
         assertTrue(uc.workspace.now.interactive)
     }
 }

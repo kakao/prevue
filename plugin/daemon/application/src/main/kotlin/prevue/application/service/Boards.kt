@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 import prevue.application.domain.model.Board
 import prevue.application.domain.model.BoardEpoch
@@ -28,7 +29,6 @@ import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.model.phrase
 import prevue.application.domain.rule.CardPolicy
 import prevue.application.domain.rule.CardPolicy.Decision
-import prevue.application.domain.rule.LinkagePolicy
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
 
@@ -109,7 +109,7 @@ class Boards(
         val t = System.nanoTime()
         val out = if (aside) engine.showAside(c.spec, tree = true)
                   else callers.repair(ed, engine.show(c.spec, ws.now.interactive), c.spec, emptyList())
-        if (aside && LinkagePolicy.missingMember(out) != null) {
+        if (aside && callers.ours(out)) {
             ed.updateBoard(b.epoch) { it.forget(listOf(index)) }
             return CompletableDeferred(CardResult.Skipped(index, SkipReason.INTERACTIVE))
         }
@@ -150,11 +150,12 @@ class Boards(
 
     private suspend fun fillQuietly(round: QuietRound) {
         var from = 0
+        val giveUpOnPostures = ws.nowMs() + POSTURE_PATIENCE_MS
         while (true) {
-            ws.state.first(::posturesDrawn)
+            withTimeoutOrNull(giveUpOnPostures - ws.nowMs()) { ws.state.first(::posturesDrawn) }
             val wait = quietMs - quietFor()
             if (wait > 0) { delay(wait); continue }
-            when (val s = quietStep(round, from)) {
+            when (val s = quietStep(round, from, ws.nowMs() >= giveUpOnPostures)) {
                 QuietStep.Done -> return
                 QuietStep.Later -> delay(quietMs)
                 is QuietStep.Started -> from = s.next
@@ -162,9 +163,9 @@ class Boards(
         }
     }
 
-    private suspend fun quietStep(round: QuietRound, from: Int): QuietStep = ws.exclusive { ed ->
+    private suspend fun quietStep(round: QuietRound, from: Int, pastPostures: Boolean): QuietStep = ws.exclusive { ed ->
         val b = ws.now.board?.takeIf { ws.now.interactive && QuietRound(it.epoch, it.gen, it.focus) == round } ?: return@exclusive QuietStep.Done
-        if (ws.reloadPending || !posturesDrawn(ws.now) || quietFor() < quietMs) return@exclusive QuietStep.Later
+        if (ws.reloadPending || !(pastPostures || posturesDrawn(ws.now)) || quietFor() < quietMs) return@exclusive QuietStep.Later
         val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
             ?: return@exclusive QuietStep.Done
         val t = System.nanoTime()
@@ -220,5 +221,6 @@ class Boards(
 
     companion object {
         const val QUIET_BY = "aside"
+        const val POSTURE_PATIENCE_MS = 10_000L
     }
 }
