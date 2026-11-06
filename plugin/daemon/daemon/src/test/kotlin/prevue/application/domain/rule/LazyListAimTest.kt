@@ -25,7 +25,7 @@ class LazyListAimTest {
     private fun opened(): TestGraph = fx.graph().also {
         runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
-        runBlocking { it.focusCard(0, on = true, by = "test") }
+        runBlocking { it.boards.focus(0, on = true, by = "test") }
     }
 
     private val width = 1000

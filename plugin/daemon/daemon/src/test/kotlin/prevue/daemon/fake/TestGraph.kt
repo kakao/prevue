@@ -29,11 +29,8 @@ import prevue.infrastructure.bindings.TargetBindings
 import prevue.infrastructure.process.ProcessMemory
 import prevue.daemon.DaemonBindings
 import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.DrawCardUseCase
-import prevue.application.service.DrawPosturesUseCase
+import prevue.application.service.Boards
 import prevue.application.service.ExternalBuildUseCase
-import prevue.application.service.FillBoardUseCase
-import prevue.application.service.FocusCardUseCase
 import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
 import prevue.application.service.ObserveScreenUseCase
@@ -81,15 +78,12 @@ internal interface TestGraph {
     val engine: Engine
     val startDaemon: StartDaemonUseCase
 
-    val drawCard: DrawCardUseCase
-    val fillBoard: FillBoardUseCase
     val rerender: RerenderUseCase
     val renderAt: RenderAtUseCase
     val applySave: ApplySaveUseCase
     val rememberValues: RememberValuesUseCase
     val resize: ResizeUseCase
-    val drawPostures: DrawPosturesUseCase
-    val focusCard: FocusCardUseCase
+    val boards: Boards
     val touch: TouchUseCase
     val type: TypeUseCase
     val scroll: ScrollUseCase
@@ -122,7 +116,7 @@ internal interface TestGraph {
             @Provides hooks: EntryHooks,
             @Provides checkout: PrevueCheckout,
             @Provides target: TargetRepo,
-            @Provides @Named(DrawPosturesUseCase.QUIET) postureQuietMs: Long,
+            @Provides @Named(Boards.QUIET) postureQuietMs: Long,
         ): TestGraph
     }
 }
@@ -157,7 +151,7 @@ internal class TestPorts(
 @Suppress("LongParameterList")
 internal fun testGraph(
     ports: TestPorts, workspace: Workspace, scope: CoroutineScope, checkout: PrevueCheckout, target: TargetRepo,
-    hooks: EntryHooks = EntryHooks(0), postureQuietMs: Long = DrawPosturesUseCase.QUIET_MS,
+    hooks: EntryHooks = EntryHooks(0), postureQuietMs: Long = Boards.QUIET_MS,
 ): TestGraph =
     createGraphFactory<TestGraph.Factory>().create(ports, workspace, scope, hooks, checkout, target, postureQuietMs).also { it.startDaemon() }
 

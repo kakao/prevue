@@ -35,7 +35,7 @@ class Tabs(
     private val engine: Engine,
     private val previews: PreviewRepository,
     private val live: LiveShot,
-    private val fillBoard: BoardFiller,
+    private val boards: Boards,
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
 ) {
@@ -120,7 +120,7 @@ class Tabs(
         compiled?.let { (batch, t) -> recordOpenCompile(ed, batch, t, shown, by) }
         val r = live.show(ed, shown, by, since)
         live.recordFocus(ed, r.shot)
-        fillBoard(by, r.startedAtMs)
+        boards.fill(by, r.startedAtMs)
         return r
     }
 
@@ -136,7 +136,7 @@ class Tabs(
         ed.update { it.withTab(tab.copy(board = null, stale = false, seenAtMs = at)).copy(board = b, current = b.focusCard.spec, openedAtMs = at) }
         val r = live.show(ed, b.focusCard.spec, by, since)
         live.recordFocus(ed, r.shot)
-        fillBoard(by, r.startedAtMs)
+        boards.fill(by, r.startedAtMs)
         return r
     }
 

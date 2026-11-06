@@ -190,7 +190,7 @@ class RenderIntegrationTest {
 
     // 0.7.3 회귀. 인터랙티브로 들어가 조작하면 그림이 바뀌어야 한다 — 가짜 렌더러는 그림이 없어 못 잡는다.
     @Test @Order(3) fun `인터랙티브에서 끌면 그림이 바뀐다`() {
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         runBlocking { engine.awaitWrites() }
         val png = on.result.shot.out.image!!
@@ -207,13 +207,13 @@ class RenderIntegrationTest {
         assertTrue(now.out.ok, "정착한 그림이 없다")
         runBlocking { engine.awaitWrites() }
         assertFalse(before.contentEquals(now.out.image!!.readBytes()), "끈 뒤에도 그림이 같다")
-        runBlocking { uc.focusCard(0, on = false, by = "test") }
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
     }
 
     // D-59. 카드를 누르면 리플이 단색으로 바뀌어 틱이 가볍다. 반짝이 리플이면 한 틱 ~250ms(CPU가 셰이더를 해석한다).
     // 렌더러 판올림으로 리플 내부가 바뀌면 바꿔 끼운 수가 0이 되어 여기서 잡힌다.
     @Test @Order(4) fun `인터랙티브에서 누른 리플은 단색이라 틱이 가볍다`() {
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         val before = engine.calmedRipples
         val (x, y) = cardCenter(on)
@@ -227,13 +227,13 @@ class RenderIntegrationTest {
         assertTrue(ms.size >= 12, "틱이 ${ms.size}번")
         assertTrue(engine.calmedRipples > before, "바꿔 끼운 리플이 없다 — 카드를 못 눌렀거나 리플 내부가 바뀌었다")
         assertTrue(ms.max() < 150, "누른 뒤 가장 긴 틱 ${ms.max()}ms — ${ms}")
-        runBlocking { uc.focusCard(0, on = false, by = "test") }
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
     }
 
     // D-58. 휠은 마우스 ACTION_SCROLL로 들어가 스크롤만 한다 — 누름이 아니라 리플이 켜지지 않는다.
     // 렌더러 판올림으로 루트 · 이벤트 경로가 바뀌면 scroll()이 false이거나 그림이 그대로라 여기서 잡힌다.
     @Test @Order(5) fun `인터랙티브에서 휠을 넣으면 스크롤되고 누름은 없다`() {
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         runBlocking { engine.awaitWrites() }
         val before = on.result.shot.out.image!!.readBytes()
@@ -244,7 +244,7 @@ class RenderIntegrationTest {
         runBlocking { engine.awaitWrites() }
         assertFalse(before.contentEquals(now.out.image!!.readBytes()), "휠 뒤에도 그림이 같다")
         assertEquals(ripples, engine.calmedRipples, "휠이 누름을 만들었다")
-        runBlocking { uc.focusCard(0, on = false, by = "test") }
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
     }
 
     // D-68. values 값을 렌더러 리소스에 얹으면 같은 로더로 그 값을 그리고, 되돌리면 원래 그림과 바이트까지 같다.
@@ -288,7 +288,7 @@ class RenderIntegrationTest {
     // D-69. 겨냥은 지금 화면의 트리를 본다 — ComposeViewAdapter는 제 onLayout에서만 트리를 지어, 다시 짓게 하지 않으면 굴린 뒤에도 처음 트리다
     // (그림은 움직였는데 박스는 그대로였다). 렌더러 판올림으로 그 private 경로가 바뀌면 여기서 잡힌다.
     @Test @Order(8) fun `굴린 뒤의 트리로 겨냥한다`() {
-        runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         val line = "DrinkCard.kt:" + PearlFixture.lineOf(PearlFixture.card, "DrinkName(drink)")
         val top = runBlocking { uc.scroll.screens(-1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
         assertTrue(!top.moved, "맨 위에서 위로 굴렸는데 움직였다")
@@ -300,7 +300,7 @@ class RenderIntegrationTest {
         val pick = after.last()
         val t = runBlocking { uc.touch.at("$line#${pick.n}", "tap", "test", settle = true) }
         assertEquals(pick.node, (t as TouchResult.Settled).aim!!.node, "굴린 뒤의 트리로 겨냥하지 않는다")
-        runBlocking { uc.focusCard(0, on = false, by = "test") }
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
     }
 
     private fun visible(at: String): List<prevue.application.domain.model.Numbered> =
@@ -335,7 +335,7 @@ class RenderIntegrationTest {
     // 굴리면 게으른 그리드가 화면 밖 아이템을 미리 짓는다(prefetch) — 배치되지 않은 그 노드가 원점 bounds로 트리에 실리면
     // touch --at 후보가 화면에 없는 카드를 내놓아 엉뚱한 곳을 누른다. 휠이 아니라 끌기로 굴린다(휠은 이 조립에서 목록을 못 굴린다).
     @Test @Order(10) fun `굴린 뒤의 트리에 배치되지 않은 목록 아이템이 없다`() {
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
             val (x, y) = cardCenter(on)
@@ -353,7 +353,7 @@ class RenderIntegrationTest {
             val overlaps = cards.flatMapIndexed { i, a -> cards.drop(i + 1).filter { b -> a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom }.map { a.sameBox to it.sameBox } }
             assertTrue(overlaps.isEmpty(), "겹친 카드 — $overlaps")
         } finally {
-            runBlocking { uc.focusCard(0, on = false, by = "test") }
+            runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
     }
 
@@ -389,7 +389,7 @@ class RenderIntegrationTest {
 
     /** 스트림을 끄면 구독이 끊긴다 — 켤 때마다 다시 구독한다. */
     private fun focus(on: Boolean) {
-        val r = runBlocking { uc.focusCard(0, on = on, by = "test") }
+        val r = runBlocking { uc.boards.focus(0, on = on, by = "test") }
         if (on) {
             assertTrue((r as FocusResult.On).result.ok, r.result.shot.out.message?.text)
             app!!.frames.subscribe(java.io.OutputStream.nullOutputStream())
@@ -668,7 +668,7 @@ class RenderIntegrationTest {
         val file = PearlFixture.sharedTransition
         assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
             fun lines(): Set<Int> {
@@ -682,7 +682,7 @@ class RenderIntegrationTest {
             assertTrue(t is TouchResult.Settled, "$t")
             assertTrue(detail in lines(), "눌렀는데 상세(${file.name}:$detail)가 트리에 없다 — ${lines()}")
         } finally {
-            runBlocking { uc.focusCard(0, on = false, by = "test") }
+            runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
     }
 
@@ -690,7 +690,7 @@ class RenderIntegrationTest {
         val file = PearlFixture.scroll
         assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
             val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
@@ -710,7 +710,7 @@ class RenderIntegrationTest {
                 assertTrue(item.at?.startsWith("${file.name}:$line") == true, "$item")
             }
         } finally {
-            runBlocking { uc.focusCard(0, on = false, by = "test") }
+            runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
     }
 
@@ -721,7 +721,7 @@ class RenderIntegrationTest {
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val ball = PearlFixture.lineOf(file, "Box(")
         fun tap(viewer: Boolean): Pair<ByteArray, List<ViewNode>> {
-            val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+            val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             try {
                 runBlocking { engine.awaitWrites() }
@@ -743,7 +743,7 @@ class RenderIntegrationTest {
                 assertTrue(out.ok, out.message?.text)
                 return out.image!!.readBytes() to PearlFixture.tree(out.tree!!).nodes
             } finally {
-                runBlocking { uc.focusCard(0, on = false, by = "test") }
+                runBlocking { uc.boards.focus(0, on = false, by = "test") }
             }
         }
         val (viewerPng, viewerTree) = tap(viewer = true)
@@ -764,7 +764,7 @@ class RenderIntegrationTest {
             runBlocking { uc.scroll.screens(amount, horizontal, at = null, by = "test", until = target) } as ScrollResult.Settled
         for ((card, horizontal, n) in listOf(Triple(0, false, 87), Triple(1, true, 23), Triple(2, false, 27), Triple(3, true, 31))) {
             for (target in listOf("${n}번", "${file.name}:$line#$n")) {
-                val on = runBlocking { uc.focusCard(card, on = true, by = "test") } as FocusResult.On
+                val on = runBlocking { uc.boards.focus(card, on = true, by = "test") } as FocusResult.On
                 assertTrue(on.result.ok, on.result.shot.out.message?.text)
                 try {
                     var r = until(target, horizontal)
@@ -779,7 +779,7 @@ class RenderIntegrationTest {
                     assertFalse(picked.moved, "$picked")
                     assertEquals("${n}번 선택됨", picked.found?.semantics?.text, "카드 $card · ${found.at} 로 다른 칸을 눌렀다: $picked")
                 } finally {
-                    runBlocking { uc.focusCard(card, on = false, by = "test") }
+                    runBlocking { uc.boards.focus(card, on = false, by = "test") }
                 }
             }
         }
@@ -790,7 +790,7 @@ class RenderIntegrationTest {
         val file = PearlFixture.until
         assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
             val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test", until = "없는 칸") } as ScrollResult.Settled
@@ -802,7 +802,7 @@ class RenderIntegrationTest {
             val rolled = plain.container!!.list!!.first!! - sought
             assertTrue(sought > 0 && kotlin.math.abs(sought - rolled) <= 1, "못 찾은 --until 이 그냥 scroll 과 다른 거리를 굴렸다: $sought / $rolled")
         } finally {
-            runBlocking { uc.focusCard(0, on = false, by = "test") }
+            runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
     }
 
@@ -813,7 +813,7 @@ class RenderIntegrationTest {
         ws.awaitBoardFilled(timeoutMs = 60_000)
         fun numbers(items: List<Semantics?>) = items.map { it?.text?.removeSuffix("번")?.toInt() ?: error("글자 없는 칸: $items") }
         for ((card, horizontal) in listOf(0 to false, 1 to true, 2 to false, 3 to true)) {
-            val on = runBlocking { uc.focusCard(card, on = true, by = "test") } as FocusResult.On
+            val on = runBlocking { uc.boards.focus(card, on = true, by = "test") } as FocusResult.On
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             try {
                 val r = runBlocking { uc.scroll.screens(5.0, horizontal, at = null, by = "test") } as ScrollResult.Settled
@@ -823,7 +823,7 @@ class RenderIntegrationTest {
                 assertTrue(passed.isNotEmpty(), "카드 $card: passed 가 비었다 — $r")
                 assertEquals((1..now.max()).toList(), was + passed + now, "카드 $card: 직전 $was · 지나감 $passed · 지금 $now")
             } finally {
-                runBlocking { uc.focusCard(card, on = false, by = "test") }
+                runBlocking { uc.boards.focus(card, on = false, by = "test") }
             }
         }
     }
@@ -901,7 +901,7 @@ class RenderIntegrationTest {
         assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 120_000)
         val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
-        val on = runBlocking { uc.focusCard(0, on = true, by = "test", size = fold8) } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(0, on = true, by = "test", size = fold8) } as FocusResult.On
         try {
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             awaitUntil("자세별 그림 세 장 — ${uc.status.read().postures.keys}", 30_000, pollMs = 50) { uc.status.read().postures.keys.count { it is ScreenSize.Device } == 3 }
@@ -925,7 +925,7 @@ class RenderIntegrationTest {
             runBlocking { engine.awaitWrites() }
             assertFalse(samePixels(before, javax.imageio.ImageIO.read(now.out.image!!)), "자세별 그림을 그린 뒤 끌어도 그림이 같다")
         } finally {
-            runBlocking { uc.focusCard(0, on = false, by = "test") }
+            runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
         assertAlive()
     }
@@ -937,13 +937,13 @@ class RenderIntegrationTest {
         val index = ws.now.board!!.cards.indexOfFirst { it.spec.fqn.endsWith("DrinkByKindPreview") }
         assertTrue(index >= 0, "보드에 DrinkByKindPreview 카드가 없다")
         val s26 = ScreenSize.Device(DeviceModel.GALAXY_S26)
-        val on = runBlocking { uc.focusCard(index, on = true, by = "test", size = s26) } as FocusResult.On
+        val on = runBlocking { uc.boards.focus(index, on = true, by = "test", size = s26) } as FocusResult.On
         try {
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             val png = javax.imageio.ImageIO.read(on.result.shot.out.image!!)
             assertEquals(1080 to 2340, png.width to png.height)
         } finally {
-            runBlocking { uc.focusCard(index, on = false, by = "test") }
+            runBlocking { uc.boards.focus(index, on = false, by = "test") }
         }
         assertAlive()
     }

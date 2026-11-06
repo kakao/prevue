@@ -15,8 +15,8 @@ class WorkspaceWriteRuleTest {
     @Test fun `줄 밖의 쓰기는 카드 쓰기 완료 · 채우기 완료 · 자세 한 장 · 감시의 새 파일 넷뿐이다`() {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(
-            listOf("application/service/DrawCardUseCase.kt → recordCard", "application/service/DrawPosturesUseCase.kt → recordPosture",
-                "application/service/FillBoardUseCase.kt → recordFill", "application/service/ObserveSourceChangesUseCase.kt → noteCreated"),
+            listOf("application/service/Boards.kt → recordFill", "application/service/Boards.kt → recordCard",
+                "application/service/Boards.kt → recordPosture", "application/service/ObserveSourceChangesUseCase.kt → noteCreated"),
             WriteRule.outOfQueue(files),
         )
     }

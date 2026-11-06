@@ -169,7 +169,7 @@ class TabsTest {
 
     @Test fun `탭을 옮기면 인터랙티브가 끝난다`() {
         show(fx.file)
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         show(fx.previewFile("B"))
         assertFalse(ws.now.interactive)
     }
@@ -180,7 +180,7 @@ class TabsTest {
         show(a)
         val gate = CountDownLatch(1)
         fx.renderer.writeHold = ws.now.board!!.cards[1].spec.previewId to gate
-        val pending = CompletableFuture.supplyAsync { runBlocking { uc.drawCard(1, force = true, by = "held") } }
+        val pending = CompletableFuture.supplyAsync { runBlocking { uc.boards.drawCard(1, force = true, by = "held") } }
         assertTrue(fx.renderer.writeEntered.tryAcquire(5, TimeUnit.SECONDS))
         show(fx.previewFile("B"))
         gate.countDown()

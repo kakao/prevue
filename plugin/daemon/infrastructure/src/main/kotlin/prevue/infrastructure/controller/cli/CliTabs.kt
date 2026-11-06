@@ -3,8 +3,7 @@ package prevue.infrastructure.controller.cli
 import dev.zacsweers.metro.Inject
 import java.io.File
 import prevue.application.domain.model.PreviewSpec
-import prevue.application.service.DrawCardUseCase
-import prevue.application.service.FocusCardUseCase
+import prevue.application.service.Boards
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.domain.model.BoardView
@@ -19,8 +18,7 @@ import prevue.application.domain.model.Status as StatusView
 internal class CliTabs(
     private val status: Status,
     private val tabs: Tabs,
-    private val drawCard: DrawCardUseCase,
-    private val focusCard: FocusCardUseCase,
+    private val boards: Boards,
 ) {
     suspend fun status(): StatusView { tabs.catchUp("status"); return status.read() }
 
@@ -31,8 +29,8 @@ internal class CliTabs(
 
     fun activeTab(): String? = status.read().tabs.firstOrNull { it.active }?.let { it.file?.absolutePath ?: it.fqn }
 
-    suspend fun card(index: Int, force: Boolean, by: String): CardResult = drawCard(index, force, by)
-    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = focusCard(index, on, by, size)
+    suspend fun card(index: Int, force: Boolean, by: String): CardResult = boards.drawCard(index, force, by)
+    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = boards.focus(index, on, by, size)
     fun board(): BoardView? = status.read().board
 
     fun previews(file: File): List<PreviewSpec> = status.listPreviews(file)

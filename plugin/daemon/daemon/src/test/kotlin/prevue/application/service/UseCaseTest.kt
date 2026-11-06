@@ -158,9 +158,9 @@ class UseCaseTest {
     @Test fun `인터랙티브 중에는 다른 카드를 그리지 않는다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
 
-        val r = runBlocking { uc.drawCard(1, force = true, by = "test") }
+        val r = runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
         assertEquals(CardResult.Skipped(1, SkipReason.INTERACTIVE), r)
 
         fx.renderer.shown.clear()
@@ -194,7 +194,7 @@ class UseCaseTest {
     @Test fun `저장은 프리뷰 인자를 다시 읽어 그 인자로 그린다`() {
         val uc = opened()
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card1", "@Preview(widthDp = 480)\nfun Card1"))
-        runBlocking { uc.focusCard(1, on = false, by = "test") }
+        runBlocking { uc.boards.focus(1, on = false, by = "test") }
         fx.renderer.shown.clear()
         uc.save()
         val b = uc.workspace.now.board!!
@@ -204,7 +204,7 @@ class UseCaseTest {
 
     @Test fun `저장으로 프리뷰가 늘거나 줄면 카드 수가 따라가고 포커스는 같은 프리뷰에 남는다`() {
         val uc = opened()
-        runBlocking { uc.focusCard(2, on = false, by = "test") }
+        runBlocking { uc.boards.focus(2, on = false, by = "test") }
         val focused = uc.workspace.now.board!!.focusCard.spec.previewId
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card0() {}\n", "") + "@Preview\nfun Card3() {}\n@Preview\nfun Card4() {}\n")
         uc.save()
@@ -264,10 +264,10 @@ class UseCaseTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate                          // 카드 0이 줄 안에서 렌더하는 중인 순간을 만든다
         fx.renderer.showEntered.drainPermits()
-        val holder = async { uc.drawCard(0, force = true, by = "test") }
+        val holder = async { uc.boards.drawCard(0, force = true, by = "test") }
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
 
-        val card = queued { uc.drawCard(1, force = true, by = "test") }   // 카드 1이 저장보다 먼저 줄에 선다
+        val card = queued { uc.boards.drawCard(1, force = true, by = "test") }   // 카드 1이 저장보다 먼저 줄에 선다
         val reload = queued { uc.applySave(listOf(fx.file), "test") }
         assertTrue(uc.workspace.reloadPending)
 
@@ -392,7 +392,7 @@ class UseCaseTest {
         fx.compiler.overlay = setOf("lib.ThemeKt")
         fx.compiler.callers = listOf(fx.file)
         fx.renderer.exceptions += "View layout failed\njava.lang.NoSuchMethodError: 'void lib.ThemeKt.Wheel(java.lang.String, androidx.compose.runtime.Composer, int)'"
-        val r = runBlocking { uc.drawCard(1, force = true, by = "test") }
+        val r = runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
         assertTrue(r is CardResult.Drawn && r.shot.out.ok, r.toString())
         assertEquals(listOf(":app" to listOf(fx.file)), fx.compiler.compiledBy.toList())
     }
@@ -410,7 +410,7 @@ class UseCaseTest {
     @Test fun `보드 카드가 R 클래스를 못 찾아도 덤프가 낡았다고 세운다`() {
         val uc = opened()
         fx.renderer.exceptions += "java.lang.NoClassDefFoundError: com/foo/LineResUtils\nCaused by: java.lang.ClassNotFoundException: com.foo.R\$string"
-        runBlocking { uc.drawCard(1, force = true, by = "test") }
+        runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
         assertTrue("build-files" in uc.workspace.now.stale)
     }
 
@@ -502,7 +502,7 @@ class UseCaseTest {
     @Test fun `인터랙티브 중 가리키기는 조작한 화면을 싣는다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         fx.renderer.moving = true
         runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
         val n = fx.renderer.rerenders.get()
@@ -516,11 +516,11 @@ class UseCaseTest {
     @Test fun `크기를 주고 켜면 그 크기로 열고 끄면 소스 그대로 다시 그린다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
+        runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
         assertEquals("320", fx.renderer.opened.last().params["widthDp"])
         assertEquals(ScreenSize.Dp(320, 640), uc.status.read().size)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["widthDp"])
-        runBlocking { uc.focusCard(0, on = false, by = "test") }
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown.first { it.previewId == ws.now.board!!.focusCard.spec.previewId && it.params.isEmpty() })
         assertEquals(null, uc.status.read().size)
     }
@@ -528,18 +528,18 @@ class UseCaseTest {
     @Test fun `켜진 카드의 크기를 바꿔도 인터랙티브는 켜져 있고 저장해도 크기가 남는다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         val opens = fx.renderer.opened.size
-        runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)) }
+        runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)) }
         assertTrue(ws.now.interactive)
         assertEquals(opens + 1, fx.renderer.opened.size)
         assertEquals("spec:width=2448px,height=1848px,dpi=420,orientation=landscape", ws.now.current!!.params["device"])
         uc.save()
         assertEquals("spec:width=2448px,height=1848px,dpi=420,orientation=landscape", fx.renderer.opened.last().params["device"])
         assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.status.read().size)
-        runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)) }
+        runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)) }
         assertEquals(opens + 2, fx.renderer.opened.size)
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.status.read().size)
         runBlocking { uc.resize(ScreenSize.Original, "viewer") }
         assertEquals(null, ws.now.current!!.params["device"])
@@ -549,13 +549,13 @@ class UseCaseTest {
     @Test fun `보드에서 인터랙티브가 아니면 크기를 바꾸지 않는다`() {
         val uc = opened()
         assertThrows<IllegalArgumentException> { runBlocking { uc.resize(ScreenSize.Dp(320, 640), "viewer") } }
-        assertThrows<IllegalArgumentException> { runBlocking { uc.focusCard(0, on = false, by = "test", size = ScreenSize.Dp(320, 640)) } }
+        assertThrows<IllegalArgumentException> { runBlocking { uc.boards.focus(0, on = false, by = "test", size = ScreenSize.Dp(320, 640)) } }
         assertEquals(null, uc.workspace.now.resize)
     }
 
     @Test fun `다른 탭으로 옮기면 크기 덮어쓰기를 푼다`() {
         val uc = opened()
-        runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
+        runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
         val other = fx.previewFile("Other")
         runBlocking { uc.tabs.openPreview(other.path, null, emptyMap(), "test") }
         assertEquals(null, uc.workspace.now.resize)
@@ -566,25 +566,38 @@ class UseCaseTest {
     @Test fun `인터랙티브에서 나오면 카드를 처음 화면으로 다시 그린다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         val entered = fx.renderer.shown.size
         runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
-        runBlocking { uc.focusCard(0, on = false, by = "viewer") }
+        runBlocking { uc.boards.focus(0, on = false, by = "viewer") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown[entered])        // 나가며 새 태스크로 그렸다(채우기는 그 뒤에 붙는다)
         val after = (ws.now.board!!.focusCard.result as prevue.application.domain.model.CardResult.Drawn).shot
         assertEquals("viewer", after.by)
         assertEquals(fx.renderer.opened.size, fx.renderer.closes.get())
     }
 
+    // 켜져 있는 동안의 저장은 포커스 카드만 그리고 채우기를 멈춘다. 나올 때 이어 그리지 않으면 나머지가 옛 그림으로 남고
+    // 다음 저장까지 `wait`가 답하지 못한다(2026-10-04 재현: 카드 24장 낡음, wait 30초 TIMEOUT).
+    @Test fun `인터랙티브에서 저장한 뒤 나오면 나머지 카드를 이어 그린다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        uc.save()
+        val b = ws.now.board!!
+        assertTrue(b.cards.drop(1).none { it.fresh(b.gen) })
+        runBlocking { uc.boards.focus(0, on = false, by = "viewer") }
+        ws.awaitBoardFilled()
+    }
+
     // 나가며 그리기가 실패해도 카드는 들어가기 전 그림 그대로다 — 나가기만 했는데 카드가 실패로 바뀌지 않는다. 마지막 결과(status)도 그대로다.
     @Test fun `나가며 다시 그리기가 실패하면 카드와 마지막 결과를 그대로 둔다`() {
         val uc = opened()
         val ws = uc.workspace
-        runBlocking { uc.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         val card = ws.now.board!!.focusCard.result
         val last = ws.now.lastResult
         fx.renderer.exceptions += "렌더 시간 초과"
-        runBlocking { uc.focusCard(0, on = false, by = "viewer") }
+        runBlocking { uc.boards.focus(0, on = false, by = "viewer") }
         assertEquals(card, ws.now.board!!.focusCard.result)
         assertTrue(last === ws.now.lastResult)
         assertFalse(ws.now.interactive)
@@ -685,7 +698,7 @@ class UseCaseTest {
         val ws = uc.workspace
         val gate = CountDownLatch(1)
         fx.renderer.writeHold = ws.now.board!!.cards[1].spec.previewId to gate
-        val old = async { uc.drawCard(1, force = true, by = "old") }
+        val old = async { uc.boards.drawCard(1, force = true, by = "old") }
         assertTrue(fx.renderer.writeEntered.tryAcquire(5, TimeUnit.SECONDS))
 
         val before = ws.now.board!!.epoch
