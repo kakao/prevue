@@ -17,7 +17,9 @@ kotlin {
     }
 }
 
-val layers = listOf(":application", ":infrastructure").map { project(it) }
+// 층은 settings 가 include 한 나머지 모듈이다 — 손으로 적으면 빠뜨린 층이 jar 에 안 실려 설치본이 실행 때 NoClassDefFoundError 로 죽는다.
+// 빌드 파일이 없는 빈 부모(:a 아래 :a:b)는 층이 아니다
+val layers = rootProject.subprojects.filter { it != project && it.buildFile.isFile }
 // 아래 jar · 테스트 컴파일이 층의 sourceSets · jar 태스크를 읽는다 — 이름 순서(application · daemon · infrastructure)에 기대지 않고 먼저 구성한다.
 layers.forEach { evaluationDependsOn(it.path) }
 
