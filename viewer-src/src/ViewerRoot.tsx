@@ -33,7 +33,7 @@ export function findHosts(): Hosts {
     rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen') },
     stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
     quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
-    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle'), seg: $('seg') }, chooser: $('chooser'),
+    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
   };
 }
 

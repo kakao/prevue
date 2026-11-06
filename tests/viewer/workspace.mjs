@@ -259,10 +259,10 @@ try {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   const boardFile = await evaluate(`__store.st.board.file`);
   await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
-  await until(`__store.st.screen==='focus' && __store.st.focus.fromBoard && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await until(`__store.st.screen==='focus' && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
   await ready();
   const linked = await evaluate(`__store.st.board.focus`);
-  await check(`!document.querySelector('#back').hidden && document.querySelector('#seg').hidden && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
+  await check(`!document.querySelector('#back').hidden && !document.querySelector('#seg') && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
   const beforeEsc = await evaluate(`__exits`);
   await key("Escape");
   await until(`!document.querySelector('#boardView').hidden && __exits>${beforeEsc} && __store.st.screen==='board' && __store.st.board.file.endsWith('/FilterScreen.kt')`);

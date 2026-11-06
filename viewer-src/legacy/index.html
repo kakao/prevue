@@ -13,7 +13,7 @@
 <body>
 <script>if (new URL(location.href).searchParams.has('prepare')) document.body.classList.add('preparing');</script>
 <!-- 헤더는 프로젝트 한 줄이다(D-98) — 어느 앱 · 무슨 일이. 어느 파일인지는 왼쪽 레일의 지금 줄이 말한다 — 파일명을 두 번 쓰지 않는다.
-     React 가 그리는 영역(#app · #status · #helpBtn · #back · #wsTitle · #seg)은 바깥 요소만 둔다 — 형제 사이의 자리를 마크업이 정한다. -->
+     React 가 그리는 영역(#app · #status · #helpBtn · #back · #wsTitle)은 바깥 요소만 둔다 — 형제 사이의 자리를 마크업이 정한다. -->
 <header class="bar" id="bar">
   <div class="bar-row">
     <div class="bar-l">
@@ -35,7 +35,6 @@
     <div class="bar-r" id="barR">
       <!-- 상태 알약의 안은 React 의 StatusPill 이 그린다. -->
       <div class="status" id="status" tabindex="0" data-state="none"></div>
-      <div class="seg" id="seg" hidden></div>
       <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-expanded="false"></button>
     </div>
   </div>

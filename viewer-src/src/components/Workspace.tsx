@@ -10,7 +10,6 @@ import { loadingHost, WorkspacePanel, WorkspaceStage, zoomHost } from './Workspa
 // 확대 줄 · 첫 장 대기 · 내비게이션 바 — 만 그린다.
 export type WorkspaceActions = {
   exit(): void;
-  setInteractive(on: boolean): void;
   zoomIn(): void;
   zoomOut(): void;
   zoomFit(): void;
@@ -19,9 +18,9 @@ export type WorkspaceActions = {
   toggleZoomMenu(byKey: boolean): void;
 };
 export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
-export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement; seg: HTMLElement };
+export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
-const NO_ACTIONS: WorkspaceActions = { exit() {}, setInteractive() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {} };
+const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {} };
 
 /** 첫 장을 기다리는 자리 표시 — 받지 못했으면 실패 문장. 그동안 조작 도구는 잠기고 출구(#back)는 남는다. */
 export function WorkspaceLoading({ host }: { host?: HTMLElement }) {
@@ -97,51 +96,25 @@ function fitTitle(back: HTMLElement, title: HTMLElement) {
 
 const BACK = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5" /></svg>;
 
-function placeSegBar(seg: HTMLElement) {
-  const on = seg.querySelector<HTMLElement>('button[aria-pressed="true"]');
-  // 숨으면 자리를 잊는다 — 남겨 두면 다시 보일 때 옛 칸에서 미끄러져 온다
-  if (!on?.offsetWidth) { seg.style.removeProperty('--seg-x'); seg.style.removeProperty('--seg-w'); return; }
-  const first = !seg.style.getPropertyValue('--seg-w');
-  // 칸 폭은 글자 폭이라 소수다 — offset* 은 정수로 잘라 막대가 1px 어긋난다
-  const box = seg.getBoundingClientRect(), r = on.getBoundingClientRect();
-  seg.classList.toggle('instant', first);
-  seg.style.setProperty('--seg-x', `${r.left - box.left}px`);
-  seg.style.setProperty('--seg-w', `${r.width}px`);
-  // 첫 자리는 전환 없이 — 스타일을 한 번 확정한 뒤 풀어야 폭 0 에서 자라지 않는다
-  if (first) { getComputedStyle(seg, '::after').width; seg.classList.remove('instant'); }
-}
-
 /**
  * 헤더가 내비게이션 바가 된다(W2) — 앱 록업 · 파일 레일 · 보드 도구가 물러나고, 돌아갈 곳 · 이 장의 이름이 남는다.
- * 보드에서 들어왔으면 뒤로 버튼이 그 파일(탭 이름)을 갖고, FQN 단건이면 돌아갈 데가 없어 보기 | 조작이 그 자리다(W8).
+ * 뒤로 버튼이 그 파일(탭 이름)을 갖는다 — FQN 으로 열어도 그 파일 보드 위의 한 장이라 늘 돌아갈 데가 있다(D-155).
  * 제목은 두 줄(D-63) — 위 프리뷰 이름(name=), 아래 함수 이름. 이름이 없으면 함수 이름 한 줄. 데몬이 구조로 싣는다 —
  * 카드 이름표를 잘라 쓰면 이름표 규칙이 바뀔 때마다 깨지고, 묶음의 다섯 장이 모두 `foldable`이면 어느 함수인지 안 남았다.
  */
 export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state: ViewerState | null; hosts?: WorkspaceHeaderHosts; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
-  const back = useHost(hosts?.back), title = useHost(hosts?.title), seg = useHost(hosts?.seg);
+  const back = useHost(hosts?.back), title = useHost(hosts?.title);
   const f: Focus | null = state?.screen === 'focus' ? state.focus : null;
   const tab = f ? (state!.tabs || []).find(t => t.active) : undefined;
-  const card = f?.fromBoard && state?.board ? state.board.groups.flatMap(g => g.cards).find(c => c.index === state.board!.focus) : undefined;
-  const interactive = !!f?.interactive;
+  const card = f && state?.board ? state.board.groups.flatMap(g => g.cards).find(c => c.index === state.board!.focus) : undefined;
 
   useLayoutEffect(() => {
     document.body.classList.toggle('ws', !!f);
-    if (back.element) back.element.hidden = !(f && f.fromBoard);
-    if (seg.element) seg.element.hidden = !(f && !f.fromBoard);
+    if (back.element) back.element.hidden = !f;
     if (title.element) { title.element.hidden = !f; title.element.title = f ? (card ? card.title : tab ? tab.title : f.previewId) : ''; }
     if (back.element && title.element) fitTitle(back.element, title.element);
   });
-  // 보기 | 조작의 막대를 눌린 칸 밑으로 — 칸 폭이 언어마다 달라 잰다. 숨었다 처음 보일 때는 전환 없이 그 자리에 선다.
-  const segShown = !!f && !f.fromBoard;
-  useLayoutEffect(() => { if (seg.element) placeSegBar(seg.element); }, [seg.element, segShown, interactive]);
-  useLayoutEffect(() => {
-    const s = seg.element;
-    if (!s) return;
-    const observer = new ResizeObserver(() => placeSegBar(s));
-    observer.observe(s);
-    return () => observer.disconnect();
-  }, [seg.element]);
   // 내비게이션 바는 이 컴포넌트가 있는 동안만이다 — Storybook 에서 다음 스토리로 body.ws 가 새지 않게 걷는다.
   useLayoutEffect(() => () => document.body.classList.remove('ws'), []);
   // 창 폭 · 알약 글자가 바뀌면 자리가 움직인다. 뒤로 버튼은 보지 않는다 — 여기서 줄이므로 보면 줄일 때마다 다시 불린다.
@@ -155,10 +128,6 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
 
   const backBody = <>{BACK}<span id="backName">{tab ? tab.name : phrase('nav.board')}</span></>;
   const titleBody = <><span className="ws-name" id="wsName">{f ? f.name || f.fn || f.previewId : ''}</span><span className="ws-fn" id="wsFn" hidden={!f?.name}>{f?.name ? f.fn : ''}</span></>;
-  const segBody = <>
-    <button type="button" data-on="false" aria-pressed={!interactive} onClick={() => actions.setInteractive(false)}>{phrase('mode.view')}</button>
-    <button type="button" data-on="true" aria-pressed={interactive} onClick={() => actions.setInteractive(true)}>{phrase('mode.interact')}</button>
-  </>;
   // 바깥 요소(#back)의 누름은 여기서 단다 — 마크업이 가진 버튼이라 안만 그리는 포털로는 onClick 을 달 수 없다.
   useLayoutEffect(() => {
     const b = back.element;
@@ -170,7 +139,6 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
   return <>
     {back.place(backBody, (ref, body) => <button className="back" id="back" type="button" ref={ref}>{body}</button>)}
     {title.place(titleBody, (ref, body) => <div className="ws-title" id="wsTitle" ref={ref}>{body}</div>)}
-    {seg.place(segBody, (ref, body) => <div className="seg" id="seg" ref={ref}>{body}</div>)}
   </>;
 }
 

@@ -6,9 +6,9 @@ import type { Store } from '../src/workspace/view';
 import { examples } from './examples';
 import { pearlBoard } from './pearl';
 
-// 한 장 스토리의 재료 — 계약 예제 focus(보드에서 들어온 조작) · single(단건 보기)과 pearl 보드의 실제 그림.
+// 한 장 스토리의 재료 — 계약 예제 focus(보드 위의 조작 한 장)와 pearl 보드의 실제 그림.
 // 계약 예제의 그림 주소는 데몬의 것이라 무대에는 같은 자리(첫 카드)의 pearl 그림을 담는다.
-export const focusExample = examples[1], singleExample = examples[2], choiceExample = examples[4];
+export const focusExample = examples[1], choiceExample = examples[3];
 export const pearlCard = pearlBoard.groups[0].cards[0];
 
 /** 무대의 그림 — 뷰어에서는 focus.ts 가 src 를 갈아 끼우므로 JSX 가 갖지 않는다. 스토리도 그린 뒤에 담는다. */

@@ -22,7 +22,7 @@ export function findWorkspaceParts(): WorkspaceParts {
   const stage = $('stage');
   return {
     focusView: $('focusView'), wrap: stage.parentElement!, stage, shot: $<HTMLImageElement>('shot'), box: $('box'), pickBox: $('pickBox'),
-    scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle'), $('seg')],
+    scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle')],
   };
 }
 
@@ -257,7 +257,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
   let skipPop = false;
   const ours = () => !!(history.state && history.state.prevueWs);
   function syncHistory(s: ViewerState) {
-    const inWs = !!(s && s.screen === 'focus' && s.focus && s.focus.fromBoard);
+    const inWs = !!(s && s.screen === 'focus' && s.focus);
     if (inWs && !ours()) {
       // 보드 스크롤은 뷰어가 갖는다(session.ts scrolls). 브라우저에 맡기면 나가는 back() 의 popstate 가 여기서 찍힌 자리 —
       // 보드를 숨긴 뒤라 0 — 로 되돌려, 줄어드는 그림이 돌아갈 카드가 화면 밖으로 사라졌다. 모드는 칸마다라 떠나는 칸에 건다.
@@ -269,8 +269,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
   }
   addEventListener('popstate', () => {
     if (skipPop) { skipPop = false; return; }
-    const f = store.st && store.st.screen === 'focus' && store.st.focus;
-    if (f && f.fromBoard) post('/viewer/exit');
+    if (store.st && store.st.screen === 'focus' && store.st.focus) post('/viewer/exit');
   });
 
   /* ---------- 마우스 — 가리키기 · 이동 · 터치(input.ts)로 나눈다 ---------- */
@@ -504,17 +503,5 @@ export function frameOf(el: HTMLElement | null): Frame | null {
 /* ---------- 의도 ---------- */
 /** FR-18. 카드 하나에 태스크를 걸고 그 장만 남긴다. 화면 전환은 돌아올 state 가 한다. */
 export function enterFocus(i: number) { post('/viewer/focus', { index: i }).catch(e => setStatus(phrase('focus.enter.failed', { why: (e as Error).message }), 'error')); }
-/** 보드로. 보드에서 들어온 한 장에서만 뜻이 있다. 버튼 · esc · 브라우저 뒤로 가기가 모두 이것이다(W7). */
-export function exitFocus() { const f = store.st && store.st.focus; if (f && f.fromBoard) post('/viewer/exit'); }
-/** 보기 ↔ 조작. 보드에서 들어왔으면 조작이 곧 이 화면이라 끄는 것이 보드로 돌아가는 것이다. */
-export function toggleInteractive() {
-  const f = store.st && store.st.focus;
-  if (!f) return;
-  if (f.fromBoard) post('/viewer/exit'); else post('/viewer/interactive', { on: !f.interactive });
-}
-/** 단건의 보기 | 조작 — 이미 그 모드면 보내지 않는다. */
-export function setInteractive(on: boolean) {
-  const f = store.st && store.st.focus;
-  if (!f || on === !!f.interactive) return;
-  post('/viewer/interactive', { on });
-}
+/** 보드로 — 버튼 · esc · I · 브라우저 뒤로 가기가 모두 이것이다(W7). 한 장은 늘 보드 위에서 열린다(D-155). */
+export function exitFocus() { if (store.st && store.st.focus) post('/viewer/exit'); }
