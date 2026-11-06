@@ -53,10 +53,10 @@ internal class BrowserInput(
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
     private suspend fun resized(s: ScreenSize) {
-        val single = status.read().board == null
+        val single = status.board() == null
         if (single && s != ScreenSize.Original && core.onLine { core.side.value.singleInteractive } == null) return
         live.resize(s, by = "viewer") ?: return
-        if (status.read().board != null) return
+        if (status.board() != null) return
         core.onLine {
             val at = System.currentTimeMillis()
             core.side.update { if (it.singleInteractive != null) it.copy(streamStamp = at) else it }

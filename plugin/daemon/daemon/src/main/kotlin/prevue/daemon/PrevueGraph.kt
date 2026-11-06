@@ -13,6 +13,7 @@ import prevue.infrastructure.bindings.RendererLoss
 import prevue.application.service.HotReload
 import prevue.application.service.Status
 import prevue.application.service.Tabs
+import prevue.application.service.Watchers
 import prevue.application.port.PrevueDispatchers
 
 @DependencyGraph(AppScope::class)
@@ -22,6 +23,7 @@ internal interface PrevueGraph {
     val hotReload: HotReload
     val status: Status
     val tabs: Tabs
+    val watchers: Watchers
     val entryPoints: EntryPoints
     val compilerWarmUp: CompilerWarmUp
 
