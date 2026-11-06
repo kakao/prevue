@@ -5,7 +5,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.update
 import prevue.application.domain.model.phrase
-import prevue.application.service.SelectUseCase
+import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.domain.model.FileMatch
@@ -18,7 +18,7 @@ import prevue.infrastructure.controller.browser.BrowserPresenter.PointResult
 internal class BrowserPointing(
     private val core: BrowserPresenter,
     private val status: Status,
-    private val select: SelectUseCase,
+    private val live: Live,
     private val tabs: Tabs,
 ) {
     private var pending: Pointed? = null
@@ -54,5 +54,5 @@ internal class BrowserPointing(
         return core.onLine { core.peek(status.read()).focus?.treeUrl }
     }
 
-    private suspend fun selected(path: String, line: Int, at: Pointed): Selection = select(path, line, at, "viewer")
+    private suspend fun selected(path: String, line: Int, at: Pointed): Selection = live.select(path, line, at, "viewer")
 }

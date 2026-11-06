@@ -199,9 +199,9 @@ class RenderIntegrationTest {
 
         // 터치 사이에 라이브 세션 루프가 틱을 돌린다 — 그 틱이 입력을 소비해 스크롤이 일어난다.
         val now = runBlocking {
-            uc.touch("press", x, y, "test", settle = false); delay(50)
-            for (i in 1..8) { uc.touch("drag", x, y - i * 150, "test", settle = false); delay(50) }
-            uc.touch("release", x, y - 8 * 150, "test", settle = false)
+            uc.live.touch("press", x, y, "test", settle = false); delay(50)
+            for (i in 1..8) { uc.live.touch("drag", x, y - i * 150, "test", settle = false); delay(50) }
+            uc.live.touch("release", x, y - 8 * 150, "test", settle = false)
             uc.awaitSettled()
         }
         assertTrue(now.out.ok, "정착한 그림이 없다")
@@ -218,9 +218,9 @@ class RenderIntegrationTest {
         val before = engine.calmedRipples
         val (x, y) = cardCenter(on)
         val ms = runBlocking {
-            uc.touch("press", x, y, "test", settle = false)
+            uc.live.touch("press", x, y, "test", settle = false)
             delay(250)
-            uc.touch("release", x, y, "test", settle = false)
+            uc.live.touch("release", x, y, "test", settle = false)
             uc.awaitSettled()
             uc.frames.value.trace.mapNotNull { it["tickMs"] as Long? }
         }
@@ -238,7 +238,7 @@ class RenderIntegrationTest {
         runBlocking { engine.awaitWrites() }
         val before = on.result.shot.out.image!!.readBytes()
         val ripples = engine.calmedRipples
-        val ok = runBlocking { repeat(6) { uc.scroll(540, 1200, 0f, 100f, "test"); delay(16) }; uc.scroll(540, 1200, 0f, 0f, "test") }
+        val ok = runBlocking { repeat(6) { uc.live.wheel(540, 1200, 0f, 100f, "test"); delay(16) }; uc.live.wheel(540, 1200, 0f, 0f, "test") }
         assertTrue(ok, "휠을 넣지 못했다")
         val now = runBlocking { uc.awaitSettled() }
         runBlocking { engine.awaitWrites() }
@@ -290,21 +290,21 @@ class RenderIntegrationTest {
     @Test @Order(8) fun `굴린 뒤의 트리로 겨냥한다`() {
         runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         val line = "DrinkCard.kt:" + PearlFixture.lineOf(PearlFixture.card, "DrinkName(drink)")
-        val top = runBlocking { uc.scroll.screens(-1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+        val top = runBlocking { uc.live.scroll(-1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
         assertTrue(!top.moved, "맨 위에서 위로 굴렸는데 움직였다")
         val before = visible(line)
-        val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+        val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
         assertTrue(r.moved, "한 화면 굴렸는데 노드 자리가 그대로다")
         val after = visible(line)
         assertTrue(after.map { it.node.sameBox } != before.map { it.node.sameBox }, "굴린 뒤에도 처음 트리다 — ${after.map { it.node.top }}")
         val pick = after.last()
-        val t = runBlocking { uc.touch.at("$line#${pick.n}", "tap", "test", settle = true) }
+        val t = runBlocking { uc.live.touchAt("$line#${pick.n}", "tap", "test", settle = true) }
         assertEquals(pick.node, (t as TouchResult.Settled).aim!!.node, "굴린 뒤의 트리로 겨냥하지 않는다")
         runBlocking { uc.boards.focus(0, on = false, by = "test") }
     }
 
     private fun visible(at: String): List<prevue.application.domain.model.Numbered> =
-        when (val t = runBlocking { uc.touch.at(at, "tap", "test", settle = true) }) {
+        when (val t = runBlocking { uc.live.touchAt(at, "tap", "test", settle = true) }) {
             is TouchResult.Missed -> (t.miss as prevue.application.domain.model.Miss.Choose).candidates
             else -> error("한 화면에 카드가 하나뿐이다 — $t")
         }
@@ -312,7 +312,7 @@ class RenderIntegrationTest {
     private fun scrollUntil(at: String, n: Int): Int {
         repeat(20) { i ->
             if (visible(at).any { it.n == n }) return i
-            val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+            val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
             assertTrue(r.moved, "#$n 에 닿기 전에 끝났다")
         }
         error("20화면 안에 #$n 이 안 보인다")
@@ -340,9 +340,9 @@ class RenderIntegrationTest {
         try {
             val (x, y) = cardCenter(on)
             val now = runBlocking {
-                uc.touch("press", x, y, "test", settle = false); delay(50)
-                for (i in 1..6) { uc.touch("drag", x, y - i * 120, "test", settle = false); delay(50) }
-                uc.touch("release", x, y - 6 * 120, "test", settle = false)
+                uc.live.touch("press", x, y, "test", settle = false); delay(50)
+                for (i in 1..6) { uc.live.touch("drag", x, y - i * 120, "test", settle = false); delay(50) }
+                uc.live.touch("release", x, y - 6 * 120, "test", settle = false)
                 uc.awaitSettled()
             }
             assertTrue(now.out.ok, "정착한 그림이 없다")
@@ -432,12 +432,12 @@ class RenderIntegrationTest {
     private fun center(n: ViewNode) = (n.left + n.right) / 2 to (n.top + n.bottom) / 2
 
     /** 뷰어의 클릭 — 정착을 기다리지 않고, 그림은 프레임 루프가 민다. */
-    private fun click(n: ViewNode) { val (x, y) = center(n); runBlocking { uc.touch("tap", x, y, "viewer", settle = false) } }
+    private fun click(n: ViewNode) { val (x, y) = center(n); runBlocking { uc.live.touch("tap", x, y, "viewer", settle = false) } }
 
     /** 뷰어의 휠 — 그리드 가운데에 네 칸으로 나눠 넣는다. */
     private fun wheel(s: Screen, dy: Float) {
         val (x, y) = center(s.grid ?: error("목록에 그리드 노드가 없다"))
-        runBlocking { repeat(4) { assertTrue(uc.scroll(x, y, 0f, dy / 4, "viewer"), "휠을 넣지 못했다"); Thread.sleep(30) } }   // 실제 시간 — 사람 휠의 칸 간격
+        runBlocking { repeat(4) { assertTrue(uc.live.wheel(x, y, 0f, dy / 4, "viewer"), "휠을 넣지 못했다"); Thread.sleep(30) } }   // 실제 시간 — 사람 휠의 칸 간격
     }
 
     private fun backToList(s: Screen, why: String): Screen = if (s.name == "list") s else { click(s.back(why)); settled("list", "$why ←") }
@@ -483,14 +483,14 @@ class RenderIntegrationTest {
         for (n in 1..6) {
             wheel(settled("list", "#$n 앞"), if (n % 2 == 1) 300f else -150f)
             val list = settled("list", "#$n 앞 굴림")
-            val seen = (runBlocking { uc.touch.at(at, "tap", "test", settle = true) } as? TouchResult.Missed)?.miss as? prevue.application.domain.model.Miss.Choose
+            val seen = (runBlocking { uc.live.touchAt(at, "tap", "test", settle = true) } as? TouchResult.Missed)?.miss as? prevue.application.domain.model.Miss.Choose
                 ?: error("굴린 뒤 카드 줄이 하나뿐이다")
             val k = seen.candidates.getOrNull(n - 1)?.n ?: error("화면 안 카드가 ${seen.candidates.size}개라 ${n}번째가 없다")
-            val t = runBlocking { uc.touch.at("$at#$k", "tap", "test", settle = true) }
+            val t = runBlocking { uc.live.touchAt("$at#$k", "tap", "test", settle = true) }
             val aim = (t as? TouchResult.Settled)?.aim ?: error("#$n 을 누르지 못했다 — $t")
             val d = settled(null, "#$n")
             assertEquals("detail", d.name, "#$n(${aim.node.sameBox} · ${aim.x},${aim.y})을 눌렀는데 상세가 아니다")
-            val back = runBlocking { uc.touch.at("DrinkDetailScreen.kt:${d.back("#$n").line}", "tap", "test", settle = true) }
+            val back = runBlocking { uc.live.touchAt("DrinkDetailScreen.kt:${d.back("#$n").line}", "tap", "test", settle = true) }
             assertTrue(back is TouchResult.Settled, "← 를 누르지 못했다 — $back")
             assertEquals(list.shown.map { it.sameBox }, settled("list", "#$n 뒤 ←").shown.map { it.sameBox }, "#$n 에서 돌아온 목록의 자리가 다르다")
         }
@@ -500,7 +500,7 @@ class RenderIntegrationTest {
     @Test @Order(13) fun `카드를 길게 눌러도 상세로 간다`() {
         openApp()
         val (x, y) = center(settled("list", "시작").card(0, "롱프레스"))
-        val t = runBlocking { uc.touch("long", x, y, "test", settle = true) }
+        val t = runBlocking { uc.live.touch("long", x, y, "test", settle = true) }
         assertTrue(t is TouchResult.Settled && t.result.ok, "롱프레스를 넣지 못했다 — $t")
         backToList(settled("detail", "롱프레스"), "롱프레스")
         assertAlive()
@@ -581,7 +581,7 @@ class RenderIntegrationTest {
         val at = "PearlScreen.kt:" + PearlFixture.lineOf(screenFile, "DrinkCard(drink, ambient = ambient, onClick = { onDrinkClick(drink) })")
         val screens = scrollUntil(at, 50)
         assertTrue(screens >= 1, "#50 이 처음부터 보였다 — 굴림을 재지 못한다")
-        val t = runBlocking { uc.touch.at("$at#50", "tap", "test", settle = true) }
+        val t = runBlocking { uc.live.touchAt("$at#50", "tap", "test", settle = true) }
         assertTrue(t is TouchResult.Settled && t.aim!!.index == 50, "$t")
         backToList(settled("detail", "#50 누름"), "#50")
         assertAlive()
@@ -589,13 +589,13 @@ class RenderIntegrationTest {
 
     @Test @Order(19) fun `scroll 은 나타난 · 사라진 카드를 key 로 알리고 나타난 카드의 at 으로 그 카드를 누른다`() {
         openApp()
-        runBlocking { uc.scroll.screens(-10.0, horizontal = false, at = null, by = "test") }
+        runBlocking { uc.live.scroll(-10.0, horizontal = false, at = null, by = "test") }
         fun seen(): Set<Any?> {
             val grid = runBlocking { uc.awaitSettled() }.look.tree.states.single { it.total == PearlFixture.DRINKS }
             return grid.items.filter { ScrollReport.visible(grid, it) > 0 }.map { it.key }.toSet()
         }
         val before = seen()
-        val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+        val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
         val after = seen()
         val list = r.container!!.list ?: error("게으른 그리드를 굴렸는데 container 에 목록 요약이 없다 — $r")
         assertEquals(PearlFixture.DRINKS, list.total)
@@ -610,7 +610,7 @@ class RenderIntegrationTest {
         }
         assertTrue(r.disappeared.all { it.semantics?.text != null }, "사라진 카드의 시맨틱이 없다 — ${r.disappeared}")
         val pick = r.appeared.first { it.visible == 1.0 }
-        val t = runBlocking { uc.touch.at(pick.at!!, "tap", "test", settle = true) }
+        val t = runBlocking { uc.live.touchAt(pick.at!!, "tap", "test", settle = true) }
         assertEquals(pick.box, (t as TouchResult.Settled).aim!!.node.sameBox, "나타난 카드의 at 이 그 카드가 아니다")
         backToList(settled("detail", "${pick.at} 누름"), pick.at!!)
         assertAlive()
@@ -629,7 +629,7 @@ class RenderIntegrationTest {
             settled("list", "머리글 저장")
             val at = "PearlScreen.kt:" + PearlFixture.lineOf(screenFile, "DrinkCard(drink, ambient = ambient, onClick = { onDrinkClick(drink) })")
             scrollUntil(at, 30)
-            val t = runBlocking { uc.touch.at("$at#30", "tap", "test", settle = true) }
+            val t = runBlocking { uc.live.touchAt("$at#30", "tap", "test", settle = true) }
             assertTrue(t is TouchResult.Settled && t.aim!!.index == 30, "머리글 아래에서 #30 이 목록 순번이 아니다 — $t")
             backToList(settled("detail", "#30 누름"), "#30")
         } finally {
@@ -643,7 +643,7 @@ class RenderIntegrationTest {
         fun fill(fn: String, ms: Long): Pair<Double, List<String>> {
             val fqn = "com.example.pearl.feature.pearl.AnimationPreviewsKt.$fn"
             assertTrue(runBlocking { uc.tabs.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
-            val r = runBlocking { uc.renderAt(ms, "test") }
+            val r = runBlocking { uc.live.renderAt(ms, "test") }
             runBlocking { engine.awaitWrites() }
             assertTrue(r.ok, r.shot.out.message?.text)
             val img = javax.imageio.ImageIO.read(r.shot.out.image!!)
@@ -678,7 +678,7 @@ class RenderIntegrationTest {
             val ball = PearlFixture.lineOf(file, "Box(")
             val detail = PearlFixture.lineOf(file, "Text(\"detail\", Modifier.padding(8.dp))")
             assertTrue(ball in lines(), "목록의 공(${file.name}:$ball)이 트리에 없다 — ${lines()}")
-            val t = runBlocking { uc.touch.at("${file.name}:$ball", "tap", "test", settle = true) }
+            val t = runBlocking { uc.live.touchAt("${file.name}:$ball", "tap", "test", settle = true) }
             assertTrue(t is TouchResult.Settled, "$t")
             assertTrue(detail in lines(), "눌렀는데 상세(${file.name}:$detail)가 트리에 없다 — ${lines()}")
         } finally {
@@ -693,7 +693,7 @@ class RenderIntegrationTest {
         val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
-            val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+            val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
             assertTrue(r.moved, "$r")
             assertEquals(null, r.container!!.list)
             fun row(text: String?) = text!!.removePrefix("행 ").toInt()
@@ -731,11 +731,11 @@ class RenderIntegrationTest {
                 Thread.sleep(300)                            // 실제 시간 — 정착의 기록은 따로 도는 수집이 적는다. 그 기록이 prior 로 잡혀야 다음 정착과 갈린다
                 val prior = ws.now.lastResult
                 val out = if (viewer) {
-                    runBlocking { uc.touch("tap", x, y, "viewer", settle = false) }
+                    runBlocking { uc.live.touch("tap", x, y, "viewer", settle = false) }
                     val settled = ws.state.awaitState("뷰어 경로의 정착", 10_000) { it.lastResult.let { r -> r !== prior && r is prevue.application.domain.model.Settled } }
                     (settled.lastResult as prevue.application.domain.model.Settled).shot.out
                 } else {
-                    val t = runBlocking { uc.touch("tap", x, y, "test", settle = true) } as TouchResult.Settled
+                    val t = runBlocking { uc.live.touch("tap", x, y, "test", settle = true) } as TouchResult.Settled
                     assertEquals(true, t.result.settled, "CLI 경로가 정착하지 않았다")
                     t.result.shot.out
                 }
@@ -761,7 +761,7 @@ class RenderIntegrationTest {
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val line = PearlFixture.lineOf(file, "Text(")
         fun until(target: String, horizontal: Boolean, amount: Double = 10.0) =
-            runBlocking { uc.scroll.screens(amount, horizontal, at = null, by = "test", until = target) } as ScrollResult.Settled
+            runBlocking { uc.live.scroll(amount, horizontal, at = null, by = "test", until = target) } as ScrollResult.Settled
         for ((card, horizontal, n) in listOf(Triple(0, false, 87), Triple(1, true, 23), Triple(2, false, 27), Triple(3, true, 31))) {
             for (target in listOf("${n}번", "${file.name}:$line#$n")) {
                 val on = runBlocking { uc.boards.focus(card, on = true, by = "test") } as FocusResult.On
@@ -773,7 +773,7 @@ class RenderIntegrationTest {
                     val found = r.found ?: error("카드 $card · $target 를 $calls 번에 못 찾았다: $r")
                     assertEquals("${n}번", found.semantics?.text, "카드 $card · $target: $found")
                     assertTrue(found.visible >= 0.99, "카드 $card · $target 가 다 보이지 않은 채 멈췄다: $found")
-                    val t = runBlocking { uc.touch.at(found.at!!, "tap", "test", settle = true) }
+                    val t = runBlocking { uc.live.touchAt(found.at!!, "tap", "test", settle = true) }
                     assertTrue(t is TouchResult.Settled, "카드 $card · ${found.at}: $t")
                     val picked = until("선택됨", horizontal, amount = 0.0)
                     assertFalse(picked.moved, "$picked")
@@ -793,11 +793,11 @@ class RenderIntegrationTest {
         val on = runBlocking { uc.boards.focus(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
         try {
-            val r = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test", until = "없는 칸") } as ScrollResult.Settled
+            val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test", until = "없는 칸") } as ScrollResult.Settled
             assertTrue(r.sought && r.moved, "$r")
             assertEquals(null, r.found)
             assertEquals(true, r.container?.list?.canScrollForward, "$r")
-            val plain = runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
+            val plain = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
             val sought = r.container!!.list!!.first!!
             val rolled = plain.container!!.list!!.first!! - sought
             assertTrue(sought > 0 && kotlin.math.abs(sought - rolled) <= 1, "못 찾은 --until 이 그냥 scroll 과 다른 거리를 굴렸다: $sought / $rolled")
@@ -816,7 +816,7 @@ class RenderIntegrationTest {
             val on = runBlocking { uc.boards.focus(card, on = true, by = "test") } as FocusResult.On
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
             try {
-                val r = runBlocking { uc.scroll.screens(5.0, horizontal, at = null, by = "test") } as ScrollResult.Settled
+                val r = runBlocking { uc.live.scroll(5.0, horizontal, at = null, by = "test") } as ScrollResult.Settled
                 val was = numbers(r.disappeared.map { it.semantics })
                 val passed = numbers(r.passed.map { it.semantics })
                 val now = numbers(r.appeared.map { it.semantics })
@@ -917,9 +917,9 @@ class RenderIntegrationTest {
             val before = javax.imageio.ImageIO.read(png)
             val (x, y) = cardCenter(on)
             val now = runBlocking {
-                uc.touch("press", x, y, "test", settle = false); delay(50)
-                for (i in 1..8) { uc.touch("drag", x, y - i * 150, "test", settle = false); delay(50) }
-                uc.touch("release", x, y - 8 * 150, "test", settle = false)
+                uc.live.touch("press", x, y, "test", settle = false); delay(50)
+                for (i in 1..8) { uc.live.touch("drag", x, y - i * 150, "test", settle = false); delay(50) }
+                uc.live.touch("release", x, y - 8 * 150, "test", settle = false)
                 uc.awaitSettled()
             }
             runBlocking { engine.awaitWrites() }

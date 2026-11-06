@@ -37,6 +37,7 @@ import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.TestGraph
 import prevue.daemon.fake.awaitSettled
+import prevue.daemon.fake.awaitState
 
 /** 개발 문서 "되돌리지 말 것" 중 논리인 것들. 조용히 되돌아가도 화면은 대개 멀쩡해 눈으로는 못 잡는다. */
 class UseCaseTest {
@@ -185,7 +186,7 @@ class UseCaseTest {
     @Test fun `render --at 은 자기 로더의 새 태스크에서 시계를 민다`() {
         val uc = opened()
         val p = uc.workspace.now.current!!
-        val r = runBlocking { uc.renderAt(1600, "test") }
+        val r = runBlocking { uc.live.renderAt(1600, "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         assertEquals(listOf(p), fx.renderer.ownLoaderShown.toList())
     }
@@ -490,7 +491,7 @@ class UseCaseTest {
         assertEquals(n, fx.renderer.rerenders.get())
 
         fx.renderer.moving = true
-        runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
         val r = runBlocking { uc.tabs.catchUp("status") }
         assertEquals("status", r?.shot?.by)
         fx.renderer.moving = false
@@ -504,13 +505,51 @@ class UseCaseTest {
         val ws = uc.workspace
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
         fx.renderer.moving = true
-        runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
         val n = fx.renderer.rerenders.get()
         val id = ws.now.board!!.focusCard.spec.previewId
-        val sel = runBlocking { uc.select(fx.file.path, 3, Pointed("Text", listOf("Text"), null, id), "viewer") }
+        val sel = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", listOf("Text"), null, id), "viewer") }
         assertEquals(n + 1, fx.renderer.rerenders.get())
         assertEquals("viewer", (ws.now.lastResult as prevue.application.domain.model.ShowResult).shot.by)
         assertEquals(ws.now.lastResult!!.image!!.absolutePath, sel.image)
+    }
+
+    @Test fun `인터랙티브 밖에서 정착하면 그 카드가 정착한 상태를 새 주소로 가리킨다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        val i = ws.now.board!!.cards.indexOfFirst { it.spec.previewId == ws.now.current!!.previewId }
+        val before = ws.now.board!!.cards[i].result
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
+        ws.state.awaitState("정착의 기록", 2_000) { it.lastResult is prevue.application.domain.model.Settled }
+        runBlocking { ws.exclusive { } }
+        val after = ws.now.board!!.cards[i].result as CardResult.Drawn
+        assertTrue(after !== before)
+        assertEquals((before as CardResult.Drawn).shot.out, after.shot.out)
+    }
+
+    @Test fun `인터랙티브 중 정착은 카드의 기록을 바꾸지 않는다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        runBlocking { ws.exclusive { } }
+        val before = ws.now.board!!.cards[0].result
+        val shown = ws.now.lastResult
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
+        ws.state.awaitState("터치의 정착", 2_000) { it.lastResult is prevue.application.domain.model.Settled && it.lastResult !== shown }
+        runBlocking { ws.exclusive { } }
+        assertTrue(ws.now.board!!.cards[0].result === before)
+    }
+
+    @Test fun `그림이 없는 카드는 정착한 그림을 제 그림으로 갖는다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        val i = ws.now.board!!.cards.indexOfFirst { it.spec.previewId == ws.now.current!!.previewId }
+        ws.now.board!!.let { b -> ws.recordCard(b.epoch, i, b.gen, CardResult.WriteFailed(i, prevue.application.domain.model.Verbatim("디스크 가득"))) }
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
+        ws.state.awaitState("정착의 기록", 2_000) { it.lastResult is prevue.application.domain.model.Settled }
+        runBlocking { ws.exclusive { } }
+        val settled = ws.now.lastResult as prevue.application.domain.model.Settled
+        assertEquals(settled.shot.out, (ws.now.board!!.cards[i].result as CardResult.Drawn).shot.out)
     }
 
     @Test fun `크기를 주고 켜면 그 크기로 열고 끄면 소스 그대로 다시 그린다`() {
@@ -541,14 +580,14 @@ class UseCaseTest {
         assertEquals(opens + 2, fx.renderer.opened.size)
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
         assertEquals(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8), uc.status.read().size)
-        runBlocking { uc.resize(ScreenSize.Original, "viewer") }
+        runBlocking { uc.live.resize(ScreenSize.Original, "viewer") }
         assertEquals(null, ws.now.current!!.params["device"])
         assertTrue(ws.now.interactive)
     }
 
     @Test fun `보드에서 인터랙티브가 아니면 크기를 바꾸지 않는다`() {
         val uc = opened()
-        assertThrows<IllegalArgumentException> { runBlocking { uc.resize(ScreenSize.Dp(320, 640), "viewer") } }
+        assertThrows<IllegalArgumentException> { runBlocking { uc.live.resize(ScreenSize.Dp(320, 640), "viewer") } }
         assertThrows<IllegalArgumentException> { runBlocking { uc.boards.focus(0, on = false, by = "test", size = ScreenSize.Dp(320, 640)) } }
         assertEquals(null, uc.workspace.now.resize)
     }
@@ -568,7 +607,7 @@ class UseCaseTest {
         val ws = uc.workspace
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
         val entered = fx.renderer.shown.size
-        runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
         runBlocking { uc.boards.focus(0, on = false, by = "viewer") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown[entered])        // 나가며 새 태스크로 그렸다(채우기는 그 뒤에 붙는다)
         val after = (ws.now.board!!.focusCard.result as prevue.application.domain.model.CardResult.Drawn).shot
@@ -609,7 +648,7 @@ class UseCaseTest {
         val i = ws.now.board!!.cards.lastIndex
         ws.now.board!!.let { b -> ws.recordCard(b.epoch, i, b.gen, prevue.application.domain.model.CardResult.WriteFailed(i, prevue.application.domain.model.Verbatim("디스크 가득"))) }
         assertTrue(ws.now.lastResult?.image != null)
-        val sel = runBlocking { uc.select(fx.file.path, 3, Pointed("Text", listOf("Text"), null, ws.now.board!!.cards[i].spec.previewId), "viewer") }
+        val sel = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", listOf("Text"), null, ws.now.board!!.cards[i].spec.previewId), "viewer") }
         assertEquals(ws.now.board!!.cards[i].spec, sel.preview)
         assertEquals(null to null, sel.image to sel.tree)
     }
@@ -618,9 +657,9 @@ class UseCaseTest {
     @Test fun `userChain 은 뷰어가 준 것, 없으면 chain`() {
         val uc = opened()
         val full = listOf("CompositionLocalProvider", "Box", "Layout", "Text")
-        val given = runBlocking { uc.select(fx.file.path, 3, Pointed("Text", full, null, null, listOf("Box", "Text")), "viewer") }
+        val given = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", full, null, null, listOf("Box", "Text")), "viewer") }
         assertEquals(listOf("Box", "Text") to full, given.userChain to given.chain)
-        val absent = runBlocking { uc.select(fx.file.path, 3, Pointed("Text", full, null, null), "cli") }
+        val absent = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", full, null, null), "cli") }
         assertEquals(full, absent.userChain)
     }
 

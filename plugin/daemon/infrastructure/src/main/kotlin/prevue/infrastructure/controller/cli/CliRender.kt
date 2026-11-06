@@ -3,8 +3,7 @@ package prevue.infrastructure.controller.cli
 import dev.zacsweers.metro.Inject
 import java.io.File
 import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.RenderAtUseCase
-import prevue.application.service.RerenderUseCase
+import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.domain.model.ReloadResult
@@ -13,16 +12,15 @@ import prevue.application.domain.model.WaitResult
 
 @Inject
 internal class CliRender(
-    private val renderAt: RenderAtUseCase,
+    private val live: Live,
     private val tabs: Tabs,
-    private val rerender: RerenderUseCase,
     private val applySave: ApplySaveUseCase,
     private val status: Status,
 ) {
     suspend fun render(at: Long?, fresh: Boolean, by: String): ShowResult = when {
-        at != null -> renderAt(at, by)
+        at != null -> live.renderAt(at, by)
         fresh -> tabs.showPreview(by)
-        else -> rerender(by)
+        else -> live.rerender(by)
     }
 
     suspend fun reload(files: List<File>, by: String): ReloadResult = applySave(files, by)

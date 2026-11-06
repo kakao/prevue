@@ -132,7 +132,7 @@ class BrowserPresenterTest {
         opened()
         input.enterFocus(0); runBlocking { presenter.drain() }
         val url = now().focus!!.streamUrl
-        runBlocking { uc.rerender("test") }
+        runBlocking { uc.live.rerender("test") }
         assertEquals(url, now().focus!!.streamUrl)
     }
 
@@ -205,7 +205,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val agent = CoroutineScope(Dispatchers.Default).launch { uc.rerender("cli") }
+        val agent = CoroutineScope(Dispatchers.Default).launch { uc.live.rerender("cli") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))   // 에이전트가 줄을 쥐고 그리는 중
             input.enterFocus(1)
@@ -297,7 +297,7 @@ class BrowserPresenterTest {
     // NFR-11. 데몬이 뜬 뒤 첫 렌더는 콜드(5초)다 — 기준 하나(1초)로 두면 콜드 첫 열기가 늘 주황이었다. 그 뒤의 열기는 첫 장이다.
     @Test fun `첫 렌더는 콜드이고 다음 렌더부터 첫 장이다`() {
         assertEquals("Cold", opened().timing.single { it.head }.label.text)
-        runBlocking { uc.rerender("test") }
+        runBlocking { uc.live.rerender("test") }
         assertEquals("First", now().timing.single { it.head }.label.text)
     }
 

@@ -9,10 +9,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
 import prevue.application.service.Boards
-import prevue.application.service.ResizeUseCase
-import prevue.application.service.ScrollUseCase
+import prevue.application.service.Live
 import prevue.application.service.Status
-import prevue.application.service.TouchUseCase
 import prevue.application.domain.model.ScreenSize
 import prevue.application.port.PrevueDispatchers
 
@@ -21,9 +19,7 @@ import prevue.application.port.PrevueDispatchers
 internal class BrowserInput(
     private val core: BrowserPresenter,
     private val boards: Boards,
-    private val resizeScreen: ResizeUseCase,
-    private val touchScreen: TouchUseCase,
-    private val scroll: ScrollUseCase,
+    private val live: Live,
     private val status: Status,
     dispatchers: PrevueDispatchers,
 ) {
@@ -59,7 +55,7 @@ internal class BrowserInput(
     private suspend fun resized(s: ScreenSize) {
         val single = status.read().board == null
         if (single && s != ScreenSize.Original && core.onLine { core.side.value.singleInteractive } == null) return
-        resizeScreen(s, by = "viewer") ?: return
+        live.resize(s, by = "viewer") ?: return
         if (status.read().board != null) return
         core.onLine {
             val at = System.currentTimeMillis()
@@ -67,10 +63,10 @@ internal class BrowserInput(
         }
     }
 
-    fun touch(type: String, x: Int, y: Int) = core.post { touchScreen(type, x, y, by = "viewer", settle = false) }
+    fun touch(type: String, x: Int, y: Int) = core.post { live.touch(type, x, y, by = "viewer", settle = false) }
 
     fun wheel(x: Int, y: Int, dx: Float, dy: Float) = core.post {
-        if (!scroll(x, y, dx, dy, by = "viewer") && core.onLine { !wheelWarned.also { wheelWarned = true } }) {
+        if (!live.wheel(x, y, dx, dy, by = "viewer") && core.onLine { !wheelWarned.also { wheelWarned = true } }) {
             core.flash(phrase("input.wheel.failed"))
         }
     }

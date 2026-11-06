@@ -15,7 +15,7 @@ class StartDaemonUseCase(
     private val ws: Workspace,
     private val renderer: PreviewRenderer,
     private val engine: Engine,
-    private val settle: SettleUseCase,
+    private val live: Live,
     private val boards: Boards,
     private val scope: CoroutineScope,
 ) {
@@ -28,7 +28,7 @@ class StartDaemonUseCase(
         scope.launch {
             engine.shots.collect { shot ->
                 if (shot.claimed) return@collect
-                try { settle(shot) } catch (e: Exception) {
+                try { live.settle(shot) } catch (e: Exception) {
                     if (e is CancellationException) throw e
                     System.err.println("[prevue] 정착을 기록하지 못했다: $e")
                 }
