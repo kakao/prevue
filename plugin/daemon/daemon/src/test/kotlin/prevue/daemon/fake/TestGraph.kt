@@ -39,8 +39,10 @@ import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.SettledShot
 import prevue.application.port.BuildWatcher
 import prevue.application.port.Compiler
+import prevue.application.port.EngineLog
 import prevue.application.port.LiveSessionFactory
 import prevue.application.port.MemoryMeter
+import prevue.application.port.MonotonicClock
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.PreviewRepository
 import prevue.application.port.ResourceValues
@@ -112,6 +114,7 @@ internal class TestPorts(
     private val values: SourceWatcher? = null,
     private val memory: MemoryMeter = MemoryMeter { null },
     private val dispatchers: PrevueDispatchers = realDispatchers,
+    private val engineLog: EngineLog = EngineLog {},
 ) {
     @Provides fun renderer(): PreviewRenderer = renderer
     @Provides fun sessions(): LiveSessionFactory = sessions
@@ -124,6 +127,8 @@ internal class TestPorts(
     @Provides @ValueFiles fun values(): SourceWatcher? = values
     @Provides fun memory(): MemoryMeter = memory
     @Provides fun dispatchers(): PrevueDispatchers = dispatchers
+    @Provides fun engineLog(): EngineLog = engineLog
+    @Provides fun monotonicClock(): MonotonicClock = MonotonicClock.SYSTEM
 }
 
 @Suppress("LongParameterList")

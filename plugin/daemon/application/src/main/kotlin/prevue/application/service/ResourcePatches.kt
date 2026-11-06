@@ -17,7 +17,7 @@ import prevue.application.domain.rule.ResourcePolicy
 
 @SingleIn(AppScope::class)
 @Inject
-class ResourcePatches(private val values: ResourceValues?, private val sources: SourceFileRepository, private val reappearMs: Long = 500) {
+class ResourcePatches(private val values: ResourceValues?, private val sources: SourceFileRepository) {
     private val known = MutableStateFlow(emptyMap<String, String>())
 
     data class Outcome(val patched: Int, val stale: Phrase?, val compile: CompileResult?) {
@@ -95,7 +95,7 @@ class ResourcePatches(private val values: ResourceValues?, private val sources: 
     }
 
     private suspend fun read(f: File): String? {
-        val until = System.nanoTime() + reappearMs * 1_000_000
+        val until = System.nanoTime() + REAPPEAR_MS * 1_000_000
         while (true) {
             sources.read(f)?.let { return it }
             if (System.nanoTime() >= until) return null
@@ -106,6 +106,8 @@ class ResourcePatches(private val values: ResourceValues?, private val sources: 
     private class Put(val file: File, val text: String, val keys: List<ResourceKey>)
 
     companion object {
+        private const val REAPPEAR_MS = 500L
+
         fun isValues(f: File): Boolean = f.extension == "xml" && f.parentFile?.name?.startsWith("values") == true && f.parentFile?.parentFile?.name == "res"
     }
 }

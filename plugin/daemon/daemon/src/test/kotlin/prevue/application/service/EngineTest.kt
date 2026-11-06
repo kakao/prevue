@@ -32,12 +32,14 @@ import prevue.application.domain.model.PreviewSpec
 import prevue.daemon.fake.FakePreviewRenderer
 import prevue.daemon.fake.realDispatchers
 import prevue.daemon.fake.dispatchersOn
+import prevue.application.port.EngineLog
+import prevue.application.port.MonotonicClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EngineTest {
     private val fake = FakePreviewRenderer(Files.createTempDirectory("prevue-actor").toFile())
     private val scope = CoroutineScope(Job() + Dispatchers.Default)
-    private val actor = Engine(fake, fake, scope, realDispatchers)
+    private val actor = Engine(fake, fake, scope, realDispatchers, MonotonicClock.SYSTEM, EngineLog {})
     private val card = PreviewSpec("demo.CardKt.Card0", "Card0", emptyMap(), null, 0)
 
     @AfterEach fun down() { scope.cancel(); fake.outDir.deleteRecursively() }
@@ -94,7 +96,7 @@ class EngineTest {
     }
 
     @Test fun `터치가 대기하는 동안 다음 명령과 프레임은 실행되지 않는다`() = runTest {
-        val a = Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)))
+        val a = Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog {})
         a.ensure(card, interactive = true)
         fake.onTouch = { _, _, _ -> delay(100) }
         val touched = async { a.touch("long", 1, 2) }
@@ -114,7 +116,7 @@ class EngineTest {
 
     @Test fun `대기 중 액터를 취소하면 진행 중과 줄 선 명령을 취소하고 세션을 닫는다`() = runTest {
         val job = Job(backgroundScope.coroutineContext[Job])
-        val a = Engine(fake, fake, CoroutineScope(job), dispatchersOn(StandardTestDispatcher(testScheduler)))
+        val a = Engine(fake, fake, CoroutineScope(job), dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog {})
         a.ensure(card, interactive = false)
         fake.onTouch = { _, _, _ -> awaitCancellation() }
         val touched = async { a.touch("long", 1, 2) }
@@ -129,7 +131,7 @@ class EngineTest {
     }
 
     @Test fun `정착 그림이 대기하는 동안 다음 명령은 실행되지 않는다`() = runTest {
-        val a = Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)))
+        val a = Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog {})
         a.ensure(card, interactive = false)
         val entered = CompletableDeferred<Unit>()
         fake.onLook = { entered.complete(Unit); delay(100) }
@@ -148,7 +150,7 @@ class EngineTest {
     @Test fun `정착 그림 대기 중 액터를 취소하면 실패로 삼키지 않고 기다리던 쪽을 풀고 세션을 닫는다`() = runTest {
         val job = Job(backgroundScope.coroutineContext[Job])
         val logs = mutableListOf<String>()
-        val a = Engine(fake, fake, CoroutineScope(job), dispatchersOn(StandardTestDispatcher(testScheduler)), log = { logs += it })
+        val a = Engine(fake, fake, CoroutineScope(job), dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog { logs += it })
         a.ensure(card, interactive = false)
         val entered = CompletableDeferred<Unit>()
         fake.onLook = { entered.complete(Unit); awaitCancellation() }
