@@ -46,7 +46,7 @@ class LiteralPatchesTest {
 
     private fun TestGraph.write(text: String, f: File = fx.file) { f.writeText(text); f.setLastModified(f.lastModified() + 1_000) }
     private fun TestGraph.watch(vararg files: File = arrayOf(fx.file)): ReloadResult = runBlocking {
-        applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
+        hotReload.applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
     }
     private fun TestGraph.waited(): WaitResult = runBlocking { status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
 
@@ -139,7 +139,7 @@ class LiteralPatchesTest {
         val uc = opened()
         uc.write(source(16)); uc.watch()
         uc.write(source(24))
-        runBlocking { uc.applySave(listOf(fx.file), "cli") }               // reload — 사람이 다시 하라고 했다
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "cli") }               // reload — 사람이 다시 하라고 했다
         assertEquals(2, fx.compiler.compiled.size)
 
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
@@ -179,7 +179,7 @@ class LiteralPatchesTest {
 
         uc.write(source(40, "// 코드가 바뀌었다\n")); uc.watch()
         fx.renderer.dropped.clear()
-        runBlocking { uc.externalBuild(BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true), done = true) }
+        runBlocking { uc.externalBuilds.applyBuild(BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true), done = true) }
         assertEquals(listOf(owner), fx.renderer.dropped.distinct())
         uc.write(source(48, "// 코드가 바뀌었다\n"))                       // 지운 뒤로는 견줄 내용이 없다 — 컴파일
         assertEquals("OK", (uc.watch() as ReloadResult.Rendered).result.shot.compile?.exitCode)

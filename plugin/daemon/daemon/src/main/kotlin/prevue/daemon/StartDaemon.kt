@@ -1,4 +1,4 @@
-package prevue.application.service
+package prevue.daemon
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -9,9 +9,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.Workspace
+import prevue.application.service.Boards
+import prevue.application.service.Engine
+import prevue.application.service.Live
+
 @SingleIn(AppScope::class)
 @Inject
-class StartDaemonUseCase(
+internal class StartDaemon(
     private val ws: Workspace,
     private val renderer: PreviewRenderer,
     private val engine: Engine,

@@ -32,7 +32,7 @@ class WorkspaceSnapshotTest {
             }
         }
         val saver = thread {
-            runBlocking { repeat(ROUNDS) { uc.applySave(listOf(if (it % 2 == 0) screen else card), "test") } }
+            runBlocking { repeat(ROUNDS) { uc.hotReload.applySave(listOf(if (it % 2 == 0) screen else card), "test") } }
         }
         runBlocking {
             repeat(ROUNDS) { uc.tabs.openPreview((if (it % 2 == 0) screen else card).path, null, emptyMap(), "test") }

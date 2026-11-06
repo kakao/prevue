@@ -1,20 +1,20 @@
 package prevue.application.service
 
 import dev.zacsweers.metro.Inject
-import prevue.application.domain.model.Phrase
 import java.io.File
-import prevue.application.domain.model.PreviewSpec
-import prevue.application.port.CompileResult
 import prevue.application.domain.model.CardResult
+import prevue.application.domain.model.Phrase
+import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.SaveTiming
-import prevue.application.domain.model.VacantTab
-import prevue.application.port.SourceChange
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.CompileResult
+import prevue.application.port.SourceChange
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
+
 @Inject
-class ApplySaveUseCase(
+class HotReload(
     private val ws: Workspace,
     private val engine: Engine,
     private val modules: StaleCallers,
@@ -32,7 +32,7 @@ class ApplySaveUseCase(
         val since = change?.mtimeMs ?: System.currentTimeMillis()
     }
 
-    suspend operator fun invoke(asked: List<File>, by: String, change: SourceChange? = null): ReloadResult = ws.saving { ed ->
+    suspend fun applySave(asked: List<File>, by: String, change: SourceChange? = null): ReloadResult = ws.saving { ed ->
         val t = System.nanoTime()
         val values = asked.filter(ResourcePatches::isValues)
         val valuesSeen = modules.seen(values)
@@ -149,8 +149,8 @@ class ApplySaveUseCase(
         } else ed.markCompiled(valuesSeen)
         val f = tab.file ?: return ReloadResult.NothingShown
         if (tabs.vacancy(f) != null) return ReloadResult.NothingShown
-        return try { ReloadResult.Rendered(tabs.activate(ed, tab.key, null, emptyMap(), by, change?.mtimeMs ?: System.currentTimeMillis())) }
-               catch (_: VacantTab) { ReloadResult.NothingShown }
+        val shown = tabs.activateOrVacant(ed, tab.key, by, change?.mtimeMs ?: System.currentTimeMillis())
+        return shown?.let(ReloadResult::Rendered) ?: ReloadResult.NothingShown
     }
 
     private suspend fun render(p: PreviewSpec, c: CompileResult?, files: List<File>, seen: Map<String, Long>, save: Save, repair: Boolean): ReloadResult {
@@ -185,4 +185,10 @@ class ApplySaveUseCase(
     private fun failing(): Boolean = ws.now.let { s -> s.lastResult?.ok == false || s.board?.cards.orEmpty().any { c ->
         when (val r = c.result) { is CardResult.Drawn -> !r.shot.ok; is CardResult.WriteFailed -> true; else -> false }
     } }
+
+    fun rememberValues(): Int {
+        val files = resources.valueFiles(ws.graph.resRoots)
+        resources.remember(files)
+        return files.size
+    }
 }

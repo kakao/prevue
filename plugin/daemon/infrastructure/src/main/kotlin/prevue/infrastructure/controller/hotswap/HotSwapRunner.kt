@@ -9,41 +9,37 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import prevue.infrastructure.controller.hotswap.HotSwapLog.line
-import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.ExternalBuildUseCase
-import prevue.application.service.ObserveBuildChangesUseCase
-import prevue.application.service.ObserveResourceChangesUseCase
-import prevue.application.service.ObserveSourceChangesUseCase
+import prevue.application.service.ExternalBuilds
+import prevue.application.service.HotReload
 import prevue.application.service.Status
 import prevue.application.service.Tabs
+import prevue.application.service.Watchers
 
 @SingleIn(AppScope::class)
 @Inject
 internal class HotSwapRunner(
-    private val applySave: ApplySaveUseCase,
+    private val hotReload: HotReload,
     private val status: Status,
     private val tabs: Tabs,
-    private val observeSourceChanges: ObserveSourceChangesUseCase,
-    private val observeBuildChanges: ObserveBuildChangesUseCase,
-    private val externalBuild: ExternalBuildUseCase,
-    private val observeResourceChanges: ObserveResourceChangesUseCase,
+    private val watchers: Watchers,
+    private val externalBuilds: ExternalBuilds,
 ) {
     private val _logs = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val logs: SharedFlow<String> = _logs
 
     fun start(scope: CoroutineScope) {
         scope.launch {
-            observeSourceChanges().collect { change ->
-                if (change.files.isNotEmpty()) guarded("watch") { line(change, applySave(change.files, "watch", change)) }
+            watchers.observeSourceChanges().collect { change ->
+                if (change.files.isNotEmpty()) guarded("watch") { line(change, hotReload.applySave(change.files, "watch", change)) }
                 guarded("preview-files") { status.indexPreviewFiles(change); null }
                 if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { tabs.trackFiles(change.created, change.deleted); null }
             }
         }
-        scope.launch { observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuild(n.change, n.done)) } } }
+        scope.launch { watchers.observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuilds.applyBuild(n.change, n.done)) } } }
         scope.launch {
-            observeResourceChanges().collect { change ->
+            watchers.observeResourceChanges().collect { change ->
                 val files = change.files + change.created + change.deleted
-                if (files.isNotEmpty()) guarded("values-watch") { line(change, applySave(files, "watch", change), files) }
+                if (files.isNotEmpty()) guarded("values-watch") { line(change, hotReload.applySave(files, "watch", change), files) }
             }
         }
     }

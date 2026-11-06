@@ -131,13 +131,13 @@ class KmpRenderIntegrationTest {
         open(file)
         file.writeText(file.readText().replaceFirst("horizontalArrangement = Arrangement.spacedBy(8.dp)", "horizontalArrangement = Arrangement.spacedBy(10.dp)")
             .also { assertNotEquals(file.readText(), it, "${file.name}에 바꿀 자리가 없다") })
-        val r = runBlocking { uc.applySave(listOf(file), "test") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(file), "test") }
         assertTrue(r is ReloadResult.Rendered && r.result.ok && r.result.shot.compile != null, "컴파일해 그리지 않았다 — $r")
     }
 
     @Test @Order(7) fun `expect actual 파일을 저장하면 컴파일하지 않고 Gradle 빌드 필요로 멈춘다`() {
         val file = PearlKmpFixture.copy(PearlKmpFixture.expectActual, copies)
-        val r = runBlocking { uc.applySave(listOf(file), "test") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(file), "test") }
         assertTrue(r is ReloadResult.NeedsGradleBuild, "멈추지 않았다 — $r")
         assertEquals(listOf(file.absolutePath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
     }
