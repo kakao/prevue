@@ -185,7 +185,7 @@ internal object BrowserStates {
         if (why == Vacancy.DELETED) phrase("vacant.deleted", "file" to name) else phrase("vacant.noPreview", "file" to name)
 
     private fun titleLines(fn: String, params: Map<String, String>, paramIndex: Int, paramCount: Int, paramLabel: String?): Pair<String?, String> =
-        params["name"] to (if (paramCount > 1) "$fn · ${paramLabel ?: paramIndex}" else fn)
+        params["name"] to (if (paramCount > 1) "$fn · ${paramLabel ?: "#$paramIndex"}" else fn)
 
     private fun tabs(views: List<TabView>, repo: String): List<TabChip> {
         fun base(t: TabView) = t.fqn?.substringAfterLast('.') ?: t.file?.nameWithoutExtension ?: t.key
@@ -222,7 +222,7 @@ internal object BrowserStates {
         val label = when {
             nth == null -> named.orEmpty()
             named == null -> c.paramLabel ?: "#$nth"
-            else -> "$named · ${c.paramLabel ?: nth}"
+            else -> "$named · ${c.paramLabel ?: "#$nth"}"
         }
         val drawn = c.ok == true && c.image != null
         val w = c.width?.takeIf { it > 0 }

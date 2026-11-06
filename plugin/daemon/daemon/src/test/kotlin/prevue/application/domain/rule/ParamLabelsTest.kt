@@ -20,6 +20,10 @@ class ParamLabelsTest {
             ParamLabels.of(listOf(Drink(1, "a"), Plain(), long, "두\n줄", " ", "b".repeat(ParamLabels.MAX_LENGTH)), 6))
     }
 
+    @Test fun `번호와 헷갈리거나 한 줄로 안 보이는 글자는 이름이 없다`() {
+        assertEquals(listOf(null, null, null, null, null, "#a"), ParamLabels.of(listOf("#1", "a\tb", "x\u2028y", " pad", "pad ", "#a"), 6))
+    }
+
     @Test fun `같은 이름이 둘 이상이면 그 값들은 이름이 없다`() {
         assertEquals(listOf(null, "b", null), ParamLabels.of(listOf("a", "b", "a"), 3))
     }

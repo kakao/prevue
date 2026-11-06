@@ -69,7 +69,7 @@ class BrowserStatesTest {
         assertEquals(7, s.version)
         val groups = s.board!!.groups
         assertEquals(listOf("A", "B", "C"), groups.map { it.name })
-        assertEquals(listOf(listOf("Light", "Dark"), listOf(""), listOf("#1", "x · 2")), groups.map { g -> g.cards.map { it.label } })
+        assertEquals(listOf(listOf("Light", "Dark"), listOf(""), listOf("#1", "x · #2")), groups.map { g -> g.cards.map { it.label } })
         assertEquals("fontScale=1.5", groups[0].cards[1].args)
         assertEquals("5 previews · Screen.kt", s.boardNote?.text)
         assertNull(s.focus)
@@ -385,7 +385,7 @@ class BrowserStatesTest {
         val st = status(board = board(card(0, "A"), card(1, "ForYouScreen", params = mapOf("name" to "foldable"), paramIndex = 2, paramCount = 3), focus = 1), interactive = true)
         val f = build(st).focus!!
         assertEquals("foldable", f.name)
-        assertEquals("ForYouScreen · 2", f.fn)
+        assertEquals("ForYouScreen · #2", f.fn)
         val plain = build(status(board = board(card(0, "A")), interactive = true)).focus!!
         assertNull(plain.name)
         assertEquals("A", plain.fn)

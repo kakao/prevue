@@ -9,9 +9,13 @@ object ParamLabels {
         return labels.map { it?.takeUnless(repeated::contains) }
     }
 
+    private val INDEX = Regex("#\\d+")
+
+    private fun unprintable(c: Char): Boolean = c.isISOControl() || c == '\u2028' || c == '\u2029'
+
     private fun label(value: Any): String? {
         if (value !is Enum<*> && value !is Number && value !is Boolean && value !is Char && value !is CharSequence) return null
         val text = runCatching { value.toString() }.getOrNull() ?: return null
-        return text.takeIf { it.isNotBlank() && it.length <= MAX_LENGTH && it.none { c -> c == '\n' || c == '\r' } }
+        return text.takeIf { it.isNotBlank() && it.length <= MAX_LENGTH && it == it.trim() && it.none(::unprintable) && !INDEX.matches(it) }
     }
 }

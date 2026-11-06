@@ -16,7 +16,7 @@ class PreviewShapesTest {
         val shapes = PreviewShapes()
         val names = spec("demo.Names"); val colors = spec("demo.Colors")
         var layoutsResolved = 0
-        listOf(names, colors).forEach { p -> shapes.instances(p) { List(2) { null } }.size; shapes.layouts(p) { layoutsResolved++; listOf("a", "b") } }
+        listOf(names, colors).forEach { p -> shapes.instances(p) { List(2) { null } }; shapes.layouts(p) { layoutsResolved++; listOf("a", "b") } }
 
         shapes.recount()
         assertEquals(3, shapes.instances(names) { List(3) { null } }.size)
@@ -29,7 +29,7 @@ class PreviewShapesTest {
     @Test fun `세지 않고 지나간 컴파일 뒤에도 마지막으로 센 개수와 견준다`() {
         val shapes = PreviewShapes()
         val names = spec("demo.Names")
-        shapes.instances(names) { List(2) { null } }.size; shapes.layouts(names) { listOf("a", "b") }
+        shapes.instances(names) { List(2) { null } }; shapes.layouts(names) { listOf("a", "b") }
         shapes.recount(); shapes.recount()
         assertEquals(3, shapes.instances(names) { List(3) { null } }.size)
         assertEquals(listOf("x"), shapes.layouts(names) { listOf("x") })
