@@ -23,15 +23,25 @@ import viewer  # noqa: E402
 PLUGIN = "plugin/daemon"
 
 
+LAYERS_KEY = re.compile(r"prevue\.layers(?:\s*[=:]\s*|\s+)(.*)")
+
+
 def read_layers(properties):
-    """gradle.properties 본문에서 층 모듈의 폴더(plugin/daemon 기준) — settings · 빌드 · 테스트와 같은 한 줄(prevue.layers)을 읽는다."""
+    """gradle.properties 본문에서 층 모듈의 폴더(plugin/daemon 기준). settings 가 java.util.Properties 로 읽으니 그 규칙대로 —
+    키 앞 공백 · `=` `:` 공백 구분자 · 주석(# !) · 같은 키는 마지막 것. 줄 이음(\\)은 쓰지 않는다"""
+    value = None
     for line in properties.splitlines():
-        if line.startswith("prevue.layers="):
-            return tuple(m.strip() for m in line.split("=", 1)[1].split(","))
-    raise ValueError("prevue.layers 가 없다")
+        line = line.lstrip()
+        m = None if line.startswith(("#", "!")) else LAYERS_KEY.fullmatch(line.rstrip())
+        if m:
+            value = m.group(1)
+    layers = tuple(x for x in (v.strip() for v in (value or "").split(",")) if x)
+    if not layers:
+        raise ValueError("prevue.layers 가 없다")
+    return layers
 
 
-# 층 모듈의 폴더 — 안쪽 :application, 바깥 :infrastructure(D-148). 조립 · 브리지는 :daemon(D-140 · D-148) — 루트(plugin/daemon)에는 빌드 파일만 있다.
+# 조립 · 브리지는 :daemon(D-140 · D-148) — 루트(plugin/daemon)에는 빌드 파일만 있다.
 # lint.sh 는 사용자의 cwd 에서 부른다 — 저장소 루트로 옮기기(main) 전에 읽으므로 이 파일 기준으로 찾는다
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", PLUGIN, "gradle.properties"), encoding="utf-8") as _f:
     MODULES = read_layers(_f.read())

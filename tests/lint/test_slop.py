@@ -143,10 +143,13 @@ class Comments(unittest.TestCase):
 
     def test_층_목록은_gradle_properties_한_줄에서_읽는다(self):
         self.assertEqual(lint.read_layers("# 주석\nprevue.layers=application, adapter/infra\nother=1\n"), ("application", "adapter/infra"))
-        with self.assertRaises(ValueError):
-            lint.read_layers("other=1\n")
-        with open(os.path.join(ROOT, "plugin/daemon/gradle.properties"), encoding="utf-8") as f:
-            self.assertEqual(lint.MODULES, lint.read_layers(f.read()))
+        # settings 는 java.util.Properties 로 읽는다 — 같은 줄을 같은 값으로 읽어야 넷이 갈리지 않는다
+        self.assertEqual(lint.read_layers("  prevue.layers = a,b,\n"), ("a", "b"))
+        self.assertEqual(lint.read_layers("prevue.layers:a\nprevue.layers=b\n"), ("b",))
+        self.assertEqual(lint.read_layers("prevue.layers a\n"), ("a",))
+        for text in ("other=1\n", "# prevue.layers=a\n", "prevue.layers=,\n", "prevue.layersx=a\n"):
+            with self.assertRaises(ValueError, msg=text):
+                lint.read_layers(text)
         for m in lint.MODULES:
             self.assertTrue(os.path.isdir(os.path.join(ROOT, "plugin/daemon", m, "src/main/kotlin")), m)
 

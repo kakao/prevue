@@ -6,10 +6,10 @@
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# 자기 검사 · JSX 날값 검사가 viewer-src 의 typescript 를 쓴다. node_modules 는 git 밖이라 새 워크트리에 없다 —
+# 자기 검사 · JSX 날값 검사가 viewer-src 의 typescript 를 쓴다. node_modules 는 git 밖이라 새 워크트리에 없고, 받다 멈추면 폴더만 남는다 —
 # 모듈을 못 찾았다는 꼬리 대신 원인을 말한다. 받는 것은 부르는 쪽 몫이다(린트는 기본 오프라인)
-if [ ! -d "$ROOT/viewer-src/node_modules" ]; then
-  echo "검사를 못 했다: viewer-src/node_modules 가 없다 — npm ci --prefix viewer-src 를 먼저 돌린다" >&2
+if [ ! -f "$ROOT/viewer-src/node_modules/typescript/package.json" ]; then
+  echo "검사를 못 했다: viewer-src/node_modules 에 typescript 가 없다 — npm ci --prefix viewer-src 를 먼저 돌린다" >&2
   exit 2
 fi
 

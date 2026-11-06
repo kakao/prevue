@@ -1,12 +1,14 @@
 package prevue.daemon
 
 import java.io.File
+import java.util.Properties
 
 /** 본체 소스의 자리 — 층 모듈(`gradle.properties` 의 `prevue.layers`)과 조립 :daemon(D-148). 테스트는 plugin/daemon/daemon 에서 돌아 "." 이 :daemon 이다. 규칙 테스트는 모두 여기서 읽는다. */
 object Sources {
-    /** 층 패키지 `prevue.<층>`(D-148). 모듈 폴더와 이름이 같고, 목록은 settings · 빌드 · 린트와 함께 `prevue.layers` 한 줄에서 읽는다. `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 쓴다. */
-    val LAYERS: List<String> = File("../gradle.properties").readLines()
-        .single { it.startsWith("prevue.layers=") }.substringAfter("=").split(",").map { it.trim() }
+    /** 층 패키지 `prevue.<층>`(D-148) — 모듈 폴더와 이름이 같다. `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 쓴다. settings 와 같은 규칙(Properties)으로 읽는다. */
+    val LAYERS: List<String> = Properties().apply { File("../gradle.properties").reader().use { load(it) } }
+        .getProperty("prevue.layers").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        .also { check(it.isNotEmpty()) { "gradle.properties 에 prevue.layers 가 없다" } }
 
     private val modules: List<String> = LAYERS.map { "../$it" } + "."
     val kotlinRoots: List<File> = modules.map { File(it, "src/main/kotlin") }

@@ -81,7 +81,7 @@ Sub-Task  <이름> | 없음
 ```sh
 git log -1 --oneline                 # origin/develop 의 끝인지 본다 — 아니면 origin/HEAD 가 main 이다(AGENTS.md 클론 직후)
 (cd plugin/daemon && ./gradlew --offline installPrevue)    # 이 체크아웃의 plugin/bin/prevue 가 쓸 실행 파일. 스킬 · 문서만 고치면 건너뛴다
-[ -d viewer-src/node_modules ] || npm ci --silent --prefix viewer-src    # git 밖이라 새 워크트리에 없다 — 없으면 tools/lint.sh 가 종료 2로 멈춘다
+[ -f viewer-src/node_modules/typescript/package.json ] || npm ci --prefix viewer-src    # git 밖이라 새 워크트리에 없다 — 없으면 tools/lint.sh 가 종료 2로 멈춘다
 ```
 
 ## 3. 개발
