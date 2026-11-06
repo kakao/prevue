@@ -46,3 +46,9 @@ body { margin: 0; background: var(--surface); color: var(--on-surface); font: va
 /* 배율 메뉴는 확대 줄 위로 열린다 — 그 자리를 비워 둔다. */
 .story-zoom { padding-top: calc(var(--space-64) + var(--space-64)); }
 .story-surface .story-zoom .panel { overflow: visible; }
+/* 가리키기 카드 — 상태를 나란히, 그림 위에서는 카드가 박스 옆에 선다. */
+.story-cards { display: grid; grid-template-columns: repeat(auto-fill, var(--point-card-w)); gap: var(--space-24); align-items: start; }
+.story-placed { position: relative; width: 360px; height: 780px; }
+.story-placed img { display: block; width: 100%; height: 100%; box-shadow: 0 0 0 1px var(--outline-variant); }
+.story-at { position: absolute; z-index: 3; }
+.story-place { min-height: 900px; overflow: hidden; }
