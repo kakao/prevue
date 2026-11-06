@@ -3,6 +3,7 @@ package prevue.application.service
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import prevue.application.domain.model.PhraseException
 import prevue.application.domain.model.ensure
 import prevue.application.domain.model.phrase
 import java.io.File
@@ -29,8 +30,7 @@ import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
-@Inject
-class Tabs(
+class Tabs @Inject internal constructor(
     private val ws: Workspace,
     private val engine: Engine,
     private val previews: PreviewRepository,
@@ -38,18 +38,20 @@ class Tabs(
     private val boards: Boards,
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
+    private val catalog: PreviewCatalog,
 ) {
     suspend fun openPreview(target: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult = ws.exclusive { ed ->
-        val key = keyOf(target)
+        val link = deepLink(target, index)
+        val key = link?.first ?: keyOf(target)
         val move = if (find(key) == null) TabMove.OPENED else TabMove.SWITCHED
-        val r = activate(ed, key, index, params, by, since)
+        val r = enter(ed, key, link?.second ?: Pick(index), params, by, since)
         val evicted = TabPolicy.evict(ws.now.tabs, ws.now.activeTab)?.also { drop(ed, it) }
         evicted?.let { ws.emit(WorkspaceEvent.TabEvicted(it)) }
         r.copy(tab = move, closedTab = evicted?.key)
     }
 
     suspend fun closeTab(target: String, by: String): CloseResult = ws.exclusive { ed ->
-        val key = keyOf(target)
+        val key = if (isPath(target)) keyOf(target) else fqnFile(target)?.canonicalPath ?: target
         val tab = find(key) ?: error("열린 탭이 아니다: $target")
         val wasActive = key == ws.now.activeTab
         drop(ed, tab)
@@ -63,7 +65,7 @@ class Tabs(
 
     suspend fun trackFiles(created: List<File>, deleted: List<File>, by: String = "watch"): Unit = ws.exclusive { ed ->
         val tab = ws.now.activeTabOrNull() ?: return@exclusive
-        val f = tab.file?.canonicalPath ?: return@exclusive
+        val f = tab.file.canonicalPath
         fun has(files: List<File>) = files.any { it.canonicalPath == f }
         when {
             has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
@@ -75,14 +77,45 @@ class Tabs(
         if (ws.now.current == null) null else live.catchUp(ed, by)
     }
 
+    private fun isPath(target: String) = sources.has(File(target)) || target.endsWith(".kt") || target.contains('/')
+
     internal fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
     internal fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
 
     internal suspend fun activateOrVacant(ed: WorkspaceEditor, key: String, by: String, since: Long? = null): ShowResult? =
-        try { activate(ed, key, null, emptyMap(), by, since) } catch (_: VacantTab) { null }
+        try { activate(ed, key, Pick(), emptyMap(), by, since) } catch (_: VacantTab) { null }
 
-    internal suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
+    internal class Pick(val index: Int? = null, private val fqn: String? = null) {
+        val interactive: Boolean get() = fqn != null
+
+        fun within(specs: List<PreviewSpec>): Boolean = specs.any { it.fqn == fqn }
+
+        fun of(specs: List<PreviewSpec>, file: String): Int? {
+            if (fqn == null) return index?.also { ensure(it in specs.indices) { noIndex(file, specs.size, it) } }
+            val mine = specs.indices.filter { specs[it].fqn == fqn }
+            val nth = index ?: 0
+            ensure(nth in mine.indices) { noIndex(fqn, mine.size, nth) }
+            return mine[nth]
+        }
+
+        private fun noIndex(file: String, n: Int, index: Int) = phrase("tabs.noIndex", "file" to file, "n" to n, "index" to index)
+    }
+
+    private suspend fun deepLink(target: String, index: Int?): Pair<String, Pick>? {
+        if (isPath(target)) return null
+        ensure(target.contains('.')) { phrase("tabs.notFqn", "target" to target) }
+        val f = fqnFile(target) ?: throw PhraseException(phrase("tabs.fqnNoSource", "target" to target))
+        return f.canonicalPath to Pick(index, target)
+    }
+
+    private suspend fun enter(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long?): ShowResult {
+        val specs = ws.now.board?.takeIf { pick.interactive && key == ws.now.activeTab && params.isEmpty() }?.cards?.map { it.spec }
+        val i = specs?.takeIf(pick::within)?.let { pick.of(it, key) } ?: return activate(ed, key, pick, params, by, since)
+        return boards.enter(ed, i, by, since = since)
+    }
+
+    internal suspend fun activate(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
         val tab = find(key)
         val wasActive = key == ws.now.activeTab
         val before = (if (wasActive) ws.now.board else null) ?: tab?.board
@@ -90,54 +123,54 @@ class Tabs(
         if (tab != null) {
             val hidden = tab.board?.takeIf { !wasActive && !tab.stale && params.isEmpty() }
             vacateIfLost(ed, tab, restoring = hidden != null)
-            if (hidden != null) return restore(ed, tab, hidden, index, by, since)
+            if (hidden != null) return restore(ed, tab, hidden, pick, by, since)
         }
         val kept = if (params.isEmpty()) tab?.params.orEmpty() else params
-        return open(ed, Opening(key, index, before?.focusCard?.spec?.previewId, kept), by, since)
+        return open(ed, Opening(key, pick, before?.focusCard?.spec?.previewId, kept), by, since)
     }
 
     private fun vacateIfLost(ed: WorkspaceEditor, tab: Tab, restoring: Boolean) {
-        val f = tab.file ?: return
+        val f = tab.file
         val why = if (restoring) Vacancy.DELETED.takeIf { !sources.has(f) } else vacancy(f)
         why?.let { vacate(ed, tab, it) }
     }
 
-    private class Opening(val key: String, val index: Int?, val focusId: String?, val kept: Map<String, String>)
+    private class Opening(val key: String, val pick: Pick, val focusId: String?, val kept: Map<String, String>)
 
     private suspend fun open(ed: WorkspaceEditor, o: Opening, by: String, since: Long?): ShowResult {
         engine.forgetShapes()
         val openedAt = ws.nowMs()
         ed.update { it.copy(openedAtMs = openedAt) }
         val compiled = compileBeforeOpen(ed, o.key, by)
-        val (p, all) = locate(o.key, o.index, o.focusId, o.kept)
-        val board = if (all.isEmpty()) null else Board.open(p.file!!, all.map { it.copy(params = it.params + o.kept) }, p.index)
-        val shown = board?.focusCard?.spec ?: p
-        val tab = Tab(o.key, board?.file, if (board == null) p else null, o.kept, null, seenAtMs = ws.nowMs())
-        ed.update { s ->
-            val modules = (board?.file ?: p.file)?.let { s.renderModules + ws.graph.ownerOf(it) } ?: s.renderModules
-            s.withTab(tab).copy(board = board, current = shown, renderModules = modules)
-        }
+        val (file, all) = locate(o.key)
+        val i = o.pick.of(all, file.name) ?: all.indexOfFirst { it.previewId == o.focusId }.coerceAtLeast(0)
+        val board = Board.open(file, all.map { it.copy(params = it.params + o.kept) }, i)
+        val shown = board.focusCard.spec
+        val tab = Tab(o.key, board.file, o.kept, null, seenAtMs = ws.nowMs())
+        ed.update { s -> s.withTab(tab).copy(board = board, current = shown, renderModules = s.renderModules + ws.graph.ownerOf(file)) }
         compiled?.let { (batch, t) -> recordOpenCompile(ed, batch, t, shown, by) }
-        val r = live.show(ed, shown, by, since)
+        return showFocus(ed, board, o.pick.interactive, by, since)
+    }
+
+    private suspend fun showFocus(ed: WorkspaceEditor, b: Board, interactive: Boolean, by: String, since: Long?): ShowResult {
+        if (interactive) return boards.enter(ed, b.focus, by, since = since)
+        val r = live.show(ed, b.focusCard.spec, by, since)
         live.recordFocus(ed, r.shot)
         boards.fill(by, r.startedAtMs)
         return r
     }
 
-    private suspend fun restore(ed: WorkspaceEditor, tab: Tab, hidden: Board, index: Int?, by: String, since: Long?): ShowResult {
+    private suspend fun restore(ed: WorkspaceEditor, tab: Tab, hidden: Board, pick: Pick, by: String, since: Long?): ShowResult {
         var b = hidden.settled()
         val gone = b.cards.indices.filter { i -> (b.cards[i].result as? CardResult.Drawn)?.shot?.out?.let(engine::lost) == true }
         b = b.forget(gone)
-        if (index != null) {
-            ensure(index in b.cards.indices) { phrase("tabs.noIndex", "file" to b.file.name, "n" to b.cards.size, "index" to index) }
-            b = b.focusOn(index)
-        }
+        pick.of(b.cards.map { it.spec }, b.file.name)?.let { b = b.focusOn(it) }
         val at = ws.nowMs()
-        ed.update { it.withTab(tab.copy(board = null, stale = false, seenAtMs = at)).copy(board = b, current = b.focusCard.spec, openedAtMs = at) }
-        val r = live.show(ed, b.focusCard.spec, by, since)
-        live.recordFocus(ed, r.shot)
-        boards.fill(by, r.startedAtMs)
-        return r
+        ed.update {
+            it.withTab(tab.copy(board = null, stale = false, seenAtMs = at))
+                .copy(board = b, current = b.focusCard.spec, openedAtMs = at)
+        }
+        return showFocus(ed, b, pick.interactive, by, since)
     }
 
     private suspend fun compileBeforeOpen(ed: WorkspaceEditor, key: String, by: String): Pair<StaleCallers.Batch, Long>? {
@@ -203,12 +236,8 @@ class Tabs(
     }
 
     internal suspend fun reread(ed: WorkspaceEditor, p: PreviewSpec): PreviewSpec {
-        ws.now.board?.let { return ws.now.sized(rereadBoard(ed, it)?.focusCard?.spec ?: p) }
-        val tab = ws.now.activeTabOrNull()?.takeIf { it.spec != null } ?: return p
-        val found = fqnMatches(tab.key).firstOrNull { it.previewId == p.previewId } ?: return ws.now.sized(p)
-        val next = found.copy(params = found.params + tab.params, index = 0)
-        if (next != tab.spec) ed.update { it.withTab(tab.copy(spec = next)) }
-        return ws.now.sized(next)
+        val b = ws.now.board ?: return p
+        return ws.now.sized(rereadBoard(ed, b)?.focusCard?.spec ?: p)
     }
 
     private suspend fun rereadBoard(ed: WorkspaceEditor, b: Board): Board? {
@@ -235,32 +264,21 @@ class Tabs(
         return t
     }
 
-    private suspend fun locate(target: String, index: Int?, focusId: String?, params: Map<String, String>): Pair<PreviewSpec, List<PreviewSpec>> {
+    private suspend fun locate(target: String): Pair<File, List<PreviewSpec>> {
         val f = File(target)
-        if (sources.has(f)) {
-            val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }
-            ensure(found.isNotEmpty()) { phrase("tabs.noPreviewFn", "file" to f.name) }
-            val i = index ?: found.indexOfFirst { it.previewId == focusId }.coerceAtLeast(0)
-            ensure(i in found.indices) { phrase("tabs.noIndex", "file" to f.name, "n" to found.size, "index" to i) }
-            val p = found[i]
-            return p.copy(params = p.params + params) to found
-        }
-        ensure(target.contains('.')) { phrase("tabs.notFqn", "target" to target) }
-        ensure(!target.endsWith(".kt") && !target.contains('/')) { phrase("tabs.noFile", "target" to target) }
-        val matches = fqnMatches(target)
-        if (matches.isEmpty()) return previews.byFqn(target, params) to emptyList()
-        val i = index ?: 0
-        ensure(i in matches.indices) { phrase("tabs.noIndex", "file" to target, "n" to matches.size, "index" to i) }
-        val p = matches[i]
-        return p.copy(params = p.params + params, index = 0) to emptyList()
+        ensure(sources.has(f)) { phrase("tabs.noFile", "target" to target) }
+        val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }
+        ensure(found.isNotEmpty()) { phrase("tabs.noPreviewFn", "file" to f.name) }
+        return f to found
     }
 
-    private suspend fun fqnMatches(fqn: String): List<PreviewSpec> {
+    private suspend fun fqnFile(fqn: String): File? {
         val facade = fqn.substringBeforeLast('.').substringAfterLast('.')
-        return sources.sourceFiles().asSequence()
-            .filter { it.nameWithoutExtension.replaceFirstChar(Char::uppercase) + "Kt" == facade }
-            .map { f -> previews.inFile(f).filter { it.fqn == fqn } }
-            .firstOrNull { it.isNotEmpty() }.orEmpty()
+        val fn = fqn.substringAfterLast('.')
+        val named = sources.sourceFiles().asSequence().filter { it.nameWithoutExtension.replaceFirstChar(Char::uppercase) + "Kt" == facade }
+        val listed = catalog.list()?.asSequence()?.filter { fn in it.functions }?.map { it.file }
+            ?: sources.sourceFiles().asSequence().filter { sources.read(it)?.contains("fun $fn") == true }
+        return (named + listed).firstOrNull { f -> previews.inFile(f).any { it.fqn == fqn } }
     }
 }
 

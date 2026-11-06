@@ -71,8 +71,8 @@ class ResultMapperTest {
 
     @Test fun `탭은 KMP 소스 세트가 있을 때만 싣는다`() {
         val f = File("/r/feature/a/src/commonMain/kotlin/Screen.kt")
-        assertEquals("commonMain", TabView(f.path, f, null, ":feature:a", active = true, stale = false, sourceSet = "commonMain").toJson()["sourceSet"])
-        assertEquals(false, TabView(f.path, f, null, ":app", active = true, stale = false).toJson().containsKey("sourceSet"))
+        assertEquals("commonMain", TabView(f.path, f, ":feature:a", active = true, stale = false, sourceSet = "commonMain").toJson()["sourceSet"])
+        assertEquals(false, TabView(f.path, f, ":app", active = true, stale = false).toJson().containsKey("sourceSet"))
     }
 
     @Test fun `아이템은 없는 값을 싣지 않는다`() {

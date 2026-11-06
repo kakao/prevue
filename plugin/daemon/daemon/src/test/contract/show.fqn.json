@@ -65,7 +65,7 @@
     "by": "http",
     "imageUrl": "/Card0-0.png?t=<t>",
     "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
-    "tab": "opened",
+    "tab": "switched",
     "stale": {},
     "board": null,
     "previews": []

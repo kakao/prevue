@@ -236,6 +236,7 @@
   "status.who": "{by} · {time} · {what}",
   "tabs.close": "탭 닫기",
   "tabs.evicted": "오래 안 본 {tab} 탭을 닫았어요",
+  "tabs.fqnNoSource": "{target}의 소스 파일을 찾지 못했어요(최상위 @Preview 함수만 찾아요) — 파일 경로로 show 해 주세요",
   "tabs.noFile": "파일이 없어요: {target}",
   "tabs.noIndex": "{file}의 Preview는 {n}개예요. index {index}는 없어요",
   "tabs.noPreviewFn": "{file}에 @Preview 함수가 없어요(최상위 함수만 찾아요)",

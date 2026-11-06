@@ -76,23 +76,18 @@ internal object BrowserStates {
     }
 
     private fun vacantOf(activeTab: TabView?, screen: BrowserState.Screen): Phrase? =
-        activeTab?.vacant?.takeIf { screen == BrowserState.Screen.VACANT }?.let { vacantText(activeTab.file?.name ?: activeTab.key, it) }
+        activeTab?.vacant?.takeIf { screen == BrowserState.Screen.VACANT }?.let { vacantText(activeTab.file.name, it) }
 
     private fun screenOf(now: Status, activeTab: TabView?): BrowserState.Screen = when {
         now.board != null && now.interactive -> BrowserState.Screen.FOCUS
         now.board != null -> BrowserState.Screen.BOARD
-        now.preview != null -> BrowserState.Screen.FOCUS
         activeTab?.vacant != null -> BrowserState.Screen.VACANT
         else -> BrowserState.Screen.EMPTY
     }
 
     private fun focusIdOf(now: Status): String? {
-        val board = now.board
-        return when {
-            board != null && now.interactive -> board.cards.getOrNull(board.focus)?.previewId
-            board == null -> now.preview?.previewId
-            else -> null
-        }
+        val board = now.board?.takeIf { now.interactive } ?: return null
+        return board.cards.getOrNull(board.focus)?.previewId
     }
 
     private fun header(now: Status, side: ViewerSide, fileName: String?, focusId: String?): Header {
@@ -113,18 +108,13 @@ internal object BrowserStates {
     private fun focusScreen(id: String, now: Status, side: ViewerSide): FocusScreen {
         val board = now.board
         val current = now.preview
-        val streaming = if (board != null) now.interactive else side.singleInteractive == id
         val stamp = maxOf(drawnAt(now), side.stillStamp)
         val card = board?.cards?.getOrNull(board.focus)
-        val (name, fn) = when {
-            card != null -> titleLines(card.name, card.params, card.paramIndex, card.paramCount, card.paramLabel)
-            board == null && current != null -> titleLines(current.functionName, current.params, current.paramIndex, current.paramCount, current.paramLabel)
-            else -> null to id
-        }
+        val (name, fn) = card?.let { titleLines(it.name, it.params, it.paramIndex, it.paramCount, it.paramLabel) } ?: (null to id)
         return FocusScreen(
-            previewId = id, interactive = streaming, fromBoard = board != null,
+            previewId = id, interactive = now.interactive, fromBoard = true,
             imageUrl = "/$id-0.png?t=$stamp", treeUrl = "/$id-0.viewinfo.json?t=$stamp",
-            streamUrl = streamUrl(board != null, streaming, now.focusAttachedAt, side.streamStamp),
+            streamUrl = now.focusAttachedAt?.takeIf { now.interactive }?.let { "/stream?t=$it" },
             pxPerDp = CardSpecs.pxPerDp((if (now.size != null) current?.params else card?.params) ?: current?.params.orEmpty()),
             name = name, fn = fn, size = now.size,
             postures = now.postures.mapNotNull { (size, shot) -> postureImage(size, shot) },
@@ -134,13 +124,6 @@ internal object BrowserStates {
     private fun postureImage(size: ScreenSize, shot: Shot): PostureImage? {
         val out = shot.out
         return artifactUrl(out.image, shot.artifactRevision)?.let { PostureImage(size, it, CardSpecs.dpSize(out.preview.params, out.width, out.height)) }
-    }
-
-    private fun streamUrl(onBoard: Boolean, streaming: Boolean, attachedAt: Long?, singleStamp: Long): String? = when {
-        !streaming -> null
-        !onBoard -> "/stream?t=$singleStamp"
-        attachedAt == null -> null
-        else -> "/stream?t=$attachedAt"
     }
 
     private fun staleRows(stale: Map<String, StaleReason>): List<StaleRow> = stale.values.map { d ->
@@ -188,14 +171,14 @@ internal object BrowserStates {
         params["name"] to (if (paramCount > 1) "$fn · ${paramLabel ?: "#$paramIndex"}" else fn)
 
     private fun tabs(views: List<TabView>, repo: String): List<TabChip> {
-        fun base(t: TabView) = t.fqn?.substringAfterLast('.') ?: t.file?.nameWithoutExtension ?: t.key
+        fun base(t: TabView) = t.file.nameWithoutExtension
         val twins = views.groupingBy(::base).eachCount()
         return views.map { t ->
             TabChip(
                 key = t.key, name = base(t),
-                dim = if (t.fqn != null) t.file?.let { " · ${it.nameWithoutExtension}" }.orEmpty() else "",
+                dim = "",
                 module = t.module.takeIf { (twins[base(t)] ?: 0) > 1 && it.isNotBlank() }?.removePrefix(":"),
-                title = listOfNotNull(t.file?.absolutePath?.removePrefix(repo.trimEnd('/') + "/"), t.fqn).joinToString("\n").ifEmpty { t.key },
+                title = t.file.absolutePath.removePrefix(repo.trimEnd('/') + "/"),
                 active = t.active, stale = t.stale, sourceSet = t.sourceSet,
             )
         }
@@ -349,8 +332,6 @@ internal object BrowserStates {
 }
 
 internal data class ViewerSide(
-    val singleInteractive: String? = null,
-    val streamStamp: Long = 0,
     val stillStamp: Long = 0,
     val choice: PathChoice? = null,
     val branch: String? = null,

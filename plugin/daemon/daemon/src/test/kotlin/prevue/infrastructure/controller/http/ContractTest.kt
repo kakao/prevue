@@ -61,6 +61,7 @@ class ContractTest {
         val misses = ArrayList<String>()
         fun check(name: String, r: Pair<Int, Any?>) { misses += compare(name, r.first, r.second) }
 
+        check("board.none", get("/board"))
         // 채우기는 따로 도는 스레드라 응답 순간에 몇 장이 그려졌는지가 경합이다. 첫 장 뒤에 세워 "포커스만 그려진 보드"로 고정한다.
         fx.renderer.hold = java.util.concurrent.CountDownLatch(1)
         fx.renderer.holdAfter = fx.renderer.shown.size + 1
@@ -179,9 +180,8 @@ class ContractTest {
         check("viewer.open.other", post("/viewer/open", mapOf("file" to elsewhere.path)))
 
         check("show.fqn", post("/show", mapOf("target" to "demo.CardsKt.Card0")))
-        check("board.none", get("/board"))
+        check("board.fqn", get("/board"))
         check("viewer.state.single", get("/viewer/state"))
-        check("viewer.interactive", post("/viewer/interactive", mapOf("on" to true)))
         check("show.error", post("/show", mapOf("target" to "/없는/파일")))
         check("unknown", post("/nope", emptyMap()))
 

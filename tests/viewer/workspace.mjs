@@ -255,25 +255,19 @@ try {
   await until(`__store.st.focus && !__store.st.focus.size`); await ready();
   await check(`(()=>{const shot=document.querySelector('#shot'),r=shot.getBoundingClientRect();return !__store.st.focus.size && Math.abs(r.width/r.height-shot.naturalWidth/shot.naturalHeight)<.002})()`, "크기를 바꾼 상태로 새로 열어도 원래 프리뷰의 비율 복원");
   await exit();
-  // 단건(FQN)의 보기 ↔ 조작도 같은 틀 모프다. 끝나면 원래 파일 보드로 돌린다.
+  // D-155 — FQN 딥링크도 그 파일 보드 위의 한 장이다. 늘 조작이고 뒤로 버튼이 있으며, esc 가 그 파일 보드의 그 카드 자리로 돌아간다.
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   const boardFile = await evaluate(`__store.st.board.file`);
   await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
-  await until(`__store.st.screen==='focus' && !__store.st.focus.fromBoard && !__store.st.focus.interactive && document.querySelector('#shot').naturalWidth>0`);
-  await pause(300);
-  const morphs = async on => {
-    await evaluate(`window.__fq=[];window.__seg=[];window.__fqRec=true;requestAnimationFrame(function f(){if(!__fqRec)return;const m=document.querySelector('.morph');if(m)__fq.push((r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()));__seg.push(document.querySelector('#seg').classList.contains('deco-off'));requestAnimationFrame(f)})`);
-    await post("/viewer/interactive", { on });
-    await until(`__store.st.focus.interactive===${on}`);
-    if (on) await ready();
-    await pause(1200);
-    await evaluate(`__fqRec=false`);
-    return evaluate(`({n:__fq.length,last:__fq.at(-1),stage:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),morph:!!document.querySelector('.morph'),seg:__seg.some(Boolean)&&!__seg.at(-1)&&getComputedStyle(document.querySelector('#seg')).opacity==='1'})`);
-  };
-  const on = await morphs(true);
-  assert(on.n > 5 && near(on.last, on.stage) && !on.morph && on.seg, `단건 보기 → 조작 틀 모프 · 토글은 패널과 함께 ${JSON.stringify(on)}`); console.log(`통과 ${++checked}: 단건 보기 → 조작 틀 모프, 토글은 패널과 함께`);
-  const off = await morphs(false);
-  assert(off.n > 5 && near(off.last, off.stage) && !off.morph && off.seg, `단건 조작 → 보기 틀 모프 · 토글은 패널과 함께 ${JSON.stringify(off)}`); console.log(`통과 ${++checked}: 단건 조작 → 보기 틀 모프, 토글은 패널과 함께`);
+  await until(`__store.st.screen==='focus' && __store.st.focus.fromBoard && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await ready();
+  const linked = await evaluate(`__store.st.board.focus`);
+  await check(`!document.querySelector('#back').hidden && document.querySelector('#seg').hidden && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
+  const beforeEsc = await evaluate(`__exits`);
+  await key("Escape");
+  await until(`!document.querySelector('#boardView').hidden && __exits>${beforeEsc} && __store.st.screen==='board' && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+  await check(`__store.st.board.focus===${linked} && !!document.querySelector('.card[data-i="${linked}"]')`, "FQN 딥링크에서 esc — 그 파일 보드의 그 카드 자리로");
   await post("/show", { target: boardFile, index: null, params: {}, by: "test" });
   await until(`__store.st.screen==='board'`);
   await check(`__errors.length===0`, "브라우저 오류 0");

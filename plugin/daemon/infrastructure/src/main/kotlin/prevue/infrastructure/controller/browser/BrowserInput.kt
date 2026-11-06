@@ -5,7 +5,6 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
 import prevue.application.service.Boards
@@ -39,28 +38,11 @@ internal class BrowserInput(
 
     fun exitFocus() = core.post { boards.unfocus(by = "viewer") }
 
-    fun setSingleInteractive(on: Boolean) = core.post {
-        if (!on) sizes.trySend(ScreenSize.Original)
-        core.onLine {
-            val at = System.currentTimeMillis()
-            core.side.update {
-                if (on) it.copy(singleInteractive = core.state.value.focus?.previewId, streamStamp = at)
-                else it.copy(singleInteractive = null, stillStamp = at)
-            }
-        }
-    }
-
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
     private suspend fun resized(s: ScreenSize) {
-        val single = status.board() == null
-        if (single && s != ScreenSize.Original && core.onLine { core.side.value.singleInteractive } == null) return
-        live.resize(s, by = "viewer") ?: return
-        if (status.board() != null) return
-        core.onLine {
-            val at = System.currentTimeMillis()
-            core.side.update { if (it.singleInteractive != null) it.copy(streamStamp = at) else it }
-        }
+        if (status.board() == null) return
+        live.resize(s, by = "viewer")
     }
 
     fun touch(type: String, x: Int, y: Int) = core.post { live.touch(type, x, y, by = "viewer", settle = false) }

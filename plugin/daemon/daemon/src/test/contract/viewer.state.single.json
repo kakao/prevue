@@ -1,8 +1,49 @@
 {
   "status": 200,
   "schema": {
-    "board": "null",
-    "boardNote": "null",
+    "board": {
+      "file": "string",
+      "focus": "number",
+      "gen": "number",
+      "groups": [
+        {
+          "cards": [
+            {
+              "args": "string",
+              "dpGuess": "boolean",
+              "failure": "null",
+              "heightDp": "number",
+              "imageUrl": "string",
+              "index": "number",
+              "isFocus": "boolean",
+              "label": "string",
+              "ok": "boolean",
+              "previewId": "string",
+              "rendered": "boolean",
+              "specs": [
+                {
+                  "kind": "string",
+                  "text": "string"
+                }
+              ],
+              "stale": "boolean",
+              "title": "string",
+              "treeUrl": "string",
+              "widthDp": "number"
+            }
+          ],
+          "failed": "number",
+          "name": "string"
+        }
+      ]
+    },
+    "boardNote": {
+      "a": {
+        "file": "string",
+        "n": "number"
+      },
+      "t": "string"
+    },
     "buildPending": "boolean",
     "busy": "boolean",
     "choice": "null",
@@ -19,7 +60,7 @@
       "previewId": "string",
       "pxPerDp": "number",
       "size": "null",
-      "streamUrl": "null",
+      "streamUrl": "string",
       "treeUrl": "string"
     },
     "header": {
@@ -104,8 +145,8 @@
   "example": {
     "version": 0,
     "header": {
-      "title": "Card0-0",
-      "tabTitle": "<repo-name> · Card0-0",
+      "title": "Cards.kt",
+      "tabTitle": "<repo-name> · Cards.kt",
       "repoPrefix": "<tmp>/",
       "repoLeaf": "<repo-name>",
       "module": "app",
@@ -115,14 +156,78 @@
       "sourceSet": null
     },
     "screen": "focus",
-    "board": null,
+    "board": {
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "gen": 4,
+      "focus": 0,
+      "groups": [
+        {
+          "name": "Card0",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 0,
+              "previewId": "Card0",
+              "label": "",
+              "title": "demo.CardsKt.Card0\nCard0",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": true,
+              "imageUrl": "/Card0-0.png?t=<t>",
+              "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        },
+        {
+          "name": "Card1",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 1,
+              "previewId": "Card1",
+              "label": "",
+              "title": "demo.CardsKt.Card1\nCard1",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": false,
+              "imageUrl": "/Card1-0.png?t=<t>",
+              "treeUrl": "/Card1-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        }
+      ]
+    },
     "focus": {
       "previewId": "Card0",
-      "interactive": false,
-      "fromBoard": false,
+      "interactive": true,
+      "fromBoard": true,
       "imageUrl": "/Card0-0.png?t=<t>",
       "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
-      "streamUrl": null,
+      "streamUrl": "/stream?t=<t>",
       "pxPerDp": 2.625,
       "name": null,
       "fn": "Card0",
@@ -132,7 +237,13 @@
     "stale": [],
     "busy": false,
     "buildPending": false,
-    "boardNote": null,
+    "boardNote": {
+      "t": "status.board",
+      "a": {
+        "n": 2,
+        "file": "Cards.kt"
+      }
+    },
     "who": {
       "t": "status.who",
       "a": {
@@ -202,7 +313,7 @@
         "dim": "",
         "module": null,
         "title": "app/src/main/kotlin/demo/Cards.kt",
-        "active": false,
+        "active": true,
         "stale": false,
         "sourceSet": null
       },
@@ -213,16 +324,6 @@
         "module": null,
         "title": "app/src/main/kotlin/demo/Other.kt",
         "active": false,
-        "stale": false,
-        "sourceSet": null
-      },
-      {
-        "key": "demo.CardsKt.Card0",
-        "name": "Card0",
-        "dim": "",
-        "module": null,
-        "title": "demo.CardsKt.Card0",
-        "active": true,
         "stale": false,
         "sourceSet": null
       }

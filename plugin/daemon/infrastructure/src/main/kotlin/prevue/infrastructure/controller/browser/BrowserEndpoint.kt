@@ -151,7 +151,6 @@ public class BrowserEndpoint @Inject internal constructor(
     private val fireAndForget: Map<String, (Map<String, Any?>) -> Unit> = mapOf(
         "focus" to { b -> input.enterFocus(b.int("index")) },
         "exit" to { _ -> input.exitFocus() },
-        "interactive" to { b -> input.setSingleInteractive(b["on"] == true) },
         "touch" to { b -> input.touch(b.string("type") ?: "tap", b.int("x"), b.int("y")) },
         "wheel" to { b -> input.wheel(b.int("x"), b.int("y"), b.float("dx"), b.float("dy")) },
         "cancel" to { _ -> pointing.cancelChoice() },

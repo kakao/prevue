@@ -76,6 +76,8 @@ class Status @Inject internal constructor(
 
     fun activeTab(): Tab? = ws.now.activeTabOrNull()
 
+    fun interactive(): Boolean = ws.now.interactive
+
     fun module(): ModuleInfo = shownModule(ws.now)
 
     fun lastRenderMs(): Long = ws.now.lastRenderMs
@@ -151,7 +153,7 @@ class Status @Inject internal constructor(
         val s = ws.now
         s.lastCompileFailure?.takeIf { AwaitPolicy.failureApplies(it.compile.files, want, s.lastCompileFailureAtMs, s.openedAtMs) }
             ?.let { return WaitResult.CompileFailed(it, waited, s.stale) }
-        s.activeTabOrNull()?.takeIf { it.vacant != null && s.board == null && it.file?.canonicalFile in want }?.let { t ->
+        s.activeTabOrNull()?.takeIf { it.vacant != null && s.board == null && it.file.canonicalFile in want }?.let { t ->
             s.stale[StaleReasons.COMPILE]?.let { error("${it.what.text} — ${it.message?.text.orEmpty()}") }
             throw VacantTab(t)
         }

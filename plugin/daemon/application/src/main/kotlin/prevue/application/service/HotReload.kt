@@ -121,7 +121,7 @@ class HotReload(
 
     private fun vacateIfPreviewLost(ed: WorkspaceEditor, files: List<File>, seen: Map<String, Long>): Boolean {
         val tab = ws.now.activeTabOrNull() ?: return false
-        val why = tab.file?.takeIf { f -> files.any { it.canonicalPath == f.canonicalPath } }
+        val why = tab.file.takeIf { f -> files.any { it.canonicalPath == f.canonicalPath } }
             ?.let(tabs::vacancy) ?: return false
         ed.markHiddenTabsStale()
         tabs.markVacant(ed, tab, why)
@@ -147,7 +147,7 @@ class HotReload(
             engine.codeChanged()
             ed.markHiddenTabsStale()
         } else ed.markCompiled(valuesSeen)
-        val f = tab.file ?: return ReloadResult.NothingShown
+        val f = tab.file
         if (tabs.vacancy(f) != null) return ReloadResult.NothingShown
         val shown = tabs.activateOrVacant(ed, tab.key, by, change?.mtimeMs ?: System.currentTimeMillis())
         return shown?.let(ReloadResult::Rendered) ?: ReloadResult.NothingShown

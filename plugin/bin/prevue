@@ -420,7 +420,7 @@ print(json.dumps(d, ensure_ascii=False))
 # start --show 의 준비 판정. status 를 읽어 다 그려졌으면 prevue wait 와 같은 모양을 찍고 0, 아니면 1.
 SHOW_READY='
 import json, sys
-st = json.load(sys.stdin); b = st.get("board")
+st = json.load(sys.stdin); b = None if st.get("interactive") else st.get("board")
 opened = {} if len(sys.argv) < 3 or sys.argv[2] != "false" else {"opened": False}
 if b:
     cards = b.get("cards") or []
@@ -985,7 +985,7 @@ except OSError:
     mark_recent; open_viewer
     # --show를 줬으면 그림이 나올 때까지 기다려서 돌려준다 — 에이전트가 start 한 번으로 PNG 경로를 얻게(FR-11).
     # status 의 preview 는 렌더를 **시작**할 때 찬다. 그걸 기준으로 돌아가면 카드가 전부 image:null 인 보드를 성공으로 받는다.
-    # 보드면 카드 전부가 그 세대로 그려질 때까지, FQN 단건이면 첫 렌더가 끝나 last 가 찰 때까지 기다린다.
+    # 보드면 카드 전부가 그 세대로 그려질 때까지, FQN 이면 그 카드로 들어가 조작 중이라(나머지는 옆 채우기가 뒤에 그린다) 첫 렌더가 끝나 last 가 찰 때까지 기다린다.
     # /wait 를 부르지 않는다 — 그것은 저장한 파일의 결과를 기다리고, --no-watch 면 거절된다. 여기서는 연 보드가 다 그려지길 본다.
     if [ -n "$SHOW" ]; then
       READY=""

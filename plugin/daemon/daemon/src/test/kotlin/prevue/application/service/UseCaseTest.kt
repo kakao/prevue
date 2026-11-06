@@ -1,5 +1,11 @@
 package prevue.application.service
 
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertNotNull
+import prevue.application.domain.model.Keyed
+import prevue.application.domain.model.PhraseException
+import prevue.application.domain.model.TabMove
 import app.cash.turbine.test
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
@@ -220,18 +226,90 @@ class UseCaseTest {
         uc.workspace.awaitBoardFilled()
     }
 
-    // FQN 경로는 애노테이션을 읽지 않아 `widthDp` · `device`를 몰랐다. 소스 파일을 찾아 파일 탭과 같은 spec을 쓴다.
-    @Test fun `FQN으로 연 한 장도 애노테이션 인자로 그리고 저장하면 다시 읽는다`() {
+    // D-155 ①② — FQN은 보드 없는 단건이 아니라 그 파일 보드 위의 그 카드다. 들어가면 늘 조작이고, 응답은 그 카드 한 장만 그린다.
+    @Test fun `FQN은 그 파일의 보드를 깔고 그 카드로 조작에 들어간다`() {
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card1", "@Preview(widthDp = 480)\nfun Card1"))
         val uc = fx.graph()
-        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
-        assertEquals("480", uc.workspace.now.current!!.params["widthDp"])
+        val r = runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
+        val s = uc.workspace.now
+        assertEquals(TabMove.OPENED, r.tab)
+        assertEquals(fx.file.canonicalPath, s.activeTab)
+        assertEquals(fx.file.canonicalFile, s.activeTabOrNull()!!.file)
+        assertEquals(1, s.board!!.focus)
+        assertTrue(s.interactive)
+        assertNotNull(s.focusAttachedAt)
+        assertEquals("480", s.current!!.params["widthDp"])
+        assertEquals(listOf("Card1"), fx.renderer.shown.map { it.previewId }.filterNot { it.endsWith("-warm") })
 
         fx.file.writeText(fx.file.readText().replace("widthDp = 480", "widthDp = 600"))
         fx.renderer.shown.clear()
         uc.save()
         assertEquals("600", fx.renderer.shown.first().params["widthDp"])
-        assertEquals(null, uc.workspace.now.activeTabOrNull()!!.file)
+    }
+
+    @Test fun `이미 보는 파일의 FQN은 보드를 다시 열지 않고 그 카드로 들어간다`() {
+        val uc = opened()
+        val before = uc.workspace.now.board!!
+        val r = runBlocking { uc.tabs.openPreview("demo.CardsKt.Card2", null, emptyMap(), "test") }
+        val b = uc.workspace.now.board!!
+        assertEquals(TabMove.SWITCHED, r.tab)
+        assertSame(before.epoch, b.epoch)
+        assertEquals(2, b.focus)
+        assertTrue(uc.workspace.now.interactive)
+        assertTrue(b.cards.all { it.result != null })
+    }
+
+    // 저장을 아직 반영하지 않은 보드에는 그 함수가 없다 — 지금 보드에서 고르면 "0개"로 거절했다.
+    @Test fun `보드에 아직 없는 함수의 FQN은 보드를 다시 읽어 그 카드로 들어간다`() {
+        val uc = opened()
+        fx.file.appendText("@Preview\nfun Card9() {}\n")
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card9", null, emptyMap(), "test") }
+        assertEquals("Card9", uc.workspace.now.board!!.focusCard.spec.functionName)
+        assertTrue(uc.workspace.now.interactive)
+    }
+
+    // 파일 이름이 파사드와 다르면 프리뷰 색인으로 찾는다 — 색인을 다 짓기 전이면 글자로 훑는다.
+    @Test fun `JvmName 파일의 FQN도 그 파일 보드로 들어간다`() {
+        val named = File(fx.srcRoot, "demo/Named.kt").apply {
+            writeText("@file:JvmName(\"Shelf\")\npackage demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Shelf0() {}\n")
+        }
+        val uc = fx.graph()
+        runBlocking { uc.tabs.openPreview("demo.Shelf.Shelf0", null, emptyMap(), "test") }
+        assertEquals(named.canonicalPath, uc.workspace.now.activeTab)
+        assertTrue(uc.workspace.now.interactive)
+    }
+
+    @Test fun `숨은 탭의 FQN은 그 보드를 되살려 그 카드로 들어간다`() {
+        val uc = opened()
+        val other = fx.previewFile("NewsCard")
+        runBlocking { uc.tabs.openPreview(other.path, null, emptyMap(), "test") }
+        uc.workspace.awaitBoardFilled()
+        val r = runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
+        val s = uc.workspace.now
+        assertEquals(TabMove.SWITCHED, r.tab)
+        assertEquals(fx.file.canonicalPath, s.activeTab)
+        assertEquals(1, s.board!!.focus)
+        assertTrue(s.interactive)
+        assertEquals(2, s.tabs.size)
+    }
+
+    @Test fun `FQN의 index는 그 함수의 카드 중 몇째다 — 제공자 값으로 나뉜 카드도 센다`() {
+        File(fx.srcRoot, "demo/Names.kt").writeText("package demo\nclass Names : PreviewParameterProvider<String> { override val values = sequenceOf(\"a\", \"b\") }\n")
+        fx.file.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Card0() {}\n@Preview\nfun Card1(@PreviewParameter(Names::class) n: String) {}\n")
+        fx.renderer.providerValues["demo.Names"] = 2
+        val uc = fx.graph()
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", 1, emptyMap(), "test") }
+        val b = uc.workspace.now.board!!
+        assertEquals(2, b.focus)
+        assertEquals(1, b.focusCard.spec.paramIndex)
+    }
+
+    @Test fun `소스를 못 찾은 FQN은 보드 없는 한 장으로 그리지 않고 파일 경로를 권한다`() {
+        val uc = fx.graph()
+        val e = runCatching { runBlocking { uc.tabs.openPreview("demo.NowhereKt.Card0", null, emptyMap(), "test") } }.exceptionOrNull()
+        assertEquals("tabs.fqnNoSource", ((e as PhraseException).phrase as Keyed).key)
+        assertNull(uc.workspace.now.board)
+        assertTrue(uc.workspace.now.tabs.isEmpty())
     }
 
     // 제공자의 값은 다른 파일(샘플 데이터)에서 오기 쉽다 — 제공자 파일이 아니라 어느 파일의 저장이든 개수를 다시 센다.
@@ -343,13 +421,12 @@ class UseCaseTest {
         assertEquals(fx.file.canonicalFile, (w as WaitResult.BoardDone).file.canonicalFile)
     }
 
-    @Test fun `FQN 단건의 기다림은 그 한 장으로 답한다`() {
+    @Test fun `FQN으로 들어간 뒤의 기다림은 그 파일 보드로 답한다`() {
         val uc = fx.graph()
         runBlocking { uc.tabs.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
         uc.save()
         val w = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
-        assertTrue(w is WaitResult.Single, "$w")
-        assertEquals(uc.workspace.now.lastResult, (w as WaitResult.Single).last)
+        assertEquals(fx.file.canonicalFile, (w as WaitResult.BoardDone).file.canonicalFile)
     }
 
     // ⑤ 컴파일 시각을 먼저 적으면 await가 옛 세대의 카드를 보고 "다 그렸다"고 답한다.
@@ -489,11 +566,6 @@ class UseCaseTest {
         val uc = opened()
         val ws = uc.workspace
         assertEquals(ws.now.board!!.cards.map { it.spec.previewId }.toSet(), ws.now.keepIds())
-
-        // FQN으로 연 단건은 보드가 없다 — 화면이 든 주소는 current 하나뿐이다.
-        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
-        assertEquals(null, ws.now.board)
-        assertEquals(setOf(ws.now.current!!.previewId), ws.now.keepIds())
     }
 
     // ⑧ 산출물은 live의 캐시다. 끝나지 않는 애니메이션이면 정착이 영영 안 와, 정착에 기대면 읽는 쪽이 터치 전 그림을 받는다(2026-10-02).

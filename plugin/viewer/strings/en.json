@@ -238,6 +238,7 @@
   "status.who": "{by} · {time} · {what}",
   "tabs.close": "Close tab",
   "tabs.evicted": "Closed the {tab} tab you hadn't looked at in a while",
+  "tabs.fqnNoSource": "Couldn't find the source file of {target} (only top-level @Preview functions are found) — show the file path instead",
   "tabs.noFile": "No such file: {target}",
   "tabs.noIndex": "{file} has {n} Previews. There's no index {index}",
   "tabs.noIndex.one": "{file} has {n} Preview. There's no index {index}",

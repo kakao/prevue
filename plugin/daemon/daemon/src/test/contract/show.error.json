@@ -6,6 +6,6 @@
   },
   "example": {
     "ok": false,
-    "error": "Not a file and not an FQN: /없는/파일"
+    "error": "No such file: /없는/파일"
   }
 }
