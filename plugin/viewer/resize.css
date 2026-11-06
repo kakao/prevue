@@ -22,7 +22,7 @@ body.resizing-ui main { padding-bottom: 0; }
 @keyframes workspace-wait { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .workspace-spinner { animation: none; } }
 .resize-scene .stage { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: 0;
-         box-shadow: 0 0 0 2px var(--live), var(--elevation-2); }
+         box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 .resize-scene .ly { position: absolute; left: 0; top: 0; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 /* 그림 시작 — 기기 몸체(틀 · 버튼 · 카메라 · 접는 선). 실제 기기의 모양이라 날값 린트가 색만 본다(D-97) */
 .resize-scene .veil { position: absolute; inset: 0; background: var(--device-veil); pointer-events: none; }

@@ -1677,7 +1677,7 @@ function Rn({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 	}
 	function ie() {
 		if (f || p) {
-			v++, f = !1, p = h = g = _ = null, m = null, y = null, b = x = !1, C?.cancel(), C = null, O(!1), i.append(r), D.enable(!1), w.clear(), T.clear(), e.classList.remove("measuring"), t.style.transform = "", document.body.classList.remove("resizing-ui"), i.classList.remove("resize-wrap"), r.classList.remove("resize-hidden"), n.onload = null;
+			v++, f = !1, p = h = g = _ = null, m = null, y = null, b = x = !1, C?.cancel(), C = null, O(!1), i.append(r), D.enable(!1), w.clear(), T.clear(), e.classList.remove("measuring"), t.style.transform = "", t.style.removeProperty("--z"), document.body.classList.remove("resizing-ui"), i.classList.remove("resize-wrap"), r.classList.remove("resize-hidden"), n.onload = null;
 			for (let e of [
 				"left",
 				"top",
@@ -1690,7 +1690,7 @@ function Rn({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 	function ae() {
 		if (!d) return;
 		let e = c(), n = d.cx - d.w / 2, r = d.y;
-		t.style.transform = `translate(${e.x + (1 - e.z) * n}px, ${e.y + (1 - e.z) * r}px) scale(${e.z})`;
+		t.style.transform = `translate(${e.x + (1 - e.z) * n}px, ${e.y + (1 - e.z) * r}px) scale(${e.z})`, t.style.setProperty("--z", String(e.z));
 	}
 	return {
 		update: re,
