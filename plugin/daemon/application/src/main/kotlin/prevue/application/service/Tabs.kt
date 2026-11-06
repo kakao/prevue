@@ -65,7 +65,7 @@ class Tabs @Inject internal constructor(
 
     suspend fun trackFiles(created: List<File>, deleted: List<File>, by: String = "watch"): Unit = ws.exclusive { ed ->
         val tab = ws.now.activeTabOrNull() ?: return@exclusive
-        val f = tab.file?.canonicalPath ?: return@exclusive
+        val f = tab.file.canonicalPath
         fun has(files: List<File>) = files.any { it.canonicalPath == f }
         when {
             has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
@@ -89,6 +89,8 @@ class Tabs @Inject internal constructor(
     internal class Pick(val index: Int? = null, private val fqn: String? = null) {
         val interactive: Boolean get() = fqn != null
 
+        fun within(specs: List<PreviewSpec>): Boolean = specs.any { it.fqn == fqn }
+
         fun of(specs: List<PreviewSpec>, file: String): Int? {
             if (fqn == null) return index?.also { ensure(it in specs.indices) { noIndex(file, specs.size, it) } }
             val mine = specs.indices.filter { specs[it].fqn == fqn }
@@ -108,15 +110,9 @@ class Tabs @Inject internal constructor(
     }
 
     private suspend fun enter(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long?): ShowResult {
-        val b = ws.now.board?.takeIf { pick.interactive && key == ws.now.activeTab && params.isEmpty() }
-            ?: return activate(ed, key, pick, params, by, since)
-        val i = pick.of(b.cards.map { it.spec }, b.file.name) ?: b.focus
-        val id = b.cards[i].spec.previewId
-        ed.update { s ->
-            val kept = s.resize?.takeIf { s.interactive && it.previewId == id }
-            s.copy(board = s.board?.focusOn(i), focusAttachedAt = null, interactive = true, resize = kept)
-        }
-        return boards.attach(ed, b.cards[i].spec, by, since)
+        val specs = ws.now.board?.takeIf { pick.interactive && key == ws.now.activeTab && params.isEmpty() }?.cards?.map { it.spec }
+        val i = specs?.takeIf(pick::within)?.let { pick.of(it, key) } ?: return activate(ed, key, pick, params, by, since)
+        return boards.enter(ed, i, by, since = since)
     }
 
     internal suspend fun activate(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
@@ -134,7 +130,7 @@ class Tabs @Inject internal constructor(
     }
 
     private fun vacateIfLost(ed: WorkspaceEditor, tab: Tab, restoring: Boolean) {
-        val f = tab.file ?: return
+        val f = tab.file
         val why = if (restoring) Vacancy.DELETED.takeIf { !sources.has(f) } else vacancy(f)
         why?.let { vacate(ed, tab, it) }
     }
@@ -151,17 +147,14 @@ class Tabs @Inject internal constructor(
         val board = Board.open(file, all.map { it.copy(params = it.params + o.kept) }, i)
         val shown = board.focusCard.spec
         val tab = Tab(o.key, board.file, o.kept, null, seenAtMs = ws.nowMs())
-        ed.update { s ->
-            s.withTab(tab).copy(board = board, current = shown, renderModules = s.renderModules + ws.graph.ownerOf(file),
-                interactive = o.pick.interactive, focusAttachedAt = null)
-        }
+        ed.update { s -> s.withTab(tab).copy(board = board, current = shown, renderModules = s.renderModules + ws.graph.ownerOf(file)) }
         compiled?.let { (batch, t) -> recordOpenCompile(ed, batch, t, shown, by) }
-        return showFocus(ed, shown, o.pick.interactive, by, since)
+        return showFocus(ed, board, o.pick.interactive, by, since)
     }
 
-    private suspend fun showFocus(ed: WorkspaceEditor, shown: PreviewSpec, interactive: Boolean, by: String, since: Long?): ShowResult {
-        if (interactive) return boards.attach(ed, shown, by, since)
-        val r = live.show(ed, shown, by, since)
+    private suspend fun showFocus(ed: WorkspaceEditor, b: Board, interactive: Boolean, by: String, since: Long?): ShowResult {
+        if (interactive) return boards.enter(ed, b.focus, by, since = since)
+        val r = live.show(ed, b.focusCard.spec, by, since)
         live.recordFocus(ed, r.shot)
         boards.fill(by, r.startedAtMs)
         return r
@@ -175,9 +168,9 @@ class Tabs @Inject internal constructor(
         val at = ws.nowMs()
         ed.update {
             it.withTab(tab.copy(board = null, stale = false, seenAtMs = at))
-                .copy(board = b, current = b.focusCard.spec, openedAtMs = at, interactive = pick.interactive, focusAttachedAt = null)
+                .copy(board = b, current = b.focusCard.spec, openedAtMs = at)
         }
-        return showFocus(ed, b.focusCard.spec, pick.interactive, by, since)
+        return showFocus(ed, b, pick.interactive, by, since)
     }
 
     private suspend fun compileBeforeOpen(ed: WorkspaceEditor, key: String, by: String): Pair<StaleCallers.Batch, Long>? {
@@ -283,7 +276,8 @@ class Tabs @Inject internal constructor(
         val facade = fqn.substringBeforeLast('.').substringAfterLast('.')
         val fn = fqn.substringAfterLast('.')
         val named = sources.sourceFiles().asSequence().filter { it.nameWithoutExtension.replaceFirstChar(Char::uppercase) + "Kt" == facade }
-        val listed = catalog.list().orEmpty().asSequence().filter { fn in it.functions }.map { it.file }
+        val listed = catalog.list()?.asSequence()?.filter { fn in it.functions }?.map { it.file }
+            ?: sources.sourceFiles().asSequence().filter { sources.read(it)?.contains("fun $fn") == true }
         return (named + listed).firstOrNull { f -> previews.inFile(f).any { it.fqn == fqn } }
     }
 }

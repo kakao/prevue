@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "schema": {
+    "error": "string",
+    "ok": "boolean"
+  },
+  "example": {
+    "ok": false,
+    "error": "보드가 없다 — 파일 경로로 show 한다"
+  }
+}

@@ -23,7 +23,7 @@ internal class CliTabs(
     suspend fun status(): StatusView { tabs.catchUp("status"); return status.read() }
 
     suspend fun show(target: String, index: Int?, params: Map<String, String>, by: String): Pair<ShowResult, BoardView?> =
-        tabs.openPreview(target, index, params, by) to status.board()?.takeIf { File(target).isFile }
+        tabs.openPreview(target, index, params, by) to status.board()?.takeUnless { status.interactive() }
 
     suspend fun close(target: String, by: String): CloseResult = tabs.closeTab(target, by)
 

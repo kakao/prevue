@@ -259,6 +259,26 @@ class UseCaseTest {
         assertTrue(b.cards.all { it.result != null })
     }
 
+    // 저장을 아직 반영하지 않은 보드에는 그 함수가 없다 — 지금 보드에서 고르면 "0개"로 거절했다.
+    @Test fun `보드에 아직 없는 함수의 FQN은 보드를 다시 읽어 그 카드로 들어간다`() {
+        val uc = opened()
+        fx.file.appendText("@Preview\nfun Card9() {}\n")
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card9", null, emptyMap(), "test") }
+        assertEquals("Card9", uc.workspace.now.board!!.focusCard.spec.functionName)
+        assertTrue(uc.workspace.now.interactive)
+    }
+
+    // 파일 이름이 파사드와 다르면 프리뷰 색인으로 찾는다 — 색인을 다 짓기 전이면 글자로 훑는다.
+    @Test fun `JvmName 파일의 FQN도 그 파일 보드로 들어간다`() {
+        val named = File(fx.srcRoot, "demo/Named.kt").apply {
+            writeText("@file:JvmName(\"Shelf\")\npackage demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Shelf0() {}\n")
+        }
+        val uc = fx.graph()
+        runBlocking { uc.tabs.openPreview("demo.Shelf.Shelf0", null, emptyMap(), "test") }
+        assertEquals(named.canonicalPath, uc.workspace.now.activeTab)
+        assertTrue(uc.workspace.now.interactive)
+    }
+
     @Test fun `숨은 탭의 FQN은 그 보드를 되살려 그 카드로 들어간다`() {
         val uc = opened()
         val other = fx.previewFile("NewsCard")

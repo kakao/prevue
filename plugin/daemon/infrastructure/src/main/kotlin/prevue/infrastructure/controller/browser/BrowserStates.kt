@@ -76,7 +76,7 @@ internal object BrowserStates {
     }
 
     private fun vacantOf(activeTab: TabView?, screen: BrowserState.Screen): Phrase? =
-        activeTab?.vacant?.takeIf { screen == BrowserState.Screen.VACANT }?.let { vacantText(activeTab.file?.name ?: activeTab.key, it) }
+        activeTab?.vacant?.takeIf { screen == BrowserState.Screen.VACANT }?.let { vacantText(activeTab.file.name, it) }
 
     private fun screenOf(now: Status, activeTab: TabView?): BrowserState.Screen = when {
         now.board != null && now.interactive -> BrowserState.Screen.FOCUS
@@ -171,14 +171,14 @@ internal object BrowserStates {
         params["name"] to (if (paramCount > 1) "$fn · ${paramLabel ?: "#$paramIndex"}" else fn)
 
     private fun tabs(views: List<TabView>, repo: String): List<TabChip> {
-        fun base(t: TabView) = t.file?.nameWithoutExtension ?: t.key
+        fun base(t: TabView) = t.file.nameWithoutExtension
         val twins = views.groupingBy(::base).eachCount()
         return views.map { t ->
             TabChip(
                 key = t.key, name = base(t),
                 dim = "",
                 module = t.module.takeIf { (twins[base(t)] ?: 0) > 1 && it.isNotBlank() }?.removePrefix(":"),
-                title = t.file?.absolutePath?.removePrefix(repo.trimEnd('/') + "/") ?: t.key,
+                title = t.file.absolutePath.removePrefix(repo.trimEnd('/') + "/"),
                 active = t.active, stale = t.stale, sourceSet = t.sourceSet,
             )
         }

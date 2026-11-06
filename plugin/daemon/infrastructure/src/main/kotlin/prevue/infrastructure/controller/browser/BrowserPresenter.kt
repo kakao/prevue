@@ -98,7 +98,7 @@ internal class BrowserPresenter(
         }
     }
 
-    private fun tabName(tab: Tab) = tab.file?.name ?: tab.key
+    private fun tabName(tab: Tab) = tab.file.name
 
     fun why(e: Exception): Phrase = (e as? PhraseException)?.phrase ?: Verbatim(e.toString())
 

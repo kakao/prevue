@@ -198,22 +198,31 @@ class Boards(
     }
 
     private suspend fun switchFocus(ed: WorkspaceEditor, index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult {
-        val b = ws.now.board ?: error("보드가 없다 — 파일 경로로 show 한다")
-        require(index in b.cards.indices) { "카드 $index 없음 — ${b.cards.size}장" }
         require(on || size == null) { "크기는 인터랙티브 카드에만 준다 — --on과 함께" }
-        val id = b.cards[index].spec.previewId
-        val kept = ws.now.resize?.takeIf { on && size == null && ws.now.interactive && it.previewId == id }
-        val sized = size?.takeIf { on && it != ScreenSize.Original }?.let { Resize(id, it) } ?: kept
-        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = on, resize = sized) }
-        if (!on) {
-            live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
-            fill(by)
-            return FocusResult.Off(index)
-        }
-        return FocusResult.On(index, attach(ed, b.cards[index].spec, by))
+        if (on) return FocusResult.On(index, enter(ed, index, by, size))
+        val b = boardWith(index)
+        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = false, resize = null) }
+        live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
+        fill(by)
+        return FocusResult.Off(index)
     }
 
-    internal suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long? = null): ShowResult {
+    internal suspend fun enter(ed: WorkspaceEditor, index: Int, by: String, size: ScreenSize? = null, since: Long? = null): ShowResult {
+        val b = boardWith(index)
+        val id = b.cards[index].spec.previewId
+        val kept = ws.now.resize?.takeIf { size == null && ws.now.interactive && it.previewId == id }
+        val sized = size?.takeIf { it != ScreenSize.Original }?.let { Resize(id, it) } ?: kept
+        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, resize = sized) }
+        return attach(ed, b.cards[index].spec, by, since)
+    }
+
+    private fun boardWith(index: Int): Board {
+        val b = ws.now.board ?: error("보드가 없다 — 파일 경로로 show 한다")
+        require(index in b.cards.indices) { "카드 $index 없음 — ${b.cards.size}장" }
+        return b
+    }
+
+    private suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long?): ShowResult {
         val r = try {
             live.show(ed, p, by, since)
         } finally {

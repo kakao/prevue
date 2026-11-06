@@ -45,8 +45,7 @@ data class WorkspaceState(
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }
 
     fun tabViews(graph: ModuleGraph): List<TabView> = tabs.map {
-        TabView(it.key, it.file, it.file?.let(graph::ownerOf).orEmpty(), it.key == activeTab, it.stale, it.vacant,
-            it.file?.let(graph::sourceSetOf))
+        TabView(it.key, it.file, graph.ownerOf(it.file), it.key == activeTab, it.stale, it.vacant, graph.sourceSetOf(it.file))
     }
 
     fun keepIds(): Set<String> =

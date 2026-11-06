@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
 import prevue.application.service.Boards
 import prevue.application.service.Live
+import prevue.application.service.Status
 import prevue.application.domain.model.ScreenSize
 import prevue.application.port.PrevueDispatchers
 
@@ -18,6 +19,7 @@ internal class BrowserInput(
     private val core: BrowserPresenter,
     private val boards: Boards,
     private val live: Live,
+    private val status: Status,
     dispatchers: PrevueDispatchers,
 ) {
     private val sizes = Channel<ScreenSize>(Channel.CONFLATED)
@@ -39,6 +41,7 @@ internal class BrowserInput(
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
     private suspend fun resized(s: ScreenSize) {
+        if (status.board() == null) return
         live.resize(s, by = "viewer")
     }
 
