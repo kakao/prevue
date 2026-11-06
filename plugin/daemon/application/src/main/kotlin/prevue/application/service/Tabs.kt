@@ -78,11 +78,11 @@ class Tabs(
         if (ws.now.current == null) null else live.catchUp(ed, by)
     }
 
-    fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
+    internal fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
-    fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
+    internal fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
 
-    suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
+    internal suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
         val tab = find(key)
         val wasActive = key == ws.now.activeTab
         val before = (if (wasActive) ws.now.board else null) ?: tab?.board
@@ -189,7 +189,7 @@ class Tabs(
         }
     }
 
-    fun drop(ed: WorkspaceEditor, t: Tab) {
+    internal fun drop(ed: WorkspaceEditor, t: Tab) {
         ed.update { s ->
             val mine = s.selectionTab == t.key
             val left = s.copy(
@@ -202,7 +202,7 @@ class Tabs(
         }
     }
 
-    suspend fun reread(ed: WorkspaceEditor, p: PreviewSpec): PreviewSpec {
+    internal suspend fun reread(ed: WorkspaceEditor, p: PreviewSpec): PreviewSpec {
         ws.now.board?.let { return ws.now.sized(rereadBoard(ed, it)?.focusCard?.spec ?: p) }
         val tab = ws.now.activeTabOrNull()?.takeIf { it.spec != null } ?: return p
         val found = fqnMatches(tab.key).firstOrNull { it.previewId == p.previewId } ?: return ws.now.sized(p)
@@ -218,15 +218,15 @@ class Tabs(
         return ed.updateBoard(b.epoch) { it.reread(found) }
     }
 
-    fun vacancy(f: File): Vacancy? = when {
+    internal fun vacancy(f: File): Vacancy? = when {
         !sources.has(f) -> Vacancy.DELETED
         previews.inFile(f).isEmpty() -> Vacancy.NO_PREVIEWS
         else -> null
     }
 
-    fun vacate(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Nothing = throw VacantTab(markVacant(ed, tab, why))
+    internal fun vacate(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Nothing = throw VacantTab(markVacant(ed, tab, why))
 
-    fun markVacant(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Tab {
+    internal fun markVacant(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Tab {
         val s = ws.now
         val kept = s.board?.takeIf { tab.key == s.activeTab } ?: tab.board
         val t = tab.copy(board = kept, stale = true, vacant = why, seenAtMs = ws.nowMs())

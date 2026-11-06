@@ -148,7 +148,7 @@ class TabsTest {
         val r = runBlocking { uc.tabs.closeTab(a.path, "test") }
         assertEquals(c.canonicalPath, r.active)                               // 직전에 보던 탭
         assertEquals(c.canonicalFile, ws.now.board!!.file)
-        runBlocking { uc.tabs.closeTab(b.path, "test") }                           // 숨은 탭은 닫아도 화면이 그대로다
+        runBlocking { uc.tabs.closeTab(b.path, "test") }                      // 숨은 탭은 닫아도 화면이 그대로다
         assertEquals(c.canonicalFile, ws.now.board!!.file)
         runBlocking { uc.tabs.closeTab(c.path, "test") }
         assertNull(ws.now.board); assertNull(ws.now.current); assertNull(ws.now.activeTab)
