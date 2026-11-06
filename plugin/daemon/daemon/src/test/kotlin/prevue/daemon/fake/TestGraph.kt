@@ -114,7 +114,6 @@ internal class TestPorts(
     private val values: SourceWatcher? = null,
     private val memory: MemoryMeter = MemoryMeter { null },
     private val dispatchers: PrevueDispatchers = realDispatchers,
-    private val engineLog: EngineLog = EngineLog {},
 ) {
     @Provides fun renderer(): PreviewRenderer = renderer
     @Provides fun sessions(): LiveSessionFactory = sessions
@@ -127,7 +126,7 @@ internal class TestPorts(
     @Provides @ValueFiles fun values(): SourceWatcher? = values
     @Provides fun memory(): MemoryMeter = memory
     @Provides fun dispatchers(): PrevueDispatchers = dispatchers
-    @Provides fun engineLog(): EngineLog = engineLog
+    @Provides fun engineLog(): EngineLog = EngineLog { System.err.println("[prevue] $it") }
     @Provides fun monotonicClock(): MonotonicClock = MonotonicClock.SYSTEM
 }
 
