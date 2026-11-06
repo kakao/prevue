@@ -2,9 +2,13 @@ package prevue.daemon
 
 import java.io.File
 
-/** 본체 소스의 자리 — 안쪽 :application, 바깥 :infrastructure, 조립 :daemon(D-148). 테스트는 plugin/daemon/daemon 에서 돌아 "." 이 :daemon 이다. 규칙 테스트는 모두 여기서 읽는다. */
+/** 본체 소스의 자리 — 층 모듈(`gradle.properties` 의 `prevue.layers`)과 조립 :daemon(D-148). 테스트는 plugin/daemon/daemon 에서 돌아 "." 이 :daemon 이다. 규칙 테스트는 모두 여기서 읽는다. */
 object Sources {
-    private val modules: List<String> = listOf("../application", "../infrastructure", ".")
+    /** 층 패키지 `prevue.<층>`(D-148). 모듈 폴더와 이름이 같고, 목록은 settings · 빌드 · 린트와 함께 `prevue.layers` 한 줄에서 읽는다. `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 쓴다. */
+    val LAYERS: List<String> = File("../gradle.properties").readLines()
+        .single { it.startsWith("prevue.layers=") }.substringAfter("=").split(",").map { it.trim() }
+
+    private val modules: List<String> = LAYERS.map { "../$it" } + "."
     val kotlinRoots: List<File> = modules.map { File(it, "src/main/kotlin") }
     val javaRoots: List<File> = modules.map { File(it, "src/main/java") }
 
@@ -21,9 +25,6 @@ object Sources {
     /** 데몬 본체 → 내용. 층은 `prevue/<층>/…` 에서 `<층>/…`(`application/service/…` · `infrastructure/render/…`), 조립은 `prevue/daemon/…` 에서 그 아래 이름(`Main.kt`)으로 단다. */
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
         .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
-
-    /** 층 패키지 `prevue.<층>`(D-148). `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 이 목록을 쓴다 — 모듈 폴더(위 modules · tools/lint/lint.py 의 MODULES)와 이름이 같다. */
-    val LAYERS: List<String> = listOf("application", "infrastructure")
 
     private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:${LAYERS.joinToString("|")})/))""")
 

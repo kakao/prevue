@@ -21,9 +21,20 @@ import slop  # noqa: E402
 import viewer  # noqa: E402
 
 PLUGIN = "plugin/daemon"
-# 층 모듈의 폴더(plugin/daemon 기준) — 안쪽 :application, 바깥 :infrastructure(D-148).
-# 조립 · 브리지는 :daemon(D-140 · D-148) — 루트(plugin/daemon)에는 빌드 파일만 있다
-MODULES = ("application", "infrastructure")
+
+
+def read_layers(properties):
+    """gradle.properties 본문에서 층 모듈의 폴더(plugin/daemon 기준) — settings · 빌드 · 테스트와 같은 한 줄(prevue.layers)을 읽는다."""
+    for line in properties.splitlines():
+        if line.startswith("prevue.layers="):
+            return tuple(m.strip() for m in line.split("=", 1)[1].split(","))
+    raise ValueError("prevue.layers 가 없다")
+
+
+# 층 모듈의 폴더 — 안쪽 :application, 바깥 :infrastructure(D-148). 조립 · 브리지는 :daemon(D-140 · D-148) — 루트(plugin/daemon)에는 빌드 파일만 있다.
+# lint.sh 는 사용자의 cwd 에서 부른다 — 저장소 루트로 옮기기(main) 전에 읽으므로 이 파일 기준으로 찾는다
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", PLUGIN, "gradle.properties"), encoding="utf-8") as _f:
+    MODULES = read_layers(_f.read())
 # build-logic(D-140)의 convention plugin 도 제품 소스다 — 같은 규칙으로 본다. detekt 만 싣지 않는다(detekt.init.gradle.kts)
 ROOTS = ("plugin/daemon/daemon/src/main/kotlin/", "plugin/daemon/daemon/src/bridge/kotlin/", "plugin/daemon/build-logic/src/main/kotlin/") + tuple(
     "plugin/daemon/%s/src/main/kotlin/" % m for m in MODULES)
@@ -35,10 +46,16 @@ OLD_ROOTS = tuple("plugin/daemon/%s/src/main/kotlin/" % m for m in ("entity", "d
              "plugin/src/main/kotlin/", "plugin/src/bridge/kotlin/", "src/main/kotlin/", "src/bridge/kotlin/")
 # 린트의 빌드 디렉터리 · 실행 기록 — 평소 빌드의 build/classes · .gradle 을 건드리지 않게 init script 에 넘긴다
 LINT_BUILD = "build/lint"
-# 모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<모듈 이름> 으로 둔다 — 이름은 폴더의 끝 칸이다.
-# 소스가 없는 루트의 보고서는 기대하지 않는다
-DETEKT_REPORTS = tuple("%s/%s/daemon/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
-    "%s/%s/%s/reports/detekt/main.xml" % (PLUGIN, LINT_BUILD, m.rsplit("/", 1)[-1]) for m in MODULES)
+
+
+def detekt_reports(modules):
+    """모듈의 빌드 디렉터리는 init script 가 LINT_BUILD/<프로젝트 경로> 로 둔다(`:a:b` → a/b) — 끝 이름이 같은 모듈이 있어도 겹치지 않는다.
+    폴더가 프로젝트 경로를 그대로 따른다(Gradle 기본). 소스가 없는 루트 · 빈 부모의 보고서는 기대하지 않는다"""
+    return tuple("%s/%s/daemon/reports/detekt/%s.xml" % (PLUGIN, LINT_BUILD, s) for s in ("main", "bridge")) + tuple(
+        "%s/%s/%s/reports/detekt/main.xml" % (PLUGIN, LINT_BUILD, m) for m in modules)
+
+
+DETEKT_REPORTS = detekt_reports(MODULES)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
 DETEKT_CONFIG = "tools/lint/detekt.yml"

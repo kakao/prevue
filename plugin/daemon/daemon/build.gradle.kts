@@ -17,7 +17,8 @@ kotlin {
     }
 }
 
-val layers = listOf(":application", ":infrastructure").map { project(it) }
+// 층 목록은 gradle.properties 의 prevue.layers 하나다(settings 의 include 와 같은 줄) — 빠지면 설치본이 실행 때 NoClassDefFoundError 로 죽는다.
+val layers = providers.gradleProperty("prevue.layers").get().split(",").map { project(":" + it.trim().replace("/", ":")) }
 // 아래 jar · 테스트 컴파일이 층의 sourceSets · jar 태스크를 읽는다 — 이름 순서(application · daemon · infrastructure)에 기대지 않고 먼저 구성한다.
 layers.forEach { evaluationDependsOn(it.path) }
 
