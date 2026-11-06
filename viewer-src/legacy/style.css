@@ -103,7 +103,7 @@ body.ws .app { flex-shrink: 0; }
    .bar-l(z 1) 위에 둔다 — 아래에 깔리면 바의 빈 칸이 호버를 먹어 툴팁(FQN)이 뜨지 않았다. */
 .ws-title { position: absolute; left: var(--ws-left, 50%); top: 0; z-index: 1; height: var(--bar-h); max-width: var(--ws-max, 34%); transform: translateX(-50%);
             display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0;
-            pointer-events: auto; cursor: default; transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+            pointer-events: auto; cursor: default; }
 .ws-title > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-name { font: var(--type-label-large); font-weight: var(--weight-semibold); }
 .ws-fn { font: var(--type-label-small); color: var(--on-surface-variant); }
@@ -111,8 +111,10 @@ body.ws .app { flex-shrink: 0; }
 @keyframes push { from { opacity: 0; translate: var(--motion-enter-shift) 0; } }
 @media (prefers-reduced-motion: reduce) { .ws-title, body.ws .back { animation-name: fade; } }
 /* 틀 모프로 여닫을 때는 패널과 한 묶음이다(workspace/focus.ts decorations, D-153 ⑧) — 들어갈 때 그림 먼저 도구 뒤, 나갈 때 도구 먼저.
-   !important 라야 도는 push 가 투명을 덮지 못한다. push(medium2)는 모프 70%(MORPH_LEAD) 전에 끝나 그 뒤의 페이드와 겹치지 않는다. */
-:is(.back, .ws-title, .seg).deco-off { opacity: 0 !important; pointer-events: none; }
+   !important 라야 도는 push 가 투명을 덮지 못한다. push(medium2)가 모프 70%(MORPH_LEAD)보다 길어지면 남은 미끄러짐이 페이드와 함께 보일 뿐 튀지는 않는다.
+   누름은 막지 않는다 — 헤더 칸은 자리가 바뀌지 않아, 보이기 전에 그 자리를 누르면 그 칸을 누른 것이다(패널은 칸이 들어오며 바뀐다). */
+:is(.ws-title, .seg) { transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+:is(.back, .ws-title, .seg).deco-off { opacity: 0 !important; }
 @keyframes fade { from { opacity: 0; } }
 
 /* 상태 — 모양이 뜻이다. ✓ 끝(회색) · 도는 표시 그리는 중(회색) · ! 실패(레드) · 기준을 넘은 시간은 주황 ✓.
@@ -151,7 +153,7 @@ body.ws .app { flex-shrink: 0; }
 .pop .where { margin-top: var(--space-8); padding-top: var(--space-8); border-top: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: var(--type-body-small); overflow-wrap: anywhere; }
 
 /* 보기 | 조작 — 보드 없이 한 장만 띄웠을 때. 보드에서 들어왔으면 조작이 곧 이 화면이라 "‹ 보드"가 출구다. */
-.seg { display: inline-flex; padding: var(--space-4); border-radius: var(--corner-medium); transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+.seg { display: inline-flex; padding: var(--space-4); border-radius: var(--corner-medium); }
 .seg button { height: 24px; padding: 0 var(--space-12); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant);
               font: var(--type-label-medium); cursor: pointer; transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard), box-shadow var(--duration-short4) var(--easing-standard); }
 .seg button[aria-pressed="true"] { background: var(--primary-container); color: var(--on-surface); }

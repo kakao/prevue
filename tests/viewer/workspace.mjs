@@ -223,12 +223,15 @@ try {
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
   await check(`document.querySelector('#workspaceLoadingText').textContent.includes('준비하지 못했') && !document.querySelector('#back').disabled`, "첫 프레임 실패를 표시하고 복귀 가능");
   await exit();
-  // 헤더가 아직 들어오지 않은 동안(모프 70% 전)에도 esc · 브라우저 뒤로 가기는 바로 나간다
-  for (const [name, leave] of [["esc", () => key("Escape")], ["브라우저 뒤로 가기", () => evaluate(`history.back()`)]]) {
+  // 헤더가 아직 들어오지 않은 동안(모프 70% 전)에도 esc · 브라우저 뒤로 가기는 바로 나간다.
+  // 창이 385ms 라 CDP 왕복으로 겨누지 않고 페이지 안에서 기다렸다 바로 누르며, 누른 순간 헤더가 숨어 있었는지 적는다.
+  for (const [name, leave] of [["esc", `dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}))`], ["브라우저 뒤로 가기", `history.back()`]]) {
     const before = await evaluate(`__exits`);
-    await click(".card .go");
-    await until(`!document.querySelector('#focusView').hidden && document.querySelector('#back').classList.contains('deco-off') && history.state?.prevueWs`, 3000);
-    await leave();
+    const hidden = await evaluate(`new Promise(done=>{document.querySelector('.card .go').click();const t0=performance.now();
+      requestAnimationFrame(function f(){const b=document.querySelector('#back');
+        if(!document.querySelector('#focusView').hidden&&b.classList.contains('deco-off')&&history.state?.prevueWs){${leave};done(b.classList.contains('deco-off'))}
+        else if(performance.now()-t0>3000)done(false);else requestAnimationFrame(f)})})`);
+    assert(hidden, `헤더가 숨은 동안 ${name}를 눌렀다`);
     await until(`!document.querySelector('#boardView').hidden && __exits>${before} && __store.st.screen==='board'`);
     checked++; console.log(`통과 ${checked}: 헤더가 들어오기 전에도 ${name}로 나감`);
     await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`); await pause(300);
@@ -256,13 +259,13 @@ try {
   await until(`__store.st.screen==='focus' && !__store.st.focus.fromBoard && !__store.st.focus.interactive && document.querySelector('#shot').naturalWidth>0`);
   await pause(300);
   const morphs = async on => {
-    await evaluate(`window.__fq=[];window.__seg=[];window.__fqRec=true;requestAnimationFrame(function f(){if(!__fqRec)return;const m=document.querySelector('.morph');if(m)__fq.push((r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()));__seg.push(Number(getComputedStyle(document.querySelector('#seg')).opacity));requestAnimationFrame(f)})`);
+    await evaluate(`window.__fq=[];window.__seg=[];window.__fqRec=true;requestAnimationFrame(function f(){if(!__fqRec)return;const m=document.querySelector('.morph');if(m)__fq.push((r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()));__seg.push(document.querySelector('#seg').classList.contains('deco-off'));requestAnimationFrame(f)})`);
     await post("/viewer/interactive", { on });
     await until(`__store.st.focus.interactive===${on}`);
     if (on) await ready();
     await pause(1200);
     await evaluate(`__fqRec=false`);
-    return evaluate(`({n:__fq.length,last:__fq.at(-1),stage:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),morph:!!document.querySelector('.morph'),seg:__seg.some(v=>v<.2)&&__seg.at(-1)===1})`);
+    return evaluate(`({n:__fq.length,last:__fq.at(-1),stage:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),morph:!!document.querySelector('.morph'),seg:__seg.some(Boolean)&&!__seg.at(-1)&&getComputedStyle(document.querySelector('#seg')).opacity==='1'})`);
   };
   const on = await morphs(true);
   assert(on.n > 5 && near(on.last, on.stage) && !on.morph && on.seg, `단건 보기 → 조작 틀 모프 · 토글은 패널과 함께 ${JSON.stringify(on)}`); console.log(`통과 ${++checked}: 단건 보기 → 조작 틀 모프, 토글은 패널과 함께`);
