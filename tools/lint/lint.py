@@ -130,21 +130,27 @@ def detekt_findings(gradle_args):
     return found
 
 
+LAYER_RULES = ("ForbiddenImport/", "ForbiddenMethodCall/")
+
+
 def layer_rule(name):
-    """층 규칙(D-150)은 detekt 규칙을 경로마다 따로 건 갈래다(`ForbiddenImport/controller`) — 갈래 이름으로 묶는다."""
-    return "layer/" + name.split("/", 1)[1] if "/" in name else None
+    """층 규칙(D-150)은 ForbiddenImport · ForbiddenMethodCall 을 경로마다 따로 건 갈래다(`ForbiddenImport/controller`) — 갈래 이름으로 묶는다."""
+    return "layer/" + name.split("/", 1)[1] if name.startswith(LAYER_RULES) else None
 
 
-def include_globs(config):
-    """detekt 설정의 includes 목록에서 (줄, glob). 목록은 여러 줄에 걸칠 수 있다."""
+def path_globs(config):
+    """detekt 설정의 includes · excludes 에서 (줄, glob, 문제). 목록은 `[...]` 한 벌이고 여러 줄에 걸칠 수 있다."""
     out, open_list = [], False
     for n, line in enumerate(config.split("\n"), 1):
-        if re.match(r"\s*includes:", line):
+        head = re.match(r"\s*(includes|excludes):\s*(.*)", line)
+        if head and not head.group(2).startswith("["):
+            out.append((n, head.group(1), "`[...]` 목록으로 쓴다 — 이 검사가 다른 모양을 못 읽는다"))
+            continue
+        if head:
             open_list = True
         if open_list:
-            out.extend((n, g) for g in re.findall(r"'([^']*)'", line))
-            if "]" in line:
-                open_list = False
+            out.extend((n, g, None) for g in re.findall(r"""['"]([^'"]*)['"]""", line))
+            open_list = "]" not in line
     return out
 
 
@@ -154,10 +160,19 @@ def glob_regex(glob):
 
 
 def empty_includes(config, paths):
-    """파일을 하나도 못 고르는 includes — 폴더 이름이 바뀌면 그 층 규칙이 말없이 통과한다."""
-    return [Finding(DETEKT_CONFIG, n, "layer/empty-includes",
-                    "`%s` 가 본체 파일을 하나도 못 고른다 — 폴더를 옮겼으면 glob 을 고친다" % g)
-            for n, g in include_globs(config) if not any(glob_regex(g).fullmatch(p) for p in paths)]
+    """파일을 하나도 못 고르는 includes · excludes — 폴더 이름이 바뀌면 그 층 규칙이 말없이 통과한다.
+    detekt 는 절대 경로에 견준다 — 어디서 돌든 같은 뜻이 되게 `**/` 로 시작하고 `{ ? [` 없이 쓴 glob 만 읽는다."""
+    found = []
+    for n, g, problem in path_globs(config):
+        if problem is None and (not g.startswith("**/") or re.search(r"[{?\[]", g)):
+            problem = "`**/` 로 시작하고 `{ ? [` 없이 쓴다 — 이 검사가 detekt 와 같은 뜻으로 읽게"
+        if problem is None:
+            rx = glob_regex(g)
+            if not any(rx.fullmatch(p) for p in paths):
+                problem = "`%s` 가 본체 파일을 하나도 못 고른다 — 폴더를 옮겼으면 glob 을 고친다" % g
+        if problem:
+            found.append(Finding(DETEKT_CONFIG, n, "layer/empty-includes", problem))
+    return found
 
 
 def viewer_findings():
