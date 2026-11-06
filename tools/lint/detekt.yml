@@ -37,6 +37,147 @@ style:
     active: true
   UnusedParameter:
     active: true
+  # 층 규칙(D-148 · D-150) — 모듈 방향은 Gradle 이 막고, 같은 모듈 안의 방향과 JDK 사용을 여기서 막는다.
+  # 규칙 하나를 경로마다 따로 건다(`이름/갈래`). includes 가 파일을 하나도 못 고르면 lint.py 가 실패로 본다 — 폴더 이름이 바뀌면 규칙이 말없이 죽는다.
+  # import 만 본다 — import 없이 전체 이름으로 쓰는 것은 놓친다(D-150).
+  ForbiddenImport/application:
+    active: true
+    includes: ['**/prevue/application/**']
+    forbiddenImports:
+      - value: 'java.awt.*'
+        reason: ':application 은 AWT 를 모른다 — 그림은 Bitmap 값으로 든다(D-139)'
+      - value: 'javax.*'
+        reason: ':application 은 javax 를 모른다(D-139)'
+      - value: 'java.nio.file.*'
+        reason: ':application 은 파일 시스템을 모른다 — SourceFileRepository · PreviewRenderer 포트로(D-139)'
+      - value: 'kotlin.io.path.*'
+        reason: ':application 은 파일 시스템을 모른다 — SourceFileRepository · PreviewRenderer 포트로(D-139)'
+  # File 을 경로 값으로 드는 것(생성자 · path · canonicalPath)은 된다 — 만지는 호출만 막는다.
+  ForbiddenMethodCall/application:
+    active: true
+    includes: ['**/prevue/application/**']
+    methods:
+      - { value: 'java.io.File.exists', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.isFile', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.isDirectory', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.delete', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.list', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.listFiles', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.lastModified', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.setLastModified', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.length', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.mkdir', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.mkdirs', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.createNewFile', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.renameTo', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.readText', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.readLines', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.readBytes', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.writeText', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.writeBytes', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.appendText', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.deleteRecursively', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.walk', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.walkTopDown', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.walkBottomUp', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.copyTo', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.copyRecursively', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.bufferedReader', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.bufferedWriter', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.inputStream', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.outputStream', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.reader', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.writer', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.forEachLine', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'kotlin.io.useLines', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.FileInputStream.<init>', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.FileOutputStream.<init>', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.FileReader.<init>', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.FileWriter.<init>', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.RandomAccessFile.<init>', reason: ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+  # :application 안쪽 순서 — 값(model)과 포트(port)는 규칙(rule) · 하는 일(service)을 모르고, 규칙은 하는 일을 모른다.
+  # model ↔ port 는 서로 안다 — 포트 위로 오가는 값(FailureKind · CompileResult · RenderOutput · LiveSession)을 model 이 싣는다.
+  ForbiddenImport/domain:
+    active: true
+    includes: ['**/prevue/application/domain/model/**', '**/prevue/application/port/**']
+    forbiddenImports:
+      - value: 'prevue.application.domain.rule.*'
+        reason: '값 · 포트는 규칙을 모른다 — 규칙이 값을 안다'
+      - value: 'prevue.application.service.*'
+        reason: '값 · 포트는 서비스를 모른다 — 서비스가 그것을 안다'
+  ForbiddenImport/rule:
+    active: true
+    includes: ['**/prevue/application/domain/rule/**']
+    forbiddenImports:
+      - value: 'prevue.application.service.*'
+        reason: '규칙은 서비스를 모른다 — 서비스가 규칙을 부른다'
+  # controller 는 서비스를 부르고 코덱 json 만 함께 쓴다 — 기술 폴더 · 조립을 모른다.
+  ForbiddenImport/controller:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.render.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.compile.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.watch.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.source.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.dump.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.process.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.store.*', reason: 'controller 는 기술 폴더를 모른다 — 서비스를 부른다(D-148)' }
+      - { value: 'prevue.infrastructure.bindings.*', reason: 'controller 는 조립을 모른다 — 조립이 controller 를 짓는다' }
+  # 입구끼리는 http 만 함께 쓴다 — 입구마다 따로 건다. 한 규칙으로 걸면 같은 입구 안의 중첩 타입 import(BrowserPresenter.PointResult)까지 잡는다.
+  ForbiddenImport/http:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/http/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.cli.*', reason: '입구끼리는 http 만 함께 쓴다' }
+      - { value: 'prevue.infrastructure.controller.browser.*', reason: '입구끼리는 http 만 함께 쓴다' }
+      - { value: 'prevue.infrastructure.controller.hotswap.*', reason: '입구끼리는 http 만 함께 쓴다' }
+  ForbiddenImport/cli:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/cli/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.browser.*', reason: '입구끼리는 http 만 함께 쓴다' }
+      - { value: 'prevue.infrastructure.controller.hotswap.*', reason: '입구끼리는 http 만 함께 쓴다' }
+  ForbiddenImport/browser:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/browser/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.cli.*', reason: '입구끼리는 http 만 함께 쓴다' }
+      - { value: 'prevue.infrastructure.controller.hotswap.*', reason: '입구끼리는 http 만 함께 쓴다' }
+  ForbiddenImport/hotswap:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/hotswap/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.cli.*', reason: '입구끼리는 http 만 함께 쓴다' }
+      - { value: 'prevue.infrastructure.controller.browser.*', reason: '입구끼리는 http 만 함께 쓴다' }
+  # 기술 폴더는 포트를 구현한다 — 부르는 쪽(controller · service)과 조립(bindings)을 모른다.
+  ForbiddenImport/technology:
+    active: true
+    includes: ['**/prevue/infrastructure/render/**', '**/prevue/infrastructure/compile/**', '**/prevue/infrastructure/watch/**',
+               '**/prevue/infrastructure/source/**', '**/prevue/infrastructure/dump/**', '**/prevue/infrastructure/process/**',
+               '**/prevue/infrastructure/store/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: '기술 폴더는 입구를 모른다 — 입구가 서비스를 거쳐 포트를 부른다' }
+      - { value: 'prevue.infrastructure.bindings.*', reason: '기술 폴더는 조립을 모른다 — 조립이 기술을 짓는다' }
+      - { value: 'prevue.application.service.*', reason: '기술 폴더는 포트를 구현한다 — 서비스를 모른다' }
+  ForbiddenImport/json:
+    active: true
+    includes: ['**/prevue/infrastructure/json/**']
+    forbiddenImports:
+      - { value: 'prevue.*', reason: '코덱 json 은 데몬의 타입을 모른다 — 누구나 함께 쓴다' }
+  # 조립(:daemon)은 :infrastructure 를 바인딩으로만 안다. 작업 공간 저장(store)만 조립이 직접 짓는다 — 인자(모듈 · 그래프)가 조립에 있다.
+  ForbiddenImport/assembly:
+    active: true
+    includes: ['**/prevue/daemon/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.render.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.compile.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.watch.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.source.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.dump.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.process.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+      - { value: 'prevue.infrastructure.json.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
 
 potential-bugs:
   active: true
