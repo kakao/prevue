@@ -221,9 +221,9 @@ try {
   hold = false;
   await Promise.all(held.splice(0).map(requestId => send("Fetch.failRequest", { requestId, errorReason: "Failed" })));
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
-  // 기본 언어는 영어이고 ?lang= 으로 바뀐다(D-110) — 문장을 박지 않고 페이지가 쓰는 사전에서 읽는다.
-  const failed = await evaluate(`fetch('/strings/'+document.documentElement.lang+'.json').then(r=>r.json()).then(d=>d['workspace.loading.failed'])`);
-  assert(failed, "사전의 workspace.loading.failed");
+  // 기본 언어는 영어이고 ?lang= 으로 바뀐다(D-110) — 문장을 박지 않고 페이지의 phrase 로 읽는다.
+  const failed = await evaluate(`import('/js/strings.js').then(m=>m.phrase('workspace.loading.failed'))`);
+  assert(failed && failed !== "workspace.loading.failed", `${await evaluate("document.documentElement.lang")} 사전에 workspace.loading.failed 가 없다`);
   await check(`document.querySelector('#workspaceLoadingText').textContent.includes(${JSON.stringify(failed)}) && !document.querySelector('#back').disabled`, "첫 프레임 실패를 표시하고 복귀 가능");
   await exit();
   // 헤더가 아직 들어오지 않은 동안(모프 70% 전)에도 esc · 브라우저 뒤로 가기는 바로 나간다.
