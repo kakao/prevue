@@ -10,5 +10,4 @@ internal class SourcePreviewRepository(classPath: List<String>) : PreviewReposit
     private val multiPreview = MultiPreview(classPath)
 
     override fun inFile(file: File): List<PreviewSpec> = PreviewLocator.fromFile(file, multiPreview)
-    override fun byFqn(fqn: String, params: Map<String, String>): PreviewSpec = PreviewLocator.fromFqn(fqn, params)
 }

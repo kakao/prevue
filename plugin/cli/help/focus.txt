@@ -2,7 +2,7 @@ prevue focus <index> --on|--off
 prevue focus <index> --size original|narrow|foldable|<W>x<H>
 prevue focus <index> --device <device> [--folded] [--landscape]
 
-Attaches a task to the card to make it interactive (--on) and back (--off). While it is on, other cards are redrawn on a separate task
+Attaches a task to the card to make it interactive (--on) and back to the board (--off) — also for a card entered by show <FQN>. While it is on, other cards are redrawn on a separate task
 once input has been quiet for a second — until they all are, wait answers complete:false. Turning it off draws whatever is still old.
 The person may have turned it on in the viewer — before turning it off, consider whether the person is using it.
 

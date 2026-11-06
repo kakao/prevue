@@ -111,9 +111,6 @@ internal object PreviewLocator {
         return out
     }
 
-    fun fromFqn(fqn: String, params: Map<String, String>, file: File? = null): PreviewSpec =
-        PreviewSpec(fqn, fqn.substringAfterLast('.'), params, file, 0)
-
     private fun matchParen(s: String, open: Int): Int {
         var depth = 0; var i = open; var inStr = false
         while (i < s.length) {

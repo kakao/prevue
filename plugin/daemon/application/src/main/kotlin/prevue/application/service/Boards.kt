@@ -21,6 +21,7 @@ import prevue.application.domain.model.BoardEpoch
 import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
+import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
@@ -209,14 +210,18 @@ class Boards(
             fill(by)
             return FocusResult.Off(index)
         }
+        return FocusResult.On(index, attach(ed, b.cards[index].spec, by))
+    }
+
+    internal suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long? = null): ShowResult {
         val r = try {
-            live.show(ed, b.cards[index].spec, by)
+            live.show(ed, p, by, since)
         } finally {
             val at = ws.nowMs()
             ed.update { it.copy(focusAttachedAt = at) }
         }
         live.recordFocus(ed, r.shot)
-        return FocusResult.On(index, r)
+        return r
     }
 
     companion object {

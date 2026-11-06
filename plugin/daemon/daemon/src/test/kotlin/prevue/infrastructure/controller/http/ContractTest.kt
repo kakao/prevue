@@ -179,9 +179,8 @@ class ContractTest {
         check("viewer.open.other", post("/viewer/open", mapOf("file" to elsewhere.path)))
 
         check("show.fqn", post("/show", mapOf("target" to "demo.CardsKt.Card0")))
-        check("board.none", get("/board"))
+        check("board.fqn", get("/board"))
         check("viewer.state.single", get("/viewer/state"))
-        check("viewer.interactive", post("/viewer/interactive", mapOf("on" to true)))
         check("show.error", post("/show", mapOf("target" to "/없는/파일")))
         check("unknown", post("/nope", emptyMap()))
 

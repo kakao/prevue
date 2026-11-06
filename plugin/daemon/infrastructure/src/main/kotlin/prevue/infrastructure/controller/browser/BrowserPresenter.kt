@@ -105,8 +105,6 @@ internal class BrowserPresenter(
     fun flash(message: Phrase) { _events.tryEmit(UiEvent.Flash(message)) }
 
     private fun published(before: Frame?, frame: Frame) {
-        val single = side.value.singleInteractive
-        if (single != null && frame.state.focus?.previewId != single) side.update { it.copy(singleInteractive = null) }
         val on = frame.state.focus?.streamUrl != null
         if (on != (before?.state?.focus?.streamUrl != null)) watchWanted.value = on
     }

@@ -9,8 +9,6 @@ data class Tab(
     /** 파일이면 정규 경로, FQN이면 그 이름. `show`가 같은 탭을 찾는 열쇠다. */
     val key: String,
     val file: File?,
-    /** FQN 탭의 한 장. 파일 탭이면 null. */
-    val spec: PreviewSpec?,
     /** `--param`은 탭의 설정이다 — 다시 `show`할 때 안 주면 그대로 간다. */
     val params: Map<String, String>,
     val board: Board?,
@@ -20,9 +18,7 @@ data class Tab(
     val seenAtMs: Long,
     /** 파일이 그릴 것을 잃었다 — 탭은 남기고 빈 화면이다. 다시 프리뷰가 생기면 저장 · 옮기기가 되살린다. */
     val vacant: Vacancy? = null,
-) {
-    val fqn: String? get() = spec?.fqn
-}
+)
 
 /** 탭의 파일이 지워졌거나 `@Preview`가 하나도 없다. */
 enum class Vacancy { NO_PREVIEWS, DELETED }
@@ -38,7 +34,7 @@ class VacantTab(val tab: Tab) : IllegalArgumentException(
 enum class TabMove { OPENED, SWITCHED }
 
 /** 탭 목록을 밖에서 본 모습(`status.tabs`). */
-data class TabView(val key: String, val file: File?, val fqn: String?, val module: String, val active: Boolean, val stale: Boolean, val vacant: Vacancy? = null,
+data class TabView(val key: String, val file: File?, val module: String, val active: Boolean, val stale: Boolean, val vacant: Vacancy? = null,
                    val sourceSet: String? = null)
 
 /** `prevue close`의 결과. 지금 보던 탭을 닫았으면 [active]가 옮겨 간 탭이다. */

@@ -33,11 +33,8 @@ data class WorkspaceState(
     fun shownSize(): ScreenSize? = resize?.takeIf { it.previewId == (board?.focusCard?.spec ?: current)?.previewId }?.size
 
     fun shownTarget(): Pair<PreviewSpec, ScreenSize>? {
-        val b = board
-        if (b != null) return if (interactive) b.focusCard.spec to (shownSize() ?: ScreenSize.Original) else null
-        val r = resize ?: return null
-        val base = activeTabOrNull()?.spec?.takeIf { it.previewId == r.previewId } ?: return null
-        return base to r.size
+        val b = board?.takeIf { interactive } ?: return null
+        return b.focusCard.spec to (shownSize() ?: ScreenSize.Original)
     }
 
     fun livePostures(): Postures? {
@@ -48,7 +45,7 @@ data class WorkspaceState(
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }
 
     fun tabViews(graph: ModuleGraph): List<TabView> = tabs.map {
-        TabView(it.key, it.file, it.fqn, it.file?.let(graph::ownerOf).orEmpty(), it.key == activeTab, it.stale, it.vacant,
+        TabView(it.key, it.file, it.file?.let(graph::ownerOf).orEmpty(), it.key == activeTab, it.stale, it.vacant,
             it.file?.let(graph::sourceSetOf))
     }
 

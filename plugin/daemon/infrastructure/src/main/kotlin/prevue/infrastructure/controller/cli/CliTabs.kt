@@ -23,11 +23,11 @@ internal class CliTabs(
     suspend fun status(): StatusView { tabs.catchUp("status"); return status.read() }
 
     suspend fun show(target: String, index: Int?, params: Map<String, String>, by: String): Pair<ShowResult, BoardView?> =
-        tabs.openPreview(target, index, params, by) to status.board()
+        tabs.openPreview(target, index, params, by) to status.board()?.takeIf { File(target).isFile }
 
     suspend fun close(target: String, by: String): CloseResult = tabs.closeTab(target, by)
 
-    fun activeTab(): String? = status.activeTab()?.let { it.file?.absolutePath ?: it.fqn }
+    fun activeTab(): String? = status.activeTab()?.file?.absolutePath
 
     suspend fun card(index: Int, force: Boolean, by: String): CardResult = boards.drawCard(index, force, by)
     suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = boards.focus(index, on, by, size)

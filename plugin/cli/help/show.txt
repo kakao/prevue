@@ -2,7 +2,10 @@ prevue show <file|FQN> [--index N] [--param k=v]... [--lang <code>]
 
 Opens every @Preview in the file as a board in a viewer tab — a new tab the first time (tab:"opened"), that tab if already open (tab:"switched").
 Showing another file keeps the previous screen as a tab. Up to 10 tabs; beyond that the least recently viewed tab closes (closedTab).
-For a file it answers after the whole board is drawn, in the same shape as wait. For an FQN it is that one card.
+For a file it answers after the whole board is drawn, in the same shape as wait.
+For an FQN it opens that function's file as a board too and enters that card interactive (as focus --on) — it answers with that one card,
+and the other cards are drawn on a separate task once input is quiet (prevue focus --help). focus --off goes back to the board.
+--index picks which of that function's cards (0 first) when it makes several. An FQN whose source file isn't found is refused — show the file path.
 --lang is the viewer language — pass the conversation's language (ko, en, …). It goes on viewer, and on next · then if it isn't ready.
 
 Response

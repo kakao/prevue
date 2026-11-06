@@ -8,7 +8,6 @@
       {
         "active": "boolean",
         "file": "string",
-        "fqn": "null",
         "module": "string",
         "stale": "boolean",
         "vacant": "null"
@@ -22,7 +21,6 @@
     "tabs": [
       {
         "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
-        "fqn": null,
         "module": ":app",
         "active": true,
         "stale": false,

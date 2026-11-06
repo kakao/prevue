@@ -34,28 +34,23 @@ import prevue.application.domain.model.Work
 
 /** `Status` → 화면 상태. 스레드도 가짜 포트도 없이 값 하나로 판정한다. */
 class BrowserStatesTest {
-    private val side = ViewerSide(streamStamp = 22, stillStamp = 11)
+    private val side = ViewerSide(stillStamp = 11)
 
     private fun build(s: Status, v: ViewerSide = side, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): BrowserState = BrowserStates.build(s, v, 7, zone)
 
-    // U8 · H7 — 확장자는 싣지 않고, 모듈은 이름이 겹칠 때만, FQN 탭은 함수 · 파일. 툴팁은 저장소 기준 경로.
+    // U8 · H7 — 확장자는 싣지 않고, 모듈은 이름이 겹칠 때만. 툴팁은 저장소 기준 경로.
     @Test fun `탭 이름 — 겹칠 때만 모듈을 붙인다`() {
         val r = "/r/wt-a"
         val tabs = listOf(
-            TabView("$r/feature/a/Screen.kt", File("$r/feature/a/Screen.kt"), null, ":feature:a", active = true, stale = false),
-            TabView("$r/core/ui/Screen.kt", File("$r/core/ui/Screen.kt"), null, ":core:ui", active = false, stale = true),
-            TabView("$r/core/ui/Card.kt", File("$r/core/ui/Card.kt"), null, ":core:ui", active = false, stale = false),
-            TabView("demo.CardKt.CardPreview", File("$r/core/ui/Card.kt"), "demo.CardKt.CardPreview", ":core:ui", active = false, stale = false),
-            // `prevue show <FQN>`의 탭 — 파일이 없고 열쇠가 곧 FQN이다.
-            TabView("demo.CardKt.Other", null, "demo.CardKt.Other", "", active = false, stale = false),
+            TabView("$r/feature/a/Screen.kt", File("$r/feature/a/Screen.kt"), ":feature:a", active = true, stale = false),
+            TabView("$r/core/ui/Screen.kt", File("$r/core/ui/Screen.kt"), ":core:ui", active = false, stale = true),
+            TabView("$r/core/ui/Card.kt", File("$r/core/ui/Card.kt"), ":core:ui", active = false, stale = false),
         )
         val chips = build(status().copy(tabs = tabs)).tabs
-        assertEquals(listOf("Screen", "Screen", "Card", "CardPreview", "Other"), chips.map { it.name })
-        assertEquals(listOf("", "", "", " · Card", ""), chips.map { it.dim })
-        assertEquals(listOf("feature:a", "core:ui", null, null, null), chips.map { it.module })
-        assertEquals("core/ui/Card.kt\ndemo.CardKt.CardPreview", chips[3].title)
-        assertEquals("demo.CardKt.Other", chips[4].title)
-        assertEquals(listOf(true, false, false, false, false), chips.map { it.active })
+        assertEquals(listOf("Screen", "Screen", "Card"), chips.map { it.name })
+        assertEquals(listOf("feature:a", "core:ui", null), chips.map { it.module })
+        assertEquals("core/ui/Card.kt", chips[2].title)
+        assertEquals(listOf(true, false, false), chips.map { it.active })
         assertTrue(chips[1].stale)
     }
 
@@ -135,7 +130,7 @@ class BrowserStatesTest {
 
     @Test fun `인터랙티브 — 보드의 포커스 장이 한 장 화면이 되고, 들어가는 중에는 스트림 주소를 내지 않는다`() {
         val st = status(board = board(card(0, "A"), card(1, "B"), focus = 1), interactive = true, focusAttachedAt = 22)
-        val s = build(st, side.copy(streamStamp = 99))
+        val s = build(st)
         assertEquals(BrowserState.Screen.FOCUS, s.screen)
         assertEquals(FocusScreen("B", interactive = true, fromBoard = true, imageUrl = "/B-0.png?t=11", treeUrl = "/B-0.viewinfo.json?t=11", streamUrl = "/stream?t=22",
             pxPerDp = 420.0 / 160, name = null, fn = "B"), s.focus)
@@ -164,17 +159,6 @@ class BrowserStatesTest {
         assertNull(build(named).focus!!.pxPerDp)
     }
 
-    @Test fun `FQN 단건 — 한 장 화면이고 인터랙티브는 화면 사정이 정한다`() {
-        val st = status(preview = spec("A"))
-        val off = build(st)
-        assertEquals(BrowserState.Screen.FOCUS, off.screen)
-        assertEquals("A-0", off.header.title)
-        assertFalse(off.focus!!.fromBoard)
-        assertNull(off.focus!!.streamUrl)
-        assertEquals("/stream?t=22", build(st, side.copy(singleInteractive = "A")).focus!!.streamUrl)
-        assertNull(build(st, side.copy(singleInteractive = "B")).focus!!.streamUrl)
-    }
-
     // D-63. 탭 0개는 오류가 아니라 시작 화면이다 — 마지막 탭을 닫아도 데몬의 기록(status.last · 낡음)은 남지만 화면에는 싣지 않는다.
     @Test fun `빈 화면 — 오류가 아니고 지난 렌더의 알약 재료를 싣지 않는다`() {
         val last = ShowResult(Shot(out(spec("A"), ok = false, failure = FailureKind.TIMEOUT), compile(80), 1200, "agent", 1), emptyMap())
@@ -193,7 +177,7 @@ class BrowserStatesTest {
     // 탭은 있는데 그 파일이 지워졌거나 프리뷰를 잃었다 — 시작 화면(탭 0개)과 가르고, 지난 렌더의 알약 재료는 싣지 않는다.
     @Test fun `빈 탭 — 그 파일의 까닭을 한 줄로 싣는다`() {
         val f = java.io.File("/r/wt-a/app/src/main/kotlin/MainActivity.kt")
-        fun tab(why: Vacancy) = TabView(f.path, f, null, ":app", active = true, stale = false, vacant = why)
+        fun tab(why: Vacancy) = TabView(f.path, f, ":app", active = true, stale = false, vacant = why)
         val s = build(status(tabs = listOf(tab(Vacancy.NO_PREVIEWS)), by = "agent", at = "2026-10-04T01:02:03Z"))
         assertEquals(BrowserState.Screen.VACANT, s.screen)
         assertEquals("MainActivity.kt has no @Preview", s.vacant?.text)
@@ -210,7 +194,7 @@ class BrowserStatesTest {
 
     @Test fun `머리말과 탭은 소스 세트를 데몬이 정한 대로 싣는다`() {
         val f = File("/r/wt-a/feature/a/src/commonMain/kotlin/Screen.kt")
-        val tab = TabView(f.path, f, null, ":feature:a", active = true, stale = false, sourceSet = "commonMain")
+        val tab = TabView(f.path, f, ":feature:a", active = true, stale = false, sourceSet = "commonMain")
         val s = build(status(board = board(card(0, "A")), tabs = listOf(tab)).let {
             it.copy(kmp = true, module = it.module.copy(sourceSet = "commonMain"))
         })
@@ -253,25 +237,25 @@ class BrowserStatesTest {
 
     @Test fun `한 장 화면의 실패와 걸린 시간 — 저장의 첫 장이 1초를 넘으면 표시한다`() {
         val failed = ShowResult(Shot(out(spec("A"), ok = false, failure = FailureKind.TIMEOUT, message = "느리다"), compile(80), 1200, "agent", 1), emptyMap())
-        val s = build(status(preview = spec("A"), last = failed))
+        val s = build(status(board = board(card(0, "A")), interactive = true, last = failed))
         assertEquals("Render timed out\n느리다", s.error?.text)
         assertEquals(listOf(TimingPart("Compile", 80, false), TimingPart("Task", 10, false), TimingPart("Render", 20, false),
             TimingPart("First", 1200, true, "1.2s", head = true)), s.timing.plain())
         // 다른 프리뷰의 실패는 이 화면의 것이 아니다.
-        assertNull(build(status(preview = spec("B"), last = failed)).error?.text)
+        assertNull(build(status(board = board(card(0, "B")), interactive = true, last = failed)).error?.text)
 
         val cf = ReloadResult.CompileFailed(spec("A"), compile(90, ok = false, messages = "e: x"), emptyMap(), totalMs = 300, by = "watch", timing = null)
-        val c = build(status(preview = spec("A"), last = cf))
+        val c = build(status(board = board(card(0, "A")), interactive = true, last = cf))
         assertEquals("Compile failed\ne: x", c.error?.text)
         assertEquals(listOf(TimingPart("Compile", 90, false), TimingPart("Total", 300, false, head = true)), c.timing.plain())
         // 컴파일 실패의 합계도 저장 기준이다 — 640줄을 넘는 파일이면 2초.
-        assertTrue(build(status(preview = spec("A"), last = cf.copy(totalMs = 1500))).timing.plain().last().over)
-        assertFalse(build(status(preview = spec("A"), last = cf.copy(totalMs = 1500, lines = 700))).timing.plain().last().over)
+        assertTrue(build(status(board = board(card(0, "A")), interactive = true, last = cf.copy(totalMs = 1500))).timing.plain().last().over)
+        assertFalse(build(status(board = board(card(0, "A")), interactive = true, last = cf.copy(totalMs = 1500, lines = 700))).timing.plain().last().over)
         // 감시 저장이면 합계는 성공의 첫 장과 같은 저장 → 화면이다 — 줄에 든 뒤의 시간만이면 위의 감지 · 대기 줄보다 작았다.
-        val watched = build(status(preview = spec("A"), last = cf.copy(totalMs = 369, timing = SaveTiming(95, 5)))).timing.plain()
+        val watched = build(status(board = board(card(0, "A")), interactive = true, last = cf.copy(totalMs = 369, timing = SaveTiming(95, 5)))).timing.plain()
         assertEquals(listOf("Detect", "Wait", "Compile", "Total"), watched.map { it.label.text })
         assertEquals(TimingPart("Total", 469, false, head = true), watched.last())
-        assertTrue(build(status(preview = spec("A"), last = cf.copy(totalMs = 950, timing = SaveTiming(95, 0)))).timing.plain().last().over)
+        assertTrue(build(status(board = board(card(0, "A")), interactive = true, last = cf.copy(totalMs = 950, timing = SaveTiming(95, 0)))).timing.plain().last().over)
     }
 
     // ---------- D-63 알약 — 보드가 다 찰 때까지 n/N, ✓ 는 첫 장, 주황은 이벤트별 ----------
@@ -339,7 +323,7 @@ class BrowserStatesTest {
     }
 
     @Test fun `시간 글자 — 1초 아래는 ms, 위는 초`() {
-        fun text(ms: Long) = build(status(preview = spec("A"), last = ShowResult(Shot(out(spec("A"), ok = true), null, ms, "cli", 1), emptyMap())))
+        fun text(ms: Long) = build(status(board = board(card(0, "A")), interactive = true, last = ShowResult(Shot(out(spec("A"), ok = true), null, ms, "cli", 1), emptyMap())))
             .timing.plain().single { it.head }.text
         assertEquals(listOf("999ms", "1s", "1.05s", "3.06s", "12.5s"), listOf(999L, 1000L, 1050L, 3060L, 12500L).map(::text))
         // 초는 10ms 단위로 올린다 — 기준을 조금 넘은 값이 기준 숫자로 찍혀 주황인데 `1s`로 읽히지 않게.
@@ -388,13 +372,6 @@ class BrowserStatesTest {
         val plain = build(status(board = board(card(0, "A")), interactive = true)).focus!!
         assertNull(plain.name)
         assertEquals("A", plain.fn)
-        // FQN 단건은 `@Preview` 인자 없이 그린다(PreviewLocator.fromFqn) — 이름은 `--param name=`을 줬을 때만 있다.
-        val fqn = build(status(preview = spec("A"))).focus!!
-        assertNull(fqn.name)
-        assertEquals("A", fqn.fn)
-        val param = build(status(preview = spec("A").copy(params = mapOf("name" to "Dark")))).focus!!
-        assertEquals("Dark", param.name)
-        assertEquals("A", param.fn)
     }
 
     @Test fun `빌드 산출물 갱신 중에는 마지막 성공 보드와 대기 표시를 함께 보인다`() {
@@ -422,11 +399,11 @@ class BrowserStatesTest {
         val long = lines(phrase("linkage.persisted", "member" to "m".repeat(1000), "names" to "n".repeat(1000)), "x".repeat(3000))
         val failed = ShowResult(Shot(RenderOutput(false, spec("A"), null, null, 0, 0, 10, 20, "", FailureKind.LINKAGE, long, freshLoader = false),
             null, 100, "agent", 1), emptyMap())
-        val error = build(status(preview = spec("A"), last = failed)).error!!
+        val error = build(status(board = board(card(0, "A")), interactive = true, last = failed)).error!!
         assertTrue(error.text.length < 1600 + 200, "${error.text.length}")
         val timedOut = ShowResult(Shot(RenderOutput(false, spec("A"), null, null, 0, 0, 10, 20, "", FailureKind.TIMEOUT,
             phrase("render.timedOut", "sec" to 30), freshLoader = false), null, 100, "agent", 1), emptyMap())
-        val json = build(status(preview = spec("A"), last = timedOut)).error!!.toJson() as Map<*, *>
+        val json = build(status(board = board(card(0, "A")), interactive = true, last = timedOut)).error!!.toJson() as Map<*, *>
         val message = (json["a"] as Map<*, *>)["message"] as Map<*, *>
         assertEquals(30, (message["a"] as Map<*, *>)["sec"])
     }
