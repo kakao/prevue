@@ -9,7 +9,7 @@ Only changes users can see go here.
 ## [Unreleased]
 
 - **The first start after this update asks to download once more.** Prevue now assembles its daemon with Metro, a compile-time dependency injection library, so the daemon build that runs once after an update needs about 11 MB it did not need before. It used to rebuild silently from what was already downloaded; this once, `health` answers with `missing: ["toolchain"]` and `prevue setup` fetches it (that build also lays down a new `~/.prevue/toolchain/lib-*` folder of about 118 MB next to the old one, which a `prevue paths` entry says you can delete). The daemon build now runs on the same Java 21+ that the daemon uses, even when the shell's `JAVA_HOME` points at Java 17. Previews are drawn exactly as before.
-- **Going back to the board slides the picture under its group's heading.** When the top of a card sat under the board's pinned heading (the preview's name at the top of each group), leaving that card's single view used to shrink the picture over the heading, hiding the name until the motion ended. Now the shrinking frame is cut at the heading's lower edge, so the name stays readable the whole way.
+- **Going back to the board slides the picture under its group's heading.** When the top of a card sat under the board's pinned heading (the preview's name at the top of each group), leaving that card's single view used to shrink the picture over the heading, hiding the name until the motion ended. Now the shrinking frame passes under the heading, showing through its faded lower edge the way the card itself does, so the name stays readable the whole way.
 
 ## [0.21.0] — 2026-11-02
 
