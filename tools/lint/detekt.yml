@@ -37,6 +37,145 @@ style:
     active: true
   UnusedParameter:
     active: true
+  # 층 규칙(D-148 · D-150) — 모듈 방향은 Gradle 이 막고, 같은 모듈 안의 방향과 JDK 사용을 여기서 막는다.
+  # 규칙 하나를 경로마다 따로 건다(`이름/갈래`, lint.py 가 layer/<갈래>로 묶는다). 폴더 사이는 허용 목록으로 쓴다 —
+  # 모두 막고(forbiddenImports) 아는 것만 연다(allowedImports). 새 폴더는 열기 전까지 막힌다.
+  # includes · excludes 가 파일을 하나도 못 고르면 lint.py 가 실패로 본다 — 폴더 이름이 바뀌면 규칙이 말없이 죽는다.
+  # import 만 본다 — import 없이 전체 이름으로 쓰는 것은 놓친다(D-150).
+  ForbiddenImport/application:
+    active: true
+    includes: ['**/prevue/application/**']
+    forbiddenImports:
+      - { value: 'java.awt.*', reason: &awt ':application 은 AWT · javax 를 모른다 — 그림은 Bitmap 값으로 든다(D-139)' }
+      - { value: 'javax.*', reason: *awt }
+      - { value: 'java.nio.file.*', reason: &nio ':application 은 파일 시스템을 모른다 — SourceFileRepository · PreviewRenderer 포트로(D-139)' }
+      - { value: 'kotlin.io.path.*', reason: *nio }
+  # File 을 경로 값으로 드는 것(생성자 · path · canonicalPath)은 된다 — 만지는 호출만 막는다.
+  # kotlin.io 확장은 File 받는 쪽의 서명으로 건다 — 이름만 쓰면 Reader · InputStream · ByteArray 의 같은 이름까지 막는다.
+  # 함수 인자를 받는 넷(forEachLine · useLines · forEachBlock · copyRecursively)만 이름으로 건다 — Reader 의 같은 이름도 막힌다.
+  ForbiddenMethodCall/application:
+    active: true
+    includes: ['**/prevue/application/**']
+    methods:
+      - { value: 'java.io.File.exists', reason: &fs ':application 은 파일 시스템을 만지지 않는다 — 포트로(D-139)' }
+      - { value: 'java.io.File.isFile', reason: *fs }
+      - { value: 'java.io.File.isDirectory', reason: *fs }
+      - { value: 'java.io.File.isHidden', reason: *fs }
+      - { value: 'java.io.File.canRead', reason: *fs }
+      - { value: 'java.io.File.canWrite', reason: *fs }
+      - { value: 'java.io.File.canExecute', reason: *fs }
+      - { value: 'java.io.File.setReadable', reason: *fs }
+      - { value: 'java.io.File.setWritable', reason: *fs }
+      - { value: 'java.io.File.setExecutable', reason: *fs }
+      - { value: 'java.io.File.setReadOnly', reason: *fs }
+      - { value: 'java.io.File.delete', reason: *fs }
+      - { value: 'java.io.File.deleteOnExit', reason: *fs }
+      - { value: 'java.io.File.list', reason: *fs }
+      - { value: 'java.io.File.listFiles', reason: *fs }
+      - { value: 'java.io.File.lastModified', reason: *fs }
+      - { value: 'java.io.File.setLastModified', reason: *fs }
+      - { value: 'java.io.File.length', reason: *fs }
+      - { value: 'java.io.File.mkdir', reason: *fs }
+      - { value: 'java.io.File.mkdirs', reason: *fs }
+      - { value: 'java.io.File.createNewFile', reason: *fs }
+      - { value: 'java.io.File.createTempFile', reason: *fs }
+      - { value: 'java.io.File.renameTo', reason: *fs }
+      - { value: 'java.io.File.toPath', reason: *fs }
+      - { value: 'kotlin.io.readText(java.io.File, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.readLines(java.io.File, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.readBytes(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.writeText(java.io.File, kotlin.String, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.writeBytes(java.io.File, kotlin.ByteArray)', reason: *fs }
+      - { value: 'kotlin.io.appendText(java.io.File, kotlin.String, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.appendBytes(java.io.File, kotlin.ByteArray)', reason: *fs }
+      - { value: 'kotlin.io.deleteRecursively(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.walk(java.io.File, kotlin.io.FileWalkDirection)', reason: *fs }
+      - { value: 'kotlin.io.walkTopDown(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.walkBottomUp(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.copyTo(java.io.File, java.io.File, kotlin.Boolean, kotlin.Int)', reason: *fs }
+      - { value: 'kotlin.io.bufferedReader(java.io.File, java.nio.charset.Charset, kotlin.Int)', reason: *fs }
+      - { value: 'kotlin.io.bufferedWriter(java.io.File, java.nio.charset.Charset, kotlin.Int)', reason: *fs }
+      - { value: 'kotlin.io.printWriter(java.io.File, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.inputStream(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.outputStream(java.io.File)', reason: *fs }
+      - { value: 'kotlin.io.reader(java.io.File, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.writer(java.io.File, java.nio.charset.Charset)', reason: *fs }
+      - { value: 'kotlin.io.forEachLine', reason: *fs }
+      - { value: 'kotlin.io.useLines', reason: *fs }
+      - { value: 'kotlin.io.forEachBlock', reason: *fs }
+      - { value: 'kotlin.io.copyRecursively', reason: *fs }
+      - { value: 'java.io.FileInputStream.<init>', reason: *fs }
+      - { value: 'java.io.FileOutputStream.<init>', reason: *fs }
+      - { value: 'java.io.FileReader.<init>', reason: *fs }
+      - { value: 'java.io.FileWriter.<init>', reason: *fs }
+      - { value: 'java.io.RandomAccessFile.<init>', reason: *fs }
+  # :application 안쪽 순서 — 값(model)과 포트(port)는 규칙(rule) · 하는 일(service)을 모르고, 규칙은 하는 일을 모른다.
+  # model ↔ port 는 서로 안다 — 포트 위로 오가는 값(FailureKind · CompileResult · RenderOutput · LiveSession)을 model 이 싣는다.
+  ForbiddenImport/domain:
+    active: true
+    includes: ['**/prevue/application/domain/model/**', '**/prevue/application/port/**']
+    forbiddenImports:
+      - { value: 'prevue.application.*', reason: '값 · 포트는 규칙 · 서비스를 모른다 — 그쪽이 값 · 포트를 안다' }
+    allowedImports: ['prevue.application.domain.model.*', 'prevue.application.port.*']
+  ForbiddenImport/rule:
+    active: true
+    includes: ['**/prevue/application/domain/rule/**']
+    forbiddenImports:
+      - { value: 'prevue.application.*', reason: '규칙은 서비스를 모른다 — 서비스가 규칙을 부른다' }
+    allowedImports: ['prevue.application.domain.*', 'prevue.application.port.*']
+  # controller 는 서비스를 부르고 코덱 json 만 함께 쓴다 — 기술 폴더 · 조립을 모른다.
+  ForbiddenImport/controller:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.*', reason: 'controller 는 기술 폴더 · 조립을 모른다 — 서비스를 부르고 json 만 함께 쓴다(D-148)' }
+    allowedImports: ['prevue.infrastructure.controller.*', 'prevue.infrastructure.json.*']
+  # 입구끼리는 http 만 함께 쓴다 — 입구마다 따로 건다(제 입구 안의 중첩 타입 import 가 있다 — BrowserPresenter.PointResult).
+  ForbiddenImport/http:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/http/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: &entry '입구끼리는 http 만 함께 쓴다' }
+    allowedImports: ['prevue.infrastructure.controller.http.*']
+  ForbiddenImport/cli:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/cli/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: *entry }
+    allowedImports: ['prevue.infrastructure.controller.cli.*', 'prevue.infrastructure.controller.http.*']
+  ForbiddenImport/browser:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/browser/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: *entry }
+    allowedImports: ['prevue.infrastructure.controller.browser.*', 'prevue.infrastructure.controller.http.*']
+  ForbiddenImport/hotswap:
+    active: true
+    includes: ['**/prevue/infrastructure/controller/hotswap/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: *entry }
+    allowedImports: ['prevue.infrastructure.controller.hotswap.*', 'prevue.infrastructure.controller.http.*']
+  # 기술 폴더(controller · bindings 밖 전부)는 포트를 구현한다 — 부르는 쪽(controller · service)과 조립(bindings)을 모른다.
+  ForbiddenImport/technology:
+    active: true
+    includes: ['**/prevue/infrastructure/**']
+    excludes: ['**/prevue/infrastructure/controller/**', '**/prevue/infrastructure/bindings/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.controller.*', reason: '기술 폴더는 입구를 모른다 — 입구가 서비스를 거쳐 포트를 부른다' }
+      - { value: 'prevue.infrastructure.bindings.*', reason: '기술 폴더는 조립을 모른다 — 조립이 기술을 짓는다' }
+      - { value: 'prevue.application.service.*', reason: '기술 폴더는 포트를 구현한다 — 서비스를 모른다' }
+  ForbiddenImport/json:
+    active: true
+    includes: ['**/prevue/infrastructure/json/**']
+    forbiddenImports:
+      - { value: 'prevue.*', reason: '코덱 json 은 데몬의 타입을 모른다 — 누구나 함께 쓴다' }
+  # 조립(:daemon)은 :infrastructure 를 바인딩으로만 안다. 작업 공간 저장만 조립이 직접 짓는다 — 인자(모듈 · 그래프)가 조립에 있다.
+  ForbiddenImport/assembly:
+    active: true
+    includes: ['**/prevue/daemon/**']
+    forbiddenImports:
+      - { value: 'prevue.infrastructure.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
+    allowedImports: ['prevue.infrastructure.bindings.*', 'prevue.infrastructure.store.InMemoryWorkspace']
 
 potential-bugs:
   active: true

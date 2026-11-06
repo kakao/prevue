@@ -1,5 +1,5 @@
 // application — 안쪽(D-148). domain/model(값) · domain/rule(규칙) · port(나가는 인터페이스와 그 위의 값) · service(하는 일).
-// 코루틴과 Metro 만 안다 — 렌더러 · 컴파일러 · JSON 을 import 하면 컴파일이 안 된다. JDK(AWT · 파일 시스템 호출)는 모듈로 못 막는다 — LayerRuleTest 가 막는다.
+// 코루틴과 Metro 만 안다 — 렌더러 · 컴파일러 · JSON 을 import 하면 컴파일이 안 된다. JDK(AWT · 파일 시스템 호출)와 안쪽 순서는 모듈로 못 막는다 — tools/lint/detekt.yml 의 층 규칙이 막는다(D-150).
 plugins {
     id("prevue.metro")
 }

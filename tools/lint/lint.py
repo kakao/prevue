@@ -1,4 +1,4 @@
-"""tools/lint.sh 의 본체 — 슬롭 규칙 · detekt(지표 · 죽은 코드) · 새 주석 · 뷰어 날값(viewer.py)을 모아 판정한다.
+"""tools/lint.sh 의 본체 — 슬롭 규칙 · detekt(지표 · 죽은 코드 · 층 규칙) · 새 주석 · 뷰어 날값(viewer.py)을 모아 판정한다.
 
 판정:
 - 위반이 하나라도 있으면 실패다.
@@ -41,6 +41,7 @@ DETEKT_REPORTS = tuple("%s/%s/daemon/reports/detekt/%s.xml" % (PLUGIN, LINT_BUIL
     "%s/%s/%s/reports/detekt/main.xml" % (PLUGIN, LINT_BUILD, m.rsplit("/", 1)[-1]) for m in MODULES)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
+DETEKT_CONFIG = "tools/lint/detekt.yml"
 
 DETEKT_GROUPS = {
     "LongMethod": "metric/long-method", "LongParameterList": "metric/long-parameter-list",
@@ -120,12 +121,57 @@ def detekt_findings(gradle_args):
             path = os.path.relpath(name if os.path.isabs(name) else os.path.join(PLUGIN, name))
             for e in file_el.iter("error"):
                 name = e.get("source", "").split(".")[-1]
-                rule = DETEKT_GROUPS.get(name, "detekt/" + name)
+                rule = layer_rule(name) or DETEKT_GROUPS.get(name, "detekt/" + name)
                 line = int(e.get("line", "1"))
                 advice = e.get("message", "").strip()
                 if rule in DETEKT_ADVICE:
                     advice = "%s — %s" % (advice, DETEKT_ADVICE[rule])
                 found.append(Finding(path, line, rule, advice))
+    return found
+
+
+LAYER_RULES = ("ForbiddenImport/", "ForbiddenMethodCall/")
+
+
+def layer_rule(name):
+    """층 규칙(D-150)은 ForbiddenImport · ForbiddenMethodCall 을 경로마다 따로 건 갈래다(`ForbiddenImport/controller`) — 갈래 이름으로 묶는다."""
+    return "layer/" + name.split("/", 1)[1] if name.startswith(LAYER_RULES) else None
+
+
+def path_globs(config):
+    """detekt 설정의 includes · excludes 에서 (줄, glob, 문제). 목록은 `[...]` 한 벌이고 여러 줄에 걸칠 수 있다."""
+    out, open_list = [], False
+    for n, line in enumerate(config.split("\n"), 1):
+        head = re.match(r"\s*(includes|excludes):\s*(.*)", line)
+        if head and not head.group(2).startswith("["):
+            out.append((n, head.group(1), "`[...]` 목록으로 쓴다 — 이 검사가 다른 모양을 못 읽는다"))
+            continue
+        if head:
+            open_list = True
+        if open_list:
+            out.extend((n, g, None) for g in re.findall(r"""['"]([^'"]*)['"]""", line))
+            open_list = "]" not in line
+    return out
+
+
+def glob_regex(glob):
+    parts = re.split(r"(\*\*/|\*\*|\*)", glob)
+    return re.compile("".join({"**/": "(?:.*/)?", "**": ".*", "*": "[^/]*"}.get(p, re.escape(p)) for p in parts))
+
+
+def empty_includes(config, paths):
+    """파일을 하나도 못 고르는 includes · excludes — 폴더 이름이 바뀌면 그 층 규칙이 말없이 통과한다.
+    detekt 는 절대 경로에 견준다 — 어디서 돌든 같은 뜻이 되게 `**/` 로 시작하고 `{ ? [` 없이 쓴 glob 만 읽는다."""
+    found = []
+    for n, g, problem in path_globs(config):
+        if problem is None and (not g.startswith("**/") or re.search(r"[{?\[]", g)):
+            problem = "`**/` 로 시작하고 `{ ? [` 없이 쓴다 — 이 검사가 detekt 와 같은 뜻으로 읽게"
+        if problem is None:
+            rx = glob_regex(g)
+            if not any(rx.fullmatch(p) for p in paths):
+                problem = "`%s` 가 본체 파일을 하나도 못 고른다 — 폴더를 옮겼으면 glob 을 고친다" % g
+        if problem:
+            found.append(Finding(DETEKT_CONFIG, n, "layer/empty-includes", problem))
     return found
 
 
@@ -225,6 +271,8 @@ def main(argv):
         findings.extend(slop_findings(src))
     findings.extend(viewer_findings())
     ci = bool(os.environ.get("CI"))
+    with open(DETEKT_CONFIG, encoding="utf-8") as f:
+        findings.extend(empty_includes(f.read(), list(srcs)))
     findings.extend(detekt_findings((["--no-daemon"] if ci else []) + ([] if args.online or ci else ["--offline"])))
 
     changed = changed_lines(base)
@@ -234,7 +282,7 @@ def main(argv):
     for f in sorted(findings, key=lambda f: (f.path, f.line, f.rule)):
         print("%s:%d  %s  %s" % (f.path, f.line, f.rule, f.advice))
     groups = Counter(f.rule.split("/")[0] for f in findings)
-    order = ["slop", "metric", "dead", "comment", "viewer"]
+    order = ["slop", "metric", "dead", "layer", "comment", "viewer"]
     parts = " · ".join("%s %d" % (g, groups[g]) for g in sorted(groups, key=lambda g: (order.index(g) if g in order else len(order), g)))
     print("──")
     print("위반 %d%s (기준 %s)" % (len(findings), " (%s)" % parts if parts else "", args.base))

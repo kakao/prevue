@@ -22,7 +22,7 @@ object Sources {
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
         .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
 
-    /** 층 패키지 `prevue.<층>`(D-148). 층 규칙 · 개수 단언이 모두 이 목록을 쓴다 — 모듈 폴더(위 modules · tools/lint/lint.py 의 MODULES)와 이름이 같다. */
+    /** 층 패키지 `prevue.<층>`(D-148). `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 이 목록을 쓴다 — 모듈 폴더(위 modules · tools/lint/lint.py 의 MODULES)와 이름이 같다. */
     val LAYERS: List<String> = listOf("application", "infrastructure")
 
     private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:${LAYERS.joinToString("|")})/))""")
