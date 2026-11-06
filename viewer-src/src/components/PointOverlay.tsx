@@ -71,11 +71,15 @@ export type CardRow = { id: string; name: string; at: 'up' | 'here' | 'down'; pr
 export type CardActions = { pick(row: CardRow): void; jump(preview: CardPreview): void; close(): void };
 const NO_CARD_ACTIONS: CardActions = { pick() {}, jump() {}, close() {} };
 
+/** 노드의 크기와 여백. padding 은 왼쪽 · 위 · 오른쪽 · 아래 순서이고 dp 다. */
+export type CardBox = { width: number; height: number; padding?: readonly [number, number, number, number] };
+/** modifier 체인의 한 칸 — 적힌 순서대로다. sizes 는 이 칸이 정한 축이고, 색이 있으면 color 로 견본을 그린다. */
+export type CardModifier = { name: string; value?: string; color?: string; sizes?: Array<'width' | 'height'> };
+/** 그림의 비율을 이 안에서만 따른다 — 띠처럼 긴 노드가 칸에서 사라지지 않게. */
+const MODEL_MAX_RATIO = 2.4;
+
 /** dp 는 px 를 밀도로 나눈 값이라 정수로 떨어지지 않는다 — 소수 한 자리까지, 정수면 소수점 없이. */
-function dpPair([a, b]: readonly [number, number], join: string) {
-  const dp = (n: number) => String(Math.round(n * 10) / 10);
-  return `${dp(a)}${join}${dp(b)} dp`;
-}
+const dp = (n: number) => String(Math.round(n * 10) / 10);
 
 function TreeRow({ row, actions, children }: { row: CardRow; actions: CardActions; children?: ReactNode }) {
   const { phrase } = useMessages();
@@ -118,31 +122,60 @@ function CardStatus({ say }: { say: TagSay }) {
   return say.copied === false ? <span className="pc-status">{phrase('point.card.blocked')}</span> : null;
 }
 
-/** 머리 아래의 수치 — 트리에서 셀 수 있는 깊이 · 자식은 색인이 있을 때만 있다. */
-function CardSpecs({ origin, size, rows }: { origin: readonly [number, number]; size: readonly [number, number]; rows: CardRow[] | null }) {
-  const { phrase } = useMessages();
-  const here = rows ? rows.findIndex(r => r.at === 'here') : -1;
-  const specs: Array<[string, string]> = [[phrase('point.card.position'), dpPair(origin, ', ')], [phrase('point.card.size'), dpPair(size, ' × ')]];
-  if (rows) specs.push([phrase('point.card.depth'), String(here + 1)], [phrase('point.card.children'), String(rows.length - here - 1)]);
-  return <dl className="pc-specs">{specs.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>;
+/** 칸 안의 상자 — 가로세로 비율만 그림을 따르고, 여백은 숫자가 들어가도록 고정 폭 고리로 그린다. */
+function BoxModel({ box }: { box: CardBox }) {
+  const ratio = Math.min(MODEL_MAX_RATIO, Math.max(1 / MODEL_MAX_RATIO, box.width / box.height));
+  const [left, top, right, bottom] = box.padding || [0, 0, 0, 0];
+  return <div className={`pc-model${box.padding ? ' padded' : ratio > 1 ? ' wide' : ''}`} style={box.padding ? undefined : { aspectRatio: ratio }}>
+    {box.padding && <>
+      <span className="pc-gap top">{dp(top)}</span><span className="pc-gap right">{dp(right)}</span>
+      <span className="pc-gap bottom">{dp(bottom)}</span><span className="pc-gap left">{dp(left)}</span>
+      <i />
+    </>}
+  </div>;
 }
 
-/**
- * 가리킨 결과의 카드(D-162) — 꼬리표를 대신해 이름 · 복사한 자리 · 위치 · 크기와 위아래 노드를 보인다.
- * rows 가 null 이면 색인이 없는 것이라 트리 칸을 숨긴다. 트리는 카드 안의 패널에서 스크롤하고 가리킨 줄을 가운데에 둔다.
- */
-export function PointCard({ node, origin, size, say, rows, state, actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; origin: readonly [number, number]; size: readonly [number, number]; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; actions?: CardActions; tabs?: PointActions }) {
+function SizeLine({ axis, value, by }: { axis: 'width' | 'height'; value: number; by?: CardModifier }) {
   const { phrase } = useMessages();
+  return <div className="pc-axis">
+    <dt>{phrase(`point.card.${axis}`)}</dt>
+    <dd><strong>{dp(value)}</strong> dp</dd>
+    {by && <dd className="pc-by">{by.value ? `${by.name}(${by.value})` : by.name}</dd>}
+  </div>;
+}
+
+function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
+  const { phrase } = useMessages();
+  return <ol className="pc-mods">{modifiers.map((m, i) => <li key={`${i}-${m.name}`}>
+    <span className="pc-mod-name">{m.name}</span>
+    {m.color && <i className="pc-swatch" style={{ background: m.color }} />}
+    {m.value && <span className="pc-mod-value" title={m.value}>{m.value}</span>}
+    {m.sizes?.map(axis => <span className="pc-mod-axis" key={axis}>{phrase(`point.card.${axis}`)}</span>)}
+  </li>)}</ol>;
+}
+
+type CardTab = 'modifiers' | 'tree';
+
+/**
+ * 가리킨 결과의 카드(D-162) — 이 노드의 크기가 어디서 왔고 어떤 modifier 를 거쳤는지를 보인다.
+ * modifiers · rows 가 null 이면 그 탭을 숨긴다. 탭 칸의 높이는 고정이라 옮겨도 카드가 출렁이지 않고, 트리는 가리킨 줄을 가운데에 둔다.
+ */
+export function PointCard({ node, box, facts = [], modifiers, say, rows, state, tab: firstTab = 'modifiers', actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; box: CardBox; facts?: string[]; modifiers: CardModifier[] | null; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; tab?: CardTab; actions?: CardActions; tabs?: PointActions }) {
+  const { phrase } = useMessages();
+  const [picked, setTab] = useState<CardTab>(firstTab);
+  const shown = ([modifiers && 'modifiers', rows && 'tree'] as Array<CardTab | null>).filter((t): t is CardTab => !!t);
+  const tab = shown.includes(picked) ? picked : shown[0];
   const tree = useRef<HTMLUListElement>(null);
   useLayoutEffect(() => {
-    const box = tree.current, here = box?.querySelector<HTMLElement>('.pc-node.here > .pc-row');
-    if (!box || !here) return;
-    const b = box.getBoundingClientRect(), r = here.getBoundingClientRect();
-    box.scrollTop += r.top - b.top - (box.clientHeight - r.height) / 2;
-  }, [rows]);
+    const list = tree.current, here = list?.querySelector<HTMLElement>('.pc-node.here > .pc-row');
+    if (!list || !here) return;
+    const b = list.getBoundingClientRect(), r = here.getBoundingClientRect();
+    list.scrollTop += r.top - b.top - (list.clientHeight - r.height) / 2;
+  }, [rows, tab]);
   const label = tabLabel(say.file, state, phrase);
   const where = say.file ? `${shortPath(say.file, state?.header?.repo)}:${node.lineNumber}` : say.ref && tagText(say.ref);
   const cut = (where || '').lastIndexOf('/') + 1;
+  const by = (axis: 'width' | 'height') => modifiers?.find(m => m.sizes?.includes(axis));
   return <section className="point-card" aria-label={phrase('point.card.label')}>
     <header className="pc-title">
       <span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span>
@@ -153,10 +186,15 @@ export function PointCard({ node, origin, size, say, rows, state, actions = NO_C
       {label && <button type="button" className="pc-tab" title={label} aria-label={label} onClick={() => tabs.openFile(say.file!)}>{TAB}</button>}
       <CardStatus say={say} />
     </div> : <p className="pc-msg">{say.msg}</p>}
-    <CardSpecs origin={origin} size={size} rows={rows} />
-    {rows && <div className="pc-section">
-      <h3 className="pc-label">{phrase('point.card.tree')}</h3>
-      <ul className="pc-tree" ref={tree} aria-label={phrase('point.card.tree')}><TreeRows rows={rows} actions={actions} /></ul>
+    <div className="pc-hero">
+      <div className="pc-stage"><BoxModel box={box} /></div>
+      <dl className="pc-axes"><SizeLine axis="width" value={box.width} by={by('width')} /><SizeLine axis="height" value={box.height} by={by('height')} /></dl>
+    </div>
+    {facts.length > 0 && <ul className="pc-facts">{facts.map(f => <li key={f} title={f}>{f}</li>)}</ul>}
+    {tab && <div className="pc-section">
+      <div className="pc-tabs" role="tablist">{shown.map(t => <button type="button" role="tab" key={t} aria-selected={t === tab} onClick={() => setTab(t)}>{phrase(`point.card.tab.${t}`)}</button>)}</div>
+      {tab === 'modifiers' ? <div className="pc-panel" role="tabpanel"><ModifierRows modifiers={modifiers!} /></div>
+        : <ul className="pc-panel pc-tree" role="tabpanel" ref={tree}><TreeRows rows={rows!} actions={actions} /></ul>}
     </div>}
   </section>;
 }
