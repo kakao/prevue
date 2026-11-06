@@ -162,6 +162,41 @@ try {
   await exit(); await pause(300);
   await check(`!!document.querySelector('.card[data-i="${far}"].returned') && !document.querySelector('.morph') && Math.abs(scrollY-__farScroll)<2`, "화면 밖 카드는 페이드와 링, 보드 스크롤 그대로");
   await evaluate(`document.querySelector('#__spacer')?.remove();scrollTo(0,__boardScroll)`);
+  // 카드 윗부분이 붙은 묶음 머리 밑에 든 채 돌아오면 줄어드는 틀도 머리 밑으로 들어간다 — 머리 바탕이 흐려지는 띠에서만 비친다
+  const tuckRun = async () => {
+    await evaluate(`window.__tuck=[];window.__ring=false;window.__tuckRec=true;requestAnimationFrame(function f(){if(!__tuckRec)return;__ring||=!!document.querySelector('.card[data-i="0"].returned');const m=document.querySelector('.morph'),g=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead'),h=g.getBoundingClientRect();
+      if(m){const r=m.getBoundingClientRect(),k=/transparent (-?[\\d.]+)px, rgb\\(0, 0, 0\\) (-?[\\d.]+)px/.exec(m.style.maskImage);__tuck.push({hide:r.y+(k?Number(k[1]):0),clear:r.y+(k?Number(k[2]):0),masked:!!m.style.maskImage,fade:h.top+h.height*parseFloat(getComputedStyle(g).getPropertyValue('--fade'))/100,head:h.bottom,
+        stuck:h.top<=parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))+.5,r:[r.x,r.y,r.width,r.height]})}requestAnimationFrame(f)})`);
+    await exit(); await pause(1000);
+    await evaluate(`__tuckRec=false`);
+    return evaluate(`({f:__tuck,card:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect()),ring:__ring})`);
+  };
+  const enter0 = async () => { await post("/focus", { index: 0, interactive: true }); await ready(); await pause(600); };
+  const barH = await evaluate(`parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))`);
+  await evaluate(`scrollBy(0,document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect().top-${barH}+120)`); await pause(200);
+  await enter0();
+  const tuck = await tuckRun();
+  assert(tuck.f.length > 5 && tuck.f.every(f => f.stuck) && !tuck.f[0].masked && tuck.f.some(f => f.masked) && tuck.f.every(f => f.hide >= f.fade - .5 && f.clear >= f.head - .5) && near(tuck.f.at(-1).r, tuck.card),
+    `머리 밑 카드로 돌아오는 틀이 머리 밑으로 들어감 ${JSON.stringify(tuck.f.map(f => [Math.round(f.hide), Math.round(f.clear), Math.round(f.fade), Math.round(f.head)]))}`);
+  console.log(`통과 ${++checked}: 머리 밑 카드로 돌아오는 틀은 묶음 머리 밑으로 들어감(${tuck.f.length}프레임)`);
+  // 머리가 붙지 않았으면 틀을 가리지 않는다
+  await evaluate(`scrollTo(0,0)`); await pause(200);
+  assert(!(await evaluate(`document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect().top<=${barH}+.5`)), "맨 위에서는 묶음 머리가 붙지 않는다");
+  await enter0();
+  const free = await tuckRun();
+  assert(free.f.length > 5 && free.f.every(f => !f.masked) && !free.ring, `머리가 붙지 않은 복귀는 가리지 않음 ${free.f.length}`);
+  console.log(`통과 ${++checked}: 묶음 머리가 붙지 않은 복귀는 틀을 가리지 않음`);
+  // 붙은 머리 밑에만 걸친 카드는 화면 밖과 같다 — 틀이 머리 밑으로 다 사라지지 않게 페이드와 링
+  await evaluate(`(()=>{const sp=document.createElement('div');sp.id='__spacer';sp.style.height='2000px';document.querySelector('#boardView').append(sp);
+    const s=document.querySelector('.card[data-i="0"] .cstage');scrollBy(0,s.getBoundingClientRect().bottom-${barH}-20)})()`); await pause(200);
+  await check(`(()=>{const r=document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect(),h=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect();return r.bottom>${barH}&&r.bottom<h.bottom})()`, "카드가 붙은 머리 밑에만 걸침");
+  await evaluate(`window.__under=scrollY`);
+  await enter0();
+  const under = await tuckRun();
+  assert(under.f.length === 0 && under.ring && Math.abs(await evaluate(`scrollY-__under`)) < 2, `머리 밑에만 걸친 카드는 페이드와 링 ${JSON.stringify(under)}`);
+  console.log(`통과 ${++checked}: 붙은 머리 밑에만 걸친 카드로는 페이드와 링`);
+  await evaluate(`document.querySelector('#__spacer')?.remove()`);
+  await evaluate(`scrollTo(0,__boardScroll)`);
   hold = true;
   await click(".card .go"); await pending();
   await until(`!document.querySelector('#workspaceLoading').hidden`);

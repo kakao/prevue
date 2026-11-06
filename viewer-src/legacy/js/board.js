@@ -115,8 +115,21 @@ export function cardStage(el) {
   const s = el && el.querySelector(".cstage");
   if (!s) return null;
   const r = s.getBoundingClientRect(), cs = getComputedStyle(document.body);
-  const top = parseFloat(cs.getPropertyValue("--bar-h"));
+  // 붙은 묶음 머리 밑에만 걸친 카드는 보이지 않는다 — 돌아오는 틀이 머리 밑으로 다 사라진다
+  const top = stuckHead(s)?.bottom ?? parseFloat(cs.getPropertyValue("--bar-h"));
   return r.width && r.bottom > top && r.top < innerHeight && r.right > 0 && r.left < innerWidth ? s : null;
+}
+/**
+ * 카드의 묶음 머리가 위에 붙어 있으면(sticky) 그 바탕이 흐려지기 시작하는 선(top)과 다 비치는 아랫선(bottom)의 화면 y, 아니면 null.
+ * 돌아오는 틀이 그 머리 밑으로 들어가 보이게 한다.
+ */
+export function stuckHead(el) {
+  const h = el && el.isConnected ? el.closest(".group")?.querySelector(".ghead") : null;
+  if (!h) return null;
+  const r = h.getBoundingClientRect(), cs = getComputedStyle(h);
+  if (r.top > parseFloat(cs.top) + .5) return null;
+  const fade = parseFloat(cs.getPropertyValue("--fade"));
+  return { top: r.top + r.height * (Number.isFinite(fade) ? fade / 100 : 1), bottom: r.bottom };
 }
 let returnTimer = null;
 /** 돌아온 카드의 강조 — 화면 밖 카드로 돌아왔을 때. 잠깐 뒤 걷는다. */

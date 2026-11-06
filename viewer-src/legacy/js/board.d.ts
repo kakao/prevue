@@ -15,4 +15,5 @@ export function applyReveal(): void;
 export function cardAt(index: number | null): HTMLElement | null;
 export function returnCard(index: number | null): HTMLElement | null;
 export function cardStage(card: HTMLElement | null): HTMLElement | null;
+export function stuckHead(el: HTMLElement | null): { top: number; bottom: number } | null;
 export function ringCard(card: HTMLElement | null): void;
