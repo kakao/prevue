@@ -31,18 +31,21 @@ sealed interface ScreenSize {
         }
     }
 
-    data class Device(val model: DeviceModel, val folded: Boolean = false, val landscape: Boolean = false) : ScreenSize {
+    data class Device(val model: DeviceModel, val folded: Boolean = false, val landscape: Boolean = false, val half: Boolean = false) : ScreenSize {
         init {
+            require(!half || model == DeviceModel.IPHONE_DUO) { "반 접기는 iPhone Duo에만 있다" }
+            require(!half || !folded) { "반 접기와 접힘은 함께 줄 수 없다" }
             require(!folded || model.cover != null) { "${model.label}은 접히지 않는다" }
         }
 
-        val panel: Panel get() = if (folded) model.cover!! else model.open
+        val panel: Panel get() = if (half) Panel(model.open.hingePx!!, model.open.heightPx) else if (folded) model.cover!! else model.open
         val widthPx: Int get() = if (landscape) panel.heightPx else panel.widthPx
         val heightPx: Int get() = if (landscape) panel.widthPx else panel.heightPx
         val widthDp: Double get() = dp(widthPx)
         val heightDp: Double get() = dp(heightPx)
         val hingeDp: Double? get() = panel.hingePx?.let(::dp)
-        override val key: String get() = listOfNotNull(model.id, "folded".takeIf { folded }, "land".takeIf { landscape }).joinToString("-")
+        override val key: String
+            get() = listOfNotNull(model.id, "folded".takeIf { folded }, "half".takeIf { half }, "land".takeIf { landscape }).joinToString("-")
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
             val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi))
@@ -58,14 +61,14 @@ sealed interface ScreenSize {
         val BAR: List<ScreenSize> = listOf(Original) + PRESETS + DeviceModel.entries.map { Device(it) }
         private const val DEFAULT_DPI = 420
 
-        fun parse(size: String?, device: String?, folded: Boolean, landscape: Boolean): ScreenSize? {
+        fun parse(size: String?, device: String?, folded: Boolean, landscape: Boolean, half: Boolean = false): ScreenSize? {
             if (device != null) {
                 require(size == null) { "size와 device는 하나만 준다" }
                 val m = DeviceModel.entries.firstOrNull { it.id == device }
                     ?: throw IllegalArgumentException("기기는 ${DeviceModel.entries.joinToString(" · ") { it.id }} 중 하나 — $device")
-                return Device(m, folded, landscape)
+                return Device(m, folded, landscape, half)
             }
-            require(!folded && !landscape) { "접기 · 가로는 기기(device)에만 있다" }
+            require(!folded && !landscape && !half) { "접기 · 가로는 기기(device)에만 있다" }
             if (size == null) return null
             if (size == "original") return Original
             PRESETS.firstOrNull { it.preset == size }?.let { return it }
@@ -104,7 +107,11 @@ enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open
 
     val postures: List<ScreenSize.Device>
         get() = listOf(false, true).flatMap { landscape ->
-            listOfNotNull(ScreenSize.Device(this, false, landscape), if (cover != null) ScreenSize.Device(this, true, landscape) else null)
+            listOfNotNull(
+                ScreenSize.Device(this, landscape = landscape),
+                if (this == IPHONE_DUO) ScreenSize.Device(this, landscape = landscape, half = true) else null,
+                if (cover != null) ScreenSize.Device(this, folded = true, landscape = landscape) else null,
+            )
         }
 }
 

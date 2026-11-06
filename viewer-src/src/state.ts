@@ -6,7 +6,7 @@ export type Message = string | { t: string; a?: { [key: string]: Message | numbe
 type DpSize = { widthDp: number; heightDp: number };
 export type Size = DpSize & (
   { kind: 'preset' | 'custom'; preset: string | null } |
-  { kind: 'device'; device: string; name: string; folded: boolean; landscape: boolean; hingeDp: number | null; dpi: number }
+  { kind: 'device'; device: string; name: string; folded: boolean; half?: boolean; landscape: boolean; hingeDp: number | null; dpi: number }
 );
 type ContractBoard = NonNullable<ContractState['board']>;
 type ContractCard = ContractBoard['groups'][number]['cards'][number];

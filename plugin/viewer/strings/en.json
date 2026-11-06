@@ -90,6 +90,8 @@
   "point.tag.copied": "· ✓ copied",
   "point.tag.retry": "click to copy",
   "point.unindexed": "{file}:{line} — not in the index, so the full path is missing",
+  "posture.half": "Half fold",
+  "posture.half.hint": "Renders a half-sized window. The renderer does not provide a FoldingFeature.",
   "posture.fold": "Fold",
   "posture.hinge": "Hinge line",
   "posture.hinge.hide": "Hide hinge line",

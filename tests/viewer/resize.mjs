@@ -97,6 +97,20 @@ try {
   await click('#pnPick [data-sel="foldable"]');
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`__store.st.focus.size.preset==='foldable' && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`, "고치던 숫자는 버리고 고른 프리셋으로");
+  await pick("ipduo", "device==='duo'");
+  await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
+  await check(`!document.querySelector('#dcHalf').hidden`, "Duo는 반 접기와 다른 자세 다섯 장을 갖는다");
+  await click('#dcHalf');
+  const halfSettled = `__store.st.focus.size?.half && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#resizeScene').classList.contains('at-rest')`;
+  await until(halfSettled);
+  await check(`__store.st.focus.size.widthDp===445 && __store.st.focus.size.heightDp===626 && document.querySelector('#shot').naturalWidth===1335 && document.querySelector('#shot').naturalHeight===1878`, "Duo 반 접기 실물은 445×626dp 한 잎 렌더");
+  await check(`(()=>{const a=document.querySelector('#stage').getBoundingClientRect(),b=document.querySelector('#duo .duo-base').getBoundingClientRect();return !document.querySelector('#duo').hidden&&Math.abs(a.x-b.x)<.1&&Math.abs(a.y-b.y)<.1&&Math.abs(a.width-b.width)<.1&&Math.abs(a.height-b.height)<.1})()`, "반 접기 라이브 스테이지와 몸체 좌표가 일치한다");
+  await check(`document.querySelector('#dcHinge').hidden && document.querySelector('#dcHalf').title.includes('FoldingFeature') && document.querySelector('#dcHalfLb').textContent==='Unfold'`, "반 접기의 제한을 툴팁에 밝히고 힌지 선을 숨긴다");
+  if (process.env.RESIZE_SCREENSHOT) { const r=await send('Page.captureScreenshot',{format:'png'});await writeFile(process.env.RESIZE_SCREENSHOT+'.half.png',Buffer.from(r.data,'base64')); }
+  await click('#dcRot'); await until(halfSettled+` && __store.st.focus.size.landscape && document.querySelector('#shot').naturalWidth===1878 && document.querySelector('#shot').naturalHeight===1335`);
+  await check(`__store.st.focus.size.widthDp===626 && __store.st.focus.size.heightDp===445 && document.querySelector('#shot').naturalWidth===1878 && document.querySelector('#shot').naturalHeight===1335 && !document.querySelector('#duo').hidden`, "반 접기를 돌려도 626×445dp와 세운 면을 유지한다");
+  if (process.env.RESIZE_SCREENSHOT) { const r=await send('Page.captureScreenshot',{format:'png'});await writeFile(process.env.RESIZE_SCREENSHOT+'.half-rot.png',Buffer.from(r.data,'base64')); }
+  await click('#dcHalf'); await until(`!__store.st.focus.size.half && !__store.st.focus.size.folded && document.querySelector('#resizeScene').classList.contains('at-rest')`);
   await pick("fold8", "device==='fold8'");
   await until(`__store.st.focus.postures.filter(p=>p.size.device==='fold8').length===3`);
   await check(`!document.querySelector('#dcFold').hidden && document.querySelector('#rlW').value==='933'`, "Fold8 펼침과 자세 캐시");
