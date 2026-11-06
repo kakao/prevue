@@ -4,6 +4,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.CoroutineScope
+import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.Closer
@@ -33,7 +34,7 @@ internal interface PrevueGraph {
             @Provides config: InfraConfig,
             @Provides scope: CoroutineScope,
             @Provides checkout: PrevueCheckout,
-            @Provides hooks: DaemonHooks,
+            @Provides hooks: EntryHooks,
             @Provides closer: Closer,
             @Provides dispatchers: PrevueDispatchers,
         ): PrevueGraph

@@ -119,7 +119,9 @@ class BrowserEndpointTest {
 
     @Test fun `멈춘 뷰어 연결이 다른 뷰어의 알림을 막지 않는다`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val endpoint = sideEndpoint(scope)
+        val side = sideEndpoint(scope)
+        val endpoint = side.endpoint
+        val feed = side.feed
         val stuck = StuckStream()
         val live = Lines()
         try {
@@ -129,29 +131,35 @@ class BrowserEndpointTest {
             }
             assertTrue(live.next()!!.contains("\"type\":\"state\""))
             repeat(100) {
-                endpoint.pushUi(UiEvent.Flash(Verbatim("알림 $it")))
+                feed.pushUi(UiEvent.Flash(Verbatim("알림 $it")))
                 assertTrue(live.next()?.contains("알림 $it") == true, "살아 있는 뷰어가 ${it}번째 알림을 받지 못했다")
             }
-        } finally { stuck.release.countDown(); endpoint.close(); scope.cancel() }
+        } finally { stuck.release.countDown(); feed.close(); scope.cancel() }
     }
 
     @Test fun `다시 시작 알림은 바로 닫아도 뷰어에 닿고 상태는 데몬 실행 id 를 싣는다`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val endpoint = sideEndpoint(scope)
+        val side = sideEndpoint(scope)
+        val endpoint = side.endpoint
+        val feed = side.feed
         val live = Lines()
         try {
             runBlocking { endpoint.route(FakeExchange(live), "/events", "GET") }
             val state = Json.parse(live.next()!!.removePrefix("data: ").trim()) as Map<*, *>
             assertTrue(((state["state"] as Map<*, *>)["boot"] as String).isNotEmpty())
-            assertEquals(1, endpoint.viewerCount)
-            endpoint.announceRestart()
-            endpoint.close()
+            assertEquals(1, feed.viewerCount)
+            feed.announceRestart()
+            feed.close()
             assertTrue(live.next()?.contains("\"kind\":\"restart\"") == true, "닫기 전에 보낸 다시 시작 알림이 뷰어에 닿지 않았다")
-        } finally { endpoint.close(); scope.cancel() }
+        } finally { feed.close(); scope.cancel() }
     }
 
-    private fun sideEndpoint(scope: CoroutineScope) = BrowserEndpoint(g.presenter, g.browserTabs, g.browserInput, g.browserPointing, server.frames,
-        Relay(scope, realDispatchers), ViewerTarget({ null to null }, null, null, null), EntryLog {})
+    private class Side(val endpoint: BrowserEndpoint, val feed: ViewerFeed)
+
+    private fun sideEndpoint(scope: CoroutineScope): Side {
+        val feed = ViewerFeed(g.presenter, Relay(scope, realDispatchers), realDispatchers, EntryLog {})
+        return Side(BrowserEndpoint(g.presenter, g.browserTabs, g.browserInput, g.browserPointing, server.frames, feed, ViewerTarget({ null to null }, null, null, null)), feed)
+    }
 
     /** 놓아 줄 때까지 쓰기가 멈춘다 — 읽지 않는 브라우저 탭. */
     private class StuckStream : OutputStream() {

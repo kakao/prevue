@@ -9,7 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import prevue.application.port.PrevueDispatchers
 
 @SingleIn(AppScope::class)
-public class Relay @Inject internal constructor(parent: CoroutineScope, internal val dispatchers: PrevueDispatchers) {
+public class Relay @Inject internal constructor(parent: CoroutineScope, dispatchers: PrevueDispatchers) {
     internal val job: Job = SupervisorJob(parent.coroutineContext[Job])
     internal val scope: CoroutineScope = CoroutineScope(parent.coroutineContext + job + dispatchers.default)
 }
