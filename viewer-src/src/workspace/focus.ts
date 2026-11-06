@@ -14,7 +14,7 @@ import { zoomView } from './view';
 
 export type WorkspaceParts = {
   focusView: HTMLElement; wrap: HTMLElement; stage: HTMLElement; shot: HTMLImageElement; box: HTMLElement; pickBox: HTMLElement;
-  scene: HTMLElement; geometry: HTMLElement; panel: HTMLElement;
+  scene: HTMLElement; geometry: HTMLElement; panel: HTMLElement; header: HTMLElement[];
 };
 
 export function findWorkspaceParts(): WorkspaceParts {
@@ -22,7 +22,7 @@ export function findWorkspaceParts(): WorkspaceParts {
   const stage = $('stage');
   return {
     focusView: $('focusView'), wrap: stage.parentElement!, stage, shot: $<HTMLImageElement>('shot'), box: $('box'), pickBox: $('pickBox'),
-    scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'),
+    scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle'), $('seg')],
   };
 }
 
@@ -32,7 +32,7 @@ type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLEle
 
 export type Workspace = ReturnType<typeof createWorkspace>;
 
-export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, scene, geometry, panel }: WorkspaceParts) {
+export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, scene, geometry, panel, header }: WorkspaceParts) {
   let all: Hit[] = [], nodes: Hit[] = [], ready = false;
 
   /** 색인이 다시 왔다. 들고 있는 트리를 새 색인으로 다시 거른다. */
@@ -147,13 +147,13 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
   /* ---------- 작업 공간 여닫기 — 틀 모프 ---------- */
   /*
    * 들어갈 때는 카드 틀이 캔버스 자리로 커지고, 나올 때는 장식이 먼저 물러난 뒤 지금 프레임을 담은 틀이 카드로 줄어든다.
-   * 그동안 실제 캔버스 · 장면의 틀은 숨기고(morph-hold), 몸체 · 치수선 · 패널의 칸은 모프 70%에서 들어온다(deco-off).
+   * 그동안 실제 캔버스 · 장면의 틀은 숨기고(morph-hold), 몸체 · 치수선 · 패널의 칸 · 헤더의 뒤로 · 이름 · 토글은 모프 70%에서 들어온다(deco-off, D-153 ⑧).
    * 움직임 줄이기 · 뒤에 있는 탭 · 출발점이 화면 밖이면 페이드만 한다.
    */
   let flight: Flight | null = null;
   const sameRatio = (a: number, b: number) => a > 0 && b > 0 && Math.abs(a / b - 1) < .01;
   const decorations = (on: boolean, ms: number) => {
-    for (const el of [scene, panel]) { el.style.setProperty('--deco-dur', ms + 'ms'); el.classList.toggle('deco-off', !on); }
+    for (const el of [scene, panel, ...header]) { el.style.setProperty('--deco-dur', ms + 'ms'); el.classList.toggle('deco-off', !on); }
   };
   function stopFlight() {
     if (!flight) return;
