@@ -23,7 +23,8 @@ import prevue.infrastructure.controller.http.Relay
 import prevue.infrastructure.json.Json
 
 @SingleIn(AppScope::class)
-public class ViewerFeed @Inject internal constructor(
+@Inject
+internal class ViewerFeed(
     private val presenter: BrowserPresenter,
     private val relay: Relay,
     private val dispatchers: PrevueDispatchers,
@@ -38,28 +39,28 @@ public class ViewerFeed @Inject internal constructor(
     private val viewers = MutableStateFlow<List<Viewer>?>(emptyList())
     private val boot = UUID.randomUUID().toString()
 
-    internal val viewerCount: Int get() = viewers.value.orEmpty().size
+    val viewerCount get() = viewers.value.orEmpty().size
 
-    internal fun announceRestart() {
+    fun announceRestart() {
         val line = line(mapOf("type" to "ui", "event" to mapOf("kind" to "restart")))
         for (v in viewers.value.orEmpty()) v.ui.trySend(line)
     }
 
-    internal fun close() {
+    fun close() {
         viewers.getAndUpdate { null }?.forEach(Viewer::hangUp)
     }
 
-    internal fun pushState(st: BrowserState) {
+    fun pushState(st: BrowserState) {
         val line = stateLine(st)
         for (v in viewers.value.orEmpty()) v.state.trySend(line)
     }
 
-    internal fun pushUi(ev: UiEvent) {
+    fun pushUi(ev: UiEvent) {
         val line = line(mapOf("type" to "ui", "event" to ev.toJson()))
         for (v in viewers.value.orEmpty()) if (v.ui.trySend(line).isFailure) drop(v)
     }
 
-    internal fun attach(out: OutputStream) {
+    fun attach(out: OutputStream) {
         val v = Viewer(out)
         if (viewers.updateAndGet { it?.plus(v) } == null) v.hangUp()
         else v.state.trySend(stateLine(presenter.state.value))

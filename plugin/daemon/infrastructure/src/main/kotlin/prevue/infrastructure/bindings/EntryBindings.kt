@@ -49,7 +49,7 @@ public object EntryBindings {
     internal fun server(
         endpoints: Set<HttpEndpoint>, seat: HttpSeat, hooks: EntryHooks, relay: Relay, dispatchers: PrevueDispatchers, feed: ViewerFeed,
     ): Server =
-        Server(seat.port, endpoints.toList(), seat.viewerDir, seat.outDir, relay.scope.coroutineContext, dispatchers) { restart ->
+        Server(seat, endpoints.toList(), relay.scope.coroutineContext, dispatchers) { restart ->
             if (restart) feed.announceRestart()
             hooks.onShutdown()
         }
