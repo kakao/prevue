@@ -89,8 +89,11 @@ try {
           const frames=await evaluate(`new Promise(resolve=>{
             const leaf=document.querySelector('#rig .leaf'),base=document.querySelector('#rig .base');
             const probe=(parent,x,y)=>{const el=document.createElement('i');el.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';parent.append(el);return el};
-            // 원근 변환을 거친 접는 축의 같은 끝점이 화면에서도 이어져야 한다.
-            const a=probe(leaf,100,100),b=probe(base,${rotated?100:0},${rotated?0:100});
+            // 원근 변환을 거친 접는 축의 같은 끝점이 화면에서도 이어져야 한다. 잎은 두께의 가운데(transform-origin 의 z)를 축으로 도니,
+            // 잎 쪽은 그 깊이의 경첩 끝점, 바닥 쪽은 같은 깊이에 둔 바닥 장의 경첩 끝점(.lift 좌표)을 잰다 — 두 장의 높이가 어긋나면 벌어진다.
+            const lift=document.querySelector('#rig .lift'),a=probe(leaf,100,100),b=probe(lift,0,0);
+            const axis=()=>{const z=parseFloat(leaf.style.transformOrigin.split(' ')[2])||0,s=base.style,x=parseFloat(s.left)+(${rotated}?parseFloat(s.width):0),y=parseFloat(s.top)+(${rotated}?0:parseFloat(s.height));
+              a.style.transform=b.style.transform='translateZ('+z+'px)';b.style.left=x+'px';b.style.top=y+'px';};
             const frames=[];const tick=()=>{
               if(${device==='ipduo'} && !document.querySelector('#duo').hidden){
                 const path=document.querySelector('#duo .duo-flap').style.clipPath;
@@ -102,7 +105,7 @@ try {
                   frames.push({error:Math.hypot(root.x+x-bx,root.y+y-by),path,base:{x:base.x,y:base.y,w:base.width,h:base.height}});
                 }
               } else if(!${device==='ipduo'} && !document.querySelector('#rig').hidden){
-                const A=a.getBoundingClientRect(),B=b.getBoundingClientRect();
+                axis();const A=a.getBoundingClientRect(),B=b.getBoundingClientRect();
                 const L=leaf.getBoundingClientRect(),R=base.getBoundingClientRect();
                 const over=${rotated}?Math.max(0,R.bottom-L.bottom,L.top-R.top):Math.max(0,R.right-L.right,L.left-R.left);
                 const th=Math.abs(Number(leaf.style.transform.match(/-?[\\d.]+/)?.[0]));

@@ -60,16 +60,24 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .duo { position: absolute; inset: 0; pointer-events: none; }
 .resize-scene .duo-base { position: absolute; left: 0; top: 0; box-shadow: var(--shadow-contact), var(--shadow-near), var(--shadow-far); }
 .resize-scene .duo-scr { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 2px var(--live); }
-.resize-scene .duo-band { position: absolute; border-style: solid; box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-inset); }
+.resize-scene .duo-band { position: absolute; border-style: solid;
+            box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-rim),
+              var(--depth-x) var(--depth-y) 0 0 var(--device-side), var(--depth-x) var(--depth-y) 0 0 currentColor, var(--depth-x) var(--depth-y) 0 .5px var(--device-side-line); }
 .resize-scene .duo-flap { position: absolute; inset: 0; background: var(--device-flap); }
 .resize-scene .duo-face { position: absolute; left: 0; top: 0; overflow: hidden; }
 .resize-scene .duo-ly { position: absolute; inset: 0; }
 .resize-scene .duo-dark { position: absolute; left: 0; top: 0; }
-/* 접는 장의 몸체도 멈춘 몸체(.shell)와 같은 그림자 · 외곽선 · 150° 빛을 받아 끝난 순간 바뀌지 않는다. 두께 띠 · 화면 가장자리는 아직 멈춘 몸체에만 있다. */
+/* 접는 장의 몸체도 멈춘 몸체(.shell)와 같은 그림자 · 외곽선 · 150° 빛 · 두께 띠 · 화면 가장자리를 받아 끝난 순간 바뀌지 않는다.
+   접는 장의 띠는 윤곽을 --depth 만큼 민 선이고(.band), 접는 동안의 두께는 먼 변의 옆면(.thick)이 맡는다. */
 .resize-scene .duo-edge { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible;
             filter: drop-shadow(var(--shadow-contact)) drop-shadow(var(--shadow-near)) drop-shadow(var(--shadow-far)); }
 .resize-scene .duo-edge :is(.outl, .houtl) { stroke: var(--device-hairline); }
 .resize-scene .duo-edge .rimhi { stroke: var(--device-rim); }
+.resize-scene .duo-edge .band { transform: translate(var(--depth-x), var(--depth-y)); }
+.resize-scene .duo-edge .bl { stroke: var(--device-side-line); }
+.resize-scene .duo-edge .bd { stroke: var(--device-side); }
+.resize-scene .duo-edge .inner { stroke: var(--device-inner); stroke-width: 2px; }
+.resize-scene .duo-edge .glow { stroke: var(--device-inner-glow); opacity: .5; }
 .resize-scene .duo-band { background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
             background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
 .resize-scene .duo-edge path { fill: none; stroke-linejoin: round; }
@@ -80,21 +88,29 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene #duoSheen stop:nth-child(3) { stop-color: var(--device-gloss-shade); }
 /* 그림 끝 */
 /* 그림 시작 — 접기 전환의 리그(면 · 그늘 · 빛) */
+/* 접는 동안 몸체 전체가 한 3D 공간이다(D-158 ①) — 원근은 .rig, 기울임은 .lift, 잎은 두께 --thick 의 상자. 그림자 · 흐림은 3D 면에 두지 않는다(매 프레임 다시 그려진다).
+   바닥 판(.plate)은 멈춘 몸체(.shell)와 같은 두께 띠 · 그림자를 그려, 접기가 끝나는 순간 띠가 이어진다. */
 .resize-scene .rig { position: absolute; inset: 0; pointer-events: none; }
-.resize-scene .rig .lift { position: absolute; inset: 0; }
+.resize-scene .rig .lift { position: absolute; inset: 0; transform-style: preserve-3d; }
 .resize-scene .rig .plate { position: absolute; left: 0; top: 0; border-radius: var(--corner-medium); }
-.resize-scene .rig .base, .resize-scene .rig .leaf { position: absolute; left: 0; top: 0; }
+.resize-scene .rig .base, .resize-scene .rig .leaf, .resize-scene .rig .spine { position: absolute; left: 0; top: 0; }
 .resize-scene .rig .leaf { transform-style: preserve-3d; transform-origin: 100% 50%; }
+.resize-scene .rig .lay { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 .resize-scene .rig .clip { position: absolute; inset: 0; overflow: hidden; }
-.resize-scene .rig .face { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
-.resize-scene .rig .face.outer { transform: rotateY(180deg); }
+.resize-scene .rig .side { position: absolute; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.resize-scene .rig .spine { background-image: linear-gradient(90deg, var(--device-side), var(--device-gloss-clear) 35%, var(--device-gloss-clear) 50%, var(--device-side)); }
+.resize-scene .rig .spine.h { background-image: linear-gradient(180deg, var(--device-side), var(--device-gloss-clear) 35%, var(--device-gloss-clear) 50%, var(--device-side)); }
+/* 화면 구멍의 가장자리 — 멈춘 몸체의 .shell::after 와 같은 겹. 테(.bez)의 안쪽 상자가 곧 화면이라 바깥(테 쪽)으로만 번진다. */
+.resize-scene .rig .bez::after { content: ""; position: absolute; inset: 0; border-radius: var(--screen-r, 0px);
+         box-shadow: 0 0 0 1px var(--device-inner), 0 0 calc(var(--bezel, 0px) * .6) 0 var(--device-inner-glow); }
 .resize-scene .rig .shade, .resize-scene .rig .cast { position: absolute; inset: 0; pointer-events: none; }
 .resize-scene .rig .shade { background: var(--device-shade); }
 .resize-scene .rig .sheen { position: absolute; top: 0; bottom: 0; left: -60%; width: 220%; pointer-events: none;
               background: linear-gradient(100deg, var(--device-gloss-clear) 38%, var(--device-sheen) 50%, var(--device-gloss-clear) 62%); }
 .resize-scene .rig .edge { position: absolute; pointer-events: none; border-style: solid; }
 .resize-scene .rig .ring { border-color: var(--live); }
-.resize-scene .rig .bez { border-color: var(--device-body); box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-inset); }
+.resize-scene .rig .bez { border-color: transparent; background-color: var(--device-body); box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-rim);
+            background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); background-repeat: no-repeat; background-origin: border-box; }
 /* 그림 끝 */
 .resize-scene .ruler { position: absolute; inset: 0; pointer-events: none; }
 .resize-scene .ruler svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
