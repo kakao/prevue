@@ -34,7 +34,7 @@ export function createResizeScene(root, hooks) {
       open: { w: 1280, h: 800 },
       look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
     ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
-      cover: { w: 466, h: 678 }, open: { w: 890, h: 626, hinge: 445 },
+      half: { w: 445, h: 626 }, cover: { w: 466, h: 678 }, open: { w: 890, h: 626, hinge: 445 },
       look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 96, h: 30, y: 10 }, btn: [[1, 200, 80], [1, 470, 46]] },
               open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 10, h: 10, y: 11, x: .75 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
     fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
@@ -57,7 +57,7 @@ export function createResizeScene(root, hooks) {
     swapDur: 320, swapBlur: 8, swapNear: .15, spinSwapA: .35, spinSwapB: .65,
     holdBlur: 24, holdRise: 150, revealFade: 240, revealDur: 280, swapZoom: .03, moveBlur: 6, settleSharp: 220,
     reducedFade: 240, reducedDim: .62, gap: 7, crease: .35,
-    hingeLine: true, duoDur: 1, duoBlur: 14, duoDark: .6, depthX: 1.4, depthY: 3 };
+    halfAngle: 66, hingeLine: true, duoDur: 1, duoBlur: 14, duoDark: .6, depthX: 1.4, depthY: 3 };
   // 커스텀 크기의 범위와 키 한 번의 걸음 — 치수선 입력과 슬라이더가 같이 쓴다
   const DP_MIN = 240, DP_MAX = 1600, stepOf = e => e.shiftKey ? 10 : 1;
   const ORIGINAL = { sel: "original", kind: "original", name: "@Preview", w: 411, h: 891, img: null };
@@ -73,7 +73,7 @@ export function createResizeScene(root, hooks) {
       const [dev, state, turn] = sel.split(":"), d = DEVICES[dev];
       if (!d || !d[state]) return null;
       const s = d[state], rot = turn === "rot";
-      st = { sel, kind: "device", dev, folded: state === "cover", rot, name: d.name, short: d.short,
+      st = { sel, kind: "device", dev, folded: state === "cover", half: state === "half", rot, name: d.name, short: d.short,
         w: rot ? s.h : s.w, h: rot ? s.w : s.h, hinge: s.hinge };
     }
     if (target?.sel === sel) { st.w = target.w; st.h = target.h; }
@@ -82,8 +82,9 @@ export function createResizeScene(root, hooks) {
   }
   const lined = st => st.kind === "preset" || st.kind === "custom";
   const shelled = st => st.kind === "device";
-  const devSel = (st, folded, rot) => `${st.dev}:${folded ? "cover" : "open"}${rot ? ":rot" : ""}`;
-  const isOpen = st => st.kind === "device" && DEVICES[st.dev].fold && !st.folded;
+  const devSel = (st, folded, rot, half = false) => `${st.dev}:${half ? "half" : folded ? "cover" : "open"}${rot ? ":rot" : ""}`;
+  const foldAngle = st => st.half ? P.halfAngle : st.folded ? 180 : 0;
+  const isOpen = st => st.kind === "device" && DEVICES[st.dev].fold && !st.folded && !st.half;
   const lookOf = st => DEVICES[st.dev].look[st.folded ? "cover" : "open"];
   const bezelOf = st => lookOf(st).bezel * P.shellK;
   const dims = st => `${Math.round(st.w)}×${Math.round(st.h)}`;
@@ -157,8 +158,23 @@ export function createResizeScene(root, hooks) {
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
   function fit(st) {
     const r = room(), pad = x => shelled(x) ? 2 * bezelOf(x) : 0, each = x => Math.min(r.maxW / (x.w + pad(x)), r.maxH / (x.h + pad(x)), 2);
-    const s = Math.min(each(ORIGINAL), each(st)), h = st.h * s;
-    return { s, w: st.w * s, h, cx: r.cx, y: r.top + pad(st) * s / 2 + Math.max(0, (r.maxH - h - pad(st) * s) / 2) };
+    let s = Math.min(each(ORIGINAL), each(st)), extra = 0;
+    if (st.half) {
+      const rad = P.halfAngle * Math.PI / 180, d = DEVICES[st.dev];
+      const bounds = z => {
+        const u = d.half.w * z, k = P.perspective / (P.perspective - u * Math.sin(rad));
+        return { extra: u * Math.cos(rad) * k, k };
+      };
+      let lo = 0, hi = s;
+      for (let i = 0; i < 24; i++) {
+        const z = (lo + hi) / 2, b = bounds(z), w = st.rot ? st.w * z * b.k : st.w * z + 2 * b.extra;
+        const h = st.rot ? st.h * z + b.extra : st.h * z * b.k;
+        if (w + pad(st) * z <= r.maxW && h + pad(st) * z <= r.maxH) lo = z; else hi = z;
+      }
+      s = lo; extra = st.rot ? bounds(s).extra : 0;
+    }
+    const h = st.h * s;
+    return { s, w: st.w * s, h, cx: r.cx, y: r.top + pad(st) * s / 2 + extra + Math.max(0, (r.maxH - h - extra - pad(st) * s) / 2) };
   }
   let cur = null;
   let tr = null;
@@ -250,8 +266,8 @@ export function createResizeScene(root, hooks) {
     if (!to || !cur || to.sel === cur.sel) return;
     if (rig.on || spin.on) { queued = to.sel; return; }
     const from = cur, same = from.kind === "device" && to.kind === "device" && from.dev === to.dev;
-    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot;
-    const spinning = !reducedOn() && same && from.rot !== to.rot && from.folded === to.folded;
+    const folding = !reducedOn() && same && foldAngle(from) !== foldAngle(to) && from.rot === to.rot;
+    const spinning = !reducedOn() && same && from.rot !== to.rot && foldAngle(from) === foldAngle(to);
     if ((folding || spinning) && !atRest(now)) { queued = to.sel; return; }
     queued = null;
 
@@ -360,20 +376,20 @@ export function createResizeScene(root, hooks) {
                                        : `color-mix(in srgb, var(--device-shade) ${(60 * (1 - l / .7)).toFixed(1)}%, ${tone})`;
 
   function startFold(from, to, now, cached) {
-    const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", ax = to.rot ? "y" : "x", H = d.open.hinge;
+    const d = DEVICES[to.dev], dir = foldAngle(to) > foldAngle(from) ? "fold" : "unfold", ax = to.rot ? "y" : "x", H = d.open.hinge;
     const f0 = fit(from), f1 = fit(to);
     freeze(now);
     if (cached) { const o = layer.old; o.fill = false; o.blur.snap(0); o.veil.snap(0); }
     const restBlur = layer.old.blur.at(now);
     const openU = f => ax === "x" ? f.cx - d.open.w * f.s / 2 + H * f.s : f.y + H * f.s;
-    const coverU = f => ax === "x" ? f.cx - d.cover.w * f.s / 2 : f.y;
+    const hingeU = (st, f) => st.folded || st.half ? (ax === "x" ? f.cx - st.w * f.s / 2 : f.y) : openU(f);
     const frame = { w: to.w, h: to.h };
     Object.assign(rig, {
       on: true, t0: now, dur: d === DEVICES.ipduo ? P.duoDur : P.foldDur, dir, d, ax, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
-      s0: f0.s, s1: f1.s,
+      a0: foldAngle(from), a1: foldAngle(to), s0: f0.s, s1: f1.s,
       half: { u: H, v: d.open.h }, cover: { u: d.cover.w, v: d.cover.h },
-      hx0: dir === "fold" ? openU(f0) : coverU(f0),
-      hx1: dir === "fold" ? coverU(f1) : openU(f1),
+      hx0: hingeU(from, f0),
+      hx1: hingeU(to, f1),
       plan: dir === "fold"
         ? { inner: { role: "crisp", du: 0 }, base: { role: "crisp", du: H }, outer: { role: "hold", du: 0, neu: true, frame } }
         : { outer: { role: "crisp", du: 0 }, inner: { role: "hold", du: 0, neu: true, frame }, base: { role: "hold", du: H, neu: true, frame } },
@@ -388,7 +404,7 @@ export function createResizeScene(root, hooks) {
   function rigAt(now) {
     const t = (now - rig.t0) / 1000, T = Math.max(.05, rig.dur);
     const e = foldEase()(clamp(t / T, 0, 1));
-    const th = (rig.dir === "fold" ? e : 1 - e) * 180;
+    const th = lerp(rig.a0, rig.a1, e);
     return { t, th, p: e, s: lerp(rig.s0, rig.s1, e), hx: lerp(rig.hx0, rig.hx1, e), top: lerp(rig.f0.y, rig.f1.y, e), settled: t >= T };
   }
 
@@ -607,21 +623,36 @@ export function createResizeScene(root, hooks) {
     for (const [k, v] of [["x1", cx - dx * L / 2], ["y1", cy - dy * L / 2], ["x2", cx + dx * L / 2], ["y2", cy + dy * L / 2]]) DU.grad.setAttribute(k, v.toFixed(2));
   }
   DU.layers = Array.from({ length: 5 }, () => { const l = document.createElement("div"); l.className = "duo-ly"; l.innerHTML = '<img class="ly" alt=""><div class="cam"></div>'; DU.face.append(l); return { el: l, img: q(l, "img"), cam: q(l, ".cam") }; });
-  function duoSrc(which) {
-    const open = rig.dir === "fold" ? rig.from : rig.to, cover = rig.dir === "fold" ? rig.to : rig.from;
-    const st = which === "cover" ? cover : open, arriving = st === rig.to;
-    if (!arriving || rig.cached) return { spec: st.img, blur: 0, size: { w: st.img.dpW, h: st.img.dpH } };
-    return { spec: rig.oldSpec, blur: layer.old.blur.at(clock.t), size: holdSize(rig.oldSpec, st, layer.old.fill) };
+  function duoSrc(which, pose) {
+    if (pose.resting && which === "base") {
+      const n = layer.neu, fresh = n.r && n.op.at(clock.t) > .5, spec = fresh ? n.r : layer.old.r;
+      return { spec, blur: fresh ? n.blur.at(clock.t) : layer.old.blur.at(clock.t), size: { w: pose.to.w, h: pose.to.h }, half: true };
+    }
+    if (which === "base" && (pose.from.half || pose.to.half)) {
+      const st = pose.to.half ? pose.to : pose.from;
+      if (st === pose.to && !pose.cached) return { spec: pose.oldSpec, blur: layer.old.blur.at(clock.t), size: holdSize(pose.oldSpec, st, true), half: true };
+      return { spec: st.img, blur: 0, size: { w: st.w, h: st.h }, half: true };
+    }
+    const state = which === "cover" ? "cover" : "open", sel = `ipduo:${state}${pose.to.rot ? ":rot" : ""}`;
+    const st = pose.to.sel === sel ? pose.to : pose.from.sel === sel ? pose.from : resolve(sel);
+    const spec = images.get(sel) || st.img || pose.oldSpec;
+    if (st === pose.to && !pose.cached) return { spec: pose.oldSpec, blur: layer.old.blur.at(clock.t), size: holdSize(pose.oldSpec, st, layer.old.fill) };
+    return { spec, blur: 0, size: { w: spec?.dpW || st.w, h: spec?.dpH || st.h } };
   }
-  function drawDuo(now) {
-    const { th, s, hx: hu, top: T0 } = rigAt(now), X = rig.ax === "x", { cx } = room(), d = rig.d, lk = lookAt(now);
-    const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), E = P.perspective, t = lk.bezel * P.shellK * s;
-    const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s, Bu = rig.half.u * s, Bv = Lv, H = d.open.hinge * s;
+  function drawDuo(now, resting = false) {
+    const pose = resting ? {
+      d: DEVICES.ipduo, ax: cur.rot ? "y" : "x", from: cur, to: cur, cached: true, resting: true,
+      half: { u: DEVICES.ipduo.half.w, v: DEVICES.ipduo.half.h }, cover: { u: DEVICES.ipduo.cover.w, v: DEVICES.ipduo.cover.h },
+    } : rig;
+    const at = resting ? { th: P.halfAngle, s: V.s.at(now), hx: cur.rot ? V.y.at(now) : room().cx - V.w.at(now) / 2, top: V.y.at(now) } : rigAt(now);
+    const { th, s, hx: hu, top: T0 } = at, X = pose.ax === "x", { cx } = room(), d = pose.d, lk = lookAt(now);
+    const k = smooth(P.halfAngle, 180, th), rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), E = P.perspective, t = lk.bezel * P.shellK * s;
+    const Lu = lerp(pose.half.u, pose.cover.u, k) * s, Lv = lerp(pose.half.v, pose.cover.v, k) * s, Bu = pose.half.u * s, Bv = Lv, H = d.open.hinge * s;
     const vc = dv => X ? T0 + dv / 2 : cx;
     const pt = (u, v) => X ? [u, v] : [v, u];
     // 반경은 면마다 고정한다 — 기기 모양 모프(펼침 30 → 커버 44)를 따르면 접는 도중 두 장의 모서리가 커진다.
     // 힌지 쪽 모서리는 두 장이 겹치는 자리라 같은 반경을 쓴다 — 60~120°에 펼침에서 커버 반경으로 옮겨, 다 접혔을 때 아래 장이 비어져 나오지 않는다.
-    const r = d.look.open.radius * s, hk = smooth(20, 160, th), rh = lerp(r, d.look.cover.radius * s, smooth(60, 120, th)) * hk;
+    const r = d.look.open.radius * s, hk = smooth(20, 160, th), rh = lerp(lerp(r, d.look.cover.radius * s, smooth(60, 120, th)) * hk, r, smooth(0, P.halfAngle, th) * (1 - smooth(P.halfAngle, 180, th)));
     const b0 = vc(Bv) - Bv / 2, [bl, bt] = pt(hu, b0), [bw, bh] = X ? [Bu, Bv] : [Bv, Bu];
     Object.assign(DU.base.style, { left: bl + "px", top: bt + "px", width: bw + "px", height: bh + "px", borderRadius: (X ? `${rh}px ${r}px ${r}px ${rh}px` : `${rh}px ${rh}px ${r}px ${r}px`) });
     DU.scr.style.borderRadius = DU.base.style.borderRadius;
@@ -632,10 +663,10 @@ export function createResizeScene(root, hooks) {
     const dx = px(P.depthX * s), dy = px(P.depthY * s);
     for (const el of [DU.base, DU.svg]) { setVar(el, "--depth-x", dx); setVar(el, "--depth-y", dy); }
     DU.band.style.color = lk.tone;
-    const bs = duoSrc("open");
-    place(DU.baseImg, bs.spec, X ? -H : 0, bs.size.w * s, bs.size.h * s, 1, bs.blur, X ? 0 : -H);
-    DU.scr.style.background = bs.spec.edge;
-    putCam(DU.baseCam, camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s), X ? -H : 0, X ? 0 : -H, 1);
+    const bs = duoSrc("base", pose);
+    place(DU.baseImg, bs.spec, !bs.half && X ? -H : 0, bs.size.w * s, bs.size.h * s, 1, bs.blur, !bs.half && !X ? -H : 0);
+    DU.scr.style.background = bs.spec?.edge || "var(--device-flap)";
+    putCam(DU.baseCam, camBox(d.open.w, d.open.h, !!pose.to.rot, d.look.open.cam, s), X ? -H : 0, X ? 0 : -H, 1);
     const th2 = t * hk, R = r + t, Rh = rh + th2;
     Object.assign(DU.band.style, { left: (X ? -th2 : -t) + "px", top: (X ? -t : -th2) + "px", right: -t + "px", bottom: -t + "px", borderColor: lk.tone,
       borderWidth: X ? `${t}px ${t}px ${t}px ${th2}px` : `${th2}px ${t}px ${t}px ${t}px`,
@@ -695,21 +726,21 @@ export function createResizeScene(root, hooks) {
     DU.ringH.style.opacity = hz;
     DU.draw.style.opacity = Math.abs(uF - hu) > 1 ? 1 : 0;
     const back = th > 90;
-    const src = back ? duoSrc("cover") : duoSrc("open");
+    const src = back ? duoSrc("cover", pose) : duoSrc("open", pose);
     const u0 = back ? hu : hu - Lu;
     const [fl, ft] = pt(u0, vf - Lv / 2), [fw, fh] = X ? [Lu, Lv] : [Lv, Lu];
     const origin = X ? (back ? "0 50%" : "100% 50%") : (back ? "50% 0" : "50% 100%");
     const squash = X ? `scaleX(${sq.toFixed(4)})` : `scaleY(${sq.toFixed(4)})`;
-    Object.assign(DU.face.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash, background: src.spec.edge });
+    Object.assign(DU.face.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash, background: `color-mix(in srgb, var(--device-flap) ${((back ? 1 - smooth(90, 150, th) : smooth(0, P.halfAngle, th)) * 100).toFixed(1)}%, ${src.spec?.edge || "var(--device-flap)"})` });
     Object.assign(DU.dark.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash });
     const dir = X ? (back ? "to right" : "to left") : (back ? "to bottom" : "to top");
-    const lift = sn, camB = back ? camBox(d.cover.w, d.cover.h, !!rig.to.rot, d.look.cover.cam, s) : camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s);
+    const lift = sn, camB = back ? camBox(d.cover.w, d.cover.h, !!pose.to.rot, d.look.cover.cam, s) : camBox(d.open.w, d.open.h, !!pose.to.rot, d.look.open.cam, s);
     DU.layers.forEach((L, i) => {
       const bl2 = i === 0 ? 0 : P.duoBlur * lift * Math.pow(i / 4, 1.35);
       place(L.img, src.spec, 0, src.size.w * s, src.size.h * s, 1, Math.max(bl2, src.blur));
       putCam(L.cam, camB, 0, 0, 1);
       L.el.style.webkitMaskImage = L.el.style.maskImage = i === 0 ? "none" : `linear-gradient(${dir}, transparent ${((i - .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${(i / 4 * 100).toFixed(1)}%)`;
-      L.el.style.opacity = i === 0 || bl2 > .2 ? 1 : 0;
+      L.el.style.opacity = (i === 0 || bl2 > .2 ? 1 : 0) * (back ? smooth(90, 150, th) : 1 - smooth(0, P.halfAngle, th));
     });
     const stops = [0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * lift * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.duoDark)} ${dd * 100}%`);
     DU.dark.style.background = `linear-gradient(${dir}, ${stops.join(", ")})`;
@@ -806,6 +837,11 @@ export function createResizeScene(root, hooks) {
   }
 
   function draw(now) {
+    if (cur.half && !rig.on && !spin.on && !draft && (!tr || tr.kind === "fold" || tr.kind === "unfold")) {
+      UA.el.hidden = true; UB.el.hidden = true; rigEl.hidden = true; DU.el.hidden = false;
+      drawDuo(now, true);
+      return;
+    }
     if (rig.on) {
       const duo = rig.d === DEVICES.ipduo;
       UA.el.hidden = true; UB.el.hidden = true; rigEl.hidden = duo; DU.el.hidden = !duo;
@@ -864,7 +900,7 @@ export function createResizeScene(root, hooks) {
   const roll = { w: new Tw(411), h: new Tw(891) };
   const byId = id => document.getElementById(id);   // 패널은 장면 밖(본문 오른쪽)에 선다 — $ 는 장면 안만 찾는다
   const PN = { el: byId("panel"), pick: byId("pnPick") };
-  const CTL = { el: byId("devCtl"), fold: byId("dcFold"), rot: byId("dcRot"), hinge: byId("dcHinge") };
+  const CTL = { el: byId("devCtl"), fold: byId("dcFold"), half: byId("dcHalf"), rot: byId("dcRot"), hinge: byId("dcHinge") };
   const ROWS = [...PN.pick.querySelectorAll("[data-sel]")];
   // 칸은 이름과 dp 두 쪽이다. 기기 칸은 몸체 윤곽을 앞에 둔다 — 비율 · 모서리 · 카메라(구멍 · 섬)는 몸체 그림의 값에서 줄이고,
   // 접는 기기는 힌지 선을 긋는다. 이름은 줄이고 전체 이름은 툴팁에 둔다.
@@ -916,7 +952,14 @@ export function createResizeScene(root, hooks) {
     if (instant) { roll.w.snap(st.w); roll.h.snap(st.h); } else { roll.w.to(st.w, 420, now); roll.h.to(st.h, 420, now); }
     if (st.kind === "device") {
       setLook(lookOf(st), instant);
-      CTL.fold.hidden = CTL.hinge.hidden = !DEVICES[st.dev].fold;
+      CTL.fold.hidden = !DEVICES[st.dev].fold;
+      CTL.hinge.hidden = !DEVICES[st.dev].fold || st.half;
+      CTL.half.hidden = st.dev !== "ipduo";
+      const halfLabel = phrase(st.half ? "posture.unfold" : "posture.half");
+      byId("dcHalfLb").textContent = halfLabel;
+      CTL.half.setAttribute("aria-label", halfLabel);
+      CTL.half.setAttribute("aria-pressed", !!st.half);
+      CTL.half.title = halfLabel + " — " + phrase("posture.half.hint");
       byId("dcFoldLb").textContent = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
       // 이름은 누르면 될 모양으로 정한다 — 원래 가로인 화면(Pixel Tablet · 펼친 Fold8)은 돌리지 않은 채로 넓다
       const turn = st.w > st.h ? phrase("posture.upright") : phrase("posture.rotate");
@@ -946,6 +989,7 @@ export function createResizeScene(root, hooks) {
   }
   PN.pick.addEventListener("click", e => { const b = e.target.closest("[data-sel]"); if (b) pick(b.dataset.sel); });
   CTL.fold.addEventListener("click", () => toggleFold());
+  CTL.half.addEventListener("click", () => { if (cur.dev === "ipduo") request(devSel(cur, false, cur.rot, !cur.half)); });
   CTL.rot.addEventListener("click", () => toggleTurn());
   CTL.hinge.addEventListener("click", () => toggleHinge());
   function paintHinge() { CTL.hinge.setAttribute("aria-pressed", P.hingeLine); CTL.hinge.title = (P.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show")) + " "; }
@@ -956,7 +1000,7 @@ export function createResizeScene(root, hooks) {
     wake();
   }
   function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(devSel(cur, !cur.folded, cur.rot)); }
-  function toggleTurn() { if (cur.kind === "device") request(devSel(cur, cur.folded, !cur.rot)); }
+  function toggleTurn() { if (cur.kind === "device") request(devSel(cur, cur.folded, !cur.rot, cur.half)); }
 
   const RL = { el: $("ruler"), ext: $("rlExt"), dim: $("rlDim"), w: $("rlW"), h: $("rlH"), shown: { w: "", h: "" } };
   let editing = false;
@@ -1080,7 +1124,8 @@ export function createResizeScene(root, hooks) {
     if (RL.el.hidden) return;
     RL.el.style.opacity = op;
     const { cx } = room(), g = Math.max(P.gap, (lookAt(now).bezel * P.shellK * V.s.at(now) + 6) * shellOp.at(now)), w = V.w.at(now), h = V.h.at(now), T = V.y.at(now);
-    const L = cx - w / 2, R = cx + w / 2, B = T + h, M = (T + B) / 2, yr = T - g - 15, xr = L - g - 22, a = 4.5;
+    const L = cx - w / 2, R = cx + w / 2, B = T + h, M = (T + B) / 2, yr = cur.half && cur.rot ? B + g + 15 : T - g - 15, xr = cur.half && !cur.rot ? R + g + 22 : L - g - 22, a = 4.5;
+    const wt = cur.half && cur.rot ? B + g : T - g, ht = cur.half && !cur.rot ? R + g : L - g;
     for (const [axis, el] of [["w", RL.w], ["h", RL.h]]) {
       if (document.activeElement === el) continue;
       const v = String(Math.round(roll[axis].at(now)));
@@ -1088,7 +1133,7 @@ export function createResizeScene(root, hooks) {
     }
     const gw = clamp(RL.w.value.length * 7.2 + 16, 0, R - L - 4 * a) / 2, gh = clamp(30, 0, B - T - 4 * a) / 2;
     const f = v => v.toFixed(1);
-    RL.ext.setAttribute("d", `M${f(L)} ${f(T - g)}V${f(yr - 5)}M${f(R)} ${f(T - g)}V${f(yr - 5)}M${f(L - g)} ${f(T)}H${f(xr - 5)}M${f(L - g)} ${f(B)}H${f(xr - 5)}`);
+    RL.ext.setAttribute("d", `M${f(L)} ${f(wt)}V${f(yr - 5)}M${f(R)} ${f(wt)}V${f(yr - 5)}M${f(ht)} ${f(T)}H${f(xr - 5)}M${f(ht)} ${f(B)}H${f(xr - 5)}`);
     RL.dim.setAttribute("d",
       `M${f(L)} ${f(yr)}H${f(cx - gw)}M${f(cx + gw)} ${f(yr)}H${f(R)}` +
       `M${f(L + a)} ${f(yr - a)}L${f(L)} ${f(yr)}L${f(L + a)} ${f(yr + a)}M${f(R - a)} ${f(yr - a)}L${f(R)} ${f(yr)}L${f(R - a)} ${f(yr + a)}` +

@@ -3,6 +3,9 @@ package prevue.infrastructure.controller.http.mapper
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import prevue.application.domain.model.DeviceModel
+import prevue.application.domain.model.ScreenSize
+import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.Progress
 import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ViewNode
@@ -17,6 +20,19 @@ import prevue.application.domain.rule.NodeTarget
 /** 스킬 · 사람이 읽는 실패 문구 — 다음에 칠 명령을 그대로 담고 있어 글자가 바뀌면 안내가 어긋난다. */
 class ResultMapperTest {
     private val node = ViewNode("Row", "Cards.kt", 3, 0, 0, 10, 10)
+
+    @Test fun `반 접기 요청과 상태 JSON은 같은 크기와 자세를 유지한다`() {
+        val half = ScreenSize.Device(DeviceModel.IPHONE_DUO, landscape = true, half = true)
+        val request = mapOf("device" to "duo", "half" to true, "landscape" to true)
+        assertEquals(half, request.toScreenSize())
+        val json = half.toJson()!!
+        assertEquals(true, json["half"])
+        assertEquals(false, json["folded"])
+        assertEquals(626.0 to 445.0, json["widthDp"] to json["heightDp"])
+        assertEquals(half, json.toScreenSize())
+        assertThrows<IllegalArgumentException> { (request + ("folded" to true)).toScreenSize() }
+        assertThrows<IllegalArgumentException> { (request + ("device" to "fold8")).toScreenSize() }
+    }
 
     @Test fun `겨냥이 빗나간 문구`() {
         assertEquals(

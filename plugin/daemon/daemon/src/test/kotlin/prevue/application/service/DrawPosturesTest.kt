@@ -57,6 +57,21 @@ class DrawPosturesTest {
         assertTrue(uc.workspace.now.keepIds().containsAll((listOf("fold8-folded", "fold8-land", "fold8-folded-land") + bar).map { "$id@$it" }))
     }
 
+    @Test fun `Duo의 두 반 접기 자세를 미리 그리고 반 접기로 바꿔도 같은 회차를 쓴다`() {
+        val uc = opened()
+        val duo = ScreenSize.Device(DeviceModel.IPHONE_DUO)
+        uc.pick(duo)
+        uc.awaitDrawn(17)
+        assertTrue(setOf("duo-half", "duo-half-land", "duo-folded", "duo-land", "duo-folded-land").all { it in asideKeys() })
+        val half = duo.copy(half = true)
+        val round = uc.workspace.now.postures!!.round
+        runBlocking { uc.live.resize(half, "viewer") }
+        assertEquals(round, uc.workspace.now.postures!!.round)
+        assertEquals(17, uc.drawn().size)
+        assertTrue(half !in uc.drawn() && duo in uc.drawn())
+        assertEquals(17, postureAsides().size)
+    }
+
     @Test fun `막대 칸은 원래 크기 · 프리셋 · 기기의 펼친 세로 자세로 그린다`() {
         val uc = opened()
         uc.pick(fold8)

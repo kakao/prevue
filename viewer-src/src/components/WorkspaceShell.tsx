@@ -159,6 +159,7 @@ export function DevicePosture() {
   return <section className="pn-sec" id="devCtl" role="group" {...t.label('posture.label')} hidden><h4 className="pn-h" {...t.text('posture.title')} />
     <div className="pn-seg">
       <button className="pn-it" id="dcFold" type="button"><span id="dcFoldLb" {...t.text('posture.fold')} /></button>
+      <button className="pn-it" id="dcHalf" type="button" hidden><span id="dcHalfLb" {...t.text('posture.half')} /></button>
       <button className="pn-it" id="dcRot" type="button"><span id="dcRotLb" {...t.text('posture.rotate')} /></button>
       <button className="pn-it" id="dcHinge" type="button" aria-pressed="true" {...t.title('posture.hinge')} {...t.text('posture.hinge')} />
     </div>

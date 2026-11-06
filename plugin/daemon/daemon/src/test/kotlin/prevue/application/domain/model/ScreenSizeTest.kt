@@ -47,6 +47,23 @@ class ScreenSizeTest {
         assertEquals(listOf(890.0, 626.0, 445.0), ScreenSize.Device(DeviceModel.IPHONE_DUO).let { listOf(it.widthDp, it.heightDp, it.hingeDp) })
     }
 
+    @Test fun `Duo 반 접기는 한 잎 크기로 그리고 접힘과 Android 반 접기를 거절한다`() {
+        val half = ScreenSize.parse(null, "duo", folded = false, landscape = false, half = true) as ScreenSize.Device
+        assertEquals("duo-half", half.key)
+        assertEquals(listOf(445.0, 626.0), listOf(half.widthDp, half.heightDp))
+        assertNull(half.hingeDp)
+        assertEquals(mapOf("device" to "spec:width=1335px,height=1878px,dpi=480", "widthDp" to "445", "heightDp" to "626"), half.applyTo(spec()).params)
+        val turned = half.copy(landscape = true)
+        assertEquals("duo-half-land", turned.key)
+        assertEquals(listOf(626.0, 445.0), listOf(turned.widthDp, turned.heightDp))
+        assertEquals("spec:width=1878px,height=1335px,dpi=480,orientation=landscape", turned.applyTo(spec("showSystemUi" to "true")).params["device"])
+        assertThrows<IllegalArgumentException> { half.copy(folded = true) }
+        assertThrows<IllegalArgumentException> { half.copy(model = DeviceModel.GALAXY_Z_FOLD8) }
+        assertThrows<IllegalArgumentException> { ScreenSize.parse(null, null, false, false, half = true) }
+        assertEquals(6, DeviceModel.IPHONE_DUO.postures.size)
+        assertEquals(4, DeviceModel.GALAXY_Z_FOLD8.postures.size)
+    }
+
     @Test fun `새 기기의 dp 크기는 공개 스펙의 px 과 밀도로 나온다`() {
         fun dp(id: String, folded: Boolean = false) = ScreenSize.parse(null, id, folded, landscape = false) as ScreenSize.Device
         assertEquals(listOf(411.43, 923.43), dp("pixel9").let { listOf(it.widthDp, it.heightDp) })

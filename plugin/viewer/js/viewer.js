@@ -1522,7 +1522,7 @@ function Nn(e, { stage: t, img: n, box: r, pick: i }, a) {
 	}, { signal: a });
 }
 // src/workspace/resize.ts
-var Pn = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
+var Pn = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.half ? "half" : e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
 function Fn(e, t, n) {
 	try {
 		let r = document.createElement("canvas");
@@ -1554,6 +1554,7 @@ function In({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 			let [t, n, r] = e.split(":"), i = D.devices.has(t) ? {
 				device: t === "ipduo" ? "duo" : t,
 				folded: n === "cover",
+				half: n === "half",
 				landscape: r === "rot"
 			} : { size: e.startsWith("custom:") ? e.slice(7) : e };
 			return N("/viewer/resize", i).then((e) => {
@@ -3473,6 +3474,16 @@ function gi() {
 					children: /* @__PURE__ */ (0, R.jsx)("span", {
 						id: "dcFoldLb",
 						...e.text("posture.fold")
+					})
+				}),
+				/* @__PURE__ */ (0, R.jsx)("button", {
+					className: "pn-it",
+					id: "dcHalf",
+					type: "button",
+					hidden: !0,
+					children: /* @__PURE__ */ (0, R.jsx)("span", {
+						id: "dcHalfLb",
+						...e.text("posture.half")
 					})
 				}),
 				/* @__PURE__ */ (0, R.jsx)("button", {
