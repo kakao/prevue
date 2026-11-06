@@ -297,7 +297,7 @@ async function pick(it: SearchRow, { phrase, daemonText }: Messages) {
   remember(f.path, true);
   if (f.path === activeKey(st)) {
     reveal(f.path, fn);
-    if (st?.screen === 'focus' && st.focus?.fromBoard) { arm(); post('/viewer/exit'); }
+    if (st?.screen === 'focus' && st.focus) { arm(); post('/viewer/exit'); }
     else { closeQuickOpen(); applyReveal(); }
     return;
   }

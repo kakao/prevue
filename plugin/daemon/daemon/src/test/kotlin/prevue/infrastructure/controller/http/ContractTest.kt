@@ -181,7 +181,6 @@ class ContractTest {
 
         check("show.fqn", post("/show", mapOf("target" to "demo.CardsKt.Card0")))
         check("board.fqn", get("/board"))
-        check("viewer.state.single", get("/viewer/state"))
         check("show.error", post("/show", mapOf("target" to "/없는/파일")))
         check("unknown", post("/nope", emptyMap()))
 

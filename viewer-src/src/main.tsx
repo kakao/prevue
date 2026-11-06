@@ -12,7 +12,7 @@ import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcu
 import { store } from '../legacy/js/store.js';
 import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
-import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, setInteractive, toggleInteractive} from './workspace/focus';
+import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts } from './workspace/focus';
 import { cancelChoice, choose, followChooser, openFile, pointCard } from './workspace/point';
 
 // 남은 기존 모듈(api · store · board · capsule · motion · strings)은 이 번들보다 먼저 평가된다(외부 import). 그 모듈들은 DOM 을 쥐지 않는다.
@@ -23,15 +23,14 @@ const workspace = createWorkspace(findWorkspaceParts());
 const renderScreens = (state: ViewerState) => { drawScreens(state); preparation?.update(state); };
 const openCursor = () => { const { cursor } = boardMarks(); if (cursor != null) enterFocus(cursor); };
 const workspaceActions: WorkspaceActions = {
-  exit: exitFocus, setInteractive,
+  exit: exitFocus,
   zoomIn: workspace.zoomIn, zoomOut: workspace.zoomOut, zoomFit: workspace.zoomFit,
   zoomMenuPick: workspace.zoomMenuPick, toggleZoomMenu: workspace.toggleZoomMenu,
 };
 const pointActions: PointActions = { openFile, choose, cancel: cancelChoice, follow: followChooser };
 const actions: ShortcutActions = {
   screen: () => store.st ? store.st.screen : 'offline',
-  fromBoard: () => !!store.st?.focus?.fromBoard,
-  tabCount, moveCursor, openCursor, exitFocus, toggleInteractive, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
+  tabCount, moveCursor, openCursor, exitFocus, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
   zoomIn: workspaceActions.zoomIn, zoomOut: workspaceActions.zoomOut, zoomFit: workspaceActions.zoomFit,
 };
 const shortcuts = shortcutTable(phrase, actions);

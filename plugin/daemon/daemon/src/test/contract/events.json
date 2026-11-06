@@ -71,7 +71,6 @@
         "error": "string",
         "focus": {
           "fn": "string",
-          "fromBoard": "string",
           "imageUrl": "string",
           "interactive": "string",
           "name": "string",
@@ -292,7 +291,6 @@
         "error": "null",
         "focus": {
           "fn": "string",
-          "fromBoard": "boolean",
           "imageUrl": "string",
           "interactive": "boolean",
           "name": "null",

@@ -259,15 +259,43 @@ try {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   const boardFile = await evaluate(`__store.st.board.file`);
   await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
-  await until(`__store.st.screen==='focus' && __store.st.focus.fromBoard && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await until(`__store.st.screen==='focus' && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
   await ready();
   const linked = await evaluate(`__store.st.board.focus`);
-  await check(`!document.querySelector('#back').hidden && document.querySelector('#seg').hidden && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
+  await check(`!document.querySelector('#back').hidden && !document.querySelector('#seg') && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
   const beforeEsc = await evaluate(`__exits`);
   await key("Escape");
   await until(`!document.querySelector('#boardView').hidden && __exits>${beforeEsc} && __store.st.screen==='board' && __store.st.board.file.endsWith('/FilterScreen.kt')`);
   await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
   await check(`__store.st.board.focus===${linked} && !!document.querySelector('.card[data-i="${linked}"]')`, "FQN 딥링크에서 esc — 그 파일 보드의 그 카드 자리로");
+  // I 는 보드에서 카드를 열고 한 장에서 닫는다 — 보기 · 조작을 바꾸는 뜻은 없다(D-155 ②).
+  await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
+  await until(`__store.st.screen==='focus' && __store.st.focus.interactive`);
+  await ready();
+  const beforeI = await evaluate(`__exits`);
+  await key("i");
+  await until(`!document.querySelector('#boardView').hidden && __exits>${beforeI} && __store.st.screen==='board'`);
+  await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+  await check(`__store.st.board.focus===${linked}`, "한 장에서 I — 보드의 그 카드 자리로");
+  for (const name of ["뒤로 버튼", "브라우저 뒤로", "빠른 열기"]) {
+    await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
+    await until(`__store.st.screen==='focus' && __store.st.focus.interactive`);
+    await ready();
+    await until(`history.state?.prevueWs`);
+    const before = await evaluate(`__exits`);
+    if (name === "뒤로 버튼") await click("#back");
+    else if (name === "브라우저 뒤로") await evaluate(`history.back()`);
+    else {
+      await key("/");
+      await until(`document.querySelector('#q')?.checkVisibility()`);
+      await evaluate(`(()=>{const q=document.querySelector('#q');q.value='DrinkFilterPreview';q.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+      await until(`!!document.querySelector('#qoIn .qo-row')`);
+      await key("Enter");
+    }
+    await until(`__store.st.screen==='board' && __exits>${before} && !document.querySelector('#boardView').hidden`);
+    await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+    await check(`__store.st.board.file.endsWith('/FilterScreen.kt') && __store.st.board.focus===${linked} && !!document.querySelector('.card[data-i="${linked}"]') && !document.querySelector('#q')?.checkVisibility()`, `FQN 딥링크에서 ${name} — 같은 파일 보드의 그 카드로`);
+  }
   await post("/show", { target: boardFile, index: null, params: {}, by: "test" });
   await until(`__store.st.screen==='board'`);
   await check(`__errors.length===0`, "브라우저 오류 0");

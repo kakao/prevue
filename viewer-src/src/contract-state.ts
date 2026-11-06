@@ -48,7 +48,6 @@ export type ContractState = {
 "error": null;
 "focus": null | {
 "fn": string;
-"fromBoard": boolean;
 "imageUrl": string;
 "interactive": boolean;
 "name": null;

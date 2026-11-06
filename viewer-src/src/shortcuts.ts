@@ -3,12 +3,10 @@
 export type ShortcutActions = {
   /** 끊겼으면 화면이 없다(offline) — 탭이 0개인 빈 화면(시작 화면)과 가른다(D-63). */
   screen(): string;
-  fromBoard(): boolean;
   tabCount(): number;
   moveCursor(d: number): void;
   openCursor(): void;
   exitFocus(): void;
-  toggleInteractive(): void;
   zoomIn(): void;
   zoomOut(): void;
   zoomFit(): void;
@@ -33,8 +31,8 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
     ] },
     { group: phrase('keys.group.single'), rows: [
       // ← → 는 비워 둔다 — 이웃 장으로 넘기지 않는다(W3). 나오면 그 카드에 커서가 있어 → ↩ 로 이웃에 든다.
-      { keys: ['Escape'], cap: ['esc'], label: phrase('keys.single.back'), when: () => a.screen() === 'focus' && a.fromBoard(), run: () => a.exitFocus() },
-      { keys: ['i'], cap: ['I'], label: phrase('keys.single.mode'), when: () => a.screen() === 'focus', run: () => a.toggleInteractive() },
+      // I 는 보드에서 카드를 열고 한 장에서 닫는다 — 같은 키로 들고 난다. 한 장은 늘 조작이라 보기 · 조작을 바꾸는 뜻은 없다(D-155).
+      { keys: ['Escape', 'i'], cap: ['esc', 'I'], label: phrase('keys.single.back'), when: () => a.screen() === 'focus', run: () => a.exitFocus() },
       { keys: ['+', '-'], cap: ['+', '−'], label: phrase('keys.single.zoom'), when: () => a.screen() === 'focus',
         run: e => (keyOf(e) === '+' ? a.zoomIn : a.zoomOut)() },
       { keys: ['0'], cap: ['0'], label: phrase('keys.single.fit'), when: () => a.screen() === 'focus', run: () => a.zoomFit() },

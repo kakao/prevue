@@ -93,14 +93,11 @@ internal data class CardState(
 )
 
 /**
- * 한 장 화면. 보드의 카드 하나에 태스크를 건 인터랙티브이거나, FQN으로 연 단건이다.
  * [streamUrl]은 태스크가 걸린 **뒤에만** 찬다 — 먼저 열면 구독 순간의 마지막 프레임이 직전 프리뷰의 것이다(실측).
  */
 internal data class FocusScreen(
     val previewId: String,
     val interactive: Boolean,
-    /** 보드로 돌아갈 데가 있다. FQN 단건이면 없다. */
-    val fromBoard: Boolean,
     val imageUrl: String,
     val treeUrl: String,
     val streamUrl: String?,
@@ -109,7 +106,6 @@ internal data class FocusScreen(
     /**
      * 제목 위 줄 — 프리뷰 이름(`name=`). 없으면 null이고 제목은 [fn] 한 줄이다(D-63).
      * 카드 이름표(`label`)에서 잘라 쓰지 않는다 — 이름표는 보드의 규칙을 따라 바뀐다.
-     * FQN 단건은 `@Preview` 인자 없이 그려 `--param name=`을 줬을 때만 있다.
      */
     val name: String? = null,
     /** 제목 아래 줄 — 함수 이름. 제공자 값이 여럿이면 몇 번째인지(` · 2`)를 붙인다. 묶음의 다섯 장이 모두 `foldable`이어도 어느 함수인지 남는다. */
