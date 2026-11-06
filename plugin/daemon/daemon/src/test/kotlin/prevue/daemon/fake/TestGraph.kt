@@ -30,7 +30,9 @@ import prevue.infrastructure.process.ProcessMemory
 import prevue.daemon.DaemonBindings
 import prevue.daemon.StartDaemon
 import prevue.application.service.Boards
+import prevue.application.service.ExternalBuilds
 import prevue.application.service.HotReload
+import prevue.application.service.Watchers
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.domain.model.LiveFrame
@@ -67,6 +69,8 @@ internal interface TestGraph {
     val live: Live
 
     val hotReload: HotReload
+    val externalBuilds: ExternalBuilds
+    val watchers: Watchers
     val boards: Boards
     val status: Status
     val tabs: Tabs

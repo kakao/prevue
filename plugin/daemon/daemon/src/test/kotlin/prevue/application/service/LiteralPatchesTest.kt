@@ -179,7 +179,7 @@ class LiteralPatchesTest {
 
         uc.write(source(40, "// 코드가 바뀌었다\n")); uc.watch()
         fx.renderer.dropped.clear()
-        runBlocking { uc.hotReload.externalBuild(BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true), done = true) }
+        runBlocking { uc.externalBuilds.apply(BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true), done = true) }
         assertEquals(listOf(owner), fx.renderer.dropped.distinct())
         uc.write(source(48, "// 코드가 바뀌었다\n"))                       // 지운 뒤로는 견줄 내용이 없다 — 컴파일
         assertEquals("OK", (uc.watch() as ReloadResult.Rendered).result.shot.compile?.exitCode)

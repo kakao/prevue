@@ -102,7 +102,7 @@ class UseCaseTest {
         assertTrue(ws.now.newFiles.isEmpty(), "지운 새 파일은 싣지 않는다")
     }
 
-    private fun watched(): TestGraph = opened().also { runBlocking { it.hotReload.noteBehindBuild() } }
+    private fun watched(): TestGraph = opened().also { runBlocking { it.watchers.noteBehindBuild() } }
 
     @Test fun `감시가 시작될 때 빌드 뒤로 바뀐 소스는 새 파일처럼 다음 컴파일에 함께 실린다`() {
         val before = java.io.File(fx.srcRoot, "demo/Shape.kt").apply { writeText("package demo\nval blob = 1\n") }
@@ -361,10 +361,10 @@ class UseCaseTest {
     @Test fun `밖의 빌드는 끝나면 스스로 닫고 닫은 뒤의 낡음을 싣는다`() {
         val uc = opened()
         val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
-        assertEquals(ExternalResult.BuildPending, runBlocking { uc.hotReload.externalBuild(built, done = false) })
+        assertEquals(ExternalResult.BuildPending, runBlocking { uc.externalBuilds.apply(built, done = false) })
         assertTrue("build" in uc.workspace.now.stale)
 
-        val r = runBlocking { uc.hotReload.externalBuild(built, done = true) }
+        val r = runBlocking { uc.externalBuilds.apply(built, done = true) }
         assertTrue(r is ExternalResult.Redrawn && r.result.ok)
         assertFalse("build" in uc.workspace.now.stale)
         assertTrue((r as ExternalResult.Redrawn).result.stale.isEmpty())
@@ -374,7 +374,7 @@ class UseCaseTest {
     // Q6. 밖의 Gradle이 의존 모듈만 빌드했으면 그 모듈의 오버레이만 버린다 — 앱 쪽 편집은 남는다(성공 기준 5). 그 모듈을 가진 엔진은 하나다(D-38).
     @Test fun `의존 모듈의 빌드는 그 모듈의 오버레이만 버리고 엔진을 새로 받게 한다`() {
         val uc = opened()
-        val r = runBlocking { uc.hotReload.externalBuild(BuildChange(own = listOf(fx.libOut), outputsExist = true), done = true) }
+        val r = runBlocking { uc.externalBuilds.apply(BuildChange(own = listOf(fx.libOut), outputsExist = true), done = true) }
         assertTrue(r is ExternalResult.Redrawn)
         assertEquals(listOf(":lib"), fx.compiler.cleared.toList())
         assertEquals(1, fx.renderer.buildChanges)
@@ -426,7 +426,7 @@ class UseCaseTest {
     @Test fun `프리뷰가 없을 때의 리소스 · 빌드 파일 변화도 다음 show 가 싣는다`() {
         val uc = fx.graph(FakeClock())
         val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")), outputsExist = false)
-        assertEquals(ExternalResult.NoPreview, runBlocking { uc.hotReload.externalBuild(change, done = true) })
+        assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuilds.apply(change, done = true) })
         val r = runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(setOf("resources", "build-files"), r.stale.keys)
     }
@@ -459,7 +459,7 @@ class UseCaseTest {
         val uc = fx.graph()
         assertEquals(ReloadResult.NothingShown, uc.save("watch"))
         val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
-        assertEquals(ExternalResult.NoPreview, runBlocking { uc.hotReload.externalBuild(built, done = true) })
+        assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuilds.apply(built, done = true) })
         assertTrue(uc.workspace.now.stale.isEmpty())
     }
 

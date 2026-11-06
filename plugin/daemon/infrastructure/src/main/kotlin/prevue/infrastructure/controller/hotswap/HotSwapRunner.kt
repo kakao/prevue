@@ -9,9 +9,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import prevue.infrastructure.controller.hotswap.HotSwapLog.line
+import prevue.application.service.ExternalBuilds
 import prevue.application.service.HotReload
 import prevue.application.service.Status
 import prevue.application.service.Tabs
+import prevue.application.service.Watchers
 
 @SingleIn(AppScope::class)
 @Inject
@@ -19,21 +21,23 @@ internal class HotSwapRunner(
     private val hotReload: HotReload,
     private val status: Status,
     private val tabs: Tabs,
+    private val watchers: Watchers,
+    private val externalBuilds: ExternalBuilds,
 ) {
     private val _logs = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val logs: SharedFlow<String> = _logs
 
     fun start(scope: CoroutineScope) {
         scope.launch {
-            hotReload.observeSourceChanges().collect { change ->
+            watchers.observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, hotReload.applySave(change.files, "watch", change)) }
                 guarded("preview-files") { status.indexPreviewFiles(change); null }
                 if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { tabs.trackFiles(change.created, change.deleted); null }
             }
         }
-        scope.launch { hotReload.observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, hotReload.externalBuild(n.change, n.done)) } } }
+        scope.launch { watchers.observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuilds.apply(n.change, n.done)) } } }
         scope.launch {
-            hotReload.observeResourceChanges().collect { change ->
+            watchers.observeResourceChanges().collect { change ->
                 val files = change.files + change.created + change.deleted
                 if (files.isNotEmpty()) guarded("values-watch") { line(change, hotReload.applySave(files, "watch", change), files) }
             }
