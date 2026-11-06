@@ -17,14 +17,6 @@
               "index": "number",
               "isFocus": "boolean",
               "label": "string",
-              "meta": {
-                "a": {
-                  "h": "number",
-                  "ms": "number",
-                  "w": "number"
-                },
-                "t": "string"
-              },
               "ok": "boolean",
               "previewId": "string",
               "rendered": "boolean",
@@ -185,14 +177,6 @@
               "isFocus": true,
               "imageUrl": "/Card0-0.png?t=<t>",
               "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
-              "meta": {
-                "t": "card.meta",
-                "a": {
-                  "w": 100,
-                  "h": 100,
-                  "ms": 0
-                }
-              },
               "failure": null,
               "widthDp": 38.1,
               "heightDp": 38.1,
@@ -222,14 +206,6 @@
               "isFocus": false,
               "imageUrl": "/Card1-0.png?t=<t>",
               "treeUrl": "/Card1-0.viewinfo.json?t=<t>",
-              "meta": {
-                "t": "card.meta",
-                "a": {
-                  "w": 100,
-                  "h": 100,
-                  "ms": 0
-                }
-              },
               "failure": null,
               "widthDp": 38.1,
               "heightDp": 38.1,

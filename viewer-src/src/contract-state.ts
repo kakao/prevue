@@ -14,14 +14,6 @@ export type ContractState = {
 "index": number;
 "isFocus": boolean;
 "label": string;
-"meta": {
-"a": {
-"h": number;
-"ms": number;
-"w": number;
-};
-"t": string;
-};
 "ok": boolean;
 "previewId": string;
 "rendered": boolean;

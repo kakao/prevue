@@ -49,7 +49,7 @@ internal fun CardState.toJson(): Map<String, Any?> = mapOf(
     "index" to index, "previewId" to previewId, "label" to label, "title" to title, "args" to args,
     "specs" to specs.map { mapOf("kind" to it.kind, "text" to it.text.toJson()) },
     "ok" to ok, "rendered" to rendered, "stale" to stale, "isFocus" to isFocus,
-    "imageUrl" to imageUrl, "treeUrl" to treeUrl, "meta" to meta?.toJson(), "failure" to failure?.toJson(),
+    "imageUrl" to imageUrl, "treeUrl" to treeUrl, "failure" to failure?.toJson(),
     "widthDp" to widthDp, "heightDp" to heightDp, "dpGuess" to dpGuess,
 )
 
