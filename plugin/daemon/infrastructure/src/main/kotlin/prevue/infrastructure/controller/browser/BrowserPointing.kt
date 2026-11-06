@@ -29,7 +29,7 @@ internal class BrowserPointing(
             is FileMatch.Path -> r.path
             is FileMatch.Ambiguous -> return core.onLine {
                 pending = at
-                core.side.update { it.copy(choice = PathChoice(fileName, line, r.candidates, status.read().module.repo)) }
+                core.side.update { it.copy(choice = PathChoice(fileName, line, r.candidates, status.module().repo)) }
                 PointResult.NeedChoice
             }
             FileMatch.Unknown -> return PointResult.Unknown(phrase("point.unindexed", "file" to fileName, "line" to line))

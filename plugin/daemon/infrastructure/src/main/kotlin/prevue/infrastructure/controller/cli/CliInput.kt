@@ -15,7 +15,7 @@ internal class CliInput(
     private val status: Status,
 ) {
     suspend fun select(file: String, line: Int, at: Pointed, by: String): Selection = live.select(file, line, at, by)
-    fun selection(): Selection? = status.read().selection
+    fun selection(): Selection? = status.selection()
 
     suspend fun touch(type: String, x: Int, y: Int, by: String, settle: Boolean): TouchResult = live.touch(type, x, y, by, settle)
     suspend fun touchAt(at: String, type: String, by: String, settle: Boolean): TouchResult = live.touchAt(at, type, by, settle)
