@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 import prevue.infrastructure.controller.hotswap.HotSwapLog.line
 import prevue.application.service.ExternalBuilds
 import prevue.application.service.HotReload
-import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.service.Watchers
 
@@ -19,7 +18,6 @@ import prevue.application.service.Watchers
 @Inject
 internal class HotSwapRunner(
     private val hotReload: HotReload,
-    private val status: Status,
     private val tabs: Tabs,
     private val watchers: Watchers,
     private val externalBuilds: ExternalBuilds,
@@ -31,7 +29,7 @@ internal class HotSwapRunner(
         scope.launch {
             watchers.observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, hotReload.applySave(change.files, "watch", change)) }
-                guarded("preview-files") { status.indexPreviewFiles(change); null }
+                guarded("preview-files") { watchers.indexPreviewFiles(change); null }
                 if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { tabs.trackFiles(change.created, change.deleted); null }
             }
         }
