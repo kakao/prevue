@@ -531,11 +531,25 @@ class UseCaseTest {
         val uc = opened()
         val ws = uc.workspace
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        runBlocking { ws.exclusive { } }
         val before = ws.now.board!!.cards[0].result
+        val shown = ws.now.lastResult
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
+        ws.state.awaitState("터치의 정착", 2_000) { it.lastResult is prevue.application.domain.model.Settled && it.lastResult !== shown }
+        runBlocking { ws.exclusive { } }
+        assertTrue(ws.now.board!!.cards[0].result === before)
+    }
+
+    @Test fun `그림이 없는 카드는 정착한 그림을 제 그림으로 갖는다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        val i = ws.now.board!!.cards.indexOfFirst { it.spec.previewId == ws.now.current!!.previewId }
+        ws.now.board!!.let { b -> ws.recordCard(b.epoch, i, b.gen, CardResult.WriteFailed(i, prevue.application.domain.model.Verbatim("디스크 가득"))) }
         runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
         ws.state.awaitState("정착의 기록", 2_000) { it.lastResult is prevue.application.domain.model.Settled }
         runBlocking { ws.exclusive { } }
-        assertTrue(ws.now.board!!.cards[0].result === before)
+        val settled = ws.now.lastResult as prevue.application.domain.model.Settled
+        assertEquals(settled.shot.out, (ws.now.board!!.cards[i].result as CardResult.Drawn).shot.out)
     }
 
     @Test fun `크기를 주고 켜면 그 크기로 열고 끄면 소스 그대로 다시 그린다`() {

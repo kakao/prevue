@@ -31,12 +31,12 @@ public object EntryBindings {
         ViewerTarget(target.app, checkout.version(), target.branch, target.reveal)
 
     @Provides @SingleIn(AppScope::class)
-    internal fun frames(screen: Live, relay: Relay, log: EntryLog, dispatchers: PrevueDispatchers): FrameStreamer =
-        FrameStreamer(screen.screen, screen.watching, relay.scope, log::invoke, dispatchers)
+    internal fun frames(live: Live, relay: Relay, log: EntryLog, dispatchers: PrevueDispatchers): FrameStreamer =
+        FrameStreamer(live.screen, live.watching, relay.scope, log::invoke, dispatchers)
 
     @Provides
-    internal fun liveStats(screen: Live, frames: FrameStreamer, browser: BrowserEndpoint): LiveStats = LiveStats {
-        val report = screen.frames.value
+    internal fun liveStats(live: Live, frames: FrameStreamer, browser: BrowserEndpoint): LiveStats = LiveStats {
+        val report = live.frames.value
         mapOf(
             "frames" to report.stats, "frameTrace" to report.trace,
             "streamSubscribers" to frames.hasSubscribers, "stream" to frames.stats.value.toJson(),

@@ -139,8 +139,8 @@ internal fun testGraph(
 ): TestGraph =
     createGraphFactory<TestGraph.Factory>().create(ports, workspace, scope, hooks, checkout, target, postureQuietMs).also { it.startDaemon() }
 
-internal val TestGraph.screen: StateFlow<LiveFrame?> get() = engine.screen
-internal val TestGraph.frames: StateFlow<LiveLoop.Report> get() = engine.frames
-internal val TestGraph.watching: StateFlow<Boolean> get() = engine.watching
-internal suspend fun TestGraph.watchScreen(on: Boolean) = engine.watch(on)
+internal val TestGraph.screen: StateFlow<LiveFrame?> get() = live.screen
+internal val TestGraph.frames: StateFlow<LiveLoop.Report> get() = live.frames
+internal val TestGraph.watching: StateFlow<Boolean> get() = live.watching
+internal suspend fun TestGraph.watchScreen(on: Boolean) = live.watch(on)
 internal suspend fun TestGraph.awaitSettled(): SettledShot = engine.settledLatest()

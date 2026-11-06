@@ -44,7 +44,7 @@ import prevue.application.port.PrevueDispatchers
 internal class BrowserPresenter(
     relay: Relay,
     private val status: Status,
-    private val screen: Live,
+    private val live: Live,
     target: ViewerTarget,
     private val dispatchers: PrevueDispatchers,
 ) {
@@ -73,7 +73,7 @@ internal class BrowserPresenter(
 
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) { status.observe().collect { onDomainEvent(it) } }
-        scope.launch(dispatchers.default) { watchWanted.collect { screen.watch(it) } }
+        scope.launch(dispatchers.default) { watchWanted.collect { live.watch(it) } }
         val readBranch = target.branch
         if (readBranch != null) scope.launch {
             while (true) {

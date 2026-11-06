@@ -232,9 +232,9 @@ class Live(
         live.finish(ed, engine.rerender(p), null, t, by).also { ed.update { it.copy(current = p) } }
     }
 
-    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> resize(ed, size, by) }
+    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> resizeWithin(ed, size, by) }
 
-    suspend fun resize(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult? {
+    suspend fun resizeWithin(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult? {
         if (size == ScreenSize.Original && ws.now.resize == null) return null
         val target = resizeTarget()
         val next = size.takeUnless { it == ScreenSize.Original }?.let { Resize(target.previewId, it) }

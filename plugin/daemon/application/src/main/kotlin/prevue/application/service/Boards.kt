@@ -38,7 +38,7 @@ class Boards(
     private val engine: Engine,
     private val live: LiveShot,
     private val callers: StaleCallers,
-    private val screen: Live,
+    private val liveService: Live,
     private val scope: CoroutineScope,
     @Named(QUIET) private val quietMs: Long = QUIET_MS,
 ) {
@@ -169,7 +169,7 @@ class Boards(
     }
 
     private suspend fun resized(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult =
-        screen.resize(ed, size, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
+        liveService.resizeWithin(ed, size, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
     suspend fun unfocus(by: String): Unit = ws.exclusive { ed ->
         val b = ws.now.board ?: return@exclusive
