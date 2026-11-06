@@ -114,7 +114,7 @@ class Engine(
         loop.close()
         if (interactive) loop.open(p, interactive = true) else renderer.show(p, ownLoader)
     }
-    suspend fun showAside(p: PreviewSpec): RenderOutput = call { drewOnce = true; renderer.showAside(p) }
+    suspend fun showAside(p: PreviewSpec, tree: Boolean = false): RenderOutput = call { drewOnce = true; renderer.showAside(p, tree) }
     suspend fun warmIfCold(p: PreviewSpec): RenderOutput? = call { if (drewOnce) null else { drewOnce = true; renderer.showAside(p) } }
     fun keepImage(out: RenderOutput, previewId: String): RenderOutput = renderer.copyImage(out, previewId)
     fun msSinceInput(): Long = loop.lastInputAt.value?.let { now() - it } ?: Long.MAX_VALUE

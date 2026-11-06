@@ -155,14 +155,18 @@ class UseCaseTest {
         assertTrue(ws.now.newFiles.isEmpty())
     }
 
-    // ① 태스크가 하나뿐이라 다른 카드를 그리면 사람이 만지던 인터랙션 상태가 통째로 사라진다.
-    @Test fun `인터랙티브 중에는 다른 카드를 그리지 않는다`() {
+    @Test fun `인터랙티브 중에 청한 다른 카드는 라이브를 두고 옆 태스크로 그린다`() {
         val uc = opened()
         val ws = uc.workspace
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        val current = ws.now.current
+        val shownBefore = fx.renderer.shown.toList()
 
         val r = runBlocking { uc.boards.drawCard(1, force = true, by = "test") }
-        assertEquals(CardResult.Skipped(1, SkipReason.INTERACTIVE), r)
+        assertTrue(r is CardResult.Drawn, "$r")
+        assertEquals(listOf(ws.now.board!!.cards[1].spec), fx.renderer.treeAsides.toList())
+        assertEquals(shownBefore, fx.renderer.shown.toList())
+        assertEquals(current, ws.now.current)
 
         fx.renderer.shown.clear()
         uc.save()

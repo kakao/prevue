@@ -149,6 +149,8 @@ class StaleCallers(
      * 저장 직후의 포커스만이 아니라 보드의 카드도 여기를 지난다 — 바뀐 함수를 포커스가 안 부르고 다른 카드만 부르면 거기서 처음 드러난다.
      * [changed]는 함께 다시 컴파일할 파일이다. 카드에서는 비어 있다 — 바뀐 파일은 이미 오버레이에 있다.
      */
+    fun ours(out: RenderOutput): Boolean = LinkagePolicy.missingMember(out)?.let { (owner, _) -> compiler.inOverlay(owner) } == true
+
     suspend fun repair(ed: WorkspaceEditor, out: RenderOutput, p: PreviewSpec, changed: List<File>): RenderOutput {
         val (owner, member) = LinkagePolicy.missingMember(out) ?: return out
         if (!compiler.inOverlay(owner)) return out         // 앱 자신의 링크 에러다 — 우리가 만든 것이 아니다

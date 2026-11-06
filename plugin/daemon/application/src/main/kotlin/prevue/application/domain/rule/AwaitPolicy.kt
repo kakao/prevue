@@ -25,7 +25,6 @@ object AwaitPolicy {
     fun failureApplies(failedFiles: List<String>, want: List<File>, failedAtMs: Long, openedAtMs: Long): Boolean =
         failedAtMs > openedAtMs || want.any { w -> failedFiles.any { File(it).canonicalPath == w.path } }
 
-    /** 보드를 다 그렸다고 답해도 되는가. 인터랙티브 중에는 다른 카드를 그리지 않으니 기다려도 오지 않는다 — 있는 그대로 답한다. */
     fun boardAnswered(allFresh: Boolean, interactive: Boolean): Boolean = allFresh || interactive
 
     /** 이 데몬이 감시하지 않는 파일들 — 이 데몬이 그리는 모듈 밖이다(Q5). */

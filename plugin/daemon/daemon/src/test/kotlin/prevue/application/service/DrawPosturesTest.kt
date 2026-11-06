@@ -39,7 +39,9 @@ class DrawPosturesTest {
 
     private fun TestGraph.id() = workspace.now.board!!.focusCard.spec.previewId
 
-    private fun asideKeys(): List<String> = fx.renderer.asides.map { it.previewId.substringAfter('@') }
+    private fun postureAsides() = fx.renderer.asides.filter { '@' in it.previewId }
+
+    private fun asideKeys(): List<String> = postureAsides().map { it.previewId.substringAfter('@') }
 
     @Test fun `폴더블을 고르면 다른 자세 셋을 먼저, 그다음 막대 칸을 왼쪽부터 옆 태스크에 그린다`() {
         val uc = opened()
@@ -47,8 +49,8 @@ class DrawPosturesTest {
         uc.awaitDrawn(15)
         val id = uc.id()
         assertEquals(listOf("fold8-folded", "fold8-land", "fold8-folded-land") + (bar - "fold8"), asideKeys())
-        assertEquals("spec:width=1248px,height=1972px,dpi=420", fx.renderer.asides[0].params["device"])
-        assertEquals("spec:width=1848px,height=2448px,dpi=420", fx.renderer.asides[1].params["device"])
+        assertEquals("spec:width=1248px,height=1972px,dpi=420", postureAsides()[0].params["device"])
+        assertEquals("spec:width=1848px,height=2448px,dpi=420", postureAsides()[1].params["device"])
         assertEquals(listOf(id to "$id@fold8"), fx.renderer.copies)
         assertTrue(fold8 !in uc.drawn(), "지금 자세는 싣지 않는다 — ${uc.drawn()}")
         assertTrue(uc.workspace.now.keepIds().containsAll((listOf("fold8-folded", "fold8-land", "fold8-folded-land") + bar).map { "$id@$it" }))
@@ -58,7 +60,7 @@ class DrawPosturesTest {
         val uc = opened()
         uc.pick(fold8)
         uc.awaitDrawn(15)
-        val byKey = fx.renderer.asides.associateBy { it.previewId.substringAfter('@') }
+        val byKey = postureAsides().associateBy { it.previewId.substringAfter('@') }
         val base = uc.workspace.now.board!!.focusCard.spec
         assertEquals(base.params, byKey.getValue("original").params)
         assertEquals("320" to "640", byKey.getValue("narrow").params["widthDp"] to byKey.getValue("narrow").params["heightDp"])
@@ -106,7 +108,7 @@ class DrawPosturesTest {
         assertEquals(round, uc.workspace.now.postures!!.round)
         assertTrue(fold8 in uc.drawn() && fold8.copy(folded = true) !in uc.drawn(), "${uc.drawn().keys}")
         assertEquals(15, uc.drawn().size)
-        assertEquals(15, fx.renderer.asides.size)
+        assertEquals(15, postureAsides().size)
     }
 
     @Test fun `다른 칸으로 바꾸면 새 회차로 옛 그림을 빼고 다시 그린다`() {
@@ -136,7 +138,7 @@ class DrawPosturesTest {
             fx.renderer.asideGate = null
         }
         uc.awaitDrawn(15)
-        assertEquals(30, fx.renderer.asides.size)
+        assertEquals(30, postureAsides().size)
     }
 
     @Test fun `그리는 도중에 크기를 바꾸면 그 그림을 싣지 않는다`() {
@@ -158,7 +160,7 @@ class DrawPosturesTest {
         val uc = opened(quietMs = 300)
         val t = System.currentTimeMillis()
         uc.pick(fold8)
-        assertEquals(0, fx.renderer.asides.size)
+        assertEquals(0, postureAsides().size)
         uc.awaitDrawn(15)
         assertTrue(System.currentTimeMillis() - t >= 300, "잠잠해지기 전에 그렸다")
     }
@@ -167,10 +169,10 @@ class DrawPosturesTest {
         val uc = opened()
         fx.renderer.asideFails = "렌더 예외"
         uc.pick(fold8)
-        awaitUntil("옆 태스크 열다섯 번") { fx.renderer.asides.size == 15 }
+        awaitUntil("옆 태스크 열다섯 번") { postureAsides().size == 15 }
         awaitUntil("실패한 칸 열다섯을 적었다") { uc.workspace.now.postures!!.shots.size == 16 }
         assertEquals(emptyMap<ScreenSize, String>(), uc.drawn())
-        assertEquals(15, fx.renderer.asides.size)
+        assertEquals(15, postureAsides().size)
     }
 
     @Test fun `저장한 코드로 라이브를 못 그리면 회차를 열지 않아 옆 태스크도 돌지 않는다`() {
@@ -181,6 +183,6 @@ class DrawPosturesTest {
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") }
         assertEquals(null, uc.workspace.now.postures)
         assertEquals(emptyMap<ScreenSize, String>(), uc.drawn())
-        assertEquals(15, fx.renderer.asides.size)
+        assertEquals(15, postureAsides().size)
     }
 }

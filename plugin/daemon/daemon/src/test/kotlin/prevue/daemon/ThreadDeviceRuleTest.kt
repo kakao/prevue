@@ -41,6 +41,7 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/infrastructure/controller/browser/FrameStreamerTest.kt", SLEEP, 2, "$WALL_CLOCK — 애니메이션의 프레임 간격 · 느린 연결"),
             Allowed("prevue/application/service/ResourcePatchesTest.kt", SLEEP, 1, "$WALL_CLOCK — 다시 나타남 유예가 벽시계다"),
             Allowed("prevue/application/service/UseCaseTest.kt", SLEEP, 3, "부정 확인 — 보드 채우기는 끝을 알리지 않아 일어나지 않음을 볼 신호가 없다"),
+            Allowed("prevue/application/service/BoardAsideFillTest.kt", SLEEP, 1, "부정 확인 — 잠잠함을 기다리는 옆 채우기는 끝을 알리지 않는다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", SLEEP, 5, "$WALL_CLOCK — 정착 간격 · 휠 칸 간격 · 전환 도중의 탭 · GC · 정착 기록의 수집"),
         )
         const val COLLECT = ".collect"

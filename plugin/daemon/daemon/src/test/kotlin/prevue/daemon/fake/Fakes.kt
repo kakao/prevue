@@ -80,8 +80,10 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val asides = CopyOnWriteArrayList<PreviewSpec>()
     @Volatile var asideGate: CountDownLatch? = null
     val asideEntered = Semaphore(0)
-    override suspend fun showAside(p: PreviewSpec): RenderOutput {
+    val treeAsides = CopyOnWriteArrayList<PreviewSpec>()
+    override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput {
         asides += p
+        if (tree) treeAsides += p
         asideEntered.release()
         asideGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
         return asideFails?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)

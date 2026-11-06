@@ -162,8 +162,8 @@ internal fun WaitResult.toJson(): Map<String, Any?> = when (this) {
     ) + (interactiveCard?.takeIf { !complete }?.let { i ->
         mapOf(
             "interactive" to i,
-            "message" to "카드 $i 가 인터랙티브(사람이 뷰어에서 조작 중일 수 있다)라 다른 카드는 다시 그리지 않았다 — " +
-                "카드 $i 말고는 저장 전 그림이다. 조작이 끝나면(prevue focus $i --off) 나머지를 그린다",
+            "message" to "카드 $i 가 인터랙티브(사람이 뷰어에서 조작 중일 수 있다)라 다른 카드는 입력이 1초 잠잠할 때 옆 태스크로 다시 그린다 — " +
+                "카드 $i 말고는 저장 전 그림이 남아 있을 수 있다. 잠시 뒤 다시 wait 해 complete:true 면 전부 새 그림이고, 조작이 끝나면(prevue focus $i --off) 남은 것을 그린다",
         )
     } ?: emptyMap())
     is WaitResult.Single -> (last?.toJson() ?: emptyMap()) + mapOf("waitedMs" to waitedMs)
