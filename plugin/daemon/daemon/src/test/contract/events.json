@@ -19,23 +19,6 @@
                   "index": "string",
                   "isFocus": "string",
                   "label": "string",
-                  "meta": {
-                    "a": {
-                      "h": "string",
-                      "meta": {
-                        "a": {
-                          "h": "string",
-                          "ms": "string",
-                          "w": "string"
-                        },
-                        "t": "string"
-                      },
-                      "ms": "string",
-                      "w": "string"
-                    },
-                    "t": "string",
-                    "|": "string"
-                  },
                   "ok": "string",
                   "previewId": "string",
                   "rendered": "string",
@@ -257,23 +240,6 @@
                   "index": "number",
                   "isFocus": "boolean",
                   "label": "string",
-                  "meta": {
-                    "a": {
-                      "h": "number",
-                      "meta": {
-                        "a": {
-                          "h": "number",
-                          "ms": "number",
-                          "w": "number"
-                        },
-                        "t": "string"
-                      },
-                      "ms": "number",
-                      "w": "number"
-                    },
-                    "t": "string",
-                    "|": "null"
-                  },
                   "ok": "boolean|null",
                   "previewId": "string",
                   "rendered": "boolean",

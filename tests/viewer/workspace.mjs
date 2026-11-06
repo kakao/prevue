@@ -187,7 +187,8 @@ try {
   assert(free.f.length > 5 && free.f.every(f => !f.masked) && !free.ring, `머리가 붙지 않은 복귀는 가리지 않음 ${free.f.length}`);
   console.log(`통과 ${++checked}: 묶음 머리가 붙지 않은 복귀는 틀을 가리지 않음`);
   // 붙은 머리 밑에만 걸친 카드는 화면 밖과 같다 — 틀이 머리 밑으로 다 사라지지 않게 페이드와 링
-  await evaluate(`(()=>{const sp=document.createElement('div');sp.id='__spacer';sp.style.height='2000px';document.querySelector('#boardView').append(sp);
+  // 여백은 묶음 안에 둔다 — 이름표가 그림 위라(D-151) 한 장짜리 묶음은 그림 아래끝에서 끝나 머리도 함께 밀려 올라간다
+  await evaluate(`(()=>{const sp=document.createElement('div');sp.id='__spacer';sp.style.height='2000px';document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.gbody').append(sp);
     const s=document.querySelector('.card[data-i="0"] .cstage');scrollBy(0,s.getBoundingClientRect().bottom-${barH}-20)})()`); await pause(200);
   await check(`(()=>{const r=document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect(),h=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect();return r.bottom>${barH}&&r.bottom<h.bottom})()`, "카드가 붙은 머리 밑에만 걸침");
   await evaluate(`window.__under=scrollY`);

@@ -9,8 +9,6 @@
   "capsule.sharedOnce": "{sourceSet} renders with the app's Android build too. expect calls run the Android actual.",
   "card.go": "Interactive",
   "card.go.tip": "Open in interactive mode to touch it",
-  "card.meta": "{w}×{h} · {ms}ms",
-  "card.meta.stale": "{meta} · old image",
   "card.waiting": "Waiting",
   "choose.cancel": "Cancel",
   "choose.label": "Choose a file",

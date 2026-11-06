@@ -2597,6 +2597,31 @@ var Jr = (0, I.memo)(function({ card: e, fn: t, cursor: n = !1, returned: r = !1
 			r && "returned"
 		].filter(Boolean).join(" "),
 		children: [/* @__PURE__ */ (0, L.jsxs)("div", {
+			className: "label",
+			children: [
+				/* @__PURE__ */ (0, L.jsx)("span", {
+					className: "fn",
+					title: e.label ? e.label + "\n" + e.title : e.title,
+					children: e.label
+				}),
+				/* @__PURE__ */ (0, L.jsxs)("button", {
+					className: "go",
+					type: "button",
+					title: a("card.go.tip"),
+					onClick: () => {
+						C(e.index), i?.open(e.index);
+					},
+					children: [Kr, /* @__PURE__ */ (0, L.jsx)("span", {
+						className: "go-t",
+						children: a("card.go")
+					})]
+				}),
+				/* @__PURE__ */ (0, L.jsx)("div", {
+					className: "sub",
+					children: /* @__PURE__ */ (0, L.jsx)(qr, { card: e })
+				})
+			]
+		}), /* @__PURE__ */ (0, L.jsxs)("div", {
 			className: "cstage",
 			ref: c,
 			children: [
@@ -2624,34 +2649,6 @@ var Jr = (0, I.memo)(function({ card: e, fn: t, cursor: n = !1, returned: r = !1
 						className: "why",
 						children: p
 					}) : a("card.waiting")
-				})
-			]
-		}), /* @__PURE__ */ (0, L.jsxs)("div", {
-			className: "label",
-			children: [
-				/* @__PURE__ */ (0, L.jsx)("span", {
-					className: "fn",
-					title: e.label ? e.label + "\n" + e.title : e.title,
-					children: e.label
-				}),
-				/* @__PURE__ */ (0, L.jsxs)("button", {
-					className: "go",
-					type: "button",
-					title: a("card.go.tip"),
-					onClick: () => {
-						C(e.index), i?.open(e.index);
-					},
-					children: [Kr, /* @__PURE__ */ (0, L.jsx)("span", {
-						className: "go-t",
-						children: a("card.go")
-					})]
-				}),
-				/* @__PURE__ */ (0, L.jsxs)("div", {
-					className: "sub",
-					children: [/* @__PURE__ */ (0, L.jsx)(qr, { card: e }), /* @__PURE__ */ (0, L.jsx)("span", {
-						className: "meta",
-						children: f ? o(e.meta) : ""
-					})]
 				})
 			]
 		})]

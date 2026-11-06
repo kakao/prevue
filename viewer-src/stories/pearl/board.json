@@ -25,14 +25,6 @@
           "isFocus": true,
           "imageUrl": "/PearlListPreview-0.png?t=1793761705377",
           "treeUrl": "/PearlListPreview-0.viewinfo.json?t=1793761705377",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 78
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -62,14 +54,6 @@
           "isFocus": false,
           "imageUrl": "/PearlEmptyPreview-0.png?t=1793761705456",
           "treeUrl": "/PearlEmptyPreview-0.viewinfo.json?t=1793761705456",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 11
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -99,14 +83,6 @@
           "isFocus": false,
           "imageUrl": "/PearlLoadingPreview-0.png?t=1793761705471",
           "treeUrl": "/PearlLoadingPreview-0.viewinfo.json?t=1793761705471",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 10
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -136,14 +112,6 @@
           "isFocus": false,
           "imageUrl": "/PearlErrorPreview-0.png?t=1793761705528",
           "treeUrl": "/PearlErrorPreview-0.viewinfo.json?t=1793761705528",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 9
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -173,14 +141,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkDetailPreview-0.png?t=1793761705581",
           "treeUrl": "/DrinkDetailPreview-0.viewinfo.json?t=1793761705581",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 92
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -210,14 +170,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p0-0.png?t=1793761705565",
           "treeUrl": "/DrinkByKindPreview_p0-0.viewinfo.json?t=1793761705565",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 29
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -241,14 +193,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p1-0.png?t=1793761705592",
           "treeUrl": "/DrinkByKindPreview_p1-0.viewinfo.json?t=1793761705592",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 5
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -272,14 +216,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p2-0.png?t=1793761705580",
           "treeUrl": "/DrinkByKindPreview_p2-0.viewinfo.json?t=1793761705580",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 5
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -303,14 +239,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p3-0.png?t=1793761705588",
           "treeUrl": "/DrinkByKindPreview_p3-0.viewinfo.json?t=1793761705588",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 5
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -334,14 +262,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p4-0.png?t=1793761705603",
           "treeUrl": "/DrinkByKindPreview_p4-0.viewinfo.json?t=1793761705603",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 5
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -365,14 +285,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkByKindPreview_p5-0.png?t=1793761705604",
           "treeUrl": "/DrinkByKindPreview_p5-0.viewinfo.json?t=1793761705604",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 525,
-              "h": 604,
-              "ms": 6
-            }
-          },
           "failure": null,
           "widthDp": 200,
           "heightDp": 230.1,
@@ -402,14 +314,6 @@
           "isFocus": false,
           "imageUrl": "/PearlListThemesPreview-0.png?t=1793761705691",
           "treeUrl": "/PearlListThemesPreview-0.viewinfo.json?t=1793761705691",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 27
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -439,14 +343,6 @@
           "isFocus": false,
           "imageUrl": "/PearlListThemesPreview_1-0.png?t=1793761705724",
           "treeUrl": "/PearlListThemesPreview_1-0.viewinfo.json?t=1793761705724",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 30
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -474,14 +370,6 @@
           "isFocus": false,
           "imageUrl": "/PearlListThemesPreview_2-0.png?t=1793761705757",
           "treeUrl": "/PearlListThemesPreview_2-0.viewinfo.json?t=1793761705757",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 28
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -509,14 +397,6 @@
           "isFocus": false,
           "imageUrl": "/PearlListThemesPreview_3-0.png?t=1793761705830",
           "treeUrl": "/PearlListThemesPreview_3-0.viewinfo.json?t=1793761705830",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 68
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -546,14 +426,6 @@
           "isFocus": false,
           "imageUrl": "/PearlErrorThemesPreview-0.png?t=1793761705852",
           "treeUrl": "/PearlErrorThemesPreview-0.viewinfo.json?t=1793761705852",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 19
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -583,14 +455,6 @@
           "isFocus": false,
           "imageUrl": "/PearlErrorThemesPreview_1-0.png?t=1793761705873",
           "treeUrl": "/PearlErrorThemesPreview_1-0.viewinfo.json?t=1793761705873",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 18
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -618,14 +482,6 @@
           "isFocus": false,
           "imageUrl": "/PearlErrorThemesPreview_2-0.png?t=1793761705910",
           "treeUrl": "/PearlErrorThemesPreview_2-0.viewinfo.json?t=1793761705910",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 18
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -653,14 +509,6 @@
           "isFocus": false,
           "imageUrl": "/PearlErrorThemesPreview_3-0.png?t=1793761705918",
           "treeUrl": "/PearlErrorThemesPreview_3-0.viewinfo.json?t=1793761705918",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 19
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -690,14 +538,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkDetailThemesPreview-0.png?t=1793761705999",
           "treeUrl": "/DrinkDetailThemesPreview-0.viewinfo.json?t=1793761705999",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 76
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -727,14 +567,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkDetailThemesPreview_1-0.png?t=1793761706079",
           "treeUrl": "/DrinkDetailThemesPreview_1-0.viewinfo.json?t=1793761706079",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 76
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -762,14 +594,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkDetailThemesPreview_2-0.png?t=1793761706158",
           "treeUrl": "/DrinkDetailThemesPreview_2-0.viewinfo.json?t=1793761706158",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 75
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -797,14 +621,6 @@
           "isFocus": false,
           "imageUrl": "/DrinkDetailThemesPreview_3-0.png?t=1793761706242",
           "treeUrl": "/DrinkDetailThemesPreview_3-0.viewinfo.json?t=1793761706242",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 75
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -838,14 +654,6 @@
           "isFocus": false,
           "imageUrl": "/PearlAccessibilityPreview-0.png?t=1793761706305",
           "treeUrl": "/PearlAccessibilityPreview-0.viewinfo.json?t=1793761706305",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 28
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -873,14 +681,6 @@
           "isFocus": false,
           "imageUrl": "/PearlAccessibilityPreview_1-0.png?t=1793761706300",
           "treeUrl": "/PearlAccessibilityPreview_1-0.viewinfo.json?t=1793761706300",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 16
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -914,14 +714,6 @@
           "isFocus": false,
           "imageUrl": "/PearlAccessibilityPreview_2-0.png?t=1793761706372",
           "treeUrl": "/PearlAccessibilityPreview_2-0.viewinfo.json?t=1793761706372",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 945,
-              "h": 2048,
-              "ms": 23
-            }
-          },
           "failure": null,
           "widthDp": 360,
           "heightDp": 780.19,
@@ -957,14 +749,6 @@
           "isFocus": false,
           "imageUrl": "/PearlPhonePreview-0.png?t=1793761706454",
           "treeUrl": "/PearlPhonePreview-0.viewinfo.json?t=1793761706454",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 1080,
-              "h": 2400,
-              "ms": 33
-            }
-          },
           "failure": null,
           "widthDp": 411.43,
           "heightDp": 914.29,
@@ -994,14 +778,6 @@
           "isFocus": false,
           "imageUrl": "/PearlTabletPreview-0.png?t=1793761706527",
           "treeUrl": "/PearlTabletPreview-0.viewinfo.json?t=1793761706527",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 1920,
-              "h": 1200,
-              "ms": 28
-            }
-          },
           "failure": null,
           "widthDp": 1280,
           "heightDp": 800,
@@ -1031,14 +807,6 @@
           "isFocus": false,
           "imageUrl": "/PearlFoldablePreview-0.png?t=1793761706493",
           "treeUrl": "/PearlFoldablePreview-0.viewinfo.json?t=1793761706493",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 1767,
-              "h": 2208,
-              "ms": 32
-            }
-          },
           "failure": null,
           "widthDp": 673.14,
           "heightDp": 841.14,
@@ -1068,14 +836,6 @@
           "isFocus": false,
           "imageUrl": "/PearlLandscapePreview-0.png?t=1793761706601",
           "treeUrl": "/PearlLandscapePreview-0.viewinfo.json?t=1793761706601",
-          "meta": {
-            "t": "card.meta",
-            "a": {
-              "w": 2339,
-              "h": 1079,
-              "ms": 24
-            }
-          },
           "failure": null,
           "widthDp": 891.05,
           "heightDp": 411.05,

@@ -50,7 +50,6 @@ class BrowserPresenterTest {
         // 함수마다 한 장이어도 묶음이다(D-62) — 함수 이름은 머리가 갖고, name= 이 없는 장의 이름표는 비어 있다.
         assertEquals(listOf("Card0", "Card1", "Card2"), s.board!!.groups.map { it.name })
         assertEquals(listOf("", "", ""), cards.map { it.label })
-        assertEquals("100×100 · 2ms", cards[0].meta?.text)
         assertEquals("3 previews · Cards.kt", s.boardNote?.text)
     }
 

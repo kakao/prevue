@@ -234,15 +234,9 @@ internal object BrowserStates {
             specs = CardSpecs.of(c.params, w, h),
             ok = c.ok, rendered = c.rendered, stale = c.stale && c.rendered, isFocus = c.index == focus,
             imageUrl = artifactUrl(c.image, c.artifactRevision), treeUrl = artifactUrl(c.tree, c.artifactRevision),
-            meta = if (drawn) meta(c) else null,
             failure = if (c.rendered && !drawn) failureText(c.failure?.name, c.message, 400) else null,
             widthDp = dp.width, heightDp = dp.height, dpGuess = dp.guess,
         )
-    }
-
-    private fun meta(c: CardView): Phrase {
-        val size = phrase("card.meta", "w" to c.width, "h" to c.height, "ms" to (c.taskMs ?: 0) + (c.renderMs ?: 0))
-        return if (c.stale) phrase("card.meta.stale", "meta" to size) else size
     }
 
     private class TimingParts {

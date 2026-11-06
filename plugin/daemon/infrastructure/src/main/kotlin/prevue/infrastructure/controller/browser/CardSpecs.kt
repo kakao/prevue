@@ -38,10 +38,6 @@ internal object CardSpecs {
         return out
     }
 
-    /**
-     * 크기는 dp 로 보인다 — 개발자가 생각하는 단위이고, px 는 밀도마다 달라진다(px 는 시간과 함께 호버에 있다).
-     * 인자가 크기를 말하면 그것을, 아니면 그린 PNG 를 밀도로 나눈다. 이름 붙은 기기는 밀도를 몰라 내지 않는다.
-     */
     private fun size(params: Map<String, String>, device: String, widthPx: Int?, heightPx: Int?): String? {
         val w = params["widthDp"]?.toIntOrNull()
         val h = params["heightDp"]?.toIntOrNull()

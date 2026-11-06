@@ -80,8 +80,6 @@ internal data class CardState(
     val isFocus: Boolean,
     val imageUrl: String?,
     val treeUrl: String?,
-    /** 그렸으면 크기·시간, 아니면 null. */
-    val meta: Phrase?,
     /** 실패했으면 종류와 메시지. 조용한 빈 카드를 만들지 않는다(FR-9). */
     val failure: Phrase?,
     /**
