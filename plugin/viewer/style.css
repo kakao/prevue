@@ -398,14 +398,14 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .ph.bad .why { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 4); overflow: hidden; overflow-wrap: anywhere; }
 
 /* 이름표 두 줄은 그림 위에 온다(D-151) — 위 줄 name= · 인터랙티브 버튼, 아래 줄 크기 · 다크 · 글자 배율 칸. 이름 > 칸.
-   이름은 name= 뿐이고(함수 이름은 묶음 머리가 갖는다, D-62) 없으면 칸이 위 줄에 서서 한 줄이 된다.
+   이름은 name= 뿐이고(함수 이름은 묶음 머리가 갖는다, D-62) 없거나 칸이 비어도 두 줄 자리를 지킨다 — 이름표 높이가 장마다 다르면
+   이름 있는 장 · 없는 장이 섞인 묶음과 나란한 묶음끼리 그림 윗선이 어긋나고, 그림이 와서 크기 칸이 생길 때 그림이 밀려 내려간다.
    렌더 픽셀 크기 · 시간은 싣지 않는다 — 픽셀 크기는 dp 칸과 겹치고, 시간은 툴바가 갖는다. */
 .label { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); min-width: 0; padding: 0 var(--space-2); }
 .label .fn { grid-area: 1 / 1; min-width: 0; font: var(--type-label-large); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label .go { grid-area: 1 / 2; }
 .label .sub { grid-area: 2 / 1 / 3 / 3; }
 .card.noname .label .fn { display: none; }
-.card.noname .label .sub { grid-area: 1 / 1; margin-top: 0; }
 /* 들어가기(인터랙티브). 아이콘은 늘 보이고, 카드에 호버하면 글자가 펼쳐진다 —
    25장에 글자가 늘 있으면 프리뷰와 시선을 다투고, 아이콘만이면 처음 온 사람이 뜻을 못 읽는다.
    진한 표시는 고른 것 · 가리킨 것에만 둔다 — 카드마다 진한 버튼이면 커서 테두리 · 가리킨 박스와 섞여 지금 고른 장이 안 읽힌다. */
@@ -431,21 +431,17 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .specs { flex: 0 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-8); height: 1.45em; overflow: hidden; white-space: nowrap;
          color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; }
 .spec { display: inline-flex; align-items: center; gap: var(--space-4); flex: 0 0 auto; }
-/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 뺀다. 이름 없는 장은 크기가 인터랙티브 버튼과 한 줄에 들어야 한다.
-   첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘렸다(이름 없는 장의 65px 칸에 `120×120dp`) —
-   이름 없는 장은 단위를 빼고, 그래도 길면 말줄임한다. */
+/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 뺀다.
+   첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘린다 — 말줄임한다. */
 .card { container-type: inline-size; }
 @container (max-width: 139px) {
-  .spec svg, .card.noname .spec .unit { display: none; }
+  .spec svg { display: none; }
   .spec:first-child { flex-shrink: 1; min-width: 0; }
   .spec:first-child > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 }
 .spec svg { width: 12px; height: 12px; color: var(--on-surface-variant); }
 .spec .aa { color: var(--on-surface-variant); font: var(--type-label-medium); }
 .spec .unit { margin-left: var(--space-2); color: var(--on-surface-variant); font: var(--type-label-small); }
-/* 빈 칸 줄은 접는다. 이름 없는 장은 그 줄이 곧 첫 줄(인터랙티브 버튼 옆)이라 접어도 줄지 않고, focus 점이 거기 붙는다 —
-   접으면 그리기 전 · 실패한 장이 focus 일 때 점이 사라졌다. */
-.card:not(.noname) .sub:has(.specs:empty) { display: none; }
 
 /* ---------- 가리키기 박스 ---------- */
 .box { position: absolute; pointer-events: none; border: 1px solid var(--pick); background: var(--pick-container); border-radius: var(--corner-small); }

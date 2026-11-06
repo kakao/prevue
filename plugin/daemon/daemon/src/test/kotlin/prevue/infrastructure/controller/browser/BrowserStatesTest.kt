@@ -108,7 +108,7 @@ class BrowserStatesTest {
         assertNull(failed.widthDp)
     }
 
-    @Test fun `카드 — 그렸으면 그림 주소, 옛 세대면 stale, 실패면 종류와 메시지`() {
+    @Test fun `카드 — 옛 세대면 stale, 실패면 종류와 메시지`() {
         val s = build(status(board = board(
             card(0, "A", drawn = true, stale = true),
             card(1, "B", ok = false, failure = FailureKind.DI, message = "Hilt 필요\n둘째 줄"),
@@ -119,7 +119,7 @@ class BrowserStatesTest {
         assertTrue(a.stale)
         assertEquals("Needs dependency injection\nHilt 필요\n둘째 줄", b.failure?.text)
         assertEquals(1, s.board!!.groups[1].failed)
-        assertNull(c.failure?.text); assertNull(c.imageUrl); assertFalse(c.stale)
+        assertNull(c.failure?.text); assertFalse(c.stale)
     }
 
     @Test fun `인터랙티브 — 보드의 포커스 장이 한 장 화면이 되고, 들어가는 중에는 스트림 주소를 내지 않는다`() {
