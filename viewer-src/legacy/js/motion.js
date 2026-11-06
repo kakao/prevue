@@ -88,7 +88,7 @@ export const MORPH_LEAD = 385;   // 모프 70% — 장식이 들어오는 때. �
  * from(고정 사각형)에서 to()(매 프레임 다시 재는 사각형)로 틀을 옮긴다. 목적지를 매번 재므로 그 사이 보드가 자리를 잡아도 따라간다.
  * a 는 처음 담는 그림, b 는 swapAt ms 에 swapMs 동안 크로스페이드해 갈 그림("" 이면 빈 바탕으로 흐려진다).
  * 그림은 늘리지 않고 틀의 왼쪽 위에 맞춰 덮는다 — 비율이 같으면 틀과 함께 고르게 커지고 줄어든다.
- * ceiling()이 화면 y 를 주면 틀에서 그 선 위를 매 프레임 잘라 낸다 — 붙어 있는 머리 밑으로 들어가 보이게.
+ * ceiling()이 화면 y 두 선을 주면 틀이 top 위로는 보이지 않고 bottom 까지 점점 드러난다 — 바탕이 흐려지는 머리 밑으로 들어가 보이게.
  */
 export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, swapMs = 150, ceiling = null }) {
   const el = document.createElement("div"), ia = new Image(), ib = new Image();
@@ -102,10 +102,10 @@ export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, 
   let raf = 0, landed = false, land, timer = 0, gone = false;
   const landedP = new Promise(r => { land = r; });
   const put = (r, rad) => Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: rad + "px" });
-  // 위만 자른다 — 나머지 세 변을 바깥으로 넓혀야 그림자가 함께 잘리지 않는다
+  // 위만 가린다 — 마스크를 옆 · 아래로 넓혀 두어야 그림자가 함께 지워지지 않는다
   const cut = y => {
-    const c = ceiling && ceiling(), top = c == null ? 0 : c - y;
-    el.style.clipPath = top > 0 ? `inset(${top}px -100vmax -100vmax)` : "";
+    const c = ceiling && ceiling(), b = c ? c.bottom - y : 0;
+    el.style.maskImage = b > 0 ? `linear-gradient(transparent ${(c.top - y).toFixed(1)}px, #000 ${b.toFixed(1)}px)` : "";
   };
   function frame(now) {
     raf = 0;

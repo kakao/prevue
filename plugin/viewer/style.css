@@ -349,7 +349,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 묶음 머리는 상자가 아니라 섹션 제목이다. 툴바 아래에 붙어 있어 아래로 내려가도 어느 함수인지 잃지 않는다. */
 .ghead { position: sticky; top: var(--bar-h); z-index: 5; display: flex; align-items: baseline; gap: var(--space-8);
          margin: 0 calc(var(--space-8) * -1) var(--space-8); padding: var(--space-8); border-radius: var(--corner-medium);
-         background: linear-gradient(var(--surface) 70%, transparent); }
+         --fade: 70%; background: linear-gradient(var(--surface) var(--fade), transparent); }
 .ghead .gn { flex: 0 1 auto; font: var(--type-title-small); min-width: 0;
              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 이름 바로 옆 — 장 수 · 배율(줄였을 때만) · 실패 수. 오른쪽 끝으로 떨어지면 넓은 묶음에서 이름과 멀어져 어느 묶음의 숫자인지 안 읽혔다.
