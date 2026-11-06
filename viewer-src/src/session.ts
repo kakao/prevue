@@ -84,7 +84,7 @@ function apply(s: ViewerState) {
   if (prev && (tabMoved || from !== to || (prev.board && s.board && prev.board.focus !== s.board.focus && to === 'focus'))) clearPick();
   const release = () => { if (held) { held = false; draw(store.st!); } };
   const now = () => store.st!;
-  // 탭을 옮겼다 — 보드가 레일의 바탕이 미끄러지는 쪽(위 · 아래)으로 10px 밀리며 엇갈려 바뀐다. 화면 높이만큼의 슬라이드가 아니라 "그쪽으로 넘어갔다"는 암시다.
+  // 탭을 옮겼다 — 보드가 레일의 막대가 미끄러지는 쪽(위 · 아래)으로 10px 밀리며 엇갈려 바뀐다. 화면 높이만큼의 슬라이드가 아니라 "그쪽으로 넘어갔다"는 암시다.
   // 위의 탭과 아래 내용이 같은 시간 · 이징으로 한 몸처럼 움직인다. 한 장에서 옮겨도 그 탭의 보드로 간다.
   if (tabMoved) {
     const root = document.documentElement;

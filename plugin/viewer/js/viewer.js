@@ -3651,21 +3651,43 @@ var Oi = /* @__PURE__ */ (0, R.jsx)("svg", {
 	strokeLinejoin: "round",
 	children: /* @__PURE__ */ (0, R.jsx)("path", { d: "M10 3.5 5.5 8l4.5 4.5" })
 });
-function ki({ state: e, hosts: t, actions: n = bi }) {
+function ki(e) {
+	let t = e.querySelector("button[aria-pressed=\"true\"]");
+	if (!t?.offsetWidth) {
+		e.style.removeProperty("--seg-x"), e.style.removeProperty("--seg-w");
+		return;
+	}
+	let n = !e.style.getPropertyValue("--seg-w"), r = e.getBoundingClientRect(), i = t.getBoundingClientRect();
+	e.classList.toggle("instant", n), e.style.setProperty("--seg-x", `${i.left - r.left}px`), e.style.setProperty("--seg-w", `${i.width}px`), n && (getComputedStyle(e, "::after").width, e.classList.remove("instant"));
+}
+function Ai({ state: e, hosts: t, actions: n = bi }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = o(t?.seg), l = e?.screen === "focus" ? e.focus : null, u = l ? (e.tabs || []).find((e) => e.active) : void 0, d = l?.fromBoard && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0, f = !!l?.interactive;
 	(0, L.useLayoutEffect)(() => {
 		document.body.classList.toggle("ws", !!l), i.element && (i.element.hidden = !(l && l.fromBoard)), c.element && (c.element.hidden = !(l && !l.fromBoard)), a.element && (a.element.hidden = !l, a.element.title = l ? d ? d.title : u ? u.title : l.previewId : ""), i.element && a.element && Di(i.element, a.element);
-	}), (0, L.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, L.useLayoutEffect)(() => {
+	});
+	let p = !!l && !l.fromBoard;
+	(0, L.useLayoutEffect)(() => {
+		c.element && ki(c.element);
+	}, [
+		c.element,
+		p,
+		f
+	]), (0, L.useLayoutEffect)(() => {
+		let e = c.element;
+		if (!e) return;
+		let t = new ResizeObserver(() => ki(e));
+		return t.observe(e), () => t.disconnect();
+	}, [c.element]), (0, L.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, L.useLayoutEffect)(() => {
 		let e = i.element, t = a.element, n = e?.parentElement?.parentElement, r = document.getElementById("barR");
 		if (!e || !t) return;
 		let o = new ResizeObserver(() => Di(e, t));
 		for (let e of [n, r]) e && o.observe(e);
 		return () => o.disconnect();
 	}, [i.element, a.element]);
-	let p = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [Oi, /* @__PURE__ */ (0, R.jsx)("span", {
+	let m = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [Oi, /* @__PURE__ */ (0, R.jsx)("span", {
 		id: "backName",
 		children: u ? u.name : r("nav.board")
-	})] }), m = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("span", {
+	})] }), h = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("span", {
 		className: "ws-name",
 		id: "wsName",
 		children: l ? l.name || l.fn || l.previewId : ""
@@ -3674,7 +3696,7 @@ function ki({ state: e, hosts: t, actions: n = bi }) {
 		id: "wsFn",
 		hidden: !l?.name,
 		children: l?.name ? l.fn : ""
-	})] }), h = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("button", {
+	})] }), g = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("button", {
 		type: "button",
 		"data-on": "false",
 		"aria-pressed": !f,
@@ -3693,20 +3715,20 @@ function ki({ state: e, hosts: t, actions: n = bi }) {
 		let t = () => n.exit();
 		return e.addEventListener("click", t), () => e.removeEventListener("click", t);
 	}, [i.element, n]), /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [
-		i.place(p, (e, t) => /* @__PURE__ */ (0, R.jsx)("button", {
+		i.place(m, (e, t) => /* @__PURE__ */ (0, R.jsx)("button", {
 			className: "back",
 			id: "back",
 			type: "button",
 			ref: e,
 			children: t
 		})),
-		a.place(m, (e, t) => /* @__PURE__ */ (0, R.jsx)("div", {
+		a.place(h, (e, t) => /* @__PURE__ */ (0, R.jsx)("div", {
 			className: "ws-title",
 			id: "wsTitle",
 			ref: e,
 			children: t
 		})),
-		c.place(h, (e, t) => /* @__PURE__ */ (0, R.jsx)("div", {
+		c.place(g, (e, t) => /* @__PURE__ */ (0, R.jsx)("div", {
 			className: "seg",
 			id: "seg",
 			ref: e,
@@ -3714,7 +3736,7 @@ function ki({ state: e, hosts: t, actions: n = bi }) {
 		}))
 	] });
 }
-function Ai({ screen: e, hosts: t, actions: n = bi }) {
+function ji({ screen: e, hosts: t, actions: n = bi }) {
 	let { phrase: r } = s(), [i, a] = (0, L.useState)(null), o = t?.view ?? i;
 	return (0, L.useLayoutEffect)(() => {
 		o && e !== null && (o.hidden = e !== "focus");
@@ -3733,7 +3755,7 @@ function Ai({ screen: e, hosts: t, actions: n = bi }) {
 	})] });
 }
 // src/ViewerRoot.tsx
-function ji() {
+function Mi() {
 	let e = (e) => document.getElementById(e);
 	return {
 		bar: e("bar"),
@@ -3775,7 +3797,7 @@ function ji() {
 		chooser: e("chooser")
 	};
 }
-function Mi({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
+function Ni({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
 	return (0, L.useLayoutEffect)(() => {
 		e && u(e);
 	}, [t]), o ? /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [
@@ -3823,12 +3845,12 @@ function Mi({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			vacant: e?.vacant ?? null,
 			host: o.vacant
 		}),
-		/* @__PURE__ */ (0, R.jsx)(Ai, {
+		/* @__PURE__ */ (0, R.jsx)(ji, {
 			screen: e?.screen ?? null,
 			hosts: o.workspace,
 			actions: c
 		}),
-		/* @__PURE__ */ (0, R.jsx)(ki, {
+		/* @__PURE__ */ (0, R.jsx)(Ai, {
 			state: e,
 			hosts: o.workspaceHeader,
 			actions: c
@@ -3850,12 +3872,12 @@ function Mi({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 		})
 	] }) : null;
 }
-function Ni({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
+function Pi({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
 	let s = document.createElement("div");
 	s.hidden = !0, document.body.append(s);
 	let c = (0, Dr.createRoot)(s), l = null, u = null, f = null, p = null, m = 0, h = () => c.render(/* @__PURE__ */ (0, R.jsx)(d.Provider, {
 		value: t,
-		children: /* @__PURE__ */ (0, R.jsx)(Mi, {
+		children: /* @__PURE__ */ (0, R.jsx)(Ni, {
 			state: l,
 			draw: m,
 			statusState: u,
@@ -3886,30 +3908,30 @@ function Ni({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 	};
 }
 // src/main.tsx
-var Pi = zt(), Fi = Bn(zn()), Ii = (e) => {
-	nr(e), Pi?.update(e);
-}, Li = () => {
+var Fi = zt(), Ii = Bn(zn()), Li = (e) => {
+	nr(e), Fi?.update(e);
+}, Ri = () => {
 	let { cursor: e } = p();
 	e != null && Gn(e);
-}, Ri = {
+}, zi = {
 	exit: Kn,
 	setInteractive: Jn,
-	zoomIn: Fi.zoomIn,
-	zoomOut: Fi.zoomOut,
-	zoomFit: Fi.zoomFit,
-	zoomMenuPick: Fi.zoomMenuPick,
-	toggleZoomMenu: Fi.toggleZoomMenu
-}, zi = {
+	zoomIn: Ii.zoomIn,
+	zoomOut: Ii.zoomOut,
+	zoomFit: Ii.zoomFit,
+	zoomMenuPick: Ii.zoomMenuPick,
+	toggleZoomMenu: Ii.toggleZoomMenu
+}, Bi = {
 	openFile: Cn,
 	choose: On,
 	cancel: kn,
 	follow: Pn
-}, Bi = {
+}, Vi = {
 	screen: () => I.st ? I.st.screen : "offline",
 	fromBoard: () => !!I.st?.focus?.fromBoard,
 	tabCount: Ct,
 	moveCursor: v,
-	openCursor: Li,
+	openCursor: Ri,
 	exitFocus: Kn,
 	toggleInteractive: qn,
 	stepTab: xt,
@@ -3917,37 +3939,37 @@ var Pi = zt(), Fi = Bn(zn()), Ii = (e) => {
 	openQuickOpen: ot,
 	helpOpen: Wt,
 	toggleHelp: Gt,
-	zoomIn: Ri.zoomIn,
-	zoomOut: Ri.zoomOut,
-	zoomFit: Ri.zoomFit
-}, Vi = Sr(k, Bi);
-Tr(Vi, Bi, {
+	zoomIn: zi.zoomIn,
+	zoomOut: zi.zoomOut,
+	zoomFit: zi.zoomFit
+}, Hi = Sr(k, Vi);
+Tr(Hi, Vi, {
 	chooserOpen: () => !!document.getElementById("chooser")?.classList.contains("on"),
 	cancelChoice: kn,
-	closeZoomMenu: Fi.closeZoomMenu,
+	closeZoomMenu: Ii.closeZoomMenu,
 	closeDirPop: Lt
 });
-var Hi = Ni({
-	renderLegacy: Ii,
+var Ui = Pi({
+	renderLegacy: Li,
 	messages: {
 		phrase: k,
 		daemonText: O
 	},
-	hosts: ji(),
-	shortcuts: Vi,
+	hosts: Mi(),
+	shortcuts: Hi,
 	board: {
 		open: Gn,
 		point: Fn
 	},
-	workspace: Ri,
-	point: zi
+	workspace: zi,
+	point: Bi
 });
 xr({
-	workspace: Fi,
-	render: Hi.apply,
-	onConnection: Hi.connection,
+	workspace: Ii,
+	render: Ui.apply,
+	onConnection: Ui.connection,
 	onPreviewFiles: st,
-	prepared: Pi
+	prepared: Fi
 });
 for (let e of [
 	"bar",
