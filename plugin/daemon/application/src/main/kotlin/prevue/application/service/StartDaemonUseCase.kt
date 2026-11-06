@@ -24,7 +24,7 @@ class StartDaemonUseCase(
     operator fun invoke() {
         if (!started.compareAndSet(expect = false, update = true)) return
         renderer.protect { ws.now.keepIds() }
-        boards.drawPostures()
+        boards.startPostures()
         scope.launch {
             engine.shots.collect { shot ->
                 if (shot.claimed) return@collect

@@ -169,7 +169,7 @@ class TabsTest {
 
     @Test fun `탭을 옮기면 인터랙티브가 끝난다`() {
         show(fx.file)
-        runBlocking { uc.boards.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         show(fx.previewFile("B"))
         assertFalse(ws.now.interactive)
     }

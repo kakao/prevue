@@ -30,7 +30,7 @@ internal class CliTabs(
     fun activeTab(): String? = status.read().tabs.firstOrNull { it.active }?.let { it.file?.absolutePath ?: it.fqn }
 
     suspend fun card(index: Int, force: Boolean, by: String): CardResult = boards.drawCard(index, force, by)
-    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = boards.focusCard(index, on, by, size)
+    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = boards.focus(index, on, by, size)
     fun board(): BoardView? = status.read().board
 
     fun previews(file: File): List<PreviewSpec> = status.listPreviews(file)

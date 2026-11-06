@@ -90,7 +90,7 @@ class LiteralPatchesTest {
     @Test fun `인터랙티브 중 같은 내용의 저장은 상태를 지우지 않는다`() {
         val uc = opened()
         uc.write(source(16)); uc.watch()
-        runBlocking { uc.boards.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         fx.renderer.shown.clear()
         uc.write(source(16))
         assertEquals(ReloadResult.Unchanged(listOf(fx.file)), uc.watch())
@@ -142,7 +142,7 @@ class LiteralPatchesTest {
         runBlocking { uc.applySave(listOf(fx.file), "cli") }               // reload — 사람이 다시 하라고 했다
         assertEquals(2, fx.compiler.compiled.size)
 
-        runBlocking { uc.boards.focusCard(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
         uc.write(source(32)); uc.watch()                                    // D-11 — 인터랙티브의 저장은 처음부터
         assertEquals(3, fx.compiler.compiled.size)
         assertEquals(emptyList<Any>(), fx.renderer.patched.toList())

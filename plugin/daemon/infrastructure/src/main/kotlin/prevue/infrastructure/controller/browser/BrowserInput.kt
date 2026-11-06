@@ -39,7 +39,7 @@ internal class BrowserInput(
         }
     }
 
-    fun enterFocus(index: Int) = core.post { boards.focusCard(index, on = true, by = "viewer") }
+    fun enterFocus(index: Int) = core.post { boards.focus(index, on = true, by = "viewer") }
 
     fun exitFocus() = core.post { boards.unfocus(by = "viewer") }
 

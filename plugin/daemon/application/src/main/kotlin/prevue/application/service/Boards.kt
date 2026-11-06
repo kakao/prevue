@@ -110,7 +110,7 @@ class Boards(
         return CardResult.Pending(index)
     }
 
-    fun drawPostures() {
+    fun startPostures() {
         scope.launch {
             ws.state.map { it.livePostures()?.round }.distinctUntilChanged().collectLatest { round ->
                 if (round == null) return@collectLatest
@@ -162,7 +162,7 @@ class Boards(
 
     private fun quietFor(ps: Postures): Long = minOf(engine.msSinceInput(), ws.nowMs() - ps.seededAtMs)
 
-    suspend fun focusCard(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = ws.exclusive { ed ->
+    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = ws.exclusive { ed ->
         val b = ws.now.board
         if (on && size != null && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, resized(ed, size, by))
         else switchFocus(ed, index, on, by, size)

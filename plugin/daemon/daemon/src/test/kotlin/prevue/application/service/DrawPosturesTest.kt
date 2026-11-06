@@ -31,7 +31,7 @@ class DrawPosturesTest {
             it.workspace.awaitBoardFilled()
         }
 
-    private fun TestGraph.pick(size: ScreenSize?) = runBlocking { boards.focusCard(0, on = true, by = "test", size = size) }
+    private fun TestGraph.pick(size: ScreenSize?) = runBlocking { boards.focus(0, on = true, by = "test", size = size) }
 
     private fun TestGraph.drawn(): Map<ScreenSize, String> = status.read().postures.mapValues { it.value.out.preview.previewId }
 

@@ -106,7 +106,7 @@ class BrowserEndpointTest {
             val uc = own.graph(hooks = EntryHooks(p))
             val module = own.entryPoints(uc)
             module.start()
-            runBlocking { uc.tabs.openPreview(own.file.path, null, emptyMap(), "test"); uc.boards.focusCard(1, on = true, by = "cli") }
+            runBlocking { uc.tabs.openPreview(own.file.path, null, emptyMap(), "test"); uc.boards.focus(1, on = true, by = "cli") }
             val c = URI("http://127.0.0.1:$p/events").toURL().openConnection() as HttpURLConnection
             val reader = c.inputStream.bufferedReader(UTF_8)
             val first = generateSequence { reader.readLine() }.first { it.startsWith("data: ") }

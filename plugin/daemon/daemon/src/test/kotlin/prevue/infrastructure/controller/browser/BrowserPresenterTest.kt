@@ -100,7 +100,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val on = CoroutineScope(Dispatchers.Default).launch { uc.boards.focusCard(1, on = true, by = "cli") }
+        val on = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, on = true, by = "cli") }
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
         val entering = awaitState { it.screen == BrowserState.Screen.FOCUS }
         assertNull(entering.focus!!.streamUrl, "태스크가 걸리기 전에 스트림 주소가 나왔다")
@@ -114,16 +114,16 @@ class BrowserPresenterTest {
     @Test fun `진입 렌더가 예외로 끝나도 스트림 주소는 나온다`() {
         opened()
         fx.renderer.showThrows = IllegalStateException("렌더러가 죽었다")
-        runBlocking { runCatching { uc.boards.focusCard(1, on = true, by = "cli") } }
+        runBlocking { runCatching { uc.boards.focus(1, on = true, by = "cli") } }
         awaitState { it.screen == BrowserState.Screen.FOCUS && it.focus?.streamUrl != null }
     }
 
     // 다른 장으로 옮겨 켜면 새 태스크다 — 같은 주소면 뷰어가 MJPEG 를 다시 열지 않고 앞 장의 마지막 프레임에 머문다.
     @Test fun `켠 채 다른 장으로 옮기면 스트림 주소가 바뀐다`() {
         opened()
-        runBlocking { uc.boards.focusCard(0, on = true, by = "cli") }
+        runBlocking { uc.boards.focus(0, on = true, by = "cli") }
         val first = awaitState { it.focus?.streamUrl != null }.focus!!.streamUrl
-        runBlocking { uc.boards.focusCard(2, on = true, by = "cli") }
+        runBlocking { uc.boards.focus(2, on = true, by = "cli") }
         awaitState { it.focus?.previewId == "Card2" && it.focus?.streamUrl != null && it.focus?.streamUrl != first }
     }
 
@@ -226,7 +226,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val agent = CoroutineScope(Dispatchers.Default).launch { uc.boards.focusCard(1, on = true, by = "cli") }
+        val agent = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, on = true, by = "cli") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
             for (i in 0 until 20) input.touch(if (i % 2 == 0) "press" else "release", i, i)
