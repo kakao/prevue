@@ -24,7 +24,7 @@ class ExternalBuilds(
     private val live: LiveShot,
     private val boards: Boards,
 ) {
-    suspend fun apply(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
+    suspend fun applyBuild(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
         if (change.buildFiles.isNotEmpty()) ed.markStaleOnce(StaleReasons.BUILD_FILES, StaleReasons.buildFiles(change.buildFiles))
         if (ws.now.current == null) return@exclusive ExternalResult.NoPreview

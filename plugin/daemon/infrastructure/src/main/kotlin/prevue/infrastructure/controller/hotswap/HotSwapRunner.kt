@@ -35,7 +35,7 @@ internal class HotSwapRunner(
                 if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { tabs.trackFiles(change.created, change.deleted); null }
             }
         }
-        scope.launch { watchers.observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuilds.apply(n.change, n.done)) } } }
+        scope.launch { watchers.observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuilds.applyBuild(n.change, n.done)) } } }
         scope.launch {
             watchers.observeResourceChanges().collect { change ->
                 val files = change.files + change.created + change.deleted
