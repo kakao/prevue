@@ -35,7 +35,7 @@ class TabsTest {
     @AfterEach fun tearDown() = fx.close()
 
     private fun show(f: java.io.File, index: Int? = null, params: Map<String, String> = emptyMap()) =
-        runBlocking { uc.openPreview(f.path, index, params, "test") }.also { ws.awaitBoardFilled() }
+        runBlocking { uc.tabs.openPreview(f.path, index, params, "test") }.also { ws.awaitBoardFilled() }
 
     @Test fun `다른 파일을 show 하면 새 탭이 열리고 앞 탭은 남는다`() {
         val screen = fx.file
@@ -145,12 +145,12 @@ class TabsTest {
         val c = fx.previewFile("C")
         show(a); show(b); show(c); show(a)
 
-        val r = runBlocking { uc.closeTab(a.path, "test") }
+        val r = runBlocking { uc.tabs.closeTab(a.path, "test") }
         assertEquals(c.canonicalPath, r.active)                               // 직전에 보던 탭
         assertEquals(c.canonicalFile, ws.now.board!!.file)
-        runBlocking { uc.closeTab(b.path, "test") }                           // 숨은 탭은 닫아도 화면이 그대로다
+        runBlocking { uc.tabs.closeTab(b.path, "test") }                      // 숨은 탭은 닫아도 화면이 그대로다
         assertEquals(c.canonicalFile, ws.now.board!!.file)
-        runBlocking { uc.closeTab(c.path, "test") }
+        runBlocking { uc.tabs.closeTab(c.path, "test") }
         assertNull(ws.now.board); assertNull(ws.now.current); assertNull(ws.now.activeTab)
     }
 
@@ -161,9 +161,9 @@ class TabsTest {
         runBlocking { uc.select(a.path, 3, Pointed("Text", listOf("Text"), null, "Card0"), "viewer") }
         show(b)
         assertEquals(a.path, ws.now.selection?.file)
-        runBlocking { uc.closeTab(b.path, "test") }
+        runBlocking { uc.tabs.closeTab(b.path, "test") }
         assertEquals(a.path, ws.now.selection?.file)
-        runBlocking { uc.closeTab(a.path, "test") }
+        runBlocking { uc.tabs.closeTab(a.path, "test") }
         assertNull(ws.now.selection)
     }
 
@@ -345,11 +345,11 @@ class TabsTest {
         show(card)
         val text = card.readText()
         card.delete()
-        runBlocking { uc.trackTabFiles(emptyList(), listOf(card)) }
+        runBlocking { uc.tabs.trackFiles(emptyList(), listOf(card)) }
         assertNull(ws.now.board)
         assertEquals(Vacancy.DELETED, ws.now.tabViews(ws.graph).single().vacant)
         card.writeText(text)
-        runBlocking { uc.trackTabFiles(listOf(card), emptyList()) }
+        runBlocking { uc.tabs.trackFiles(listOf(card), emptyList()) }
         ws.awaitBoardFilled()
         assertEquals(2, ws.now.board!!.cards.size)
         assertNull(ws.now.tabViews(ws.graph).single().vacant)
@@ -362,7 +362,7 @@ class TabsTest {
         show(screen); show(card)
         runBlocking { uc.applySave(listOf(card), "test") }; ws.awaitBoardFilled()   // 숨은 screen 이 낡는다
         screen.delete()
-        val e = runCatching { runBlocking { uc.openPreview(screen.path, null, emptyMap(), "viewer") } }.exceptionOrNull()
+        val e = runCatching { runBlocking { uc.tabs.openPreview(screen.path, null, emptyMap(), "viewer") } }.exceptionOrNull()
         assertTrue(e is VacantTab, "빈 탭은 VacantTab 으로 답한다: $e")
         assertEquals(screen.canonicalPath, ws.now.activeTab)
         assertNull(ws.now.board); assertNull(ws.now.current)
@@ -375,7 +375,7 @@ class TabsTest {
         val card = fx.previewFile("NewsCard")
         show(screen); show(card)
         screen.delete()
-        runBlocking { uc.closeTab(card.path, "viewer") }
+        runBlocking { uc.tabs.closeTab(card.path, "viewer") }
         assertEquals(screen.canonicalPath, ws.now.activeTab)
         assertEquals(Vacancy.DELETED, ws.now.tabViews(ws.graph).single().vacant)
     }

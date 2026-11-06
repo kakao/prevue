@@ -28,7 +28,7 @@ class HotSwapRunnerTest {
 
     init {
         vm.start(scope)
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         uc.workspace.awaitBoardFilled()
         // 감시가 붙는 것(start)은 모으기가 시작될 때다 — 핫셋 함수가 꽂힐 때까지 기다린다.
         awaitUntil("감시가 붙기") { sources.hot().isNotEmpty() }

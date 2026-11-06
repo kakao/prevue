@@ -14,14 +14,17 @@ import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.model.Board
 import prevue.application.domain.model.CardResult
+import prevue.application.domain.model.CloseResult
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.Tab
+import prevue.application.domain.model.TabMove
 import prevue.application.domain.model.Vacancy
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.PreviewExpansion
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.domain.rule.TabPolicy
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
 
@@ -36,11 +39,50 @@ class Tabs(
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
 ) {
-    fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
+    suspend fun openPreview(target: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult = ws.exclusive { ed ->
+        val key = keyOf(target)
+        val move = if (find(key) == null) TabMove.OPENED else TabMove.SWITCHED
+        val r = activate(ed, key, index, params, by, since)
+        val evicted = TabPolicy.evict(ws.now.tabs, ws.now.activeTab)?.also { drop(ed, it) }
+        evicted?.let { ws.emit(WorkspaceEvent.TabEvicted(it)) }
+        r.copy(tab = move, closedTab = evicted?.key)
+    }
 
-    fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
+    suspend fun closeTab(target: String, by: String): CloseResult = ws.exclusive { ed ->
+        val key = keyOf(target)
+        val tab = find(key) ?: error("열린 탭이 아니다: $target")
+        val wasActive = key == ws.now.activeTab
+        drop(ed, tab)
+        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let {
+            runCatching { activate(ed, it.key, null, emptyMap(), by) }.onFailure { e -> if (e !is VacantTab) throw e }
+        }
+        CloseResult(key, ws.now.activeTab, ws.now.tabViews(ws.graph))
+    }
 
-    suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
+    suspend fun showPreview(by: String): ShowResult = ws.exclusive { ed ->
+        live.show(ed, ws.now.current ?: error("보여 주는 프리뷰가 없다 — 먼저 show"), by)
+    }
+
+    suspend fun trackFiles(created: List<File>, deleted: List<File>, by: String = "watch"): Unit = ws.exclusive { ed ->
+        val tab = ws.now.activeTabOrNull() ?: return@exclusive
+        val f = tab.file?.canonicalPath ?: return@exclusive
+        fun has(files: List<File>) = files.any { it.canonicalPath == f }
+        when {
+            has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
+            has(created) && tab.vacant == Vacancy.DELETED ->
+                runCatching { activate(ed, tab.key, null, emptyMap(), by) }.onFailure { if (it !is VacantTab) throw it }
+        }
+    }
+
+    suspend fun catchUp(by: String): ShowResult? = ws.exclusive { ed ->
+        if (ws.now.current == null) null else live.catchUp(ed, by)
+    }
+
+    internal fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
+
+    internal fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
+
+    internal suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
         val tab = find(key)
         val wasActive = key == ws.now.activeTab
         val before = (if (wasActive) ws.now.board else null) ?: tab?.board
@@ -147,7 +189,7 @@ class Tabs(
         }
     }
 
-    fun drop(ed: WorkspaceEditor, t: Tab) {
+    internal fun drop(ed: WorkspaceEditor, t: Tab) {
         ed.update { s ->
             val mine = s.selectionTab == t.key
             val left = s.copy(
@@ -160,7 +202,7 @@ class Tabs(
         }
     }
 
-    suspend fun reread(ed: WorkspaceEditor, p: PreviewSpec): PreviewSpec {
+    internal suspend fun reread(ed: WorkspaceEditor, p: PreviewSpec): PreviewSpec {
         ws.now.board?.let { return ws.now.sized(rereadBoard(ed, it)?.focusCard?.spec ?: p) }
         val tab = ws.now.activeTabOrNull()?.takeIf { it.spec != null } ?: return p
         val found = fqnMatches(tab.key).firstOrNull { it.previewId == p.previewId } ?: return ws.now.sized(p)
@@ -176,15 +218,15 @@ class Tabs(
         return ed.updateBoard(b.epoch) { it.reread(found) }
     }
 
-    fun vacancy(f: File): Vacancy? = when {
+    internal fun vacancy(f: File): Vacancy? = when {
         !sources.has(f) -> Vacancy.DELETED
         previews.inFile(f).isEmpty() -> Vacancy.NO_PREVIEWS
         else -> null
     }
 
-    fun vacate(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Nothing = throw VacantTab(markVacant(ed, tab, why))
+    internal fun vacate(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Nothing = throw VacantTab(markVacant(ed, tab, why))
 
-    fun markVacant(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Tab {
+    internal fun markVacant(ed: WorkspaceEditor, tab: Tab, why: Vacancy): Tab {
         val s = ws.now
         val kept = s.board?.takeIf { tab.key == s.activeTab } ?: tab.board
         val t = tab.copy(board = kept, stale = true, vacant = why, seenAtMs = ws.nowMs())

@@ -30,7 +30,7 @@ class AgentActionsTest {
     @AfterEach fun tearDown() = fx.close()
 
     private fun opened(): TestGraph = fx.graph().also {
-        runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
         runBlocking { it.focusCard(0, on = true, by = "test") }
     }

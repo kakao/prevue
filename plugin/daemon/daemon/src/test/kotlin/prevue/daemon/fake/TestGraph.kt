@@ -29,8 +29,6 @@ import prevue.infrastructure.bindings.TargetBindings
 import prevue.infrastructure.process.ProcessMemory
 import prevue.daemon.DaemonBindings
 import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.CatchUpUseCase
-import prevue.application.service.CloseTabUseCase
 import prevue.application.service.DrawCardUseCase
 import prevue.application.service.DrawPosturesUseCase
 import prevue.application.service.ExternalBuildUseCase
@@ -40,7 +38,6 @@ import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
 import prevue.application.service.ObserveScreenUseCase
 import prevue.application.service.ObserveSourceChangesUseCase
-import prevue.application.service.OpenPreviewUseCase
 import prevue.application.service.RememberValuesUseCase
 import prevue.application.service.RenderAtUseCase
 import prevue.application.service.RerenderUseCase
@@ -48,11 +45,10 @@ import prevue.application.service.ResizeUseCase
 import prevue.application.service.ScrollUseCase
 import prevue.application.service.SelectUseCase
 import prevue.application.service.SettleUseCase
-import prevue.application.service.ShowPreviewUseCase
 import prevue.application.service.StartDaemonUseCase
 import prevue.application.service.Status
+import prevue.application.service.Tabs
 import prevue.application.service.TouchUseCase
-import prevue.application.service.TrackTabFilesUseCase
 import prevue.application.service.TypeUseCase
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.SettledShot
@@ -87,13 +83,9 @@ internal interface TestGraph {
 
     val drawCard: DrawCardUseCase
     val fillBoard: FillBoardUseCase
-    val openPreview: OpenPreviewUseCase
-    val closeTab: CloseTabUseCase
-    val showPreview: ShowPreviewUseCase
     val rerender: RerenderUseCase
     val renderAt: RenderAtUseCase
     val applySave: ApplySaveUseCase
-    val trackTabFiles: TrackTabFilesUseCase
     val rememberValues: RememberValuesUseCase
     val resize: ResizeUseCase
     val drawPostures: DrawPosturesUseCase
@@ -103,13 +95,13 @@ internal interface TestGraph {
     val scroll: ScrollUseCase
     val settle: SettleUseCase
     val select: SelectUseCase
-    val catchUp: CatchUpUseCase
     val observeScreen: ObserveScreenUseCase
     val externalBuild: ExternalBuildUseCase
     val observeSourceChanges: ObserveSourceChangesUseCase
     val observeBuildChanges: ObserveBuildChangesUseCase
     val observeResourceChanges: ObserveResourceChangesUseCase
     val status: Status
+    val tabs: Tabs
 
     val entryPoints: EntryPoints
     val presenter: BrowserPresenter

@@ -5,9 +5,9 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.update
 import prevue.application.domain.model.phrase
-import prevue.application.service.CatchUpUseCase
 import prevue.application.service.SelectUseCase
 import prevue.application.service.Status
+import prevue.application.service.Tabs
 import prevue.application.domain.model.FileMatch
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.Selection
@@ -19,7 +19,7 @@ internal class BrowserPointing(
     private val core: BrowserPresenter,
     private val status: Status,
     private val select: SelectUseCase,
-    private val catchUpLive: CatchUpUseCase,
+    private val tabs: Tabs,
 ) {
     private var pending: Pointed? = null
     private val chosen = HashMap<String, String>()
@@ -50,7 +50,7 @@ internal class BrowserPointing(
     fun cancelChoice() = core.post { core.onLine { pending = null; core.side.update { it.copy(choice = null) } } }
 
     suspend fun catchUp(): String? {
-        catchUpLive("viewer")
+        tabs.catchUp("viewer")
         return core.onLine { core.peek(status.read()).focus?.treeUrl }
     }
 

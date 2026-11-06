@@ -27,7 +27,7 @@ class DrawPosturesTest {
 
     private fun opened(quietMs: Long = 0): TestGraph =
         fx.graph(Clock(System::currentTimeMillis), postureQuietMs = quietMs).also {
-            runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }
+            runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
             it.workspace.awaitBoardFilled()
         }
 

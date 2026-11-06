@@ -45,7 +45,7 @@ class UseCaseTest {
     @AfterEach fun tearDown() = fx.close()
 
     private fun opened(clock: FakeClock = FakeClock()): TestGraph =
-        fx.graph(clock).also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
+        fx.graph(clock).also { runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
 
     private fun TestGraph.save(by: String = "test"): ReloadResult = runBlocking { applySave(listOf(fx.file), by) }
 
@@ -219,7 +219,7 @@ class UseCaseTest {
     @Test fun `FQN으로 연 한 장도 애노테이션 인자로 그리고 저장하면 다시 읽는다`() {
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card1", "@Preview(widthDp = 480)\nfun Card1"))
         val uc = fx.graph()
-        runBlocking { uc.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", null, emptyMap(), "test") }
         assertEquals("480", uc.workspace.now.current!!.params["widthDp"])
 
         fx.file.writeText(fx.file.readText().replace("widthDp = 480", "widthDp = 600"))
@@ -246,7 +246,7 @@ class UseCaseTest {
 
     @Test fun `FQN의 index가 그 함수의 프리뷰 수를 넘으면 첫 장으로 바꾸지 않고 거절한다`() {
         val uc = fx.graph()
-        val e = runCatching { runBlocking { uc.openPreview("demo.CardsKt.Card1", 5, emptyMap(), "test") } }.exceptionOrNull()
+        val e = runCatching { runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", 5, emptyMap(), "test") } }.exceptionOrNull()
         assertTrue(e is IllegalArgumentException, "$e")
     }
 
@@ -331,7 +331,7 @@ class UseCaseTest {
 
     @Test fun `FQN 단건의 기다림은 그 한 장으로 답한다`() {
         val uc = fx.graph()
-        runBlocking { uc.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
         uc.save()
         val w = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }
         assertTrue(w is WaitResult.Single, "$w")
@@ -401,7 +401,7 @@ class UseCaseTest {
     @Test fun `R 클래스를 못 찾은 렌더는 덤프가 낡았다고 세우고 warmup 을 말한다`() {
         val uc = fx.graph(FakeClock())
         fx.renderer.exceptions += "java.lang.ClassNotFoundException: com.example.share.common.R\$color\n    at com.example.domain.line.LineResUtils.getLineBgColorId(LineResUtils.kt:62)"
-        val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        val r = runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(FailureKind.EXCEPTION, r.shot.out.failure)
         val why = r.stale["build-files"]
         assertTrue(why != null && "prevue warmup ${fx.file.path}" in why.remedy.text, r.stale.toString())
@@ -417,7 +417,7 @@ class UseCaseTest {
     @Test fun `R 이 아닌 클래스를 못 찾은 렌더는 낡음이 아니다`() {
         val uc = fx.graph(FakeClock())
         fx.renderer.exceptions += "java.lang.ClassNotFoundException: com.foo.Rx\$color"
-        val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        val r = runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertTrue(r.stale.isEmpty(), r.stale.toString())
     }
 
@@ -426,7 +426,7 @@ class UseCaseTest {
         val uc = fx.graph(FakeClock())
         val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")), outputsExist = false)
         assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(change, done = true) })
-        val r = runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        val r = runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(setOf("resources", "build-files"), r.stale.keys)
     }
 
@@ -477,7 +477,7 @@ class UseCaseTest {
         assertEquals(ws.now.board!!.cards.map { it.spec.previewId }.toSet(), ws.now.keepIds())
 
         // FQN으로 연 단건은 보드가 없다 — 화면이 든 주소는 current 하나뿐이다.
-        runBlocking { uc.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
         assertEquals(null, ws.now.board)
         assertEquals(setOf(ws.now.current!!.previewId), ws.now.keepIds())
     }
@@ -486,16 +486,16 @@ class UseCaseTest {
     @Test fun `live가 바뀌었을 때만 읽기 전에 한 장 맞춘다`() {
         val uc = opened()
         val n = fx.renderer.rerenders.get()
-        assertEquals(null, runBlocking { uc.catchUp("status") })
+        assertEquals(null, runBlocking { uc.tabs.catchUp("status") })
         assertEquals(n, fx.renderer.rerenders.get())
 
         fx.renderer.moving = true
         runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
-        val r = runBlocking { uc.catchUp("status") }
+        val r = runBlocking { uc.tabs.catchUp("status") }
         assertEquals("status", r?.shot?.by)
         fx.renderer.moving = false
         runBlocking { uc.awaitSettled() }
-        assertEquals(null, runBlocking { uc.catchUp("status") })
+        assertEquals(null, runBlocking { uc.tabs.catchUp("status") })
     }
 
     // 인터랙티브 중 카드의 기록은 들어가기 전 그림이다. 사람이 가리킨 것은 조작한 화면이다.
@@ -557,7 +557,7 @@ class UseCaseTest {
         val uc = opened()
         runBlocking { uc.focusCard(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
         val other = fx.previewFile("Other")
-        runBlocking { uc.openPreview(other.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(other.path, null, emptyMap(), "test") }
         assertEquals(null, uc.workspace.now.resize)
         assertEquals(null, uc.status.read().size)
     }
@@ -618,9 +618,9 @@ class UseCaseTest {
         val lib = java.io.File(fx.libRoot, "lib/LibCards.kt").apply {
             parentFile.mkdirs(); writeText("package lib\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun LibCard() {}\n")
         }
-        runBlocking { uc.openPreview(lib.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(lib.path, null, emptyMap(), "test") }
         assertEquals(":lib" to listOf(":app", ":lib"), uc.status.read().let { it.module.module to it.renderModules })
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(":app" to listOf(":app", ":lib"), uc.status.read().let { it.module.module to it.renderModules })
     }
 
@@ -633,7 +633,7 @@ class UseCaseTest {
         assertTrue(runBlocking { uc.status.awaitRender(listOf(fx.libFile), timeoutMs = 2_000) } is WaitResult.CompileFailed)
 
         fx.file.setLastModified(1_000)                       // 연 뒤로 안 바뀐 파일이다 — 가짜 시계는 1970년이다
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         val r = runBlocking { uc.status.awaitRender(listOf(fx.file), timeoutMs = 2_000) }
         assertTrue(r is WaitResult.BoardDone, "$r")
         assertTrue("compile" in (r as WaitResult.BoardDone).stale)                // 실패는 낡음으로 남는다
@@ -647,7 +647,7 @@ class UseCaseTest {
         val uc = fx.graph(FakeClock())
         runBlocking {
             uc.boardFills().test {
-                val shown = uc.openPreview(fx.file.path, null, emptyMap(), "test")
+                val shown = uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
                 uc.workspace.awaitBoardFilled()
                 val fill = awaitItem()
                 Thread.sleep(100)                            // 부정 확인 — 두 번째 알림이 오지 않는다. 채우기는 끝을 알리지 않는다
@@ -664,10 +664,10 @@ class UseCaseTest {
         fx.renderer.awaitWritesHold = gate
         runBlocking {
             uc.boardFills().test {
-                val first = uc.openPreview(fx.file.path, null, emptyMap(), "test", since = 1_000)
+                val first = uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test", since = 1_000)
                 assertTrue(fx.renderer.awaitWritesEntered.tryAcquire(5, TimeUnit.SECONDS))
 
-                val again = uc.openPreview(fx.file.path, null, emptyMap(), "test", since = 2_000)
+                val again = uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test", since = 2_000)
                 ws.awaitBoardFilled()
                 gate.countDown()
                 assertTrue(first.startedAtMs != again.startedAtMs)
@@ -689,7 +689,7 @@ class UseCaseTest {
         assertTrue(fx.renderer.writeEntered.tryAcquire(5, TimeUnit.SECONDS))
 
         val before = ws.now.board!!.epoch
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }; ws.awaitBoardFilled()
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }; ws.awaitBoardFilled()
         assertTrue(ws.now.board!!.epoch != before)
         val fresh = ws.now.board!!.cards[1].result
 

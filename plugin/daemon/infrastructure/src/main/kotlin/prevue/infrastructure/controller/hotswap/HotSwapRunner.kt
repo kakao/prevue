@@ -15,14 +15,14 @@ import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
 import prevue.application.service.ObserveSourceChangesUseCase
 import prevue.application.service.Status
-import prevue.application.service.TrackTabFilesUseCase
+import prevue.application.service.Tabs
 
 @SingleIn(AppScope::class)
 @Inject
 internal class HotSwapRunner(
     private val applySave: ApplySaveUseCase,
     private val status: Status,
-    private val trackTabFiles: TrackTabFilesUseCase,
+    private val tabs: Tabs,
     private val observeSourceChanges: ObserveSourceChangesUseCase,
     private val observeBuildChanges: ObserveBuildChangesUseCase,
     private val externalBuild: ExternalBuildUseCase,
@@ -36,7 +36,7 @@ internal class HotSwapRunner(
             observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, applySave(change.files, "watch", change)) }
                 guarded("preview-files") { status.indexPreviewFiles(change); null }
-                if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { trackTabFiles(change.created, change.deleted); null }
+                if (change.created.isNotEmpty() || change.deleted.isNotEmpty()) guarded("tab-files") { tabs.trackFiles(change.created, change.deleted); null }
             }
         }
         scope.launch { observeBuildChanges().collect { n -> guarded("stale-watch") { line(n, externalBuild(n.change, n.done)) } } }

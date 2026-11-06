@@ -20,7 +20,7 @@ class WorkspaceSnapshotTest {
     @Test fun `저장과 탭 전환이 겹치는 동안 status는 한 시점의 것이다`() {
         val screen = fx.file
         val card = fx.previewFile("NewsCard")
-        runBlocking { uc.openPreview(screen.path, null, emptyMap(), "test"); uc.openPreview(card.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(screen.path, null, emptyMap(), "test"); uc.tabs.openPreview(card.path, null, emptyMap(), "test") }
 
         val done = AtomicBoolean(false)
         val reads = AtomicInteger()
@@ -35,7 +35,7 @@ class WorkspaceSnapshotTest {
             runBlocking { repeat(ROUNDS) { uc.applySave(listOf(if (it % 2 == 0) screen else card), "test") } }
         }
         runBlocking {
-            repeat(ROUNDS) { uc.openPreview((if (it % 2 == 0) screen else card).path, null, emptyMap(), "test") }
+            repeat(ROUNDS) { uc.tabs.openPreview((if (it % 2 == 0) screen else card).path, null, emptyMap(), "test") }
         }
         saver.join()
         done.set(true)
@@ -48,15 +48,15 @@ class WorkspaceSnapshotTest {
     @Test fun `지금 탭을 닫고 옮기는 동안 status는 닫은 탭의 보드를 보이지 않는다`() {
         val screen = fx.file
         val card = fx.previewFile("NewsCard")
-        runBlocking { uc.openPreview(screen.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(screen.path, null, emptyMap(), "test") }
 
         val done = AtomicBoolean(false)
         val torn = java.util.concurrent.CopyOnWriteArrayList<String>()
         val reader = thread { while (!done.get()) torn(uc.status.read())?.let { torn += it } }
         runBlocking {
             repeat(ROUNDS) {
-                uc.openPreview(card.path, null, emptyMap(), "test")
-                uc.closeTab(card.path, "test")
+                uc.tabs.openPreview(card.path, null, emptyMap(), "test")
+                uc.tabs.closeTab(card.path, "test")
             }
         }
         done.set(true)

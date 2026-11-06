@@ -5,8 +5,8 @@ import java.io.File
 import prevue.application.service.ApplySaveUseCase
 import prevue.application.service.RenderAtUseCase
 import prevue.application.service.RerenderUseCase
-import prevue.application.service.ShowPreviewUseCase
 import prevue.application.service.Status
+import prevue.application.service.Tabs
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.WaitResult
@@ -14,14 +14,14 @@ import prevue.application.domain.model.WaitResult
 @Inject
 internal class CliRender(
     private val renderAt: RenderAtUseCase,
-    private val showPreview: ShowPreviewUseCase,
+    private val tabs: Tabs,
     private val rerender: RerenderUseCase,
     private val applySave: ApplySaveUseCase,
     private val status: Status,
 ) {
     suspend fun render(at: Long?, fresh: Boolean, by: String): ShowResult = when {
         at != null -> renderAt(at, by)
-        fresh -> showPreview(by)
+        fresh -> tabs.showPreview(by)
         else -> rerender(by)
     }
 
