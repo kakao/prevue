@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test
 import prevue.application.domain.model.PreviewSpec
 import prevue.daemon.fake.FakePreviewRenderer
 import prevue.application.port.LiveSession
+import prevue.application.port.ScrollRider
 import prevue.application.port.Frame
 import prevue.application.domain.model.SettledShot
 import prevue.daemon.fake.dispatchersOn
@@ -147,7 +148,7 @@ class LiveLoopTest {
         val at = ArrayList<Int>()
         fake.onScroll = { _, _ -> at += fake.ticks.get() }
         val before = fake.ticks.get()
-        val (seq, ok) = a.seek(5, 6, 0f, 800f, pieces = 4, object : LiveLoop.Rider {
+        val (seq, ok) = a.seek(5, 6, 0f, 800f, pieces = 4, object : ScrollRider {
             override fun frame(s: LiveSession) = Unit
             override suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit) = false
         })
@@ -163,7 +164,7 @@ class LiveLoopTest {
         changed(3)
         val seen = ArrayList<Int>()
         var frames = 0
-        val (seq, ok) = a.seek(5, 6, 0f, 800f, pieces = 4, object : LiveLoop.Rider {
+        val (seq, ok) = a.seek(5, 6, 0f, 800f, pieces = 4, object : ScrollRider {
             override fun frame(s: LiveSession) { frames++ }
             override suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit): Boolean {
                 val t = fake.ticks.get()

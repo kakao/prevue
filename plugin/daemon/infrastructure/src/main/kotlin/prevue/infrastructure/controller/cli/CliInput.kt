@@ -19,7 +19,7 @@ internal class CliInput(
 
     suspend fun touch(type: String, x: Int, y: Int, by: String, settle: Boolean): TouchResult = live.touch(type, x, y, by, settle)
     suspend fun touchAt(at: String, type: String, by: String, settle: Boolean): TouchResult = live.touchAt(at, type, by, settle)
-    suspend fun scroll(screens: Double, horizontal: Boolean, at: String?, by: String, until: String? = null): ScrollResult =
+    suspend fun scroll(screens: Double?, horizontal: Boolean, at: String?, by: String, until: String? = null): ScrollResult =
         live.scroll(screens, horizontal, at, by, until)
     suspend fun type(text: String, by: String): TypeResult = live.type(text, by)
 }
