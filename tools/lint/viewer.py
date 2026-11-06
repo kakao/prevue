@@ -2,7 +2,7 @@
 
 화면을 고치는 쪽이 대부분 에이전트라, 고칠 때마다 새 값을 정하지 못하게 기계적인 모양만 본다. 규칙마다 tests/lint/test_viewer.py 에 심은 위반이 있다.
 - 두는 것: 배치 치수(폭 · 높이 · 위치 · 테두리 두께 · 스크롤 여백), 0 · auto · inherit · transparent · currentColor · linear,
-  테두리처럼 두르는 고리 그림자(0 0 0 <두께> <색 토큰>), 계산한 색(템플릿의 rgb(${…}))
+  테두리처럼 두르는 고리 그림자(0 0 0 <두께> <색 토큰> — 확대를 되돌리는 calc(<두께> / var(--z)) 도), 계산한 색(템플릿의 rgb(${…}))
 - 지역 변수(tokens.css 밖의 --x)는 쓰이는 자리의 규칙으로 본다 — 날값을 변수에 옮겨 담아 피하지 못하게
 - 계산식의 단위 없는 배수도 날값이다(토큰에 곱해 새 값을 만든다). 둘 것은 부호 바꾸기(* -1)와 --motion-stagger 의 칸 수뿐이다
 - 그림 블록(/* 그림 시작 … */ ~ /* 그림 끝 */)은 그림 안무라 색 · 원시값만 본다(D-97)
@@ -62,6 +62,9 @@ _EASE = re.compile(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|step-start|s
                    r"|(?<![\w-])(?:cubic-bezier|steps|linear)\(", re.I)
 _MATH = re.compile(r"(?<![\w-])(?:calc|min|max|clamp)\(", re.I)
 _RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+(?:\d+\.?\d*|\.\d+)[a-z]*\s*(?:inset\s*)?")
+# 확대를 되돌리는 고리 — 두께를 변수 배율로만 나눈다(calc(1px / var(--z, 1))). 변수를 걷기 전의 원문에서 본다
+_ZOOM_RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+calc\(\s*(?:\d+\.?\d*|\.\d+)[a-z]+\s*/\s*var\(--[\w-]+(?:\s*,\s*1)?\s*\)\s*\)"
+                        r"\s+var\(--[\w-]+\)\s*(?:inset\s*)?")
 _DECL = re.compile(r"\s*(--[\w-]+|-?[A-Za-z][\w-]*)\s*:(.*)", re.S)
 _GROUP = ("@media", "@supports", "@container", "@layer", "@scope")
 _SPACE = re.compile(r"(?:padding|margin)(?:-[a-z-]+)?|(?:row-|column-|grid-)?gap")
@@ -204,7 +207,7 @@ def raw_in(cat, prop, value, rest):
             layer_rest, _ = split_vars(layer)
             if not any(v for _, v, _ in _numbers(layer_rest)):
                 continue
-            if prop != "text-shadow" and _RING.fullmatch(layer_rest):
+            if prop != "text-shadow" and (_RING.fullmatch(layer_rest) or _ZOOM_RING.fullmatch(layer)):
                 continue
             found.append(" ".join(layer.split()))
         return found
