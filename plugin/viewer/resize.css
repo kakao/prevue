@@ -28,13 +28,22 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .veil { position: absolute; inset: 0; background: var(--device-veil); pointer-events: none; }
 .resize-scene .outline { position: absolute; left: 0; top: 0; border: .5px solid var(--resize-outline); pointer-events: none; }
 .resize-scene .tick { position: absolute; width: 1px; height: 6px; background: var(--resize-outline); pointer-events: none; }
-.resize-scene .shell { position: absolute; left: 0; top: 0; pointer-events: none; background-color: var(--device-body);
+/* 두께 띠(D-158 ②) — 옆면은 몸체를 --depth-x · --depth-y 만큼 민 그림자 둘(몸체 색 · 그 위의 어둠)이다. 몸체 색은 color 로 받아(currentColor) 기기를 바꿀 때 바탕과 함께 옮겨 간다.
+   띠의 폭 · 방향은 resize-scene.js 가 배율에 맞춰 쓴다. ::after 는 화면 구멍의 가장자리 — 그림자가 바깥(테 쪽)으로만 번져 화면 픽셀 위에는 아무것도 얹지 않는다. */
+.resize-scene .shell { position: absolute; left: 0; top: 0; pointer-events: none; background-color: var(--device-body); color: var(--device-body);
+         --depth-x: 0px; --depth-y: 0px; --bezel: 0px; --screen-r: 0px;
          background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade));
-         box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline), var(--elevation-2);
+         box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline),
+           var(--depth-x) var(--depth-y) 0 0 var(--device-side), var(--depth-x) var(--depth-y) 0 0 currentColor,
+           var(--depth-x) var(--depth-y) 0 .5px var(--device-side-line), var(--device-shadow);
          transition: background-color var(--duration-medium2) var(--easing-standard); }
+.resize-scene .shell::after { content: ""; position: absolute; inset: var(--bezel); border-radius: var(--screen-r);
+         box-shadow: 0 0 0 1px var(--device-inner), 0 0 calc(var(--bezel) * .6) 0 var(--device-inner-glow); }
 .resize-scene .btn { position: absolute; left: 0; top: 0; border-radius: 2px; pointer-events: none; background-color: var(--device-body);
-       box-shadow: inset 0 0 0 .5px var(--device-gloss); transition: background-color var(--duration-medium2) var(--easing-standard); }
-.resize-scene .cam { position: absolute; left: 0; top: 0; z-index: 2; background: var(--device-camera); pointer-events: none; }
+       box-shadow: inset 0 0 0 .5px var(--device-gloss), inset 0 0 0 9px var(--device-side), 0 0 0 .5px var(--device-side-line);
+       transition: background-color var(--duration-medium2) var(--easing-standard); }
+.resize-scene .cam { position: absolute; left: 0; top: 0; z-index: 2; background: var(--device-camera); pointer-events: none;
+       box-shadow: inset 0 -.5px .5px var(--device-side-edge); }
 .resize-scene .crease { position: absolute; top: 0; width: 14px; margin-left: -7px; pointer-events: none;
           background: linear-gradient(90deg, var(--device-gloss-clear), var(--device-crease-light) 36%, var(--device-crease-dark) 50%, var(--device-crease-light) 64%, var(--device-gloss-clear)); }
 .resize-scene .crease.h { width: auto; height: 14px; margin-left: 0; margin-top: -7px;
@@ -42,7 +51,7 @@ body.resizing-ui main { padding-bottom: 0; }
 /* 그림 끝 */
 /* 그림 시작 — 접는 장(Duo)의 몸체와 면 */
 .resize-scene .duo { position: absolute; inset: 0; pointer-events: none; }
-.resize-scene .duo-base { position: absolute; left: 0; top: 0; box-shadow: var(--elevation-2); }
+.resize-scene .duo-base { position: absolute; left: 0; top: 0; box-shadow: var(--device-shadow); }
 .resize-scene .duo-scr { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 2px var(--live); }
 .resize-scene .duo-band { position: absolute; border-style: solid; box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-inset); }
 .resize-scene .duo-flap { position: absolute; inset: 0; background: var(--device-flap); }
@@ -50,7 +59,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .duo-ly { position: absolute; inset: 0; }
 .resize-scene .duo-dark { position: absolute; left: 0; top: 0; }
 /* 접는 장의 몸체도 멈춘 몸체(.shell)와 같은 그림자 · 외곽선 · 150° 빛을 받아 끝난 순간 바뀌지 않는다. */
-.resize-scene .duo-edge { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; filter: var(--elevation-2-filter); }
+.resize-scene .duo-edge { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; filter: var(--device-shadow-filter); }
 .resize-scene .duo-edge :is(.outl, .houtl) { stroke: var(--device-hairline); }
 .resize-scene .duo-edge .rimhi { stroke: var(--device-rim); }
 .resize-scene .duo-band { background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
@@ -118,7 +127,7 @@ body.resizing-ui main { padding-bottom: 0; }
 #focusView.morph-hold #stage, #focusView.morph-hold .unit .stage, .morph-target { visibility: hidden !important; }
 .resize-scene { --deco-dur: var(--duration-short4); }
 .resize-scene .unit :is(.outline, .tick, .cam), .resize-scene .ruler { transition: filter var(--deco-dur) var(--easing-standard); }
-.resize-scene .shell, .resize-scene .btn { transition: background-color var(--duration-medium2) var(--easing-standard), filter var(--deco-dur) var(--easing-standard); }
+.resize-scene .shell, .resize-scene .btn { transition: background-color var(--duration-medium2) var(--easing-standard), color var(--duration-medium2) var(--easing-standard), filter var(--deco-dur) var(--easing-standard); }
 .resize-scene.deco-off .unit :is(.shell, .btn, .outline, .tick, .cam), .resize-scene.deco-off .ruler { filter: opacity(0); }
 .morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container);
          mask-size: calc(100% + 200vmax) calc(100% + 100vmax); mask-position: -100vmax 0; mask-repeat: no-repeat; mask-clip: no-clip; }

@@ -57,7 +57,7 @@ export function createResizeScene(root, hooks) {
     swapDur: 320, swapBlur: 8, swapNear: .15, spinSwapA: .35, spinSwapB: .65,
     holdBlur: 24, holdRise: 150, revealFade: 240, revealDur: 280, swapZoom: .03, moveBlur: 6, settleSharp: 220,
     reducedFade: 240, reducedDim: .62, gap: 7, crease: .35,
-    hingeLine: true, duoDur: 1, duoBlur: 24, duoDark: .85 };
+    hingeLine: true, duoDur: 1, duoBlur: 24, duoDark: .85, depthX: 1.4, depthY: 3 };
   // 커스텀 크기의 범위와 키 한 번의 걸음 — 치수선 입력과 슬라이더가 같이 쓴다
   const DP_MIN = 240, DP_MAX = 1600, stepOf = e => e.shiftKey ? 10 : 1;
   const ORIGINAL = { sel: "original", kind: "original", name: "@Preview", w: 411, h: 891, img: null };
@@ -483,7 +483,7 @@ export function createResizeScene(root, hooks) {
     const tip = hu - Lu * cs, p0 = Math.min(hu, tip), p1 = Math.max(hu + Bu, tip);
     const pb = box(p0, p1 - p0, Bv);
     Object.assign(RG.plate.style, pb, { margin: -t + "px", width: parseFloat(pb.width) + 2 * t + "px", height: parseFloat(pb.height) + 2 * t + "px", borderRadius: r + t + "px",
-      boxShadow: `var(--elevation-2), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
+      boxShadow: `var(--device-shadow), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
     Object.assign(RG.base.style, box(hu, Bu, Bv));
     const hk = smooth(20, 160, th);
     q(RG.base, ".clip").style.borderRadius = corners(r * hk, r).map(v => v + "px").join(" ");
@@ -680,6 +680,11 @@ export function createResizeScene(root, hooks) {
     return w > .5 ? to : from;
   }
 
+  // 두께 띠는 화면 기준 오른쪽 아래다 — 돌리는 동안 몸체가 돌아도 빛은 그대로라, 몸체 좌표로 거꾸로 돌려 준다.
+  function depthAt(s, deg) {
+    const a = -deg * Math.PI / 180, x = P.depthX * s, y = P.depthY * s;
+    return { x: x * Math.cos(a) - y * Math.sin(a), y: x * Math.sin(a) + y * Math.cos(a) };
+  }
   function drawUnit(U, rect, ol, s, layers, now, opacity, turning = false) {
     const { cx } = room(), g = P.gap, y = rect.y;
     U.el.style.opacity = opacity;
@@ -690,15 +695,20 @@ export function createResizeScene(root, hooks) {
     U.stage.style.borderRadius = sr.toFixed(2) + "px";
     Object.assign(U.outline.style, { left: cx - ol.w / 2 + "px", top: y - g + "px", width: ol.w + "px", height: ol.h + "px",
       borderRadius: sr > 0 ? sr + g + "px" : "0px", opacity: ol.op });
-    const t = lk.bezel * P.shellK * s, L = cx - rect.w / 2;
+    const t = lk.bezel * P.shellK * s, L = cx - rect.w / 2, dp = depthAt(s, turning ? spin.dir * 90 * spinAt(now).p : 0);
     Object.assign(U.shell.style, { left: L - t + "px", top: y - t + "px", width: rect.w + 2 * t + "px", height: rect.h + 2 * t + "px", borderRadius: sr + t + "px",
-      backgroundColor: lk.tone, opacity: ol.shell });
-    const H0 = (ol.rot ? rect.w : rect.h) / s, bw = 3;
+      backgroundColor: lk.tone, color: lk.tone, opacity: ol.shell });
+    U.shell.style.setProperty("--depth-x", dp.x.toFixed(2) + "px");
+    U.shell.style.setProperty("--depth-y", dp.y.toFixed(2) + "px");
+    U.shell.style.setProperty("--bezel", t.toFixed(2) + "px");
+    U.shell.style.setProperty("--screen-r", sr.toFixed(2) + "px");
+    // 옆 단추는 옆면 띠의 바깥에 붙는다 — 띠가 단추 쪽으로 나와 있으면 그만큼 민다.
+    const H0 = (ol.rot ? rect.w : rect.h) / s, bw = 3, out = (side, d) => side > 0 ? Math.max(0, d) : -Math.max(0, -d);
     lk.btn.forEach((b, i) => {
       const e = U.btns[i], a = b.at * s, ln = b.len * s;
       Object.assign(e.style, ol.rot
-        ? { left: L + (H0 * s - a - ln) + "px", top: (b.side < 0 ? y - t - bw + .5 : y + rect.h + t - .5) + "px", width: ln + "px", height: bw + "px" }
-        : { left: (b.side < 0 ? L - t - bw + .5 : L + rect.w + t - .5) + "px", top: y + a + "px", width: bw + "px", height: ln + "px" },
+        ? { left: L + (H0 * s - a - ln) + "px", top: (b.side < 0 ? y - t - bw + .5 : y + rect.h + t - .5) + out(b.side, dp.y) + "px", width: ln + "px", height: bw + "px" }
+        : { left: (b.side < 0 ? L - t - bw + .5 : L + rect.w + t - .5) + out(b.side, dp.x) + "px", top: y + a + "px", width: bw + "px", height: ln + "px" },
         { backgroundColor: lk.tone, opacity: ln > .5 ? ol.shell : 0 });
     });
     putCam(U.cam, camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s), 0, 0, ol.shell);
