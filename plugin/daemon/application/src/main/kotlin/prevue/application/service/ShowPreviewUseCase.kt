@@ -2,6 +2,7 @@ package prevue.application.service
 
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.ShowResult
+import prevue.application.port.Workspace
 /** 보여 주는 한 장을 새 태스크로 다시 그린다 — 앞의 터치·시계 진행을 버리고 처음 상태로. */
 @Inject
 class ShowPreviewUseCase(private val ws: Workspace, private val live: LiveShot) {

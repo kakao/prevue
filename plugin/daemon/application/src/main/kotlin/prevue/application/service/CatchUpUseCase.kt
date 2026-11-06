@@ -2,6 +2,7 @@ package prevue.application.service
 
 import dev.zacsweers.metro.Inject
 import prevue.application.domain.model.ShowResult
+import prevue.application.port.Workspace
 /**
  * 읽기 전에 PNG·트리를 지금 화면으로 맞춘다 — 에이전트의 status와 뷰어의 가리키기가 부른다.
  * live가 쓴 뒤로 바뀌지 않았으면 그리지 않는다(null). 인터랙티브 밖에서는 렌더할 때마다 쓰므로 대개 null이다.

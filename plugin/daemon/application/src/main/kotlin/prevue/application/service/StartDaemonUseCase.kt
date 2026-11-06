@@ -8,12 +8,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import prevue.application.port.PreviewRenderer
+import prevue.application.port.Workspace
 @SingleIn(AppScope::class)
 @Inject
 class StartDaemonUseCase(
     private val ws: Workspace,
     private val renderer: PreviewRenderer,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val settle: SettleUseCase,
     private val postures: DrawPosturesUseCase,
     private val scope: CoroutineScope,

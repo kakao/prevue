@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.condition.EnabledIf
+import prevue.application.port.Workspace
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
@@ -32,7 +33,6 @@ import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Clock
-import prevue.application.service.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.TestGraph
@@ -41,6 +41,7 @@ import prevue.infrastructure.bindings.TargetRepo
 import prevue.daemon.fake.TestPorts
 import prevue.daemon.fake.testGraph
 import prevue.daemon.fake.realDispatchers
+import prevue.infrastructure.store.InMemoryWorkspace
 
 /**
  * 진짜 layoutlib으로 `fixtures/pearl-kmp`의 commonMain 프리뷰를 그린다(`./gradlew integrationTest`, 로컬만).
@@ -76,7 +77,7 @@ class KmpRenderIntegrationTest {
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers, resourceApk.second)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
-        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
+        ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
         sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) }
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))

@@ -8,10 +8,11 @@ import prevue.application.port.CompileResult
 import prevue.application.port.LiteralSite
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.rule.LiteralPolicy
+import prevue.application.port.Workspace
 
 @SingleIn(AppScope::class)
 @Inject
-class LiteralPatches(private val ws: Workspace, private val engine: EngineActor, private val sources: SourceFileRepository) {
+class LiteralPatches(private val ws: Workspace, private val engine: Engine, private val sources: SourceFileRepository) {
     private class Known(val text: String, val owner: String?, val sites: List<LiteralSite>, val epoch: Int)
     private val known = HashMap<String, Known>()
     private var epoch = 0

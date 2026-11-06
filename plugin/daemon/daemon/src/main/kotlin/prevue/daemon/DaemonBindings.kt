@@ -6,6 +6,7 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import prevue.application.port.Workspace
 import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.TargetRepo
 import prevue.infrastructure.bindings.InfraConfig
@@ -13,9 +14,9 @@ import prevue.infrastructure.bindings.InfraLog
 import prevue.infrastructure.bindings.TargetCheckout
 import prevue.infrastructure.bindings.WatchRoots
 import prevue.application.port.Clock
-import prevue.application.service.Workspace
 import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.ModuleInfo
+import prevue.infrastructure.store.InMemoryWorkspace
 
 internal class DaemonHooks(val log: (String) -> Unit, val onShutdown: () -> Unit)
 
@@ -27,7 +28,7 @@ internal object DaemonBindings {
 
     @Provides @SingleIn(AppScope::class)
     fun workspace(module: ModuleInfo, graph: ModuleGraph, @WatchRoots roots: List<File>): Workspace =
-        Workspace(module, Clock(System::currentTimeMillis), graph, roots)
+        InMemoryWorkspace(module, Clock(System::currentTimeMillis), graph, roots)
 
     @Provides
     fun entryHooks(config: InfraConfig, hooks: DaemonHooks): EntryHooks = EntryHooks(config.port, hooks.log, hooks.onShutdown)

@@ -5,6 +5,7 @@ import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.TabMove
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.TabPolicy
+import prevue.application.port.Workspace
 /**
  * FR-1·17 · D-54. 파일이나 FQN을 탭으로 연다 — 없으면 새 탭, 있으면 그 탭으로 옮긴다. 지금 탭을 바꿔 끼우지 않는다:
  * 화면 파일과 하위 컴포넌트 파일을 함께 고칠 때 상위 화면이 사라지지 않게. 파일이면 그 파일의 프리뷰 전부로 보드를 만들고

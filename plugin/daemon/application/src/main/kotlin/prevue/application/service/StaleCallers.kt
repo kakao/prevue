@@ -18,6 +18,8 @@ import prevue.application.domain.rule.LinkagePolicy
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Compiler
 import prevue.application.port.SourceFileRepository
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 /**
  * 모듈마다 컴파일하기 · 함께 실을 파일 고르기 · 옛 호출자 고치기. 유스케이스가 아니다 — 저장 · 열기 · 카드 그리기가 **줄 안에서** 함께 쓴다([LiveShot]과 같다).
@@ -26,7 +28,7 @@ import prevue.application.port.SourceFileRepository
 @Inject
 class StaleCallers(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val compiler: Compiler,
     private val literals: LiteralPatches,
     private val sources: SourceFileRepository,

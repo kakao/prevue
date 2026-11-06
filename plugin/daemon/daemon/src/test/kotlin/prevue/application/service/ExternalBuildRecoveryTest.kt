@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.WaitResult
+import prevue.application.domain.rule.buildPending
 import prevue.application.port.BuildChange
 import prevue.application.port.FailureKind
 import prevue.daemon.fake.FakeClock

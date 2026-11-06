@@ -22,12 +22,14 @@ import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.PreviewExpansion
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
 @Inject
 class Tabs(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val previews: PreviewRepository,
     private val live: LiveShot,
     private val fillBoard: BoardFiller,

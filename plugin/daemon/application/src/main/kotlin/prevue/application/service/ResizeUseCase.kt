@@ -5,6 +5,8 @@ import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 @Inject
 class ResizeUseCase(private val ws: Workspace, private val live: LiveShot) {
     suspend operator fun invoke(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> within(ed, size, by) }

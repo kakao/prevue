@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 /**
  * 층 규칙(D-148) — 방향(`:infrastructure` → `:application`, `:daemon` 이 둘을 조립)은 모듈 의존이 컴파일 때 막는다.
  * 이 표는 모듈이 못 막는 둘만 지킨다.
- * ① `controller` 는 같은 모듈의 기술 폴더(render · compile · watch · source · dump · process · bindings)를 모른다 — 서비스를 부르고, 코덱 `json` 만 함께 쓴다.
+ * ① `controller` 는 같은 모듈의 기술 폴더(render · compile · watch · source · dump · process · store · bindings)를 모른다 — 서비스를 부르고, 코덱 `json` 만 함께 쓴다.
  * ② `:application` 은 파일 시스템을 직접 만지지 않고 AWT · nio 를 이름으로 쓰지 않는다 — JDK 는 모듈이 못 막는다.
  */
 class LayerRuleTest {

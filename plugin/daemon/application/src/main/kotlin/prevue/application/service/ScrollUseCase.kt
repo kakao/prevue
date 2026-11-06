@@ -17,10 +17,11 @@ import prevue.application.domain.rule.NodeTarget
 import prevue.application.domain.rule.ScrollPassed
 import prevue.application.domain.rule.ScrollReport
 import prevue.application.domain.rule.ScrollUntil
+import prevue.application.port.Workspace
 @Inject
 class ScrollUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
     private val sources: SourceFileRepository,
 ) {

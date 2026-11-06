@@ -11,10 +11,12 @@ import prevue.application.domain.model.SaveTiming
 import prevue.application.domain.model.VacantTab
 import prevue.application.port.SourceChange
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 @Inject
 class ApplySaveUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val modules: StaleCallers,
     private val literals: LiteralPatches,
     private val resources: ResourcePatches,

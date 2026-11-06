@@ -9,6 +9,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import prevue.application.port.Workspace
 import prevue.infrastructure.controller.browser.BrowserEndpoint
 import prevue.infrastructure.controller.browser.BrowserInput
 import prevue.infrastructure.controller.browser.BrowserPointing
@@ -65,9 +66,8 @@ import prevue.application.port.ResourceValues
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
-import prevue.application.service.EngineActor
+import prevue.application.service.Engine
 import prevue.application.service.LiveLoop
-import prevue.application.service.Workspace
 import prevue.application.port.PrevueDispatchers
 
 /**
@@ -82,7 +82,7 @@ import prevue.application.port.PrevueDispatchers
 )
 internal interface TestGraph {
     val workspace: Workspace
-    val engine: EngineActor
+    val engine: Engine
     val startDaemon: StartDaemonUseCase
 
     val drawCard: DrawCardUseCase

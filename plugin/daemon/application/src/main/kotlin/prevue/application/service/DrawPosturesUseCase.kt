@@ -16,11 +16,12 @@ import prevue.application.domain.model.Postures
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.Shot
 import prevue.application.port.RenderOutput
+import prevue.application.port.Workspace
 @SingleIn(AppScope::class)
 @Inject
 class DrawPosturesUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val live: LiveShot,
     private val scope: CoroutineScope,
     @Named(QUIET) private val quietMs: Long = QUIET_MS,

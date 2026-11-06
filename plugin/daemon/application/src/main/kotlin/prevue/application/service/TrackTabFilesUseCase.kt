@@ -5,6 +5,7 @@ import java.io.File
 import prevue.application.domain.model.Vacancy
 import prevue.application.domain.model.VacantTab
 import prevue.application.port.SourceFileRepository
+import prevue.application.port.Workspace
 /**
  * 지금 탭의 파일이 지워지거나 다시 생겼다. 생성 · 삭제는 저장이 아니라(D-56) 저장 → 화면을 타지 않으므로 여기서 탭만 맞춘다 —
  * 지워졌으면 옛 카드를 두지 않고 빈 화면으로, 다시 생겼으면 그 탭을 다시 연다. 숨은 탭은 옮길 때 [Tabs.activate]가 본다.

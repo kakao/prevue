@@ -10,6 +10,7 @@ import prevue.application.domain.model.Postures
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.Work
 import prevue.application.domain.model.CardResult
+import prevue.application.domain.rule.buildPending
 import prevue.application.port.CompileResult
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.RenderOutput
@@ -19,6 +20,8 @@ import prevue.application.domain.model.Shot
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.Workspace
+import prevue.application.port.WorkspaceEditor
 
 /**
  * live 태스크에 한 장을 그리고 그 결과를 [Workspace]에 적는 단계들. 유스케이스가 아니다 — 여러 유스케이스가 **줄 안에서** 함께 쓰고,
@@ -26,7 +29,7 @@ import prevue.application.domain.rule.StaleReasons
  */
 @SingleIn(AppScope::class)
 @Inject
-class LiveShot(private val ws: Workspace, private val engine: EngineActor) {
+class LiveShot(private val ws: Workspace, private val engine: Engine) {
     /** 새 태스크로 그려 live로 삼는다. [since]는 이 렌더를 부른 일의 시작(epoch ms)이고, 없으면 그리기 시작이다(D-63). */
     suspend fun show(
         ed: WorkspaceEditor, spec: PreviewSpec, by: String, since: Long? = null, keepPostures: Boolean = false, deferMissing: Boolean = false,

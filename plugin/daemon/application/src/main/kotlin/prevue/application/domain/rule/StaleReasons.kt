@@ -3,6 +3,7 @@ package prevue.application.domain.rule
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.Verbatim
+import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
 import prevue.application.port.RenderOutput
@@ -69,3 +70,5 @@ object StaleReasons {
     private fun reason(files: List<File>, what: Phrase, remedy: Phrase, message: Phrase? = null, pending: Boolean = false) =
         StaleReason(files.map { it.absolutePath }, what, remedy, Instant.now().toString(), message, pending)
 }
+
+val WorkspaceState.buildPending: Boolean get() = stale[StaleReasons.BUILD]?.pending == true

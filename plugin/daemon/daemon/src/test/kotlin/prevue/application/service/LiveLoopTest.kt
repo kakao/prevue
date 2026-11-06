@@ -31,8 +31,8 @@ class LiveLoopTest {
 
     @AfterEach fun down() { fake.outDir.deleteRecursively() }
 
-    private fun TestScope.actor(): EngineActor =
-        EngineActor(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), now = { testScheduler.currentTime }, log = {})
+    private fun TestScope.actor(): Engine =
+        Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), now = { testScheduler.currentTime }, log = {})
 
     private fun changed(n: Int) = repeat(n) { fake.frames += Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) }
 

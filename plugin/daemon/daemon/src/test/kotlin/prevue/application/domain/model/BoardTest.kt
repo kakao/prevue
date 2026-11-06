@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.FakeClock
-import prevue.application.service.Workspace
+import prevue.infrastructure.store.InMemoryWorkspace
 
 /** 보드와 카드는 불변 값이다(D-51). 바꾸면 새 값이 나오고, `Workspace`가 CAS로 갈아 끼운다. */
 class BoardTest {
@@ -41,7 +41,7 @@ class BoardTest {
     }
 
     @Test fun `줄 밖의 기록이 동시에 와도 하나도 잃지 않는다`() {
-        val ws = Workspace(ModuleInfo("/r", ":a", "debug", "a", null, null), FakeClock(), ModuleGraph.single(":a", emptyList(), emptyList()))
+        val ws = InMemoryWorkspace(ModuleInfo("/r", ":a", "debug", "a", null, null), FakeClock(), ModuleGraph.single(":a", emptyList(), emptyList()))
         val many = (0 until 64).map { PreviewSpec("com.x.P$it", "P$it", emptyMap(), null, it) }
         val b = Board.open(File("A.kt"), many, 0)
         kotlinx.coroutines.runBlocking { ws.exclusive { it.openBoard(b) } }

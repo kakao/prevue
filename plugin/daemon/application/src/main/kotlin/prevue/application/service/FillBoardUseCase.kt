@@ -10,11 +10,12 @@ import prevue.application.domain.model.Board
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.SkipReason
 import prevue.application.domain.model.BoardFill
+import prevue.application.port.Workspace
 @ContributesBinding(AppScope::class)
 @Inject
 class FillBoardUseCase(
     private val ws: Workspace,
-    private val engine: EngineActor,
+    private val engine: Engine,
     private val drawCard: DrawCardUseCase,
     private val scope: CoroutineScope,
 ) : BoardFiller {
