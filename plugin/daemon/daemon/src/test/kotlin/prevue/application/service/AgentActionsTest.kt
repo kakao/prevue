@@ -20,6 +20,7 @@ import prevue.application.domain.model.TouchResult
 import prevue.application.domain.model.TypeResult
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.port.Frame
+import prevue.application.domain.rule.Scrolling
 import prevue.application.domain.model.Bitmap
 import prevue.daemon.fake.TestGraph
 
@@ -120,7 +121,7 @@ class AgentActionsTest {
         val r = runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") } as ScrollResult.Settled
         assertTrue(r.moved, "$r")
         assertEquals(0f to 1600f, wheeled())
-        assertTrue(fx.renderer.scrolls.dropLast(1).all { it[3] <= Live.WHEEL && it[0] == 500f && it[1] == 1000f })
+        assertTrue(fx.renderer.scrolls.dropLast(1).all { it[3] <= Scrolling.WHEEL && it[0] == 500f && it[1] == 1000f })
         assertEquals(listOf(500f, 1000f, 0f, 0f), fx.renderer.scrolls.last())
         assertEquals(Container(null, listOf(0, 0, 1000, 2000), "vertical"), r.container)
     }

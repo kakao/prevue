@@ -13,6 +13,7 @@ import prevue.application.port.Frame
 import prevue.application.port.LiveSession
 import prevue.application.port.LiveSessionFactory
 import prevue.application.port.RenderOutput
+import prevue.application.domain.rule.Scrolling
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.SettledShot
 import prevue.application.domain.rule.Pacing
@@ -102,18 +103,13 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return input("type") to why
     }
 
-    interface Rider {
-        fun frame(s: LiveSession)
-        suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit): Boolean
-    }
-
     fun wheel(x: Int, y: Int, dx: Float, dy: Float): Pair<Long, Boolean> {
         val s = current()
         val seq = input("wheel")
         return seq to s.scroll(x, y, dx, dy)
     }
 
-    suspend fun seek(x: Int, y: Int, dx: Float, dy: Float, pieces: Int, rider: Rider): Pair<Long, Boolean> {
+    suspend fun seek(x: Int, y: Int, dx: Float, dy: Float, pieces: Int, rider: Scrolling.Rider): Pair<Long, Boolean> {
         val s = current()
         val seq = input("wheel")
         val sample = { rider.frame(s) }
