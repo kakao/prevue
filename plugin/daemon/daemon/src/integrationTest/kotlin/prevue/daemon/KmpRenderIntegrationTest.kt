@@ -172,7 +172,7 @@ class KmpRenderIntegrationTest {
     }
 
     private fun open(file: File) {
-        val r = runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }
+        val r = runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)
     }

@@ -56,7 +56,7 @@ class InfraIntegrationTest {
             assertNotNull(graph.values)
             assertEquals(graph.target.outDir.absolutePath, uc.status.read().engine.out)
             uc.rememberValues()
-            val first = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
+            val first = uc.tabs.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(first.ok, first.message.toString())
             ws.awaitBoardFilled(timeoutMs = 60_000)
             copy.appendText("\n")
@@ -77,7 +77,7 @@ class InfraIntegrationTest {
             assertNull(uc.status.read().watch)
             assertNull(graph.builds)
             assertNull(graph.values)
-            val shown = uc.openPreview(copy.path, null, emptyMap(), "test").shot.out
+            val shown = uc.tabs.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(shown.ok, shown.message.toString())
         }
         Unit

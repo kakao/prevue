@@ -14,14 +14,17 @@ import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.model.Board
 import prevue.application.domain.model.CardResult
+import prevue.application.domain.model.CloseResult
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.Tab
+import prevue.application.domain.model.TabMove
 import prevue.application.domain.model.Vacancy
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.PreviewExpansion
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.domain.rule.TabPolicy
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
 
@@ -36,6 +39,45 @@ class Tabs(
     private val modules: StaleCallers,
     private val sources: SourceFileRepository,
 ) {
+    suspend fun openPreview(target: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult = ws.exclusive { ed ->
+        val key = keyOf(target)
+        val move = if (find(key) == null) TabMove.OPENED else TabMove.SWITCHED
+        val r = activate(ed, key, index, params, by, since)
+        val evicted = TabPolicy.evict(ws.now.tabs, ws.now.activeTab)?.also { drop(ed, it) }
+        evicted?.let { ws.emit(WorkspaceEvent.TabEvicted(it)) }
+        r.copy(tab = move, closedTab = evicted?.key)
+    }
+
+    suspend fun closeTab(target: String, by: String): CloseResult = ws.exclusive { ed ->
+        val key = keyOf(target)
+        val tab = find(key) ?: error("열린 탭이 아니다: $target")
+        val wasActive = key == ws.now.activeTab
+        drop(ed, tab)
+        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let {
+            runCatching { activate(ed, it.key, null, emptyMap(), by) }.onFailure { e -> if (e !is VacantTab) throw e }
+        }
+        CloseResult(key, ws.now.activeTab, ws.now.tabViews(ws.graph))
+    }
+
+    suspend fun showPreview(by: String): ShowResult = ws.exclusive { ed ->
+        live.show(ed, ws.now.current ?: error("보여 주는 프리뷰가 없다 — 먼저 show"), by)
+    }
+
+    suspend fun trackFiles(created: List<File>, deleted: List<File>, by: String = "watch"): Unit = ws.exclusive { ed ->
+        val tab = ws.now.activeTabOrNull() ?: return@exclusive
+        val f = tab.file?.canonicalPath ?: return@exclusive
+        fun has(files: List<File>) = files.any { it.canonicalPath == f }
+        when {
+            has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
+            has(created) && tab.vacant == Vacancy.DELETED ->
+                runCatching { activate(ed, tab.key, null, emptyMap(), by) }.onFailure { if (it !is VacantTab) throw it }
+        }
+    }
+
+    suspend fun catchUp(by: String): ShowResult? = ws.exclusive { ed ->
+        if (ws.now.current == null) null else live.catchUp(ed, by)
+    }
+
     fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
     fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }

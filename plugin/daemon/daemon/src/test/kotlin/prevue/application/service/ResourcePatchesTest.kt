@@ -37,7 +37,7 @@ class ResourcePatchesTest {
     private fun opened(file: File = fx.valuesFile(xml("title" to "A", "done" to "Done"))): Pair<TestGraph, File> {
         val uc = fx.graph(resources = values)
         uc.rememberValues()
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         uc.workspace.awaitBoardFilled()
         return uc to file
     }
@@ -148,7 +148,7 @@ class ResourcePatchesTest {
     @Test fun `렌더러가 값을 얹을 수 없으면 지금처럼 낡음이다`() {
         val f = fx.valuesFile(xml("title" to "A"))
         val uc = fx.graph(resources = null).also { it.rememberValues() }
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         write(f, xml("title" to "B"))
         assertTrue(uc.watch(f) is ReloadResult.ResourcesStale)
     }

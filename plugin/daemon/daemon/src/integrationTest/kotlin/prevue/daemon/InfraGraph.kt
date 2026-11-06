@@ -10,10 +10,10 @@ import prevue.infrastructure.bindings.Closer
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.TargetCheckout
 import prevue.application.service.ApplySaveUseCase
-import prevue.application.service.OpenPreviewUseCase
 import prevue.application.service.RememberValuesUseCase
 import prevue.application.service.StartDaemonUseCase
 import prevue.application.service.Status
+import prevue.application.service.Tabs
 import prevue.application.port.BuildWatcher
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
@@ -29,7 +29,7 @@ internal interface InfraGraph {
     val startDaemon: StartDaemonUseCase
     val status: Status
     val rememberValues: RememberValuesUseCase
-    val openPreview: OpenPreviewUseCase
+    val tabs: Tabs
     val applySave: ApplySaveUseCase
 
     @DependencyGraph.Factory

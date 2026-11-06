@@ -105,7 +105,7 @@ class RenderIntegrationTest {
         ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) },
             sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
-        val r = runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
+        val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)
     }
@@ -376,7 +376,7 @@ class RenderIntegrationTest {
             val ui = uc.entryPoints
             app = ui
             ui.startWatching()
-            val r = runBlocking { uc.openPreview(appFile.path, null, emptyMap(), "test") }
+            val r = runBlocking { uc.tabs.openPreview(appFile.path, null, emptyMap(), "test") }
             assertTrue(r.ok, r.shot.out.message?.text)
             ws.awaitBoardFilled(timeoutMs = 60_000)
             focus(true)
@@ -397,7 +397,7 @@ class RenderIntegrationTest {
     }
 
     private fun screen(): Screen {
-        runBlocking { uc.catchUp("test"); engine.awaitWrites() }
+        runBlocking { uc.tabs.catchUp("test"); engine.awaitWrites() }
         val tree = PearlFixture.tree(ws.now.lastResult!!.tree!!)
         val nodes = tree.nodes
         fun on(name: String) = nodes.any { it.name == name && it.file == "PearlApp.kt" && it.right > it.left && it.bottom > it.top }
@@ -642,7 +642,7 @@ class RenderIntegrationTest {
     @Test @Order(21) fun `render --at 은 애니메이션 API마다 그 시점의 프레임을 그리고 delay 는 경고한다`() {
         fun fill(fn: String, ms: Long): Pair<Double, List<String>> {
             val fqn = "com.example.pearl.feature.pearl.AnimationPreviewsKt.$fn"
-            assertTrue(runBlocking { uc.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
+            assertTrue(runBlocking { uc.tabs.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
             val r = runBlocking { uc.renderAt(ms, "test") }
             runBlocking { engine.awaitWrites() }
             assertTrue(r.ok, r.shot.out.message?.text)
@@ -666,7 +666,7 @@ class RenderIntegrationTest {
     // SharedTransitionLayout 안의 LookaheadScope 가상 노드는 늘 배치 안 됨이라, 그 아래 화면이 트리에서 통째로 빠졌다(데모 리허설 2026-10-08).
     @Test @Order(22) fun `공유 요소 전환으로 감싼 프리뷰도 트리에 화면이 실리고 touch --at 으로 누른다`() {
         val file = PearlFixture.sharedTransition
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
@@ -688,7 +688,7 @@ class RenderIntegrationTest {
 
     @Test @Order(23) fun `목록 상태가 없는 스크롤은 시맨틱 내용으로 나타남 · 사라짐을 맞춘다`() {
         val file = PearlFixture.scroll
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
@@ -717,7 +717,7 @@ class RenderIntegrationTest {
     // 성공 기준 2(D-75). 사람과 에이전트가 같은 루프가 정착시킨 같은 화면을 본다 — 뷰어 경로와 CLI 경로의 정착 그림 · 트리가 같다.
     @Test @Order(24) fun `뷰어로 누른 정착과 CLI 로 누른 정착이 같은 그림 · 트리다`() {
         val file = PearlFixture.sharedTransition
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val ball = PearlFixture.lineOf(file, "Box(")
         fun tap(viewer: Boolean): Pair<ByteArray, List<ViewNode>> {
@@ -757,7 +757,7 @@ class RenderIntegrationTest {
     // 「Prevue 스크롤로 찾기」 성공 기준 3. 네 모양 × 텍스트 · 소스 줄 대상 — 멈춘 화면에서 대상이 다 보이고, found.at 으로 누른 칸이 그 칸이다.
     @Test @Order(25) fun `scroll --until 은 네 모양에서 대상이 다 보일 때 멈추고 found 의 at 으로 그 칸을 누른다`() {
         val file = PearlFixture.until
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val line = PearlFixture.lineOf(file, "Text(")
         fun until(target: String, horizontal: Boolean, amount: Double = 10.0) =
@@ -788,7 +788,7 @@ class RenderIntegrationTest {
     // 성공 기준 1 · 2의 바닥. 못 찾으면 상한까지 굴린 채 found 가 비고, 응답에 found 키가 남는다.
     @Test @Order(26) fun `scroll --until 이 못 찾으면 상한만큼 굴리고 found 가 비며 더 굴릴 수 있는지 싣는다`() {
         val file = PearlFixture.until
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         val on = runBlocking { uc.focusCard(0, on = true, by = "test") } as FocusResult.On
         assertTrue(on.result.ok, on.result.shot.out.message?.text)
@@ -809,7 +809,7 @@ class RenderIntegrationTest {
     // 「Prevue 스크롤로 찾기」 성공 기준 6. 맨 앞에서 5화면 굴리면 직전 화면(= disappeared) · passed · 지금 화면(= appeared)이 겹치지 않고 1번부터 빈틈없이 잇는다.
     @Test @Order(27) fun `scroll 의 passed 는 네 모양에서 굴린 범위의 빈틈을 겹치지 않게 메운다`() {
         val file = PearlFixture.until
-        assertTrue(runBlocking { uc.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 60_000)
         fun numbers(items: List<Semantics?>) = items.map { it?.text?.removeSuffix("번")?.toInt() ?: error("글자 없는 칸: $items") }
         for ((card, horizontal) in listOf(0 to false, 1 to true, 2 to false, 3 to true)) {
@@ -830,7 +830,7 @@ class RenderIntegrationTest {
 
     /** 한 장만 연 상태의 spec — 엔진을 직접 부르기 전에 액터의 루프와 보드 채우기를 비운다. */
     private fun single(fqn: String): prevue.application.domain.model.PreviewSpec {
-        assertTrue(runBlocking { uc.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
+        assertTrue(runBlocking { uc.tabs.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
         runBlocking { engine.awaitWrites() }
         return ws.now.current!!
     }
@@ -898,7 +898,7 @@ class RenderIntegrationTest {
 
     // 자세별 그림 미리 그리기 — 기기를 고르면 잠잠해진 뒤 다른 자세 셋을 그 자세의 픽셀 크기로 그리고, 그 뒤에도 라이브는 끌면 바뀐다.
     @Test @Order(30) fun `기기를 고르면 다른 자세를 그 크기로 미리 그리고 라이브는 그대로 조작된다`() {
-        assertTrue(runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 120_000)
         val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
         val on = runBlocking { uc.focusCard(0, on = true, by = "test", size = fold8) } as FocusResult.On
@@ -932,7 +932,7 @@ class RenderIntegrationTest {
 
     // 내용 크기로 감싸는 컴포넌트도 기기를 고르면 그 기기 화면 크기로 그린다 — 작게 그리면 뷰어가 틀에 맞춰 늘려 글자가 찌그러졌다.
     @Test @Order(31) fun `내용 크기 컴포넌트도 기기를 고르면 기기 화면 크기로 그린다`() {
-        assertTrue(runBlocking { uc.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
         ws.awaitBoardFilled(timeoutMs = 120_000)
         val index = ws.now.board!!.cards.indexOfFirst { it.spec.fqn.endsWith("DrinkByKindPreview") }
         assertTrue(index >= 0, "보드에 DrinkByKindPreview 카드가 없다")

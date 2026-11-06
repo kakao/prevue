@@ -41,7 +41,7 @@ class LiteralPatchesTest {
     private fun opened(): TestGraph {
         fx.file.writeText(source(16))
         fx.compiler.literals = ::table
-        return fx.graph().also { runBlocking { it.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
+        return fx.graph().also { runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
     }
 
     private fun TestGraph.write(text: String, f: File = fx.file) { f.writeText(text); f.setLastModified(f.lastModified() + 1_000) }

@@ -117,7 +117,7 @@ private fun PrevueDaemon.showInitial(target: String, graph: PrevueGraph): Job =
     scope.launch(CoroutineName("prevue-initial-preview")) {
         val (t, idx) = target.substringBefore('#') to target.substringAfter('#', "").toIntOrNull()
         try {
-            val r = graph.openPreview(t, idx, emptyMap(), "cli", since = ManagementFactory.getRuntimeMXBean().startTime).shot.out
+            val r = graph.tabs.openPreview(t, idx, emptyMap(), "cli", since = ManagementFactory.getRuntimeMXBean().startTime).shot.out
             val n = graph.status.read().board?.cards?.size
             log("show ${r.preview.previewId}: ok=${r.ok} task=${r.taskMs}ms render=${r.renderMs}ms" +
                 (n?.let { " board=${it}장" } ?: "") + " ${r.failure ?: ""} ${r.image ?: r.message?.text}")

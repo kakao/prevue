@@ -38,7 +38,7 @@ class BrowserPresenterTest {
     @AfterEach fun tearDown() = fx.close()
 
     private fun opened(): BrowserState {
-        runBlocking { uc.openPreview(fx.file.path, null, emptyMap(), "test") }; uc.workspace.awaitBoardFilled()
+        runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }; uc.workspace.awaitBoardFilled()
         return now()
     }
 
@@ -304,7 +304,7 @@ class BrowserPresenterTest {
     // D-63. 탭 0개는 오류가 아니라 시작 화면이다 — 데몬을 파일 없이 띄웠을 때와 같다.
     @Test fun `마지막 탭을 닫으면 빈 화면이고 오류도 알약 재료도 없다`() {
         opened()
-        runBlocking { uc.closeTab(fx.file.path, "test") }
+        runBlocking { uc.tabs.closeTab(fx.file.path, "test") }
         val s = now()
         assertEquals(BrowserState.Screen.EMPTY, s.screen)
         assertNull(s.error)
@@ -352,7 +352,7 @@ class BrowserPresenterTest {
         opened()
         runBlocking {
             presenter.events.filterIsInstance<UiEvent.Flash>().test {
-                for (i in 1..10) uc.openPreview(fx.previewFile("Extra$i", 1).path, null, emptyMap(), "test")
+                for (i in 1..10) uc.tabs.openPreview(fx.previewFile("Extra$i", 1).path, null, emptyMap(), "test")
                 assertEquals("Closed the Cards.kt tab you hadn't looked at in a while", awaitItem().text.text)
             }
         }
