@@ -36,7 +36,7 @@ class ResourcePatchesTest {
 
     private fun opened(file: File = fx.valuesFile(xml("title" to "A", "done" to "Done"))): Pair<TestGraph, File> {
         val uc = fx.graph(resources = values)
-        uc.rememberValues()
+        uc.hotReload.rememberValues()
         runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         uc.workspace.awaitBoardFilled()
         return uc to file
@@ -44,7 +44,7 @@ class ResourcePatchesTest {
 
     private fun write(f: File, text: String) { f.writeText(text); f.setLastModified(f.lastModified() + 1_000) }
     private fun TestGraph.watch(vararg files: File): ReloadResult = runBlocking {
-        applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
+        hotReload.applySave(files.toList(), "watch", SourceChange(files.toList(), files.maxOf { it.lastModified() }, System.currentTimeMillis(), System.nanoTime()))
     }
 
     @Test fun `한 묶음의 판정은 넣기 전의 값과 견준다 — 앞 파일에 넣은 값이 뒤 파일의 지금 값이 되지 않는다`() {
@@ -147,7 +147,7 @@ class ResourcePatchesTest {
 
     @Test fun `렌더러가 값을 얹을 수 없으면 지금처럼 낡음이다`() {
         val f = fx.valuesFile(xml("title" to "A"))
-        val uc = fx.graph(resources = null).also { it.rememberValues() }
+        val uc = fx.graph(resources = null).also { it.hotReload.rememberValues() }
         runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         write(f, xml("title" to "B"))
         assertTrue(uc.watch(f) is ReloadResult.ResourcesStale)
@@ -156,7 +156,7 @@ class ResourcePatchesTest {
     // 보여 주는 것이 없어도 얹는다 — 그다음 여는 그림이 저장한 값이어야 한다.
     @Test fun `보여 주는 것이 없어도 값은 얹는다`() {
         val f = fx.valuesFile(xml("title" to "A", "done" to "Done"))
-        val uc = fx.graph(resources = values).also { it.rememberValues() }
+        val uc = fx.graph(resources = values).also { it.hotReload.rememberValues() }
         write(f, xml("title" to "B", "done" to "Done"))
         assertEquals(ReloadResult.NothingShown, uc.watch(f))
         assertEquals("B", values.over[title])
@@ -208,14 +208,14 @@ class ResourcePatchesTest {
     @Test fun `values reload가 낡음이면 다시 그리지 않고 낡음으로 답한다`() {
         val (uc, f) = opened()
         write(f, xml("title" to "A", "done" to "Done", "fresh" to "New"))
-        val r = runBlocking { uc.applySave(listOf(f), "cli") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(f), "cli") }
         assertTrue(r is ReloadResult.ResourcesStale, "$r")
     }
 
     @Test fun `지금 그림에 실패가 있으면 값이 그대로인 values 저장도 다시 그린다`() {
         val (uc, f) = opened()
         fx.renderer.exceptions.add("흔들린 렌더")
-        runBlocking { uc.applySave(listOf(fx.file), "cli") }                   // 포커스 카드가 실패로 남는다
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "cli") }                   // 포커스 카드가 실패로 남는다
         fx.renderer.shown.clear()
         write(f, "<!-- 다시 -->\n" + xml("title" to "A", "done" to "Done"))
         assertTrue(uc.watch(f) is ReloadResult.Rendered)
@@ -225,7 +225,7 @@ class ResourcePatchesTest {
     @Test fun `reload는 바뀐 값이 없어도 다시 그린다`() {
         val (uc, f) = opened()
         fx.renderer.shown.clear()
-        val r = runBlocking { uc.applySave(listOf(f), "cli") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(f), "cli") }
         assertTrue(r is ReloadResult.Rendered, "$r")
         assertFalse(fx.renderer.shown.isEmpty())
         assertNull(uc.workspace.now.stale[StaleReasons.RESOURCES])

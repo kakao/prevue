@@ -31,18 +31,18 @@ class ExternalBuildRecoveryTest {
 
     @Test fun `완료된 옛 보드가 있어도 빌드 대기 중 wait는 복구를 기다린다`() = runBlocking {
         val uc = opened()
-        uc.externalBuild(built, done = false)
+        uc.hotReload.externalBuild(built, done = false)
         val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.status.awaitRender(listOf(fx.file), 5_000) }
         assertFalse(waiting.isDone)
         assertTrue(uc.workspace.now.buildPending)
-        uc.externalBuild(built, done = true)
+        uc.hotReload.externalBuild(built, done = true)
         assertTrue(waiting.get(5, TimeUnit.SECONDS).ok)
         assertFalse(uc.workspace.now.buildPending)
     }
 
     @Test fun `갱신이 끝나지 않으면 실패한 프리뷰 대신 빌드 대기 시간 초과를 답한다`() = runBlocking {
         val uc = opened()
-        uc.externalBuild(built, done = false)
+        uc.hotReload.externalBuild(built, done = false)
         val result = uc.status.awaitRender(listOf(fx.file), 20) as WaitResult.TimedOut
         assertTrue(result.message.contains("빌드 산출물 갱신"))
         assertTrue(result.stale.getValue("build").pending)
@@ -55,13 +55,13 @@ class ExternalBuildRecoveryTest {
         val shown = fx.renderer.shown.size
         val name = uc.workspace.now.current!!.fqn.substringBeforeLast('.')
         fx.compiler.unbuilt = setOf(name)
-        assertEquals(ExternalResult.BuildPending, uc.externalBuild(built, done = true))
+        assertEquals(ExternalResult.BuildPending, uc.hotReload.externalBuild(built, done = true))
         assertSame(before, uc.workspace.now.lastResult)
         assertEquals(shown, fx.renderer.shown.size)
         assertTrue(uc.workspace.now.stale.getValue("build").message!!.text.contains(name))
         assertTrue(uc.status.awaitRender(listOf(fx.file), 20) is WaitResult.TimedOut)
         fx.compiler.unbuilt = emptySet()
-        assertTrue((uc.externalBuild(built, done = true) as ExternalResult.Redrawn).result.ok)
+        assertTrue((uc.hotReload.externalBuild(built, done = true) as ExternalResult.Redrawn).result.ok)
         assertTrue(uc.status.awaitRender(listOf(fx.file), 5_000).ok)
     }
 
@@ -70,28 +70,28 @@ class ExternalBuildRecoveryTest {
         val before = uc.workspace.now.lastResult
         val generation = uc.workspace.now.board!!.gen
         fx.renderer.failures += FailureKind.NOT_FOUND
-        assertEquals(ExternalResult.BuildPending, uc.externalBuild(built, done = true))
+        assertEquals(ExternalResult.BuildPending, uc.hotReload.externalBuild(built, done = true))
         assertSame(before, uc.workspace.now.lastResult)
         assertEquals(generation, uc.workspace.now.board!!.gen)
         assertTrue(uc.workspace.now.stale.getValue("build").pending)
-        assertTrue((uc.externalBuild(built, done = true) as ExternalResult.Redrawn).result.ok)
+        assertTrue((uc.hotReload.externalBuild(built, done = true) as ExternalResult.Redrawn).result.ok)
     }
 
     @Test fun `빌드 대기 중 새 소스 컴파일 오류는 기다리는 wait에 바로 전달한다`() = runBlocking {
         val uc = opened()
-        uc.externalBuild(built, done = false)
+        uc.hotReload.externalBuild(built, done = false)
         val waiting = fx.scope.future(start = CoroutineStart.UNDISPATCHED) { uc.status.awaitRender(listOf(fx.file), 5_000) }
         assertFalse(waiting.isDone)
         fx.compiler.ok = false
-        uc.applySave(listOf(fx.file), "test")
+        uc.hotReload.applySave(listOf(fx.file), "test")
         assertTrue(waiting.get(1, TimeUnit.SECONDS) is WaitResult.CompileFailed)
     }
 
     @Test fun `빌드 뒤 실제 렌더 오류는 갱신 대기로 숨기지 않는다`() = runBlocking {
         val uc = opened()
-        uc.externalBuild(built, done = false)
+        uc.hotReload.externalBuild(built, done = false)
         fx.renderer.exceptions += "java.lang.IllegalStateException: actual failure"
-        val result = uc.externalBuild(built, done = true) as ExternalResult.Redrawn
+        val result = uc.hotReload.externalBuild(built, done = true) as ExternalResult.Redrawn
         assertFalse(result.result.ok)
         assertFalse(uc.workspace.now.buildPending)
         val waiting = uc.status.awaitRender(listOf(fx.file), 5_000)
@@ -103,9 +103,9 @@ class ExternalBuildRecoveryTest {
     @Test fun `직접 reload로 새 소스를 컴파일하면 클래스 갱신 대기를 닫는다`() = runBlocking {
         val uc = opened()
         fx.renderer.failures += FailureKind.NOT_FOUND
-        uc.externalBuild(built, done = true)
+        uc.hotReload.externalBuild(built, done = true)
         assertTrue(uc.workspace.now.buildPending)
-        assertTrue(uc.applySave(listOf(fx.file), "reload").ok)
+        assertTrue(uc.hotReload.applySave(listOf(fx.file), "reload").ok)
         assertFalse(uc.workspace.now.buildPending)
         assertTrue(uc.status.awaitRender(listOf(fx.file), 5_000).ok)
     }

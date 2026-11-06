@@ -10,8 +10,7 @@ import prevue.infrastructure.bindings.Closer
 import prevue.infrastructure.bindings.CompilerWarmUp
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.RendererLoss
-import prevue.application.service.RememberValuesUseCase
-import prevue.application.service.StartDaemonUseCase
+import prevue.application.service.HotReload
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.port.PrevueDispatchers
@@ -19,8 +18,8 @@ import prevue.application.port.PrevueDispatchers
 @DependencyGraph(AppScope::class)
 internal interface PrevueGraph {
     val rendererLoss: RendererLoss
-    val startDaemon: StartDaemonUseCase
-    val rememberValues: RememberValuesUseCase
+    val startDaemon: StartDaemon
+    val hotReload: HotReload
     val status: Status
     val tabs: Tabs
     val entryPoints: EntryPoints

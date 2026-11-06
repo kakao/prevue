@@ -18,10 +18,10 @@ class EngineAccessRuleTest {
         val files by lazy { prevue.daemon.Sources.daemon() }
     }
 
-    @Test fun `application 에서 엔진 포트를 쥐는 곳은 액터 · 프레임 루프 · 조립 · status 뿐이다`() {
+    @Test fun `application 에서 엔진 포트를 쥐는 곳은 액터 · 프레임 루프 · status 뿐이다`() {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(
-            listOf("application/service/Engine.kt", "application/service/LiveLoop.kt", "application/service/StartDaemonUseCase.kt", "application/service/Status.kt"),
+            listOf("application/service/Engine.kt", "application/service/LiveLoop.kt", "application/service/Status.kt"),
             EngineRule.holders(files),
         )
     }
@@ -38,14 +38,14 @@ class EngineAccessRuleTest {
         val planted = mapOf(
             "application/service/A.kt" to "class A(private val r: PreviewRenderer) { fun a() = r.show(p) }\n",
             "application/service/Status.kt" to "val s = engine.loaderGen + engine.codeChanged()\n",
-            "application/service/StartDaemonUseCase.kt" to "renderer.protect { k }; renderer.buildChanged()\n",
+            "StartDaemon.kt" to "renderer.protect { k }; renderer.buildChanged()\n",
             "infrastructure/bindings/RenderBindings.kt" to "val engine = RenderEngine(s, l, o)\nlog(engine.bootstrapMs); engine.codeChanged()\n",
             "infrastructure/bindings/RendererLoss.kt" to "engine.await().lost; engine.buildChanged()\n",
             "infrastructure/controller/http/Server.kt" to "// RenderEngine 은 액터가 쥔다\nclass Server(private val e: RenderEngine)\n",
         )
         assertEquals(listOf("application/service/A.kt"), EngineRule.holders(planted))
         assertEquals(
-            listOf("application/service/Status.kt → codeChanged", "application/service/StartDaemonUseCase.kt → buildChanged", "infrastructure/bindings/RenderBindings.kt → codeChanged",
+            listOf("application/service/Status.kt → codeChanged", "StartDaemon.kt → buildChanged", "infrastructure/bindings/RenderBindings.kt → codeChanged",
                 "infrastructure/bindings/RendererLoss.kt → buildChanged"),
             EngineRule.outOfQueue(planted),
         )
@@ -58,7 +58,7 @@ object EngineRule {
     private val observed = setOf("bootstrapMs", "loaderGen", "tasksOnLoader", "outDir", "outBytes", "outMaxBytes", "touchModeError")
     private val outside = mapOf(
         "application/service/Status.kt" to (Regex("""\bengine\.(\w+)""") to observed),
-        "application/service/StartDaemonUseCase.kt" to (Regex("""\brenderer\.(\w+)""") to setOf("protect")),
+        "StartDaemon.kt" to (Regex("""\brenderer\.(\w+)""") to setOf("protect")),
         "infrastructure/bindings/RenderBindings.kt" to (Regex("""\bengine\.(\w+)""") to setOf("bootstrapMs", "negatives")),
         "infrastructure/bindings/RendererLoss.kt" to (Regex("""\bengine\.(\w+)""") to setOf("await")),
         "infrastructure/bindings/PortBindings.kt" to (Regex("""\bengine\.(\w+)""") to setOf("resources")),

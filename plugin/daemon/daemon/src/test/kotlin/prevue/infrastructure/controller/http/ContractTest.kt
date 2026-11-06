@@ -146,9 +146,9 @@ class ContractTest {
         post("/reload", mapOf("files" to listOf(f))); ws.awaitBoardFilled()
 
         val built = prevue.application.port.BuildChange(own = listOf(File(fx.root, "app/build/classes")), outputsExist = true)
-        runBlocking { uc.externalBuild(built, done = false) }
+        runBlocking { uc.hotReload.externalBuild(built, done = false) }
         check("wait.build-pending", post("/wait", mapOf("files" to listOf(f), "timeoutMs" to 50)))
-        runBlocking { uc.externalBuild(built, done = true) }
+        runBlocking { uc.hotReload.externalBuild(built, done = true) }
         ws.awaitBoardFilled()
 
         fx.file.setLastModified(System.currentTimeMillis() + 3_600_000)   // 감시에 안 잡힌 저장 — 컴파일이 이 내용을 읽은 적이 없다

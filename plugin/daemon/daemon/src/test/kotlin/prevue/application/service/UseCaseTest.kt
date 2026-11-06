@@ -48,7 +48,7 @@ class UseCaseTest {
     private fun opened(clock: FakeClock = FakeClock()): TestGraph =
         fx.graph(clock).also { runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }; it.workspace.awaitBoardFilled() }
 
-    private fun TestGraph.save(by: String = "test"): ReloadResult = runBlocking { applySave(listOf(fx.file), by) }
+    private fun TestGraph.save(by: String = "test"): ReloadResult = runBlocking { hotReload.applySave(listOf(fx.file), by) }
 
     // 뷰어와 에이전트가 같은 사실을 본다 — 진행(`work`)과 마지막으로 그린 쪽(`shownBy`)은 status 하나에서 나온다.
     @Test fun `저장하는 동안 status는 컴파일 중이고 끝나면 저장한 쪽이 마지막으로 그린 쪽이다`() {
@@ -102,7 +102,7 @@ class UseCaseTest {
         assertTrue(ws.now.newFiles.isEmpty(), "지운 새 파일은 싣지 않는다")
     }
 
-    private fun watched(): TestGraph = opened().also { runBlocking { it.observeSourceChanges.noteBehindBuild() } }
+    private fun watched(): TestGraph = opened().also { runBlocking { it.hotReload.noteBehindBuild() } }
 
     @Test fun `감시가 시작될 때 빌드 뒤로 바뀐 소스는 새 파일처럼 다음 컴파일에 함께 실린다`() {
         val before = java.io.File(fx.srcRoot, "demo/Shape.kt").apply { writeText("package demo\nval blob = 1\n") }
@@ -240,7 +240,7 @@ class UseCaseTest {
         assertEquals(2, uc.workspace.now.board!!.cards.size)
 
         fx.renderer.providerValues["demo.Names"] = 3
-        runBlocking { uc.applySave(listOf(samples), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(samples), "test") }
         assertEquals(3, uc.workspace.now.board!!.cards.size)
         uc.workspace.awaitBoardFilled()
     }
@@ -269,7 +269,7 @@ class UseCaseTest {
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
 
         val card = queued { uc.boards.drawCard(1, force = true, by = "test") }   // 카드 1이 저장보다 먼저 줄에 선다
-        val reload = queued { uc.applySave(listOf(fx.file), "test") }
+        val reload = queued { uc.hotReload.applySave(listOf(fx.file), "test") }
         assertTrue(uc.workspace.reloadPending)
 
         fx.renderer.showGate = null; gate.countDown()
@@ -344,7 +344,7 @@ class UseCaseTest {
         val uc = opened()
         val gate = CountDownLatch(1)
         fx.renderer.codeGate = gate                          // 컴파일은 끝났고 세대는 아직 안 오른 자리
-        val reload = async { uc.applySave(listOf(fx.file), "test") }
+        val reload = async { uc.hotReload.applySave(listOf(fx.file), "test") }
         assertTrue(fx.renderer.codeEntered.tryAcquire(5, TimeUnit.SECONDS))
 
         val waiting = queued { uc.status.awaitRender(listOf(fx.file), timeoutMs = 5_000) }   // 첫 판단까지 하고 돌아온다
@@ -361,10 +361,10 @@ class UseCaseTest {
     @Test fun `밖의 빌드는 끝나면 스스로 닫고 닫은 뒤의 낡음을 싣는다`() {
         val uc = opened()
         val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
-        assertEquals(ExternalResult.BuildPending, runBlocking { uc.externalBuild(built, done = false) })
+        assertEquals(ExternalResult.BuildPending, runBlocking { uc.hotReload.externalBuild(built, done = false) })
         assertTrue("build" in uc.workspace.now.stale)
 
-        val r = runBlocking { uc.externalBuild(built, done = true) }
+        val r = runBlocking { uc.hotReload.externalBuild(built, done = true) }
         assertTrue(r is ExternalResult.Redrawn && r.result.ok)
         assertFalse("build" in uc.workspace.now.stale)
         assertTrue((r as ExternalResult.Redrawn).result.stale.isEmpty())
@@ -374,7 +374,7 @@ class UseCaseTest {
     // Q6. 밖의 Gradle이 의존 모듈만 빌드했으면 그 모듈의 오버레이만 버린다 — 앱 쪽 편집은 남는다(성공 기준 5). 그 모듈을 가진 엔진은 하나다(D-38).
     @Test fun `의존 모듈의 빌드는 그 모듈의 오버레이만 버리고 엔진을 새로 받게 한다`() {
         val uc = opened()
-        val r = runBlocking { uc.externalBuild(BuildChange(own = listOf(fx.libOut), outputsExist = true), done = true) }
+        val r = runBlocking { uc.hotReload.externalBuild(BuildChange(own = listOf(fx.libOut), outputsExist = true), done = true) }
         assertTrue(r is ExternalResult.Redrawn)
         assertEquals(listOf(":lib"), fx.compiler.cleared.toList())
         assertEquals(1, fx.renderer.buildChanges)
@@ -383,7 +383,7 @@ class UseCaseTest {
     // Q7. 파일마다 그 모듈의 인자(모듈명 · friend)로 컴파일한다. 다른 모듈의 인자로 컴파일하면 internal 이름이 어긋난다.
     @Test fun `모듈을 넘는 저장은 모듈마다 의존 먼저 컴파일한다`() {
         val uc = opened()
-        assertTrue(runBlocking { uc.applySave(listOf(fx.file, fx.libFile), "test") }.ok)
+        assertTrue(runBlocking { uc.hotReload.applySave(listOf(fx.file, fx.libFile), "test") }.ok)
         assertEquals(listOf(":lib" to listOf(fx.libFile), ":app" to listOf(fx.file)), fx.compiler.compiledBy.toList())
     }
 
@@ -426,7 +426,7 @@ class UseCaseTest {
     @Test fun `프리뷰가 없을 때의 리소스 · 빌드 파일 변화도 다음 show 가 싣는다`() {
         val uc = fx.graph(FakeClock())
         val change = BuildChange(resources = listOf(java.io.File(fx.root, "app/x.ap_")), buildFiles = listOf(java.io.File(fx.root, "settings.gradle.kts")), outputsExist = false)
-        assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(change, done = true) })
+        assertEquals(ExternalResult.NoPreview, runBlocking { uc.hotReload.externalBuild(change, done = true) })
         val r = runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         assertEquals(setOf("resources", "build-files"), r.stale.keys)
     }
@@ -436,7 +436,7 @@ class UseCaseTest {
         val uc = opened()
         fx.compiler.derived = setOf(":lib")
         fx.compiler.fails = { m, _ -> m == ":lib" }
-        val r = runBlocking { uc.applySave(listOf(fx.libFile), "test") } as ReloadResult.CompileFailed
+        val r = runBlocking { uc.hotReload.applySave(listOf(fx.libFile), "test") } as ReloadResult.CompileFailed
         assertTrue("prevue warmup ${fx.libFile.path} " in r.compile.hint?.text.orEmpty(), r.compile.hint?.text)
         assertEquals(r.compile.hint, uc.workspace.now.stale.getValue("compile").remedy)
     }
@@ -447,7 +447,7 @@ class UseCaseTest {
         fx.compiler.overlay = setOf("lib.ThemeKt")
         fx.compiler.callers = listOf(fx.file)
         fx.renderer.exceptions += "Exception raised during rendering: 'long lib.ThemeKt.accent(int, androidx.compose.runtime.Composer, int)'"
-        val r = runBlocking { uc.applySave(listOf(fx.libFile), "test") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(fx.libFile), "test") }
         assertTrue(r.ok, (r as? ReloadResult.Rendered)?.result?.shot?.out?.message?.text)
         assertEquals(uc.workspace.graph.roots, fx.compiler.callerRoots)
         assertEquals(listOf(":lib" to listOf(fx.libFile), ":lib" to listOf(fx.libFile), ":app" to listOf(fx.file)), fx.compiler.compiledBy.toList())
@@ -459,7 +459,7 @@ class UseCaseTest {
         val uc = fx.graph()
         assertEquals(ReloadResult.NothingShown, uc.save("watch"))
         val built = BuildChange(own = listOf(java.io.File(fx.root, "app/build/classes")), outputsExist = true)
-        assertEquals(ExternalResult.NoPreview, runBlocking { uc.externalBuild(built, done = true) })
+        assertEquals(ExternalResult.NoPreview, runBlocking { uc.hotReload.externalBuild(built, done = true) })
         assertTrue(uc.workspace.now.stale.isEmpty())
     }
 
@@ -680,7 +680,7 @@ class UseCaseTest {
     @Test fun `연 전의 다른 파일의 컴파일 실패는 새 보드의 기다림을 막지 않는다`() {
         val uc = opened()
         fx.compiler.ok = false
-        runBlocking { uc.applySave(listOf(fx.libFile), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(fx.libFile), "test") }
         fx.compiler.ok = true
         assertTrue(runBlocking { uc.status.awaitRender(listOf(fx.libFile), timeoutMs = 2_000) } is WaitResult.CompileFailed)
 
@@ -691,7 +691,7 @@ class UseCaseTest {
         assertTrue("compile" in (r as WaitResult.BoardDone).stale)                // 실패는 낡음으로 남는다
 
         fx.compiler.ok = false
-        runBlocking { uc.applySave(listOf(fx.libFile), "test") }                     // 연 뒤의 실패 — 파일 없이 기다려도 받는다
+        runBlocking { uc.hotReload.applySave(listOf(fx.libFile), "test") }                     // 연 뒤의 실패 — 파일 없이 기다려도 받는다
         assertTrue(runBlocking { uc.status.awaitRender(emptyList(), timeoutMs = 2_000) } is WaitResult.CompileFailed)
     }
 

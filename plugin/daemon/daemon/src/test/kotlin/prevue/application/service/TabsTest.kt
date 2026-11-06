@@ -106,7 +106,7 @@ class TabsTest {
         show(screen); show(card)
         fx.renderer.shown.clear()
 
-        runBlocking { uc.applySave(listOf(card), "test") }; ws.awaitBoardFilled()
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }; ws.awaitBoardFilled()
         assertEquals(setOf("NewsCard0", "NewsCard1"), fx.renderer.shown.map { it.functionName }.toSet())
         assertEquals(listOf(true, false), ws.now.tabViews(ws.graph).map { it.stale })
 
@@ -123,7 +123,7 @@ class TabsTest {
         val screen = fx.file
         val card = fx.previewFile("NewsCard")
         show(card); show(screen)
-        runBlocking { uc.applySave(listOf(card), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }
         val r = runBlocking { uc.status.awaitRender(listOf(card), 2_000) }
         assertTrue(r is WaitResult.BoardDone, "$r")
         assertEquals(screen.canonicalFile, (r as WaitResult.BoardDone).file)
@@ -323,18 +323,18 @@ class TabsTest {
         runBlocking {
             ws.events.filterIsInstance<WorkspaceEvent.TabVacated>().test {
                 card.writeText("package demo\nfun NewsCard0() {}\n")
-                assertEquals(ReloadResult.NothingShown, uc.applySave(listOf(card), "test"))
+                assertEquals(ReloadResult.NothingShown, uc.hotReload.applySave(listOf(card), "test"))
                 assertNull(ws.now.board)
                 assertEquals(Vacancy.NO_PREVIEWS, ws.now.tabViews(ws.graph).single().vacant)
                 assertTrue(fx.renderer.shown.isEmpty(), "옛 함수로 그리지 않는다")
                 awaitItem()
-                uc.applySave(listOf(card), "test")                         // 다시 저장해도 알림은 한 번
+                uc.hotReload.applySave(listOf(card), "test")                         // 다시 저장해도 알림은 한 번
                 expectNoEvents()
             }
         }
 
         card.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun NewsCard0() {}\n")
-        assertTrue(runBlocking { uc.applySave(listOf(card), "test") } is ReloadResult.Rendered)
+        assertTrue(runBlocking { uc.hotReload.applySave(listOf(card), "test") } is ReloadResult.Rendered)
         ws.awaitBoardFilled()
         assertEquals(1, ws.now.board!!.cards.size)
         assertNull(ws.now.tabViews(ws.graph).single().vacant)
@@ -360,7 +360,7 @@ class TabsTest {
         val screen = fx.file
         val card = fx.previewFile("NewsCard")
         show(screen); show(card)
-        runBlocking { uc.applySave(listOf(card), "test") }; ws.awaitBoardFilled()   // 숨은 screen 이 낡는다
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }; ws.awaitBoardFilled()   // 숨은 screen 이 낡는다
         screen.delete()
         val e = runCatching { runBlocking { uc.tabs.openPreview(screen.path, null, emptyMap(), "viewer") } }.exceptionOrNull()
         assertTrue(e is VacantTab, "빈 탭은 VacantTab 으로 답한다: $e")
@@ -384,10 +384,10 @@ class TabsTest {
         val card = fx.previewFile("NewsCard", n = 3)
         show(card, index = 2)
         card.writeText("package demo\nfun NewsCard0() {}\n")
-        runBlocking { uc.applySave(listOf(card), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }
         assertNull(ws.now.board)
         fx.previewFile("NewsCard", n = 3)                                   // @Preview 를 되살렸다
-        assertTrue(runBlocking { uc.applySave(emptyList(), "reload") } is ReloadResult.Rendered)
+        assertTrue(runBlocking { uc.hotReload.applySave(emptyList(), "reload") } is ReloadResult.Rendered)
         ws.awaitBoardFilled()
         assertEquals(2, ws.now.board!!.focus, "보던 카드로 돌아와야 한다")
     }
@@ -396,13 +396,13 @@ class TabsTest {
         val card = fx.previewFile("NewsCard")
         show(card)
         card.writeText("package demo\nfun NewsCard0() {}\n")
-        runBlocking { uc.applySave(listOf(card), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }
         val vacant = runCatching { runBlocking { uc.status.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
         assertTrue(vacant is VacantTab, "빈 탭은 지난 그림이 아니라 그 까닭으로 답한다: $vacant")
 
         fx.compiler.ok = false
         card.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun NewsCard0() { oops }\n")
-        assertEquals(ReloadResult.NothingShown, runBlocking { uc.applySave(listOf(card), "test") })
+        assertEquals(ReloadResult.NothingShown, runBlocking { uc.hotReload.applySave(listOf(card), "test") })
         assertTrue("compile" in ws.now.stale)
         assertNull(ws.now.board)
         val failed = runCatching { runBlocking { uc.status.awaitRender(listOf(card), 2_000) } }.exceptionOrNull()
@@ -424,7 +424,7 @@ class TabsTest {
         assertEquals(file.canonicalFile, ws.now.board!!.file)
 
         file.writeText(file.readText().replace("expect fun platform(): String\n", ""))
-        runBlocking { uc.applySave(listOf(java.io.File(fx.srcRoot.path + "/demo/../demo/Platform.kt")), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(java.io.File(fx.srcRoot.path + "/demo/../demo/Platform.kt")), "test") }
         assertFalse(StaleReasons.EXPECT_ACTUAL in ws.now.stale, "열며 붙잡은 파일을 다른 경로 모양의 저장이 풀지 못했다")
     }
 
@@ -432,12 +432,12 @@ class TabsTest {
         val card = fx.previewFile("NewsCard")
         show(card)
         card.writeText("package demo\nfun NewsCard0() {}\n")
-        runBlocking { uc.applySave(listOf(card), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(card), "test") }
         assertEquals(Vacancy.NO_PREVIEWS, ws.now.tabViews(ws.graph).single().vacant)
 
         card.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\nactual fun platform(): String = \"android\"\n@Preview\nfun NewsCard0() {}\n")
         fx.compiler.compiled.clear()
-        val r = runBlocking { uc.applySave(listOf(card), "test") }
+        val r = runBlocking { uc.hotReload.applySave(listOf(card), "test") }
         assertTrue(r is ReloadResult.Rendered, "$r")
         assertTrue(fx.compiler.compiled.isEmpty(), "핫 컴파일로 보냈다: ${fx.compiler.compiled}")
         assertEquals(listOf(card.absolutePath), ws.now.stale[StaleReasons.EXPECT_ACTUAL]?.files)
