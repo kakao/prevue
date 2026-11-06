@@ -61,7 +61,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .duo-base { position: absolute; left: 0; top: 0; box-shadow: var(--shadow-contact), var(--shadow-near), var(--shadow-far); }
 .resize-scene .duo-scr { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 2px var(--live); }
 .resize-scene .duo-band { position: absolute; border-style: solid;
-            box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-rim),
+            box-shadow: 0 0 0 .5px var(--device-hairline),
               var(--depth-x) var(--depth-y) 0 0 var(--device-side), var(--depth-x) var(--depth-y) 0 0 currentColor, var(--depth-x) var(--depth-y) 0 .5px var(--device-side-line); }
 .resize-scene .duo-flap { position: absolute; inset: 0; background: var(--device-flap); }
 .resize-scene .duo-face { position: absolute; left: 0; top: 0; overflow: hidden; }
@@ -77,7 +77,8 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .duo-edge .bl { stroke: var(--device-side-line); }
 .resize-scene .duo-edge .bd { stroke: var(--device-side); }
 .resize-scene .duo-edge .inner { stroke: var(--device-inner); stroke-width: 2px; }
-.resize-scene .duo-edge .glow { stroke: var(--device-inner-glow); opacity: .5; }
+/* 번짐은 굵기가 다른 선 셋을 겹쳐 가장자리에서 짙고 바깥으로 옅게 — 멈춘 몸체의 흐린 그림자와 같은 모양이다(흐림 필터는 매 프레임 다시 그린다). */
+.resize-scene .duo-edge .glow { stroke: var(--device-inner-glow); opacity: .2; }
 .resize-scene .duo-band { background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
             background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
 .resize-scene .duo-edge path { fill: none; stroke-linejoin: round; }
@@ -101,6 +102,9 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .rig .spine { background-image: linear-gradient(90deg, var(--device-side), var(--device-gloss-clear) 35%, var(--device-gloss-clear) 50%, var(--device-side)); }
 .resize-scene .rig .spine.h { background-image: linear-gradient(180deg, var(--device-side), var(--device-gloss-clear) 35%, var(--device-gloss-clear) 50%, var(--device-side)); }
 /* 화면 구멍의 가장자리 — 멈춘 몸체의 .shell::after 와 같은 겹. 테(.bez)의 안쪽 상자가 곧 화면이라 바깥(테 쪽)으로만 번진다. */
+.resize-scene :is(.rig .bez, .duo-band)::before { content: ""; position: absolute; pointer-events: none; border-radius: inherit;
+         inset: calc(-1 * var(--bw-t, 0px)) calc(-1 * var(--bw-r, 0px)) calc(-1 * var(--bw-b, 0px)) calc(-1 * var(--bw-l, 0px));
+         box-shadow: inset 0 0 0 1px var(--device-rim); }
 .resize-scene .rig .bez::after { content: ""; position: absolute; inset: 0; border-radius: var(--screen-r, 0px);
          box-shadow: 0 0 0 1px var(--device-inner), 0 0 calc(var(--bezel, 0px) * .6) 0 var(--device-inner-glow); }
 .resize-scene .rig .shade, .resize-scene .rig .cast { position: absolute; inset: 0; pointer-events: none; }
@@ -109,7 +113,8 @@ body.resizing-ui main { padding-bottom: 0; }
               background: linear-gradient(100deg, var(--device-gloss-clear) 38%, var(--device-sheen) 50%, var(--device-gloss-clear) 62%); }
 .resize-scene .rig .edge { position: absolute; pointer-events: none; border-style: solid; }
 .resize-scene .rig .ring { border-color: var(--live); }
-.resize-scene .rig .bez { border-color: transparent; background-color: var(--device-body); box-shadow: 0 0 0 .5px var(--device-hairline), inset 0 0 0 1px var(--device-rim);
+/* 테는 투명한 테두리 위에 몸체 색 · 광택을 깐다. 안쪽 림은 테두리 바깥 모서리에 따로 그린다 — inset 그림자는 안쪽(화면) 상자에 그려져 화면에 덮인다. */
+.resize-scene .rig .bez { border-color: transparent; background-color: var(--device-body); box-shadow: 0 0 0 .5px var(--device-hairline);
             background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); background-repeat: no-repeat; background-origin: border-box; }
 /* 그림 끝 */
 .resize-scene .ruler { position: absolute; inset: 0; pointer-events: none; }

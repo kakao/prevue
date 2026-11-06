@@ -43,10 +43,15 @@ export function ResizeScene() {
       <svg className="duo-edge" aria-hidden="true">
         {/* 세 색은 resize.css 의 그림 블록이 준다 — 크롬의 JSX style 에는 그림 토큰을 쓰지 않는다. */}
         <defs><linearGradient id="duoSheen" gradientUnits="userSpaceOnUse"><stop offset="0" /><stop offset=".4" /><stop offset="1" /></linearGradient></defs>
-        {/* 두께 띠(band) · 옆면(thick)은 테보다 먼저, 화면 가장자리(inner)는 테 위에 그린다 — 접는 장(.duo-flap)이 안쪽 절반을 덮는다. */}
-        <g className="band"><path className="bl" /><path className="bc" /><path className="bd" /></g><path className="thick" />
-        <path className="outl" /><path className="houtl" /><path className="rim" /><path className="rimhi" /><path className="body" /><path className="glow" /><path className="inner" />
-        <path className="sheen" stroke="url(#duoSheen)" /><path className="hinge" /><path className="hsheen" stroke="url(#duoSheen)" /><path className="ring" /><path className="ring hr" />
+        {/* 옆면(thick)은 장이 옆으로 선 순간에도 보여야 해 윤곽 묶음(draw) 밖에 둔다. 두께 띠(band)는 테보다 먼저,
+            화면 가장자리(glow · inner)는 테 위에 그린다 — 접는 장(.duo-flap)이 안쪽 절반을 덮는다. */}
+        <path className="thick" />
+        <g className="draw">
+          <g className="band"><path className="bl" /><path className="bc" /><path className="bd" /></g>
+          <path className="outl" /><path className="houtl" /><path className="rim" /><path className="rimhi" /><path className="body" />
+          <path className="glow" /><path className="glow" /><path className="glow" /><path className="inner" />
+          <path className="sheen" stroke="url(#duoSheen)" /><path className="hinge" /><path className="hsheen" stroke="url(#duoSheen)" /><path className="ring" /><path className="ring hr" />
+        </g>
       </svg>
       <div className="duo-flap"><div className="duo-face" /><div className="duo-dark" /></div>
     </div>

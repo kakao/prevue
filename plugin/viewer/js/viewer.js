@@ -3189,33 +3189,40 @@ function di() {
 										/* @__PURE__ */ (0, R.jsx)("stop", { offset: "1" })
 									]
 								}) }),
-								/* @__PURE__ */ (0, R.jsxs)("g", {
-									className: "band",
-									children: [
-										/* @__PURE__ */ (0, R.jsx)("path", { className: "bl" }),
-										/* @__PURE__ */ (0, R.jsx)("path", { className: "bc" }),
-										/* @__PURE__ */ (0, R.jsx)("path", { className: "bd" })
-									]
-								}),
 								/* @__PURE__ */ (0, R.jsx)("path", { className: "thick" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "outl" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "houtl" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "rim" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "rimhi" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "body" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "inner" }),
-								/* @__PURE__ */ (0, R.jsx)("path", {
-									className: "sheen",
-									stroke: "url(#duoSheen)"
-								}),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "hinge" }),
-								/* @__PURE__ */ (0, R.jsx)("path", {
-									className: "hsheen",
-									stroke: "url(#duoSheen)"
-								}),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "ring" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "ring hr" })
+								/* @__PURE__ */ (0, R.jsxs)("g", {
+									className: "draw",
+									children: [
+										/* @__PURE__ */ (0, R.jsxs)("g", {
+											className: "band",
+											children: [
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bl" }),
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bc" }),
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bd" })
+											]
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "outl" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "houtl" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "rim" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "rimhi" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "body" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "inner" }),
+										/* @__PURE__ */ (0, R.jsx)("path", {
+											className: "sheen",
+											stroke: "url(#duoSheen)"
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "hinge" }),
+										/* @__PURE__ */ (0, R.jsx)("path", {
+											className: "hsheen",
+											stroke: "url(#duoSheen)"
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "ring" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "ring hr" })
+									]
+								})
 							]
 						}),
 						/* @__PURE__ */ (0, R.jsxs)("div", {
