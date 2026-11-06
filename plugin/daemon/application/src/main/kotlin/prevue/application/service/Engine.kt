@@ -21,7 +21,7 @@ import prevue.application.port.LiveSessionFactory
 import prevue.application.port.PrevueDispatchers
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.RenderOutput
-import prevue.application.port.ScrollRider
+import prevue.application.domain.rule.Scrolling
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.SettledShot
 
@@ -134,7 +134,7 @@ class Engine(
     suspend fun touch(type: String, x: Int, y: Int): Long = call { loop.touch(type, x, y) }
     suspend fun type(text: String): Pair<Long, String?> = call { loop.type(text) }
     suspend fun wheel(x: Int, y: Int, dx: Float, dy: Float): Pair<Long, Boolean> = call { loop.wheel(x, y, dx, dy) }
-    suspend fun seek(x: Int, y: Int, dx: Float, dy: Float, pieces: Int, rider: ScrollRider): Pair<Long, Boolean> =
+    suspend fun seek(x: Int, y: Int, dx: Float, dy: Float, pieces: Int, rider: Scrolling.Rider): Pair<Long, Boolean> =
         call { loop.seek(x, y, dx, dy, pieces, rider) }
     suspend fun watch(on: Boolean) = call { loop.watch(on) }
     suspend fun settled(seq: Long, semantics: Boolean = false): SettledShot = call { loop.await(seq, semantics) }.await()

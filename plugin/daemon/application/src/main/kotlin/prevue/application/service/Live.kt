@@ -94,9 +94,9 @@ class Live(
         live.session(ed, t, by)?.let { return@exclusive ScrollResult.Settled(it, null, moved = false) }
         val before = engine.look(semantics = true)
         if (!before.out.ok) return@exclusive ScrollResult.Settled(live.finish(ed, before.out, null, t, by), null, moved = false)
-        val found = when (val p = Scrolling.target(at, spec, horizontal, before.tree)) {
-            is Scrolling.Target.Missed -> return@exclusive ScrollResult.Missed(p.miss)
-            is Scrolling.Target.Found -> p
+        val found = when (val p = Scrolling.pick(at, spec, horizontal, before.tree)) {
+            is Scrolling.Picked.Missed -> return@exclusive ScrollResult.Missed(p.miss)
+            is Scrolling.Picked.Found -> p
         }
         val box = found.container.box
         val amount = Scrolling.screens(screens, until != null)
@@ -117,7 +117,7 @@ class Live(
     }
 
     private fun reported(
-        shot: ShowResult, passage: ScrollPassed, after: LiveSession.Look, found: Scrolling.Target.Found, pane: ScrollReport.Pane, seek: Scrolling.Seek?,
+        shot: ShowResult, passage: ScrollPassed, after: LiveSession.Look, found: Scrolling.Picked.Found, pane: ScrollReport.Pane, seek: Scrolling.Seek?,
     ): ScrollResult {
         if (!after.out.ok) return ScrollResult.Settled(shot, found.container, pane.moved, sought = seek != null)
         val ours = { file: String -> sources.candidates(file).isNotEmpty() }
