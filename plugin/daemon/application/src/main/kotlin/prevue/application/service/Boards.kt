@@ -136,5 +136,4 @@ class Boards(
         live.recordFocus(ed, r.shot)
         return FocusResult.On(index, r)
     }
-
 }
