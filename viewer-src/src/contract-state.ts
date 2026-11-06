@@ -1,6 +1,6 @@
 // 생성물이다. viewer.state.*.json을 고치고 sh tools/gen-viewer.sh로 만든다.
 export type ContractState = {
-"board": null | {
+"board": {
 "file": string;
 "focus": number;
 "gen": number;
@@ -30,7 +30,7 @@ export type ContractState = {
 "name": string;
 }>;
 };
-"boardNote": null | {
+"boardNote": {
 "a": {
 "file": string;
 "n": number;
@@ -56,7 +56,7 @@ export type ContractState = {
 "previewId": string;
 "pxPerDp": number;
 "size": null;
-"streamUrl": null | string;
+"streamUrl": string;
 "treeUrl": string;
 };
 "header": {
