@@ -102,7 +102,7 @@ class DrawPosturesTest {
         uc.pick(fold8)
         uc.awaitDrawn(15)
         val round = uc.workspace.now.postures!!.round
-        runBlocking { uc.resize(fold8.copy(folded = true), "viewer") }
+        runBlocking { uc.live.resize(fold8.copy(folded = true), "viewer") }
         assertEquals(round, uc.workspace.now.postures!!.round)
         assertTrue(fold8 in uc.drawn() && fold8.copy(folded = true) !in uc.drawn(), "${uc.drawn().keys}")
         assertEquals(15, uc.drawn().size)
@@ -114,7 +114,7 @@ class DrawPosturesTest {
         uc.pick(fold8)
         uc.awaitDrawn(15)
         val round = uc.workspace.now.postures!!.round
-        runBlocking { uc.resize(ScreenSize.PRESETS[1], "viewer") }
+        runBlocking { uc.live.resize(ScreenSize.PRESETS[1], "viewer") }
         assertTrue(uc.workspace.now.postures!!.round > round)
         uc.awaitDrawn(12)
         assertEquals(bar - "foldable", asideKeys().drop(15))
@@ -145,7 +145,7 @@ class DrawPosturesTest {
         fx.renderer.asideGate = gate
         uc.pick(fold8)
         assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "옆 태스크가 시작하지 않았다")
-        val resized = fx.scope.async { uc.resize(ScreenSize.Original, "viewer") }
+        val resized = fx.scope.async { uc.live.resize(ScreenSize.Original, "viewer") }
         gate.countDown()
         fx.renderer.asideGate = null
         runBlocking { resized.await() }

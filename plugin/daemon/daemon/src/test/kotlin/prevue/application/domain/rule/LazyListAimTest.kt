@@ -54,10 +54,10 @@ class LazyListAimTest {
     @Test fun `번호는 굴리기 전후로 같은 아이템을 가리킨다`() {
         val uc = opened()
         grid()
-        val before = (runBlocking { uc.touch.at("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
+        val before = (runBlocking { uc.live.touchAt("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
         assertEquals(1, before.candidates.first().n)
-        runBlocking { uc.scroll.screens(1.0, horizontal = false, at = null, by = "test") }
-        val after = (runBlocking { uc.touch.at("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
+        runBlocking { uc.live.scroll(1.0, horizontal = false, at = null, by = "test") }
+        val after = (runBlocking { uc.live.touchAt("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
         assertTrue(after.candidates.first().n > 1, "${after.candidates.map { it.n }}")
         assertTrue(after.candidates.all { (it.n % 2 == 1) == (it.node.left == 10) }, "홀수 번호는 왼쪽 열이다")
     }
@@ -65,7 +65,7 @@ class LazyListAimTest {
     @Test fun `2열 그리드의 짝수 번호는 오른쪽 열이다`() {
         val uc = opened()
         grid()
-        val r = runBlocking { uc.touch.at("Card.kt:10#2", "tap", "test", settle = true) } as TouchResult.Settled
+        val r = runBlocking { uc.live.touchAt("Card.kt:10#2", "tap", "test", settle = true) } as TouchResult.Settled
         assertEquals(2, r.aim!!.index)
         assertTrue(r.aim!!.x > width / 2)
     }
@@ -73,16 +73,16 @@ class LazyListAimTest {
     @Test fun `화면 밖 번호는 누르지 않는다`() {
         val uc = opened()
         grid()
-        assertTrue((runBlocking { uc.touch.at("Card.kt:10#40", "tap", "test", settle = true) } as TouchResult.Missed).miss is Miss.OffScreen)
+        assertTrue((runBlocking { uc.live.touchAt("Card.kt:10#40", "tap", "test", settle = true) } as TouchResult.Missed).miss is Miss.OffScreen)
         assertTrue(fx.renderer.touches.isEmpty())
     }
 
     @Test fun `고르라는 응답은 목록 전체 개수를 싣고 화면 밖 응답은 보이는 후보를 싣는다`() {
         val uc = opened()
         grid()
-        val choose = (runBlocking { uc.touch.at("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
+        val choose = (runBlocking { uc.live.touchAt("Card.kt:10", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
         assertEquals(50, choose.total)
-        val off = (runBlocking { uc.touch.at("Card.kt:10#40", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.OffScreen
+        val off = (runBlocking { uc.live.touchAt("Card.kt:10#40", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.OffScreen
         assertTrue(off.candidates.isNotEmpty() && off.candidates.all { it.n <= 14 }, "${off.candidates.map { it.n }}")
     }
 
@@ -95,7 +95,7 @@ class LazyListAimTest {
         val outer = LazyList(0, 0, width, height, true, 5, (0 until 2).map { r -> LazyItem(r, r, 0, r * 400, width, r * 400 + 300) })
         val nodes = rows.flatMap { l -> l.items.map { ViewNode("Poster", "Card.kt", 10, it.left + 10, it.top + 10, it.right - 10, it.bottom - 10) } }
         fx.renderer.liveTree = LiveTree(width, height, nodes, rows + outer)
-        val miss = (runBlocking { uc.touch.at("Card.kt:10#2", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
+        val miss = (runBlocking { uc.live.touchAt("Card.kt:10#2", "tap", "test", settle = true) } as TouchResult.Missed).miss as Miss.Choose
         assertTrue(miss.mixedLists)
         assertTrue(fx.renderer.touches.isEmpty())
     }

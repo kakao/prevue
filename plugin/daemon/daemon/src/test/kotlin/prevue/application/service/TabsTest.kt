@@ -158,7 +158,7 @@ class TabsTest {
         val a = fx.file
         val b = fx.previewFile("B")
         show(a)
-        runBlocking { uc.select(a.path, 3, Pointed("Text", listOf("Text"), null, "Card0"), "viewer") }
+        runBlocking { uc.live.select(a.path, 3, Pointed("Text", listOf("Text"), null, "Card0"), "viewer") }
         show(b)
         assertEquals(a.path, ws.now.selection?.file)
         runBlocking { uc.tabs.closeTab(b.path, "test") }

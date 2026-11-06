@@ -33,20 +33,11 @@ import prevue.application.service.Boards
 import prevue.application.service.ExternalBuildUseCase
 import prevue.application.service.ObserveBuildChangesUseCase
 import prevue.application.service.ObserveResourceChangesUseCase
-import prevue.application.service.ObserveScreenUseCase
 import prevue.application.service.ObserveSourceChangesUseCase
 import prevue.application.service.RememberValuesUseCase
-import prevue.application.service.RenderAtUseCase
-import prevue.application.service.RerenderUseCase
-import prevue.application.service.ResizeUseCase
-import prevue.application.service.ScrollUseCase
-import prevue.application.service.SelectUseCase
-import prevue.application.service.SettleUseCase
 import prevue.application.service.StartDaemonUseCase
 import prevue.application.service.Status
 import prevue.application.service.Tabs
-import prevue.application.service.TouchUseCase
-import prevue.application.service.TypeUseCase
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.SettledShot
 import prevue.application.port.BuildWatcher
@@ -60,6 +51,7 @@ import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
 import prevue.application.service.Engine
+import prevue.application.service.Live
 import prevue.application.service.LiveLoop
 import prevue.application.port.PrevueDispatchers
 
@@ -77,19 +69,11 @@ internal interface TestGraph {
     val workspace: Workspace
     val engine: Engine
     val startDaemon: StartDaemonUseCase
+    val live: Live
 
-    val rerender: RerenderUseCase
-    val renderAt: RenderAtUseCase
     val applySave: ApplySaveUseCase
     val rememberValues: RememberValuesUseCase
-    val resize: ResizeUseCase
     val boards: Boards
-    val touch: TouchUseCase
-    val type: TypeUseCase
-    val scroll: ScrollUseCase
-    val settle: SettleUseCase
-    val select: SelectUseCase
-    val observeScreen: ObserveScreenUseCase
     val externalBuild: ExternalBuildUseCase
     val observeSourceChanges: ObserveSourceChangesUseCase
     val observeBuildChanges: ObserveBuildChangesUseCase

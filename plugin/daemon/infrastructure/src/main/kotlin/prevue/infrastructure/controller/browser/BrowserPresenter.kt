@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import prevue.infrastructure.controller.http.Relay
-import prevue.application.service.ObserveScreenUseCase
+import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.domain.model.Selection
 import prevue.application.domain.model.Status as StatusView
@@ -44,7 +44,7 @@ import prevue.application.port.PrevueDispatchers
 internal class BrowserPresenter(
     relay: Relay,
     private val status: Status,
-    private val screen: ObserveScreenUseCase,
+    private val screen: Live,
     target: ViewerTarget,
     private val dispatchers: PrevueDispatchers,
 ) {

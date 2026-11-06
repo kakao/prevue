@@ -97,7 +97,7 @@ class ContractTest {
         check("type.no-field", post("/type", mapOf("text" to "x")))
         fx.renderer.typeError = null
         // 정착은 라이브 세션 루프가 기록한다 — 기다리지 않는 터치 하나를 넣고 루프가 정착시키기를 기다린다.
-        runBlocking { uc.touch("tap", 1, 1, "viewer", settle = false) }
+        runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
         ws.state.awaitState("정착의 기록", 2_000) { it.lastResult is prevue.application.domain.model.Settled }
         check("status.settled", get("/status"))
         check("board.settled", get("/board"))

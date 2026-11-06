@@ -117,7 +117,7 @@ class KmpRenderIntegrationTest {
         val path = (match as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — $match")
         val expected = File(PearlKmpFixture.dir, "core/ui/src/commonMain/kotlin/com/example/pearl/core/ui/DrinkCard.kt")
         assertEquals(expected.canonicalPath, File(path).canonicalPath)
-        val sel = runBlocking { uc.select(path, node.line, Pointed(node.name, listOf(node.name), node.sameBox, list.spec.previewId), "test") }
+        val sel = runBlocking { uc.live.select(path, node.line, Pointed(node.name, listOf(node.name), node.sameBox, list.spec.previewId), "test") }
         assertEquals(list.spec, sel.preview, "가리킨 카드가 아닌 프리뷰를 실었다")
         assertEquals(shot.image!!.absolutePath, sel.image, "가리킨 카드가 아닌 그림을 실었다")
     }
