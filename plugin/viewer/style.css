@@ -397,9 +397,9 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .ph.bad::before { content: "렌더 실패"; color: var(--error); font: var(--type-label-medium); }
 .ph.bad .why { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 4); overflow: hidden; overflow-wrap: anywhere; }
 
-/* 이름표 두 줄 — 위 줄 name= · 인터랙티브 버튼, 아래 줄 크기 · 다크 · 글자 배율 칸. 이름 > 칸 > 시간.
+/* 이름표 두 줄은 그림 위에 온다(D-151) — 위 줄 name= · 인터랙티브 버튼, 아래 줄 크기 · 다크 · 글자 배율 칸. 이름 > 칸.
    이름은 name= 뿐이고(함수 이름은 묶음 머리가 갖는다, D-62) 없으면 칸이 위 줄에 서서 한 줄이 된다.
-   시간은 호버해야 보인다(전체 시간은 툴바가 갖는다). */
+   렌더 픽셀 크기 · 시간은 싣지 않는다 — 픽셀 크기는 dp 칸과 겹치고, 시간은 툴바가 갖는다. */
 .label { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); min-width: 0; padding: 0 var(--space-2); }
 .label .fn { grid-area: 1 / 1; min-width: 0; font: var(--type-label-large); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label .go { grid-area: 1 / 2; }
@@ -420,37 +420,32 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .go:hover { background: var(--state-hover); color: var(--on-surface); }
 .go:active { transform: scale(var(--motion-enter-scale)); }
 /* 좁은 칸(작은 컴포넌트 · 줄인 폰 · 폴더블)에서는 호버해도 글자를 펼치지 않는다 — 펼친 버튼이 이름 · 크기 칸을 몇 px 로 눌렀다
-   (이름 > 칸 > 시간). 180px 부터는 흔한 이름(`Light theme` 14px 로 79px)이 펼친 버튼(85px) 옆에 다 든다 — 셈으로는 172px 에 들고, 남은 8px 는 더 긴 이름의 여유다. 뜻은 버튼의 툴팁이 갖는다. */
+   (이름 > 칸). 180px 부터는 흔한 이름(`Light theme` 14px 로 79px)이 펼친 버튼(85px) 옆에 다 든다 — 셈으로는 172px 에 들고, 남은 8px 는 더 긴 이름의 여유다. 뜻은 버튼의 툴팁이 갖는다. */
 @container (max-width: 179px) {
   .card:hover .go, .go:focus-visible { padding: 0 var(--space-4); }
   .card:hover .go-t, .go:focus-visible .go-t { max-width: 0; margin-left: 0; opacity: 0; }
 }
-/* 인자 칸 — 소스 표기(`device=spec:…`) 대신 뜻 하나에 아이콘 하나와 짧은 값. 원래 인자는 툴팁에 있다.
-   시간은 호버해야 보이고 오른쪽에 붙는다 — 자리가 모자라면 시간이 먼저 준다(이름 > 칸 > 시간). 칸 폭이 100px 까지 좁아진다. */
+/* 인자 칸 — 소스 표기(`device=spec:…`) 대신 뜻 하나에 아이콘 하나와 짧은 값. 원래 인자는 툴팁에 있다. 칸 폭이 100px 까지 좁아진다. */
 .sub { display: flex; align-items: center; gap: var(--space-8); min-width: 0; margin-top: calc(var(--space-4) * -1); }
 /* 다 안 드는 칸은 보이지 않는 둘째 줄로 넘어간다 — 반쯤 잘린 아이콘이 남지 않게, 칸은 통째로 들거나 빠진다. */
 .specs { flex: 0 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-8); height: 1.45em; overflow: hidden; white-space: nowrap;
          color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; }
 .spec { display: inline-flex; align-items: center; gap: var(--space-4); flex: 0 0 auto; }
-/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 시간과 칸 아이콘을 먼저 뺀다. 이름 없는 장은 크기가 인터랙티브 버튼과 한 줄에 들어야 한다.
+/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 뺀다. 이름 없는 장은 크기가 인터랙티브 버튼과 한 줄에 들어야 한다.
    첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘렸다(이름 없는 장의 65px 칸에 `120×120dp`) —
-   이름 없는 장은 단위를 빼고, 그래도 길면 말줄임한다. 말줄임은 시간이 빠진 이 폭에서만 건다 — 쉬는 동안 안 보이는 시간도 자리를 조금 눌러,
-   넓은 칸에 걸면 다 드는 칸에도 말줄임이 붙었다. */
+   이름 없는 장은 단위를 빼고, 그래도 길면 말줄임한다. */
 .card { container-type: inline-size; }
 @container (max-width: 139px) {
-  .spec svg, .sub .meta, .card.noname .spec .unit { display: none; }
+  .spec svg, .card.noname .spec .unit { display: none; }
   .spec:first-child { flex-shrink: 1; min-width: 0; }
   .spec:first-child > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 }
 .spec svg { width: 12px; height: 12px; color: var(--on-surface-variant); }
 .spec .aa { color: var(--on-surface-variant); font: var(--type-label-medium); }
 .spec .unit { margin-left: var(--space-2); color: var(--on-surface-variant); font: var(--type-label-small); }
-.sub .meta { flex: 0 100 auto; min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-             color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; opacity: 0; transition: opacity var(--duration-short4) var(--easing-standard); }
-.card:hover .sub .meta { opacity: 1; }
 /* 빈 칸 줄은 접는다. 이름 없는 장은 그 줄이 곧 첫 줄(인터랙티브 버튼 옆)이라 접어도 줄지 않고, focus 점이 거기 붙는다 —
    접으면 그리기 전 · 실패한 장이 focus 일 때 점이 사라졌다. */
-.card:not(.noname) .sub:has(.specs:empty):has(.meta:empty) { display: none; }
+.card:not(.noname) .sub:has(.specs:empty) { display: none; }
 
 /* ---------- 가리키기 박스 ---------- */
 .box { position: absolute; pointer-events: none; border: 1px solid var(--pick); background: var(--pick-container); border-radius: var(--corner-small); }
