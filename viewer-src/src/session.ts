@@ -103,12 +103,6 @@ function apply(s: ViewerState) {
     workspace.morphOut(() => draw(now()), release, () => cardStage(card = now().screen === 'board' ? returnCard(now().board!.focus) : null), () => ringCard(card),
       () => now().screen === 'board');
   }
-  // 단건의 보기 ↔ 조작도 같은 틀 모프다 — 보기 캔버스와 조작 캔버스 사이를 옮긴다.
-  else if (from === 'focus' && to === 'focus' && prev!.focus?.interactive !== s.focus?.interactive) {
-    if (prev!.focus?.interactive) workspace.morphOut(() => draw(now()), release, () => workspace.image().parentElement, undefined,
-      () => now().screen === 'focus' && !now().focus?.interactive);
-    else { const src = frameOf(workspace.image().parentElement); transition(() => { draw(now()); workspace.morphIn(src); }, release, { workspace: true }); }
-  }
   else if (from === 'focus' && to === 'focus' && prev!.board && s.board && prev!.board.focus !== s.board.focus) transition(() => draw(now()), release, { workspace: true });
   else draw(s);
 }

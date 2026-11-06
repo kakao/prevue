@@ -153,7 +153,7 @@ body.ws .app { flex-shrink: 0; }
 
 /* ---------- 작업 공간의 검사 패널(D-99) ---------- */
 /* 레일이 접힌 작업 공간의 오른쪽에 선다 — 크기 · 기기 · 자세 · 확대가 위에서 아래로. 고른 칸은 바탕 없이 진한 글자와 왼쪽 2px 막대다(D-153) —
-   쉬는 화면에 채운 덩어리를 두지 않는다. 크기를 고를 수 없는 한 장(보기 | 조작)에서는 확대 줄만 남는다. */
+   쉬는 화면에 채운 덩어리를 두지 않는다. */
 body.ws { --panel-w: 264px; }
 .panel { position: fixed; top: calc(var(--bar-h) + 1px); right: 0; bottom: 0; z-index: 16; width: var(--panel-w); display: flex; flex-direction: column; gap: var(--space-16);
          padding: var(--space-16) var(--space-12); overflow-y: auto; border-left: 1px solid var(--outline-variant); background: var(--surface);
