@@ -8,8 +8,6 @@
   "capsule.sharedOnce": "{sourceSet}도 앱의 Android 빌드로 그려요. expect는 Android actual로 실행돼요.",
   "card.go": "인터랙티브",
   "card.go.tip": "인터랙티브로 열어 터치 넣기",
-  "card.meta": "{w}×{h} · {ms}ms",
-  "card.meta.stale": "{meta} · 옛 그림",
   "card.waiting": "대기",
   "choose.cancel": "취소",
   "choose.label": "파일 고르기",

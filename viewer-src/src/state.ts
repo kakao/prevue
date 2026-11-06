@@ -10,11 +10,10 @@ export type Size = DpSize & (
 );
 type ContractBoard = NonNullable<ContractState['board']>;
 type ContractCard = ContractBoard['groups'][number]['cards'][number];
-export type Card = Omit<ContractCard, 'ok' | 'imageUrl' | 'treeUrl' | 'meta' | 'failure' | 'widthDp' | 'heightDp' | 'specs'> & {
+export type Card = Omit<ContractCard, 'ok' | 'imageUrl' | 'treeUrl' | 'failure' | 'widthDp' | 'heightDp' | 'specs'> & {
   ok: boolean | null;
   imageUrl: string | null;
   treeUrl: string | null;
-  meta: Message | null;
   failure: Message | null;
   widthDp: number | null;
   heightDp: number | null;
