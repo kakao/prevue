@@ -130,10 +130,11 @@ internal class RenderEngine(
     override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
     override suspend fun written(out: RenderOutput): RenderOutput = out.copy(phases = out.phases + out.written.await())
 
-    override fun instanceCount(p: PreviewSpec): Int {
-        if (p.methodParams.isEmpty()) return 1
-        return shapes.count(p) {
-            runCatching { screenshot(p).toPreviewElement(renderer.module).resolveXmlLayouts().count() }.getOrElse { 1 }.coerceAtLeast(1)
+    override fun instances(p: PreviewSpec): List<String?> {
+        if (p.methodParams.isEmpty()) return listOf(null)
+        return shapes.instances(p) {
+            val n = runCatching { screenshot(p).toPreviewElement(renderer.module).resolveXmlLayouts().count() }.getOrElse { 1 }.coerceAtLeast(1)
+            ProviderValues.labels(renderer.module, p.methodParams.first()["provider"], n)
         }
     }
 

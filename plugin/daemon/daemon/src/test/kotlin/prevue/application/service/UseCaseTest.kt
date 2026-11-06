@@ -245,6 +245,15 @@ class UseCaseTest {
         uc.workspace.awaitBoardFilled()
     }
 
+    @Test fun `제공자 값 이름이 카드까지 간다 — 못 지은 값은 이름이 없다`() {
+        File(fx.srcRoot, "demo/Names.kt").writeText("package demo\nclass Names : PreviewParameterProvider<String> { override val values = sequenceOf(\"a\", \"b\") }\n")
+        fx.file.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Card0(@PreviewParameter(Names::class) n: String) {}\n")
+        fx.renderer.providerLabels["demo.Names"] = listOf("a", null)
+        val board = opened().workspace.now.board!!
+        assertEquals(listOf("a", null), board.cards.map { it.spec.paramLabel })
+        assertEquals(listOf("a", null), board.view().cards.map { it.paramLabel })
+    }
+
     @Test fun `FQN의 index가 그 함수의 프리뷰 수를 넘으면 첫 장으로 바꾸지 않고 거절한다`() {
         val uc = fx.graph()
         val e = runCatching { runBlocking { uc.tabs.openPreview("demo.CardsKt.Card1", 5, emptyMap(), "test") } }.exceptionOrNull()

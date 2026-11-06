@@ -1150,6 +1150,8 @@ def agent_view(d, viewer="", shown=None):
             if (c.get("paramCount") or 1) > 1:
                 o["paramIndex"] = c.get("paramIndex")
                 o["paramCount"] = c.get("paramCount")
+                if c.get("paramLabel"):
+                    o["paramLabel"] = c["paramLabel"]
             if c.get("ok") is not True:
                 for k in ("failure", "message"):
                     if c.get(k):

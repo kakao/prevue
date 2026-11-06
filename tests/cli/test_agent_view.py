@@ -27,7 +27,7 @@ def board(cards):
         name = "RoutePointEditorWithLongDestinationNamePreview%d" % i
         pid = "com.acme.shop.feature.route.planner.ui.RoutePointEditorKt.%s" % name
         c = dict(proto, index=i, previewId=pid, fqn=pid, name=name, params={"name": "다크 · 폰트 1.3배 · 경유지 셋", "uiMode": 32},
-                 paramIndex=i % 3, paramCount=3, image="%s/%s-0.png" % (OUT, pid), tree="%s/%s-0.viewinfo.json" % (OUT, pid),
+                 paramIndex=i % 3, paramCount=3, paramLabel="X" * 24, image="%s/%s-0.png" % (OUT, pid), tree="%s/%s-0.viewinfo.json" % (OUT, pid),
                  imageUrl="/%s-0.png?t=1759550000000" % pid, treeUrl="/%s-0.viewinfo.json?t=1759550000000" % pid,
                  phases={k: 12 for k in ("disposeMs", "elementMs", "buildMs", "classifyMs", "copyMs", "treeMs", "pngMs", "jsonMs")})
         d["cards"].append(c)
@@ -47,9 +47,16 @@ class AgentView(unittest.TestCase):
         self.assertEqual("http://127.0.0.1:8791/", v["viewer"])
         self.assertNotIn("gen", v)
         ok, bad = v["cards"]
-        self.assertEqual({"index", "name", "ok", "label", "paramIndex", "paramCount", "image", "tree"}, set(ok))
+        self.assertEqual({"index", "name", "ok", "label", "paramIndex", "paramCount", "paramLabel", "image", "tree"}, set(ok))
         self.assertEqual("EXCEPTION", bad["failure"])
         self.assertNotIn("image", bad)
+
+    def test_param_label_only_when_named(self):
+        d = board(2)
+        d["cards"][1]["paramLabel"] = None
+        named, unnamed = P.agent_view(d, "")["cards"]
+        self.assertEqual("X" * 24, named["paramLabel"])
+        self.assertNotIn("paramLabel", unnamed)
 
     def test_show_carries_tab_move_from_show_response(self):
         # show 의 답은 wait 모양이지만 tab 은 연 탭인지 옮긴 탭인지다(D-54) — wait 의 tab(파일)은 file 과 겹친다.

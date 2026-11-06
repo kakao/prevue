@@ -21,6 +21,7 @@ data class CardView(
     val rendered: Boolean,
     val paramIndex: Int,
     val paramCount: Int,
+    val paramLabel: String?,
     val ok: Boolean?,
     val failure: FailureKind?,
     val message: Phrase?,

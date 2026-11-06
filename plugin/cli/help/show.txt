@@ -7,7 +7,8 @@ For a file it answers after the whole board is drawn, in the same shape as wait.
 
 Response
   cards[]   index · name · ok · label (device name) · image (absolute PNG path) · tree (ViewInfo tree path)
-            failure · message when not ok. paramIndex · paramCount when one function makes several cards
+            failure · message when not ok. paramIndex · paramCount when one function makes several cards,
+            paramLabel when that value has a short name (an enum · number · short string)
   viewer    the viewer address — show doesn't open the browser. Give the person this address as a link
   complete  false means a card is interactive, so the other cards are old images (prevue wait --help)
   started   true means there was no daemon and this show started it — the viewer opened in the browser

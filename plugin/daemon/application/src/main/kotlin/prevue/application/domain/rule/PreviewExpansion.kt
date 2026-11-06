@@ -2,18 +2,17 @@ package prevue.application.domain.rule
 
 import prevue.application.domain.model.PreviewSpec
 
-/**
- * `@PreviewParameter` 제공자가 값을 여럿 내면 값마다 한 장으로 나눈다 — AS가 `userNewsResources 0`처럼 가르는 자리다.
- * 값의 개수는 렌더러만 알아서 [countOf]로 받는다.
- */
 object PreviewExpansion {
-    fun expand(found: List<PreviewSpec>, countOf: (PreviewSpec) -> Int): List<PreviewSpec> {
+    fun expand(found: List<PreviewSpec>, instancesOf: (PreviewSpec) -> List<String?>): List<PreviewSpec> {
         if (found.none { it.methodParams.isNotEmpty() }) return found
         val out = ArrayList<PreviewSpec>()
         for (p in found) {
-            val n = countOf(p)
+            val labels = instancesOf(p)
+            val n = labels.size
             if (n <= 1) { out += p.copy(index = out.size); continue }
-            for (k in 0 until n) out += p.copy(previewId = "${p.previewId}_p$k", paramIndex = k, paramCount = n, index = out.size)
+            for (k in 0 until n) {
+                out += p.copy(previewId = "${p.previewId}_p$k", paramIndex = k, paramCount = n, paramLabel = labels[k], index = out.size)
+            }
         }
         return out
     }

@@ -51,7 +51,7 @@ internal class BootingEngine(
     override fun dropLiterals(owners: Collection<String>) = ready.dropLiterals(owners)
     override fun buildChanged() = ready.buildChanged()
     override fun forgetShapes() = ready.forgetShapes()
-    override fun instanceCount(p: PreviewSpec): Int = ready.instanceCount(p)
+    override fun instances(p: PreviewSpec): List<String?> = ready.instances(p)
     override fun protect(keep: () -> Set<String>) { scope.launch { await().protect(keep) } }
     override suspend fun written(out: RenderOutput): RenderOutput = await().written(out)
     override suspend fun awaitWrites() = await().awaitWrites()

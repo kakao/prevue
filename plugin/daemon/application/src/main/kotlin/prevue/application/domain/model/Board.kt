@@ -107,7 +107,7 @@ data class Card(
         return CardView(
             index = index, previewId = spec.previewId, fqn = spec.fqn, name = spec.functionName,
             params = spec.params, gen = gen, stale = gen != boardGen, rendered = r != null,
-            paramIndex = spec.paramIndex, paramCount = spec.paramCount,
+            paramIndex = spec.paramIndex, paramCount = spec.paramCount, paramLabel = spec.paramLabel,
             ok = out?.ok ?: failed?.let { false }, failure = out?.failure ?: failed?.let { FailureKind.EXCEPTION },
             message = out?.message ?: failed?.message,
             width = out?.width, height = out?.height, artifactRevision = shot?.artifactRevision,
