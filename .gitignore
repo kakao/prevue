@@ -5,6 +5,8 @@ build/
 !plugin/daemon/gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 local.properties
+*.hprof
+hs_err_pid*.log
 
 # 데몬이 남기는 것 — 클래스패스 덤프, 오버레이, 렌더 산출물, 로그
 .cache/
