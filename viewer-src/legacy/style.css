@@ -547,8 +547,8 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-mention { display: flex; align-items: center; gap: var(--space-4); min-width: 0; min-height: var(--control-large); padding: 0 var(--space-4) 0 var(--space-8); border-radius: var(--corner-medium); background: var(--surface); }
 .pc-ref { display: flex; min-width: 0; color: var(--on-surface-variant); font: var(--type-code-small); white-space: nowrap; }
 /* 폭이 모자라면 디렉터리부터 줄인다 — 파일명과 라인이 멘션의 핵심이다. */
-.pc-ref span:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.pc-ref span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pc-ref span:first-child { flex: 0 9999 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pc-ref span:last-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pc-status { flex: 0 0 auto; margin-left: auto; padding: 0 var(--space-4) 0 var(--space-8); color: var(--on-surface-variant); font: var(--type-label-medium); }
 .pc-status.ok { color: var(--success); animation: okmark var(--duration-medium2) var(--easing-standard); }
 .pc-msg { margin: 0; padding: var(--space-8); border-radius: var(--corner-medium); background: var(--surface); color: var(--on-surface-variant); font: var(--type-body-small); }
