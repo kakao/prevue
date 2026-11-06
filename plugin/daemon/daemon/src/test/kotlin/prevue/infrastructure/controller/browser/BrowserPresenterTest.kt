@@ -340,7 +340,7 @@ class BrowserPresenterTest {
         val before = presenter.state.value.version
         runBlocking {
             presenter.events.test {
-                uc.status.indexPreviewFiles()
+                uc.watchers.indexPreviewFiles()
                 assertEquals(UiEvent.PreviewFiles, awaitItem())
                 assertEquals(before, presenter.state.value.version)
             }

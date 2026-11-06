@@ -74,7 +74,7 @@ class ContractTest {
         check("project-files", awaitIndex())
         // D-56. 빠른 열기 — 띄울 때 한 번 훑는다(Main).
         check("preview-files.pending", get("/preview-files.json"))
-        runBlocking { uc.status.indexPreviewFiles() }
+        runBlocking { uc.watchers.indexPreviewFiles() }
         check("preview-files", get("/preview-files.json"))
         check("card.cached", post("/card", mapOf("index" to 1)))
         check("card.force", post("/card", mapOf("index" to 1, "force" to true)))

@@ -15,6 +15,10 @@ dependencyResolutionManagement {
 }
 
 // 헥사고날 두 원(D-148) — 의존 방향(:infrastructure → :application)을 컴파일러가 막는다. 배포는 :daemon 의 prevue.jar 하나에 함께 담는다.
-include(":application", ":infrastructure")
+// 목록은 gradle.properties 의 prevue.layers 다. 테스트 · 린트는 Gradle 밖에서 그 파일을 읽으므로 -P · 홈 설정이 덮지 못하게 여기서도 파일을 직접 읽는다.
+val layers = java.util.Properties().apply { settingsDir.resolve("gradle.properties").reader().use { load(it) } }
+    .getProperty("prevue.layers").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }
+require(layers.isNotEmpty()) { "gradle.properties 에 prevue.layers 가 없다" }
+include(layers.map { ":" + it.replace("/", ":") })
 // 조립 · 테스트 · 설치 산출물. 루트는 빌드 파일만 갖는다(D-140) — installPrevue · test 는 태스크 이름으로 여기서 그대로 돈다.
 include(":daemon")

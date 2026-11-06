@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import prevue.application.domain.model.WatchStats
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.port.BuildNotice
 import prevue.application.port.BuildWatcher
@@ -17,17 +16,15 @@ import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
 import prevue.application.port.Workspace
 
-@Inject
-class Watchers(
+class Watchers @Inject internal constructor(
     private val ws: Workspace,
     private val sources: SourceWatcher?,
     private val builds: BuildWatcher?,
     @ValueFiles private val values: SourceWatcher?,
     private val sourceFiles: SourceFileRepository,
     private val callers: StaleCallers,
+    private val catalog: PreviewCatalog,
 ) {
-    fun stats(): WatchStats? = sources?.let { w -> WatchStats(w.stats, builds?.stats.orEmpty(), values?.stats.orEmpty()) }
-
     fun observeSourceChanges(): Flow<SourceChange> = sources?.let { repo ->
         repo.changes { listOfNotNull(ws.now.board?.file ?: ws.now.current?.file) }.onStart { noteBehindBuild() }.onEach {
             try {
@@ -58,6 +55,10 @@ class Watchers(
     }
 
     private fun note(created: List<File>, deleted: List<File>) = ws.noteCreated(created, deleted)
+
+    suspend fun indexPreviewFiles(change: SourceChange? = null) {
+        if (change == null) catalog.build() else catalog.update(change.files + change.created, change.deleted)
+    }
 
     fun observeBuildChanges(): Flow<BuildNotice> = builds?.changes() ?: emptyFlow()
 

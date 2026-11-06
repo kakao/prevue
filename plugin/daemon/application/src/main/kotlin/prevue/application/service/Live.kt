@@ -5,16 +5,11 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import java.io.File
 import java.time.Instant
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.StateFlow
 import prevue.application.domain.model.Aim
 import prevue.application.domain.model.Card
 import prevue.application.domain.model.CardResult
-import prevue.application.domain.model.Container
 import prevue.application.domain.model.LiveFrame
-import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.PreviewSpec
@@ -27,13 +22,13 @@ import prevue.application.domain.model.SettledShot
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.TouchResult
 import prevue.application.domain.model.TypeResult
-import prevue.application.domain.model.ViewNode
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.Aiming
 import prevue.application.domain.rule.NodeTarget
 import prevue.application.domain.rule.ScrollPassed
 import prevue.application.domain.rule.ScrollReport
 import prevue.application.domain.rule.ScrollUntil
+import prevue.application.domain.rule.Scrolling
 import prevue.application.port.LiveSession
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.Workspace
@@ -92,69 +87,37 @@ class Live(
         engine.wheel(x, y, dx, dy).second.also { if (it) ws.emit(WorkspaceEvent.Touched("wheel", by)) }
     }
 
-    suspend fun scroll(amount: Double, horizontal: Boolean, at: String?, by: String, until: String? = null): ScrollResult = ws.exclusive { ed ->
+    suspend fun scroll(screens: Double?, horizontal: Boolean, at: String?, by: String, until: String? = null): ScrollResult = ws.exclusive { ed ->
         val spec = at?.let { NodeTarget.parse(it) ?: return@exclusive ScrollResult.Missed(Miss.BadAt(it)) }
         val target = until?.takeIf { it.isNotBlank() }?.let(ScrollUntil::parse)
         val t = System.nanoTime()
         live.session(ed, t, by)?.let { return@exclusive ScrollResult.Settled(it, null, moved = false) }
         val before = engine.look(semantics = true)
         if (!before.out.ok) return@exclusive ScrollResult.Settled(live.finish(ed, before.out, null, t, by), null, moved = false)
-        val found = when (val p = pane(at, spec, horizontal, before.tree)) {
-            is Pane.Missed -> return@exclusive ScrollResult.Missed(p.miss)
-            is Pane.Found -> p
+        val found = when (val p = Scrolling.pick(at, spec, horizontal, before.tree)) {
+            is Scrolling.Picked.Missed -> return@exclusive ScrollResult.Missed(p.miss)
+            is Scrolling.Picked.Found -> p
         }
-        val pane = found.container
-        val side = ScrollReport.Pane(pane.box, !horizontal, amount > 0, found.frame)
-        val seek = target?.let { Seek(ScrollUntil.watch(it, before.tree, side), ScrollUntil.whole(it, side)) }
+        val box = found.container.box
+        val amount = Scrolling.screens(screens, until != null)
+        val side = ScrollReport.Pane(box, !horizontal, amount > 0, found.frame)
+        val seek = target?.let { Scrolling.Seek(it, before.tree, side) }
         val passage = ScrollPassed(before.tree, side)
-        if (seek != null && seek.whole.sight(ScrollUntil.Still(before.tree)) == ScrollUntil.Sight.WHOLE) {
+        if (seek != null && seek.whole(before.tree)) {
             val shot = engine.settledLatest(semantics = true)
             return@exclusive reported(live.settled(ed, shot, t, by), passage, shot.look, found, side.copy(moved = false), seek)
         }
-        val near = seek?.watch?.sight(ScrollUntil.Still(before.tree)) == ScrollUntil.Sight.NEAR
-        val seeker = Seeker(passage, seek?.watch, seek?.let { piecesOf(it.watch.span * PAGE) } ?: 1, near)
-        val (seq, rolled) = roll(pane, amount.coerceIn(-MAX_SCREENS, MAX_SCREENS), horizontal, seeker)
+        val seeker = Scrolling.Seeker(passage, seek, near = seek?.near(before.tree) == true)
+        val roll = Scrolling.roll(box, amount, horizontal)
+        val (seq, rolled) = engine.seek(roll.x, roll.y, roll.dx, roll.dy, roll.pieces, seeker)
         if (!rolled) return@exclusive ScrollResult.Missed(Miss.Broken(at ?: ""))
         val shot = engine.settled(seq, semantics = true)
         val after = shot.look
-        val moved = signature(before.tree, pane) != signature(after.tree, pane)
-        reported(live.settled(ed, shot, t, by), passage, after, found, side.copy(moved = moved), seek)
-    }
-
-    private class Seek(val watch: ScrollUntil.Watch, val whole: ScrollUntil.Watch) {
-        fun found(after: LiveTree, ours: (String) -> Boolean) = watch.found(after, ours) ?: whole.found(after, ours)
-    }
-
-    private class Probe(private val s: LiveSession) : ScrollUntil.Probe {
-        private val lists by lazy { s.lists() }
-        private val semantics by lazy { s.semantics() }
-        override fun lists() = lists
-        override fun semantics() = semantics
-        override suspend fun look() = s.look().tree
-    }
-
-    private class Seeker(
-        private val passage: ScrollPassed, private val watch: ScrollUntil.Watch?, private val screen: Int, private var near: Boolean,
-    ) : LiveLoop.Rider {
-        private var piece = 0
-
-        override fun frame(s: LiveSession) = passage.sample(Probe(s))
-
-        override suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit): Boolean {
-            val watch = watch ?: return false
-            piece++
-            if (!near && piece % screen != 0) return false
-            catchUp()
-            return when (watch.sight(Probe(s))) {
-                ScrollUntil.Sight.WHOLE -> true
-                ScrollUntil.Sight.NEAR -> false.also { near = true }
-                ScrollUntil.Sight.NONE -> false
-            }
-        }
+        reported(live.settled(ed, shot, t, by), passage, after, found, side.copy(moved = Scrolling.moved(before.tree, after.tree, box)), seek)
     }
 
     private fun reported(
-        shot: ShowResult, passage: ScrollPassed, after: LiveSession.Look, found: Pane.Found, pane: ScrollReport.Pane, seek: Seek?,
+        shot: ShowResult, passage: ScrollPassed, after: LiveSession.Look, found: Scrolling.Picked.Found, pane: ScrollReport.Pane, seek: Scrolling.Seek?,
     ): ScrollResult {
         if (!after.out.ok) return ScrollResult.Settled(shot, found.container, pane.moved, sought = seek != null)
         val ours = { file: String -> sources.candidates(file).isNotEmpty() }
@@ -163,42 +126,6 @@ class Live(
             shot, found.container.copy(list = report.list), pane.moved, report.appeared, report.disappeared,
             sought = seek != null, found = seek?.found(after.tree, ours), passed = report.passed,
         )
-    }
-
-    private sealed interface Pane {
-        data class Found(val container: Container, val frame: List<Int> = container.box) : Pane
-        data class Missed(val miss: Miss) : Pane
-    }
-
-    private fun pane(at: String?, spec: NodeTarget.Spec?, horizontal: Boolean, tree: LiveTree): Pane {
-        val axis = if (horizontal) "horizontal" else "vertical"
-        if (at == null || spec == null) return Pane.Found(Container(null, listOf(0, 0, tree.width, tree.height), axis))
-        val all = NodeTarget.candidates(tree.nodes, spec)
-        val seen = all.filter { NodeTarget.visible(it, tree) }
-        return when (val pick = NodeTarget.pick(seen, spec.nth)) {
-            is NodeTarget.Pick.Hit -> Pane.Found(Container(spec.toString(), NodeTarget.visibleBox(pick.node, tree), axis), pick.node.sameBox)
-            is NodeTarget.Pick.Choose -> Pane.Missed(Miss.Choose(at, pick.numbered))
-            is NodeTarget.Pick.NoSuch -> Pane.Missed(Miss.NoSuch(at, pick.nth, pick.numbered))
-            is NodeTarget.Pick.Away, NodeTarget.Pick.Missing ->
-                Pane.Missed(if (all.isEmpty()) Miss.Missing(at) else Miss.OffScreen(at, NodeTarget.inReadingOrder(all)))
-        }
-    }
-
-    private suspend fun roll(
-        pane: Container, amount: Double, horizontal: Boolean, rider: LiveLoop.Rider,
-    ): Pair<Long, Boolean> {
-        val (l, top, r, b) = pane.box
-        val d = (amount * (if (horizontal) r - l else b - top) * PAGE).roundToInt()
-        val n = piecesOf(abs(d).toDouble())
-        val (dx, dy) = if (horizontal) d.toFloat() to 0f else 0f to d.toFloat()
-        return engine.seek((l + r) / 2, (top + b) / 2, dx, dy, n, rider)
-    }
-
-    private fun piecesOf(px: Double) = maxOf(1, ceil(px / WHEEL).toInt())
-
-    private fun signature(tree: LiveTree, pane: Container): Int {
-        val (l, top, r, b) = pane.box
-        return tree.nodes.filter { it.right > l && it.left < r && it.bottom > top && it.top < b }.map(ViewNode::sameBox).hashCode()
     }
 
     suspend fun settle(settled: SettledShot): Unit = ws.exclusive { ed ->
@@ -281,11 +208,5 @@ class Live(
         val result = card?.result ?: return ws.now.lastResult?.image to ws.now.lastResult?.tree
         val out = (result as? CardResult.Drawn)?.shot?.out
         return out?.image to out?.tree
-    }
-
-    companion object {
-        const val PAGE = 0.8
-        const val WHEEL = 200
-        const val MAX_SCREENS = 10.0
     }
 }

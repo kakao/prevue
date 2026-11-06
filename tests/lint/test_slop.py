@@ -4,6 +4,7 @@ import os
 import sys
 import unittest
 
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools", "lint"))
 import kotlin_source  # noqa: E402
 import lint  # noqa: E402
@@ -139,6 +140,24 @@ class Comments(unittest.TestCase):
             self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/%s/A.kt" % (m, pkg)), m)
         self.assertFalse(lint.in_scope("plugin/daemon/application/src/test/kotlin/A.kt"))
         self.assertFalse(lint.in_scope("plugin/daemon/domain/src/main/kotlin/prevue/domain/A.kt"))
+
+    def test_층_목록은_gradle_properties_한_줄에서_읽는다(self):
+        self.assertEqual(lint.read_layers("# 주석\nprevue.layers=application, adapter/infra\nother=1\n"), ("application", "adapter/infra"))
+        # settings 는 java.util.Properties 로 읽는다 — 같은 줄을 같은 값으로 읽어야 넷이 갈리지 않는다
+        self.assertEqual(lint.read_layers("  prevue.layers = a,b,\n"), ("a", "b"))
+        self.assertEqual(lint.read_layers("prevue.layers:a\nprevue.layers=b\n"), ("b",))
+        self.assertEqual(lint.read_layers("prevue.layers a\n"), ("a",))
+        for text in ("other=1\n", "# prevue.layers=a\n", "prevue.layers=,\n", "prevue.layersx=a\n"):
+            with self.assertRaises(ValueError, msg=text):
+                lint.read_layers(text)
+        for m in lint.MODULES:
+            self.assertTrue(os.path.isdir(os.path.join(ROOT, "plugin/daemon", m, "src/main/kotlin")), m)
+
+    def test_detekt_보고서는_프로젝트_경로로_가른다(self):
+        reports = lint.detekt_reports(("a/infra", "b/infra"))
+        self.assertIn("plugin/daemon/build/lint/a/infra/reports/detekt/main.xml", reports)
+        self.assertIn("plugin/daemon/build/lint/b/infra/reports/detekt/main.xml", reports)
+        self.assertEqual(len(reports), len(set(reports)))
 
     def test_헥사고날로_옮긴_파일은_옛_자리와_짝짓는다(self):
         for old, new in (("entity/src/main/kotlin/prevue/entity/Bitmap.kt", "application/src/main/kotlin/prevue/application/domain/model/Bitmap.kt"),

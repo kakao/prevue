@@ -31,5 +31,5 @@ internal class BrowserTabs(
 
     fun sourceIndex(): SourceIndex? = status.readSourceIndex()
 
-    fun previewFiles(): Map<String, Any?> = previewFilesJson(status.readPreviewFiles(), File(status.read().module.repo).canonicalPath)
+    fun previewFiles(): Map<String, Any?> = previewFilesJson(status.readPreviewFiles(), File(status.module().repo).canonicalPath)
 }

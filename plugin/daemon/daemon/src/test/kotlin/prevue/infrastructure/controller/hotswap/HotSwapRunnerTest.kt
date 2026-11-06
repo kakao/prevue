@@ -55,7 +55,7 @@ class HotSwapRunnerTest {
     }
 
     @Test fun `생성만 있는 묶음은 저장 → 화면을 돌리지 않고 빠른 열기의 목록만 고친다`() {
-        runBlocking { uc.status.indexPreviewFiles() }
+        runBlocking { uc.watchers.indexPreviewFiles() }
         val fresh = fx.previewFile("Fresh")
         val line = firstLog {
             sources.fireStructure(created = listOf(fresh))

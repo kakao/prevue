@@ -1,17 +1,22 @@
 package prevue.application.service
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
+import prevue.application.domain.model.BoardView
 import prevue.application.domain.model.EngineStats
 import prevue.application.domain.model.FileMatch
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.domain.model.PreviewFile
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.Selection
 import prevue.application.domain.model.SourceIndex
+import prevue.application.domain.model.Tab
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WaitResult
 import prevue.application.domain.model.WorkspaceEvent
@@ -24,18 +29,18 @@ import prevue.application.port.Compiler
 import prevue.application.port.MemoryMeter
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.PreviewRepository
-import prevue.application.port.SourceChange
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.Workspace
 import java.io.File
 import prevue.application.domain.model.Status as StatusView
 
+@SingleIn(AppScope::class)
 class Status @Inject internal constructor(
     private val ws: Workspace,
     private val engine: PreviewRenderer,
     private val compiler: Compiler,
     private val memory: MemoryMeter,
-    private val watchers: Watchers,
+    private val watch: WatchMeter,
     private val sourceFiles: SourceFileRepository,
     private val previews: PreviewRepository,
     private val catalog: PreviewCatalog,
@@ -56,7 +61,7 @@ class Status @Inject internal constructor(
                 heapUsedMb = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024, heapMaxMb = rt.maxMemory() / 1024 / 1024,
                 rssMb = memory.rssMb(),
             ),
-            watch = watchers.stats(),
+            watch = watch.stats(),
             lastRenderMs = s.lastRenderMs,
             focusAttachedAt = s.focusAttachedAt,
             work = s.work, lastShown = s.lastShown, boardFill = s.boardFill, size = s.shownSize(),
@@ -64,6 +69,16 @@ class Status @Inject internal constructor(
             kmp = ws.graph.kmp,
         )
     }
+
+    fun board(): BoardView? = ws.now.board?.view()
+
+    fun selection(): Selection? = ws.now.selection
+
+    fun activeTab(): Tab? = ws.now.activeTabOrNull()
+
+    fun module(): ModuleInfo = shownModule(ws.now)
+
+    fun lastRenderMs(): Long = ws.now.lastRenderMs
 
     fun hosts(f: File): Boolean = ws.hosts(f)
 
@@ -74,10 +89,6 @@ class Status @Inject internal constructor(
     fun listPreviews(file: File): List<PreviewSpec> = previews.inFile(file)
 
     fun readPreviewFiles(): List<PreviewFile>? = catalog.list()
-
-    suspend fun indexPreviewFiles(change: SourceChange? = null) {
-        if (change == null) catalog.build() else catalog.update(change.files + change.created, change.deleted)
-    }
 
     fun readSourceIndex(): SourceIndex? = sourceFiles.index()
 

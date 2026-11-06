@@ -9,7 +9,6 @@ import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.TouchResult
 import prevue.application.domain.model.TypeResult
-import prevue.application.service.Live
 import prevue.application.domain.model.ScrollResult
 import prevue.infrastructure.json.map
 import prevue.infrastructure.controller.http.mapper.status
@@ -163,9 +162,7 @@ public class CliEndpoint @Inject internal constructor(
 
     private suspend fun scroll(ex: HttpExchange) {
         val b = ex.body()
-        val until = b.string("until")
-        val screens = (b["screens"] as? Number)?.toDouble() ?: if (until != null) Live.MAX_SCREENS else 1.0
-        val r = input.scroll(screens, b["horizontal"] == true, b.string("at"), b.string("by") ?: "cli", until)
+        val r = input.scroll((b["screens"] as? Number)?.toDouble(), b["horizontal"] == true, b.string("at"), b.string("by") ?: "cli", b.string("until"))
         val code = when (r) {
             is ScrollResult.Missed -> r.miss.status()
             is ScrollResult.Settled -> if (r.result.ok && r.sought && r.found == null) 404 else okOr422(r.result.ok)
