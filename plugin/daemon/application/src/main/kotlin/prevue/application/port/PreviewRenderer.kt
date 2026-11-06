@@ -25,8 +25,7 @@ interface PreviewRenderer {
     fun buildChanged()
     /** 프리뷰의 모양(제공자 값 개수·레이아웃 XML)을 잊는다. 파일을 다시 열 때. */
     fun forgetShapes()
-    /** `@PreviewParameter` 제공자가 내는 값의 개수. 렌더러만 안다. */
-    fun instanceCount(p: PreviewSpec): Int
+    fun instances(p: PreviewSpec): List<String?>
     /** NFR-10. 산출물 상한을 넘겨도 지우지 않을 프리뷰들. 화면이 주소를 들고 있는 것이다 — 조립할 때 한 번 건다. */
     fun protect(keep: () -> Set<String>)
     /** [out]의 PNG·트리가 디스크에 닿기를 기다린다. 쓰기가 실패했으면 그 예외를 낸다 — 주소만 멀쩡한 응답이 최악이다. */

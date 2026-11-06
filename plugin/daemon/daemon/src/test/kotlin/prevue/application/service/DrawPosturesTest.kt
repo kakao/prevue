@@ -127,7 +127,7 @@ class DrawPosturesTest {
         val round = uc.workspace.now.postures!!.round
         val gate = CountDownLatch(1)
         fx.renderer.asideGate = gate
-        runBlocking { uc.applySave(listOf(fx.file), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") }
         try {
             assertTrue(uc.workspace.now.postures!!.round > round)
             assertEquals(emptyMap<ScreenSize, String>(), uc.drawn(), "저장 직후에 옛 그림이 실렸다")
@@ -178,7 +178,7 @@ class DrawPosturesTest {
         uc.pick(fold8)
         uc.awaitDrawn(15)
         fx.renderer.exceptions += "렌더 예외"
-        runBlocking { uc.applySave(listOf(fx.file), "test") }
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") }
         assertEquals(null, uc.workspace.now.postures)
         assertEquals(emptyMap<ScreenSize, String>(), uc.drawn())
         assertEquals(15, fx.renderer.asides.size)

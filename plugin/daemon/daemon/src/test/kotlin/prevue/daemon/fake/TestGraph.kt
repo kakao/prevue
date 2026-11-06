@@ -28,14 +28,11 @@ import prevue.infrastructure.bindings.SourceBindings
 import prevue.infrastructure.bindings.TargetBindings
 import prevue.infrastructure.process.ProcessMemory
 import prevue.daemon.DaemonBindings
-import prevue.application.service.ApplySaveUseCase
+import prevue.daemon.StartDaemon
 import prevue.application.service.Boards
-import prevue.application.service.ExternalBuildUseCase
-import prevue.application.service.ObserveBuildChangesUseCase
-import prevue.application.service.ObserveResourceChangesUseCase
-import prevue.application.service.ObserveSourceChangesUseCase
-import prevue.application.service.RememberValuesUseCase
-import prevue.application.service.StartDaemonUseCase
+import prevue.application.service.ExternalBuilds
+import prevue.application.service.HotReload
+import prevue.application.service.Watchers
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.domain.model.LiveFrame
@@ -68,16 +65,13 @@ import prevue.application.port.PrevueDispatchers
 internal interface TestGraph {
     val workspace: Workspace
     val engine: Engine
-    val startDaemon: StartDaemonUseCase
+    val startDaemon: StartDaemon
     val live: Live
 
-    val applySave: ApplySaveUseCase
-    val rememberValues: RememberValuesUseCase
+    val hotReload: HotReload
+    val externalBuilds: ExternalBuilds
+    val watchers: Watchers
     val boards: Boards
-    val externalBuild: ExternalBuildUseCase
-    val observeSourceChanges: ObserveSourceChangesUseCase
-    val observeBuildChanges: ObserveBuildChangesUseCase
-    val observeResourceChanges: ObserveResourceChangesUseCase
     val status: Status
     val tabs: Tabs
 

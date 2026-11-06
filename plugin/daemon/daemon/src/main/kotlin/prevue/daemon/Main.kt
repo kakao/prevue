@@ -67,7 +67,7 @@ private fun PrevueDaemon.assemble(boot: Boot) {
         .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), hooks, closer, dispatchers)
     val renderer = graph.rendererLoss
     graph.startDaemon()
-    log("values XML ${graph.rememberValues()}개")
+    log("values XML ${graph.hotReload.rememberValues()}개")
     indexPreviewFiles(graph)
     val ui = graph.entryPoints
     watchRenderer(renderer, boot, graph, ui)

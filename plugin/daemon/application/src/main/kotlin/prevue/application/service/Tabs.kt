@@ -53,9 +53,7 @@ class Tabs(
         val tab = find(key) ?: error("열린 탭이 아니다: $target")
         val wasActive = key == ws.now.activeTab
         drop(ed, tab)
-        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let {
-            runCatching { activate(ed, it.key, null, emptyMap(), by) }.onFailure { e -> if (e !is VacantTab) throw e }
-        }
+        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let { activateOrVacant(ed, it.key, by) }
         CloseResult(key, ws.now.activeTab, ws.now.tabViews(ws.graph))
     }
 
@@ -69,8 +67,7 @@ class Tabs(
         fun has(files: List<File>) = files.any { it.canonicalPath == f }
         when {
             has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
-            has(created) && tab.vacant == Vacancy.DELETED ->
-                runCatching { activate(ed, tab.key, null, emptyMap(), by) }.onFailure { if (it !is VacantTab) throw it }
+            has(created) && tab.vacant == Vacancy.DELETED -> activateOrVacant(ed, tab.key, by)
         }
     }
 
@@ -81,6 +78,9 @@ class Tabs(
     internal fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
     internal fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
+
+    internal suspend fun activateOrVacant(ed: WorkspaceEditor, key: String, by: String, since: Long? = null): ShowResult? =
+        try { activate(ed, key, null, emptyMap(), by, since) } catch (_: VacantTab) { null }
 
     internal suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
         val tab = find(key)
@@ -213,7 +213,7 @@ class Tabs(
 
     private suspend fun rereadBoard(ed: WorkspaceEditor, b: Board): Board? {
         val kept = ws.now.activeTabOrNull()?.params.orEmpty()
-        val found = previews.inFile(b.file).let { PreviewExpansion.expand(it, engine.instanceCounts(it)::getValue) }.map { it.copy(params = it.params + kept) }
+        val found = previews.inFile(b.file).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }.map { it.copy(params = it.params + kept) }
         if (found.isEmpty() || found == b.cards.map { it.spec }) return b
         return ed.updateBoard(b.epoch) { it.reread(found) }
     }
@@ -238,7 +238,7 @@ class Tabs(
     private suspend fun locate(target: String, index: Int?, focusId: String?, params: Map<String, String>): Pair<PreviewSpec, List<PreviewSpec>> {
         val f = File(target)
         if (sources.has(f)) {
-            val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instanceCounts(it)::getValue) }
+            val found = previews.inFile(f).let { PreviewExpansion.expand(it, engine.instances(it)::getValue) }
             ensure(found.isNotEmpty()) { phrase("tabs.noPreviewFn", "file" to f.name) }
             val i = index ?: found.indexOfFirst { it.previewId == focusId }.coerceAtLeast(0)
             ensure(i in found.indices) { phrase("tabs.noIndex", "file" to f.name, "n" to found.size, "index" to i) }

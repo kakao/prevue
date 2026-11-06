@@ -1,25 +1,22 @@
 package prevue.application.service
 
 import dev.zacsweers.metro.Inject
+import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.Phrase
+import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.phrase
-import prevue.application.port.BuildChange
-import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.rule.ExternalPolicy
 import prevue.application.domain.rule.ExternalPolicy.Plan
 import prevue.application.domain.rule.StaleReasons
+import prevue.application.port.BuildChange
 import prevue.application.port.Compiler
 import prevue.application.port.FailureKind
-import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
-/**
- * 소스 밖의 변화가 그림을 낡게 했다. 닫을 수 있는 것(밖에서 돈 Gradle의 산출물)은 스스로 닫고, 못 닫는 것(리소스 · 빌드 파일)은
- * 낡음으로 세워 사람에게 할 일을 말한다 — 판정은 [ExternalPolicy]가 한다.
- */
+
 @Inject
-class ExternalBuildUseCase(
+class ExternalBuilds(
     private val ws: Workspace,
     private val engine: Engine,
     private val compiler: Compiler,
@@ -27,7 +24,7 @@ class ExternalBuildUseCase(
     private val live: LiveShot,
     private val boards: Boards,
 ) {
-    suspend operator fun invoke(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
+    suspend fun applyBuild(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
         if (change.buildFiles.isNotEmpty()) ed.markStaleOnce(StaleReasons.BUILD_FILES, StaleReasons.buildFiles(change.buildFiles))
         if (ws.now.current == null) return@exclusive ExternalResult.NoPreview

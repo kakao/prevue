@@ -16,6 +16,7 @@
           "ok": "boolean|null",
           "paramCount": "number",
           "paramIndex": "number",
+          "paramLabel": "null",
           "params": {},
           "phases": {
             "|": "null"
@@ -126,6 +127,7 @@
           "rendered": true,
           "paramIndex": 0,
           "paramCount": 1,
+          "paramLabel": null,
           "ok": true,
           "failure": null,
           "message": null,
@@ -150,6 +152,7 @@
           "rendered": false,
           "paramIndex": 0,
           "paramCount": 1,
+          "paramLabel": null,
           "ok": null,
           "failure": null,
           "message": null,

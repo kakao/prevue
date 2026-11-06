@@ -162,7 +162,7 @@ class BrowserPresenterTest {
     @Test fun `컴파일이 실패하면 낡음 줄과 보드 한 줄이 그것을 말한다`() {
         opened()
         fx.compiler.ok = false
-        runBlocking { uc.applySave(listOf(fx.file), "watch") }
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }
         val s = now()
         assertEquals(listOf("⚠ The compile failed, so the image you see is from before this save"), s.stale.map { it.head.text })
         assertTrue(s.boardNote!!.text.startsWith("Compile failed"), s.boardNote?.text)
@@ -249,7 +249,7 @@ class BrowserPresenterTest {
         opened()
         runBlocking {
             presenter.events.test {
-                uc.applySave(listOf(fx.file), "watch"); uc.workspace.awaitBoardFilled()
+                uc.hotReload.applySave(listOf(fx.file), "watch"); uc.workspace.awaitBoardFilled()
                 input.enterFocus(0); presenter.drain()
                 input.touch("tap", 1, 1); presenter.drain()
                 eventually(2_000) { now().settle != null }
@@ -267,7 +267,7 @@ class BrowserPresenterTest {
         fx.renderer.hold = CountDownLatch(1)
         fx.renderer.holdAfter = fx.renderer.shown.size + 1                     // 저장의 첫 장만 그리고 채우기를 세운다
         try {
-            runBlocking { uc.applySave(listOf(fx.file), "watch") }
+            runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }
             val mid = awaitState { it.boardNote?.text == "1/3" }
             assertTrue(mid.busy)
         } finally { fx.renderer.holdAfter = Int.MAX_VALUE; fx.renderer.hold.countDown() }
@@ -283,7 +283,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val save = CoroutineScope(Dispatchers.Default).launch { uc.applySave(listOf(fx.file), "watch") }
+        val save = CoroutineScope(Dispatchers.Default).launch { uc.hotReload.applySave(listOf(fx.file), "watch") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))   // 저장의 첫 장을 그리는 중
             awaitState { it.busy && it.timing.isEmpty() }
@@ -326,10 +326,10 @@ class BrowserPresenterTest {
     @Test fun `렌더가 실패하면 보드 한 줄이 그 실패를 말하고 다음 성공이 걷는다`() {
         opened()
         fx.renderer.exceptions += "View layout failed\njava.lang.IllegalStateException: boom"
-        runBlocking { uc.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         val failed = now()
         assertTrue(failed.boardNote!!.text.endsWith("View layout failed"), failed.boardNote?.text)
-        runBlocking { uc.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
+        runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         assertEquals("3 previews · Cards.kt", awaitState { !it.busy }.boardNote?.text)
     }
 
