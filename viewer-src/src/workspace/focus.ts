@@ -3,6 +3,7 @@
 import { get, post, reportStreamWidth, viewerStream } from '../../legacy/js/api.js';
 import { flash, setStatus, setSummary } from '../../legacy/js/capsule.js';
 import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, reduced, swapImage, transition } from '../../legacy/js/motion.js';
+import { stuckHead } from '../../legacy/js/board.js';
 import { cardOf, store } from '../../legacy/js/store.js';
 import { phrase } from '../../legacy/js/strings.js';
 import type { Focus, ViewerState } from '../state';
@@ -236,8 +237,9 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
           if (t!.isConnected) last = t!.getBoundingClientRect();
           return last;
         };
+        // 카드 윗부분이 붙은 묶음 머리 밑에 들어 있으면 틀도 그 밑으로 들어간다 — 층(z)을 내리면 지나는 다른 머리가 틀을 가로로 자른다
         const m = frameMorph({ from: src.rect, to, radius: [src.radius, dst.radius], shadow: [src.shadow, dst.shadow],
-          a: src.url, b: dst.url, swapAt: same ? 400 : 0, swapMs: same ? 150 : 250 });
+          a: src.url, b: dst.url, swapAt: same ? 400 : 0, swapMs: same ? 150 : 250, ceiling: () => stuckHead(t) });
         const f: Flight = flight = { m, same, hidden: [t] };
         m.landed.then(() => requestAnimationFrame(() => { if (flight !== f) return; flight = null; for (const el of f.hidden) el.classList.remove('morph-target'); m.finish(0); }));
       }, done, { workspace: true });

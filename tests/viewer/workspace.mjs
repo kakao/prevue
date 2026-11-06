@@ -162,6 +162,19 @@ try {
   await exit(); await pause(300);
   await check(`!!document.querySelector('.card[data-i="${far}"].returned') && !document.querySelector('.morph') && Math.abs(scrollY-__farScroll)<2`, "화면 밖 카드는 페이드와 링, 보드 스크롤 그대로");
   await evaluate(`document.querySelector('#__spacer')?.remove();scrollTo(0,__boardScroll)`);
+  // 카드 윗부분이 붙은 묶음 머리 밑에 든 채 돌아오면 줄어드는 틀도 머리 밑으로 들어간다 — 머리를 덮지 않는다
+  await evaluate(`(()=>{const s=document.querySelector('.card[data-i="0"] .cstage');scrollBy(0,s.getBoundingClientRect().top-parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))+120)})()`);
+  await pause(200);
+  await click('.card[data-i="0"] .go'); await ready(); await pause(600);
+  await evaluate(`window.__tuck=[];window.__tuckRec=true;requestAnimationFrame(function f(){if(!__tuckRec)return;const m=document.querySelector('.morph'),h=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect();
+    if(m){const r=m.getBoundingClientRect(),c=/^inset\\(([\\d.]+)px/.exec(m.style.clipPath);__tuck.push({y:r.y,cut:c?Number(c[1]):0,head:h.bottom,stuck:h.top<=parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))+.5,r:[r.x,r.y,r.width,r.height]})}requestAnimationFrame(f)})`);
+  await exit(); await pause(1000);
+  await evaluate(`__tuckRec=false`);
+  const tuck = await evaluate(`({f:__tuck,card:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect())})`);
+  assert(tuck.f.length > 5 && tuck.f.every(f => f.stuck) && tuck.f.some(f => f.cut > 0) && tuck.f.every(f => f.y + f.cut >= f.head - .5) && near(tuck.f.at(-1).r, tuck.card),
+    `머리 밑 카드로 돌아오는 틀이 머리 아래에서 잘림 ${JSON.stringify(tuck.f.map(f => [Math.round(f.y), Math.round(f.cut), Math.round(f.head)]))}`);
+  console.log(`통과 ${++checked}: 머리 밑 카드로 돌아오는 틀은 묶음 머리 아래에서 잘림(${tuck.f.length}프레임)`);
+  await evaluate(`scrollTo(0,__boardScroll)`);
   hold = true;
   await click(".card .go"); await pending();
   await until(`!document.querySelector('#workspaceLoading').hidden`);

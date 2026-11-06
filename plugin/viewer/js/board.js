@@ -118,6 +118,13 @@ export function cardStage(el) {
   const top = parseFloat(cs.getPropertyValue("--bar-h"));
   return r.width && r.bottom > top && r.top < innerHeight && r.right > 0 && r.left < innerWidth ? s : null;
 }
+/** 카드의 묶음 머리가 위에 붙어 있으면(sticky) 그 아랫선의 화면 y, 아니면 null — 돌아오는 틀이 그 위로 올라오지 않는다. */
+export function stuckHead(el) {
+  const h = el && el.isConnected ? el.closest(".group")?.querySelector(".ghead") : null;
+  if (!h) return null;
+  const r = h.getBoundingClientRect();
+  return r.top <= parseFloat(getComputedStyle(h).top) + .5 ? r.bottom : null;
+}
 let returnTimer = null;
 /** 돌아온 카드의 강조 — 화면 밖 카드로 돌아왔을 때. 잠깐 뒤 걷는다. */
 export function ringCard(el) {
