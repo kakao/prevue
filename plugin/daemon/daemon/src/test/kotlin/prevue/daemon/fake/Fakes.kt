@@ -393,7 +393,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     @Suppress("LongParameterList")
     internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
-        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.Boards.QUIET_MS,
+        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.Live.QUIET_MS,
         hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
     ): TestGraph {
         val ws = InMemoryWorkspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())

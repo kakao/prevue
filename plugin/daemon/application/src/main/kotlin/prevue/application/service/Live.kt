@@ -2,16 +2,25 @@ package prevue.application.service
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import java.io.File
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import prevue.application.domain.model.Aim
 import prevue.application.domain.model.Card
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
+import prevue.application.domain.model.Postures
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
@@ -19,10 +28,12 @@ import prevue.application.domain.model.ScrollResult
 import prevue.application.domain.model.Selection
 import prevue.application.domain.model.Settled
 import prevue.application.domain.model.SettledShot
+import prevue.application.domain.model.Shot
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.TouchResult
 import prevue.application.domain.model.TypeResult
 import prevue.application.domain.model.WorkspaceEvent
+import prevue.application.domain.model.phrase
 import prevue.application.domain.rule.Aiming
 import prevue.application.domain.rule.NodeTarget
 import prevue.application.domain.rule.ScrollPassed
@@ -30,6 +41,7 @@ import prevue.application.domain.rule.ScrollReport
 import prevue.application.domain.rule.ScrollUntil
 import prevue.application.domain.rule.Scrolling
 import prevue.application.port.LiveSession
+import prevue.application.port.RenderOutput
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
@@ -41,6 +53,8 @@ class Live(
     private val engine: Engine,
     private val live: LiveShot,
     private val sources: SourceFileRepository,
+    private val scope: CoroutineScope,
+    @Named(QUIET) private val quietMs: Long = QUIET_MS,
 ) {
     val screen: StateFlow<LiveFrame?> get() = engine.screen
     val frames: StateFlow<LiveLoop.Report> get() = engine.frames
@@ -208,5 +222,62 @@ class Live(
         val result = card?.result ?: return ws.now.lastResult?.image to ws.now.lastResult?.tree
         val out = (result as? CardResult.Drawn)?.shot?.out
         return out?.image to out?.tree
+    }
+
+    fun startPostures() {
+        scope.launch {
+            ws.state.map { it.livePostures()?.round }.distinctUntilChanged().collectLatest { round ->
+                if (round == null) return@collectLatest
+                try { fillPostures(round) } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    System.err.println("[prevue] 자세별 그림을 그리지 못했다: $e")
+                }
+            }
+        }
+    }
+
+    private sealed interface PostureStep {
+        data object Done : PostureStep
+        data object Later : PostureStep
+        class Drawn(val d: ScreenSize, val out: RenderOutput, val t: Long) : PostureStep
+    }
+
+    private suspend fun fillPostures(round: Long) {
+        while (true) {
+            val ps = ws.now.livePostures()?.takeIf { it.round == round } ?: return
+            val wait = quietMs - quietFor(ps)
+            if (wait > 0) { delay(wait); continue }
+            when (val s = postureStep(round)) {
+                PostureStep.Done -> return
+                PostureStep.Later -> delay(quietMs)
+                is PostureStep.Drawn -> ws.recordPosture(round, s.d, postureShot(s))
+            }
+        }
+    }
+
+    private suspend fun postureStep(round: Long): PostureStep = ws.exclusive {
+        val ps = ws.now.livePostures()?.takeIf { it.round == round } ?: return@exclusive PostureStep.Done
+        val (_, shown) = ws.now.shownTarget() ?: return@exclusive PostureStep.Done
+        if (ws.reloadPending || quietFor(ps) < quietMs) return@exclusive PostureStep.Later
+        val d = ps.next(shown) ?: return@exclusive PostureStep.Done
+        val t = System.nanoTime()
+        val out = engine.showAside(ps.specOf(d))
+        val failed = if (out.ok) "" else " 실패: ${out.message?.text}"
+        println("[prevue] 자세 ${d.key} 미리 그림 ${(System.nanoTime() - t) / 1_000_000}ms ${out.width}x${out.height}$failed")
+        PostureStep.Drawn(d, out, t)
+    }
+
+    private suspend fun postureShot(s: PostureStep.Drawn): Shot = try {
+        live.shot(s.out, null, s.t, LiveShot.POSTURE)
+    } catch (e: Exception) {
+        if (e is CancellationException) throw e
+        Shot(s.out.copy(ok = false, message = phrase("render.writeFailed", "why" to e)), null, 0, LiveShot.POSTURE, 0)
+    }
+
+    private fun quietFor(ps: Postures): Long = minOf(engine.msSinceInput(), ws.nowMs() - ps.seededAtMs)
+
+    companion object {
+        const val QUIET_MS = 1_000L
+        const val QUIET = "postureQuietMs"
     }
 }
