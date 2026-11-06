@@ -338,7 +338,7 @@ main { position: relative; right: var(--panel-w); width: calc(100% - var(--rail-
    보드가 짧아지면 스크롤바가 사라지고, 그러면 다시 넓어진다). 뿌리의 scrollbar-gutter 는 브라우저마다 잡히지 않아 스크롤 막대를 늘 둔다. */
 html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 묶음(함수)이 가로로 흐른다(D-62). 묶음마다 배율이 하나이고 폭은 그 배율로 놓은 한 줄의 폭이다 — 한 장뿐인 함수가 여럿인 파일도
-   오른쪽이 비지 않는다. 한 장짜리도 묶음이라 나란히 놓인 묶음끼리 머리 줄과 카드 윗선이 맞는다. */
+   오른쪽이 비지 않는다. 한 장짜리도 묶음이라 나란히 놓인 묶음끼리 머리 줄이 맞는다 — 이름표가 한 줄인 묶음은 카드 윗선이 그만큼 위에 온다. */
 #cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-32) var(--space-40); }
 .group { flex: 0 0 auto; min-width: 0; max-width: 100%; }
 /* 묶음 안은 한 줄 — 같은 축척으로 나란히 놓여야 비교가 된다. 하한(0.25)에서도 넘치는 묶음만 줄을 바꾼다. */
@@ -413,6 +413,9 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .group.nameless .label { grid-template-rows: auto; }
 .group.nameless .label .sub { grid-area: 1 / 1; margin-top: 0; }
 .group.nameless .label .go { grid-area: 1 / 2; align-self: center; margin-bottom: 0; }
+/* ▶와 한 줄이라 호버에 칸이 좁아진다 — 긴 기기 이름도 첫 칸은 둘째 줄로 못 넘어가니 글자 중간에서 잘리지 않게 말줄임한다. */
+.card.noname .spec:first-child { flex-shrink: 1; min-width: 0; }
+.card.noname .spec:first-child > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 들어가기(인터랙티브). 아이콘은 늘 보이고, 카드에 호버하면 글자가 펼쳐진다 —
    25장에 글자가 늘 있으면 프리뷰와 시선을 다투고, 아이콘만이면 처음 온 사람이 뜻을 못 읽는다.
    진한 표시는 고른 것 · 가리킨 것에만 둔다 — 카드마다 진한 버튼이면 커서 테두리 · 가리킨 박스와 섞여 지금 고른 장이 안 읽힌다. */
@@ -432,7 +435,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
   .card:hover .go, .go:focus-visible { padding: 0 var(--space-4); }
   .card:hover .go-t, .go:focus-visible .go-t { max-width: 0; margin-left: 0; opacity: 0; }
 }
-/* 이름 없는 장은 ▶가 크기 칸과 한 줄이라 펼친 버튼(영어 95px)이 첫 칸을 민다 — 첫 칸은 둘째 줄로 못 넘어가 글자 중간에서 잘린다. 200px 부터는 `1280×800dp`까지 다 든다. */
+/* 이름 없는 장은 ▶가 크기 칸과 한 줄이라 펼친 버튼(영어 95px)이 첫 칸을 민다 — 첫 칸은 둘째 줄로 못 넘어가 글자 중간에서 잘린다. 200px 부터는 `1280×800dp`까지 다 들고, 더 긴 첫 칸은 말줄임한다. */
 @container (max-width: 199px) {
   .card.noname:hover .go, .card.noname .go:focus-visible { padding: 0 var(--space-4); }
   .card.noname:hover .go-t, .card.noname .go:focus-visible .go-t { max-width: 0; margin-left: 0; opacity: 0; }
