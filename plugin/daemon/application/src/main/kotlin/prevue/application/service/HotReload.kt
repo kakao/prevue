@@ -13,7 +13,6 @@ import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.SaveTiming
-import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.model.phrase
@@ -174,8 +173,8 @@ class HotReload(
         } else ed.markCompiled(valuesSeen)
         val f = tab.file ?: return ReloadResult.NothingShown
         if (tabs.vacancy(f) != null) return ReloadResult.NothingShown
-        return try { ReloadResult.Rendered(tabs.activate(ed, tab.key, null, emptyMap(), by, change?.mtimeMs ?: System.currentTimeMillis())) }
-               catch (_: VacantTab) { ReloadResult.NothingShown }
+        val shown = tabs.activateOrVacant(ed, tab.key, by, change?.mtimeMs ?: System.currentTimeMillis())
+        return shown?.let(ReloadResult::Rendered) ?: ReloadResult.NothingShown
     }
 
     private suspend fun render(p: PreviewSpec, c: CompileResult?, files: List<File>, seen: Map<String, Long>, save: Save, repair: Boolean): ReloadResult {

@@ -53,9 +53,7 @@ class Tabs(
         val tab = find(key) ?: error("열린 탭이 아니다: $target")
         val wasActive = key == ws.now.activeTab
         drop(ed, tab)
-        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let {
-            runCatching { activate(ed, it.key, null, emptyMap(), by) }.onFailure { e -> if (e !is VacantTab) throw e }
-        }
+        if (wasActive) TabPolicy.next(ws.now.tabs, key)?.let { activateOrVacant(ed, it.key, by) }
         CloseResult(key, ws.now.activeTab, ws.now.tabViews(ws.graph))
     }
 
@@ -69,8 +67,7 @@ class Tabs(
         fun has(files: List<File>) = files.any { it.canonicalPath == f }
         when {
             has(deleted) && tab.vacant != Vacancy.DELETED && !sources.has(File(f)) -> markVacant(ed, tab, Vacancy.DELETED)
-            has(created) && tab.vacant == Vacancy.DELETED ->
-                runCatching { activate(ed, tab.key, null, emptyMap(), by) }.onFailure { if (it !is VacantTab) throw it }
+            has(created) && tab.vacant == Vacancy.DELETED -> activateOrVacant(ed, tab.key, by)
         }
     }
 
@@ -81,6 +78,9 @@ class Tabs(
     internal fun keyOf(target: String): String = File(target).let { if (sources.has(it)) it.canonicalPath else target }
 
     internal fun find(key: String): Tab? = ws.now.tabs.firstOrNull { it.key == key }
+
+    internal suspend fun activateOrVacant(ed: WorkspaceEditor, key: String, by: String, since: Long? = null): ShowResult? =
+        try { activate(ed, key, null, emptyMap(), by, since) } catch (_: VacantTab) { null }
 
     internal suspend fun activate(ed: WorkspaceEditor, key: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
         val tab = find(key)
