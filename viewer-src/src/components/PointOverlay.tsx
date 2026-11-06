@@ -72,9 +72,9 @@ export type CardActions = { pick(row: CardRow): void; jump(preview: CardPreview)
 const NO_CARD_ACTIONS: CardActions = { pick() {}, jump() {}, close() {} };
 
 /** dp 는 px 를 밀도로 나눈 값이라 정수로 떨어지지 않는다 — 소수 한 자리까지, 정수면 소수점 없이. */
-export function dpSize([w, h]: readonly [number, number]) {
+function dpPair([a, b]: readonly [number, number], join: string) {
   const dp = (n: number) => String(Math.round(n * 10) / 10);
-  return `${dp(w)} × ${dp(h)} dp`;
+  return `${dp(a)}${join}${dp(b)} dp`;
 }
 
 function TreeRow({ row, actions, children }: { row: CardRow; actions: CardActions; children?: ReactNode }) {
@@ -118,11 +118,20 @@ function CardStatus({ say }: { say: TagSay }) {
   return say.copied === false ? <span className="pc-status">{phrase('point.card.blocked')}</span> : null;
 }
 
+/** 머리 아래의 수치 — 트리에서 셀 수 있는 깊이 · 자식은 색인이 있을 때만 있다. */
+function CardSpecs({ origin, size, rows }: { origin: readonly [number, number]; size: readonly [number, number]; rows: CardRow[] | null }) {
+  const { phrase } = useMessages();
+  const here = rows ? rows.findIndex(r => r.at === 'here') : -1;
+  const specs: Array<[string, string]> = [[phrase('point.card.position'), dpPair(origin, ', ')], [phrase('point.card.size'), dpPair(size, ' × ')]];
+  if (rows) specs.push([phrase('point.card.depth'), String(here + 1)], [phrase('point.card.children'), String(rows.length - here - 1)]);
+  return <dl className="pc-specs">{specs.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>;
+}
+
 /**
- * 가리킨 결과의 카드(D-162) — 꼬리표를 대신해 이름 · 파일:라인 · 복사 결과 · 크기와 위아래 노드를 보인다.
- * rows 가 null 이면 색인이 없는 것이라 트리 칸을 숨긴다. 트리는 안에서 스크롤하고 가리킨 줄을 가운데에 둔다.
+ * 가리킨 결과의 카드(D-162) — 꼬리표를 대신해 이름 · 복사한 자리 · 위치 · 크기와 위아래 노드를 보인다.
+ * rows 가 null 이면 색인이 없는 것이라 트리 칸을 숨긴다. 트리는 카드 안의 패널에서 스크롤하고 가리킨 줄을 가운데에 둔다.
  */
-export function PointCard({ node, size, say, rows, state, actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; size: readonly [number, number]; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; actions?: CardActions; tabs?: PointActions }) {
+export function PointCard({ node, origin, size, say, rows, state, actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; origin: readonly [number, number]; size: readonly [number, number]; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; actions?: CardActions; tabs?: PointActions }) {
   const { phrase } = useMessages();
   const tree = useRef<HTMLUListElement>(null);
   useLayoutEffect(() => {
@@ -132,20 +141,23 @@ export function PointCard({ node, size, say, rows, state, actions = NO_CARD_ACTI
     box.scrollTop += r.top - b.top - (box.clientHeight - r.height) / 2;
   }, [rows]);
   const label = tabLabel(say.file, state, phrase);
+  const where = say.file ? `${shortPath(say.file, state?.header?.repo)}:${node.lineNumber}` : say.ref && tagText(say.ref);
+  const cut = (where || '').lastIndexOf('/') + 1;
   return <section className="point-card" aria-label={phrase('point.card.label')}>
-    <header className="pc-head">
-      <div className="pc-title">
-        <span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span>
-        <span className="pc-size">{dpSize(size)}</span>
-        <button type="button" className="pc-close" title={phrase('point.card.close')} aria-label={phrase('point.card.close')} onClick={actions.close}>{CLOSE}</button>
-      </div>
-      {say.ref ? <div className="pc-meta">
-        <span className="pc-ref" title={say.ref}>{tagText(say.ref)}</span>
-        {label && <button type="button" className="pc-tab" title={label} aria-label={label} onClick={() => tabs.openFile(say.file!)}>{TAB}</button>}
-        <CardStatus say={say} />
-      </div> : <p className="pc-msg">{say.msg}</p>}
+    <header className="pc-title">
+      <span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span>
+      <button type="button" className="pc-close" title={phrase('point.card.close')} aria-label={phrase('point.card.close')} onClick={actions.close}>{CLOSE}</button>
     </header>
-    {rows && <ul className="pc-tree" ref={tree} aria-label={phrase('point.card.tree')}><TreeRows rows={rows} actions={actions} /></ul>}
+    {say.ref ? <div className="pc-mention">
+      <span className="pc-ref" title={say.ref}><span>{where!.slice(0, cut)}</span><span>{where!.slice(cut)}</span></span>
+      {label && <button type="button" className="pc-tab" title={label} aria-label={label} onClick={() => tabs.openFile(say.file!)}>{TAB}</button>}
+      <CardStatus say={say} />
+    </div> : <p className="pc-msg">{say.msg}</p>}
+    <CardSpecs origin={origin} size={size} rows={rows} />
+    {rows && <div className="pc-section">
+      <h3 className="pc-label">{phrase('point.card.tree')}</h3>
+      <ul className="pc-tree" ref={tree} aria-label={phrase('point.card.tree')}><TreeRows rows={rows} actions={actions} /></ul>
+    </div>}
   </section>;
 }
 

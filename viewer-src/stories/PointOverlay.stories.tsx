@@ -27,7 +27,7 @@ export const Tags: Story = { render: () => { useShot(pearlCard.imageUrl); return
 const row = (name: string, at: CardRow['at'], previews: string[] = []): CardRow => ({ id: `${at}-${name}`, name, at, previews: previews.map(p => ({ id: p, name: p })) });
 const card: PointNode = { name: 'DrinkCard', fileName: 'DrinkCard.kt', lineNumber: 73, bounds: [0, 0, 1, 1] };
 const mention = '@/Users/me/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/DrinkCard.kt#L73';
-const elsewhere = { ...choiceExample, tabs: [] };
+const elsewhere = { ...choiceExample, tabs: [], header: { ...choiceExample.header, repo: '/Users/me/pearl' } };
 const copied: TagSay = { msg: null, ref: mention, copied: true, file: '/Users/me/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/DrinkCard.kt' };
 const rows = [
   row('PearlTheme', 'up'),
@@ -48,35 +48,35 @@ const longRows = [
 const Sheets = () => <div className="story-sheets">{['light', 'dark'].map(theme => <section key={theme} className="story-sheet" data-theme={theme}>
   <h2>{theme}</h2>
   <div className="story-cards">
-    <Case name="복사됨"><PointCard node={card} size={[164, 96.4]} say={copied} rows={rows} state={elsewhere} /></Case>
-    <Case name="가리키는 중"><PointCard node={card} size={[164, 96.4]} say={{ msg: null, ref: 'DrinkCard.kt:73' }} rows={rows} state={elsewhere} /></Case>
-    <Case name="다시 복사"><PointCard node={card} size={[164, 96.4]} say={{ ...copied, copied: false, again: () => {} }} rows={rows} state={elsewhere} /></Case>
-    <Case name="막힘"><PointCard node={card} size={[164, 96.4]} say={{ ...copied, copied: false }} rows={rows} state={elsewhere} /></Case>
+    <Case name="복사됨"><PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={copied} rows={rows} state={elsewhere} /></Case>
+    <Case name="가리키는 중"><PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={{ msg: null, ref: 'DrinkCard.kt:73' }} rows={rows} state={elsewhere} /></Case>
+    <Case name="다시 복사"><PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={{ ...copied, copied: false, again: () => {} }} rows={rows} state={elsewhere} /></Case>
+    <Case name="막힘"><PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={{ ...copied, copied: false }} rows={rows} state={elsewhere} /></Case>
     <Case name="Preview 후보 펼침"><Expanded /></Case>
-    <Case name="긴 사슬"><PointCard node={{ ...card, name: 'AsyncImage', fileName: 'NewsResourceCard.kt', lineNumber: 214 }} size={[331.4, 180]} say={{ ...copied, ref: '@/Users/me/nia/core/ui/src/main/kotlin/NewsResourceCard.kt#L214' }} rows={longRows} state={elsewhere} /></Case>
-    <Case name="색인 없음"><PointCard node={card} size={[360, 72]} say={copied} rows={null} state={elsewhere} /></Case>
-    <Case name="지금 탭의 파일 · 긴 이름"><PointCard node={{ ...card, name: 'PearlScreenContentWithHeroAndStickyFilterChips', fileName: 'PearlScreenContentWithHeroAndStickyFilterChips.kt', lineNumber: 1208 }} size={[360, 780.2]} say={{ msg: null, ref: '@/Users/me/pearl/PearlScreenContentWithHeroAndStickyFilterChips.kt#L1208', copied: true }} rows={null} state={choiceExample} /></Case>
-    <Case name="문장"><PointCard node={card} size={[164, 96.4]} say={{ msg: 'DrinkCard.kt:73 — not in the index, so the full path is missing' }} rows={null} state={choiceExample} /></Case>
+    <Case name="긴 사슬"><PointCard origin={[24, 288.2]} node={{ ...card, name: 'AsyncImage', fileName: 'NewsResourceCard.kt', lineNumber: 214 }} size={[331.4, 180]} say={{ ...copied, ref: '@/Users/me/nia/core/ui/src/main/kotlin/NewsResourceCard.kt#L214' }} rows={longRows} state={elsewhere} /></Case>
+    <Case name="색인 없음"><PointCard origin={[24, 288.2]} node={card} size={[360, 72]} say={copied} rows={null} state={elsewhere} /></Case>
+    <Case name="지금 탭의 파일 · 긴 이름"><PointCard origin={[24, 288.2]} node={{ ...card, name: 'PearlScreenContentWithHeroAndStickyFilterChips', fileName: 'PearlScreenContentWithHeroAndStickyFilterChips.kt', lineNumber: 1208 }} size={[360, 780.2]} say={{ msg: null, ref: '@/Users/me/pearl/PearlScreenContentWithHeroAndStickyFilterChips.kt#L1208', copied: true }} rows={null} state={choiceExample} /></Case>
+    <Case name="문장"><PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={{ msg: 'DrinkCard.kt:73 — not in the index, so the full path is missing' }} rows={null} state={choiceExample} /></Case>
   </div>
 </section>)}</div>;
 const Case = ({ name, children }: { name: string; children: React.ReactNode }) => <div className="story-stack"><span className="story-meta">{name}</span>{children}</div>;
 /** 첫 Preview 줄을 펼친 모양 — 펼침은 줄이 쥔 상태라 처음 그릴 때 누른다. */
 const Expanded = () => <div ref={el => { el?.querySelector<HTMLElement>('.pc-node.up .pc-jump[aria-expanded="false"]')?.click(); }}>
-  <PointCard node={card} size={[164, 96.4]} say={copied} rows={rows} state={elsewhere} />
+  <PointCard origin={[24, 288.2]} node={card} size={[164, 96.4]} say={copied} rows={rows} state={elsewhere} />
 </div>;
 export const States: Story = { render: () => <Sheets /> };
 
 /** 그림 위에서 — 카드는 박스 옆(오른쪽 · 왼쪽 · 아래 순)이고 창 안으로 당긴다. 자리 계산은 다음 작업이라 여기서는 세워 둔다. */
-const Placed = ({ theme, node, size, tree, box, at }: { theme: string; node: PointNode; size: [number, number]; tree: CardRow[]; box: React.CSSProperties; at: React.CSSProperties }) => <section className="story-sheet story-place" data-theme={theme}>
+const Placed = ({ theme, node, origin, size, tree, box, at }: { theme: string; node: PointNode; origin: [number, number]; size: [number, number]; tree: CardRow[]; box: React.CSSProperties; at: React.CSSProperties }) => <section className="story-sheet story-place" data-theme={theme}>
   <h2>{theme}</h2>
   <div className="story-placed">
     <img src={pearlCard.imageUrl!} alt="" />
     <div className="box pick" style={box} />
-    <div className="story-at" style={at}><PointCard node={node} size={size} say={{ ...copied, ref: `@/Users/me/pearl/${node.fileName}#L${node.lineNumber}` }} rows={tree} state={elsewhere} /></div>
+    <div className="story-at" style={at}><PointCard origin={origin} node={node} size={size} say={{ ...copied, ref: `@/Users/me/pearl/${node.fileName}#L${node.lineNumber}` }} rows={tree} state={elsewhere} /></div>
   </div>
 </section>;
 const chips = [row('PearlTheme', 'up'), row('PearlScreen', 'up', ['PearlEmptyPreview', 'PearlLoadingPreview', 'PearlErrorPreview']), row('LazyRow', 'here'), row('FilterChip', 'down')];
 export const OnPreview: Story = { render: () => <div className="story-sheets">
-  <Placed theme="light" node={card} size={[150, 174.3]} tree={rows} box={{ left: '6.7%', top: '36.9%', width: '41.7%', height: '22.3%' }} at={{ left: 'calc(48.4% + 8px)', top: '36.9%' }} />
-  <Placed theme="dark" node={{ ...card, name: 'LazyRow', fileName: 'PearlScreen.kt', lineNumber: 112 }} size={[360, 36.4]} tree={chips} box={{ left: '0%', top: '30.3%', width: '100%', height: '5.4%' }} at={{ left: '6.7%', top: 'calc(35.7% + 8px)' }} />
+  <Placed theme="light" node={card} origin={[24, 288.2]} size={[150, 174.3]} tree={rows} box={{ left: '6.7%', top: '36.9%', width: '41.7%', height: '22.3%' }} at={{ left: 'calc(48.4% + 8px)', top: '36.9%' }} />
+  <Placed theme="dark" node={{ ...card, name: 'LazyRow', fileName: 'PearlScreen.kt', lineNumber: 112 }} origin={[0, 236]} size={[360, 36.4]} tree={chips} box={{ left: '0%', top: '30.3%', width: '100%', height: '5.4%' }} at={{ left: '6.7%', top: 'calc(35.7% + 8px)' }} />
 </div> };
