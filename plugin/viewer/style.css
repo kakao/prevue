@@ -384,12 +384,14 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 
 /* 칸 폭 = 그림 폭(dp × 묶음 배율)이되 이름표가 놓일 최소 폭(100px) 아래로는 줄지 않는다 — 폭은 board.js 가 준다. */
 .card { flex: 0 0 auto; min-width: 0; max-width: 100%; display: flex; flex-direction: column; gap: var(--space-6); }
-/* 그림만 떠 있다 — 테두리 없이 모서리와 그림자. 그림 폭에 맞춰 줄어 납작하거나 좁은 프리뷰에 흰 여백이 붙지 않는다. */
-.cstage { position: relative; width: fit-content; max-width: 100%; border-radius: var(--corner-medium); overflow: hidden; line-height: 0;
-          background: var(--surface-container); box-shadow: var(--elevation-1);
+/* 카드는 바닥이라 반경 · 그림자 없이 그림 바깥 헤어라인만 둔다(D-153) — 흰 · 검은 앱 그림이 면에 녹지 않게.
+   선은 고리 그림자라 자리를 차지하지 않아 칸 폭 · 가리키기 배율이 그대로다. outline 은 키보드 커서 테가 쓴다.
+   그림 폭에 맞춰 줄어 납작하거나 좁은 프리뷰에 흰 여백이 붙지 않는다. */
+.cstage { position: relative; width: fit-content; max-width: 100%; overflow: hidden; line-height: 0;
+          background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant);
           transition: box-shadow var(--duration-medium2) var(--easing-standard), outline-color var(--duration-short4) var(--easing-standard);
           outline: 2px solid transparent; outline-offset: 2px; }
-.card:hover .cstage { box-shadow: var(--elevation-2); }
+.card:hover .cstage { box-shadow: 0 0 0 1px var(--outline); }
 /* 위 여백 = 헤더 + 붙어 있는 묶음 머리(머리 윗선에서 첫 카드까지 48px) — 키로 고른 카드가 머리 밑에 숨지 않는다. 모든 함수가 머리를 가진다(D-62). */
 .card { scroll-margin: calc(var(--bar-h) + var(--space-48) + var(--space-8)) 0 calc(var(--cap-room) + var(--space-16)); }
 /* 고른 장(키보드 커서 · 다음에 열 카드) — 그림 둘레에 포커스 테와 같은 무채색 선(D-93). 커서는 데몬 focus(라이브 태스크가 걸린 장)에서
@@ -488,20 +490,21 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 
 /* ---------- 한 장 ---------- */
 #focusView { position: relative; }
-/* 한 장의 틀. 확대된 그림은 이 안에서만 움직인다 — 안쪽 여백은 맞춤일 때 그림자 · 글로우가 잘리지 않을 자리다. */
+/* 한 장의 틀. 확대된 그림은 이 안에서만 움직인다 — 안쪽 여백은 맞춤일 때 헤어라인 · 조작 링이 잘리지 않을 자리다. */
 .wrap { position: relative; display: flex; flex-direction: column; align-items: center; height: var(--view-h, auto);
         padding: var(--space-16); margin: calc(var(--space-16) * -1); overflow: hidden; }
-.stage { position: relative; line-height: 0; border-radius: var(--corner-medium); background: var(--surface-container);
-         box-shadow: var(--elevation-2); max-width: 100%; min-width: 120px; min-height: 60px;
-         transition: box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+/* 무대도 바닥이다 — 반경 · 그림자 없이 카드와 같은 헤어라인(D-153). 확대해도 가늘게 --z 로 되돌린다. */
+.stage { position: relative; line-height: 0; background: var(--surface-container);
+         box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant); max-width: 100%; min-width: 120px; min-height: 60px;
+         transition: background-color var(--duration-medium2) var(--easing-standard); }
 /* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 너비/naturalWidth 로 배율을 내므로 축소해도 그대로 맞는다.
    min-height 를 이미지에 걸면 945x184 같은 납작한 프리뷰가 세로로 늘어난다. 하한은 --stage-max-h 를 계산할 때 둔다. */
-.stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px);
-             border-radius: var(--corner-medium); }
-/* stage 는 넘침을 자르지 않는다 — 고른 박스의 이름 태그가 그림 가장자리 밖으로 나가야 한다. 모서리는 그림이 스스로 깎는다. */
+.stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px); }
+/* stage 는 넘침을 자르지 않는다 — 고른 박스의 이름 태그가 그림 가장자리 밖으로 나가야 한다. */
 /* 조작 중 — 말 대신 표면으로 알린다. */
 .stage { transform-origin: 0 0; }
-.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+/* 선 · 링은 --z 를 따라 바로 바뀐다 — 전이를 걸면 확대보다 늦게 굵어졌다 가늘어진다. */
+.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
 .stage.grab { cursor: grab !important; }
 .stage.panning { cursor: grabbing !important; }
 .stage.grab img, .stage.panning img { pointer-events: none; }
@@ -511,8 +514,8 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .stage .box.pick .tag { transform: scale(calc(1 / var(--z, 1))); transform-origin: left bottom; }
 .stage .box.pick.below .tag, .stage .box.pick.inside .tag { transform-origin: left top; }
 .stage { z-index: 1; }
-/* 조작 중 — 얇은 링 하나. 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
-.stage.live { box-shadow: 0 0 0 2px var(--live), var(--elevation-2); }
+/* 조작 중 — 얇은 링 하나(헤어라인을 갈음한다). 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
+.stage.live { box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 
 /* ---------- 떠 있는 층 — 캡슐 · 후보 고르기 ---------- */
 /* 오류 · 잠깐의 알림이 뜨는 곳. 비어 있으면 안 보인다 — 가리킨 결과는 박스 꼬리표가 말한다(D-101). */
@@ -571,7 +574,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 :root.vt-workspace::view-transition-new(rail) { animation: fade var(--duration-short3) var(--easing-standard) both; }
 @keyframes fade-out { to { opacity: 0; } }
 .card.returned .cstage { animation: return-card var(--duration-extra-long2) var(--easing-decelerate); }
-@keyframes return-card { from { box-shadow: 0 0 0 4px var(--outline), var(--elevation-2); } }
+@keyframes return-card { from { box-shadow: 0 0 0 4px var(--outline); } }
 @media (prefers-reduced-motion: reduce) {
   .card.returned .cstage { animation: none; }
 }

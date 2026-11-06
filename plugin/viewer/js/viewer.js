@@ -1861,8 +1861,9 @@ function Bn({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, scen
 		H.suspend(), M(!1, me("--duration-short2"));
 		let u = _() && r.naturalWidth ? fe(r) : null;
 		Promise.all([u, new Promise((e) => setTimeout(e, me("--duration-short2")))]).then(() => {
+			n.style.setProperty("--z", "1");
 			let e = Wn(n);
-			l(), s() ? ve(() => {
+			n.style.removeProperty("--z"), l(), s() ? ve(() => {
 				t(), M(!0, 0);
 				let n = a(), r = n && Wn(n);
 				if (!n || !r || !r.rect.width || !e.url) {
@@ -1975,8 +1976,8 @@ function Bn({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, scen
 			Math.min(c / 2 - u, Math.max(c / 2 - u - o, i))
 		];
 	}
-	function V(e, t, r, i) {
-		H.preparing() || ([z.z, z.x, z.y] = ke(Math.min(Oe(), Math.max(De(), e)), t, r), n.classList.toggle("zoom-anim", !!i), n.style.transform = H.zoom(i) || z.z === 1 ? "" : `translate(${z.x}px, ${z.y}px) scale(${z.z})`, n.style.setProperty("--z", String(z.z)), n.classList.toggle("zoomed", z.z > 1), Ae(), S());
+	function V(e, r, i, a) {
+		H.preparing() || ([z.z, z.x, z.y] = ke(Math.min(Oe(), Math.max(De(), e)), r, i), n.classList.toggle("zoom-anim", !!a), n.style.transform = H.zoom(a) || z.z === 1 ? "" : `translate(${z.x}px, ${z.y}px) scale(${z.z})`, t.style.setProperty("--z", String(z.z)), n.classList.toggle("zoomed", z.z > 1), Ae(), S());
 	}
 	function Ae() {
 		let e = Ee();

@@ -105,13 +105,16 @@ class Corner(unittest.TestCase):
 class Shadow(unittest.TestCase):
     def test_그림자_날값(self):
         for bad in ("box-shadow: 0 2px 4px var(--outline)", "box-shadow: var(--elevation-1), 0 8px 24px -4px var(--scrim)",
-                    "text-shadow: 0 1px 0 var(--surface)", "filter: drop-shadow(0 1px 2px var(--scrim))"):
+                    "text-shadow: 0 1px 0 var(--surface)", "filter: drop-shadow(0 1px 2px var(--scrim))",
+                    "box-shadow: 0 0 0 calc(1px + 2px) var(--outline)", "box-shadow: 0 0 0 calc(4px / 2) var(--outline)",
+                    "box-shadow: 0 0 0 calc(1px / var(--k)) var(--outline)"):
             self.assertEqual(decl(bad), ["viewer/raw-shadow"], bad)
 
     def test_단계와_고리는_둔다(self):
         for ok in ("box-shadow: var(--elevation-2)", "box-shadow: 0 0 0 2px var(--live), var(--elevation-2)",
                    "box-shadow: inset 0 0 0 .5px var(--outline-variant)", "box-shadow: none", "filter: var(--elevation-2-filter)",
-                   "filter: grayscale(.6)", "box-shadow: var(--board-shadow, none)"):
+                   "filter: grayscale(.6)", "box-shadow: var(--board-shadow, none)",
+                   "box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant)"):
             self.assertEqual(decl(ok), [], ok)
 
 
