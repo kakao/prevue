@@ -25,7 +25,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Python 3.9 배포본이 없는 Ubuntu 26.04로 넘어가지 않도록 고정한다.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
