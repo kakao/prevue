@@ -185,12 +185,10 @@
   --device-side-line: light-dark(rgb(0 0 0 / .5), rgb(255 255 255 / .16));
   --device-inner: rgb(0 0 0 / .6);
   --device-inner-glow: rgb(0 0 0 / .35);
-  /* 바닥에서 뜬 몸체의 그림자 — 짙고 가까운 접촉 그림자와 옅고 넓은 주변 그림자. 접는 장면도 같은 값을 써 끝나는 순간 바뀌지 않는다. */
-  --device-shadow: 0 1px 1.5px light-dark(rgb(31 35 40 / .32), rgb(1 4 9 / .9)), 0 3px 6px -1px light-dark(rgb(31 35 40 / .2), rgb(1 4 9 / .7)),
-    0 18px 40px -10px light-dark(rgb(31 35 40 / .28), rgb(1 4 9 / .9));
-  --device-shadow-filter: drop-shadow(0 1px 1.5px light-dark(rgb(31 35 40 / .32), rgb(1 4 9 / .9))) drop-shadow(0 3px 5px light-dark(rgb(31 35 40 / .2), rgb(1 4 9 / .7)))
-    drop-shadow(0 14px 20px light-dark(rgb(31 35 40 / .16), rgb(1 4 9 / .6)));
-  --device-inset: rgb(255 255 255 / .1);
+  /* 바닥 그림자의 색 — 짙고 가까운 접촉 그림자 · 중간 · 옅고 넓은 주변 그림자. 거리 · 번짐은 resize.css 가 화면 기준 아래로 둔다. */
+  --device-shadow-contact: light-dark(rgb(31 35 40 / .34), rgb(1 4 9 / .9));
+  --device-shadow-near: light-dark(rgb(31 35 40 / .18), rgb(1 4 9 / .7));
+  --device-shadow-far: light-dark(rgb(31 35 40 / .16), rgb(1 4 9 / .8));
   --device-hairline: rgb(0 0 0 / .5);
   --device-crease-light: rgb(255 255 255 / .6);
   --device-crease-dark: rgb(0 0 0 / .18);

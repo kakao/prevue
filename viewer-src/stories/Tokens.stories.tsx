@@ -13,7 +13,8 @@ type Story = StoryObj<typeof meta>;
 const colors = ['surface', 'surface-container', 'surface-container-high', 'state-hover', 'primary-container', 'on-surface', 'on-surface-variant', 'on-surface-disabled',
   'outline', 'outline-variant', 'primary', 'on-primary', 'focus-ring', 'pick', 'pick-container', 'on-pick', 'live', 'error', 'error-container', 'on-error', 'warning', 'success', 'scrim',
   'device-body', 'device-tone-s26', 'device-tone-pixel9', 'device-tone-fold8', 'device-tone-ultra', 'device-tone-pixelfold', 'device-tone-tablet',
-  'device-tone-ip17', 'device-tone-ipair', 'device-tone-ip17pm', 'device-tone-ipduo', 'device-rim', 'device-side', 'device-side-line', 'device-inner', 'art-kmp',
+  'device-tone-ip17', 'device-tone-ipair', 'device-tone-ip17pm', 'device-tone-ipduo', 'device-rim', 'device-side', 'device-side-line', 'device-side-edge', 'device-inner', 'device-inner-glow',
+  'device-shadow-contact', 'device-shadow-near', 'device-shadow-far', 'art-kmp',
   'avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6', 'avatar-7', 'avatar-8', 'on-avatar'];
 const types = ['display', 'title-large', 'title-medium', 'title-small', 'body-large', 'body-medium', 'body-small', 'label-large', 'label-medium', 'label-small', 'code', 'code-small'];
 const spaces = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64];
@@ -64,7 +65,7 @@ export const Contrast: Story = { render: () => <Sheets>{sheet => sheet && <Contr
 export const Typography: Story = { render: () => <div className="story-stack">{types.map(role => <div key={role} className="story-scale"><code>--type-{role}</code><div style={{ font: `var(--type-${role})` }}>Prevue · Compose Preview · 프리뷰</div></div>)}</div> };
 export const Spacing: Story = { render: () => <div className="story-stack">{spaces.map(space => <div key={space} className="story-scale"><code>--space-{space}</code><i className="story-bar" style={{ width: `var(--space-${space})` }} /></div>)}</div> };
 // 그림자는 light-dark() 라 두 면을 나란히 본다.
-export const ShapeAndElevation: Story = { render: () => <Sheets>{() => <div className="story-grid">{['small', 'medium', 'large', 'full'].map(role => <div key={role} className="story-swatch" style={{ borderRadius: `var(--corner-${role})` }}>--corner-{role}</div>)}{[1, 2, 3, 4].map(level => <div key={level} className="story-swatch" style={{ boxShadow: `var(--elevation-${level})` }}>--elevation-{level}</div>)}{['device-shadow'].map(role => <div key={role} className="story-swatch" style={{ boxShadow: `var(--${role})` }}>--{role}</div>)}</div>}</Sheets> };
+export const ShapeAndElevation: Story = { render: () => <Sheets>{() => <div className="story-grid">{['small', 'medium', 'large', 'full'].map(role => <div key={role} className="story-swatch" style={{ borderRadius: `var(--corner-${role})` }}>--corner-{role}</div>)}{[1, 2, 3, 4].map(level => <div key={level} className="story-swatch" style={{ boxShadow: `var(--elevation-${level})` }}>--elevation-{level}</div>)}</div>}</Sheets> };
 
 function Parts({ language }: { language: string }) {
   const { phrase } = createMessages(language === 'ko' ? ko : en);
