@@ -9,8 +9,8 @@ import kotlinx.coroutines.launch
 import prevue.infrastructure.controller.http.EntryLog
 import prevue.infrastructure.controller.http.Relay
 import prevue.infrastructure.controller.http.Server
-import prevue.infrastructure.controller.browser.BrowserEndpoint
 import prevue.infrastructure.controller.browser.FrameStreamer
+import prevue.infrastructure.controller.browser.ViewerFeed
 import prevue.infrastructure.controller.browser.BrowserPresenter
 import prevue.infrastructure.controller.hotswap.HotSwapRunner
 
@@ -27,14 +27,14 @@ public class TargetRepo(
 
 public class EntryHooks(
     internal val port: Int,
-    internal val log: (String) -> Unit = {},
+    public val log: (String) -> Unit = {},
     internal val onShutdown: () -> Unit = {},
 )
 
 @SingleIn(AppScope::class)
 public class EntryPoints @Inject internal constructor(
     internal val server: Server,
-    internal val browser: BrowserEndpoint,
+    internal val feed: ViewerFeed,
     internal val frames: FrameStreamer,
     presenter: BrowserPresenter,
     internal val hotSwap: HotSwapRunner,
@@ -42,8 +42,8 @@ public class EntryPoints @Inject internal constructor(
     log: EntryLog,
 ) {
     init {
-        relay.scope.launch { presenter.state.collect(browser::pushState) }
-        relay.scope.launch { presenter.events.collect(browser::pushUi) }
+        relay.scope.launch { presenter.state.collect(feed::pushState) }
+        relay.scope.launch { presenter.events.collect(feed::pushUi) }
         relay.scope.launch { hotSwap.logs.collect(log::invoke) }
     }
 
@@ -51,10 +51,10 @@ public class EntryPoints @Inject internal constructor(
 
     public fun start(): Unit { server.start(); startWatching() }
     internal fun startWatching() = hotSwap.start(relay.scope)
-    public fun announceRestart(): Unit = browser.announceRestart()
+    public fun announceRestart(): Unit = feed.announceRestart()
     public fun stopInputs(): Unit {
         try { server.stopAccepting() } finally {
-            try { browser.close() } finally { frames.stop() }
+            try { feed.close() } finally { frames.stop() }
         }
     }
     public suspend fun awaitStopped(): Unit { frames.awaitStopped(); server.awaitStopped() }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import prevue.application.port.Workspace
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.Closer
+import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.TargetCheckout
 import prevue.application.service.HotReload
@@ -35,7 +36,7 @@ internal interface InfraGraph {
             @Provides config: InfraConfig,
             @Provides scope: CoroutineScope,
             @Provides checkout: PrevueCheckout,
-            @Provides hooks: DaemonHooks,
+            @Provides hooks: EntryHooks,
             @Provides closer: Closer,
             @Provides dispatchers: PrevueDispatchers,
         ): InfraGraph

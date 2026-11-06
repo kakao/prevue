@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIf
 import dev.zacsweers.metro.createGraphFactory
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.Closer
+import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.application.domain.model.ReloadResult
@@ -124,7 +125,7 @@ class InfraIntegrationTest {
         val logs = CopyOnWriteArrayList<String>()
         val closer = Closer { logs += it }
         try {
-            val graph = createGraphFactory<InfraGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), DaemonHooks({}) {}, closer, realDispatchers)
+            val graph = createGraphFactory<InfraGraph.Factory>().create(config, scope, PrevueCheckout(File(dir, "viewer")), EntryHooks(config.port, {}) {}, closer, realDispatchers)
             scope.block(graph)
         } finally {
             scope.cancel()

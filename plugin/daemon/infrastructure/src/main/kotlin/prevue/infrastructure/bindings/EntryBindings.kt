@@ -5,8 +5,8 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import prevue.infrastructure.controller.browser.BrowserEndpoint
 import prevue.infrastructure.controller.browser.FrameStreamer
+import prevue.infrastructure.controller.browser.ViewerFeed
 import prevue.infrastructure.controller.browser.ViewerTarget
 import prevue.infrastructure.controller.http.EntryLog
 import prevue.infrastructure.controller.http.HttpEndpoint
@@ -21,7 +21,8 @@ import prevue.application.port.PrevueDispatchers
 @BindingContainer
 public object EntryBindings {
     @Provides
-    internal fun seat(hooks: EntryHooks, checkout: PrevueCheckout): HttpSeat = HttpSeat(hooks.port, checkout.root)
+    internal fun seat(hooks: EntryHooks, checkout: PrevueCheckout, target: TargetRepo): HttpSeat =
+        HttpSeat(hooks.port, checkout.root, checkout.viewer, target.outDir)
 
     @Provides
     internal fun log(hooks: EntryHooks): EntryLog = EntryLog(hooks.log)
@@ -35,21 +36,21 @@ public object EntryBindings {
         FrameStreamer(live.screen, live.watching, relay.scope, log::invoke, dispatchers)
 
     @Provides
-    internal fun liveStats(live: Live, frames: FrameStreamer, browser: BrowserEndpoint): LiveStats = LiveStats {
+    internal fun liveStats(live: Live, frames: FrameStreamer, feed: ViewerFeed): LiveStats = LiveStats {
         val report = live.frames.value
         mapOf(
             "frames" to report.stats, "frameTrace" to report.trace,
             "streamSubscribers" to frames.hasSubscribers, "stream" to frames.stats.value.toJson(),
-            "viewers" to browser.viewerCount,
+            "viewers" to feed.viewerCount,
         )
     }
 
     @Provides @SingleIn(AppScope::class)
     internal fun server(
-        endpoints: Set<HttpEndpoint>, hooks: EntryHooks, checkout: PrevueCheckout, target: TargetRepo, relay: Relay, browser: BrowserEndpoint,
+        endpoints: Set<HttpEndpoint>, seat: HttpSeat, hooks: EntryHooks, relay: Relay, dispatchers: PrevueDispatchers, feed: ViewerFeed,
     ): Server =
-        Server(hooks.port, endpoints.toList(), checkout.viewer, target.outDir, relay.scope.coroutineContext, relay.dispatchers) { restart ->
-            if (restart) browser.announceRestart()
+        Server(seat.port, endpoints.toList(), seat.viewerDir, seat.outDir, relay.scope.coroutineContext, dispatchers) { restart ->
+            if (restart) feed.announceRestart()
             hooks.onShutdown()
         }
 }

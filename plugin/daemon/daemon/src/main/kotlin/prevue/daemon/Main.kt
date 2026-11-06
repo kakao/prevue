@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import dev.zacsweers.metro.createGraphFactory
 import prevue.infrastructure.bindings.EntryPoints
+import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.RendererLoss
@@ -62,7 +63,7 @@ private fun respawn(args: List<String>) {
 }
 
 private fun PrevueDaemon.assemble(boot: Boot) {
-    val hooks = DaemonHooks(::log) { requestStop("HTTP /shutdown") }
+    val hooks = EntryHooks(boot.infra.port, ::log) { requestStop("HTTP /shutdown") }
     val graph = createGraphFactory<PrevueGraph.Factory>()
         .create(boot.infra, scope, PrevueCheckout(boot.args.viewer, root = boot.args.root), hooks, closer, dispatchers)
     val renderer = graph.rendererLoss
