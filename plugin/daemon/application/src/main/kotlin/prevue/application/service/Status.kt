@@ -16,7 +16,7 @@ import prevue.application.domain.model.PreviewFile
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Selection
 import prevue.application.domain.model.SourceIndex
-import prevue.application.domain.model.TabView
+import prevue.application.domain.model.Tab
 import prevue.application.domain.model.VacantTab
 import prevue.application.domain.model.WaitResult
 import prevue.application.domain.model.WorkspaceEvent
@@ -74,7 +74,7 @@ class Status @Inject internal constructor(
 
     fun selection(): Selection? = ws.now.selection
 
-    fun activeTab(): TabView? = ws.now.tabViews(ws.graph).firstOrNull { it.active }
+    fun activeTab(): Tab? = ws.now.activeTabOrNull()
 
     fun module(): ModuleInfo = shownModule(ws.now)
 
