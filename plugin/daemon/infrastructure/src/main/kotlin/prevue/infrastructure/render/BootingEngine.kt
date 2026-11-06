@@ -43,7 +43,7 @@ internal class BootingEngine(
     }
 
     override suspend fun show(p: PreviewSpec, ownLoader: Boolean): RenderOutput = await().show(p, ownLoader)
-    override suspend fun showAside(p: PreviewSpec): RenderOutput = await().showAside(p)
+    override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput = await().showAside(p, tree)
     override suspend fun open(p: PreviewSpec, interactive: Boolean, ownLoader: Boolean): LiveSession = await().open(p, interactive, ownLoader)
     override fun copyImage(out: RenderOutput, previewId: String): RenderOutput = ready.copyImage(out, previewId)
     override fun codeChanged() = ready.codeChanged()

@@ -21,6 +21,12 @@ internal data class RenderTiming(
     }
 }
 
+internal enum class TreeOut {
+    KEPT, WRITTEN, NONE;
+
+    val written: Boolean get() = this != NONE
+}
+
 internal class RenderOutputs(
     private val artifacts: RenderArtifactStore,
     private val onBlank: (PreviewSpec, RenderVerdict.Blank, ClassLoader?) -> Unit = { _, _, _ -> },
@@ -35,16 +41,16 @@ internal class RenderOutputs(
     }
 
     fun written(
-        p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, remember: Boolean = true,
+        p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, tree: TreeOut = TreeOut.KEPT,
     ): RenderOutput {
         val ph = timing.phases
         var t = System.nanoTime()
-        val compose = if (remember) ViewInfoJson.compose(result.rootViews) else emptyList()
-        val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), remember && compose.isEmpty())
+        val compose = if (tree.written) ViewInfoJson.compose(result.rootViews) else emptyList()
+        val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), tree.written && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
         if (verdict.failure == null) ViewInfoJson.toolingMismatch(result.rootViews)?.let {
-            forgetTree()
+            forgetTree(tree)
             return failed(p, FailureKind.EXCEPTION, phrase("render.toolingMismatch", "surface" to it), timing)
         }
         if (afterBuild && verdict.failure == FailureKind.NOT_FOUND)
@@ -62,8 +68,8 @@ internal class RenderOutputs(
             "image" to png.absolutePath, "imageSize" to listOf(img.width, img.height),
             "renderResult" to status, "failure" to verdict.failure?.name, "message" to verdict.message?.text, "warnings" to verdict.warnings,
             "timings" to mapOf("taskMs" to timing.taskMs, "renderMs" to timing.renderMs, "freshLoader" to timing.freshLoader),
-            "layoutlibViewInfo" to if (remember) result.rootViews.map { ViewInfoJson.layoutlib(it) } else emptyList(),
-            "composeViewInfo" to if (remember) compose.also { keepTree(it, result) } else emptyList(),
+            "layoutlibViewInfo" to if (tree.written) result.rootViews.map { ViewInfoJson.layoutlib(it) } else emptyList(),
+            "composeViewInfo" to if (tree.written) kept(tree, compose, result) else emptyList(),
         )
         ph["treeMs"] = msSince(t)
         val ok = verdict.failure == null
@@ -72,6 +78,15 @@ internal class RenderOutputs(
             ok, p, png.takeIf { ok }, artifacts.treeFile(p.previewId), img.width, img.height, timing.taskMs, timing.renderMs,
             status, verdict.failure, verdict.message, timing.freshLoader, verdict.warnings, written, ph.toMap(),
         )
+    }
+
+    private fun forgetTree(tree: TreeOut) {
+        if (tree == TreeOut.KEPT) forgetTree()
+    }
+
+    private fun kept(tree: TreeOut, compose: List<Map<String, Any?>>, result: RenderResult): List<Map<String, Any?>> {
+        if (tree == TreeOut.KEPT) keepTree(compose, result)
+        return compose
     }
 
     private fun keepTree(compose: List<Map<String, Any?>>, result: RenderResult) {

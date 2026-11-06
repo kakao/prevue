@@ -164,7 +164,7 @@ internal class RenderEngine(
         return out
     }
 
-    override suspend fun showAside(p: PreviewSpec): RenderOutput {
+    override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput {
         if (lostThread != null) return lostOutput(p)
         val usePrivate = !preloadNext || live?.task?.classLoader?.let { it === loaders.current } == true
         val started = when (val s = start(p, mutableMapOf(), usePrivate, park = usePrivate && preloadNext, counted = true)) {
@@ -172,7 +172,7 @@ internal class RenderEngine(
             is Start.Failed -> return s.out
         }
         try {
-            return renderOn(started.session, started.timing, remember = false).also { learnFrom(started) }
+            return renderOn(started.session, started.timing, tree = if (tree) TreeOut.WRITTEN else TreeOut.NONE).also { learnFrom(started) }
         } finally {
             if (lostThread == null) dispose(started.session)
         }
@@ -334,7 +334,7 @@ internal class RenderEngine(
     private suspend fun renderLive(timing: RenderTiming, relayout: Boolean = false): RenderOutput =
         renderOn(live ?: error(NOTHING_SHOWN), timing, relayout)
 
-    private suspend fun renderOn(l: LayoutlibSession, timing: RenderTiming, relayout: Boolean = false, remember: Boolean = true): RenderOutput {
+    private suspend fun renderOn(l: LayoutlibSession, timing: RenderTiming, relayout: Boolean = false, tree: TreeOut = TreeOut.KEPT): RenderOutput {
         if (lostThread != null) return lostOutput(l.preview)
         val t = System.nanoTime()
         val result: RenderResult = try {
@@ -346,7 +346,7 @@ internal class RenderEngine(
         }
         val renderMs = msSince(t)
         if (relayout) refreshTree(l, result)
-        val out = outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, remember)
+        val out = outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree)
         return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
     }
 

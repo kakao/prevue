@@ -123,7 +123,6 @@ sealed interface CardResult {
     /** 렌더는 됐는데 PNG·트리를 디스크에 못 썼다 — 주소만 멀쩡한 응답이 최악이라 실패로 남긴다. */
     data class WriteFailed(override val index: Int, val message: Phrase, val cached: Boolean = false) : CardResult
 
-    /** 그리지 않고 물러났다. 사람이 다른 카드를 만지는 중이거나(INTERACTIVE) 저장이 기다린다(RELOAD). */
     data class Skipped(override val index: Int, val reason: SkipReason) : CardResult
 
     /** 채우기만 받는다 — 쓰기를 기다리지 않고 다음 카드로 간다. */
@@ -202,10 +201,6 @@ sealed interface WaitResult {
     val ok: Boolean
     val waitedMs: Long
 
-    /**
-     * [complete]가 거짓이면 인터랙티브 중이라 다른 카드를 그리지 않아 있는 그대로 돌려준 것이다 — [interactiveCard] 말고는 저장 전 그림이다.
-     * 뷰어에서 사람이 카드를 만지는 중일 수 있어(기준선 세트 3 · 1) 에이전트가 옛 그림을 새 그림으로 믿지 않게 어느 카드인지 싣는다.
-     */
     data class BoardDone(
         val file: File, val gen: Int, val complete: Boolean, override val waitedMs: Long,
         val stale: Map<String, StaleReason>, val cards: List<CardView>, val interactiveCard: Int? = null,

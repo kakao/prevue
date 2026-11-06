@@ -2,13 +2,21 @@ package prevue.application.service
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import prevue.application.domain.model.Board
+import prevue.application.domain.model.BoardEpoch
 import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
@@ -16,9 +24,11 @@ import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.SkipReason
+import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.model.phrase
 import prevue.application.domain.rule.CardPolicy
 import prevue.application.domain.rule.CardPolicy.Decision
+import prevue.application.domain.rule.LinkagePolicy
 import prevue.application.port.Workspace
 import prevue.application.port.WorkspaceEditor
 
@@ -31,6 +41,7 @@ class Boards(
     private val callers: StaleCallers,
     private val liveService: Live,
     private val scope: CoroutineScope,
+    @Named(Live.QUIET) private val quietMs: Long = Live.QUIET_MS,
 ) {
     private class Filled(val drawn: Int, val renderNs: Long)
 
@@ -70,35 +81,105 @@ class Boards(
         val pending: Deferred<CardResult> = ws.exclusive { ed ->
             val b = ws.now.board ?: error("보드가 없다 — 파일 경로로 show 한다")
             require(index in b.cards.indices) { "카드 $index 없음 — ${b.cards.size}장" }
-            val c = b.cards[index]
-            val gen = b.gen
-            when (val d = CardPolicy.decide(c.fresh(gen), c.writing(gen) != null, index == b.focus, force, ws.now.interactive, ws.reloadPending)) {
-                Decision.Fresh -> CompletableDeferred(when (val r = c.result!!) {
-                    is CardResult.Drawn -> r.copy(index = index, cached = true)
-                    is CardResult.WriteFailed -> r.copy(index = index, cached = true)
-                    else -> r
-                })
-                Decision.Writing -> c.writing(gen)!!
-                is Decision.Skip -> CompletableDeferred(CardResult.Skipped(index, d.reason))
-                Decision.Draw -> {
-                    val t = System.nanoTime()
-                    val out = callers.repair(ed, engine.show(c.spec, ws.now.interactive), c.spec, emptyList())
-                    live.dumpOutdated(ed, out)
-                    val done = CompletableDeferred<CardResult>()
-                    ed.update { s -> s.copy(current = c.spec, board = s.board?.takeIf { it.epoch == b.epoch }?.begin(index, gen, done) ?: s.board) }
-                    scope.launch {
-                        val r = try { CardResult.Drawn(index, live.shot(out, null, t, by)) }
-                                catch (e: Exception) { CardResult.WriteFailed(index, phrase("render.writeFailed", "why" to e)) }
-                        ws.recordCard(b.epoch, index, gen, r)
-                        done.complete(r)
-                    }
-                    done
-                }
-            }
+            startCard(ed, b, index, force, by)
         }
         if (await || pending.isCompleted) return pending.await()
         return CardResult.Pending(index)
     }
+
+    private suspend fun startCard(ed: WorkspaceEditor, b: Board, index: Int, force: Boolean, by: String): Deferred<CardResult> {
+        val c = b.cards[index]
+        val gen = b.gen
+        return when (val d = CardPolicy.decide(c.fresh(gen), c.writing(gen) != null, index == b.focus, force, ws.now.interactive, ws.reloadPending)) {
+            Decision.Fresh -> CompletableDeferred(when (val r = c.result!!) {
+                is CardResult.Drawn -> r.copy(index = index, cached = true)
+                is CardResult.WriteFailed -> r.copy(index = index, cached = true)
+                else -> r
+            })
+            Decision.Writing -> c.writing(gen)!!
+            is Decision.Skip -> CompletableDeferred(CardResult.Skipped(index, d.reason))
+            Decision.Draw -> draw(ed, b, index, aside = false, by)
+            Decision.Aside -> draw(ed, b, index, aside = true, by)
+        }
+    }
+
+    private suspend fun draw(ed: WorkspaceEditor, b: Board, index: Int, aside: Boolean, by: String): Deferred<CardResult> {
+        val c = b.cards[index]
+        val gen = b.gen
+        val t = System.nanoTime()
+        val out = if (aside) engine.showAside(c.spec, tree = true)
+                  else callers.repair(ed, engine.show(c.spec, ws.now.interactive), c.spec, emptyList())
+        if (aside && LinkagePolicy.missingMember(out) != null) {
+            ed.updateBoard(b.epoch) { it.forget(listOf(index)) }
+            return CompletableDeferred(CardResult.Skipped(index, SkipReason.INTERACTIVE))
+        }
+        live.dumpOutdated(ed, out)
+        val done = CompletableDeferred<CardResult>()
+        ed.update { s ->
+            s.copy(current = if (aside) s.current else c.spec, board = s.board?.takeIf { it.epoch == b.epoch }?.begin(index, gen, done) ?: s.board)
+        }
+        scope.launch {
+            val r = try { CardResult.Drawn(index, live.shot(out, null, t, by)) }
+                    catch (e: Exception) { CardResult.WriteFailed(index, phrase("render.writeFailed", "why" to e)) }
+            ws.recordCard(b.epoch, index, gen, r)
+            done.complete(r)
+        }
+        return done
+    }
+
+    fun startQuietFill() {
+        scope.launch {
+            ws.state.map { s -> s.board?.takeIf { s.interactive }?.let { QuietRound(it.epoch, it.gen, it.focus) } }
+                .distinctUntilChanged().collectLatest { round ->
+                    if (round == null) return@collectLatest
+                    try { fillQuietly(round) } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        System.err.println("[prevue] 조작 중 보드 카드를 그리지 못했다: $e")
+                    }
+                }
+        }
+    }
+
+    private data class QuietRound(val epoch: BoardEpoch, val gen: Int, val focus: Int)
+
+    private sealed interface QuietStep {
+        data object Done : QuietStep
+        data object Later : QuietStep
+        class Started(val next: Int) : QuietStep
+    }
+
+    private suspend fun fillQuietly(round: QuietRound) {
+        var from = 0
+        while (true) {
+            ws.state.first(::posturesDrawn)
+            val wait = quietMs - quietFor()
+            if (wait > 0) { delay(wait); continue }
+            when (val s = quietStep(round, from)) {
+                QuietStep.Done -> return
+                QuietStep.Later -> delay(quietMs)
+                is QuietStep.Started -> from = s.next
+            }
+        }
+    }
+
+    private suspend fun quietStep(round: QuietRound, from: Int): QuietStep = ws.exclusive { ed ->
+        val b = ws.now.board?.takeIf { ws.now.interactive && QuietRound(it.epoch, it.gen, it.focus) == round } ?: return@exclusive QuietStep.Done
+        if (ws.reloadPending || !posturesDrawn(ws.now) || quietFor() < quietMs) return@exclusive QuietStep.Later
+        val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
+            ?: return@exclusive QuietStep.Done
+        val t = System.nanoTime()
+        startCard(ed, b, idx, force = false, QUIET_BY)
+        println("[prevue] 조작 중 카드 $idx 옆 그림 ${(System.nanoTime() - t) / 1_000_000}ms gen=${b.gen}")
+        QuietStep.Started(idx + 1)
+    }
+
+    private fun posturesDrawn(s: WorkspaceState): Boolean {
+        val ps = s.livePostures() ?: return true
+        val shown = s.shownTarget()?.second ?: return true
+        return ps.next(shown) == null
+    }
+
+    private fun quietFor(): Long = minOf(engine.msSinceInput(), ws.nowMs() - ws.now.lastRenderMs)
 
     suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = ws.exclusive { ed ->
         val b = ws.now.board
@@ -135,5 +216,9 @@ class Boards(
         }
         live.recordFocus(ed, r.shot)
         return FocusResult.On(index, r)
+    }
+
+    companion object {
+        const val QUIET_BY = "aside"
     }
 }
