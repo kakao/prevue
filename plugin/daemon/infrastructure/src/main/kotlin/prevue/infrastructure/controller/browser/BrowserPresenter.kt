@@ -49,7 +49,7 @@ internal class BrowserPresenter(
     private val dispatchers: PrevueDispatchers,
 ) {
     val scope = CoroutineScope(relay.scope.coroutineContext + dispatchers.default.limitedParallelism(1, "prevue-viewer"))
-    val side = MutableStateFlow(ViewerSide(stillStamp = System.currentTimeMillis()))
+    private val side = MutableStateFlow(ViewerSide(stillStamp = System.currentTimeMillis()))
     private var version = 0L
 
     private val statuses = status.observeChanges().onStart { emit(Unit) }.map { status.read() }
@@ -86,7 +86,11 @@ internal class BrowserPresenter(
 
     suspend fun current(): BrowserState = onLine { BrowserStates.build(status.read(), side.value, ++version) }
 
-    fun peek(now: StatusView): BrowserState = BrowserStates.build(now, side.value, version)
+    suspend fun treeUrl(): String? = onLine { BrowserStates.build(status.read(), side.value, version).focus?.treeUrl }
+
+    fun showChoice(choice: PathChoice?) { side.update { it.copy(choice = choice) } }
+
+    fun choice(): PathChoice? = side.value.choice
 
     private fun onDomainEvent(ev: WorkspaceEvent) {
         when (ev) {

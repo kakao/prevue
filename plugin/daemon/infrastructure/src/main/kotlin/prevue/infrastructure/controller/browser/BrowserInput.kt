@@ -5,6 +5,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
 import prevue.application.service.Boards
@@ -23,7 +25,7 @@ internal class BrowserInput(
     dispatchers: PrevueDispatchers,
 ) {
     private val sizes = Channel<ScreenSize>(Channel.CONFLATED)
-    private var wheelWarned = false
+    private val wheelWarned = MutableStateFlow(false)
 
     init {
         core.scope.launch(dispatchers.default) {
@@ -48,7 +50,7 @@ internal class BrowserInput(
     fun touch(type: String, x: Int, y: Int) = core.post { live.touch(type, x, y, by = "viewer", settle = false) }
 
     fun wheel(x: Int, y: Int, dx: Float, dy: Float) = core.post {
-        if (!live.wheel(x, y, dx, dy, by = "viewer") && core.onLine { !wheelWarned.also { wheelWarned = true } }) {
+        if (!live.wheel(x, y, dx, dy, by = "viewer") && !wheelWarned.getAndUpdate { true }) {
             core.flash(phrase("input.wheel.failed"))
         }
     }
