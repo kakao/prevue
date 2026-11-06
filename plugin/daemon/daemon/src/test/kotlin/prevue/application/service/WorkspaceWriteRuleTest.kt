@@ -16,7 +16,7 @@ class WorkspaceWriteRuleTest {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(
             listOf("application/service/Boards.kt → recordFill", "application/service/Boards.kt → recordCard",
-                "application/service/Boards.kt → recordPosture", "application/service/Watchers.kt → noteCreated"),
+                "application/service/Live.kt → recordPosture", "application/service/Watchers.kt → noteCreated"),
             WriteRule.outOfQueue(files),
         )
     }
