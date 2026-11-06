@@ -92,7 +92,8 @@ body.ws .app-t, body.ws .brand-name { display: none; }
 body.ws .app { flex-shrink: 0; }
 .back { flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: var(--space-2); height: 30px; padding: 0 var(--space-12) 0 var(--space-6); border: 0; border-radius: var(--corner-medium);
         background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); cursor: pointer;
-        transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard); }
+        transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard),
+                    opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
 .back:hover { color: var(--on-surface); background: var(--state-hover); }
 .back svg { flex: 0 0 auto; width: 16px; height: 16px; }
 .back span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
@@ -109,6 +110,11 @@ body.ws .app { flex-shrink: 0; }
 .ws-title, body.ws .back { animation: push var(--duration-medium2) var(--easing-standard); }
 @keyframes push { from { opacity: 0; translate: var(--motion-enter-shift) 0; } }
 @media (prefers-reduced-motion: reduce) { .ws-title, body.ws .back { animation-name: fade; } }
+/* 틀 모프로 여닫을 때는 패널과 한 묶음이다(workspace/focus.ts decorations, D-153 ⑧) — 들어갈 때 그림 먼저 도구 뒤, 나갈 때 도구 먼저.
+   !important 라야 도는 push 가 투명을 덮지 못한다. push(medium2)가 모프 70%(MORPH_LEAD)보다 길어지면 남은 미끄러짐이 페이드와 함께 보일 뿐 튀지는 않는다.
+   누름은 막지 않는다 — 헤더 칸은 자리가 바뀌지 않아, 보이기 전에 그 자리를 누르면 그 칸을 누른 것이다(패널은 칸이 들어오며 바뀐다). */
+:is(.ws-title, .seg) { transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+:is(.back, .ws-title, .seg).deco-off { opacity: 0 !important; }
 @keyframes fade { from { opacity: 0; } }
 
 /* 상태 — 모양이 뜻이다. ✓ 끝(회색) · 도는 표시 그리는 중(회색) · ! 실패(레드) · 기준을 넘은 시간은 주황 ✓.
