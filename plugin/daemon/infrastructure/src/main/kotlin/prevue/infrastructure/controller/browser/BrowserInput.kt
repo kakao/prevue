@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.phrase
-import prevue.application.service.FocusCardUseCase
+import prevue.application.service.Boards
 import prevue.application.service.ResizeUseCase
 import prevue.application.service.ScrollUseCase
 import prevue.application.service.Status
@@ -20,7 +20,7 @@ import prevue.application.port.PrevueDispatchers
 @Inject
 internal class BrowserInput(
     private val core: BrowserPresenter,
-    private val focusCard: FocusCardUseCase,
+    private val boards: Boards,
     private val resizeScreen: ResizeUseCase,
     private val touchScreen: TouchUseCase,
     private val scroll: ScrollUseCase,
@@ -39,9 +39,9 @@ internal class BrowserInput(
         }
     }
 
-    fun enterFocus(index: Int) = core.post { focusCard(index, on = true, by = "viewer") }
+    fun enterFocus(index: Int) = core.post { boards.focusCard(index, on = true, by = "viewer") }
 
-    fun exitFocus() = core.post { focusCard.offCurrent(by = "viewer") }
+    fun exitFocus() = core.post { boards.unfocus(by = "viewer") }
 
     fun setSingleInteractive(on: Boolean) = core.post {
         if (!on) sizes.trySend(ScreenSize.Original)

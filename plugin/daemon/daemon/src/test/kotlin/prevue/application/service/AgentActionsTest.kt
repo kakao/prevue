@@ -32,7 +32,7 @@ class AgentActionsTest {
     private fun opened(): TestGraph = fx.graph().also {
         runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         it.workspace.awaitBoardFilled()
-        runBlocking { it.focusCard(0, on = true, by = "test") }
+        runBlocking { it.boards.focusCard(0, on = true, by = "test") }
     }
 
     private fun node(name: String, line: Int, top: Int, h: Int = 100) = ViewNode(name, "Card.kt", line, 0, top, 200, top + h)

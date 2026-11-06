@@ -25,7 +25,7 @@ class ExternalBuildUseCase(
     private val compiler: Compiler,
     private val literals: LiteralPatches,
     private val live: LiveShot,
-    private val fillBoard: FillBoardUseCase,
+    private val boards: Boards,
 ) {
     suspend operator fun invoke(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
@@ -61,7 +61,7 @@ class ExternalBuildUseCase(
         ed.update { s -> s.copy(lastResult = out, board = s.board?.advance()) }
         ed.markHiddenTabsStale()
         live.recordFocus(ed, out.shot)
-        fillBoard("gradle", out.startedAtMs)
+        boards.fill("gradle", out.startedAtMs)
         return ExternalResult.Redrawn(out)
     }
 

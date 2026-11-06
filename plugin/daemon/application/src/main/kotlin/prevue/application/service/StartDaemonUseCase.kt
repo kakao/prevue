@@ -16,7 +16,7 @@ class StartDaemonUseCase(
     private val renderer: PreviewRenderer,
     private val engine: Engine,
     private val settle: SettleUseCase,
-    private val postures: DrawPosturesUseCase,
+    private val boards: Boards,
     private val scope: CoroutineScope,
 ) {
     private val started = MutableStateFlow(false)
@@ -24,7 +24,7 @@ class StartDaemonUseCase(
     operator fun invoke() {
         if (!started.compareAndSet(expect = false, update = true)) return
         renderer.protect { ws.now.keepIds() }
-        postures.start()
+        boards.drawPostures()
         scope.launch {
             engine.shots.collect { shot ->
                 if (shot.claimed) return@collect

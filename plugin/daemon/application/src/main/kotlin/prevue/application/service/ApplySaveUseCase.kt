@@ -21,7 +21,7 @@ class ApplySaveUseCase(
     private val literals: LiteralPatches,
     private val resources: ResourcePatches,
     private val live: LiveShot,
-    private val fillBoard: FillBoardUseCase,
+    private val boards: Boards,
     private val tabs: Tabs,
 ) {
     private data class Save(
@@ -172,7 +172,7 @@ class ApplySaveUseCase(
         ed.update { it.copy(current = p) }
         live.recordFocus(ed, r.shot)
         live.seedPostures(ed, kept, keep = false)
-        fillBoard(save.by, save.since)
+        boards.fill(save.by, save.since)
         return ReloadResult.Rendered(r)
     }
 
