@@ -176,7 +176,7 @@ try {
   await evaluate(`scrollBy(0,document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect().top-${barH}+120)`); await pause(200);
   await enter0();
   const tuck = await tuckRun();
-  assert(tuck.f.length > 5 && tuck.f.every(f => f.stuck) && tuck.f.some(f => f.masked) && tuck.f.every(f => f.hide >= f.fade - .5 && f.clear >= f.head - .5) && near(tuck.f.at(-1).r, tuck.card),
+  assert(tuck.f.length > 5 && tuck.f.every(f => f.stuck) && !tuck.f[0].masked && tuck.f.some(f => f.masked) && tuck.f.every(f => f.hide >= f.fade - .5 && f.clear >= f.head - .5) && near(tuck.f.at(-1).r, tuck.card),
     `머리 밑 카드로 돌아오는 틀이 머리 밑으로 들어감 ${JSON.stringify(tuck.f.map(f => [Math.round(f.hide), Math.round(f.clear), Math.round(f.fade), Math.round(f.head)]))}`);
   console.log(`통과 ${++checked}: 머리 밑 카드로 돌아오는 틀은 묶음 머리 밑으로 들어감(${tuck.f.length}프레임)`);
   // 머리가 붙지 않았으면 틀을 가리지 않는다
