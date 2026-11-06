@@ -9,7 +9,7 @@ import { FileIcon, kindOf } from './FileIcon';
 import { QuickOpenButton } from './QuickOpen';
 
 // 뷰어 탭(D-54) — 왼쪽 레일의 열린 파일 줄(D-98). 파일 보드가 있으면 하나여도 이 줄이 파일명을 말한다(H4). 열기 · 옮기기 · 닫기는 데몬이 정하고 여기는 그리고 의도만 보낸다.
-// 지금 파일은 진한 글자와 왼쪽 2px 막대(glider)가 가리키고, 옮기면 막대가 미끄러진다.
+// 지금 파일은 글자가 아니라 그 아래 떠 있는 바탕(glider)이 가리키고, 옮기면 바탕이 미끄러진다.
 type Tab = ViewerState['tabs'][number];
 const SHARED_ONCE = 'prevue.sharedOnce';
 const NONE: Tab[] = [];
@@ -172,7 +172,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   const enter = shown.current && on && !reduced.matches && !document.hidden;
 
   /**
-   * 막대를 지금 줄 옆으로. 줄을 옮긴 때만 미끄러지고, 높이가 바뀌는 동안(열고 닫기)은 그대로 따라간다.
+   * 바탕을 지금 줄 밑으로. 줄을 옮긴 때만 미끄러지고, 높이가 바뀌는 동안(열고 닫기)은 그대로 따라간다.
    * 늘어나거나 출렁이지 않는다 — 시간 · 이징은 tokens.css 의 것을 읽는다.
    */
   const glide = useRef({ y: 0, stretch: null as Animation | null, sliding: false });
@@ -195,7 +195,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   };
   const moveRef = useRef(move);
   moveRef.current = move;
-  // 줄 높이가 움직이는 동안(열고 닫기) 막대가 따라간다. 미끄러지는 중이면 그 전환을 끊지 않고 새 자리로 다시 겨눈다.
+  // 줄 높이가 움직이는 동안(열고 닫기) 바탕이 따라간다. 미끄러지는 중이면 그 전환을 끊지 않고 새 자리로 다시 겨눈다.
   const [observer] = useState(() => new ResizeObserver(() => moveRef.current(glide.current.sliding)));
   const observe = (el: HTMLElement | null, on: boolean) => { if (el) { if (on) observer.observe(el); else observer.unobserve(el); } };
   useEffect(() => () => observer.disconnect(), [observer]);
