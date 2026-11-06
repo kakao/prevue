@@ -167,7 +167,7 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
   // 판에 드는 줄까지만 보인다(layoutGroups 의 --lines) — 실패 문장은 400자까지라 작은 판을 넘친다.
   const failure = !ok && c.failure ? daemonText(c.failure) : null;
   return <article data-i={c.index} data-fn={fn}
-    // 이름(name=)이 없으면 첫 줄은 버튼만 선다 — 함수 이름은 묶음 머리가 갖는다(D-62). 이름표는 늘 두 줄이라 그림 윗선이 맞는다.
+    // 이름(name=)이 없으면 ▶가 크기 칸 줄로 내려온다 — 함수 이름은 묶음 머리가 갖는다(D-62). 이름 있는 장과 섞인 묶음은 빈 첫 줄을 지켜 그림 윗선이 맞는다.
     className={['card', c.isFocus && 'focus', c.stale && 'stale', !c.label && 'noname', cursor && 'cursor', returned && 'returned'].filter(Boolean).join(' ')}>
     {/* 이름표가 그림 위에 온다(D-151) — 큰 카드의 윗부분만 보여도 어느 변형인지 읽히고 ▶ 를 누를 수 있다. */}
     <div className="label">
@@ -187,7 +187,9 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
 export function PreviewGroup({ group, marks = NO_MARKS, actions }: { group: Group; marks?: BoardMarks; actions?: BoardActions }) {
   const { phrase } = useMessages();
   // 배율(.sc)은 잰 뒤에만 정해져 layoutGroups 가 쓴다 — React 는 자리만 만든다.
-  return <section className="group" data-fn={group.name}>
+  // 이름 있는 장이 하나도 없으면 맞출 상대가 없어 이름표가 한 줄이다.
+  const nameless = group.cards.every(c => !c.label);
+  return <section className={nameless ? 'group nameless' : 'group'} data-fn={group.name}>
     <div className="ghead"><span className="gn" title={group.name}>{group.name}</span><span className="m">
       <span className="n">{phrase('board.count', { n: group.cards.length })}</span><span className="sc" hidden />
       <span className="bad">{group.failed ? `· ${phrase('board.failed', { n: group.failed })}` : ''}</span>

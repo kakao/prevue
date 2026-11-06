@@ -2633,9 +2633,9 @@ var Kr = (0, L.memo)(function({ card: e, fn: t, cursor: n = !1, returned: r = !1
 	});
 });
 function qr({ group: e, marks: t = Or, actions: n }) {
-	let { phrase: r } = s();
+	let { phrase: r } = s(), i = e.cards.every((e) => !e.label);
 	return /* @__PURE__ */ (0, R.jsxs)("section", {
-		className: "group",
+		className: i ? "group nameless" : "group",
 		"data-fn": e.name,
 		children: [/* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "ghead",
