@@ -3189,22 +3189,40 @@ function di() {
 										/* @__PURE__ */ (0, R.jsx)("stop", { offset: "1" })
 									]
 								}) }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "outl" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "houtl" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "rim" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "rimhi" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "body" }),
-								/* @__PURE__ */ (0, R.jsx)("path", {
-									className: "sheen",
-									stroke: "url(#duoSheen)"
-								}),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "hinge" }),
-								/* @__PURE__ */ (0, R.jsx)("path", {
-									className: "hsheen",
-									stroke: "url(#duoSheen)"
-								}),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "ring" }),
-								/* @__PURE__ */ (0, R.jsx)("path", { className: "ring hr" })
+								/* @__PURE__ */ (0, R.jsx)("path", { className: "thick" }),
+								/* @__PURE__ */ (0, R.jsxs)("g", {
+									className: "draw",
+									children: [
+										/* @__PURE__ */ (0, R.jsxs)("g", {
+											className: "band",
+											children: [
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bl" }),
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bc" }),
+												/* @__PURE__ */ (0, R.jsx)("path", { className: "bd" })
+											]
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "outl" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "houtl" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "rim" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "rimhi" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "body" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "glow" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "inner" }),
+										/* @__PURE__ */ (0, R.jsx)("path", {
+											className: "sheen",
+											stroke: "url(#duoSheen)"
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "hinge" }),
+										/* @__PURE__ */ (0, R.jsx)("path", {
+											className: "hsheen",
+											stroke: "url(#duoSheen)"
+										}),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "ring" }),
+										/* @__PURE__ */ (0, R.jsx)("path", { className: "ring hr" })
+									]
+								})
 							]
 						}),
 						/* @__PURE__ */ (0, R.jsxs)("div", {
@@ -3224,6 +3242,7 @@ function di() {
 							/* @__PURE__ */ (0, R.jsxs)("div", {
 								className: "base",
 								children: [
+									/* @__PURE__ */ (0, R.jsx)("div", { className: "edge bez" }),
 									/* @__PURE__ */ (0, R.jsxs)("div", {
 										className: "clip",
 										children: [
@@ -3240,49 +3259,64 @@ function di() {
 											/* @__PURE__ */ (0, R.jsx)("div", { className: "cam" })
 										]
 									}),
-									/* @__PURE__ */ (0, R.jsx)("div", { className: "edge bez" }),
 									/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
 								]
 							}),
+							/* @__PURE__ */ (0, R.jsx)("div", { className: "spine" }),
 							/* @__PURE__ */ (0, R.jsxs)("div", {
 								className: "leaf",
 								children: [
 									/* @__PURE__ */ (0, R.jsxs)("div", {
-										className: "clip face inner",
+										className: "lay l-in",
 										children: [
-											/* @__PURE__ */ (0, R.jsx)("img", {
-												className: "ly old",
-												alt: ""
+											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge bez" }),
+											/* @__PURE__ */ (0, R.jsxs)("div", {
+												className: "clip face inner",
+												children: [
+													/* @__PURE__ */ (0, R.jsx)("img", {
+														className: "ly old",
+														alt: ""
+													}),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "veil" }),
+													/* @__PURE__ */ (0, R.jsx)("img", {
+														className: "ly neu",
+														alt: ""
+													}),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "shade" }),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "sheen" }),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "cam" })
+												]
 											}),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "veil" }),
-											/* @__PURE__ */ (0, R.jsx)("img", {
-												className: "ly neu",
-												alt: ""
-											}),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "shade" }),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "sheen" }),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "cam" })
+											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
 										]
 									}),
 									/* @__PURE__ */ (0, R.jsxs)("div", {
-										className: "clip face outer",
+										className: "lay l-out",
 										children: [
-											/* @__PURE__ */ (0, R.jsx)("img", {
-												className: "ly old",
-												alt: ""
+											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge bez" }),
+											/* @__PURE__ */ (0, R.jsxs)("div", {
+												className: "clip face outer",
+												children: [
+													/* @__PURE__ */ (0, R.jsx)("img", {
+														className: "ly old",
+														alt: ""
+													}),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "veil" }),
+													/* @__PURE__ */ (0, R.jsx)("img", {
+														className: "ly neu",
+														alt: ""
+													}),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "shade" }),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "sheen" }),
+													/* @__PURE__ */ (0, R.jsx)("div", { className: "cam" })
+												]
 											}),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "veil" }),
-											/* @__PURE__ */ (0, R.jsx)("img", {
-												className: "ly neu",
-												alt: ""
-											}),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "shade" }),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "sheen" }),
-											/* @__PURE__ */ (0, R.jsx)("div", { className: "cam" })
+											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
 										]
 									}),
-									/* @__PURE__ */ (0, R.jsx)("div", { className: "edge bez" }),
-									/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
+									/* @__PURE__ */ (0, R.jsx)("div", { className: "side s-far" }),
+									/* @__PURE__ */ (0, R.jsx)("div", { className: "side s-a" }),
+									/* @__PURE__ */ (0, R.jsx)("div", { className: "side s-b" })
 								]
 							}),
 							/* @__PURE__ */ (0, R.jsx)("div", { className: "crease" }),

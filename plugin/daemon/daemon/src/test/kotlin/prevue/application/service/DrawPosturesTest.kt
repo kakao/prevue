@@ -2,6 +2,7 @@ package prevue.application.service
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -147,7 +148,7 @@ class DrawPosturesTest {
         fx.renderer.asideGate = gate
         uc.pick(fold8)
         assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "옆 태스크가 시작하지 않았다")
-        val resized = fx.scope.async { uc.live.resize(ScreenSize.Original, "viewer") }
+        val resized = fx.scope.async(start = CoroutineStart.UNDISPATCHED) { uc.live.resize(ScreenSize.Original, "viewer") }
         gate.countDown()
         fx.renderer.asideGate = null
         runBlocking { resized.await() }

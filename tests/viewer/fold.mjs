@@ -12,13 +12,15 @@ const markup = (await readFile(join(root, 'plugin/viewer/index.html'), 'utf8')).
 const harness = `<script type="module">
 import { createResizeScene } from '/js/resize-scene.js';
 document.querySelector('#focusView').hidden=false;
-document.querySelector('#focusView').style.cssText='position:absolute;inset:0';
+document.querySelector('#focusView').style.cssText='position:fixed;inset:0';
 document.querySelector('#focusView .wrap').style.cssText='position:absolute;inset:0';
+// 장면을 창 크기로 채운다 — 작은 장면에서는 원근 · 깊이 어긋남이 픽셀 아래로 묻힌다
+for(let e=document.querySelector('#resizeScene');e!==document.querySelector('#focusView .wrap');e=e.parentElement)e.style.cssText+=';position:absolute;inset:0;width:auto;height:auto';
 window.scene=createResizeScene(document.querySelector('#resizeScene'), {request(){},layout(){}});
 const url='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="white"/></svg>');
 window.spec=(w,h)=>({url,dpW:w,dpH:h,edge:'rgb(255,255,255)'});
 scene.setOriginal(360,740,spec(360,740));
-scene.enable(true);
+scene.enable(true);scene.relayout();
 window.ready=true;
 </script>`;
 const server = createServer(async (request, response) => {
@@ -89,8 +91,12 @@ try {
           const frames=await evaluate(`new Promise(resolve=>{
             const leaf=document.querySelector('#rig .leaf'),base=document.querySelector('#rig .base');
             const probe=(parent,x,y)=>{const el=document.createElement('i');el.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';parent.append(el);return el};
-            // 원근 변환을 거친 접는 축의 같은 끝점이 화면에서도 이어져야 한다.
-            const a=probe(leaf,100,100),b=probe(base,${rotated?100:0},${rotated?0:100});
+            // 원근 변환을 거친 접는 축의 같은 끝점이 화면에서도 이어져야 한다. 잎은 두께의 가운데(transform-origin 의 z)를 축으로 도니,
+            // 잎 쪽은 그 깊이의 경첩 끝점, 바닥 쪽은 같은 깊이에 둔 바닥 장의 경첩 끝점(.lift 좌표)을 잰다 — 두 장의 높이가 어긋나면 벌어진다.
+            // 바닥 장은 내려간 만큼 원근 중심에서 키운다 — 그 실제 모서리(c)가 z=0 에 둔 같은 점(e)과 화면에서 겹쳐야 바닥 판과 틈이 없다.
+            const lift=document.querySelector('#rig .lift'),a=probe(leaf,100,100),b=probe(lift,0,0),c=probe(base,${rotated?100:0},${rotated?0:100}),e=probe(lift,0,0);
+            const axis=()=>{const z=parseFloat(leaf.style.transformOrigin.split(' ')[2])||0,s=base.style,x=parseFloat(s.left)+(${rotated}?parseFloat(s.width):0),y=parseFloat(s.top)+(${rotated}?0:parseFloat(s.height));
+              a.style.transform=b.style.transform='translateZ('+z+'px)';b.style.left=e.style.left=x+'px';b.style.top=e.style.top=y+'px';};
             const frames=[];const tick=()=>{
               if(${device==='ipduo'} && !document.querySelector('#duo').hidden){
                 const path=document.querySelector('#duo .duo-flap').style.clipPath;
@@ -102,13 +108,13 @@ try {
                   frames.push({error:Math.hypot(root.x+x-bx,root.y+y-by),path,base:{x:base.x,y:base.y,w:base.width,h:base.height}});
                 }
               } else if(!${device==='ipduo'} && !document.querySelector('#rig').hidden){
-                const A=a.getBoundingClientRect(),B=b.getBoundingClientRect();
-                const L=leaf.getBoundingClientRect(),R=base.getBoundingClientRect();
+                axis();const A=a.getBoundingClientRect(),B=b.getBoundingClientRect(),C=c.getBoundingClientRect(),E=e.getBoundingClientRect();
+                const L=leaf.querySelector('.l-out').getBoundingClientRect(),R=base.getBoundingClientRect();
                 const over=${rotated}?Math.max(0,R.bottom-L.bottom,L.top-R.top):Math.max(0,R.right-L.right,L.left-R.left);
                 const th=Math.abs(Number(leaf.style.transform.match(/-?[\\d.]+/)?.[0]));
-                frames.push({error:Math.hypot(A.x-B.x,A.y-B.y),over,th,leaf:leaf.style.cssText,base:base.style.cssText});
+                frames.push({error:Math.hypot(A.x-B.x,A.y-B.y),sink:Math.hypot(C.x-E.x,C.y-E.y),over,th,leaf:leaf.style.cssText,base:base.style.cssText});
               }
-              if(scene.moving())requestAnimationFrame(tick);else{a.remove();b.remove();resolve(frames)}
+              if(scene.moving())requestAnimationFrame(tick);else{a.remove();b.remove();c.remove();e.remove();resolve(frames)}
             };
             scene.update(${JSON.stringify({sel,...dimensions})});
             setTimeout(()=>scene.image(${JSON.stringify(sel)},spec(${dimensions.w},${dimensions.h})),300);
@@ -117,6 +123,8 @@ try {
           assert(frames.length>=10, '접기 애니메이션 프레임 수');
           const worst=frames.reduce((a,b)=>a.error>b.error?a:b);
           assert(worst.error<=.1, `${device} ${rotated?'가로':'세로'} ${cached?'캐시':'대기'} ${sel}: 하단 이음매 ${JSON.stringify(worst)}`);
+          const sunk=Math.max(0,...frames.map(f=>f.sink||0));
+          assert(sunk<=.1, `${device} ${rotated?'가로':'세로'} ${sel}: 내려간 바닥 장의 모서리가 제자리에서 ${sunk.toFixed(2)}px`);
           // 다 접힌 마지막 프레임에서 바닥 반쪽이 접힌 장(커버) 밖으로 비어져 나오면 멈추는 순간 단차가 튄다
           if(sel===cover&&device!=='ipduo'){const shut=frames.filter(f=>f.th>=179);assert(shut.length, `${device} ${sel}: 다 접힌 프레임이 없다`);
             const over=Math.max(...shut.map(f=>f.over));assert(over<=.5, `${device} ${rotated?'가로':'세로'} ${sel}: 다 접힌 순간 바닥이 커버 밖으로 ${over.toFixed(2)}px`);}
