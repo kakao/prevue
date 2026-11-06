@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
@@ -20,6 +20,7 @@ const NO_ACTIONS: PointActions = { openFile() {}, choose() {}, cancel() {}, foll
 
 const CLOSE = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>;
 const JUMP = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="M2.5 11.5L6 8l2.5 2.5 2-2 3 3" /><circle cx="10.5" cy="6" r="0.75" fill="currentColor" stroke="none" /></svg>;
+const CARET = <svg className="pc-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" /></svg>;
 const TAB = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9.5" rx="2" /><path d="M2 6.5h5.5V3.5" /></svg>;
 
 /** 멘션(`@절대경로#L라인`)이나 미리 보인 `파일명:라인`에서 꼬리표 글자를. */
@@ -76,7 +77,7 @@ export function dpSize([w, h]: readonly [number, number]) {
   return `${dp(w)} × ${dp(h)} dp`;
 }
 
-function TreeRow({ row, actions }: { row: CardRow; actions: CardActions }) {
+function TreeRow({ row, actions, children }: { row: CardRow; actions: CardActions; children?: ReactNode }) {
   const { phrase } = useMessages();
   const [open, setOpen] = useState(false);
   const previews = row.previews || [], many = previews.length > 1;
@@ -86,13 +87,27 @@ function TreeRow({ row, actions }: { row: CardRow; actions: CardActions }) {
       <button type="button" className="pc-pick" aria-current={row.at === 'here' ? 'true' : undefined} onClick={() => actions.pick(row)}>{row.name}</button>
       {label && <button type="button" className="pc-jump" title={label} aria-label={label} aria-expanded={many ? open : undefined}
         onClick={() => { if (many) setOpen(!open); else actions.jump(previews[0]); }}>
-        {many && <span>{previews.length}</span>}{JUMP}
+        {many && <span>{previews.length}</span>}{JUMP}{many && CARET}
       </button>}
     </div>
-    {many && open && <ul className="pc-previews">{previews.map(p => <li key={p.id}>
+    {many && <div className="pc-fold" data-open={open || undefined} inert={!open}><ul className="pc-previews">{previews.map(p => <li key={p.id}>
       <button type="button" className="pc-preview" title={p.name} onClick={() => actions.jump(p)}><span>{p.name}</span>{JUMP}</button>
-    </li>)}</ul>}
+    </li>)}</ul></div>}
+    {children}
   </li>;
+}
+
+/** 가리킨 줄 바로 위 몇 칸만 파일 트리처럼 들여 쓴다 — 깊이 22를 다 들이면 카드 폭을 먹는다. 그 위의 조상은 왼쪽에 나란히 선다. */
+const NESTED_UPS = 2;
+function TreeRows({ rows, actions }: { rows: CardRow[]; actions: CardActions }) {
+  const here = rows.findIndex(r => r.at === 'here'), cut = Math.max(0, here - NESTED_UPS);
+  const line = rows.slice(cut, here + 1), downs = rows.slice(here + 1);
+  const leaves = downs.length ? <ul className="pc-group">{downs.map(r => <TreeRow key={r.id} row={r} actions={actions} />)}</ul> : null;
+  const nested = line.reduceRight<ReactNode>((inner, r, i) => {
+    const row = <TreeRow key={r.id} row={r} actions={actions}>{inner}</TreeRow>;
+    return i ? <ul className="pc-group">{row}</ul> : row;
+  }, leaves);
+  return <>{rows.slice(0, cut).map(r => <TreeRow key={r.id} row={r} actions={actions} />)}{nested}</>;
 }
 
 /** 머리 둘째 줄 오른쪽의 복사 결과. */
@@ -111,8 +126,10 @@ export function PointCard({ node, size, say, rows, state, actions = NO_CARD_ACTI
   const { phrase } = useMessages();
   const tree = useRef<HTMLUListElement>(null);
   useLayoutEffect(() => {
-    const here = tree.current?.querySelector<HTMLElement>('.pc-node.here');
-    if (here) tree.current!.scrollTop = here.offsetTop - (tree.current!.clientHeight - here.offsetHeight) / 2;
+    const box = tree.current, here = box?.querySelector<HTMLElement>('.pc-node.here > .pc-row');
+    if (!box || !here) return;
+    const b = box.getBoundingClientRect(), r = here.getBoundingClientRect();
+    box.scrollTop += r.top - b.top - (box.clientHeight - r.height) / 2;
   }, [rows]);
   const label = tabLabel(say.file, state, phrase);
   return <section className="point-card" aria-label={phrase('point.card.label')}>
@@ -128,7 +145,7 @@ export function PointCard({ node, size, say, rows, state, actions = NO_CARD_ACTI
         <CardStatus say={say} />
       </div> : <p className="pc-msg">{say.msg}</p>}
     </header>
-    {rows && <ul className="pc-tree" ref={tree} aria-label={phrase('point.card.tree')}>{rows.map(row => <TreeRow key={row.id} row={row} actions={actions} />)}</ul>}
+    {rows && <ul className="pc-tree" ref={tree} aria-label={phrase('point.card.tree')}><TreeRows rows={rows} actions={actions} /></ul>}
   </section>;
 }
 
