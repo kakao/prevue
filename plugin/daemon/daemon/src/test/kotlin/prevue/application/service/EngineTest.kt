@@ -12,11 +12,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
@@ -164,5 +167,28 @@ class EngineTest {
         assertTrue(waiting.await().exceptionOrNull() is CancellationException)
         assertEquals(emptyList<String>(), logs)
         assertEquals(1, fake.closes.get())
+    }
+
+    // IO 와 Default 는 워커 이름이 같아 스레드로 가리지 못한다 — 엔진이 어느 디스패처에 어떤 뷰를 청하는지로 본다(D-89).
+    @Test fun `엔진은 io 의 한 줄 뷰에서만 돌고 default 는 쓰지 않는다`() = runTest {
+        val io = LaneSpy(StandardTestDispatcher(testScheduler))
+        val default = LaneSpy(StandardTestDispatcher(testScheduler))
+        val a = Engine(fake, fake, backgroundScope, dispatchersOn(default, io = io), MonotonicClock.SYSTEM, EngineLog {})
+        a.ensure(card, interactive = false)
+        a.codeChanged()
+        assertEquals(1, fake.codeChanges)
+        assertEquals(listOf(1 to "prevue-engine"), io.lanes)
+        assertEquals(emptyList<Pair<Int, String?>>(), default.lanes)
+        assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
+    }
+
+    private class LaneSpy(private val inner: CoroutineDispatcher) : CoroutineDispatcher() {
+        val lanes = mutableListOf<Pair<Int, String?>>()
+        var dispatched = 0
+        override fun dispatch(context: CoroutineContext, block: Runnable) { dispatched++; inner.dispatch(context, block) }
+        override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
+            lanes += parallelism to name
+            return inner.limitedParallelism(parallelism, name)
+        }
     }
 }
