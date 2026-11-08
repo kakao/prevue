@@ -398,13 +398,13 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     @Suppress("LongParameterList")
     internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
-        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.QuietFill.QUIET_MS,
+        resources: ResourceValues? = null, watchRoots: Boolean = true, quietMs: Long = prevue.application.service.QuietFill.QUIET_MS,
         hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
     ): TestGraph {
         val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
             ProjectFiles(root, graph.roots, realDispatchers, scope), realDispatchers, resources = resources, sources = sources, builds = builds)
-        return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)
+        return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, quietMs)
     }
 
     /** 입구 한 벌을 띄울 그래프. 감시 포트는 주지 않는다 — 저장은 테스트가 유스케이스를 직접 부른다. */

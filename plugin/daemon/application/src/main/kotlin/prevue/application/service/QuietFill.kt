@@ -49,49 +49,45 @@ class QuietFill(
         data object Done : Step
         data object Later : Step
         class Posture(val round: Long, val d: ScreenSize, val out: RenderOutput, val t: Long) : Step
+        class PostureFailed(val e: Exception) : Step
         class Card(val next: Int) : Step
     }
 
     private suspend fun fill(round: Round) {
         var from = 0
-        var postures = round.postures != null
+        var posturesFailed = false
         while (true) {
             val wait = quietMs - quietFor()
             if (wait > 0) { delay(wait); continue }
-            val s = try { step(round, from, postures) } catch (e: Exception) {
-                if (e is CancellationException || !postures) throw e
-                System.err.println("[prevue] 자세별 그림을 그리지 못했다: $e")
-                postures = false
-                continue
-            }
-            when (s) {
+            when (val s = step(round, from, posturesFailed)) {
                 Step.Done -> return
                 Step.Later -> delay(quietMs)
                 is Step.Posture -> ws.recordPosture(s.round, s.d, postureShot(s))
-                is Step.Card -> { postures = false; from = s.next }
+                is Step.PostureFailed -> {
+                    System.err.println("[prevue] 자세별 그림을 그리지 못했다: ${s.e}")
+                    posturesFailed = true
+                }
+                is Step.Card -> from = s.next
             }
         }
     }
 
-    private suspend fun step(round: Round, from: Int, postures: Boolean): Step = ws.exclusive { ed ->
+    private suspend fun step(round: Round, from: Int, posturesFailed: Boolean): Step = ws.exclusive { ed ->
         if (roundOf(ws.now) != round) return@exclusive Step.Done
         if (ws.reloadPending || quietFor() < quietMs) return@exclusive Step.Later
-        if (postures) postureStep()?.let { return@exclusive it }
-        val b = ws.now.board!!
-        val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
-            ?: return@exclusive Step.Done
-        val t = System.nanoTime()
-        boards.startCard(ed, b, idx, force = false, QUIET_BY)
-        println("[prevue] 조작 중 카드 $idx 옆 그림 ${(System.nanoTime() - t) / 1_000_000}ms gen=${b.gen}")
-        Step.Card(idx + 1)
+        if (!posturesFailed) postureStep()?.let { return@exclusive it }
+        boards.startNextAside(ed, from, QUIET_BY)?.let { Step.Card(it + 1) } ?: Step.Done
     }
 
-    private suspend fun postureStep(): Step.Posture? {
+    private suspend fun postureStep(): Step? {
         val ps = ws.now.livePostures() ?: return null
         val (_, shown) = ws.now.shownTarget() ?: return null
         val d = ps.next(shown) ?: return null
         val t = System.nanoTime()
-        val out = engine.showAside(ps.specOf(d))
+        val out = try { engine.showAside(ps.specOf(d)) } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            return Step.PostureFailed(e)
+        }
         val failed = if (out.ok) "" else " 실패: ${out.message?.text}"
         println("[prevue] 자세 ${d.key} 미리 그림 ${(System.nanoTime() - t) / 1_000_000}ms ${out.width}x${out.height}$failed")
         return Step.Posture(ps.round, d, out, t)

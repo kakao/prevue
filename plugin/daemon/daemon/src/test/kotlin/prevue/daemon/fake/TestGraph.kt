@@ -102,7 +102,7 @@ internal interface TestGraph {
             @Provides hooks: EntryHooks,
             @Provides checkout: PrevueCheckout,
             @Provides target: TargetRepo,
-            @Provides @Named(QuietFill.QUIET) postureQuietMs: Long,
+            @Provides @Named(QuietFill.QUIET) quietMs: Long,
         ): TestGraph
     }
 }
@@ -139,9 +139,9 @@ internal class TestPorts(
 @Suppress("LongParameterList")
 internal fun testGraph(
     ports: TestPorts, workspace: Workspace, scope: CoroutineScope, checkout: PrevueCheckout, target: TargetRepo,
-    hooks: EntryHooks = EntryHooks(0), postureQuietMs: Long = QuietFill.QUIET_MS,
+    hooks: EntryHooks = EntryHooks(0), quietMs: Long = QuietFill.QUIET_MS,
 ): TestGraph =
-    createGraphFactory<TestGraph.Factory>().create(ports, workspace, scope, hooks, checkout, target, postureQuietMs).also { it.startDaemon() }
+    createGraphFactory<TestGraph.Factory>().create(ports, workspace, scope, hooks, checkout, target, quietMs).also { it.startDaemon() }
 
 internal val TestGraph.screen: StateFlow<LiveFrame?> get() = live.screen
 internal val TestGraph.frames: StateFlow<LiveLoop.Report> get() = live.frames

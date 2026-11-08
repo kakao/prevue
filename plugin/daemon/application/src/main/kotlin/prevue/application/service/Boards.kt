@@ -75,7 +75,17 @@ class Boards(
         return CardResult.Pending(index)
     }
 
-    internal suspend fun startCard(ed: WorkspaceEditor, b: Board, index: Int, force: Boolean, by: String): Deferred<CardResult> {
+    internal suspend fun startNextAside(ed: WorkspaceEditor, from: Int, by: String): Int? {
+        val b = ws.now.board ?: return null
+        val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
+            ?: return null
+        val t = System.nanoTime()
+        startCard(ed, b, idx, force = false, by)
+        println("[prevue] 조작 중 카드 $idx 옆 그림 ${(System.nanoTime() - t) / 1_000_000}ms gen=${b.gen}")
+        return idx
+    }
+
+    private suspend fun startCard(ed: WorkspaceEditor, b: Board, index: Int, force: Boolean, by: String): Deferred<CardResult> {
         val c = b.cards[index]
         val gen = b.gen
         return when (val d = CardPolicy.decide(c.fresh(gen), c.writing(gen) != null, index == b.focus, force, ws.now.interactive, ws.reloadPending)) {
