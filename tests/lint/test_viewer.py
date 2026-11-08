@@ -21,6 +21,42 @@ def js(text):
     return [rule for _, rule, _ in viewer.js_findings(text)]
 
 
+class NodeDeps(unittest.TestCase):
+    NODE = staticmethod(lambda _: "/bin/node")
+
+    def problem(self, files, which=NODE):
+        with tempfile.TemporaryDirectory() as root:
+            for path, text in files.items():
+                full = os.path.join(root, path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w") as f:
+                    f.write(text)
+            return viewer.node_deps_problem(root, which=which)
+
+    PACKAGE = {viewer.TYPESCRIPT: '{"main": "./lib/typescript.js"}', "viewer-src/node_modules/typescript/lib/typescript.js": ""}
+
+    def test_typescript_가_없으면_npm_ci_를_안내한다(self):
+        self.assertIn("npm ci --prefix viewer-src", self.problem({}))
+
+    def test_받다_멈춰_진입_파일이_없으면_없는_것이다(self):
+        self.assertIsNotNone(self.problem({viewer.TYPESCRIPT: '{"main": "./lib/typescript.js"}'}))
+        self.assertIsNotNone(self.problem({viewer.TYPESCRIPT: '{"main": "./lib/'}))
+
+    def test_node_가_없으면_그것을_말한다(self):
+        self.assertIn("node 가 PATH 에 없다", self.problem(self.PACKAGE, which=lambda _: None))
+
+    def test_둘_다_있으면_문제가_없다(self):
+        self.assertIsNone(self.problem(self.PACKAGE))
+
+    def test_이_저장소의_의존을_판정한다(self):
+        self.assertIsNone(viewer.node_deps_problem())
+
+    def test_JSX_검사는_node_를_띄우기_전에_그_판정으로_멈춘다(self):
+        with self.assertRaises(RuntimeError) as caught:
+            viewer.jsx_findings({"a.tsx": "const C = () => <div />;"}, deps_problem=lambda: "의존 없음")
+        self.assertEqual(str(caught.exception), "의존 없음")
+
+
 class ReactStyles(unittest.TestCase):
     def test_jsx_style의_날값을_모두_잡는다(self):
         cases = {
