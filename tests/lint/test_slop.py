@@ -88,7 +88,8 @@ class Slop(unittest.TestCase):
                     "class A @Inject internal constructor(\n    b: B,\n    n: Int = 1,\n)",
                     "@Inject class A<T : Any>(val m: Map<String, Int> = emptyMap())",
                     "object G {\n    @Provides @SingleIn(AppScope::class)\n    fun f(b: B,\n        n: Int = 1): C = C(b, n)\n}",
-                    "@Inject\nclass A(@Suppress(\"x\") val n: Int = 1)"):
+                    "@Inject\nclass A(@Suppress(\"x\") val n: Int = 1)",
+                    "@Inject\nclass A(@param:Suppress(\"x\") val n: Int = 1)"):
             self.assertEqual(rules(bad), ["slop/inject-default"], bad)
         self.assertEqual(slop.check("@Inject\nclass A(\n    private val b: B,\n    private val quietMs: Long = 300,\n)", ADAPTER)[0][0], 4)
 
@@ -96,6 +97,7 @@ class Slop(unittest.TestCase):
         for ok in ("@SingleIn(AppScope::class)\n@Inject\nclass Live(\n    private val ws: Workspace,\n    @Named(QUIET) private val quietMs: Long = QUIET_MS,\n)",
                    "class Boards @Inject constructor(\n    @Named(Live.QUIET) private val quietMs: Long = Live.QUIET_MS,\n)",
                    "@Inject\nclass A(@ValueFiles val files: List<File> = emptyList())",
+                   "@Inject\nclass A(@param:Named(Q) val n: Int = 1)",
                    "@Inject\nclass A(val f: (Int) -> Boolean, val g: B)",
                    "class A(val n: Int = 1)\n@Inject\nclass B(val a: A)",
                    "class A @Inject constructor(val b: B) {\n    fun f(n: Int = 1) = n\n}",

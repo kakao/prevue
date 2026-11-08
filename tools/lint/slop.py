@@ -251,7 +251,8 @@ def _top_level_params(code, start):
     return out
 
 
-def _has_default(param):
+def _default_at(param):
+    """깊이 0 의 기본값 `=` 자리 — 없으면 -1."""
     depth = 0
     for k, c in enumerate(param):
         if c in "([{<":
@@ -259,17 +260,18 @@ def _has_default(param):
         elif c in ")]}>" and not (c == ">" and param[k - 1:k] == "-"):
             depth -= 1
         elif c == "=" and depth == 0 and param[k + 1:k + 2] != "=" and param[k - 1:k] not in ("!", "<", ">", "="):
-            return True
-    return False
+            return k
+    return -1
 
 
 def inject_default(code, text, path):
     found = []
     for start in _injected_param_lists(code):
         for at, param in _top_level_params(code, start):
-            if not param.strip() or not _has_default(param):
+            eq = _default_at(param)
+            if eq < 0:
                 continue
-            head = param.split(":", 1)[0]
+            head = param[:eq]
             names = {a.split(".")[-1] for a in re.findall(r"@(?:\w+:)?([\w.]+)", head)}
             if names - _NOT_QUALIFIERS:
                 continue
