@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test
 
 /**
  * 공유 상태는 액터나 `StateFlow` 스냅숏으로 두고, 스레드 장치는 JVM · 라이브러리 경계에만 둔다(D-89).
- * `src/main` 전체를 세므로 새 파일 · 새 패키지도 따로 적지 않아도 검사에 든다. 남기는 것은 허용 목록이 파일 · 장치 · 개수 · 이유로 갖고,
+ * `src/main` 과 컴파일러 브리지(`src/bridge`) 전체를 세므로 새 파일 · 새 패키지도 따로 적지 않아도 검사에 든다. 남기는 것은 허용 목록이 파일 · 장치 · 개수 · 이유로 갖고,
  * 개수가 늘거나 줄어도 깨진다 — 장치를 걷었으면 목록에서도 지운다. 이 검사는 철자를 센다(주석과 별칭 없는 import 줄은 뺀다).
  */
 class ThreadDeviceRuleTest {
     private class Allowed(val path: String, val device: String, val count: Int, val reason: String)
 
     private companion object {
-        val roots = Sources.kotlinRoots + Sources.javaRoots
+        val roots = Sources.kotlinRoots + Sources.javaRoots + File("src/bridge/kotlin")
         const val RENDER = "prevue/infrastructure/render"
         const val CLASS_LIFETIME = "JVM 클래스 수명 — 캐시를 클래스에 매단다. 클래스를 키로 쥐는 맵은 버린 로더를 붙잡는다"
         const val RENDERER_API = "렌더러 API — layoutlib 이 렌더 스레드의 ThreadLocal 과 Future 로 세션을 정리한다"
@@ -44,6 +44,14 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/application/service/BoardAsideFillTest.kt", SLEEP, 1, "부정 확인 — 잠잠함을 기다리는 옆 채우기는 끝을 알리지 않는다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", SLEEP, 5, "$WALL_CLOCK — 정착 간격 · 휠 칸 간격 · 전환 도중의 탭 · GC · 정착 기록의 수집"),
         )
+        const val DELAY = "delay"
+        val delayAllowed = listOf(
+            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", DELAY, 3, "이 검사 — 심은 위반"),
+            Allowed("prevue/daemon/fake/Await.kt", DELAY, 2, "$WALL_CLOCK — 기다림 도우미의 폴링 간격"),
+            Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
+            Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
+            Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다"),
+        )
         const val COLLECT = ".collect"
         const val VIRTUAL_CLOCK = "가상 시계 — runTest 안의 awaitItem 은 다음 방출까지 시계를 밀어 늦음을 가린다. advanceTimeBy 뒤 리스트로 본다"
         val collectAllowed = listOf(
@@ -66,9 +74,9 @@ class ThreadDeviceRuleTest {
         val allowedCounts = counted(allowed)
     }
 
-    @Test fun `src main 의 스레드 장치는 허용 목록뿐이다`() {
+    @Test fun `src main 과 브리지의 스레드 장치는 허용 목록뿐이다`() {
         val files = Sources.under(roots, "kt", "java")
-        assertTrue("prevue/daemon/Main.kt" in files && "prevue/infrastructure/render/Shim.java" in files, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
+        assertTrue(listOf("prevue/daemon/Main.kt", "prevue/infrastructure/render/Shim.java", "prevue/compiler/CompilerBridge.kt").all { it in files }, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(emptyList<String>(), ThreadDeviceRule.violations(files, allowedCounts)) {
             "허용 목록(D-89 경계)과 다르다. 지금 허용한 것:\n" + allowed.joinToString("\n") { "  ${it.path} → ${it.device} ×${it.count} — ${it.reason}" }
         }
@@ -91,6 +99,18 @@ class ThreadDeviceRuleTest {
             "테스트의 sleep 이 허용 목록과 다르다 — 기다림은 fake/Await.kt 로 한다. 지금 허용한 것:\n" +
                 sleepAllowed.joinToString("\n") { "  ${it.path} ×${it.count} — ${it.reason}" }
         }
+    }
+
+    // 철자로는 실제 시간 delay 와 runTest 의 가상 시간 delay 를 가르지 못한다 — 둘 다 세고 이유를 적는다.
+    @Test fun `테스트의 delay 는 허용 목록뿐이다`() {
+        assertEquals(counted(delayAllowed), ThreadDeviceRule.counts(testFiles(), ThreadDeviceRule.delay)) {
+            "테스트의 delay 가 허용 목록과 다르다 — 기다림은 fake/Await.kt 로 하고, 실제 시간이 필요하면 이유와 함께 적는다. 지금 허용한 것:\n" +
+                delayAllowed.joinToString("\n") { "  ${it.path} ×${it.count} — ${it.reason}" }
+        }
+        assertEquals(
+            mapOf("H.kt → delay" to 2),
+            ThreadDeviceRule.counts(mapOf("H.kt" to "delay(50)\n  // delay(1)\nx; delay (2)\nval delayMs = 3\nadvanceTimeBy(4)\n"), ThreadDeviceRule.delay),
+        )
     }
 
     // 실제 스레드의 Flow 방출은 Turbine 으로 기다린다 — 리스트에 모으고 폴링하면 순서 · 남은 방출을 단언하지 못한다.
@@ -146,6 +166,7 @@ object ThreadDeviceRule {
 
     val collect = Regex("""\.(?:collect\w*|launchIn)(?=\s*[({])""")
     val dispatchers = Regex("""\bDispatchers\b""")
+    val delay = Regex("""\bdelay(?=\s*\()""")
 
     fun counts(files: Map<String, String>, pattern: Regex = device, imports: Boolean = false): Map<String, Int> = files.flatMap { (path, text) ->
         text.lineSequence().filterNot { comment.containsMatchIn(it) || (!imports && plainImport.matches(it)) }
