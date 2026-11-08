@@ -83,7 +83,7 @@ const NO_CARD_ACTIONS: CardActions = { pick() {}, jump() {}, close() {} };
 
 /** 노드의 크기와 여백. padding 은 왼쪽 · 위 · 오른쪽 · 아래 순서이고 dp 다. */
 export type CardBox = { width: number; height: number; padding?: readonly [number, number, number, number] };
-/** modifier 체인의 한 칸 — 적힌 순서대로다. sizes 는 이 칸이 정한 축이고, 색이 있으면 color 로 견본을 그린다. */
+/** modifier 체인의 한 칸 — 적힌 순서대로다. value 는 보일 모양 그대로(문자열은 따옴표째)이고, sizes 는 이 칸이 정한 축, color 는 견본이다. */
 export type CardModifier = { name: string; value?: string; color?: string; sizes?: Array<'width' | 'height'> };
 /** 그림의 비율을 이 안에서만 따른다 — 띠나 기둥처럼 긴 노드도 상자 안에 크기 글자가 들어가게. */
 const MODEL_RATIO: readonly [number, number] = [0.8, 3.2];
@@ -164,8 +164,7 @@ function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
   return <ol className="pc-mods">{modifiers.map((m, i) => { const kind = modifierKind(m); return <li key={`${i}-${m.name}`} className={m.sizes?.length ? 'sizing' : undefined}>
     <span className="pc-kind">{kind ? phrase(`point.card.kind.${kind}`) : ''}</span>
     <span className="pc-mod-name">{m.name}</span>
-    {m.color && <i className="pc-swatch" style={{ background: m.color }} />}
-    {m.value && <span className="pc-mod-value" title={m.value}>{m.value}</span>}
+    {(m.value || m.color) && <span className="pc-mod-value" title={m.value}>{m.color && <i className="pc-swatch" style={{ background: m.color }} />}<span>{m.value}</span></span>}
   </li>; })}</ol>;
 }
 

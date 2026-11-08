@@ -38,7 +38,7 @@ const cardBox: CardBox = { width: 150, height: 174.4 };
 const cardMods: CardModifier[] = [
   { name: 'fillMaxWidth', sizes: ['width'] },
   { name: 'aspectRatio', value: '0.86', sizes: ['height'] },
-  { name: 'clickable', value: 'Taro Milk Tea' },
+  { name: 'clickable', value: '"Taro Milk Tea"' },
   { name: 'background', ...tone(0xF6F6F5) },
 ];
 const captionMods: CardModifier[] = [{ name: 'padding', value: '12, 10, 12, 12' }, { name: 'fillMaxWidth', sizes: ['width'] }];
@@ -69,7 +69,7 @@ export const States: Story = { render: () => <div className="story-sheets">{['li
     <Case name="복사됨 · Modifier"><PointCard {...base} say={say(73)} /></Case>
     <Case name="구조 탭"><PointCard {...base} say={say(73)} tab="tree" /></Case>
     <Case name="여백이 있는 노드"><PointCard {...base} node={{ ...card, name: 'Column', lineNumber: 88 }} box={{ width: 150, height: 62.4, padding: [12, 10, 12, 12] }} modifiers={captionMods} say={say(88)} /></Case>
-    <Case name="글자 노드"><PointCard {...base} node={{ ...card, name: 'Text', lineNumber: 114 }} box={{ width: 96.3, height: 19 }} modifiers={[{ name: 'wrapContent', sizes: ['width', 'height'] }, { name: 'text', value: 'Taro Milk Tea · maxLines 1' }]} say={say(114)} /></Case>
+    <Case name="글자 노드"><PointCard {...base} node={{ ...card, name: 'Text', lineNumber: 114 }} box={{ width: 96.3, height: 19 }} modifiers={[{ name: 'wrapContent', sizes: ['width', 'height'] }, { name: 'text', value: '"Taro Milk Tea"' }, { name: 'maxLines', value: '1' }]} say={say(114)} /></Case>
     <Case name="가리키는 중"><PointCard {...base} say={{ msg: null, ref: 'DrinkCard.kt:73' }} /></Case>
     <Case name="다시 복사"><PointCard {...base} say={say(73, { copied: false, again: () => {} })} /></Case>
     <Case name="막힘"><PointCard {...base} say={say(73, { copied: false })} /></Case>
