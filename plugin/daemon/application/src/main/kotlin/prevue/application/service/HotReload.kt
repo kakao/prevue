@@ -1,6 +1,8 @@
 package prevue.application.service
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.Phrase
@@ -11,6 +13,7 @@ import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.CompileResult
 import prevue.application.port.SourceChange
 
+@SingleIn(AppScope::class)
 @Inject
 class HotReload(
     private val ws: Workspace,
