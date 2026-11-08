@@ -6,7 +6,7 @@
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# 자기 검사 · JSX 날값 검사가 쓰는 node 의존은 viewer.py 가 판정한다
+# 자기 검사도 JSX 날값 검사를 돌린다 — node 의존이 없으면 unittest 꼬리 대신 원인 한 줄로 먼저 멈춘다(판정은 viewer.py 한 곳)
 python3 "$ROOT/tools/lint/viewer.py" --deps || exit 2
 
 # 규칙이 심은 위반을 잡는지부터 본다. 못 잡으면 통과가 아무것도 말하지 않는다.
