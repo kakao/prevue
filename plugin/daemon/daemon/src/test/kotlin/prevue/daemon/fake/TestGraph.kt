@@ -113,12 +113,12 @@ internal class TestPorts(
     private val compiler: Compiler,
     private val previews: PreviewRepository,
     private val sourceFiles: SourceFileRepository,
+    private val dispatchers: PrevueDispatchers,
     private val resources: ResourceValues? = null,
     private val sources: SourceWatcher? = null,
     private val builds: BuildWatcher? = null,
     private val values: SourceWatcher? = null,
     private val memory: MemoryMeter = MemoryMeter { null },
-    private val dispatchers: PrevueDispatchers = realDispatchers,
 ) {
     @Provides fun renderer(): PreviewRenderer = renderer
     @Provides fun sessions(): LiveSessionFactory = sessions
