@@ -26,9 +26,11 @@ class Workspace(
     val module: ModuleInfo,
     private val clock: Clock,
     val graph: ModuleGraph,
-    val watchRoots: List<File>,
+    watchRoots: List<File>,
     private val store: WorkspaceStore,
 ) {
+    val watchRoots: List<File> = watchRoots.map { it.canonicalFile }
+
     init { store.edit { it.copy(lastRenderMs = clock.nowMs()) } }
 
     val state: StateFlow<WorkspaceState> get() = store.state
