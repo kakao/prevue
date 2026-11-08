@@ -81,8 +81,6 @@
   "point.card.blocked": "Can't copy",
   "point.card.close": "Close",
   "point.card.copied": "✓ Copied",
-  "point.card.fact.click": "Clickable",
-  "point.card.fact.text": "Text",
   "point.card.height": "Height",
   "point.card.jump": "Go to Preview — {name}",
   "point.card.label": "Pointed composable",

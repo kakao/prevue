@@ -92,8 +92,6 @@ const NO_CARD_ACTIONS: CardActions = { pick() {}, jump() {}, close() {} };
 export type CardBox = { width: number; height: number; padding?: readonly [number, number, number, number] };
 /** modifier 체인의 한 칸 — 적힌 순서대로다. sizes 는 이 칸이 정한 축이고, 색이 있으면 color 로 견본을 그린다. */
 export type CardModifier = { name: string; value?: string; color?: string; sizes?: Array<'width' | 'height'> };
-/** 시맨틱이 말하는 것 — 누를 수 있나(click), 읽히는 글(text). */
-export type CardFact = { kind: 'click' | 'text'; label: string };
 /** 그림의 비율을 이 안에서만 따른다 — 띠나 기둥처럼 긴 노드도 상자 안에 크기 글자가 들어가게. */
 const MODEL_RATIO: readonly [number, number] = [0.8, 3.2];
 
@@ -161,11 +159,6 @@ function BoxModel({ box }: { box: CardBox }) {
   </div>;
 }
 
-/** 아이콘 하나 · 글 하나의 작은 알약 — 시맨틱이 말하는 것. 크기를 정한 modifier 는 아래 목록의 ↔ · ↕ 줄이 말한다. */
-function Chip({ glyph, label, title }: { glyph: ReactNode; label: string; title: string }) {
-  return <li className="pc-chip" title={title}>{glyph}<span>{label}</span></li>;
-}
-
 function modifierGlyph(m: CardModifier) {
   if (m.color) return <i className="pc-swatch" style={{ background: m.color }} />;
   if (m.sizes?.length === 2) return ICON.size;
@@ -187,7 +180,7 @@ type CardTab = 'modifiers' | 'tree';
  * 가리킨 결과의 카드(D-162) — 이 노드의 크기가 어디서 왔고 어떤 modifier 를 거쳤는지를 보인다.
  * modifiers · rows 가 null 이면 그 탭을 숨긴다. 탭 칸의 높이는 고정이라 옮겨도 카드가 출렁이지 않고, 트리는 가리킨 줄을 가운데에 둔다.
  */
-export function PointCard({ node, box, facts = [], modifiers, say, rows, state, tab: firstTab = 'modifiers', actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; box: CardBox; facts?: CardFact[]; modifiers: CardModifier[] | null; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; tab?: CardTab; actions?: CardActions; tabs?: PointActions }) {
+export function PointCard({ node, box, modifiers, say, rows, state, tab: firstTab = 'modifiers', actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; box: CardBox; modifiers: CardModifier[] | null; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; tab?: CardTab; actions?: CardActions; tabs?: PointActions }) {
   const { phrase } = useMessages();
   const [picked, setTab] = useState<CardTab>(firstTab);
   const shown = ([modifiers && 'modifiers', rows && 'tree'] as Array<CardTab | null>).filter((t): t is CardTab => !!t);
@@ -202,7 +195,6 @@ export function PointCard({ node, box, facts = [], modifiers, say, rows, state, 
   const label = tabLabel(say.file, state, phrase);
   const full = say.file ? `${shortPath(say.file, state?.header?.repo)}:${node.lineNumber}` : say.ref && tagText(say.ref);
   const where = full ? full.slice(full.lastIndexOf('/') + 1) : '';
-  const chips = facts.map(f => <Chip key={`${f.kind}-${f.label}`} glyph={ICON[f.kind]} label={f.label} title={phrase(`point.card.fact.${f.kind}`)} />);
   return <section className="point-card" aria-label={phrase('point.card.label')}>
     <header className="pc-title">
       <span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span>
@@ -215,7 +207,6 @@ export function PointCard({ node, box, facts = [], modifiers, say, rows, state, 
       <CardStatus say={say} />
     </div> : <p className="pc-msg">{say.msg}</p>}
     <BoxModel box={box} />
-    {chips.length > 0 && <ul className="pc-chips">{chips}</ul>}
     {tab && <div className="pc-section">
       <div className="pc-tabs" role="tablist">{shown.map(t => { const name = phrase(`point.card.tab.${t}`); return <button type="button" role="tab" key={t} title={name} aria-label={name} aria-selected={t === tab} onClick={() => setTab(t)}>{ICON[t]}<span>{t === 'modifiers' ? modifiers!.length : rows!.length}</span></button>; })}</div>
       {tab === 'modifiers' ? <div className="pc-panel" role="tabpanel"><ModifierRows modifiers={modifiers!} /></div>

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties, ReactNode } from 'react';
 import '../legacy/style.css';
-import { PointCard, PointTag, tagTitle, type CardBox, type CardFact, type CardModifier, type CardRow } from '../src/components/PointOverlay';
+import { PointCard, PointTag, tagTitle, type CardBox, type CardModifier, type CardRow } from '../src/components/PointOverlay';
 import type { PointNode, TagSay } from '../src/workspace/view';
 import { choiceExample, pearlCard, useShot } from './workspace';
 
@@ -35,7 +35,6 @@ const card: PointNode = { name: 'DrinkCard', fileName: 'DrinkCard.kt', lineNumbe
 const tone = (rgb: number) => { const value = `#${rgb.toString(16).toUpperCase().padStart(6, '0')}`; return { value, color: value }; };
 // 값은 fixtures/pearl 을 데몬에서 그려 ComposeViewAdapter 의 LayoutInfo.getModifierInfo() 로 읽은 체인이다.
 const cardBox: CardBox = { width: 150, height: 174.4 };
-const cardFacts: CardFact[] = [{ kind: 'click', label: 'onClick' }, { kind: 'text', label: 'Taro Milk Tea' }];
 const cardMods: CardModifier[] = [
   { name: 'fillMaxWidth', sizes: ['width'] },
   { name: 'aspectRatio', value: '0.86', sizes: ['height'] },
@@ -58,7 +57,7 @@ const longRows = [
   row('Image', 'down'),
 ];
 const longMods: CardModifier[] = [{ name: 'fillMaxWidth', sizes: ['width'] }, { name: 'height', value: '180.dp', sizes: ['height'] }, { name: 'clip', value: 'RoundedCornerShape(12.dp)' }, { name: 'background', ...tone(0x6750A4) }, { name: 'semantics' }, { name: 'graphicsLayer' }, { name: 'drawBehind' }, { name: 'paint' }];
-const base = { node: card, box: cardBox, facts: cardFacts, modifiers: cardMods, rows, state: elsewhere };
+const base = { node: card, box: cardBox, modifiers: cardMods, rows, state: elsewhere };
 const Case = ({ name, children }: { name: string; children: ReactNode }) => <div className="story-stack"><span className="story-meta">{name}</span>{children}</div>;
 /** 첫 Preview 줄을 펼친 모양 — 펼침은 줄이 쥔 상태라 처음 그릴 때 누른다. */
 const Expanded = () => <div ref={el => { el?.querySelector<HTMLElement>('.pc-node.up .pc-jump[aria-expanded="false"]')?.click(); }}>
@@ -69,14 +68,14 @@ export const States: Story = { render: () => <div className="story-sheets">{['li
   <div className="story-cards">
     <Case name="복사됨 · Modifier"><PointCard {...base} say={say(73)} /></Case>
     <Case name="구조 탭"><PointCard {...base} say={say(73)} tab="tree" /></Case>
-    <Case name="여백이 있는 노드"><PointCard {...base} node={{ ...card, name: 'Column', lineNumber: 88 }} box={{ width: 150, height: 62.4, padding: [12, 10, 12, 12] }} facts={[]} modifiers={captionMods} say={say(88)} /></Case>
-    <Case name="글자 노드"><PointCard {...base} node={{ ...card, name: 'Text', lineNumber: 114 }} box={{ width: 96.3, height: 19 }} facts={[{ kind: 'text', label: 'Taro Milk Tea' }]} modifiers={[{ name: 'wrapContent', sizes: ['width', 'height'] }, { name: 'text', value: 'Taro Milk Tea · maxLines 1' }]} say={say(114)} /></Case>
+    <Case name="여백이 있는 노드"><PointCard {...base} node={{ ...card, name: 'Column', lineNumber: 88 }} box={{ width: 150, height: 62.4, padding: [12, 10, 12, 12] }} modifiers={captionMods} say={say(88)} /></Case>
+    <Case name="글자 노드"><PointCard {...base} node={{ ...card, name: 'Text', lineNumber: 114 }} box={{ width: 96.3, height: 19 }} modifiers={[{ name: 'wrapContent', sizes: ['width', 'height'] }, { name: 'text', value: 'Taro Milk Tea · maxLines 1' }]} say={say(114)} /></Case>
     <Case name="가리키는 중"><PointCard {...base} say={{ msg: null, ref: 'DrinkCard.kt:73' }} /></Case>
     <Case name="다시 복사"><PointCard {...base} say={say(73, { copied: false, again: () => {} })} /></Case>
     <Case name="막힘"><PointCard {...base} say={say(73, { copied: false })} /></Case>
     <Case name="Preview 후보 펼침"><Expanded /></Case>
-    <Case name="긴 사슬"><PointCard {...base} node={{ ...card, name: 'AsyncImage', fileName: 'NewsResourceCard.kt', lineNumber: 214 }} box={{ width: 331.4, height: 180 }} facts={[]} modifiers={longMods} rows={longRows} tab="tree" say={{ msg: null, ref: '@/Users/me/pearl/core/ui/src/main/kotlin/NewsResourceCard.kt#L214', file: '/Users/me/pearl/core/ui/src/main/kotlin/NewsResourceCard.kt', copied: true }} /></Case>
-    <Case name="색인 없음"><PointCard {...base} rows={null} modifiers={null} facts={[]} say={say(73)} /></Case>
+    <Case name="긴 사슬"><PointCard {...base} node={{ ...card, name: 'AsyncImage', fileName: 'NewsResourceCard.kt', lineNumber: 214 }} box={{ width: 331.4, height: 180 }} modifiers={longMods} rows={longRows} tab="tree" say={{ msg: null, ref: '@/Users/me/pearl/core/ui/src/main/kotlin/NewsResourceCard.kt#L214', file: '/Users/me/pearl/core/ui/src/main/kotlin/NewsResourceCard.kt', copied: true }} /></Case>
+    <Case name="색인 없음"><PointCard {...base} rows={null} modifiers={null} say={say(73)} /></Case>
     <Case name="문장"><PointCard {...base} rows={null} say={{ msg: 'DrinkCard.kt:73 — not in the index, so the full path is missing' }} /></Case>
   </div>
 </section>)}</div> };
@@ -92,6 +91,6 @@ const Placed = ({ theme, frame, at, ...card }: Omit<Parameters<typeof PointCard>
 </section>;
 const chips = [row('PearlTheme', 'up'), row('PearlScreen', 'up', ['PearlEmptyPreview', 'PearlLoadingPreview', 'PearlErrorPreview']), row('LazyRow', 'here'), row('FilterChip', 'down')];
 export const OnPreview: Story = { render: () => <div className="story-sheets">
-  <Placed theme="light" node={card} box={cardBox} facts={cardFacts} modifiers={cardMods} rows={rows} frame={{ left: '6.7%', top: '36.9%', width: '41.7%', height: '22.3%' }} at={{ left: 'calc(48.4% + 8px)', top: '36.9%' }} />
+  <Placed theme="light" node={card} box={cardBox} modifiers={cardMods} rows={rows} frame={{ left: '6.7%', top: '36.9%', width: '41.7%', height: '22.3%' }} at={{ left: 'calc(48.4% + 8px)', top: '36.9%' }} />
   <Placed theme="dark" node={{ ...card, name: 'LazyRow', fileName: 'PearlScreen.kt', lineNumber: 112 }} box={{ width: 360, height: 36.4 }} modifiers={[{ name: 'fillMaxWidth', sizes: ['width'] }, { name: 'padding', value: '24, 0, 24, 0' }]} rows={chips} tab="tree" frame={{ left: '0%', top: '30.3%', width: '100%', height: '5.4%' }} at={{ left: '6.7%', top: 'calc(35.7% + 8px)' }} />
 </div> };

@@ -547,7 +547,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-small); }
 .pc-mention { display: flex; align-items: center; gap: var(--space-6); min-width: 0; min-height: var(--control-large); padding: 0 var(--space-4) 0 var(--space-8); border-radius: var(--corner-medium); background: var(--surface); }
 .pc-glyph { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: var(--space-16); height: var(--space-16); color: var(--on-surface-variant); }
-.pc-glyph svg, .pc-chip svg, .pc-tabs svg, .pc-status svg, .pc-again svg { flex: 0 0 auto; width: 14px; height: 14px; }
+.pc-glyph svg, .pc-tabs svg, .pc-status svg, .pc-again svg { flex: 0 0 auto; width: 14px; height: 14px; }
 .pc-ref { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface); font: var(--type-code-small); }
 .pc-status { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: var(--control-small); height: var(--control-small); color: var(--on-surface-variant); }
 .pc-status.ok { color: var(--success); animation: okmark var(--duration-medium2) var(--easing-standard); }
@@ -568,10 +568,6 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-gap.left, .pc-gap.right { top: 50%; transform: translateY(-50%); width: var(--space-20); text-align: center; }
 .pc-gap.left { left: 0; }
 .pc-gap.right { right: 0; }
-.pc-chips { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.pc-chip { display: inline-flex; align-items: center; gap: var(--space-4); max-width: 100%; height: var(--control-small); padding: 0 var(--space-8) 0 var(--space-6); border: 1px solid var(--outline-variant); border-radius: var(--corner-full); color: var(--on-surface); font: var(--type-code-small); }
-.pc-chip svg { color: var(--on-surface-variant); }
-.pc-chip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-section { display: grid; gap: var(--space-6); min-width: 0; }
 .pc-tabs { display: flex; gap: var(--space-2); }
 .pc-tabs button { display: inline-flex; align-items: center; gap: var(--space-4); height: var(--control-small); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; cursor: pointer;
