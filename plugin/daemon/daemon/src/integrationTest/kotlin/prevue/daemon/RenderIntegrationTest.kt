@@ -1,6 +1,6 @@
 package prevue.daemon
 
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.render.toBitmap
@@ -42,7 +42,7 @@ import prevue.application.port.Clock
 import prevue.application.port.FailureKind
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.render.ViewInfoJson
-import prevue.infrastructure.store.InMemoryWorkspace
+import prevue.infrastructure.store.InMemoryWorkspaceStore
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.domain.model.ViewNode
 import prevue.application.domain.model.ScreenSize
@@ -102,7 +102,7 @@ class RenderIntegrationTest {
         screenFile = File(appFile.parentFile, "PearlScreen.kt")
         val watched = listOf(appRoot)
         watcher = PollingSourceWatcher(watched, realDispatchers)
-        ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
+        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope),
             sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
         val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }

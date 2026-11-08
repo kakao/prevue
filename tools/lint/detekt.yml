@@ -175,7 +175,7 @@ style:
     includes: ['**/prevue/daemon/**']
     forbiddenImports:
       - { value: 'prevue.infrastructure.*', reason: '조립은 :infrastructure 를 bindings 로 안다' }
-    allowedImports: ['prevue.infrastructure.bindings.*', 'prevue.infrastructure.store.InMemoryWorkspace']
+    allowedImports: ['prevue.infrastructure.bindings.*', 'prevue.infrastructure.store.InMemoryWorkspaceStore']
 
 potential-bugs:
   active: true

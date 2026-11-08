@@ -26,8 +26,6 @@ import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.rule.PreviewExpansion
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.domain.rule.TabPolicy
-import prevue.application.port.Workspace
-import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
 class Tabs @Inject internal constructor(

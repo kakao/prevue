@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.compile.HotCompiler
@@ -25,7 +25,7 @@ import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderEngine
 import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
-import prevue.infrastructure.store.InMemoryWorkspace
+import prevue.infrastructure.store.InMemoryWorkspaceStore
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.port.Clock
@@ -68,7 +68,7 @@ class BlankRenderIntegrationTest {
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         stub = PearlFixture.stubCopy(appRoot)
         val watched = listOf(appRoot)
-        ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched)
+        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope),
             sources = PollingSourceWatcher(watched, realDispatchers)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
         ui = uc.entryPoints.also { it.startWatching() }

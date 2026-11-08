@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.condition.EnabledIf
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
@@ -41,7 +41,7 @@ import prevue.infrastructure.bindings.TargetRepo
 import prevue.daemon.fake.TestPorts
 import prevue.daemon.fake.testGraph
 import prevue.daemon.fake.realDispatchers
-import prevue.infrastructure.store.InMemoryWorkspace
+import prevue.infrastructure.store.InMemoryWorkspaceStore
 
 /**
  * 진짜 layoutlib으로 `fixtures/pearl-kmp`의 commonMain 프리뷰를 그린다(`./gradlew integrationTest`, 로컬만).
@@ -77,7 +77,7 @@ class KmpRenderIntegrationTest {
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers, resourceApk.second)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
-        ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
+        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies), InMemoryWorkspaceStore())
         sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope)
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))

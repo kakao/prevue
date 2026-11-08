@@ -9,7 +9,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.controller.browser.BrowserEndpoint
 import prevue.infrastructure.controller.browser.BrowserInput
 import prevue.infrastructure.controller.browser.BrowserPointing
