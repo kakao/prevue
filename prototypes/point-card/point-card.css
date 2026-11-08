@@ -1,93 +1,134 @@
 /* 가리키기 카드 프로토타입 — 값은 tokens.css 의 역할 이름만 쓴다. 뷰어 style.css 위에 얹어 본다.
    prototypes/ 는 날값 린트(tools/lint.sh) 밖이라 연결할 때 viewer-src 로 옮기며 검사를 받는다. */
 :root {
-  --point-card-w: 320px;      /* 가리킨 결과 카드 폭 — 상자 그림과 modifier 한 줄이 들어가는 폭 */
-  --point-stage-h: 104px;     /* 카드 크기 칸의 상자 높이 상한 — 가운데의 `너비 × 높이`와 여백 고리가 들어가는 높이 */
-  --point-tree-max-h: 152px;  /* 카드 탭 칸 높이 — 탭을 옮겨도 카드가 출렁이지 않게 고정하고 넘치면 안에서 스크롤한다 */
+  --point-card-w: 320px;   /* 가리킨 결과 카드 폭 — 이름 · 출처 칩 · 버튼 둘과 modifier 한 줄이 들어가는 폭 */
+  --point-glyph: 56px;     /* 크기 그림 칸 — 비율이 읽히는 가장 작은 정사각형 */
+  /* 그림 위 표시의 토큰 후보 — --pick 하나에서 섞는다. 연결할 때 tokens.css 의 역할로 옮기고 대비 쌍을 더한다. */
+  --pick-outline: color-mix(in srgb, var(--pick) 35%, transparent);     /* 구조 테두리 */
+  --pick-hover: color-mix(in srgb, var(--pick) 16%, transparent);       /* 손 아래 바탕 */
+  --pick-hover-line: color-mix(in srgb, var(--pick) 70%, transparent);  /* 손 아래 테두리 */
+  --pick-chosen: color-mix(in srgb, var(--pick) 30%, transparent);      /* 고른 바탕 — 그림 위에 손이 있을 때 */
+  --pick-rest: color-mix(in srgb, var(--pick) 22%, transparent);        /* 고른 바탕 — 손이 떠났을 때 */
 }
 
-/* 가리킨 결과 카드(D-162) — 떠 있는 층이라 반경과 그림자를 갖는다. 복사한 자리와 트리는 한 단 낮은 패널(--surface)에 담고, 파랑은 그림 위의 박스에만 둔다. */
-.point-card { display: grid; gap: var(--space-12); width: min(var(--point-card-w), calc(100vw - 32px)); padding: var(--space-12); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); }
-.pc-title { display: flex; align-items: center; gap: var(--space-8); min-width: 0; min-height: var(--control-small); padding-left: var(--space-4); }
-.pc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-small); }
-.pc-mention { display: flex; align-items: center; gap: var(--space-6); min-width: 0; min-height: var(--control-large); padding: 0 var(--space-4) 0 var(--space-8); border-radius: var(--corner-medium); background: var(--surface); }
-.pc-glyph { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: var(--space-16); height: var(--space-16); color: var(--on-surface-variant); }
-.pc-glyph svg, .pc-tabs svg, .pc-status svg, .pc-again svg { flex: 0 0 auto; width: 14px; height: 14px; }
-.pc-ref { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface); font: var(--type-code-small); }
-.pc-status { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: var(--control-small); height: var(--control-small); color: var(--on-surface-variant); }
-.pc-status.ok { color: var(--success); animation: okmark var(--duration-medium2) var(--easing-standard); }
+/* 가리킨 결과 카드(D-162) — 떠 있는 층이라 반경과 그림자를 갖는다. 트리와 설명은 한 단 낮은 패널(--surface)에 담고, 파랑은 그림 위의 박스와 크기 그림에만 둔다. */
+.point-card { display: block; width: min(var(--point-card-w), calc(100vw - 32px)); padding: var(--space-8); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); }
+.pc-body { display: grid; gap: var(--space-8); }
+
+/* 머리 — 두 줄(이름 + 출처 칩 / 흐린 파일:라인)과 오른쪽 버튼. 버튼은 첫 줄에 맞춘다. */
+.pc-head { display: flex; align-items: flex-start; gap: var(--space-8); min-width: 0; padding: var(--space-6) var(--space-4) var(--space-4) var(--space-8); margin-bottom: var(--space-4); }
+.pc-head > button { margin-top: calc(var(--space-2) * -1); }
+.pc-id { display: grid; flex: 1; gap: var(--space-4); min-width: 0; }
+.pc-nameline { display: flex; align-items: center; gap: var(--space-6); min-width: 0; }
+.pc-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-small); }
+/* 출처 칩 — 프로젝트 컴포저블은 정의 모듈(채움), Compose 기본은 테두리만 둔 `Compose`. */
+.pc-chip { flex: 0 0 auto; height: var(--space-20); padding: 0 var(--space-8); border-radius: var(--corner-small); font: var(--type-code-small); line-height: var(--space-20); white-space: nowrap; }
+.pc-chip.module { background: var(--primary-container); color: var(--on-surface); }
+.pc-chip.compose { box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); }
+.pc-refline { display: flex; align-items: baseline; gap: var(--space-8); min-width: 0; }
+.pc-ref { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-code-small); }
+/* 복사 막힘 — 자동 복사가 실패할 때만 파일 줄 끝에 글자 버튼 */
+.pc-rescue { flex: 0 0 auto; padding: 0; border: 0; background: none; color: var(--on-surface); font: var(--type-label-small); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.pc-rescue:hover { color: var(--primary); }
+.pc-rescue.off { color: var(--on-surface-variant); text-decoration: none; cursor: default; }
 .pc-msg { margin: 0; padding: var(--space-8); border-radius: var(--corner-medium); background: var(--surface); color: var(--on-surface-variant); font: var(--type-body-small); }
-/* 크기 — 상자의 비율이 그림을 따르고 가운데의 `너비 × 높이`가 주인공이다. */
-.pc-stage { display: flex; align-items: center; justify-content: center; height: calc(var(--point-stage-h) + var(--space-16)); padding: var(--space-8); border-radius: var(--corner-medium); background: var(--surface); }
-/* 비율(--ratio)을 지키며 칸에 맞춘다 — 높이가 먼저 차고, 넓은 상자는 폭 100% 에서 멈춘다. */
-.pc-model { position: relative; display: flex; width: min(100%, calc(var(--point-stage-h) * var(--ratio))); aspect-ratio: var(--ratio); border: 1px solid var(--pick); border-radius: var(--corner-small); background: var(--pick-container); }
-.pc-inner { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); min-width: 0; }
-.pc-model.padded .pc-inner { margin: var(--space-20); border: 1px dashed var(--pick); border-radius: var(--corner-small); background: var(--surface-container); }
+
+/* 머리 버튼 — Preview(가리킨 노드에 있을 때만, 여럿이면 개수) · 닫기 */
+.pc-close, .pc-jump { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--control-small); min-width: var(--control-small); border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); cursor: pointer;
+                      transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.pc-jump { padding: 0 var(--space-4); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.pc-close svg, .pc-jump svg, .pc-preview svg { flex: 0 0 auto; width: 14px; height: 14px; }
+.pc-close:hover, .pc-jump:hover, .pc-jump[aria-expanded="true"] { background: var(--state-hover); color: var(--on-surface); }
+/* Preview 여럿 — 머리 아래 목록. 높이를 모르는 목록을 펼치려고 줄 높이를 0fr → 1fr 로 옮긴다. */
+.pc-fold { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: calc(var(--space-8) * -1); transition: grid-template-rows var(--duration-short4) var(--easing-accelerate), opacity var(--duration-short3) var(--easing-accelerate); }
+.pc-fold[data-open] { grid-template-rows: 1fr; opacity: 1; margin-top: 0; transition: grid-template-rows var(--duration-medium1) var(--easing-decelerate), opacity var(--duration-short4) var(--easing-decelerate); }
+.pc-previews { min-height: 0; margin: 0; padding: 0; list-style: none; overflow: hidden; }
+.pc-fold[data-open] .pc-previews { padding: var(--space-2); border-radius: var(--corner-medium); background: var(--surface); }
+.pc-preview { display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-small); padding: 0 var(--space-6); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-label-small); cursor: pointer; text-align: left;
+              transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-preview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-preview:hover { background: var(--state-hover); color: var(--on-surface); }
+
+/* 패널 — 카드보다 한 단 낮은 면 */
+.pc-panel { margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); }
+/* 트리 — 6줄 × 24px 고정. 노드를 옮겨도 트리 칸과 그 아래 설명 패널이 제자리에 있고, 넘치면 안에서 스크롤한다. */
+.pc-tree-panel { height: calc(var(--control-small) * 6 + var(--space-8)); overflow-y: auto; overscroll-behavior: contain; }
+.pc-tree { margin: 0; padding: 0; list-style: none; }
+/* 파일 트리의 모양 — 자식 묶음의 왼쪽 실과 한 칸 들여쓰기 */
+.pc-group { margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; }
+.pc-row { display: flex; align-items: center; height: var(--control-small); border-radius: var(--corner-medium); color: var(--on-surface-variant);
+          transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-row:hover { background: var(--state-hover); color: var(--on-surface); }
+/* 가리킨 노드는 그림 위 박스와 같은 파랑 바탕이라 "지금 고른 그것"으로 이어 읽힌다. */
+.pc-node.here > .pc-row { background: var(--pick-container); color: var(--on-surface); }
+.pc-pick { flex: 1; min-width: 0; height: var(--control-small); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: inherit; font: var(--type-label-small); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-node.here > .pc-row .pc-pick { font: var(--type-label-medium); }
+/* 트리 전환 — 새로 가리킨 노드의 자식 묶음이 접힌 데서 펼쳐지고, 떠나는 옛 자식 묶음은 같은 시간에 접혀 걷힌다. */
+.pc-unfold, .pc-foldout { display: grid; }
+.pc-unfold > ul, .pc-foldout > ul { min-height: 0; overflow: hidden; }
+.pc-unfold { animation: pc-unfold var(--duration-medium2) var(--easing-decelerate); }
+.pc-foldout { grid-template-rows: 0fr; opacity: 0; animation: pc-foldout var(--duration-medium2) var(--easing-accelerate); }
+@keyframes pc-unfold { from { grid-template-rows: 0fr; opacity: 0; } to { grid-template-rows: 1fr; opacity: 1; } }
+@keyframes pc-foldout { from { grid-template-rows: 1fr; opacity: 1; } to { grid-template-rows: 0fr; opacity: 0; } }
+
+/* 설명 패널 — 크기 한 줄과 modifier 체인. 둘 다 "이 노드" 이야기라 한 패널에 담고 가는 선 하나로만 나눈다. */
+.pc-detail-in { display: grid; gap: var(--space-4); }
+.pc-size { display: flex; align-items: center; gap: var(--space-12); padding: var(--space-4); }
+.pc-glyph { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: var(--point-glyph); height: var(--point-glyph); }
+.pc-shape { position: relative; width: min(var(--point-glyph), calc(var(--point-glyph) * var(--ratio))); height: min(var(--point-glyph), calc(var(--point-glyph) / var(--ratio))); border: 1px solid var(--pick); border-radius: var(--corner-small); background: var(--pick-container); }
+.pc-shape.padded i { position: absolute; inset: 22%; border: 1px dashed var(--pick); border-radius: var(--corner-small); background: var(--surface-container); }
 .pc-dims { color: var(--on-surface); font: var(--type-code); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pc-dims i { margin: 0 var(--space-4); color: var(--on-surface-variant); font-style: normal; font-weight: var(--weight-regular); }
-.pc-unit { color: var(--on-surface-variant); font: var(--type-code-small); }
-.pc-gap { position: absolute; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
-.pc-gap.top, .pc-gap.bottom { left: 0; right: 0; text-align: center; }
-.pc-gap.top { top: var(--space-2); }
-.pc-gap.bottom { bottom: var(--space-2); }
-.pc-gap.left, .pc-gap.right { top: 50%; transform: translateY(-50%); width: var(--space-20); text-align: center; }
-.pc-gap.left { left: 0; }
-.pc-gap.right { right: 0; }
-.pc-section { display: grid; gap: var(--space-6); min-width: 0; }
-.pc-tabs { display: flex; gap: var(--space-2); }
-.pc-tabs button { display: inline-flex; align-items: center; gap: var(--space-4); height: var(--control-small); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; cursor: pointer;
-                  transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
-.pc-tabs button:hover { background: var(--state-hover); color: var(--on-surface); }
-.pc-tabs button[aria-selected="true"] { background: var(--primary-container); color: var(--on-surface); }
-.pc-tree { margin: 0; padding: 0; list-style: none; }
-.pc-panel { height: var(--point-tree-max-h); margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); list-style: none; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-/* modifier 는 위에서 아래로 적용되는 순서다. 표처럼 읽힌다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝에 맞춘다. 구분선 없이 줄 높이와 호버 바탕으로 짚는다. 크기를 정한 줄은 진하다. */
-.pc-mods { margin: 0; padding: 0; list-style: none; }
+.pc-unit { margin-left: var(--space-4); color: var(--on-surface-variant); font: var(--type-code-small); }
+/* modifier 는 위에서 아래로 적용되는 순서다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝. 상한 4줄, 넘치면 안에서 스크롤한다. 크기를 정한 줄도 강조하지 않는다. */
+.pc-mods { max-height: calc(var(--control-medium) * 4 + var(--space-4)); margin: 0; padding: var(--space-4) 0 0; border-top: 1px solid var(--outline-variant); list-style: none; overflow-y: auto; overscroll-behavior: contain; }
 .pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-medium); padding: 0 var(--space-8) 0 var(--space-4); border-radius: var(--corner-small);
               transition: background var(--duration-short3) var(--easing-standard); }
 .pc-mods li:hover { background: var(--state-hover); }
 .pc-kind { flex: 0 0 var(--space-16); display: inline-flex; align-items: center; justify-content: center; height: var(--space-16); color: var(--on-surface-variant); }
 .pc-kind svg { width: 14px; height: 14px; }
-.pc-mods li.sizing .pc-kind { color: var(--on-surface); }
 .pc-mod-name { flex: 0 0 auto; color: var(--on-surface); font: var(--type-code-small); }
-.pc-mods li.sizing .pc-mod-name { font-weight: var(--weight-semibold); }
 .pc-mod-value { display: inline-flex; align-items: center; gap: var(--space-6); min-width: 0; margin-left: auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
 .pc-mod-value span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-swatch { flex: 0 0 auto; width: var(--space-12); height: var(--space-12); border-radius: var(--corner-small); box-shadow: 0 0 0 1px var(--outline-variant); }
-.pc-close, .pc-tab, .pc-jump { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--on-surface-variant); cursor: pointer;
-                               transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
-.pc-close { width: var(--control-small); height: var(--control-small); border-radius: var(--corner-medium); }
-.pc-tab { width: var(--control-small); height: var(--control-small); border-radius: var(--corner-small); }
-.pc-close svg, .pc-tab svg, .pc-jump svg, .pc-preview svg { flex: 0 0 auto; width: 14px; height: 14px; }
-.pc-close:hover, .pc-tab:hover, .pc-jump:hover, .pc-jump[aria-expanded="true"] { background: var(--state-hover); color: var(--on-surface); }
-.pc-again { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-4); height: var(--control-small); padding: 0 var(--space-8) 0 var(--space-6); border: 1px solid var(--outline); border-radius: var(--corner-medium); background: transparent; color: var(--on-surface); font: var(--type-label-medium); cursor: pointer;
-            transition: background var(--duration-short4) var(--easing-standard); }
-.pc-again:hover { background: var(--state-hover); }
-/* 파일 트리의 모양 — 자식 묶음의 왼쪽 실과 한 칸 들여쓰기, 줄 끝의 고정폭 숫자. 접고 펴는 것은 Preview 후보뿐이라 ▸는 후보가 여럿인 칸에만 있다. */
-.pc-group { margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; }
-.pc-row { display: flex; align-items: center; min-height: var(--control-medium); padding-right: var(--space-2); border-radius: var(--corner-medium); color: var(--on-surface-variant);
-          transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
-.pc-row:hover { background: var(--state-hover); color: var(--on-surface); }
-/* 가리킨 노드는 그림 위 박스와 같은 파랑 바탕이라 "지금 고른 그것"으로 이어 읽힌다. */
-.pc-node.here > .pc-row { background: var(--pick-container); color: var(--on-surface); }
-.pc-pick { flex: 1; min-width: 0; height: var(--control-medium); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: inherit; font: var(--type-label-small); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pc-node.here > .pc-row .pc-pick { font: var(--type-label-medium); }
-.pc-jump { gap: var(--space-4); height: var(--control-small); min-width: var(--control-small); padding: 0 var(--space-4); border-radius: var(--corner-small); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
-.pc-caret { transition: transform var(--duration-short3) var(--easing-standard); }
-.pc-jump svg.pc-caret { width: 10px; height: 10px; }
-.pc-jump[aria-expanded="true"] .pc-caret { transform: rotate(90deg); }
-/* 높이를 모르는 목록을 펼치려고 줄 높이를 0fr → 1fr 로 옮긴다. */
-.pc-fold { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--duration-short4) var(--easing-accelerate), opacity var(--duration-short3) var(--easing-accelerate); }
-.pc-fold[data-open] { grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows var(--duration-medium1) var(--easing-decelerate), opacity var(--duration-short4) var(--easing-decelerate); }
-/* Preview 후보는 자식이 아니라 그 줄에 딸린 목록이다 — 트리의 실 없이 줄 아래 작은 상자에 담고, 글꼴은 트리 줄과 같다. */
-.pc-previews { min-height: 0; margin: 0 0 0 var(--space-8); padding: 0; list-style: none; overflow: hidden; }
-.pc-fold[data-open] .pc-previews { margin: var(--space-2) 0 var(--space-4) var(--space-8); padding: var(--space-2); border-radius: var(--corner-medium); background: var(--surface-container); }
-.pc-preview { display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-small); padding: 0 var(--space-6); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-label-small); cursor: pointer; text-align: left;
-              transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
-.pc-preview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pc-preview:hover { background: var(--state-hover); color: var(--on-surface); }
-/* 움직임 줄이기 — 높이 · 회전은 두지 않고 페이드만 남긴다. 시간은 tokens.css 규칙대로 그대로다. */
+
+/* 스크롤바 — 평소엔 숨기고, 올리거나 포커스가 오면 얇은 무채색 막대. 위아래 끝 8px 는 옅어져 더 있다는 것을 알린다.
+   마스크는 알파만 보므로 색 자리의 black 은 색이 아니라 "불투명"이다. */
+.pc-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black var(--space-8), black calc(100% - var(--space-8)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, black var(--space-8), black calc(100% - var(--space-8)), transparent 100%); }
+.pc-scroll:hover, .pc-scroll:focus-within, .pc-scroll:focus-visible { scrollbar-color: var(--outline-variant) transparent; }
+.pc-scroll:focus-visible { outline: none; }
+
+/* 내용 전환 — 바뀐 머리 글자와 설명은 이동 없이 옅게만 갈아든다. */
+.pc-swap { animation: pc-fade var(--duration-medium1) var(--easing-decelerate); }
+@keyframes pc-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 떠 있는 카드 — 그림 밖에 서고 y 와 높이만 같은 곡선 · 같은 시간으로 옮긴다. 처음 뜰 때는 자리로 바로 간다(data-placed 전에는 전환 없음). */
+.pc-float { position: absolute; z-index: 5; width: var(--point-card-w); }
+.pc-float .point-card { height: calc(var(--h, auto) + var(--space-8) * 2); overflow: hidden; }
+.pc-float[data-placed] { transition: top var(--duration-long4) var(--easing-spring); }
+.pc-float[data-placed] .point-card { transition: height var(--duration-long4) var(--easing-spring); }
+
+/* 그림 위 표시 — 구조 테두리 · 손 아래 옅은 바탕 · 고른 것 진한 바탕. 그림과 같은 좌표계에 얹는다. */
+.pc-marks { position: absolute; inset: 0; pointer-events: none; }
+.pc-outlines { position: absolute; inset: 0; opacity: 0; transition: opacity var(--duration-short4) var(--easing-standard); }
+.pc-marks.over .pc-outlines { opacity: 1; }
+.pc-outline, .pc-mark { position: absolute; border-radius: var(--corner-small); }
+.pc-outline { box-shadow: inset 0 0 0 1px var(--pick-outline); }
+.pc-mark.hover { background: var(--pick-hover); box-shadow: inset 0 0 0 1px var(--pick-hover-line); opacity: 0;
+                 transition: opacity var(--duration-short3) var(--easing-standard), left var(--duration-short3) var(--easing-decelerate), top var(--duration-short3) var(--easing-decelerate), width var(--duration-short3) var(--easing-decelerate), height var(--duration-short3) var(--easing-decelerate); }
+.pc-mark.hover.on { opacity: 1; }
+.pc-mark.pick { z-index: 1; background: var(--pick-rest); box-shadow: inset 0 0 0 2px var(--pick); transition: background var(--duration-short3) var(--easing-standard); animation: pc-press var(--duration-short4) var(--easing-decelerate); }
+.pc-marks.over .pc-mark.pick { background: var(--pick-chosen); }
+@keyframes pc-press { from { background: var(--pick-hover); } }
+
+/* 움직임 줄이기 — 자리 · 높이 · 미끄러짐은 즉시, 펼침 · 접힘은 높이 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
 @media (prefers-reduced-motion: reduce) {
+  .pc-float[data-placed], .pc-float[data-placed] .point-card { transition: none; }
   .pc-fold, .pc-fold[data-open] { transition-property: opacity; }
-  .pc-caret { transition: none; }
+  .pc-unfold { animation: pc-fade var(--duration-short4) linear; }
+  .pc-foldout { grid-template-rows: 0fr; animation: pc-fadeout var(--duration-short4) linear; }
+  .pc-mark.hover { transition: opacity var(--duration-short3) linear; }
 }
+@keyframes pc-fadeout { from { opacity: 1; } to { opacity: 0; } }
