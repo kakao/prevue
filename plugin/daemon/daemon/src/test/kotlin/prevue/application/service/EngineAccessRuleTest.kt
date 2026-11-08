@@ -73,7 +73,7 @@ object EngineRule {
     fun holders(files: Map<String, String>): List<String> =
         files.filter { (path, text) -> (path.startsWith("application/") || assembly(path)) && !path.startsWith("application/port/") && port.containsMatchIn(text) }.keys.sorted()
 
-    private fun assembly(path: String) = prevue.daemon.Sources.LAYERS.none { path.startsWith("$it/") }
+    private fun assembly(path: String) = prevue.daemon.Sources.PACKAGES.none { path.startsWith("$it/") }
 
     fun outOfQueue(files: Map<String, String>): List<String> = outside.flatMap { (path, rule) ->
         val (access, allowed) = rule
