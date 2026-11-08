@@ -124,9 +124,9 @@ class Source:
         _, self.comment_lines = kotlin_source.mask(self.text)
 
 
-def slop_findings(src):
+def slop_findings(src, known_qualifiers=()):
     return [Finding(src.path, line, rule, advice)
-            for line, rule, advice in slop.check(src.text, src.path)]
+            for line, rule, advice in slop.check(src.text, src.path, known_qualifiers)]
 
 
 def detekt_findings(gradle_args):
@@ -294,8 +294,9 @@ def main(argv):
 
     srcs = {p: Source(p) for p in sources()}
     findings = []
+    known = set().union(*(slop.qualifiers(src.text) for src in srcs.values()))
     for src in srcs.values():
-        findings.extend(slop_findings(src))
+        findings.extend(slop_findings(src, known))
     findings.extend(viewer_findings())
     ci = bool(os.environ.get("CI"))
     with open(DETEKT_CONFIG, encoding="utf-8") as f:

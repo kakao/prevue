@@ -214,6 +214,164 @@ def _branch_start(body, prev_arrow, arrow):
     return last_nl
 
 
+# Metro 는 기본값이 있는 주입 인자를 선택 바인딩으로 본다 — 같은 타입의 바인딩이 그래프에 생기면 기본값 대신 말없이 그 값이 들어간다(PR 109).
+# 한정자는 허용 목록이다 — @Named 와 소스가 @Qualifier 로 선언한 어노테이션(qualifiers). 그 밖의 어노테이션(@IntRange 등)은 한정자가 아니다
+NAMED = frozenset({"Named"})
+_VISIBILITY = {"public", "internal", "private", "protected"}
+_CLASS_MODIFIERS = _VISIBILITY | {"data", "open", "abstract", "sealed", "inner", "final", "value", "inline", "expect", "actual"}
+_FUN_MODIFIERS = _VISIBILITY | {"open", "override", "final", "abstract", "inline", "suspend", "operator", "infix", "tailrec", "external", "expect", "actual"}
+_QUALIFIER_DECL = re.compile(r"@Qualifier\b(?:\s+@[\w.]+(?:\([^()]*\))?|\s+\w+)*?\s+annotation\s+class\s+(\w+)")
+
+
+def qualifiers(text):
+    """이 소스가 @Qualifier 로 선언한 어노테이션 이름들."""
+    return set(_QUALIFIER_DECL.findall(mask(text)[0]))
+
+
+def _skip_space(code, k):
+    while k < len(code) and code[k] in " \t\r\n":
+        k += 1
+    return k
+
+
+def _skip_annotation(code, k):
+    """k 가 `@이름(…)?` 이면 그 뒤 자리, 아니면 k. 사용 자리 표지(`@param:`)와 괄호 중첩을 넘는다."""
+    m = re.match(r"@(?:\w+:)?[\w.]+", code[k:])
+    if not m:
+        return k
+    j = k + m.end()
+    if j < len(code) and code[j] == "(":
+        j = _matching(code, j + 1, "(", ")")
+    return j
+
+
+def _skip_generics(code, k):
+    """k 가 `<` 이면 짝 `>` 뒤 자리 — `->` 의 `>` 는 세지 않는다."""
+    if k >= len(code) or code[k] != "<":
+        return k
+    depth, j = 0, k
+    while j < len(code):
+        c = code[j]
+        if c == "<":
+            depth += 1
+        elif c == ">" and code[j - 1] != "-":
+            depth -= 1
+            if depth == 0:
+                return j + 1
+        j += 1
+    return j
+
+
+def _skip_prefix(code, k, words):
+    """어노테이션과 words 의 수식어를 넘는다."""
+    while True:
+        k = _skip_space(code, k)
+        j = _skip_annotation(code, k)
+        if j != k:
+            k = j
+            continue
+        m = re.match(r"\w+\b", code[k:])
+        if m and m.group(0) in words:
+            k += m.end()
+            continue
+        return k
+
+
+def _word_at(code, k, word):
+    m = re.match(r"%s\b" % word, code[k:])
+    return k + m.end() if m else -1
+
+
+def _inject_target(code, k):
+    """@Inject 뒤 k 에서 시작하는 주입 인자 목록의 `(` 다음 자리 — 생성자 두 꼴과 멤버 주입 함수. 없으면 -1."""
+    k = _skip_prefix(code, k, _CLASS_MODIFIERS | _FUN_MODIFIERS)
+    j = _word_at(code, k, "constructor")
+    if j >= 0:
+        j = _skip_space(code, j)
+        return j + 1 if code[j:j + 1] == "(" else -1
+    j = _word_at(code, k, "fun")
+    if j >= 0:
+        return _fun_params(code, j)
+    j = _word_at(code, k, "class")
+    if j < 0:
+        return -1
+    m = re.match(r"\s+\w+", code[j:])
+    if not m:
+        return -1
+    j = _skip_generics(code, _skip_space(code, j + m.end()))
+    j = _skip_prefix(code, j, _VISIBILITY)
+    c = _word_at(code, j, "constructor")
+    j = _skip_space(code, c) if c >= 0 else j
+    return j + 1 if code[j:j + 1] == "(" else -1
+
+
+def _fun_params(code, j):
+    """`fun` 뒤 j 에서 인자 목록 `(` 다음 자리."""
+    j = _skip_generics(code, _skip_space(code, j))
+    m = re.match(r"\s*[\w.]+\s*", code[j:])
+    if not m:
+        return -1
+    j += m.end()
+    return j + 1 if code[j:j + 1] == "(" else -1
+
+
+def _injected_param_lists(code):
+    """주입 인자 목록의 여는 괄호 다음 자리들 — @Inject 생성자 · 멤버 주입 함수와 @Provides 함수."""
+    starts = []
+    for m in re.finditer(r"@Inject\b", code):
+        starts.append(_inject_target(code, m.end()))
+    for m in re.finditer(r"@Provides\b", code):
+        k = _skip_prefix(code, m.end(), _FUN_MODIFIERS)
+        j = _word_at(code, k, "fun")
+        starts.append(_fun_params(code, j) if j >= 0 else -1)
+    return [s for s in starts if s >= 0]
+
+
+def _params(code, start):
+    """[(시작 자리, 인자 본문, 기본값 `=` 의 인자 안 자리 또는 -1)] — 괄호 안을 깊이 0 의 쉼표로 나눈다.
+    `<` `>` 는 기본값 앞(타입)에서만 괄호로 센다 — 기본값 안의 비교 · 람다를 괄호로 읽지 않게"""
+    end = _matching(code, start, "(", ")") - 1
+    out, depth, piece, eq = [], 0, start, -1
+    for k in range(start, end + 1):
+        c = code[k] if k < end else ","
+        angle = eq < 0 and c in "<>" and not (c == ">" and code[k - 1] == "-")
+        if c in "([{" or (angle and c == "<"):
+            depth += 1
+        elif c in ")]}" or (angle and c == ">"):
+            depth -= 1
+        elif c == "=" and depth == 0 and eq < 0:
+            eq = k - piece
+        elif c == "," and depth == 0:
+            out.append((piece, code[piece:k], eq))
+            piece, eq = k + 1, -1
+    return out
+
+
+def _leading_annotations(param):
+    """인자 맨 앞의 어노테이션 이름들 — 타입에 붙은 어노테이션(@Composable () -> Unit)은 넣지 않는다."""
+    names, k = set(), _skip_space(param, 0)
+    while True:
+        j = _skip_annotation(param, k)
+        if j == k:
+            return names
+        names.add(re.match(r"@(?:\w+:)?([\w.]+)", param[k:]).group(1).split(".")[-1])
+        k = _skip_space(param, j)
+
+
+def inject_default(code, text, path, known=NAMED):
+    found = []
+    for start in _injected_param_lists(code):
+        for at, param, eq in _params(code, start):
+            if eq < 0:
+                continue
+            names = _leading_annotations(param)
+            if names & known or "Assisted" in names:
+                continue
+            found.append((_pos_to_line(code, at + len(param) - len(param.lstrip())), "slop/inject-default",
+                          "한정자 없는 주입 인자의 기본값 — 같은 타입의 바인딩이 생기면 기본값 대신 그 값이 들어간다. @Named 를 붙이거나 그래프가 값을 준다"))
+    return found
+
+
 def file_length(code, text, path):
     n = text.count("\n") + (0 if text.endswith("\n") else 1)
     if n > FILE_MAX_LINES:
@@ -224,10 +382,11 @@ def file_length(code, text, path):
 RULES = [domain_blocking, ignored_rename, bare_run_catching, synchronized_this, format_without_locale, empty_catch, when_else_default, file_length]
 
 
-def check(text, path):
-    """한 파일의 [(줄, 규칙 id, 처방)]."""
+def check(text, path, known_qualifiers=()):
+    """한 파일의 [(줄, 규칙 id, 처방)]. known_qualifiers — 다른 소스가 @Qualifier 로 선언한 이름들."""
     code, _ = mask(text)
     found = []
     for rule in RULES:
         found.extend(rule(code, text, path))
+    found.extend(inject_default(code, text, path, NAMED | set(known_qualifiers) | qualifiers(text)))
     return sorted(found)
