@@ -3,8 +3,7 @@ export const strings: Record<'en' | 'ko', Record<string, string>> = {
   "en": {
     "point.card.blocked": "Can't copy",
     "point.card.close": "Close",
-    "point.card.copied": "✓ Copied",
-    "point.card.height": "Height",
+    "point.card.copied": "Copied",
     "point.card.jump": "Go to Preview — {name}",
     "point.card.kind.click": "Click",
     "point.card.kind.color": "Fill",
@@ -16,16 +15,13 @@ export const strings: Record<'en' | 'ko', Record<string, string>> = {
     "point.card.label": "Pointed composable",
     "point.card.previews": "{n} Previews",
     "point.card.retry": "Copy again",
-    "point.card.size": "Size",
     "point.card.tab.modifiers": "Modifiers",
-    "point.card.tab.tree": "Structure",
-    "point.card.width": "Width"
+    "point.card.tab.tree": "Structure"
   },
   "ko": {
     "point.card.blocked": "복사할 수 없음",
     "point.card.close": "닫기",
-    "point.card.copied": "✓ 복사됨",
-    "point.card.height": "높이",
+    "point.card.copied": "복사됨",
     "point.card.jump": "Preview로 가기 — {name}",
     "point.card.kind.click": "클릭",
     "point.card.kind.color": "배경",
@@ -37,9 +33,7 @@ export const strings: Record<'en' | 'ko', Record<string, string>> = {
     "point.card.label": "가리킨 컴포저블",
     "point.card.previews": "Preview {n}개",
     "point.card.retry": "다시 복사",
-    "point.card.size": "크기",
     "point.card.tab.modifiers": "Modifier",
-    "point.card.tab.tree": "구조",
-    "point.card.width": "너비"
+    "point.card.tab.tree": "구조"
   }
 };

@@ -1,6 +1,6 @@
 # 가리키기 카드 프로토타입
 
-가리키기 결과를 박스 옆 카드로 보이는 시안이다(D-162). 제품 뷰어(`plugin/viewer/`)에 잇지 않았고 데몬과도 이어지지 않는다 — 설치본에 실리지 않는다. 값은 `plugin/viewer/tokens.css`의 역할 이름만 쓰고, 문구는 `strings.ts`가 갖는다.
+가리키기 결과를 박스 옆 카드로 보이는 시안이다(D-162). 제품 뷰어(`plugin/viewer/`)에 잇지 않았고 데몬과도 이어지지 않는다 — 설치본에 실리지 않는다. 값은 `plugin/viewer/tokens.css`의 역할 이름만 쓰고, 문구는 `strings.ts`가 갖는다. `prototypes/`는 날값 린트(`sh tools/lint.sh`) 밖이라, 연결할 때 `viewer-src/`로 옮기며 검사를 받는다. 경로 접기 · 탭 열기 판정(`tagText` · `shortPath` · `tabLabel`)은 뷰어 `PointOverlay.tsx`의 사본이고 연결 때 하나로 합친다.
 
 ## 보기
 

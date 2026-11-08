@@ -62,6 +62,8 @@ export type CardBox = { width: number; height: number; padding?: readonly [numbe
 export type CardModifier = { name: string; value?: string; color?: string; sizes?: Array<'width' | 'height'> };
 /** 그림의 비율을 이 안에서만 따른다 — 띠나 기둥처럼 긴 노드도 상자 안에 크기 글자가 들어가게. */
 const MODEL_RATIO: readonly [number, number] = [0.8, 3.2];
+/** 여백 고리(양쪽 20px)를 두르면 안쪽 상자가 좁아진다 — 크기 글자가 들어가도록 더 넓게 묶는다. */
+const PADDED_MIN_RATIO = 1.1;
 
 /** dp 는 px 를 밀도로 나눈 값이라 정수로 떨어지지 않는다 — 소수 한 자리까지, 정수면 소수점 없이. */
 const dp = (n: number) => String(Math.round(n * 10) / 10);
@@ -89,7 +91,9 @@ function TreeRow({ row, actions, children }: { row: CardRow; actions: CardAction
 /** 가리킨 줄 바로 위 몇 칸만 파일 트리처럼 들여 쓴다 — 깊이 22를 다 들이면 카드 폭을 먹는다. 그 위의 조상은 왼쪽에 나란히 선다. */
 const NESTED_UPS = 2;
 function TreeRows({ rows, actions }: { rows: CardRow[]; actions: CardActions }) {
-  const here = rows.findIndex(r => r.at === 'here'), cut = Math.max(0, here - NESTED_UPS);
+  const here = rows.findIndex(r => r.at === 'here');
+  if (here < 0) return <>{rows.map(r => <TreeRow key={r.id} row={r} actions={actions} />)}</>;
+  const cut = Math.max(0, here - NESTED_UPS);
   const line = rows.slice(cut, here + 1), downs = rows.slice(here + 1);
   const leaves = downs.length ? <ul className="pc-group">{downs.map(r => <TreeRow key={r.id} row={r} actions={actions} />)}</ul> : null;
   const nested = line.reduceRight<ReactNode>((inner, r, i) => {
@@ -114,11 +118,13 @@ function CardStatus({ say }: { say: TagSay }) {
  * 파랑은 그림 위 박스와 같은 색이라 "저 박스의 치수"로 읽힌다.
  */
 function BoxModel({ box }: { box: CardBox }) {
-  const ratio = Math.min(MODEL_RATIO[1], Math.max(MODEL_RATIO[0], box.width / box.height));
+  const padded = !!box.padding?.some(v => v !== 0);
+  const raw = box.width > 0 && box.height > 0 ? box.width / box.height : 1;
+  const ratio = Math.min(MODEL_RATIO[1], Math.max(padded ? PADDED_MIN_RATIO : MODEL_RATIO[0], raw));
   const [left, top, right, bottom] = box.padding || [0, 0, 0, 0];
   return <div className="pc-stage">
-    <div className={`pc-model${box.padding ? ' padded' : ''}`} style={{ '--ratio': ratio } as CSSProperties}>
-      {box.padding && <>
+    <div className={`pc-model${padded ? ' padded' : ''}`} style={{ '--ratio': ratio } as CSSProperties}>
+      {padded && <>
         <span className="pc-gap top">{dp(top)}</span><span className="pc-gap right">{dp(right)}</span>
         <span className="pc-gap bottom">{dp(bottom)}</span><span className="pc-gap left">{dp(left)}</span>
       </>}
@@ -177,9 +183,10 @@ export function PointCard({ node, box, modifiers, say, rows, state, tab: firstTa
     </div> : <p className="pc-msg">{say.msg}</p>}
     <BoxModel box={box} />
     {tab && <div className="pc-section">
-      <div className="pc-tabs" role="tablist">{shown.map(t => { const name = phrase(`point.card.tab.${t}`); return <button type="button" role="tab" key={t} title={name} aria-label={name} aria-selected={t === tab} onClick={() => setTab(t)}>{ICON[t]}<span>{t === 'modifiers' ? modifiers!.length : rows!.length}</span></button>; })}</div>
-      {tab === 'modifiers' ? <div className="pc-panel" role="tabpanel"><ModifierRows modifiers={modifiers!} /></div>
-        : <ul className="pc-panel pc-tree" role="tabpanel" ref={tree}><TreeRows rows={rows!} actions={actions} /></ul>}
+      <div className="pc-tabs" role="tablist">{shown.map(t => { const name = phrase(`point.card.tab.${t}`), n = t === 'modifiers' ? modifiers!.length : rows!.length; return <button type="button" role="tab" key={t} id={`pc-tab-${t}`} title={name} aria-label={`${name} ${n}`} aria-controls={`pc-panel-${t}`} aria-selected={t === tab} onClick={() => setTab(t)}>{ICON[t]}<span aria-hidden="true">{n}</span></button>; })}</div>
+      <div className="pc-panel" role="tabpanel" id={`pc-panel-${tab}`} aria-labelledby={`pc-tab-${tab}`}>
+        {tab === 'modifiers' ? <ModifierRows modifiers={modifiers!} /> : <ul className="pc-tree" ref={tree}><TreeRows rows={rows!} actions={actions} /></ul>}
+      </div>
     </div>}
   </section>;
 }
