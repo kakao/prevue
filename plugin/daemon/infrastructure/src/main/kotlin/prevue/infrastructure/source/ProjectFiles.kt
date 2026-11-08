@@ -18,7 +18,9 @@ import prevue.application.domain.model.SourceIndex
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.PrevueDispatchers
 
-internal class ProjectFiles(private val repoRoot: File, roots: List<File>, private val dispatchers: PrevueDispatchers) : SourceFileRepository {
+internal class ProjectFiles(
+    private val repoRoot: File, roots: List<File>, private val dispatchers: PrevueDispatchers, scope: CoroutineScope,
+) : SourceFileRepository {
     private sealed interface State {
         class Building(val pending: List<List<Change>>) : State
         class Ready(val files: Map<String, List<String>>) : State
@@ -31,7 +33,11 @@ internal class ProjectFiles(private val repoRoot: File, roots: List<File>, priva
     private val canonicalRoot = repoRoot.canonicalPath + "/"
     override val sourceRoots: List<String> = roots.map { it.absolutePath }
 
-    fun buildInBackground(scope: CoroutineScope) = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+    init {
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { build() }
+    }
+
+    private suspend fun build() {
         runCatching { withContext(dispatchers.io) { walk() } }
             .onSuccess { walked -> state.update { s -> State.Ready(s.pendingOrEmpty().fold(walked) { m, changes -> m.applied(changes) ?: m }) } }
             .onFailure { state.value = State.Failed(IllegalStateException("소스 색인을 짓지 못했다", it)) }

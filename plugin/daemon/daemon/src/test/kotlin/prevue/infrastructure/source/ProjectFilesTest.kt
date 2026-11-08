@@ -4,7 +4,9 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.realDispatchers
 
@@ -25,13 +28,17 @@ class ProjectFilesTest {
         return root to src
     }
 
-    private fun built(root: File, src: File) = ProjectFiles(root, listOf(src), realDispatchers).also { f ->
-        runBlocking { f.buildInBackground(this).join() }
-    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @AfterEach fun tearDown() = scope.cancel()
+
+    private fun files(root: File, src: File) = ProjectFiles(root, listOf(src), realDispatchers, scope)
+
+    private fun built(root: File, src: File) = files(root, src).also { f -> runBlocking { withTimeout(5_000) { f.sourceFiles() } } }
 
     @Test fun `경로로 쓸 수 없는 이름은 없는 파일이다 — 사용자가 넘긴 대상이 서버 오류가 되지 않는다`() {
         val (root, src) = repo()
-        val files = ProjectFiles(root, listOf(src), realDispatchers)
+        val files = files(root, src)
         val bad = File(src, "a\u0000b.kt")
         assertNull(files.modifiedAt(bad))
         assertFalse(files.has(bad))
@@ -64,10 +71,10 @@ class ProjectFilesTest {
         val (root, src) = repo()
         repeat(2000) { File(src, "d${it % 50}/F$it.kt").apply { parentFile.mkdirs(); writeText("") } }
         val late = File(src, "Late.kt").apply { writeText("") }
-        val files = ProjectFiles(root, listOf(src), realDispatchers)
+        val files = files(root, src)
         val t = thread { repeat(500) { files.update(listOf(late), emptyList()) } }
-        runBlocking { files.buildInBackground(this).join() }
         t.join()
+        runBlocking { withTimeout(5_000) { files.sourceFiles() } }
         assertEquals(listOf(late.absolutePath), files.candidates("Late.kt"))
         assertEquals(2002, files.index()!!.files.size)
     }
@@ -93,8 +100,7 @@ class ProjectFilesTest {
 
     @Test fun `짓기가 취소되면 기다리던 쪽이 멈추지 않고 실패를 받는다`() {
         val (root, src) = repo()
-        val files = ProjectFiles(root, listOf(src), realDispatchers)
-        files.buildInBackground(CoroutineScope(Job()).apply { cancel() })
+        val files = ProjectFiles(root, listOf(src), realDispatchers, CoroutineScope(Job()).apply { cancel() })
         assertThrows(IllegalStateException::class.java) { runBlocking { withTimeout(5_000) { files.sourceFiles() } } }
         assertNull(files.index())
         assertFalse(files.update(listOf(File(src, "Main.kt")), emptyList()))

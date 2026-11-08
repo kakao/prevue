@@ -78,7 +78,7 @@ class KmpRenderIntegrationTest {
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         ws = InMemoryWorkspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies))
-        sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers).apply { buildInBackground(scope) }
+        sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope)
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))
     }

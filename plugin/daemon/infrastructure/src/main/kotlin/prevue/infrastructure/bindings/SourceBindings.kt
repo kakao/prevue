@@ -21,7 +21,7 @@ public annotation class WatchRoots
 public object SourceBindings {
     @Provides @SingleIn(AppScope::class)
     internal fun sourceFiles(dumps: Dumps, graph: ModuleGraph, scope: CoroutineScope, dispatchers: PrevueDispatchers): SourceFileRepository =
-        ProjectFiles(dumps.target.repoRoot, graph.roots, dispatchers).apply { buildInBackground(scope) }
+        ProjectFiles(dumps.target.repoRoot, graph.roots, dispatchers, scope)
 
     @Provides @SingleIn(AppScope::class)
     internal fun watches(config: InfraConfig, graph: ModuleGraph, dumps: Dumps, log: InfraLog): Watches =
