@@ -30,12 +30,12 @@ class WorkspaceTest {
         try {
             val real = File(tmp, "real/src").apply { mkdirs() }
             val link = Files.createSymbolicLink(File(tmp, "link").toPath(), real.parentFile.toPath()).toFile()
-            val ws = workspace(listOf(File(link, "src")))
+            val ws = workspace(listOf(File(link, "src"), real))
             assertTrue(ws.hosts(File(link, "src/A.kt")))
             assertTrue(ws.hosts(File(real, "A.kt")))
             assertFalse(ws.hosts(File(tmp, "other/A.kt")))
             assertEquals(listOf(real.canonicalFile), ws.watchRoots)
-        } finally { tmp.deleteRecursively() }
+        } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
     }
 
     @Test fun `줄 밖의 카드 기록이 동시에 와도 하나도 잃지 않는다`() {
