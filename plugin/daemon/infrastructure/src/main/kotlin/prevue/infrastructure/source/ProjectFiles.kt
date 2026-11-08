@@ -33,10 +33,6 @@ internal class ProjectFiles(
     private val canonicalRoot = repoRoot.canonicalPath + "/"
     override val sourceRoots: List<String> = roots.map { it.absolutePath }
 
-    init {
-        scope.launch(start = CoroutineStart.UNDISPATCHED) { build() }
-    }
-
     private suspend fun build() {
         runCatching { withContext(dispatchers.io) { walk() } }
             .onSuccess { walked -> state.update { s -> State.Ready(s.pendingOrEmpty().fold(walked) { m, changes -> m.applied(changes) ?: m }) } }
@@ -123,5 +119,9 @@ internal class ProjectFiles(
 
     private companion object {
         val SKIP = setOf(".git", "build", ".gradle", ".kotlin", ".idea")
+    }
+
+    init {
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { build() }
     }
 }
