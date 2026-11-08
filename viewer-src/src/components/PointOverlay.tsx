@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
@@ -21,6 +21,23 @@ const NO_ACTIONS: PointActions = { openFile() {}, choose() {}, cancel() {}, foll
 const CLOSE = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>;
 const JUMP = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="M2.5 11.5L6 8l2.5 2.5 2-2 3 3" /><circle cx="10.5" cy="6" r="0.75" fill="currentColor" stroke="none" /></svg>;
 const CARET = <svg className="pc-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" /></svg>;
+const icon = (d: ReactNode) => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
+/** 카드의 작은 그림들 — 라벨 대신 뜻을 싣는다. 글은 title · aria-label 이 갖는다. */
+const ICON = {
+  width: icon(<path d="M2 8h12M4.5 5.5 2 8l2.5 2.5M11.5 5.5 14 8l-2.5 2.5" />),
+  height: icon(<path d="M8 2v12M5.5 4.5 8 2l2.5 2.5M5.5 11.5 8 14l2.5-2.5" />),
+  size: icon(<><rect x="3" y="3" width="10" height="10" rx="1" /><path d="M6 10l4-4M7.5 6H10v2.5" /></>),
+  padding: icon(<><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" /><rect x="5.5" y="5.5" width="5" height="5" rx="0.5" strokeDasharray="1.5 1.5" /></>),
+  click: icon(<path d="M5 2.5l7.5 4.8-3.4.9 2 3.4-1.6.9-2-3.4L5 11.5z" />),
+  text: icon(<path d="M3.5 3.5h9M8 3.5v9M6 12.5h4" />),
+  other: icon(<circle cx="8" cy="8" r="1.75" />),
+  code: icon(<path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />),
+  copied: icon(<path d="M3 8.5l3 3 7-7" />),
+  retry: icon(<path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" />),
+  blocked: icon(<><circle cx="8" cy="8" r="5.5" /><path d="M4.2 11.8l7.6-7.6" /></>),
+  modifiers: icon(<path d="M8 2.5 14 5.5 8 8.5 2 5.5zM2 8.5l6 3 6-3M2 11l6 3 6-3" />),
+  tree: icon(<><path d="M4.5 3v9.5M4.5 6.5h4M4.5 11.5h4" /><rect x="9.5" y="5" width="4" height="3" rx="0.5" /><rect x="9.5" y="10" width="4" height="3" rx="0.5" /></>),
+};
 const TAB = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9.5" rx="2" /><path d="M2 6.5h5.5V3.5" /></svg>;
 
 /** 멘션(`@절대경로#L라인`)이나 미리 보인 `파일명:라인`에서 꼬리표 글자를. */
@@ -75,8 +92,10 @@ const NO_CARD_ACTIONS: CardActions = { pick() {}, jump() {}, close() {} };
 export type CardBox = { width: number; height: number; padding?: readonly [number, number, number, number] };
 /** modifier 체인의 한 칸 — 적힌 순서대로다. sizes 는 이 칸이 정한 축이고, 색이 있으면 color 로 견본을 그린다. */
 export type CardModifier = { name: string; value?: string; color?: string; sizes?: Array<'width' | 'height'> };
-/** 그림의 비율을 이 안에서만 따른다 — 띠처럼 긴 노드가 칸에서 사라지지 않게. */
-const MODEL_MAX_RATIO = 2.4;
+/** 시맨틱이 말하는 것 — 누를 수 있나(click), 읽히는 글(text). */
+export type CardFact = { kind: 'click' | 'text'; label: string };
+/** 그림의 비율을 이 안에서만 따른다 — 띠나 기둥처럼 긴 노드도 상자 안에 크기 글자가 들어가게. */
+const MODEL_RATIO: readonly [number, number] = [0.8, 3.2];
 
 /** dp 는 px 를 밀도로 나눈 값이라 정수로 떨어지지 않는다 — 소수 한 자리까지, 정수면 소수점 없이. */
 const dp = (n: number) => String(Math.round(n * 10) / 10);
@@ -114,43 +133,51 @@ function TreeRows({ rows, actions }: { rows: CardRow[]; actions: CardActions }) 
   return <>{rows.slice(0, cut).map(r => <TreeRow key={r.id} row={r} actions={actions} />)}{nested}</>;
 }
 
-/** 머리 둘째 줄 오른쪽의 복사 결과. */
+/** 복사 결과는 아이콘 하나다 — 막혔을 때만 누를 수 있는 버튼이 된다. */
 function CardStatus({ say }: { say: TagSay }) {
   const { phrase } = useMessages();
-  if (say.copied) return <span className="pc-status ok">{phrase('point.card.copied')}</span>;
-  if (say.again) return <button type="button" className="pc-again" onClick={say.again}>{phrase('point.card.retry')}</button>;
-  return say.copied === false ? <span className="pc-status">{phrase('point.card.blocked')}</span> : null;
+  if (say.copied) { const t = phrase('point.card.copied'); return <span className="pc-status ok" title={t} aria-label={t}>{ICON.copied}</span>; }
+  if (say.again) { const t = phrase('point.card.retry'); return <button type="button" className="pc-again" title={t} onClick={say.again}>{ICON.retry}<span>{t}</span></button>; }
+  if (say.copied !== false) return null;
+  const t = phrase('point.card.blocked');
+  return <span className="pc-status" title={t} aria-label={t}>{ICON.blocked}</span>;
 }
 
-/** 칸 안의 상자 — 가로세로 비율만 그림을 따르고, 여백은 숫자가 들어가도록 고정 폭 고리로 그린다. */
+/**
+ * 칸 안의 상자 — 비율은 그림을 따르고 가운데에 `너비 × 높이`를 쓴다. 여백이 있으면 고정 폭 고리에 네 방향 숫자를 둔다.
+ * 파랑은 그림 위 박스와 같은 색이라 "저 박스의 치수"로 읽힌다.
+ */
 function BoxModel({ box }: { box: CardBox }) {
-  const ratio = Math.min(MODEL_MAX_RATIO, Math.max(1 / MODEL_MAX_RATIO, box.width / box.height));
+  const ratio = Math.min(MODEL_RATIO[1], Math.max(MODEL_RATIO[0], box.width / box.height));
   const [left, top, right, bottom] = box.padding || [0, 0, 0, 0];
-  return <div className={`pc-model${box.padding ? ' padded' : ratio > 1 ? ' wide' : ''}`} style={box.padding ? undefined : { aspectRatio: ratio }}>
-    {box.padding && <>
-      <span className="pc-gap top">{dp(top)}</span><span className="pc-gap right">{dp(right)}</span>
-      <span className="pc-gap bottom">{dp(bottom)}</span><span className="pc-gap left">{dp(left)}</span>
-      <i />
-    </>}
+  return <div className="pc-stage">
+    <div className={`pc-model${box.padding ? ' padded' : ''}`} style={{ '--ratio': ratio } as CSSProperties}>
+      {box.padding && <>
+        <span className="pc-gap top">{dp(top)}</span><span className="pc-gap right">{dp(right)}</span>
+        <span className="pc-gap bottom">{dp(bottom)}</span><span className="pc-gap left">{dp(left)}</span>
+      </>}
+      <div className="pc-inner"><span className="pc-dims">{dp(box.width)}<i>×</i>{dp(box.height)}</span><span className="pc-unit">dp</span></div>
+    </div>
   </div>;
 }
 
-function SizeLine({ axis, value, by }: { axis: 'width' | 'height'; value: number; by?: CardModifier }) {
-  const { phrase } = useMessages();
-  return <div className="pc-axis">
-    <dt>{phrase(`point.card.${axis}`)}</dt>
-    <dd><strong>{dp(value)}</strong> dp</dd>
-    {by && <dd className="pc-by">{by.value ? `${by.name}(${by.value})` : by.name}</dd>}
-  </div>;
+/** 아이콘 하나 · 글 하나의 작은 알약 — 시맨틱이 말하는 것. 크기를 정한 modifier 는 아래 목록의 ↔ · ↕ 줄이 말한다. */
+function Chip({ glyph, label, title }: { glyph: ReactNode; label: string; title: string }) {
+  return <li className="pc-chip" title={title}>{glyph}<span>{label}</span></li>;
+}
+
+function modifierGlyph(m: CardModifier) {
+  if (m.color) return <i className="pc-swatch" style={{ background: m.color }} />;
+  if (m.sizes?.length === 2) return ICON.size;
+  if (m.sizes?.length === 1) return ICON[m.sizes[0]];
+  return m.name === 'padding' ? ICON.padding : m.name === 'clickable' ? ICON.click : m.name === 'text' ? ICON.text : ICON.other;
 }
 
 function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
-  const { phrase } = useMessages();
-  return <ol className="pc-mods">{modifiers.map((m, i) => <li key={`${i}-${m.name}`}>
+  return <ol className="pc-mods">{modifiers.map((m, i) => <li key={`${i}-${m.name}`} className={m.sizes?.length ? 'sizing' : undefined}>
+    <span className="pc-glyph">{modifierGlyph(m)}</span>
     <span className="pc-mod-name">{m.name}</span>
-    {m.color && <i className="pc-swatch" style={{ background: m.color }} />}
     {m.value && <span className="pc-mod-value" title={m.value}>{m.value}</span>}
-    {m.sizes?.map(axis => <span className="pc-mod-axis" key={axis}>{phrase(`point.card.${axis}`)}</span>)}
   </li>)}</ol>;
 }
 
@@ -160,7 +187,7 @@ type CardTab = 'modifiers' | 'tree';
  * 가리킨 결과의 카드(D-162) — 이 노드의 크기가 어디서 왔고 어떤 modifier 를 거쳤는지를 보인다.
  * modifiers · rows 가 null 이면 그 탭을 숨긴다. 탭 칸의 높이는 고정이라 옮겨도 카드가 출렁이지 않고, 트리는 가리킨 줄을 가운데에 둔다.
  */
-export function PointCard({ node, box, facts = [], modifiers, say, rows, state, tab: firstTab = 'modifiers', actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; box: CardBox; facts?: string[]; modifiers: CardModifier[] | null; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; tab?: CardTab; actions?: CardActions; tabs?: PointActions }) {
+export function PointCard({ node, box, facts = [], modifiers, say, rows, state, tab: firstTab = 'modifiers', actions = NO_CARD_ACTIONS, tabs = NO_ACTIONS }: { node: PointNode; box: CardBox; facts?: CardFact[]; modifiers: CardModifier[] | null; say: TagSay; rows: CardRow[] | null; state: ViewerState | null; tab?: CardTab; actions?: CardActions; tabs?: PointActions }) {
   const { phrase } = useMessages();
   const [picked, setTab] = useState<CardTab>(firstTab);
   const shown = ([modifiers && 'modifiers', rows && 'tree'] as Array<CardTab | null>).filter((t): t is CardTab => !!t);
@@ -173,26 +200,24 @@ export function PointCard({ node, box, facts = [], modifiers, say, rows, state, 
     list.scrollTop += r.top - b.top - (list.clientHeight - r.height) / 2;
   }, [rows, tab]);
   const label = tabLabel(say.file, state, phrase);
-  const where = say.file ? `${shortPath(say.file, state?.header?.repo)}:${node.lineNumber}` : say.ref && tagText(say.ref);
-  const cut = (where || '').lastIndexOf('/') + 1;
-  const by = (axis: 'width' | 'height') => modifiers?.find(m => m.sizes?.includes(axis));
+  const full = say.file ? `${shortPath(say.file, state?.header?.repo)}:${node.lineNumber}` : say.ref && tagText(say.ref);
+  const where = full ? full.slice(full.lastIndexOf('/') + 1) : '';
+  const chips = facts.map(f => <Chip key={`${f.kind}-${f.label}`} glyph={ICON[f.kind]} label={f.label} title={phrase(`point.card.fact.${f.kind}`)} />);
   return <section className="point-card" aria-label={phrase('point.card.label')}>
     <header className="pc-title">
       <span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span>
       <button type="button" className="pc-close" title={phrase('point.card.close')} aria-label={phrase('point.card.close')} onClick={actions.close}>{CLOSE}</button>
     </header>
-    {say.ref ? <div className="pc-mention">
-      <span className="pc-ref" title={say.ref}><span>{where!.slice(0, cut)}</span><span>{where!.slice(cut)}</span></span>
+    {say.ref ? <div className="pc-mention" title={say.ref}>
+      <span className="pc-glyph">{ICON.code}</span>
+      <span className="pc-ref" title={full || undefined}>{where}</span>
       {label && <button type="button" className="pc-tab" title={label} aria-label={label} onClick={() => tabs.openFile(say.file!)}>{TAB}</button>}
       <CardStatus say={say} />
     </div> : <p className="pc-msg">{say.msg}</p>}
-    <div className="pc-hero">
-      <div className="pc-stage"><BoxModel box={box} /></div>
-      <dl className="pc-axes"><SizeLine axis="width" value={box.width} by={by('width')} /><SizeLine axis="height" value={box.height} by={by('height')} /></dl>
-    </div>
-    {facts.length > 0 && <ul className="pc-facts">{facts.map(f => <li key={f} title={f}>{f}</li>)}</ul>}
+    <BoxModel box={box} />
+    {chips.length > 0 && <ul className="pc-chips">{chips}</ul>}
     {tab && <div className="pc-section">
-      <div className="pc-tabs" role="tablist">{shown.map(t => <button type="button" role="tab" key={t} aria-selected={t === tab} onClick={() => setTab(t)}>{phrase(`point.card.tab.${t}`)}</button>)}</div>
+      <div className="pc-tabs" role="tablist">{shown.map(t => { const name = phrase(`point.card.tab.${t}`); return <button type="button" role="tab" key={t} title={name} aria-label={name} aria-selected={t === tab} onClick={() => setTab(t)}>{ICON[t]}<span>{t === 'modifiers' ? modifiers!.length : rows!.length}</span></button>; })}</div>
       {tab === 'modifiers' ? <div className="pc-panel" role="tabpanel"><ModifierRows modifiers={modifiers!} /></div>
         : <ul className="pc-panel pc-tree" role="tabpanel" ref={tree}><TreeRows rows={rows!} actions={actions} /></ul>}
     </div>}
