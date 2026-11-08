@@ -21,5 +21,6 @@
   { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 },
   { "fg": ["on-surface"], "bg": ["primary-container", "surface"], "need": 4.5 },
   { "fg": ["on-surface"], "bg": ["state-hover", "surface"], "need": 4.5 },
-  { "fg": ["success"], "bg": ["surface"], "need": 4.5 }
+  { "fg": ["success"], "bg": ["surface"], "need": 4.5 },
+  { "fg": ["on-surface"], "bg": ["pick-container", "surface"], "need": 4.5 }
 ]

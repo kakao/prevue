@@ -602,7 +602,8 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-row { display: flex; align-items: center; min-height: var(--control-medium); padding-right: var(--space-2); border-radius: var(--corner-medium); color: var(--on-surface-variant);
           transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
 .pc-row:hover { background: var(--state-hover); color: var(--on-surface); }
-.pc-node.here > .pc-row { background: var(--primary-container); color: var(--on-surface); }
+/* 가리킨 노드는 그림 위 박스와 같은 파랑 바탕이라 "지금 고른 그것"으로 이어 읽힌다. */
+.pc-node.here > .pc-row { background: var(--pick-container); color: var(--on-surface); }
 .pc-pick { flex: 1; min-width: 0; height: var(--control-medium); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: inherit; font: var(--type-label-small); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-node.here > .pc-row .pc-pick { font: var(--type-label-medium); }
 .pc-jump { gap: var(--space-4); height: var(--control-small); min-width: var(--control-small); padding: 0 var(--space-4); border-radius: var(--corner-small); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
@@ -612,8 +613,10 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 높이를 모르는 목록을 펼치려고 줄 높이를 0fr → 1fr 로 옮긴다. */
 .pc-fold { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--duration-short4) var(--easing-accelerate), opacity var(--duration-short3) var(--easing-accelerate); }
 .pc-fold[data-open] { grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows var(--duration-medium1) var(--easing-decelerate), opacity var(--duration-short4) var(--easing-decelerate); }
-.pc-previews { min-height: 0; margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; overflow: hidden; }
-.pc-preview { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); width: 100%; height: var(--control-small); padding: 0 var(--space-6) 0 var(--space-8); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-code-small); cursor: pointer;
+/* Preview 후보는 자식이 아니라 그 줄에 딸린 목록이다 — 트리의 실 없이 줄 아래 작은 상자에 담고, 글꼴은 트리 줄과 같다. */
+.pc-previews { min-height: 0; margin: 0 0 0 var(--space-8); padding: 0; list-style: none; overflow: hidden; }
+.pc-fold[data-open] .pc-previews { margin: var(--space-2) 0 var(--space-4) var(--space-8); padding: var(--space-2); border-radius: var(--corner-medium); background: var(--surface-container); }
+.pc-preview { display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-small); padding: 0 var(--space-6); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-label-small); cursor: pointer; text-align: left;
               transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
 .pc-preview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-preview:hover { background: var(--state-hover); color: var(--on-surface); }

@@ -112,7 +112,7 @@ function TreeRow({ row, actions, children }: { row: CardRow; actions: CardAction
       </button>}
     </div>
     {many && <div className="pc-fold" data-open={open || undefined} inert={!open}><ul className="pc-previews">{previews.map(p => <li key={p.id}>
-      <button type="button" className="pc-preview" title={p.name} onClick={() => actions.jump(p)}><span>{p.name}</span>{JUMP}</button>
+      <button type="button" className="pc-preview" title={p.name} onClick={() => actions.jump(p)}>{JUMP}<span>{p.name}</span></button>
     </li>)}</ul></div>}
     {children}
   </li>;
