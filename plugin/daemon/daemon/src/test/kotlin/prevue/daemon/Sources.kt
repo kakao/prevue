@@ -13,6 +13,7 @@ object Sources {
     private val modules: List<String> = LAYERS.map { "../$it" } + "."
     val kotlinRoots: List<File> = modules.map { File(it, "src/main/kotlin") }
     val javaRoots: List<File> = modules.map { File(it, "src/main/java") }
+    val bridgeRoots: List<File> = listOf(File("src/bridge/kotlin"))
 
     /** `src/main/kotlin` (· `java`) 아래 상대 경로 → 내용. 모듈이 갈라도 패키지 경로는 하나로 모인다. */
     fun under(roots: List<File>, vararg ext: String): Map<String, String> {
