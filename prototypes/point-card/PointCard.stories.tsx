@@ -80,7 +80,7 @@ function Board({ theme, start = null, still }: { theme: string; start?: Node | n
         <img src={pearlCard.imageUrl!} alt="" draggable={false} />
         <PointMarks nodes={nodes} over={over || !!peek} hover={shown && rectOf(shown)} pick={here && rect ? { id: here.id, rect } : null} />
       </div>
-      {here && rect && <PointCardFloat shot={SHOT_RECT} box={{ ...rect, left: rect.left + INSET, top: rect.top + INSET }}>
+      {here && <PointCardFloat shot={SHOT_RECT}>
         <PointCard {...cardOf(pearl, here)} actions={actions} />
       </PointCardFloat>}
     </div>

@@ -108,10 +108,9 @@
 .pc-swap { animation: pc-fade var(--duration-medium1) var(--easing-decelerate); }
 @keyframes pc-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* 떠 있는 카드 — 그림 밖에 서고 y 와 높이만 같은 곡선 · 같은 시간으로 옮긴다. 처음 뜰 때는 자리로 바로 간다(data-placed 전에는 전환 없음). */
+/* 떠 있는 카드 — 그림 밖, 그림 위쪽에 고정한다. 내용이 바뀌면 높이만 감쇠 곡선으로 옮긴다. 처음 뜰 때는 바로 선다(data-placed 전에는 전환 없음). */
 .pc-float { position: absolute; z-index: 5; width: var(--point-card-w); }
 .pc-float .point-card { height: calc(var(--h, auto) + var(--space-8) * 2); overflow: hidden; }
-.pc-float[data-placed] { transition: top var(--duration-long4) var(--easing-spring); }
 .pc-float[data-placed] .point-card { transition: height var(--duration-long4) var(--easing-spring); }
 
 /* 그림 위 표시 — 구조 테두리 · 손 아래 옅은 바탕 · 고른 것 진한 바탕. 그림과 같은 좌표계에 얹는다. */
@@ -127,9 +126,9 @@
 .pc-marks.over .pc-mark.pick { background: var(--pick-chosen); }
 @keyframes pc-press { from { background: var(--pick-hover); } }
 
-/* 움직임 줄이기 — 자리 · 높이 · 미끄러짐은 즉시, 펼침 · 접힘은 높이 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
+/* 움직임 줄이기 — 높이 · 미끄러짐은 즉시, 펼침 · 접힘은 높이 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
 @media (prefers-reduced-motion: reduce) {
-  .pc-float[data-placed], .pc-float[data-placed] .point-card { transition: none; }
+  .pc-float[data-placed] .point-card { transition: none; }
   .pc-fold, .pc-fold[data-open] { transition-property: opacity; }
   .pc-unfold { animation: pc-fade var(--duration-short4) linear; }
   .pc-foldout { grid-template-rows: 0fr; animation: pc-fadeout var(--duration-short4) linear; }
