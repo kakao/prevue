@@ -1,6 +1,7 @@
 """뷰어 날값 린트가 심은 위반을 잡고 지켜진 모양은 놓아주는지 — tools/lint.sh 가 판정 전에 먼저 돌린다."""
 
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,37 @@ def decl(body, selector=".a"):
 
 def js(text):
     return [rule for _, rule, _ in viewer.js_findings(text)]
+
+
+class NodeDeps(unittest.TestCase):
+    def _root(self, typescript):
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root)
+        if typescript:
+            full = os.path.join(root, viewer.TYPESCRIPT)
+            os.makedirs(os.path.dirname(full))
+            open(full, "w").close()
+        return root
+
+    def test_typescript_가_없으면_npm_ci_를_안내한다(self):
+        self.assertIn("npm ci --prefix viewer-src", viewer.node_deps_problem(self._root(False), which=lambda _: "/bin/node"))
+
+    def test_받다_멈춘_빈_node_modules_도_없는_것이다(self):
+        root = self._root(False)
+        os.makedirs(os.path.join(root, "viewer-src/node_modules/typescript"))
+        self.assertIsNotNone(viewer.node_deps_problem(root, which=lambda _: "/bin/node"))
+
+    def test_node_가_없으면_그것을_말한다(self):
+        self.assertIn("node 가 PATH 에 없다", viewer.node_deps_problem(self._root(True), which=lambda _: None))
+
+    def test_둘_다_있으면_문제가_없다(self):
+        self.assertIsNone(viewer.node_deps_problem(self._root(True), which=lambda _: "/bin/node"))
+
+    def test_JSX_검사는_node_를_띄우기_전에_같은_판정으로_멈춘다(self):
+        root = self._root(False)
+        with self.assertRaises(RuntimeError) as caught:
+            viewer.jsx_findings({"a.tsx": "const C = () => <div />;"}, root=root)
+        self.assertEqual(str(caught.exception), viewer.node_deps_problem(root))
 
 
 class ReactStyles(unittest.TestCase):

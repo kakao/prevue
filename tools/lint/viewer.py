@@ -12,11 +12,16 @@
 import os
 import re
 import json
+import shutil
 import subprocess
+import sys
 
 VIEWER = "plugin/viewer"
 SOURCES = "viewer-src"
 TOKENS = "plugin/viewer/tokens.css"
+# 린트는 사용자의 cwd 에서 불린다 — 의존은 이 파일이 든 저장소에서 찾는다
+REPO = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+TYPESCRIPT = SOURCES + "/node_modules/typescript/package.json"
 
 # 데이터라 날값이 아닌 것 — (경로, 그 줄에 있는 조각, 이유). 가리키는 곳이 사라지면 실패한다.
 DATA = ()
@@ -498,14 +503,28 @@ def files(root):
     return sorted(out)
 
 
-def jsx_findings(texts):
+def node_deps_problem(root=REPO, which=shutil.which):
+    """JSX 날값 검사(lint-styles.mjs)와 그 자기 검사가 쓰는 node · typescript 가 없으면 그 까닭, 있으면 None.
+    node_modules 는 git 밖이라 새 워크트리에 없고, 받다 멈추면 폴더만 남는다 — 모듈을 못 찾았다는 꼬리 대신 원인을 말한다.
+    받는 것은 부르는 쪽 몫이다(린트는 기본 오프라인)"""
+    if not which("node"):
+        return "node 가 PATH 에 없다 — viewer-src/.node-version 의 판을 깐다"
+    if not os.path.isfile(os.path.join(root, TYPESCRIPT)):
+        return "viewer-src/node_modules 에 typescript 가 없다 — npm ci --prefix viewer-src 를 먼저 돌린다"
+    return None
+
+
+def jsx_findings(texts, root=REPO):
     sources = {p: t for p, t in texts.items() if p.endswith((".ts", ".tsx"))}
     if not sources:
         return []
-    parser = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../viewer-src/lint-styles.mjs")
+    problem = node_deps_problem(root)
+    if problem:
+        raise RuntimeError(problem)
+    parser = os.path.join(root, SOURCES, "lint-styles.mjs")
     result = subprocess.run(["node", parser], input=json.dumps(sources), text=True, capture_output=True)
     if result.returncode:
-        raise RuntimeError("JSX style을 검사하지 못했다 — viewer-src에서 npm ci를 실행한다\n" + result.stderr)
+        raise RuntimeError("JSX style 을 검사하지 못했다 — lint-styles.mjs 가 실패했다\n" + result.stderr)
     out = []
     for path, groups in json.loads(result.stdout).items():
         for group in groups:
@@ -556,3 +575,13 @@ def check(root="."):
     out += [(os.path.relpath(os.path.abspath(__file__), root), 1, "viewer/data-stale", "DATA 의 %s %s 이 가리키는 곳이 없다 — 지운다" % d[:2])
             for d in DATA if d not in used]
     return out
+
+
+if __name__ == "__main__":
+    # tools/lint.sh 가 자기 검사 전에 부른다 — 자기 검사도 JSX 검사를 돌려 같은 의존을 쓴다
+    if sys.argv[1:] != ["--deps"]:
+        sys.exit("쓰는 법: python3 tools/lint/viewer.py --deps")
+    why = node_deps_problem()
+    if why:
+        print("검사를 못 했다: %s" % why, file=sys.stderr)
+        sys.exit(2)
