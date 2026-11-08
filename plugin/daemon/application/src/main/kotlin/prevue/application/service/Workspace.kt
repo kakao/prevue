@@ -65,9 +65,10 @@ class Workspace(
 
     suspend fun <T> exclusive(block: suspend (WorkspaceEditor) -> T): T = turn.withLock {
         yield()
-        val ed = WorkspaceEditor(clock, store::edit)
+        var open = true
+        val ed = WorkspaceEditor(clock) { f -> check(open) { "줄 밖에서 쓴다" }; store.edit(f) }
         try { block(ed) } finally {
-            ed.close()
+            open = false
             if (store.state.value.work != null) store.edit { it.copy(work = null) }
         }
     }
@@ -86,14 +87,7 @@ class WorkspaceEditor internal constructor(
     private val clock: Clock,
     private val write: ((WorkspaceState) -> WorkspaceState) -> WorkspaceState,
 ) {
-    private var open = true
-
-    internal fun close() { open = false }
-
-    fun update(f: (WorkspaceState) -> WorkspaceState): WorkspaceState {
-        check(open) { "줄 밖에서 쓴다" }
-        return write(f)
-    }
+    fun update(f: (WorkspaceState) -> WorkspaceState): WorkspaceState = write(f)
 
     fun openBoard(b: Board?) { update { it.copy(board = b) } }
 

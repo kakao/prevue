@@ -169,7 +169,7 @@ style:
     includes: ['**/prevue/infrastructure/json/**']
     forbiddenImports:
       - { value: 'prevue.*', reason: '코덱 json 은 데몬의 타입을 모른다 — 누구나 함께 쓴다' }
-  # 조립(:daemon)은 :infrastructure 를 바인딩으로만 안다. 작업 공간 저장만 조립이 직접 짓는다 — 인자(모듈 · 그래프)가 조립에 있다.
+  # 조립(:daemon)은 :infrastructure 를 바인딩으로만 안다. 작업 공간 저장소만 조립이 직접 짓는다 — 그것을 받는 서비스 Workspace 의 인자(모듈 · 그래프)가 조립에 있어 함께 짓는다.
   ForbiddenImport/assembly:
     active: true
     includes: ['**/prevue/daemon/**']

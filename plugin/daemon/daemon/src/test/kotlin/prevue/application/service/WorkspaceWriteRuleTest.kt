@@ -26,12 +26,12 @@ class WorkspaceWriteRuleTest {
         assertEquals(emptyList<String>(), WriteRule.leaks(files))
     }
 
-    @Test fun `저장소 포트는 Workspace만 쥔다`() {
+    @Test fun `저장소 포트는 Workspace만 쥔다 — 조립 · 입구도 쥐지 않는다`() {
         assertEquals(emptyList<String>(), WriteRule.storeHolders(files))
     }
 
     @Test fun `작업 공간과 편집기에 흩어진 가변 필드가 없다`() {
-        val found = WriteRule.MAKERS.flatMap { path -> listOf("@Volatile", "AtomicReference", "internal set", "private set").filter { it in files.getValue(path) }.map { "$path → $it" } }
+        val found = (WriteRule.MAKERS + WriteRule.STORE_IMPL).flatMap { path -> listOf("@Volatile", "AtomicReference", "internal set", "private set").filter { it in files.getValue(path) }.map { "$path → $it" } }
         assertEquals(emptyList<String>(), found)
     }
 
@@ -43,10 +43,12 @@ class WorkspaceWriteRuleTest {
             "application/service/B.kt" to "fun b() { ws.noteCreated(c, d); ws.noteCreated(c, d) }\n",
             "application/service/C.kt" to "val ed = WorkspaceEditor (clock) { it }\n",
             "application/service/D.kt" to "class D(private val store: WorkspaceStore)\n",
+            "infrastructure/controller/http/E.kt" to "class E(private val store: WorkspaceStore)\n",
+            "infrastructure/store/InMemoryWorkspaceStore.kt" to "class InMemoryWorkspaceStore : WorkspaceStore\n",
         )
         assertEquals(listOf("application/service/A.kt → recordCard", "application/service/B.kt → noteCreated", "application/service/B.kt → noteCreated"), WriteRule.outOfQueue(planted))
         assertEquals(listOf("application/service/C.kt → WorkspaceEditor("), WriteRule.leaks(planted))
-        assertEquals(listOf("application/service/D.kt → WorkspaceStore"), WriteRule.storeHolders(planted))
+        assertEquals(listOf("application/service/D.kt → WorkspaceStore", "infrastructure/controller/http/E.kt → WorkspaceStore"), WriteRule.storeHolders(planted))
     }
 }
 
@@ -55,7 +57,8 @@ object WriteRule {
     private val EDITOR = Regex("""\bWorkspaceEditor\s*\(""")
     private val STORE = Regex("""\bWorkspaceStore\b""")
     val MAKERS = setOf("application/service/Workspace.kt")
-    private val STORE_HOLDERS = MAKERS + "application/port/WorkspaceStore.kt"
+    const val STORE_IMPL = "infrastructure/store/InMemoryWorkspaceStore.kt"
+    private val STORE_HOLDERS = MAKERS + "application/port/WorkspaceStore.kt" + STORE_IMPL
 
     fun outOfQueue(files: Map<String, String>): List<String> =
         files.entries.sortedBy { it.key }.flatMap { (path, text) -> outside.findAll(text).map { "$path → ${it.groupValues[1]}" } }
@@ -65,6 +68,6 @@ object WriteRule {
     }
 
     fun storeHolders(files: Map<String, String>): List<String> =
-        files.entries.sortedBy { it.key }.filter { (path, text) -> path.startsWith("application/") && path !in STORE_HOLDERS && STORE.containsMatchIn(text) }
+        files.entries.sortedBy { it.key }.filter { (path, text) -> path !in STORE_HOLDERS && STORE.containsMatchIn(text) }
             .map { (path, _) -> "$path → WorkspaceStore" }
 }

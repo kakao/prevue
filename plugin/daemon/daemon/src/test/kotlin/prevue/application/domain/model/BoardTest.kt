@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** 보드와 카드는 불변 값이다(D-51). 바꾸면 새 값이 나오고, `Workspace`가 CAS로 갈아 끼운다. */
+/** 보드와 카드는 불변 값이다(D-51). 바꾸면 새 값이 나오고, `WorkspaceStore`가 CAS로 갈아 끼운다. */
 class BoardTest {
     private val specs = (0 until 4).map { PreviewSpec("com.x.P$it", "P$it", emptyMap(), null, it) }
     private fun drawn(i: Int) = CardResult.WriteFailed(i, prevue.application.domain.model.Verbatim("x$i"))
