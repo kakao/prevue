@@ -20,7 +20,7 @@ Storybook `프로토타입/PointCard`
 - `PointFloat.tsx` — 카드 자리(`placeCard`) · 떠 있는 카드(`PointCardFloat`) · 그림 위 표시(`PointMarks`)
 - `point-card.css` — 카드 · 표시 스타일과 그림 위 표시의 토큰 후보. 뷰어 `style.css` 위에 얹는다
 - `strings.ts` — `point.card.*` 문구(en · ko)
-- `pearl-tree.ts` — 스토리 재료. pearl 0번 그림의 노드 트리를 눈으로 본뜬 것과 깊이 22 사슬
+- `pearl-tree.ts` — 스토리 재료. pearl 0번 그림의 노드 트리를 눈으로 본뜬 것과 조상 19칸의 긴 사슬
 - `PointCard.stories.tsx` · `stories.css` — 스토리와 배치
 
 ## 카드의 모양

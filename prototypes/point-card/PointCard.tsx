@@ -66,17 +66,17 @@ function TreeRow({ row, here, actions, children }: { row: CardRow; here?: boolea
 
 /**
  * 가리킨 노드가 바뀌면 새 자식 묶음은 펼치고, 옛 노드가 형제나 자식으로 남으면 그 아래의 옛 자식 묶음을 같은 시간에 접어 걷는다.
- * 처음 그릴 때는 펼치지 않는다 — 바뀐 적이 있어야 moved 가 선다.
+ * 처음 그릴 때와 부모로 올라갈 때(새 자식이 곧 이미 보이던 형제다)는 펼치지 않는다.
  */
 function Tree({ tree, actions, settled }: { tree: CardTree; actions: CardActions; settled(): void }) {
   const { ups, here, before, after, downs } = tree;
   const [ghost, setGhost] = useState<{ at: string; rows: CardRow[] } | null>(null);
-  const [moved, setMoved] = useState(false);
+  const [unfold, setUnfold] = useState(false);
   const prev = useRef<{ here: string; downs: CardRow[] } | null>(null);
   useLayoutEffect(() => {
     const p = prev.current;
     if (p && p.here !== here.id) {
-      setMoved(true);
+      setUnfold(!downs.some(d => d.id === p.here));
       const level = [...before, ...after, ...downs], shown = new Set([...ups, here, ...level].map(r => r.id));
       const rows = p.downs.filter(d => !shown.has(d.id));
       setGhost(rows.length && level.some(r => r.id === p.here) ? { at: p.here, rows } : null);
@@ -89,7 +89,7 @@ function Tree({ tree, actions, settled }: { tree: CardTree; actions: CardActions
       </div>
     : undefined;
   const side = (r: CardRow) => <TreeRow key={r.id} row={r} actions={actions}>{leaving(r)}</TreeRow>;
-  const leaves = downs.length ? <div key={`unfold-${here.id}`} className={moved ? 'pc-unfold' : undefined} onAnimationEnd={e => { if (e.target === e.currentTarget) settled(); }}>
+  const leaves = downs.length ? <div key={`unfold-${here.id}`} className={unfold ? 'pc-unfold' : undefined} onAnimationEnd={e => { if (e.target === e.currentTarget) settled(); }}>
     <ul className="pc-group">{downs.map(side)}</ul>
   </div> : null;
   const level = <>{before.map(side)}<TreeRow key={here.id} row={here} here actions={actions}>{leaves}</TreeRow>{after.map(side)}</>;
@@ -98,16 +98,20 @@ function Tree({ tree, actions, settled }: { tree: CardTree; actions: CardActions
   return <ul className="pc-tree">{ups.slice(0, cut).map(r => <TreeRow key={r.id} row={r} actions={actions} />)}{nested}</ul>;
 }
 
-/** 자동 복사가 막혔을 때만 파일 줄 끝에 선다. 누르는 순간(사용자 제스처) 넣고 사라지고, 그래도 막히면 `복사할 수 없음`으로 남는다. */
+/**
+ * 자동 복사가 막혔을 때만 파일 줄 끝에 선다. 누르는 순간(사용자 제스처) 다시 넣는다.
+ * 뷰어는 다시 복사(again)가 실패하면 again 없이 copied=false 를 다시 보내므로, 누른 뒤 again 이 사라지면 `복사할 수 없음`으로 남는다.
+ * 상태는 멘션마다다 — 부르는 쪽이 key 를 ref 로 준다.
+ */
 function CopyRescue({ say }: { say: TagSay }) {
   const { phrase } = useMessages();
-  const [gone, setGone] = useState(false), [failed, setFailed] = useState(false);
-  useEffect(() => { setGone(false); setFailed(false); }, [say.ref, say.copied]);
-  if (say.copied !== false || gone) return null;
-  if (failed) return <span className="pc-rescue off">{phrase('point.card.blocked')}</span>;
+  const [asked, setAsked] = useState(false), [failed, setFailed] = useState(false), [done, setDone] = useState(false);
+  if (say.copied !== false || done) return null;
+  if (failed || (asked && !say.again)) return <span className="pc-rescue off">{phrase('point.card.blocked')}</span>;
+  if (asked) return null;
   const press = () => {
-    if (say.again) { say.again(); setGone(true); return; }
-    (navigator.clipboard ? navigator.clipboard.writeText(say.ref || '') : Promise.reject()).then(() => setGone(true), () => setFailed(true));
+    if (say.again) { setAsked(true); say.again(); return; }
+    (navigator.clipboard ? navigator.clipboard.writeText(say.ref || '') : Promise.reject()).then(() => setDone(true), () => setFailed(true));
   };
   return <button type="button" className="pc-rescue" title={phrase('point.card.rescue.title', { ref: say.ref ?? '' })} onClick={press}>{phrase('point.card.rescue')}</button>;
 }
@@ -139,11 +143,11 @@ function modifierKind(m: CardModifier): keyof typeof KIND | null {
 
 function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
   const { phrase } = useMessages();
-  return <ol className="pc-mods pc-scroll" tabIndex={0}>{modifiers.map((m, i) => { const kind = modifierKind(m); return <li key={`${i}-${m.name}`}>
+  return <div className="pc-mods"><ol className="pc-scroll" tabIndex={0}>{modifiers.map((m, i) => { const kind = modifierKind(m); return <li key={`${i}-${m.name}`}>
     {kind ? <span className="pc-kind" title={phrase(`point.card.kind.${kind}`)} aria-label={phrase(`point.card.kind.${kind}`)}>{KIND[kind]}</span> : <span className="pc-kind" />}
     <span className="pc-mod-name">{m.name}</span>
     {(m.value || m.color) && <span className="pc-mod-value" title={m.value}>{m.color && <i className="pc-swatch" style={{ background: m.color }} />}<span>{m.value}</span></span>}
-  </li>; })}</ol>;
+  </li>; })}</ol></div>;
 }
 
 /**
@@ -179,7 +183,7 @@ export function PointCard({ node, box, modifiers, say, tree, previews = [], orig
       <header className="pc-head">
         <div className="pc-id pc-swap" key={`id-${swap}`}>
           <span className="pc-nameline"><span className="pc-name" title={node.name || undefined}>{node.name || node.fileName}</span><OriginChip origin={origin} /></span>
-          {say.ref && <span className="pc-refline"><span className="pc-ref" title={full || say.ref}>{where}</span><CopyRescue say={say} /></span>}
+          {say.ref && <span className="pc-refline"><span className="pc-ref" title={full || say.ref}>{where}</span><CopyRescue key={say.ref} say={say} /></span>}
         </div>
         {jumpLabel && <button type="button" className="pc-jump" title={jumpLabel} aria-label={jumpLabel} aria-expanded={many ? listOpen : undefined}
           onClick={() => many ? setListOpen(o => !o) : actions.jump(previews[0])}>{JUMP}{many && <span>{previews.length}</span>}</button>}
@@ -189,7 +193,7 @@ export function PointCard({ node, box, modifiers, say, tree, previews = [], orig
         <button type="button" className="pc-preview" title={p.name} onClick={() => actions.jump(p)}>{JUMP}<span>{p.name}</span></button>
       </li>)}</ul></div>}
       {!say.ref && <p className="pc-msg">{say.msg}</p>}
-      {tree && <div className="pc-panel pc-tree-panel pc-scroll" ref={panel}><Tree tree={tree} actions={actions} settled={() => center(true)} /></div>}
+      {tree && <div className="pc-panel pc-tree-panel"><div className="pc-scroll" ref={panel}><Tree tree={tree} actions={actions} settled={() => center(true)} /></div></div>}
       <div className="pc-panel pc-detail">
         <div className="pc-detail-in pc-swap" key={`detail-${swap}`}>
           <SizeRow box={box} />

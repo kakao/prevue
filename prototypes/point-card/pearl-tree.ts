@@ -59,7 +59,7 @@ export const pearl = N({ name: 'PearlTheme', file: THEME, line: 20, module: ':co
   ] }),
 ] });
 
-// 깊이 22 — 나우인안드로이드 화면 트리를 프로젝트 소스 · 크기 있는 노드로 좁힌 깊이다. 그림 좌표가 없어 States 에만 쓴다.
+// 긴 사슬 — 나우인안드로이드 화면 트리를 프로젝트 소스 · 크기 있는 노드로 좁힌 조상 19칸 아래의 AsyncImage(깊이 20)다. 그림 좌표가 없어 States 에만 쓴다.
 const NEWS = '/Users/me/nowinandroid/core/ui/src/main/kotlin/com/google/samples/apps/nowinandroid/core/ui/NewsResourceCard.kt';
 const niaModule: Record<string, string> = { NiaTheme: ':core:designsystem', NiaBackground: ':core:designsystem', NiaGradientBackground: ':core:designsystem', NiaApp: ':app', NiaNavigationSuiteScaffold: ':core:designsystem', NiaNavHost: ':app', ForYouScreen: ':feature:foryou', newsFeed: ':core:ui', NewsResourceCardExpanded: ':core:ui', NewsResourceHeaderImage: ':core:ui' };
 export const asyncImage = N({ name: 'AsyncImage', file: NEWS, line: 214, box: { width: 331.4, height: 180 },

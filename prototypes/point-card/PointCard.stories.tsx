@@ -49,7 +49,7 @@ export const States: Story = { render: () => <div className="story-sheets">{['li
     <Case name="글자 노드 (Compose)"><Picker start={label} /></Case>
     <Case name="Preview 여럿"><Picker start={screen} /></Case>
     <Case name="복사 막힘"><Picker start={drink} copied={false} /></Case>
-    <Case name="긴 사슬 (깊이 22)"><Picker root={nia} start={asyncImage} /></Case>
+    <Case name="긴 사슬 (조상 19)"><Picker root={nia} start={asyncImage} /></Case>
     <Case name="색인 없음"><Picker start={drink} bare /></Case>
     <Case name="문장 (멘션 없음)"><Picker start={drink} bare msg="DrinkCard.kt:73 — not in the index, so the full path is missing" /></Case>
   </div>
@@ -80,7 +80,7 @@ function Board({ theme, start = null, still }: { theme: string; start?: Node | n
         <img src={pearlCard.imageUrl!} alt="" draggable={false} />
         <PointMarks nodes={nodes} over={over || !!peek} hover={shown && rectOf(shown)} pick={here && rect ? { id: here.id, rect } : null} />
       </div>
-      {here && rect && <PointCardFloat stage={STAGE} shot={SHOT_RECT} box={{ ...rect, left: rect.left + INSET, top: rect.top + INSET }}>
+      {here && rect && <PointCardFloat shot={SHOT_RECT} box={{ ...rect, left: rect.left + INSET, top: rect.top + INSET }}>
         <PointCard {...cardOf(pearl, here)} actions={actions} />
       </PointCardFloat>}
     </div>

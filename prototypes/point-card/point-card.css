@@ -52,7 +52,8 @@
 /* 패널 — 카드보다 한 단 낮은 면 */
 .pc-panel { margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); }
 /* 트리 — 6줄 × 24px 고정. 노드를 옮겨도 트리 칸과 그 아래 설명 패널이 제자리에 있고, 넘치면 안에서 스크롤한다. */
-.pc-tree-panel { height: calc(var(--control-small) * 6 + var(--space-8)); overflow-y: auto; overscroll-behavior: contain; }
+.pc-tree-panel { height: calc(var(--control-small) * 6 + var(--space-8)); }
+.pc-tree-panel > .pc-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
 .pc-tree { margin: 0; padding: 0; list-style: none; }
 /* 파일 트리의 모양 — 자식 묶음의 왼쪽 실과 한 칸 들여쓰기 */
 .pc-group { margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; }
@@ -81,7 +82,9 @@
 .pc-dims i { margin: 0 var(--space-4); color: var(--on-surface-variant); font-style: normal; font-weight: var(--weight-regular); }
 .pc-unit { margin-left: var(--space-4); color: var(--on-surface-variant); font: var(--type-code-small); }
 /* modifier 는 위에서 아래로 적용되는 순서다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝. 상한 4줄, 넘치면 안에서 스크롤한다. 크기를 정한 줄도 강조하지 않는다. */
-.pc-mods { max-height: calc(var(--control-medium) * 4 + var(--space-4)); margin: 0; padding: var(--space-4) 0 0; border-top: 1px solid var(--outline-variant); list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+/* 가는 선은 바깥 묶음이 갖고, 흐린 끝(마스크)은 안쪽 목록만 받는다 — 선과 패널 바탕이 흐려지지 않게. */
+.pc-mods { padding-top: var(--space-4); border-top: 1px solid var(--outline-variant); }
+.pc-mods > ol { max-height: calc(var(--control-medium) * 4); margin: 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
 .pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-medium); padding: 0 var(--space-8) 0 var(--space-4); border-radius: var(--corner-small);
               transition: background var(--duration-short3) var(--easing-standard); }
 .pc-mods li:hover { background: var(--state-hover); }
@@ -93,6 +96,7 @@
 .pc-swatch { flex: 0 0 auto; width: var(--space-12); height: var(--space-12); border-radius: var(--corner-small); box-shadow: 0 0 0 1px var(--outline-variant); }
 
 /* 스크롤바 — 평소엔 숨기고, 올리거나 포커스가 오면 얇은 무채색 막대. 위아래 끝 8px 는 옅어져 더 있다는 것을 알린다.
+   마스크는 바탕 · 테두리를 그리지 않는 안쪽 스크롤러에만 단다.
    마스크는 알파만 보므로 색 자리의 black 은 색이 아니라 "불투명"이다. */
 .pc-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, black var(--space-8), black calc(100% - var(--space-8)), transparent 100%);
