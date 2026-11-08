@@ -1,6 +1,8 @@
 package prevue.application.service
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +17,7 @@ import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
 
+@SingleIn(AppScope::class)
 class Watchers @Inject internal constructor(
     private val ws: Workspace,
     private val sources: SourceWatcher?,

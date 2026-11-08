@@ -1,6 +1,8 @@
 package prevue.application.service
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.PreviewSpec
@@ -13,6 +15,7 @@ import prevue.application.port.BuildChange
 import prevue.application.port.Compiler
 import prevue.application.port.FailureKind
 
+@SingleIn(AppScope::class)
 @Inject
 class ExternalBuilds(
     private val ws: Workspace,
