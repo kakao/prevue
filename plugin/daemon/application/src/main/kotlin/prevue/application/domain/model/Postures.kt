@@ -4,7 +4,6 @@ data class Postures(
     val spec: PreviewSpec,
     val from: ScreenSize,
     val round: Long,
-    val seededAtMs: Long,
     val shots: Map<ScreenSize, Shot> = emptyMap(),
 ) {
     fun idOf(s: ScreenSize): String = idOf(spec, s)

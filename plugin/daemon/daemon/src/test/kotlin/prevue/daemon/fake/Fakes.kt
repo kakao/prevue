@@ -86,10 +86,13 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         if (tree) treeAsides += p
         asideEntered.release()
         asideGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
+        asideThrows?.let { check(!it(p)) { "옆 태스크 예외 — ${p.previewId}" } }
         return asideFails?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
     }
     /** 걸어 두면 옆 태스크가 그 문구의 렌더 예외로 실패한다. */
     @Volatile var asideFails: String? = null
+    /** 걸어 두면 맞는 옆 태스크가 결과 대신 예외를 던진다. */
+    @Volatile var asideThrows: ((PreviewSpec) -> Boolean)? = null
 
     /** 라이브 첫 장을 다른 이름으로 남긴 것들 — (원래 previewId, 새 previewId). */
     val copies = CopyOnWriteArrayList<Pair<String, String>>()
@@ -395,7 +398,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     @Suppress("LongParameterList")
     internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
-        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.Live.QUIET_MS,
+        resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.QuietFill.QUIET_MS,
         hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
     ): TestGraph {
         val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
