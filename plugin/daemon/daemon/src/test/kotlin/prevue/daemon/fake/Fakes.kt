@@ -52,7 +52,6 @@ import prevue.application.port.ResourceKey
 import prevue.application.port.ResourceLookup
 import prevue.application.port.ResourceValues
 import prevue.application.port.Clock
-import prevue.application.port.PrevueDispatchers
 import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
@@ -392,16 +391,16 @@ class Fixture(previews: Int = 3) : AutoCloseable {
 
     private val module = ModuleInfo(root.absolutePath, spec.project, spec.variant, spec.kotlinModuleName, null, null)
 
-    /** `Main`과 같은 조립 — 운영 그래프의 기여에 가짜 포트를 끼운다. 채우기·쓰기 기록은 기본이 진짜 디스패처다 — 줄 서기의 경합이 실제와 같아야 한다. [dispatchers]를 바꾸면 그 디스패처로 만든 [scope]도 함께 넘긴다. */
+    /** `Main`과 같은 조립 — 운영 그래프의 기여에 가짜 포트를 끼운다. 채우기·쓰기 기록은 진짜 디스패처다 — 줄 서기의 경합이 실제와 같아야 한다. */
     @Suppress("LongParameterList")
     internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
         resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.Live.QUIET_MS,
-        hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir), dispatchers: PrevueDispatchers = realDispatchers,
+        hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
     ): TestGraph {
         val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
-            ProjectFiles(root, graph.roots, dispatchers, scope), dispatchers, resources = resources, sources = sources, builds = builds)
+            ProjectFiles(root, graph.roots, realDispatchers, scope), realDispatchers, resources = resources, sources = sources, builds = builds)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)
     }
 
