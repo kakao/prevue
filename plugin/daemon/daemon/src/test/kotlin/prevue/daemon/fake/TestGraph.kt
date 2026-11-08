@@ -31,7 +31,9 @@ import prevue.daemon.DaemonBindings
 import prevue.daemon.StartDaemon
 import prevue.application.service.Boards
 import prevue.application.service.ExternalBuilds
+import prevue.application.domain.model.ModuleGraph
 import prevue.application.service.HotReload
+import prevue.application.service.ResourcePatches
 import prevue.application.service.Watchers
 import prevue.application.service.Status
 import prevue.application.service.Tabs
@@ -71,6 +73,7 @@ internal interface TestGraph {
     val live: Live
 
     val hotReload: HotReload
+    val resourcePatches: ResourcePatches
     val externalBuilds: ExternalBuilds
     val watchers: Watchers
     val boards: Boards
@@ -85,6 +88,8 @@ internal interface TestGraph {
     val browserEndpoint: BrowserEndpoint
     val hotSwap: HotSwapRunner
     val endpoints: Set<HttpEndpoint>
+
+    @Provides fun moduleGraph(workspace: Workspace): ModuleGraph = workspace.graph
 
     @DependencyGraph.Factory
     fun interface Factory {

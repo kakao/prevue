@@ -56,7 +56,7 @@ class InfraIntegrationTest {
             assertNotNull(graph.builds)
             assertNotNull(graph.values)
             assertEquals(graph.target.outDir.absolutePath, uc.status.read().engine.out)
-            uc.hotReload.rememberValues()
+            uc.resourcePatches.rememberValues()
             val first = uc.tabs.openPreview(copy.path, null, emptyMap(), "test").shot.out
             assertTrue(first.ok, first.message.toString())
             ws.awaitBoardFilled(timeoutMs = 60_000)

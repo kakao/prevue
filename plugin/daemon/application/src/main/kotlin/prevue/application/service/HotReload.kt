@@ -183,10 +183,4 @@ class HotReload(
     private fun failing(): Boolean = ws.now.let { s -> s.lastResult?.ok == false || s.board?.cards.orEmpty().any { c ->
         when (val r = c.result) { is CardResult.Drawn -> !r.shot.ok; is CardResult.WriteFailed -> true; else -> false }
     } }
-
-    fun rememberValues(): Int {
-        val files = resources.valueFiles(ws.graph.resRoots)
-        resources.remember(files)
-        return files.size
-    }
 }

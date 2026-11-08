@@ -15,6 +15,8 @@ import prevue.daemon.fake.awaitBoardFilled
 import prevue.application.port.CompileResult
 import prevue.application.port.ResourceKey
 import prevue.application.port.SourceChange
+import prevue.application.domain.model.ModuleGraph
+import prevue.application.domain.model.ModuleNode
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.WaitResult
 import prevue.application.domain.rule.StaleReasons
@@ -36,7 +38,7 @@ class ResourcePatchesTest {
 
     private fun opened(file: File = fx.valuesFile(xml("title" to "A", "done" to "Done"))): Pair<TestGraph, File> {
         val uc = fx.graph(resources = values)
-        uc.hotReload.rememberValues()
+        uc.resourcePatches.rememberValues()
         runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         uc.workspace.awaitBoardFilled()
         return uc to file
@@ -50,8 +52,9 @@ class ResourcePatchesTest {
     @Test fun `한 묶음의 판정은 넣기 전의 값과 견준다 — 앞 파일에 넣은 값이 뒤 파일의 지금 값이 되지 않는다`() {
         val a = fx.valuesFile(xml("title" to "A"))
         val b = File(fx.root, "app/src/debug/res/values/strings.xml").apply { parentFile.mkdirs(); writeText(xml("title" to "A")) }
-        val patches = ResourcePatches(values, ProjectFiles(fx.root, emptyList(), realDispatchers, fx.scope))
-        patches.remember(listOf(a, b))
+        val graph = ModuleGraph(":app", listOf(ModuleNode(":app", emptyList(), emptyList(), resRoots = listOf(fx.resRoot, b.parentFile.parentFile))))
+        val patches = ResourcePatches(values, ProjectFiles(fx.root, emptyList(), realDispatchers, fx.scope), graph)
+        assertEquals(2, patches.rememberValues())
         a.writeText(xml("title" to "B"))
         b.writeText(xml("title" to "C"))
         val out = runBlocking { patches.apply(listOf(a, b)) }
@@ -147,7 +150,7 @@ class ResourcePatchesTest {
 
     @Test fun `렌더러가 값을 얹을 수 없으면 지금처럼 낡음이다`() {
         val f = fx.valuesFile(xml("title" to "A"))
-        val uc = fx.graph(resources = null).also { it.hotReload.rememberValues() }
+        val uc = fx.graph(resources = null).also { it.resourcePatches.rememberValues() }
         runBlocking { uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
         write(f, xml("title" to "B"))
         assertTrue(uc.watch(f) is ReloadResult.ResourcesStale)
@@ -156,7 +159,7 @@ class ResourcePatchesTest {
     // 보여 주는 것이 없어도 얹는다 — 그다음 여는 그림이 저장한 값이어야 한다.
     @Test fun `보여 주는 것이 없어도 값은 얹는다`() {
         val f = fx.valuesFile(xml("title" to "A", "done" to "Done"))
-        val uc = fx.graph(resources = values).also { it.hotReload.rememberValues() }
+        val uc = fx.graph(resources = values).also { it.resourcePatches.rememberValues() }
         write(f, xml("title" to "B", "done" to "Done"))
         assertEquals(ReloadResult.NothingShown, uc.watch(f))
         assertEquals("B", values.over[title])

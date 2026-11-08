@@ -11,7 +11,7 @@ import prevue.infrastructure.bindings.Closer
 import prevue.infrastructure.bindings.CompilerWarmUp
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.RendererLoss
-import prevue.application.service.HotReload
+import prevue.application.service.ResourcePatches
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.service.Watchers
@@ -21,7 +21,7 @@ import prevue.application.port.PrevueDispatchers
 internal interface PrevueGraph {
     val rendererLoss: RendererLoss
     val startDaemon: StartDaemon
-    val hotReload: HotReload
+    val resourcePatches: ResourcePatches
     val status: Status
     val tabs: Tabs
     val watchers: Watchers
