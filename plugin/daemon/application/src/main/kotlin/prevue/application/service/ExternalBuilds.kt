@@ -12,8 +12,6 @@ import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.BuildChange
 import prevue.application.port.Compiler
 import prevue.application.port.FailureKind
-import prevue.application.port.Workspace
-import prevue.application.port.WorkspaceEditor
 
 @Inject
 class ExternalBuilds(

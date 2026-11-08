@@ -43,8 +43,6 @@ import prevue.application.domain.rule.Scrolling
 import prevue.application.port.LiveSession
 import prevue.application.port.RenderOutput
 import prevue.application.port.SourceFileRepository
-import prevue.application.port.Workspace
-import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
 @Inject

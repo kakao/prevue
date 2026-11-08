@@ -14,7 +14,6 @@ import prevue.application.port.SourceChange
 import prevue.application.port.SourceFileRepository
 import prevue.application.port.SourceWatcher
 import prevue.application.port.ValueFiles
-import prevue.application.port.Workspace
 
 class Watchers @Inject internal constructor(
     private val ws: Workspace,

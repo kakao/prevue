@@ -4,7 +4,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.CoroutineScope
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.Closer
 import prevue.infrastructure.bindings.EntryHooks

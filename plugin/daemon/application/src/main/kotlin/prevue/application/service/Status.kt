@@ -30,7 +30,6 @@ import prevue.application.port.MemoryMeter
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
-import prevue.application.port.Workspace
 import java.io.File
 import prevue.application.domain.model.Status as StatusView
 

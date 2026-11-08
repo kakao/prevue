@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.dump.DumpPaths
 import prevue.infrastructure.render.RenderOutputs
@@ -57,7 +57,7 @@ import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.TargetRepo
-import prevue.infrastructure.store.InMemoryWorkspace
+import prevue.infrastructure.store.InMemoryWorkspaceStore
 
 /** 그림 없이 순서만 기록하는 렌더러. 막고 풀기(latch)로 락 안의 한 순간에 다른 스레드를 끼워 넣는다. */
 class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSessionFactory {
@@ -399,7 +399,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
         resources: ResourceValues? = null, watchRoots: Boolean = true, postureQuietMs: Long = prevue.application.service.Live.QUIET_MS,
         hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir), dispatchers: PrevueDispatchers = realDispatchers,
     ): TestGraph {
-        val ws = InMemoryWorkspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList())
+        val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
             ProjectFiles(root, graph.roots, dispatchers, scope), resources = resources, sources = sources, builds = builds, dispatchers = dispatchers)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, postureQuietMs)

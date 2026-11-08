@@ -10,8 +10,6 @@ import prevue.application.domain.model.SaveTiming
 import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.CompileResult
 import prevue.application.port.SourceChange
-import prevue.application.port.Workspace
-import prevue.application.port.WorkspaceEditor
 
 @Inject
 class HotReload(

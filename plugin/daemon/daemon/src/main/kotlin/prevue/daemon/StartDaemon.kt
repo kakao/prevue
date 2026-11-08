@@ -8,7 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import prevue.application.port.PreviewRenderer
-import prevue.application.port.Workspace
+import prevue.application.service.Workspace
 import prevue.application.service.Boards
 import prevue.application.service.Engine
 import prevue.application.service.Live

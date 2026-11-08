@@ -13,7 +13,6 @@ import prevue.application.domain.model.PreviewFile
 import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.model.WorkspaceEvent
-import prevue.application.port.Workspace
 
 /**
  * D-56. 이 데몬이 열 수 있는 프리뷰 파일들 — 빠른 열기가 찾는다. 띄울 때 소스 루트를 한 번 훑고([build]), 그 뒤로는 감시가 알린 파일만

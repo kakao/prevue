@@ -30,8 +30,6 @@ import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.model.phrase
 import prevue.application.domain.rule.CardPolicy
 import prevue.application.domain.rule.CardPolicy.Decision
-import prevue.application.port.Workspace
-import prevue.application.port.WorkspaceEditor
 
 @SingleIn(AppScope::class)
 @Inject
