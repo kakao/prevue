@@ -11,6 +11,7 @@ import prevue.infrastructure.bindings.EntryHooks
 import prevue.infrastructure.bindings.InfraConfig
 import prevue.infrastructure.bindings.TargetCheckout
 import prevue.application.service.HotReload
+import prevue.application.service.ResourcePatches
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.application.port.BuildWatcher
@@ -29,6 +30,7 @@ internal interface InfraGraph {
     val status: Status
     val tabs: Tabs
     val hotReload: HotReload
+    val resourcePatches: ResourcePatches
 
     @DependencyGraph.Factory
     fun interface Factory {

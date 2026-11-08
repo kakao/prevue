@@ -3,6 +3,7 @@ package prevue.application.service
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.phrase
 import java.io.File
@@ -17,19 +18,23 @@ import prevue.application.domain.rule.ResourcePolicy
 
 @SingleIn(AppScope::class)
 @Inject
-class ResourcePatches(private val values: ResourceValues?, private val sources: SourceFileRepository) {
+class ResourcePatches(
+    private val values: ResourceValues?,
+    private val sources: SourceFileRepository,
+    private val graph: ModuleGraph,
+) {
     private val known = MutableStateFlow(emptyMap<String, String>())
 
     data class Outcome(val patched: Int, val stale: Phrase?, val compile: CompileResult?) {
         val same: Boolean get() = patched == 0 && stale == null
     }
 
-    fun remember(files: List<File>) {
+    fun rememberValues(): Int {
+        val files = sources.valueFiles(graph.resRoots).filter(::isValues)
         val read = files.mapNotNull { f -> sources.read(f)?.let { f.canonicalPath to it } }
         known.update { it + read }
+        return files.size
     }
-
-    fun valueFiles(resRoots: List<File>): List<File> = sources.valueFiles(resRoots).filter(::isValues)
 
     suspend fun apply(files: List<File>): Outcome {
         val t = System.nanoTime()
