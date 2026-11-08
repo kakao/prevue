@@ -2,22 +2,13 @@ package prevue.application.service
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 import prevue.application.domain.model.Board
-import prevue.application.domain.model.BoardEpoch
 import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
@@ -26,7 +17,6 @@ import prevue.application.domain.model.Resize
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.SkipReason
-import prevue.application.domain.model.WorkspaceState
 import prevue.application.domain.model.phrase
 import prevue.application.domain.rule.CardPolicy
 import prevue.application.domain.rule.CardPolicy.Decision
@@ -40,7 +30,6 @@ class Boards(
     private val callers: StaleCallers,
     private val liveService: Live,
     private val scope: CoroutineScope,
-    @Named(Live.QUIET) private val quietMs: Long = Live.QUIET_MS,
 ) {
     private class Filled(val drawn: Int, val renderNs: Long)
 
@@ -86,6 +75,16 @@ class Boards(
         return CardResult.Pending(index)
     }
 
+    internal suspend fun startNextAside(ed: WorkspaceEditor, from: Int, by: String): Int? {
+        val b = ws.now.board ?: return null
+        val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
+            ?: return null
+        val t = System.nanoTime()
+        startCard(ed, b, idx, force = false, by)
+        println("[prevue] 조작 중 카드 $idx 옆 그림 ${(System.nanoTime() - t) / 1_000_000}ms gen=${b.gen}")
+        return idx
+    }
+
     private suspend fun startCard(ed: WorkspaceEditor, b: Board, index: Int, force: Boolean, by: String): Deferred<CardResult> {
         val c = b.cards[index]
         val gen = b.gen
@@ -125,61 +124,6 @@ class Boards(
         }
         return done
     }
-
-    fun startQuietFill() {
-        scope.launch {
-            ws.state.map { s -> s.board?.takeIf { s.interactive }?.let { QuietRound(it.epoch, it.gen, it.focus) } }
-                .distinctUntilChanged().collectLatest { round ->
-                    if (round == null) return@collectLatest
-                    try { fillQuietly(round) } catch (e: Exception) {
-                        if (e is CancellationException) throw e
-                        System.err.println("[prevue] 조작 중 보드 카드를 그리지 못했다: $e")
-                    }
-                }
-        }
-    }
-
-    private data class QuietRound(val epoch: BoardEpoch, val gen: Int, val focus: Int)
-
-    private sealed interface QuietStep {
-        data object Done : QuietStep
-        data object Later : QuietStep
-        class Started(val next: Int) : QuietStep
-    }
-
-    private suspend fun fillQuietly(round: QuietRound) {
-        var from = 0
-        val giveUpOnPostures = ws.nowMs() + POSTURE_PATIENCE_MS
-        while (true) {
-            withTimeoutOrNull(giveUpOnPostures - ws.nowMs()) { ws.state.first(::posturesDrawn) }
-            val wait = quietMs - quietFor()
-            if (wait > 0) { delay(wait); continue }
-            when (val s = quietStep(round, from, ws.nowMs() >= giveUpOnPostures)) {
-                QuietStep.Done -> return
-                QuietStep.Later -> delay(quietMs)
-                is QuietStep.Started -> from = s.next
-            }
-        }
-    }
-
-    private suspend fun quietStep(round: QuietRound, from: Int, pastPostures: Boolean): QuietStep = ws.exclusive { ed ->
-        val b = ws.now.board?.takeIf { ws.now.interactive && QuietRound(it.epoch, it.gen, it.focus) == round } ?: return@exclusive QuietStep.Done
-        if (ws.reloadPending || !(pastPostures || posturesDrawn(ws.now)) || quietFor() < quietMs) return@exclusive QuietStep.Later
-        val idx = (from until b.cards.size).firstOrNull { it != b.focus && !b.cards[it].fresh(b.gen) && b.cards[it].writing(b.gen) == null }
-            ?: return@exclusive QuietStep.Done
-        val t = System.nanoTime()
-        startCard(ed, b, idx, force = false, QUIET_BY)
-        println("[prevue] 조작 중 카드 $idx 옆 그림 ${(System.nanoTime() - t) / 1_000_000}ms gen=${b.gen}")
-        QuietStep.Started(idx + 1)
-    }
-
-    private fun posturesDrawn(s: WorkspaceState): Boolean {
-        val ps = s.livePostures() ?: return true
-        val shown = s.shownTarget()?.second ?: return true
-        return ps.next(shown) == null
-    }
-
-    private fun quietFor(): Long = minOf(engine.msSinceInput(), ws.nowMs() - ws.now.lastRenderMs)
 
     suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = ws.exclusive { ed ->
         val b = ws.now.board
@@ -229,10 +173,5 @@ class Boards(
         }
         live.recordFocus(ed, r.shot)
         return r
-    }
-
-    companion object {
-        const val QUIET_BY = "aside"
-        const val POSTURE_PATIENCE_MS = 10_000L
     }
 }

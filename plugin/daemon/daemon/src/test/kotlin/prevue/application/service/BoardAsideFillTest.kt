@@ -23,7 +23,7 @@ class BoardAsideFillTest {
     @AfterEach fun tearDown() = fx.close()
 
     private fun opened(quietMs: Long = 0): TestGraph =
-        fx.graph(Clock(System::currentTimeMillis), postureQuietMs = quietMs).also {
+        fx.graph(Clock(System::currentTimeMillis), quietMs = quietMs).also {
             runBlocking { it.tabs.openPreview(fx.file.path, null, emptyMap(), "test") }
             it.workspace.awaitBoardFilled()
         }
@@ -53,7 +53,7 @@ class BoardAsideFillTest {
         assertTrue(uc.workspace.now.interactive)
         assertEquals(cards[0], uc.workspace.now.current)
         val b = uc.workspace.now.board!!
-        assertTrue(b.cards.drop(1).all { (it.result as CardResult.Drawn).shot.by == Boards.QUIET_BY })
+        assertTrue(b.cards.drop(1).all { (it.result as CardResult.Drawn).shot.by == QuietFill.QUIET_BY })
     }
 
     @Test fun `입력이 잠잠하지 않으면 그리지 않고 나갈 때 채우기가 그린다`() {
@@ -82,6 +82,17 @@ class BoardAsideFillTest {
         val firstCard = after.indexOfFirst { '@' !in it.previewId }
         assertEquals(15, firstCard, "보드 카드가 자세 칸보다 먼저 그려졌다 — $after")
         assertEquals(uc.cardSpecs().drop(1), after.drop(firstCard))
+    }
+
+    @Test fun `자세 칸이 예외로 멈춰도 보드 카드는 그린다`() {
+        val uc = opened()
+        fx.renderer.asideThrows = { '@' in it.previewId }
+        uc.focus(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
+        uc.save()
+        uc.workspace.awaitBoardFilled()
+        assertEquals(uc.cardSpecs().drop(1), cardAsides())
+        val tried = fx.renderer.asides.count { '@' in it.previewId }
+        assertTrue(tried in 1..2, "회차마다 자세를 한 번 던지면 접는다 — ${tried}번")
     }
 
     @Test fun `저장 뒤 이미 새로 그린 카드는 나갈 때 다시 그리지 않는다`() {
