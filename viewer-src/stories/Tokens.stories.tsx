@@ -20,7 +20,7 @@ const types = ['display', 'title-large', 'title-medium', 'title-small', 'body-la
 const spaces = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64];
 // [시간, 이징, 계단 칸 수] — 계단은 --motion-stagger 의 배수만큼 늦게 출발한다.
 const motions: [string, string, number?][] = [['short1', 'standard'], ['short2', 'standard'], ['short3', 'standard'], ['short4', 'standard'], ['medium1', 'standard'],
-  ['medium2', 'standard'], ['medium2', 'decelerate'], ['medium2', 'accelerate'], ['long1', 'standard'], ['long3', 'standard'], ['long4', 'standard'],
+  ['medium2', 'standard'], ['medium2', 'decelerate'], ['medium2', 'accelerate'], ['long1', 'standard'], ['long3', 'standard'], ['long4', 'standard'], ['long4', 'spring'],
   ['extra-long2', 'decelerate'], ['extra-long3', 'standard'], ['extra-long4', 'standard'],
   ['medium2', 'standard', 2], ['medium2', 'standard', 4], ['medium2', 'standard', 6]];
 
