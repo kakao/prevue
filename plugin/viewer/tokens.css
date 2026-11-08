@@ -141,6 +141,8 @@
   --easing-standard: cubic-bezier(.6, 0, .2, 1);
   --easing-decelerate: cubic-bezier(.3, .8, .6, 1);
   --easing-accelerate: cubic-bezier(.7, .1, .75, .9);
+  /* 넘침 없는 임계 감쇠 스프링(ζ=1) — 떠 있는 카드가 자리와 높이를 한 덩어리로 옮긴다. cubic-bezier 로는 꼬리가 길게 끌리는 모양이 안 나와 linear() 로 적는다. */
+  --easing-spring: linear(0, 0.056, 0.177, 0.316, 0.450, 0.567, 0.666, 0.745, 0.808, 0.856, 0.893, 0.921, 0.942, 0.958, 0.969, 0.978, 0.984, 0.988, 0.992, 0.994, 0.996, 0.997, 0.998, 0.998, 0.999, 0.999, 0.999, 1);
   --motion-enter-scale: .96;
   --motion-enter-shift: 8px;
   /* 줄이 차례로 떠오를 때의 한 칸. n번째는 n칸 늦게 온다. */
