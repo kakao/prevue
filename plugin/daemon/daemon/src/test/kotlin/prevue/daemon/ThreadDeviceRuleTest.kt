@@ -14,7 +14,8 @@ class ThreadDeviceRuleTest {
     private class Allowed(val path: String, val device: String, val count: Int, val reason: String)
 
     private companion object {
-        val roots = Sources.kotlinRoots + Sources.javaRoots + File("src/bridge/kotlin")
+        val mainRoots = Sources.kotlinRoots + Sources.javaRoots
+        val roots = mainRoots + Sources.bridgeRoots
         const val RENDER = "prevue/infrastructure/render"
         const val CLASS_LIFETIME = "JVM 클래스 수명 — 캐시를 클래스에 매단다. 클래스를 키로 쥐는 맵은 버린 로더를 붙잡는다"
         const val RENDERER_API = "렌더러 API — layoutlib 이 렌더 스레드의 ThreadLocal 과 Future 로 세션을 정리한다"
@@ -62,7 +63,8 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/infrastructure/watch/PollingBuildWatcherTest.kt", COLLECT, 2, VIRTUAL_CLOCK),
             Allowed("prevue/application/service/LiveLoopTest.kt", COLLECT, 1, VIRTUAL_CLOCK),
         )
-        fun testFiles(): Map<String, String> = testRoots.flatMap { root ->
+        val testFiles: Map<String, String> by lazy { readTestFiles() }
+        fun readTestFiles(): Map<String, String> = testRoots.flatMap { root ->
             root.walk().filter { it.extension == "kt" }.map { it.relativeTo(root).invariantSeparatorsPath to it.readText() }.toList()
         }.toMap().also {
             assertTrue("prevue/daemon/fake/Fakes.kt" in it && "prevue/daemon/RenderIntegrationTest.kt" in it, "테스트를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
@@ -84,7 +86,7 @@ class ThreadDeviceRuleTest {
 
     // 디스패처는 PrevueDispatchers 로 주입받는다 — 직접 쓰면 테스트가 바꿔 끼우지 못한다. 만드는 자리는 데몬 하나다.
     @Test fun `src main 은 Dispatchers 를 PrevueDaemon 에서만 쓴다`() {
-        val found = ThreadDeviceRule.counts(Sources.under(roots, "kt", "java"), ThreadDeviceRule.dispatchers, imports = true)
+        val found = ThreadDeviceRule.counts(Sources.under(mainRoots, "kt", "java"), ThreadDeviceRule.dispatchers, imports = true)
         assertEquals(mapOf("prevue/daemon/PrevueDaemon.kt → Dispatchers" to 3), found)
         val planted = "import kotlinx.coroutines.Dispatchers.IO\nimport kotlinx.coroutines.Dispatchers as D\nval a = Dispatchers\n    .IO\n" +
             "val b = PrevueDispatchers(x, y)\nval c = dispatchers.io\n// Dispatchers.Default\n"
@@ -93,7 +95,7 @@ class ThreadDeviceRuleTest {
 
     // 테스트는 틈을 sleep 으로 두지 않고 fake/Await.kt 로 기다린다. 남은 것은 실제 시간이 필요한 곳뿐이다.
     @Test fun `테스트의 Thread sleep 은 허용 목록뿐이다`() {
-        val found = ThreadDeviceRule.counts(testFiles()).filterKeys { it.endsWith(" → $SLEEP") }
+        val found = ThreadDeviceRule.counts(testFiles).filterKeys { it.endsWith(" → $SLEEP") }
         val want = counted(sleepAllowed)
         assertEquals(want, found) {
             "테스트의 sleep 이 허용 목록과 다르다 — 기다림은 fake/Await.kt 로 한다. 지금 허용한 것:\n" +
@@ -103,19 +105,22 @@ class ThreadDeviceRuleTest {
 
     // 철자로는 실제 시간 delay 와 runTest 의 가상 시간 delay 를 가르지 못한다 — 둘 다 세고 이유를 적는다.
     @Test fun `테스트의 delay 는 허용 목록뿐이다`() {
-        assertEquals(counted(delayAllowed), ThreadDeviceRule.counts(testFiles(), ThreadDeviceRule.delay)) {
+        assertEquals(counted(delayAllowed), ThreadDeviceRule.counts(testFiles, ThreadDeviceRule.delay, imports = true)) {
             "테스트의 delay 가 허용 목록과 다르다 — 기다림은 fake/Await.kt 로 하고, 실제 시간이 필요하면 이유와 함께 적는다. 지금 허용한 것:\n" +
                 delayAllowed.joinToString("\n") { "  ${it.path} ×${it.count} — ${it.reason}" }
         }
         assertEquals(
-            mapOf("H.kt → delay" to 2),
-            ThreadDeviceRule.counts(mapOf("H.kt" to "delay(50)\n  // delay(1)\nx; delay (2)\nval delayMs = 3\nadvanceTimeBy(4)\n"), ThreadDeviceRule.delay),
+            mapOf("H.kt → delay" to 3),
+            ThreadDeviceRule.counts(
+                mapOf("H.kt" to "import kotlinx.coroutines.delay\nimport kotlinx.coroutines.delay as pause\ndelay(50)\n  // delay(1)\nx; delay (2)\nval delayMs = 3\nadvanceTimeBy(4)\n"),
+                ThreadDeviceRule.delay, imports = true,
+            ),
         )
     }
 
     // 실제 스레드의 Flow 방출은 Turbine 으로 기다린다 — 리스트에 모으고 폴링하면 순서 · 남은 방출을 단언하지 못한다.
     @Test fun `테스트의 Flow 수집은 허용 목록뿐이다`() {
-        assertEquals(counted(collectAllowed), ThreadDeviceRule.counts(testFiles(), ThreadDeviceRule.collect)) {
+        assertEquals(counted(collectAllowed), ThreadDeviceRule.counts(testFiles, ThreadDeviceRule.collect)) {
             "테스트의 Flow 수집이 허용 목록과 다르다 — 실제 스레드의 방출은 Turbine(test {})으로 기다린다. 지금 허용한 것:\n" +
                 collectAllowed.joinToString("\n") { "  ${it.path} ×${it.count} — ${it.reason}" }
         }
@@ -166,7 +171,7 @@ object ThreadDeviceRule {
 
     val collect = Regex("""\.(?:collect\w*|launchIn)(?=\s*[({])""")
     val dispatchers = Regex("""\bDispatchers\b""")
-    val delay = Regex("""\bdelay(?=\s*\()""")
+    val delay = Regex("""\bdelay(?=\s*\(|\s+as\b)""")
 
     fun counts(files: Map<String, String>, pattern: Regex = device, imports: Boolean = false): Map<String, Int> = files.flatMap { (path, text) ->
         text.lineSequence().filterNot { comment.containsMatchIn(it) || (!imports && plainImport.matches(it)) }

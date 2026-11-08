@@ -3,6 +3,7 @@ package prevue.application.service
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -12,7 +13,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -169,26 +169,30 @@ class EngineTest {
         assertEquals(1, fake.closes.get())
     }
 
-    // IO 와 Default 는 워커 이름이 같아 스레드로 가리지 못한다 — 엔진이 어느 디스패처에 어떤 뷰를 청하는지로 본다(D-89).
+    // IO 와 Default 는 워커 이름이 같아 스레드로 가리지 못한다 — 엔진이 어느 디스패처에 어떤 뷰를 청하고 그 뷰에서 도는지로 본다(D-89).
     @Test fun `엔진은 io 의 한 줄 뷰에서만 돌고 default 는 쓰지 않는다`() = runTest {
         val io = LaneSpy(StandardTestDispatcher(testScheduler))
         val default = LaneSpy(StandardTestDispatcher(testScheduler))
         val a = Engine(fake, fake, backgroundScope, dispatchersOn(default, io = io), MonotonicClock.SYSTEM, EngineLog {})
-        a.ensure(card, interactive = false)
+        a.ensure(card, interactive = true)
+        a.touch("tap", 1, 2)
+        advanceTimeBy(500)
+        runCurrent()
         a.codeChanged()
+        assertTrue(fake.ticks.get() > 0, "라이브 루프가 틱을 돌지 않았다")
         assertEquals(1, fake.codeChanges)
-        assertEquals(listOf(1 to "prevue-engine"), io.lanes)
-        assertEquals(emptyList<Pair<Int, String?>>(), default.lanes)
+        assertEquals(listOf(1 to "prevue-engine"), io.views.map { it.parallelism to it.name })
+        assertTrue(io.views.single().spy.dispatched > 0, "청한 뷰에서 돌지 않았다")
+        assertEquals(emptyList<LaneSpy.View>(), default.views)
         assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
 
     private class LaneSpy(private val inner: CoroutineDispatcher) : CoroutineDispatcher() {
-        val lanes = mutableListOf<Pair<Int, String?>>()
+        class View(val parallelism: Int, val name: String?, val spy: LaneSpy)
+        val views = mutableListOf<View>()
         var dispatched = 0
         override fun dispatch(context: CoroutineContext, block: Runnable) { dispatched++; inner.dispatch(context, block) }
-        override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
-            lanes += parallelism to name
-            return inner.limitedParallelism(parallelism, name)
-        }
+        override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher =
+            LaneSpy(inner.limitedParallelism(parallelism, name)).also { views += View(parallelism, name, it) }
     }
 }
