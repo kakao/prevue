@@ -79,7 +79,7 @@ class KmpRenderIntegrationTest {
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies), InMemoryWorkspaceStore())
         sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope)
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex), ws, scope,
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex, realDispatchers), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))
     }
 

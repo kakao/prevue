@@ -104,7 +104,7 @@ class RenderIntegrationTest {
         watcher = PollingSourceWatcher(watched, realDispatchers)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
         uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope),
-            sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
+            realDispatchers, sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
         val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
         ws.awaitBoardFilled(timeoutMs = 120_000)
