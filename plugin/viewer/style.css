@@ -575,12 +575,13 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-tabs button:hover { background: var(--state-hover); color: var(--on-surface); }
 .pc-tabs button[aria-selected="true"] { background: var(--primary-container); color: var(--on-surface); }
 .pc-panel { height: var(--point-tree-max-h); margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); list-style: none; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-/* modifier 는 위에서 아래로 적용되는 순서다. 표처럼 읽힌다 — 하는 일 · 이름은 왼쪽, 값은 오른쪽 끝에 맞춘다. 크기를 정한 줄은 진하다. */
+/* modifier 는 위에서 아래로 적용되는 순서다. 표처럼 읽힌다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝에 맞춘다. 크기를 정한 줄은 진하다. */
 .pc-mods { margin: 0; padding: 0; list-style: none; }
 .pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-medium); padding: 0 var(--space-8) 0 var(--space-4); }
 .pc-mods li + li { border-top: 1px solid var(--outline-variant); }
-.pc-kind { flex: 0 0 var(--space-32); color: var(--on-surface-variant); font: var(--type-label-small); text-align: right; }
-.pc-mods li.sizing .pc-kind { color: var(--on-surface); font-weight: var(--weight-semibold); }
+.pc-kind { flex: 0 0 var(--space-16); display: inline-flex; align-items: center; justify-content: center; height: var(--space-16); color: var(--on-surface-variant); }
+.pc-kind svg { width: 14px; height: 14px; }
+.pc-mods li.sizing .pc-kind { color: var(--on-surface); }
 .pc-mod-name { flex: 0 0 auto; color: var(--on-surface); font: var(--type-code-small); }
 .pc-mods li.sizing .pc-mod-name { font-weight: var(--weight-semibold); }
 .pc-mod-value { display: inline-flex; align-items: center; gap: var(--space-6); min-width: 0; margin-left: auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
