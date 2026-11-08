@@ -88,21 +88,41 @@ class Slop(unittest.TestCase):
                     "class A @Inject internal constructor(\n    b: B,\n    n: Int = 1,\n)",
                     "@Inject class A<T : Any>(val m: Map<String, Int> = emptyMap())",
                     "object G {\n    @Provides @SingleIn(AppScope::class)\n    fun f(b: B,\n        n: Int = 1): C = C(b, n)\n}",
+                    "class A {\n    @Inject fun inject(n: Int = 1) {}\n}",
                     "@Inject\nclass A(@Suppress(\"x\") val n: Int = 1)",
-                    "@Inject\nclass A(@param:Suppress(\"x\") val n: Int = 1)"):
+                    "@Inject\nclass A(@param:Suppress(\"x\") val n: Int = 1)",
+                    "@Inject class A(@IntRange(from = 0) val n: Long = 300)",
+                    "@Inject class A(val f: @Composable () -> Unit = {})",
+                    "@Inject class A(val m: Map<String, Int>= emptyMap())",
+                    "@Inject\n@ContributesBinding(AppScope::class, binding = binding<Foo>())\nclass A(val n: Int = 1)",
+                    "@Inject class A<T : (Int) -> Unit>(val n: Int = 1)",
+                    "@Provides fun <T : Comparable<T>> f(n: Int = 1): T = TODO()"):
             self.assertEqual(rules(bad), ["slop/inject-default"], bad)
         self.assertEqual(slop.check("@Inject\nclass A(\n    private val b: B,\n    private val quietMs: Long = 300,\n)", ADAPTER)[0][0], 4)
+
+    def test_기본값_안의_비교와_람다_뒤_인자도_본다(self):
+        self.assertEqual(rules("@Inject class A(val b: B, val p: (Int) -> Boolean = { it > 0 })"), ["slop/inject-default"])
+        self.assertEqual(rules("@Inject class A(\n    @Named(Q) val n: Int = if (a > b) 1 else 2,\n    val m: Int = 3,\n)"), ["slop/inject-default"])
+        self.assertEqual(rules("@Inject class A(@Named(Q) val b: Boolean = x < y, val m: Int = 3)"), ["slop/inject-default"])
 
     def test_한정자가_붙었거나_주입이_아닌_기본_인자는_놓아준다(self):
         for ok in ("@SingleIn(AppScope::class)\n@Inject\nclass Live(\n    private val ws: Workspace,\n    @Named(QUIET) private val quietMs: Long = QUIET_MS,\n)",
                    "class Boards @Inject constructor(\n    @Named(Live.QUIET) private val quietMs: Long = Live.QUIET_MS,\n)",
-                   "@Inject\nclass A(@ValueFiles val files: List<File> = emptyList())",
                    "@Inject\nclass A(@param:Named(Q) val n: Int = 1)",
+                   "@Inject\nclass A(@Assisted val n: Int = 1)",
                    "@Inject\nclass A(val f: (Int) -> Boolean, val g: B)",
                    "class A(val n: Int = 1)\n@Inject\nclass B(val a: A)",
+                   "@Inject\nclass A\n\nclass B (val n: Int = 1)",
                    "class A @Inject constructor(val b: B) {\n    fun f(n: Int = 1) = n\n}",
                    "@Provides\nfun f(b: B): C = C(b, 1)"):
             self.assertEqual(rules(ok), [], ok)
+
+    def test_한정자는_소스가_Qualifier_로_선언한_것이다(self):
+        uses = "@Inject\nclass A(@ValueFiles val files: List<File> = emptyList())"
+        self.assertEqual(rules(uses), ["slop/inject-default"])
+        self.assertEqual([r for _, r, _ in slop.check(uses, ADAPTER, {"ValueFiles"})], [])
+        self.assertEqual(rules("@Qualifier\nannotation class ValueFiles\n\n" + uses), [])
+        self.assertEqual(slop.qualifiers("@Qualifier\npublic annotation class WatchRoots\n@Qualifier @Retention(BINARY) annotation class B\n"), {"WatchRoots", "B"})
 
     def test_파일_길이(self):
         self.assertEqual(rules("val x = 1\n" * 401), ["slop/file-length"])
