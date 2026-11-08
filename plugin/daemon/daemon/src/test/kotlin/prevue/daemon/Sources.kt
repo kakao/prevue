@@ -12,15 +12,22 @@ object Sources {
 
     private val modules: List<String> = LAYERS.map { "../$it" } + "."
 
-    /** 층 패키지 `prevue.<층>`(D-148) — 폴더 이름과 갈릴 수 있어 각 층 모듈의 소스에서 끌어낸다. `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 쓴다. */
-    val PACKAGES: List<String> = LAYERS.map { packageOf(File("../$it", "src/main/kotlin")) }
+    /** 층 패키지 `prevue.<층>`(D-148) — 폴더 이름과 갈릴 수 있어 각 층 모듈의 소스에서 끌어낸다. `daemon()` 의 키 · 조립 판정(EngineAccessRuleTest)이 쓴다. 이 판정이 깨져도 다른 규칙 테스트는 돌게 늦게 읽는다. */
+    val PACKAGES: List<String> by lazy {
+        LAYERS.map { packageOf(File("../$it", "src/main/kotlin")) }
+            .also { check(it.toSet().size == it.size) { "두 층 모듈이 같은 패키지를 쓴다 — 키로 층을 가르지 못한다: $it" } }
+    }
 
-    /** 층 모듈 하나는 `prevue/` 바로 아래 패키지 하나만 갖는다 — 둘이거나 없으면 키가 모호해 멈춘다. */
+    /** 층 모듈 하나는 `prevue/` 바로 아래 패키지 하나에만 `.kt` 를 둔다 — 둘이거나 없거나 `prevue/` 에 바로 두면 키가 모호하거나 빠져 멈춘다. 빈 폴더(.DS_Store 만 남은 옛 자리)는 세지 않는다. */
     fun packageOf(root: File): String {
-        val top = File(root, "prevue").listFiles { f -> f.isDirectory }.orEmpty().map { it.name }.sorted()
-        check(top.size == 1) { "층 모듈 $root 의 prevue/ 아래 패키지가 하나가 아니다: $top" }
+        val base = File(root, "prevue")
+        val top = base.walkTopDown().filter { it.isFile && it.extension == "kt" }
+            .map { it.relativeTo(base).invariantSeparatorsPath.substringBefore('/', missingDelimiterValue = "(prevue 바로 아래 ${it.name})") }
+            .toSortedSet()
+        check(top.size == 1 && !top.single().startsWith("(")) { "층 모듈 $root 의 prevue/ 아래 패키지가 하나가 아니다: $top" }
         return top.single()
     }
+
     val kotlinRoots: List<File> = modules.map { File(it, "src/main/kotlin") }
     val javaRoots: List<File> = modules.map { File(it, "src/main/java") }
     val bridgeRoots: List<File> = listOf(File("src/bridge/kotlin"))
@@ -39,7 +46,7 @@ object Sources {
     fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
         .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
 
-    private val DAEMON = Regex("""^prevue/(?:daemon/|(?=(?:${PACKAGES.joinToString("|")})/))""")
+    private val DAEMON by lazy { Regex("""^prevue/(?:daemon/|(?=(?:${PACKAGES.joinToString("|")})/))""") }
 
     fun file(path: String): File = kotlinRoots.map { File(it, path) }.firstOrNull { it.isFile } ?: File(kotlinRoots.last(), path)
 }
