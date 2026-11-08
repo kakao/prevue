@@ -1,11 +1,14 @@
 package prevue.application.service
 
 import java.io.File
+import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.Board
@@ -19,8 +22,21 @@ import prevue.infrastructure.store.InMemoryWorkspaceStore
 
 /** 줄의 규칙은 저장소가 아니라 `Workspace`가 갖는다 — 줄 밖의 이름 붙은 쓰기는 잃지 않고, 줄이 끝난 편집기는 쓰지 못한다. */
 class WorkspaceTest {
-    private fun workspace() = Workspace(ModuleInfo("/r", ":a", "debug", "a", null, null), FakeClock(), ModuleGraph.single(":a", emptyList(), emptyList()),
-        emptyList(), InMemoryWorkspaceStore())
+    private fun workspace(roots: List<File> = emptyList()) = Workspace(ModuleInfo("/r", ":a", "debug", "a", null, null), FakeClock(),
+        ModuleGraph.single(":a", emptyList(), emptyList()), roots, InMemoryWorkspaceStore())
+
+    @Test fun `링크를 거친 날 경로로 감시 루트를 넘겨도 그 안의 파일을 품는다`() {
+        val tmp = Files.createTempDirectory("prevue-hosts").toFile()
+        try {
+            val real = File(tmp, "real/src").apply { mkdirs() }
+            val link = Files.createSymbolicLink(File(tmp, "link").toPath(), real.parentFile.toPath()).toFile()
+            val ws = workspace(listOf(File(link, "src"), real))
+            assertTrue(ws.hosts(File(link, "src/A.kt")))
+            assertTrue(ws.hosts(File(real, "A.kt")))
+            assertFalse(ws.hosts(File(tmp, "other/A.kt")))
+            assertEquals(listOf(real.canonicalFile), ws.watchRoots)
+        } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
+    }
 
     @Test fun `줄 밖의 카드 기록이 동시에 와도 하나도 잃지 않는다`() {
         val ws = workspace()
