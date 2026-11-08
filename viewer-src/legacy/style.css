@@ -575,9 +575,11 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-tabs button:hover { background: var(--state-hover); color: var(--on-surface); }
 .pc-tabs button[aria-selected="true"] { background: var(--primary-container); color: var(--on-surface); }
 .pc-panel { height: var(--point-tree-max-h); margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); list-style: none; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-/* modifier 는 위에서 아래로 적용되는 순서다. 아이콘 열이 종류를, 크기를 정한 줄은 진한 이름이 말한다. */
+/* modifier 는 위에서 아래로 적용되는 순서다. 왼쪽 열이 하는 일을 글로, 크기를 정한 줄은 진한 이름이 말한다. */
 .pc-mods { margin: 0; padding: 0; list-style: none; }
-.pc-mods li { display: flex; align-items: center; gap: var(--space-6); min-height: var(--control-small); padding: 0 var(--space-4); }
+.pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-small); padding: 0 var(--space-4); }
+.pc-kind { flex: 0 0 var(--space-32); color: var(--on-surface-variant); font: var(--type-label-small); text-align: right; }
+.pc-mods li.sizing .pc-kind { color: var(--on-surface); }
 .pc-mod-name { flex: 0 0 auto; color: var(--on-surface-variant); font: var(--type-code-small); }
 .pc-mods li.sizing .pc-mod-name { color: var(--on-surface); font-weight: var(--weight-semibold); }
 .pc-mod-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-code-small); }

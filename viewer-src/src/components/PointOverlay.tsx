@@ -24,13 +24,6 @@ const CARET = <svg className="pc-caret" viewBox="0 0 12 12" fill="none" stroke="
 const icon = (d: ReactNode) => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 /** 카드의 작은 그림들 — 라벨 대신 뜻을 싣는다. 글은 title · aria-label 이 갖는다. */
 const ICON = {
-  width: icon(<path d="M2 8h12M4.5 5.5 2 8l2.5 2.5M11.5 5.5 14 8l-2.5 2.5" />),
-  height: icon(<path d="M8 2v12M5.5 4.5 8 2l2.5 2.5M5.5 11.5 8 14l2.5-2.5" />),
-  size: icon(<><rect x="3" y="3" width="10" height="10" rx="1" /><path d="M6 10l4-4M7.5 6H10v2.5" /></>),
-  padding: icon(<><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" /><rect x="5.5" y="5.5" width="5" height="5" rx="0.5" strokeDasharray="1.5 1.5" /></>),
-  click: icon(<path d="M5 2.5l7.5 4.8-3.4.9 2 3.4-1.6.9-2-3.4L5 11.5z" />),
-  text: icon(<path d="M3.5 3.5h9M8 3.5v9M6 12.5h4" />),
-  other: icon(<circle cx="8" cy="8" r="1.75" />),
   code: icon(<path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />),
   copied: icon(<path d="M3 8.5l3 3 7-7" />),
   retry: icon(<path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" />),
@@ -159,19 +152,21 @@ function BoxModel({ box }: { box: CardBox }) {
   </div>;
 }
 
-function modifierGlyph(m: CardModifier) {
-  if (m.color) return <i className="pc-swatch" style={{ background: m.color }} />;
-  if (m.sizes?.length === 2) return ICON.size;
-  if (m.sizes?.length === 1) return ICON[m.sizes[0]];
-  return m.name === 'padding' ? ICON.padding : m.name === 'clickable' ? ICON.click : m.name === 'text' ? ICON.text : ICON.other;
+/** modifier 가 하는 일 — 아이콘은 뜻이 눈에 들어오지 않아 짧은 글로 적는다. 모르는 modifier 는 비워 둔다. */
+function modifierKind(m: CardModifier) {
+  if (m.sizes?.length) return m.sizes.length === 2 ? 'size' : m.sizes[0];
+  if (m.color) return 'color';
+  return ({ padding: 'padding', clickable: 'click', text: 'text' } as Record<string, string>)[m.name] ?? null;
 }
 
 function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
-  return <ol className="pc-mods">{modifiers.map((m, i) => <li key={`${i}-${m.name}`} className={m.sizes?.length ? 'sizing' : undefined}>
-    <span className="pc-glyph">{modifierGlyph(m)}</span>
+  const { phrase } = useMessages();
+  return <ol className="pc-mods">{modifiers.map((m, i) => { const kind = modifierKind(m); return <li key={`${i}-${m.name}`} className={m.sizes?.length ? 'sizing' : undefined}>
+    <span className="pc-kind">{kind ? phrase(`point.card.kind.${kind}`) : ''}</span>
     <span className="pc-mod-name">{m.name}</span>
+    {m.color && <i className="pc-swatch" style={{ background: m.color }} />}
     {m.value && <span className="pc-mod-value" title={m.value}>{m.value}</span>}
-  </li>)}</ol>;
+  </li>; })}</ol>;
 }
 
 type CardTab = 'modifiers' | 'tree';
