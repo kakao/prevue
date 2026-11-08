@@ -214,6 +214,71 @@ def _branch_start(body, prev_arrow, arrow):
     return last_nl
 
 
+# Metro 는 기본값이 있는 주입 인자를 선택 바인딩으로 본다 — 같은 타입의 바인딩이 그래프에 생기면 기본값 대신 말없이 그 값이 들어간다(PR 109).
+# 한정자가 아닌 어노테이션 — 이것만 붙은 인자는 한정자가 없는 것이다. @Qualifier 선언은 다른 파일이라 따라가지 않고 이 목록으로 근사한다
+_NOT_QUALIFIERS = {"Suppress", "Assisted", "OptionalBinding", "Deprecated", "JvmField", "JvmStatic", "Volatile", "Transient", "JvmSuppressWildcards"}
+_INJECT_CTOR = re.compile(r"@Inject\s+(?:(?:public|internal|private|protected)\s+)?constructor\s*\(")
+_INJECT_CLASS = re.compile(r"@Inject\s+(?:@[\w.]+(?:\([^)]*\))?\s+|\w+\s+)*?class\s+\w+")
+_PROVIDES_FUN = re.compile(r"@Provides\s+(?:@[\w.]+(?:\([^)]*\))?\s+|\w+\s+)*?fun\s+(?:<[^>]*>\s*)?[\w.]+\s*\(")
+
+
+def _injected_param_lists(code):
+    """주입 인자 목록의 여는 괄호 다음 자리들 — @Inject 생성자(두 꼴)와 @Provides 함수."""
+    starts = [m.end() for m in _INJECT_CTOR.finditer(code)] + [m.end() for m in _PROVIDES_FUN.finditer(code)]
+    for m in _INJECT_CLASS.finditer(code):
+        k = m.end()
+        if code[k:].lstrip().startswith("<"):
+            k = _matching(code, code.index("<", k) + 1, "<", ">")
+        ctor = re.match(r"\s*(?:@[\w.]+(?:\([^)]*\))?\s+|\w+\s+)*?(?:constructor\s*)?\(", code[k:])
+        if ctor:
+            starts.append(k + ctor.end())
+    return starts
+
+
+def _top_level_params(code, start):
+    """(시작 자리, 인자 본문) — 괄호 안을 깊이 0 의 쉼표로 나눈다."""
+    end = _matching(code, start, "(", ")") - 1
+    out, depth, piece = [], 0, start
+    for k in range(start, end + 1):
+        c = code[k] if k < end else ","
+        if c in "([{<":
+            depth += 1
+        elif c in ")]}>" and not (c == ">" and code[k - 1] == "-"):
+            depth -= 1
+        elif c == "," and depth == 0:
+            out.append((piece, code[piece:k]))
+            piece = k + 1
+    return out
+
+
+def _has_default(param):
+    depth = 0
+    for k, c in enumerate(param):
+        if c in "([{<":
+            depth += 1
+        elif c in ")]}>" and not (c == ">" and param[k - 1:k] == "-"):
+            depth -= 1
+        elif c == "=" and depth == 0 and param[k + 1:k + 2] != "=" and param[k - 1:k] not in ("!", "<", ">", "="):
+            return True
+    return False
+
+
+def inject_default(code, text, path):
+    found = []
+    for start in _injected_param_lists(code):
+        for at, param in _top_level_params(code, start):
+            if not param.strip() or not _has_default(param):
+                continue
+            head = param.split(":", 1)[0]
+            names = {a.split(".")[-1] for a in re.findall(r"@(?:\w+:)?([\w.]+)", head)}
+            if names - _NOT_QUALIFIERS:
+                continue
+            lead = len(param) - len(param.lstrip())
+            found.append((_pos_to_line(code, at + lead), "slop/inject-default",
+                          "한정자 없는 주입 인자의 기본값 — 같은 타입의 바인딩이 생기면 기본값 대신 그 값이 들어간다. @Named 를 붙이거나 그래프가 값을 준다"))
+    return found
+
+
 def file_length(code, text, path):
     n = text.count("\n") + (0 if text.endswith("\n") else 1)
     if n > FILE_MAX_LINES:
@@ -221,7 +286,7 @@ def file_length(code, text, path):
     return []
 
 
-RULES = [domain_blocking, ignored_rename, bare_run_catching, synchronized_this, format_without_locale, empty_catch, when_else_default, file_length]
+RULES = [domain_blocking, ignored_rename, bare_run_catching, synchronized_this, format_without_locale, empty_catch, when_else_default, inject_default, file_length]
 
 
 def check(text, path):
