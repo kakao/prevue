@@ -42,11 +42,24 @@ object Sources {
         return all.toMap()
     }
 
-    /** 데몬 본체 → 내용. 층은 `prevue/<층>/…` 에서 `<층>/…`(`application/service/…` · `infrastructure/render/…`), 조립은 `prevue/daemon/…` 에서 그 아래 이름(`Main.kt`)으로 단다. */
-    fun daemon(): Map<String, String> = under(kotlinRoots, "kt")
-        .filterKeys { DAEMON.containsMatchIn(it) }.mapKeys { DAEMON.replace(it.key, "") }
+    /** 데몬 본체 → 내용. 키 매기기는 [keyed] 가 갖는다. */
+    fun daemon(): Map<String, String> = keyed(under(kotlinRoots, "kt"), PACKAGES)
 
-    private val DAEMON by lazy { Regex("""^prevue/(?:daemon/|(?=(?:${PACKAGES.joinToString("|")})/))""") }
+    /**
+     * 층은 `prevue/<층>/…` 에서 `<층>/…`(`application/service/…` · `infrastructure/render/…`), 조립은 `prevue/daemon/…` 에서 그 아래 이름(`Main.kt`)으로 단다.
+     * 조립 키는 층 패키지로 시작하지 않는 것으로 가려진다(EngineRule 의 조립 판정) — 그래서 `prevue/daemon/<층>/…` 하위 패키지나 층 패키지 `daemon` 이 생기면
+     * 조립 파일이 층 파일로 보이거나 같은 키의 층 파일을 덮는다. 말없이 빠지지 않게 멈춘다.
+     */
+    fun keyed(files: Map<String, String>, packages: List<String>): Map<String, String> {
+        check("daemon" !in packages) { "층 패키지 prevue.daemon 이 조립 :daemon 과 겹친다 — 키로 층과 조립을 가르지 못한다" }
+        val assembly = files.filterKeys { it.startsWith(ASSEMBLY) }.mapKeys { it.key.removePrefix(ASSEMBLY) }
+        val clash = assembly.keys.filter { key -> packages.any { key.startsWith("$it/") } }.map { ASSEMBLY + it }
+        check(clash.isEmpty()) { "조립 :daemon 에 층 패키지와 같은 이름의 하위 패키지가 있다 — 키가 층 파일과 섞여 조립 판정에서 빠진다: $clash" }
+        val layered = files.filterKeys { path -> packages.any { path.startsWith("prevue/$it/") } }.mapKeys { it.key.removePrefix("prevue/") }
+        return assembly + layered
+    }
+
+    private const val ASSEMBLY = "prevue/daemon/"
 
     fun file(path: String): File = kotlinRoots.map { File(it, path) }.firstOrNull { it.isFile } ?: File(kotlinRoots.last(), path)
 }

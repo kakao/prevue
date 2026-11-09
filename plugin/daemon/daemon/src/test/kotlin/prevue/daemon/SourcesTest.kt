@@ -28,6 +28,25 @@ class SourcesTest {
         assertThrows<IllegalStateException> { Sources.packageOf(module("bare", "prevue/a/A.kt", "prevue/Foo.kt")) }
     }
 
+    @Test fun `층은 패키지부터 조립은 그 아래 이름으로 단다`() {
+        val files = mapOf(
+            "prevue/daemon/Main.kt" to "m", "prevue/daemon/render/R.kt" to "r",
+            "prevue/infrastructure/X.kt" to "x", "prevue/application/service/S.kt" to "s", "prevue/other/O.kt" to "o",
+        )
+        assertEquals(
+            mapOf("Main.kt" to "m", "render/R.kt" to "r", "infrastructure/X.kt" to "x", "application/service/S.kt" to "s"),
+            Sources.keyed(files, packages),
+        )
+    }
+
+    @Test fun `층 패키지와 같은 이름의 조립 하위 패키지는 멈춘다`() {
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/infrastructure/X.kt" to ""), packages) }
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/infrastructure/X.kt" to "a", "prevue/infrastructure/X.kt" to "b"), packages) }
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/Main.kt" to ""), listOf("daemon")) }
+    }
+
+    private val packages = listOf("application", "infrastructure")
+
     private fun module(folder: String, vararg files: String): File {
         val root = File(tmp, "$folder/src/main/kotlin")
         files.forEach { File(root, it).apply { parentFile.mkdirs() }.writeText("") }
