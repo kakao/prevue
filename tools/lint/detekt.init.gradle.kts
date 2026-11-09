@@ -55,7 +55,6 @@ if (gradle.parent != null) {
                 val type = buildscript.classLoader.loadClass("dev.detekt.gradle.Detekt") as Class<SourceTask>
                 tasks.register("detektLayerSeeds", type) {
                     source(seeds)
-                    val task = this
                     withGroovyBuilder {
                         for (p in listOf("detektClasspath", "pluginClasspath", "classpath")) {
                             (getProperty(p) as ConfigurableFileCollection).setFrom(main.withGroovyBuilder { getProperty(p) })
@@ -82,7 +81,7 @@ if (gradle.parent != null) {
                             (reports.withGroovyBuilder { getProperty(r) }.withGroovyBuilder { getProperty("required") } as Property<Boolean>).set(false)
                         }
                         (reports.withGroovyBuilder { getProperty("checkstyle") }.withGroovyBuilder { getProperty("outputLocation") } as RegularFileProperty)
-                            .set(task.project.layout.buildDirectory.file("reports/detekt/layerSeeds.xml"))
+                            .set(project.layout.buildDirectory.file("reports/detekt/layerSeeds.xml"))
                     }
                 }
             }

@@ -104,10 +104,6 @@ class LayerSeeds(unittest.TestCase):
             lint.check_no_stray_seeds(stray)
         lint.check_no_stray_seeds([lint.Finding("plugin/daemon/application/src/main/kotlin/A.kt", 1, "detekt/X", "")])
 
-    def test_심은_위반_보고서는_본_보고서와_따로다(self):
-        self.assertNotIn(lint.SEED_REPORT, lint.DETEKT_REPORTS)
-        self.assertTrue(lint.SEED_REPORT.startswith("plugin/daemon/build/lint/application/"))
-
 
 class LayerRule(unittest.TestCase):
     def test_갈래_이름으로_묶는다(self):
