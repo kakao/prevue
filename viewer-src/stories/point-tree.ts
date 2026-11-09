@@ -102,6 +102,6 @@ export function cardOf(list: Picked[], here: Picked, { copied = true, bare = fal
   return {
     node: { ...here, uchain: [...here.ups.map(id => list[id].name!), name!] }, say,
     box: boxOf(here, here.node.b ? PX : 1), tree: bare ? null : treeOf(list, here), modifiers: bare ? null : here.mods,
-    previews: previewsOf(name, index, { file: null, fn: null }), origin, repo: REPO,
+    previews: previewsOf(name, index, { file: null, fn: null }), origin,
   };
 }

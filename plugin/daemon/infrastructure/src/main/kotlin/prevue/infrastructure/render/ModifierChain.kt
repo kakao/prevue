@@ -1,17 +1,30 @@
 package prevue.infrastructure.render
 
 import java.lang.reflect.Field
+import java.lang.reflect.Method
+import java.util.Optional
+import java.util.concurrent.ConcurrentHashMap
 import java.util.Locale
 import kotlin.math.roundToInt
 
 internal object ModifierChain {
     fun of(layout: Any?): List<Map<String, Any?>> {
         if (layout == null) return emptyList()
-        val infos = runCatching { layout.javaClass.getMethod("getModifierInfo").invoke(layout) as? List<*> }.getOrNull().orEmpty()
+        val infos = call(layout, "getModifierInfo") as? List<*> ?: return emptyList()
         return infos.mapNotNull { info ->
-            val modifier = info?.let { i -> runCatching { i.javaClass.getMethod("getModifier").invoke(i) }.getOrNull() }
+            val modifier = info?.let { call(it, "getModifier") }
             modifier?.let { runCatching { describe(it) }.getOrElse { _ -> fallback(modifier) } }
         }
+    }
+
+    private val methods = object : ClassValue<ConcurrentHashMap<String, Optional<Method>>>() {
+        override fun computeValue(type: Class<*>) = ConcurrentHashMap<String, Optional<Method>>()
+    }
+
+    private fun call(target: Any, name: String): Any? {
+        val type = target.javaClass
+        val method = methods.get(type).getOrPut(name) { Optional.ofNullable(runCatching { type.getMethod(name) }.getOrNull()) }
+        return method.map { runCatching { it.invoke(target) }.getOrNull() }.orElse(null)
     }
 
     fun describe(modifier: Any): Map<String, Any?>? {
@@ -81,6 +94,7 @@ internal object ModifierChain {
     private fun size(f: Fields): Map<String, Any?> {
         val w = bound(f.float("minWidth"), f.float("maxWidth"))
         val h = bound(f.float("minHeight"), f.float("maxHeight"))
+        if (w == null && h == null) return entry("sizeIn")
         val stem = if (w != null && h != null) "size" else if (w != null) "width" else "height"
         val required = if (f.boolean("enforceIncoming") == false) "required" + stem.replaceFirstChar { it.uppercase() } else stem
         val ranged = listOfNotNull(w, h).any { it.first != it.second }
@@ -141,17 +155,18 @@ internal object ModifierChain {
 
     private const val QUOTE_MAX = 80
 
-    private class Fields(private val target: Any) {
-        private fun field(name: String): Field? {
-            var c: Class<*>? = target.javaClass
-            while (c != null) {
-                c.declaredFields.firstOrNull { it.name == name }?.let { return it.apply { isAccessible = true } }
-                c = c.superclass
-            }
-            return null
-        }
+    private val fieldsOf = object : ClassValue<Map<String, Field>>() {
+        override fun computeValue(type: Class<*>): Map<String, Field> =
+            generateSequence(type) { it.superclass }.flatMap { it.declaredFields.asSequence() }
+                .distinctBy { it.name }
+                .filter { runCatching { it.isAccessible = true }.isSuccess }
+                .associateBy { it.name }
+    }
 
-        fun raw(name: String): Any? = runCatching { field(name)?.get(target) }.getOrNull()
+    private class Fields(private val target: Any) {
+        private val fields = fieldsOf.get(target.javaClass)
+
+        fun raw(name: String): Any? = runCatching { fields[name]?.get(target) }.getOrNull()
         fun float(name: String): Float? = raw(name) as? Float
         fun long(name: String): Long? = raw(name) as? Long
         fun boolean(name: String): Boolean? = raw(name) as? Boolean

@@ -65,7 +65,7 @@ function place(el: HTMLElement, n: PointNode, s: number) {
   const [l, t, r, b] = n.bounds;
   el.style.left = l * s + 'px'; el.style.top = t * s + 'px'; el.style.width = (r - l) * s + 'px'; el.style.height = (b - t) * s + 'px';
 }
-export function drawBox(el: HTMLElement, n: PointNode, s: number) { el.hidden = false; place(el, n, s); }
+function drawBox(el: HTMLElement, n: PointNode, s: number) { el.hidden = false; place(el, n, s); }
 
 /**
  * 손 아래 노드의 옅은 바탕 — 붙였다 떼면 깜빡여서 늘 그려 두고 투명도(on)와 자리만 옮긴다. 그래서 자리를 옮길 때 미끄러진다.
@@ -156,7 +156,6 @@ export type PointSpot = {
   scale(): number; previewId: string; dpPerPx: number | null; seen: { file: string | null; fn: string | null };
 };
 let spot: (PointSpot & { hit: Hit; shot: () => DOMRect | null }) | null = null;
-export const cardOpen = () => !!spot;
 export const pointedImage = () => spot?.img ?? null;
 
 /** 노드 하나를 가리킨다 — 그림 클릭과 카드 트리 줄이 같은 길이다. 박스 · 카드 · 데몬의 선택 · 클립보드가 함께 바뀐다. */
@@ -178,7 +177,7 @@ function showCard(n: Hit): Say {
   let said: PointSay = { msg: null, ref: `${n.fileName}:${n.lineNumber}` };
   const card = (): PointCardData => ({
     node: n, say: said, box: boxOf(n, s.dpPerPx), tree, modifiers: n.mods,
-    previews: previewsOf(n.name, previewIndex, s.seen), origin: originOf(n.name, previewIndex), repo: store.st?.header?.repo ?? null,
+    previews: previewsOf(n.name, previewIndex, s.seen), origin: originOf(n.name, previewIndex),
   });
   const draw = () => { if (spot?.hit === n) pointView.set({ host: s.host, shot: s.shot, card: card() }); };
   draw();
@@ -257,8 +256,9 @@ const GAP = 8, EDGE = 16;
 function placeChooser(chooser: HTMLElement) {
   const root = document.documentElement, cw = root.clientWidth, ch = root.clientHeight;
   const w = chooser.offsetWidth, h = chooser.offsetHeight;
+  // 카드가 그림을 잃어 숨었으면(visibility) 붙지 않는다 — 숨은 머리를 따라가면 팝오버가 엉뚱한 자리에 뜬다
   const anchor = document.querySelector<HTMLElement>('.point-card .pc-head');
-  const a = anchor && anchor.getClientRects().length ? anchor.getBoundingClientRect() : null;
+  const a = anchor && anchor.getClientRects().length && getComputedStyle(anchor).visibility !== 'hidden' ? anchor.getBoundingClientRect() : null;
   let left: number, top: number, up = false;
   if (a) {
     left = a.left; top = a.bottom + GAP;
@@ -314,14 +314,14 @@ export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts
   }, { signal });
   stage.addEventListener('mouseleave', () => { over = false; leave(box, marks); }, { signal });
   img.addEventListener('mousemove', e => { if (list) hover(box, hitIn(list, ...posIn(e, img)) ?? null, scaleOf(img)); }, { signal });
-  img.addEventListener('load', () => { if (spot?.img === img) clearPick(); }, { signal });
+  img.addEventListener('load', () => { list = null; if (spot?.img === img) clearPick(); }, { signal });
   signal.addEventListener('abort', () => { if (spot?.img === img) clearPick(); });
   img.addEventListener('click', async e => {
     setCursor(i);
     const l = list || await load();
     if (!l) return;
     const n = hitIn(l, ...posIn(e, img));
-    if (!n) return;
+    if (!n) { if (spot?.img === img) clearPick(); return; }   // 그림의 빈 곳 — 한 장의 ⌥+클릭과 같다
     const c = cardOf(i)!, full = natW(img);
     pointAt({
       list: l, img, hover: box, pick, marks, host: document.getElementById('boardView')!, scale: () => scaleOf(img), previewId: c.previewId,

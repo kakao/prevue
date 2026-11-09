@@ -44,7 +44,7 @@ export type CardOrigin = { module: string } | 'compose' | null;
 /** 카드 하나의 내용. tree · modifiers 가 null 이면 그 칸을 숨긴다. */
 export type PointCardData = {
   node: PointNode; say: PointSay; box: CardBox; tree: CardTree | null; modifiers: CardModifier[] | null;
-  previews: CardPreview[]; origin: CardOrigin; repo: string | null;
+  previews: CardPreview[]; origin: CardOrigin;
 };
 /** 떠 있는 카드 — host 는 카드가 서는 영역(보드 · 한 장), shot 은 가리킨 그림의 화면 사각형을 잰다. */
 export type PointView = { host: HTMLElement | null; shot: (() => DOMRect | null) | null; card: PointCardData | null };

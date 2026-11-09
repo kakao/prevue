@@ -277,6 +277,8 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
   /* ---------- 마우스 — 가리키기 · 이동 · 터치(input.ts)로 나눈다 ---------- */
   const pos = (e: MouseEvent) => posIn(e, shot);
   const interactiveNow = () => !!(store.st && store.st.focus && store.st.focus.interactive);
+  // 앱을 누르거나 굴리면 화면이 바뀌어 들고 있는 트리가 옛것이 된다 — 그 트리로 가리킨 카드는 걷는다. 다시 가리키면(⌥+클릭) 지금 화면으로 맞춘다(catchup).
+  const dropCard = () => { if (pointedImage() === shot) clearPick(); };
   // 손 아래 옅은 바탕과 구조 테두리는 보기일 때만 — 조작 중 누름은 앱으로 간다. ⌥ 를 누른 채면 조작 중에도 가리키기라 보인다.
   const pointing = (e: MouseEvent) => !interactiveNow() || e.altKey;
   stage.addEventListener('mousemove', e => {
@@ -293,6 +295,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (spaceHeld || (!interactiveNow() && zoom.z > 1 && !e.altKey)) { startPan(e); return; }
     if (!interactiveNow() || e.altKey) return;
     e.preventDefault();                       // 이미지 드래그(ghost)가 mousemove를 가로채지 못하게
+    dropCard();
     press(...pos(e));
   });
   window.addEventListener('mousemove', e => { if (pressing()) drag(...pos(e)); });
@@ -412,7 +415,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
   wrap.addEventListener('wheel', e => {
     if (focusView.hidden) return;
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomAt(zoom.z * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false); }
-    else if (interactiveNow()) { e.preventDefault(); if (!resizeUI.moving()) wheelAt(e); }
+    else if (interactiveNow()) { e.preventDefault(); if (!resizeUI.moving()) { dropCard(); wheelAt(e); } }
     else if (zoom.z > 1) { e.preventDefault(); setZoom(zoom.z, zoom.x - e.deltaX, zoom.y - e.deltaY, false); }
   }, { passive: false });
 

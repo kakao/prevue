@@ -158,7 +158,7 @@ function ModifierRows({ modifiers }: { modifiers: CardModifier[] }) {
  */
 export function PointCard({ card, actions = NO_ACTIONS }: { card: PointCardData; actions?: PointActions }) {
   const { phrase } = useMessages();
-  const { node, say, box, tree, modifiers, previews, origin, repo } = card;
+  const { node, say, box, tree, modifiers, previews, origin } = card;
   const panel = useRef<HTMLDivElement>(null), drawn = useRef(false);
   /** 가리킨 줄을 트리 칸 가운데로 — 스크롤하는 것은 칸(div)이지 그 안의 ul 이 아니다. 처음은 바로, 그 뒤는 부드럽게. */
   const center = (smooth: boolean) => {
@@ -171,8 +171,7 @@ export function PointCard({ card, actions = NO_ACTIONS }: { card: PointCardData;
   useLayoutEffect(() => { center(drawn.current); drawn.current = true; }, [hereId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [listOpen, setListOpen] = useState(false);
   useEffect(() => setListOpen(false), [hereId, node.lineNumber]);
-  const full = say.file ? `${shortPath(say.file, repo)}:${node.lineNumber}` : say.ref && refText(say.ref);
-  const where = full ? full.slice(full.lastIndexOf('/') + 1) : '';
+  const where = say.file ? `${say.file.slice(say.file.lastIndexOf('/') + 1)}:${node.lineNumber}` : say.ref ? refText(say.ref) : '';
   const many = previews.length > 1;
   const jumpLabel = many ? phrase('point.card.previews', { n: previews.length }) : previews[0] && phrase('point.card.jump', { name: previews[0].fn });
   // 노드가 바뀌면 머리 글자와 설명을 새로 붙여 페이드로 갈아든다.

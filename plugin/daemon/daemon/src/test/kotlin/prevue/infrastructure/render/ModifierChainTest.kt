@@ -49,6 +49,7 @@ class ModifierChainTest {
         assertEquals(mapOf("name" to "height", "value" to "120.dp", "sizes" to listOf("height")), of(SizeElement(nan, 120f, nan, 120f, true)).single())
         assertEquals(mapOf("name" to "requiredWidth", "value" to "36.5.dp", "sizes" to listOf("width")), of(SizeElement(36.5f, nan, 36.5f, nan, false)).single())
         assertEquals(mapOf("name" to "widthIn", "value" to "100.dp..", "sizes" to listOf("width")), of(SizeElement(100f, nan, Float.POSITIVE_INFINITY, nan, true)).single())
+        assertEquals(mapOf("name" to "sizeIn"), of(SizeElement(nan, nan, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, true)).single())
     }
 
     @Test fun `sRGB 배경은 견본 색을 싣고 다른 색 공간 · 브러시는 이름만`() {
