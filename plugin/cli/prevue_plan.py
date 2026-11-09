@@ -1173,11 +1173,14 @@ def agent_view(d, viewer="", shown=None):
 def previews_of(d, name, rc):
     """previews --of 의 판정. 데몬은 색인을 뒤집은 자료만 주고, 종료 코드와 에이전트에게 할 말은 여기서 정한다(D-165).
     판정 필드(ok · message · error)를 앞에, 목록을 뒤에 — 긴 응답을 앞에서 잘라 읽어도 판정이 남는다."""
-    if rc == 3 or not isinstance(d, dict) or "ready" not in d:
+    if rc == 3:
         if isinstance(d, dict) and d.get("daemon") is False:
             d["error"] = ("No daemon — the composable index lives in it. Find the file that defines or previews %s "
                           "and run prevue show <file>, which starts one" % name)
         return d, 3
+    if not isinstance(d, dict) or "ready" not in d:
+        return {"ok": False, "of": name, "error": "The running daemon couldn't answer --of (%s) — find the file that defines or previews %s "
+                "and run prevue show <file>" % (d.get("error", "no answer") if isinstance(d, dict) else "no answer", name)}, 1
     of = d.get("of") or name
     lists = {k: d.get(k) or [] for k in ("definitions", "previews")}
     if not d.get("ready"):

@@ -609,6 +609,8 @@ if [ "${RESOLVE_SEAT:-0}" = 1 ]; then
       KEY="$(key_from_args "$@")" || KEY=""
       if [ -z "$KEY" ] && R="$(repo_root "$PWD" 2>/dev/null)"; then
         C="$(repo_key "$R")"; S="$(seat_of "$C")" && [ -n "$(daemon_key "$S")" ] && KEY="$C"
+        # previews --of 는 찾을 색인이 저장소마다 다르다 — 그 저장소에 데몬이 없을 때 남의 데몬에게 물으면 틀린 답을 낸다.
+        [ -z "$KEY" ] && [ "$cmd" = previews ] && KEY="$C"
       fi
       if [ -n "$KEY" ]; then
         # 같은 저장소에도 앱마다 데몬이 따로다 — 인자가 가리킨 모듈을 그리는 데몬, 없으면 새 자리(D-50).

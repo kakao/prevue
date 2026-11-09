@@ -21,5 +21,7 @@ Exit codes (--of)
   0  found. message is set when definitions has more than one entry
   1  none found — definitions tells which: defined but no @Preview calls it directly (show its definition file or a screen that calls it),
      or no definition in this project (a library composable, or the name differs)
-  3  no daemon — find the file that defines or previews it and run prevue show <file>, which starts one ·
-     the index is still being built after waiting 10 seconds (ready:false) — run it again
+     or the running daemon couldn't answer (error) — find the file and run prevue show <file>
+  2  several daemons and no way to tell the repository — run it from inside the repository or give a file of it
+  3  no daemon (find the file that defines or previews it and run prevue show <file>, which starts one),
+     or the index was still being built after 10 seconds of waiting (ready:false — run it once more, then fall back the same way)

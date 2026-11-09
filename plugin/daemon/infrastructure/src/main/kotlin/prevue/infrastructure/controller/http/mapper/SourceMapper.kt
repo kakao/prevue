@@ -3,6 +3,7 @@ package prevue.infrastructure.controller.http.mapper
 
 import prevue.application.port.CompileResult
 import java.io.File
+import prevue.application.domain.model.ComposableDefinition
 import prevue.application.domain.model.ComposablePreviews
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.RenderOutput
@@ -17,17 +18,19 @@ internal fun PreviewSpec.toJson(): Map<String, Any?> = mapOf(
     "methodParams" to methodParams,
 )
 
-internal fun composablePreviewsJson(of: String, found: ComposablePreviews?, repoRoot: String): Map<String, Any?> {
-    fun rel(f: File) = f.path.removePrefix("$repoRoot/")
-    return mapOf(
-        "ready" to (found != null),
-        "of" to (found?.name ?: of),
-        "definitions" to found?.definitions.orEmpty().map { mapOf("path" to it.file.path, "rel" to rel(it.file), "module" to it.module) },
-        "previews" to found?.previews.orEmpty().map {
-            mapOf("fqn" to it.fqn, "fn" to it.fqn.substringAfterLast('.'), "file" to it.file.path, "rel" to rel(it.file), "module" to it.module)
-        },
-    )
-}
+internal fun File.relTo(repoRoot: String): String = path.removePrefix("$repoRoot/")
+
+internal fun ComposableDefinition.toJson(repoRoot: String): Map<String, Any?> =
+    mapOf("path" to file.path, "rel" to file.relTo(repoRoot), "module" to module)
+
+internal fun composablePreviewsJson(of: String, found: ComposablePreviews?, repoRoot: String): Map<String, Any?> = mapOf(
+    "ready" to (found != null),
+    "of" to (found?.name ?: of),
+    "definitions" to found?.definitions.orEmpty().map { it.toJson(repoRoot) },
+    "previews" to found?.previews.orEmpty().map {
+        mapOf("fqn" to it.fqn, "fn" to it.function, "file" to it.file.path, "rel" to it.file.relTo(repoRoot), "module" to it.module)
+    },
+)
 
 internal fun RenderOutput.toJson(): Map<String, Any?> = mapOf(
     "ok" to ok, "warnings" to warnings, "preview" to preview.toJson(), "image" to image?.absolutePath, "tree" to tree?.absolutePath,

@@ -26,8 +26,10 @@ internal class PreviewCatalog(
     private val sources: SourceFileRepository,
 ) {
     private data class Entry(
-        val module: String, val mtimeMs: Long, val functions: List<String>, val calls: Map<String, List<String>>, val composables: List<String>,
+        val module: String, val mtimeMs: Long, val fqns: Map<String, String>, val calls: Map<String, List<String>>, val composables: List<String>,
     ) {
+        val functions get() = fqns.keys.toList()
+
         fun sameListing(other: Entry?) = other != null && copy(mtimeMs = 0) == other.copy(mtimeMs = 0)
     }
 
@@ -37,7 +39,7 @@ internal class PreviewCatalog(
                 .flatMap { (f, e) -> e.composables.map { it to ComposableDefinition(f, e.module) } }
                 .groupBy({ it.first }, { it.second })
             val files = byFile.filterValues { it.functions.isNotEmpty() }
-                .map { (f, e) -> PreviewFile(f, e.module, e.mtimeMs, e.functions, e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }) }
+                .map { (f, e) -> PreviewFile(f, e.module, e.mtimeMs, e.functions, e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }, e.fqns) }
                 .sortedByDescending { it.mtimeMs }
             PreviewIndex(files, composables)
         }
@@ -52,18 +54,12 @@ internal class PreviewCatalog(
 
     fun previewsOf(composable: String): ComposablePreviews? {
         val index = index() ?: return null
-        val name = composable.substringAfterLast('.')
+        val name = composable.trim().removeSuffix("()").substringAfterLast('.')
         val found = index.files.flatMap { f ->
-            val callers = f.functions.filter { name in f.calls[it].orEmpty() }
-            fqns(f.file, callers).map { ComposablePreview(it, f.file, f.module) }
+            f.functions.filter { name in f.calls[it].orEmpty() }
+                .mapNotNull { fn -> f.fqns[fn]?.let { ComposablePreview(it, fn, f.file, f.module) } }
         }
         return ComposablePreviews(name, index.composables[name].orEmpty(), found)
-    }
-
-    private fun fqns(f: File, functions: List<String>): List<String> {
-        if (functions.isEmpty()) return emptyList()
-        val specs = runCatching { previews.inFile(f) }.getOrDefault(emptyList())
-        return functions.mapNotNull { fn -> specs.firstOrNull { it.functionName == fn }?.fqn }
     }
 
     suspend fun build() {
@@ -97,14 +93,14 @@ internal class PreviewCatalog(
 
     private fun read(f: File): Entry? {
         val text = sources.read(f) ?: return null
-        val fns = if (text.contains("Preview")) previewFunctions(f) else emptyList()
-        if (fns.isEmpty() && !text.contains("Composable")) return null
-        val outline = previews.outline(text, fns)
-        if (fns.isEmpty() && outline.composables.isEmpty()) return null
-        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns, outline.calls, outline.composables)
+        val fqns = if (text.contains("Preview")) previewFunctions(f) else emptyMap()
+        if (fqns.isEmpty() && !text.contains("Composable")) return null
+        val outline = previews.outline(text, fqns.keys)
+        if (fqns.isEmpty() && outline.composables.isEmpty()) return null
+        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fqns, outline.calls, outline.composables)
     }
 
-    private fun previewFunctions(f: File): List<String> = runCatching { previews.inFile(f) }
+    private fun previewFunctions(f: File): Map<String, String> = runCatching { previews.inFile(f) }
         .getOrElse { e -> System.err.println("[prevue] ${f.name}의 프리뷰를 읽지 못해 빠른 열기에서 뺀다: $e"); emptyList() }
-        .map { it.functionName }.distinct()
+        .associate { it.functionName to it.fqn }
 }

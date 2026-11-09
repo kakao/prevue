@@ -123,8 +123,9 @@ class PreviewCatalogTest {
         runBlocking { uc.watchers.indexPreviewFiles() }
         change(created = listOf(screens(), lib("Chips", "@Composable fun Chip() {}\n")))
         val banner = previewsOf("Banner")
-        assertEquals(listOf("demo.ScreensKt.ScreenPreview"), banner.previews.map { it.fqn })
+        assertEquals(listOf("demo.ScreensKt.ScreenPreview" to "ScreenPreview"), banner.previews.map { it.fqn to it.function })
         assertEquals(listOf(":app"), banner.definitions.map { it.module })
+        assertEquals("Banner", previewsOf(" Banner() ").name)
         val chip = previewsOf("lib.Chip")
         assertEquals("Chip", chip.name)
         assertEquals(listOf("demo.ScreensKt.ScreenPreview"), chip.previews.map { it.fqn })

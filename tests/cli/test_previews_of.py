@@ -47,6 +47,11 @@ class Judgement(unittest.TestCase):
         out, code = P.previews_of(index(ready=False), "Badge", 0)
         self.assertEqual((code, out["ready"]), (3, False))
 
+    def test_데몬이_of_를_모르면_1_이고_파일로_돌아가게_한다(self):
+        out, code = P.previews_of({"ok": False, "error": "java.lang.IllegalStateException: file이 필요하다"}, "Badge", 1)
+        self.assertEqual((code, out["ok"]), (1, False))
+        self.assertIn("prevue show <file>", out["error"])
+
     def test_데몬이_없으면_3_이고_파일을_찾아_show_하라고_한다(self):
         out, code = P.previews_of({"ok": False, "daemon": False, "error": "No daemon"}, "Badge", 3)
         self.assertEqual(code, 3)
@@ -96,6 +101,19 @@ class Waiting(DaemonSeat):
         self.assertEqual(len(SlowIndex.asked), 3)
         self.assertEqual(SlowIndex.asked[0], {"of": "lib.Badge"})
         self.assertEqual(json.loads(p.stdout)["previews"][0]["fqn"], PREVIEW["fqn"])
+
+
+    def test_파일_없이_불러도_지금_저장소에_데몬이_없으면_남의_데몬에게_묻지_않는다(self):
+        other = Path(self.tmp.name, "other")
+        other.mkdir()
+        Path(other, "settings.gradle.kts").touch()
+        gradlew = Path(other, "gradlew")
+        gradlew.touch()
+        gradlew.chmod(0o755)
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        p = subprocess.run([str(ROOT / "bin/prevue"), "previews", "--of", "Badge"], capture_output=True, text=True, cwd=other, env=env)
+        self.assertEqual(p.returncode, 3, p.stdout + p.stderr)
+        self.assertEqual(SlowIndex.asked, [])
 
 
 class NoDaemon(DaemonSeat):
