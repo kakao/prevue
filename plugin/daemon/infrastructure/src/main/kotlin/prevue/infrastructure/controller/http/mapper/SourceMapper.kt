@@ -2,6 +2,9 @@
 package prevue.infrastructure.controller.http.mapper
 
 import prevue.application.port.CompileResult
+import java.io.File
+import prevue.application.domain.model.ComposableDefinition
+import prevue.application.domain.model.ComposablePreviews
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.RenderOutput
 import prevue.application.domain.model.Selection
@@ -13,6 +16,20 @@ import prevue.application.domain.model.Pointed
 internal fun PreviewSpec.toJson(): Map<String, Any?> = mapOf(
     "fqn" to fqn, "previewId" to previewId, "params" to params, "file" to file?.absolutePath, "index" to index,
     "methodParams" to methodParams,
+)
+
+internal fun File.relTo(repoRoot: String): String = path.removePrefix("$repoRoot/")
+
+internal fun ComposableDefinition.toJson(repoRoot: String): Map<String, Any?> =
+    mapOf("path" to file.path, "rel" to file.relTo(repoRoot), "module" to module)
+
+internal fun composablePreviewsJson(of: String, found: ComposablePreviews?, repoRoot: String): Map<String, Any?> = mapOf(
+    "ready" to (found != null),
+    "of" to (found?.name ?: of),
+    "definitions" to found?.definitions.orEmpty().map { it.toJson(repoRoot) },
+    "previews" to found?.previews.orEmpty().map {
+        mapOf("fqn" to it.fqn, "fn" to it.function, "file" to it.file.path, "rel" to it.file.relTo(repoRoot), "module" to it.module)
+    },
 )
 
 internal fun RenderOutput.toJson(): Map<String, Any?> = mapOf(

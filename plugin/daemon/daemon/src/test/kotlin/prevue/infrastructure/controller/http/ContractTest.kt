@@ -78,8 +78,11 @@ class ContractTest {
         check("project-files", awaitIndex())
         // D-56. 빠른 열기 — 띄울 때 한 번 훑는다(Main).
         check("preview-files.pending", get("/preview-files.json"))
+        check("previews.of.pending", post("/previews", mapOf("of" to "Badge")))
         runBlocking { uc.watchers.indexPreviewFiles() }
         check("preview-files", get("/preview-files.json"))
+        check("previews.of", post("/previews", mapOf("of" to "lib.Badge")))
+        check("previews.of.none", post("/previews", mapOf("of" to "Nope")))
         check("card.cached", post("/card", mapOf("index" to 1)))
         check("card.force", post("/card", mapOf("index" to 1, "force" to true)))
         check("render", post("/render", emptyMap()))

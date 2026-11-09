@@ -396,6 +396,13 @@ bring_down() {  # <port> <post 의 종료 코드>
   if [ "$2" = 1 ]; then force_exit "$1"; else await_exit "$1" || force_exit "$1"; fi || return 1
   drop_jars "$1"; sweep_jars
 }
+# previews --of 는 파일 없이 불리는 것이 보통이라 데몬이 없으면 여기서 끝난다 — 무엇을 할지(파일을 찾아 show)를 판정에 맡긴다.
+previews_unreached() {
+  local of=""
+  while [ $# -gt 0 ]; do [ "$1" = --of ] && of="${2:-}"; shift; done
+  [ -n "$of" ] || return 0
+  printf '{"ok":false,"daemon":false}' | python3 "$PLAN_PY" previews-of "$of" 3; exit 3
+}
 # $PORT 에 닿지 못했을 때의 답. curl 의 오류 문구는 샌드박스 차단과 빈 포트에서 같아("Couldn't connect to server")
 # 가를 수 없다 — 기록으로 가른다. 살아 있으면 이 셸이 못 닿는 것이고 start 로 보내지 않는다.
 unreached_json() {
@@ -602,6 +609,8 @@ if [ "${RESOLVE_SEAT:-0}" = 1 ]; then
       KEY="$(key_from_args "$@")" || KEY=""
       if [ -z "$KEY" ] && R="$(repo_root "$PWD" 2>/dev/null)"; then
         C="$(repo_key "$R")"; S="$(seat_of "$C")" && [ -n "$(daemon_key "$S")" ] && KEY="$C"
+        # previews --of 는 찾을 색인이 저장소마다 다르다 — 그 저장소에 데몬이 없을 때 남의 데몬에게 물으면 틀린 답을 낸다.
+        [ -z "$KEY" ] && [ "$cmd" = previews ] && KEY="$C"
       fi
       if [ -n "$KEY" ]; then
         # 같은 저장소에도 앱마다 데몬이 따로다 — 인자가 가리킨 모듈을 그리는 데몬, 없으면 새 자리(D-50).
@@ -619,6 +628,7 @@ if [ "${RESOLVE_SEAT:-0}" = 1 ]; then
           if [ -n "$U" ]; then
             echo "{\"ok\":false,\"error\":\"$NET_BLOCKED_MSG\",\"unreachable\":[$(printf '%s' "$U" | sed 's/ *$//; s/ /,/g')],\"networkBlocked\":true}"; exit 3
           fi
+          [ "$cmd" = previews ] && previews_unreached "$@"
           echo "{\"ok\":false,\"error\":\"No running daemon — point at a file path to find that repository's seat\"}"; exit 3
         else
           # 후보를 실어 보낸다. awk 로 조립하면 따옴표가 셸·awk·JSON 세 겹을 지나며 깨진다 — 셸로만 짠다.
@@ -1042,7 +1052,18 @@ except OSError:
     [ "$T" = "${T#/}" ] && [ -e "$T" ] && T="$(cd "$(dirname "$T")" && pwd)/$(basename "$T")"
     post /close "{\"target\":$(jstr "$T"),\"by\":\"${PREVUE_BY:-cli}\"}" ;;
   previews)
-    F="${1:-}"; [ -n "$F" ] || usage; [ "$F" = "${F#/}" ] && F="$(cd "$(dirname "$F")" && pwd)/$(basename "$F")"
+    F=""; OF=""
+    while [ $# -gt 0 ]; do case "$1" in --of) [ $# -ge 2 ] || usage; OF="$2"; shift 2;; -*) usage;; *) F="$1"; shift;; esac; done
+    if [ -n "$OF" ]; then
+      # 파일은 저장소를 고르는 단서일 뿐이다(위에서 이미 썼다). 색인은 데몬이 뜰 때 훑어 준비 전이면 ready:false — 10초까지 다시 묻는다.
+      for _ in $(seq 1 50); do
+        RES=$(post /previews "{\"of\":$(jstr "$OF")}"); RC=$?
+        [ "$RC" = 0 ] && printf '%s' "$RES" | grep -q '"ready":false' || break
+        sleep 0.2
+      done
+      printf '%s' "$RES" | python3 "$PLAN_PY" previews-of "$OF" "$RC"; exit $?
+    fi
+    [ -n "$F" ] || usage; [ "$F" = "${F#/}" ] && F="$(cd "$(dirname "$F")" && pwd)/$(basename "$F")"
     post /previews "{\"file\":\"$F\"}" ;;
   open)
     curl -sf -m 2 "$BASE/status" >/dev/null 2>&1 \

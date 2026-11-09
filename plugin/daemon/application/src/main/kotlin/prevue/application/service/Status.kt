@@ -13,6 +13,7 @@ import prevue.application.domain.model.EngineStats
 import prevue.application.domain.model.FileMatch
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.domain.model.PreviewFile
+import prevue.application.domain.model.ComposablePreviews
 import prevue.application.domain.model.PreviewIndex
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Selection
@@ -93,6 +94,8 @@ class Status @Inject internal constructor(
     fun readPreviewFiles(): List<PreviewFile>? = catalog.list()
 
     fun readPreviewIndex(): PreviewIndex? = catalog.index()
+
+    fun findPreviews(composable: String): ComposablePreviews? = catalog.previewsOf(composable)
 
     fun readSourceIndex(): SourceIndex? = sourceFiles.index()
 
