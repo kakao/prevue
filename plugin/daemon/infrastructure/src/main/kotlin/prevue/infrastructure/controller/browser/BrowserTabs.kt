@@ -18,12 +18,16 @@ internal class BrowserTabs(
 
     fun closeTab(key: String) = core.post { tabs.closeTab(key, by = "viewer") }
 
-    fun open(path: String): OpenResult {
+    fun open(path: String, function: String?): OpenResult {
         val f = File(path)
         if (!f.isFile) return OpenResult.NoPreview(phrase("open.missing", "file" to f.name))
         if (!status.hosts(f)) return OpenResult.OtherApp("prevue show ${shellQuote(f.absolutePath)}")
-        if (status.listPreviews(f).isEmpty()) return OpenResult.NoPreview(phrase("open.noPreview", "file" to f.name))
-        core.post { tabs.openPreview(f.path, null, emptyMap(), by = "viewer") }
+        val specs = status.listPreviews(f)
+        if (specs.isEmpty()) return OpenResult.NoPreview(phrase("open.noPreview", "file" to f.name))
+        if (function != null && specs.none { it.functionName == function }) {
+            return OpenResult.NoPreview(phrase("open.noFunction", "file" to f.name, "fn" to function))
+        }
+        core.post { tabs.openFile(f.path, function, by = "viewer") }
         return OpenResult.Opened
     }
 
@@ -31,5 +35,6 @@ internal class BrowserTabs(
 
     fun sourceIndex(): SourceIndex? = status.readSourceIndex()
 
-    fun previewFiles(): Map<String, Any?> = previewFilesJson(status.readPreviewFiles(), File(status.module().repo).canonicalPath)
+    fun previewFiles(): Map<String, Any?> =
+        previewFilesJson(status.readPreviewFiles(), status.readComposables(), File(status.module().repo).canonicalPath)
 }

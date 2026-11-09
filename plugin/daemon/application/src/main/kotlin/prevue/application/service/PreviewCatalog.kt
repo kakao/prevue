@@ -9,6 +9,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
+import prevue.application.domain.model.ComposableDefinition
 import prevue.application.domain.model.PreviewFile
 import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
@@ -26,12 +27,29 @@ internal class PreviewCatalog(
     private val previews: PreviewRepository,
     private val sources: SourceFileRepository,
 ) {
-    private class Catalog(val byFile: Map<File, PreviewFile> = emptyMap(), val ready: Boolean = false)
+    private data class Entry(val module: String, val mtimeMs: Long, val functions: List<String>, val calls: Map<String, List<String>>, val composables: List<String>) {
+        fun sameListing(other: Entry?) = other != null && copy(mtimeMs = 0) == other.copy(mtimeMs = 0)
+    }
+
+    private class Catalog(val byFile: Map<File, Entry> = emptyMap(), val ready: Boolean = false)
 
     private val catalog = MutableStateFlow(Catalog())
 
     /** 다 훑기 전에는 null — "프리뷰 파일이 없다"와 "아직 모른다"를 가른다. */
-    fun list(): List<PreviewFile>? = catalog.value.takeIf { it.ready }?.byFile?.values?.sortedByDescending { it.mtimeMs }
+    fun list(): List<PreviewFile>? {
+        val c = catalog.value.takeIf { it.ready } ?: return null
+        val defined = definitions(c).keys
+        return c.byFile.filterValues { it.functions.isNotEmpty() }
+            .map { (f, e) -> PreviewFile(f, e.module, e.mtimeMs, e.functions, e.calls.mapValues { (_, names) -> names.filter(defined::contains) }) }
+            .sortedByDescending { it.mtimeMs }
+    }
+
+    fun definitions(): Map<String, List<ComposableDefinition>>? = catalog.value.takeIf { it.ready }?.let(::definitions)
+
+    private fun definitions(c: Catalog): Map<String, List<ComposableDefinition>> =
+        c.byFile.entries.sortedBy { it.key.path }
+            .flatMap { (f, e) -> e.composables.map { it to ComposableDefinition(f, e.module) } }
+            .groupBy({ it.first }, { it.second })
 
     suspend fun build() {
         for (f in sources.sourceFiles()) { currentCoroutineContext().ensureActive(); scan(f) }
@@ -46,13 +64,12 @@ internal class PreviewCatalog(
         if (hit && catalog.value.ready) ws.emit(WorkspaceEvent.PreviewFilesChanged)
     }
 
-    /** 목록이 바뀌었으면 참. */
     private fun scan(f: File): Boolean {
         val c = f.canonicalFile
         return put(c, if (c.extension == "kt" && sources.has(c) && ws.hosts(c)) read(c) else null)
     }
 
-    private fun put(c: File, entry: PreviewFile?): Boolean {
+    private fun put(c: File, entry: Entry?): Boolean {
         val old = catalog.getAndUpdate {
             when {
                 it.byFile[c] == entry -> it
@@ -60,15 +77,14 @@ internal class PreviewCatalog(
                 else -> Catalog(it.byFile + (c to entry), it.ready)
             }
         }.byFile[c]
-        return old?.functions != entry?.functions
+        return if (old == null) entry != null else !old.sameListing(entry)
     }
 
-    private fun read(f: File): PreviewFile? {
+    private fun read(f: File): Entry? {
         val text = sources.read(f) ?: return null
-        // 멀티프리뷰를 풀려면 처음 보는 애노테이션마다 클래스패스를 뒤진다. 수천 파일에 그 값을 치르지 않게 "Preview"가 없는 파일은 건너뛴다 —
-        // 이름에 Preview가 없는 멀티프리뷰 애노테이션만 쓰는 파일은 놓친다(androidx 것과 AS 관례는 모두 이름에 있다).
-        if (!text.contains("Preview")) return null
-        val fns = runCatching { previews.inFile(f) }.getOrNull().orEmpty().map { it.functionName }.distinct()
-        return if (fns.isEmpty()) null else PreviewFile(f, ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns)
+        val fns = if (text.contains("Preview")) runCatching { previews.inFile(f) }.getOrNull().orEmpty().map { it.functionName }.distinct() else emptyList()
+        val outline = previews.outline(text, fns)
+        if (fns.isEmpty() && outline.composables.isEmpty()) return null
+        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns, outline.calls, outline.composables)
     }
 }

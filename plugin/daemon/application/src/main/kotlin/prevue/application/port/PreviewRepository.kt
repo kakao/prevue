@@ -2,9 +2,11 @@ package prevue.application.port
 
 import java.io.File
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SourceOutline
 
 /** 소스에 정의된 `@Preview`를 내준다 — 구현은 소스 정규식 + 클래스 파일의 멀티프리뷰 애노테이션(`PreviewLocator` · `MultiPreview`). */
 interface PreviewRepository {
     /** 파일의 최상위 `@Preview` 함수들. 멀티프리뷰는 풀고, `@PreviewParameter` 값으로 나누기 전이다. */
     fun inFile(file: File): List<PreviewSpec>
+    fun outline(text: String, functions: Collection<String>): SourceOutline
 }

@@ -1,11 +1,13 @@
 // 뷰어 상태 → SSE·HTTP JSON(D-41·D-42). 브라우저가 읽는 키는 여기서만 정한다.
 package prevue.infrastructure.controller.browser
 
+import java.io.File
 import prevue.application.domain.model.Keyed
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.phrase
 import prevue.infrastructure.controller.http.mapper.toJson
+import prevue.application.domain.model.ComposableDefinition
 import prevue.application.domain.model.PreviewFile
 
 internal fun BrowserState.toJson(): Map<String, Any?> = mapOf(
@@ -63,13 +65,19 @@ internal fun UiEvent.toJson(): Map<String, Any?> = when (this) {
  * D-56. 빠른 열기의 목록. 다 훑기 전이면 `ready: false`에 빈 목록이다. `path`는 `/viewer/open`에 그대로 넘기는 풀패스,
  * `rel`은 저장소 기준 — 줄에 보이고 매칭하는 것은 이쪽이다.
  */
-internal fun previewFilesJson(files: List<PreviewFile>?, repoRoot: String): Map<String, Any?> = mapOf(
-    "ready" to (files != null),
-    "files" to files.orEmpty().map { f ->
-        mapOf("path" to f.file.path, "rel" to f.file.path.removePrefix("$repoRoot/"), "module" to f.module,
-            "mtime" to f.mtimeMs, "functions" to f.functions)
-    },
-)
+internal fun previewFilesJson(files: List<PreviewFile>?, composables: Map<String, List<ComposableDefinition>>?, repoRoot: String): Map<String, Any?> {
+    fun rel(f: File) = f.path.removePrefix("$repoRoot/")
+    return mapOf(
+        "ready" to (files != null),
+        "files" to files.orEmpty().map { f ->
+            mapOf("path" to f.file.path, "rel" to rel(f.file), "module" to f.module, "mtime" to f.mtimeMs, "functions" to f.functions,
+                "previews" to f.functions.map { fn -> mapOf("fn" to fn, "calls" to f.calls[fn].orEmpty()) })
+        },
+        "composables" to composables.orEmpty().flatMap { (name, defs) ->
+            defs.map { mapOf("name" to name, "path" to it.file.path, "rel" to rel(it.file), "module" to it.module) }
+        },
+    )
+}
 
 internal fun BrowserPresenter.OpenResult.toJson(): Map<String, Any?> = when (this) {
     BrowserPresenter.OpenResult.Opened -> mapOf("ok" to true)

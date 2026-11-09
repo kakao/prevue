@@ -12,6 +12,7 @@ import prevue.application.domain.model.BoardView
 import prevue.application.domain.model.EngineStats
 import prevue.application.domain.model.FileMatch
 import prevue.application.domain.model.ModuleInfo
+import prevue.application.domain.model.ComposableDefinition
 import prevue.application.domain.model.PreviewFile
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.Selection
@@ -90,6 +91,8 @@ class Status @Inject internal constructor(
     fun listPreviews(file: File): List<PreviewSpec> = previews.inFile(file)
 
     fun readPreviewFiles(): List<PreviewFile>? = catalog.list()
+
+    fun readComposables(): Map<String, List<ComposableDefinition>>? = catalog.definitions()
 
     fun readSourceIndex(): SourceIndex? = sourceFiles.index()
 

@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "schema": {
+    "ok": "boolean"
+  },
+  "example": {
+    "ok": true
+  }
+}

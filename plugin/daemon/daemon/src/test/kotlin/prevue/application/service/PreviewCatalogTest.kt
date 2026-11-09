@@ -66,6 +66,56 @@ class PreviewCatalogTest {
         }
     }
 
+    private fun calls(name: String) = uc.status.readPreviewFiles()!!.single { it.file.name == name }.calls
+
+    private fun screens() = File(fx.srcRoot, "demo/Screens.kt").apply {
+        writeText("""
+            package demo
+            @Composable fun Banner() { Text("x") }
+            @Preview @Composable fun ScreenPreview() { AppTheme { Banner(); Chip(); Text("y") } }
+        """.trimIndent())
+    }
+
+    private fun lib(name: String, text: String) = File(fx.libRoot, "lib/$name.kt").apply { parentFile.mkdirs(); writeText("package lib\n$text") }
+
+    @Test fun `Preview 본문이 직접 부른 이름은 프로젝트에 정의가 있는 것만 싣고, 정의는 파일이 아닌 모듈을 단다`() {
+        runBlocking { uc.watchers.indexPreviewFiles() }
+        change(created = listOf(screens(), lib("Chips", "@Composable fun Chip() {}\n")))
+        assertEquals(mapOf("ScreenPreview" to listOf("Banner", "Chip")), calls("Screens.kt"))
+        val defs = uc.status.readComposables()!!
+        assertEquals(":app", defs.getValue("Banner").single().module)
+        assertEquals(":lib", defs.getValue("Chip").single().module)
+        assertEquals(listOf("Banner", "Chip", "ScreenPreview"), defs.keys.sorted())
+    }
+
+    @Test fun `다른 파일에 정의가 생기면 그 파일만 읽고도 호출이 늘고, 정의만 바뀐 저장도 알린다`() {
+        runBlocking {
+            filesChanged().test {
+                uc.watchers.indexPreviewFiles()
+                awaitItem()
+                val screens = screens()
+                change(created = listOf(screens))
+                awaitItem()
+                assertEquals(listOf("Banner"), calls("Screens.kt")["ScreenPreview"])
+
+                screens.appendText("\n@Preview @Composable fun Unread() { Chip() }\n")   // 알리지 않은 고침 — 다시 읽으면 드러난다
+                val theme = lib("Theme", "@Composable fun AppTheme(content: @Composable () -> Unit) {}\n@Composable fun Chip() {}\n")
+                change(created = listOf(theme))
+                awaitItem()
+                assertEquals(mapOf("ScreenPreview" to listOf("AppTheme", "Banner", "Chip")), calls("Screens.kt"))
+
+                theme.writeText("package lib\n@Composable fun AppTheme(content: @Composable () -> Unit) {}\n")
+                change(changed = listOf(theme))
+                awaitItem()
+                assertEquals(listOf("AppTheme", "Banner"), calls("Screens.kt")["ScreenPreview"])
+
+                theme.setLastModified(theme.lastModified() + 2_000)
+                change(changed = listOf(theme))
+                expectNoEvents()
+            }
+        }
+    }
+
     @Test fun `다른 앱의 파일은 프리뷰가 있어도 싣지 않는다`() {
         runBlocking { uc.watchers.indexPreviewFiles() }
         val elsewhere = File(fx.root, "other-app/src/X.kt").apply { parentFile.mkdirs(); writeText("package x\n@Preview\nfun X() {}\n") }

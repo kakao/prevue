@@ -31,7 +31,10 @@ import prevue.infrastructure.bindings.EntryHooks
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ContractTest {
-    private val fx = Fixture(previews = 2)
+    private val fx = Fixture(previews = 2).apply {
+        File(libRoot, "lib/Badge.kt").apply { parentFile.mkdirs(); writeText("package lib\n@Composable fun Badge() {}\n") }
+        File(srcRoot, "demo/Badges.kt").writeText("package demo\nimport lib.Badge\n@Preview @Composable fun BadgePreview() { Badge(); Text(\"x\") }\n")
+    }
     private val port = ServerSocket(0).use { it.localPort }
     private val uc = fx.graph(Clock(System::currentTimeMillis), hooks = EntryHooks(port))
     private val ws = uc.workspace
@@ -175,6 +178,11 @@ class ContractTest {
         check("viewer.open", post("/viewer/open", mapOf("file" to other.path)))
         runBlocking { viewer.drain() }
         ws.awaitBoardFilled()
+        check("viewer.open.current", post("/viewer/open", mapOf("file" to other.path, "fn" to "Other1")))   // 지금 탭 — 다시 그리지 않는다
+        check("viewer.open.fn", post("/viewer/open", mapOf("file" to f, "fn" to "Card1")))
+        runBlocking { viewer.drain() }
+        ws.awaitBoardFilled()
+        check("viewer.open.fn.none", post("/viewer/open", mapOf("file" to f, "fn" to "없는함수")))
         check("viewer.open.none", post("/viewer/open", mapOf("file" to java.io.File(fx.srcRoot, "a/Dup.kt").path)))
         val elsewhere = java.io.File(fx.root, "other-app/src/X.kt").apply { parentFile.mkdirs(); writeText("package x\n") }
         check("viewer.open.other", post("/viewer/open", mapOf("file" to elsewhere.path)))

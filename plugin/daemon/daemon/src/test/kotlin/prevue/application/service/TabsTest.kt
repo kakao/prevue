@@ -167,6 +167,35 @@ class TabsTest {
         assertNull(ws.now.selection)
     }
 
+    @Test fun `파일과 함수로 열면 그 함수의 첫 카드에 선 보드로 연다 — 숨은 탭도 같고 한 장 진입은 아니다`() {
+        show(fx.previewFile("B"))
+        runBlocking { uc.tabs.openFile(fx.file.path, "Card1", "test") }
+        ws.awaitBoardFilled()
+        assertEquals(fx.file.canonicalPath, ws.now.activeTab)
+        assertEquals(1, ws.now.board!!.focus)
+        assertFalse(ws.now.interactive)
+
+        show(fx.previewFile("C"))
+        runBlocking { uc.tabs.openFile(fx.file.path, "Card2", "test") }
+        ws.awaitBoardFilled()
+        assertEquals(2, ws.now.board!!.focus)
+    }
+
+    @Test fun `지금 탭을 다시 열면 그리지 않고 한 장 보기면 보드로 나가기만 한다`() {
+        show(fx.file)
+        val epoch = ws.now.board!!.epoch
+        fx.renderer.shown.clear()
+        assertNull(runBlocking { uc.tabs.openFile(fx.file.path, "Card2", "test") })
+        assertEquals(epoch, ws.now.board!!.epoch)
+        assertEquals(emptyList<Any>(), fx.renderer.shown.toList())
+
+        runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        assertTrue(ws.now.interactive)
+        assertNull(runBlocking { uc.tabs.openFile(fx.file.path, null, "test") })
+        assertFalse(ws.now.interactive)
+        assertEquals(epoch, ws.now.board!!.epoch)
+    }
+
     @Test fun `탭을 옮기면 인터랙티브가 끝난다`() {
         show(fx.file)
         runBlocking { uc.boards.focus(0, on = true, by = "test") }
