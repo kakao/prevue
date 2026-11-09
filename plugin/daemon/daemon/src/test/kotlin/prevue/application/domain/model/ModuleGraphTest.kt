@@ -1,6 +1,7 @@
 package prevue.application.domain.model
 
 import java.io.File
+import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -39,5 +40,28 @@ class ModuleGraphTest {
     @Test fun `KMP 모듈이 하나라도 있으면 KMP 프로젝트다`() {
         assertTrue(ModuleGraph(":app", listOf(pearl, app)).kmp)
         assertFalse(ModuleGraph(":app", listOf(app)).kmp)
+    }
+
+    @Test fun `링크 경로 루트로 만든 그래프도 실제 경로의 파일을 품고 모듈을 가린다`() {
+        val tmp = Files.createTempDirectory("prevue-graph").toFile()
+        try {
+            val real = File(tmp, "real/lib/src/main/kotlin").apply { mkdirs() }
+            val link = Files.createSymbolicLink(File(tmp, "link").toPath(), File(tmp, "real").toPath()).toFile()
+            val g = ModuleGraph(":app", listOf(
+                ModuleNode(":lib", listOf(File(link, "lib/src/main/kotlin")), emptyList()),
+                ModuleNode(":app", emptyList(), emptyList()),
+            ))
+            val f = File(real, "a/Screen.kt").canonicalFile
+            assertTrue(g.contains(f))
+            assertEquals(":lib", g.ownerOf(f))
+            assertEquals(listOf(real.canonicalFile), g.roots)
+            assertFalse(g.contains(File(tmp, "other/Screen.kt").canonicalFile))
+        } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
+    }
+
+    @Test fun `루트와 이름만 앞이 같은 형제 폴더는 품지 않는다`() {
+        val g = ModuleGraph(":app", listOf(app))
+        assertFalse(g.contains(File("$r/app/src/main/kotlinx/A.kt")))
+        assertTrue(g.contains(File("$r/app/src/main/kotlin/A.kt")))
     }
 }
