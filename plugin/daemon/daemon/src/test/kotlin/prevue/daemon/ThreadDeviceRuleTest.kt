@@ -53,6 +53,7 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
             Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다", virtualTime = true),
+            Allowed("prevue/daemon/fake/LaneSpyTest.kt", DELAY, 1, "가상 시간 — 스파이가 가상 시계의 Delay 를 넘기는지 본다", virtualTime = true),
         )
         const val COLLECT = ".collect"
         const val VIRTUAL_CLOCK = "가상 시계 — runTest 안의 awaitItem 은 다음 방출까지 시계를 밀어 늦음을 가린다. advanceTimeBy 뒤 리스트로 본다"
@@ -136,7 +137,7 @@ class ThreadDeviceRuleTest {
     // 가상 시간 항목만 철자마다 `= runTest` 인 fun 본문 안인지 본다(가장 가까운 앞의 fun 줄로 가른다, 별칭 import 줄은 밖이다).
     // 함수 밖 최상위 코드와 runTest 안의 실제 디스패처는 못 가린다. runTest 본문 안의 지역 fun 은 그 뒤를 밖으로 잘못 본다 — 실패하는 쪽이다.
     @Test fun `가상 시간 허용은 runTest 테스트 안에만 있다`() {
-        assertEquals(3, virtualFiles(delayAllowed + collectAllowed).size, "가상 시간 파일을 못 찾았다")
+        assertEquals(4, virtualFiles(delayAllowed + collectAllowed).size, "가상 시간 파일을 못 찾았다")
         assertEquals(
             emptyList<String>(),
             ThreadDeviceRule.outsideRunTest(virtualFiles(delayAllowed), ThreadDeviceRule.delay) +
