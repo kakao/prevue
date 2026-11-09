@@ -42,9 +42,9 @@ export function ResizeScene() {
       <div className="btn" /><div className="btn" />
       <svg className="duo-edge" aria-hidden="true">
         {/* 세 색은 resize.css 의 그림 블록이 준다 — 크롬의 JSX style 에는 그림 토큰을 쓰지 않는다. */}
-        <defs><linearGradient id="duoSheen" gradientUnits="userSpaceOnUse"><stop offset="0" /><stop offset=".4" /><stop offset="1" /></linearGradient></defs>
-        <path className="outl" /><path className="houtl" /><path className="rim" /><path className="rimhi" /><path className="body" />
-        <path className="sheen" stroke="url(#duoSheen)" /><path className="hinge" /><path className="hsheen" stroke="url(#duoSheen)" /><path className="ring" /><path className="ring hr" />
+        <defs><path id="duoSide" /><path id="duoHinge" /><linearGradient id="duoSheen" gradientUnits="userSpaceOnUse"><stop offset="0" /><stop offset=".4" /><stop offset="1" /></linearGradient></defs>
+        <use className="outl" href="#duoSide" /><use className="houtl" href="#duoHinge" /><use className="rim" href="#duoSide" /><use className="rimhi" href="#duoSide" /><use className="body" href="#duoSide" />
+        <use className="sheen" href="#duoSide" stroke="url(#duoSheen)" /><use className="hinge" href="#duoHinge" /><use className="hsheen" href="#duoHinge" stroke="url(#duoSheen)" /><use className="ring" href="#duoSide" /><use className="ring hr" href="#duoHinge" />
       </svg>
       <div className="duo-flap"><div className="duo-face" /><div className="duo-dark" /></div>
     </div>

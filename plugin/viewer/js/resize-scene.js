@@ -532,7 +532,8 @@ export function createResizeScene(root, hooks) {
   }
 
   const DU = { el: $("duo"), base: q($("duo"), ".duo-base"), band: q($("duo"), ".duo-band"), scr: q($("duo"), ".duo-scr"),
-    flap: q($("duo"), ".duo-flap"), face: q($("duo"), ".duo-face"), dark: q($("duo"), ".duo-dark"), edge: q($("duo"), ".duo-edge .body"), ring: q($("duo"), ".duo-edge .ring") };
+    flap: q($("duo"), ".duo-flap"), face: q($("duo"), ".duo-face"), dark: q($("duo"), ".duo-dark"), edge: q($("duo"), ".duo-edge .body"),
+    side: $("duoSide"), hingePath: $("duoHinge") };
   // radii[i] = [앞 변 쪽 반경, 뒤 변 쪽 반경] — 눌린 장의 둥근 모서리는 두 변에서 다르게 줄어 타원이 된다.
   function roundPath(pts, radii, open) {
     const n = pts.length, f = v => v.toFixed(2), at = (a, b, r) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, k = Math.min(r, l / 2) / l; return [a[0] + dx * k, a[1] + dy * k]; };
@@ -602,13 +603,12 @@ export function createResizeScene(root, hooks) {
     DU.flap.style.clipPath = `path("${path}")`;
     const side = roundPath(quad, rad4, true), hseg = (() => { const a = quad[3], b = quad[0], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, k = Math.min(rhf, l / 2) / l, f = v => v.toFixed(1);
       return `M${f(a[0] + (b[0] - a[0]) * k)} ${f(a[1] + (b[1] - a[1]) * k)}L${f(b[0] - (b[0] - a[0]) * k)} ${f(b[1] - (b[1] - a[1]) * k)}`; })(), hz = smooth(110, 178, th);
-    for (const el of [DU.edge, DU.ring, DU.outl, DU.sheen, DU.rim, DU.rimhi]) el.setAttribute("d", side);
-    for (const el of [DU.houtl, DU.hsheen]) el.setAttribute("d", hseg);
+    DU.side.setAttribute("d", side); DU.hingePath.setAttribute("d", hseg);
     // 멈춘 몸체(.shell)의 겹 — 바깥 .5px 어두운 선, 바깥 1px 밝은 테, 150° 빛. 띠 가운데 선 위에 그려 바깥 절반만 보인다.
     const px = v => Math.max(0, v).toFixed(2) + "px";
     DU.outl.style.strokeWidth = px(2 * t + 1); DU.sheen.style.strokeWidth = px(2 * t);
     Object.assign(DU.rim.style, { stroke: lk.tone, strokeWidth: px(2 * t) }); DU.rimhi.style.strokeWidth = px(2 * t);
-    Object.assign(DU.houtl.style, { strokeWidth: px(2 * t * hz + 1), opacity: hz }); Object.assign(DU.hsheen.style, { strokeWidth: px(2 * t * hz), opacity: hz > .01 ? 1 : 0 }); DU.hinge.setAttribute("d", hseg); DU.ringH.setAttribute("d", hseg);
+    Object.assign(DU.houtl.style, { strokeWidth: px(2 * t * hz + 1), opacity: hz }); Object.assign(DU.hsheen.style, { strokeWidth: px(2 * t * hz), opacity: hz > .01 ? 1 : 0 });
     Object.assign(DU.edge.style, { stroke: lk.tone, strokeWidth: px(2 * t - 2) });
     Object.assign(DU.hinge.style, { stroke: lk.tone, strokeWidth: (2 * t * hz).toFixed(2) + "px", opacity: hz > .01 ? 1 : 0 });
     DU.ringH.style.opacity = hz;
