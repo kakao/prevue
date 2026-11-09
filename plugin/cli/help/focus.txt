@@ -21,6 +21,9 @@ Given to a card already on, they redraw at that size without turning interactive
   removes only the size and --system-ui annotated only the system UI. status's systemUi gives choice (annotated · on · off), annotated (the source's value)
   and shown (whether the bars are drawn). The bars are drawn edge-to-edge over the app as on a device with target SDK 35+.
   on keeps a card's widthDp x heightDp as the screen; with only widthDp the screen is the renderer's default device
+  With --device the bars are that device's — the app is pushed by the device's measured insets (status bar · bottom, dp, from windowinsets.info
+  and safearea.info) and the viewer draws its look (One UI · Pixel · iOS). status's systemUi.bars gives look and insets with their source.
+  A posture with no measurement (most rotated phones · the unfolded Duo) and sizes without a device keep the renderer's common bars (look aosp, insets null)
 Giving only --size · --device · --system-ui turns the card on (--on is the default). Running --on again on a card already on, without them, keeps them.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.

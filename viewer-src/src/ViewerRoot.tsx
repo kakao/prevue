@@ -33,7 +33,7 @@ export function findHosts(): Hosts {
     rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen') },
     stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
     quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
-    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
+    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), bars: $('sysBars'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
   };
 }
 
@@ -67,7 +67,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <VacantTab screen={state?.screen ?? null} vacant={state?.vacant ?? null} host={hosts.vacant} />
     {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}
-    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} hosts={hosts.workspace} actions={workspace} />
+    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} />
     <WorkspaceHeader state={state} hosts={hosts.workspaceHeader} actions={workspace} />
     <PointOverlay actions={point} />
     <ChoicePopover choice={state?.choice ?? null} repo={state?.header?.repo} host={hosts.chooser} actions={point} />
