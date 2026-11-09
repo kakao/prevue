@@ -82,8 +82,8 @@ android --no-metrics docs fetch "<kb:// url>"   # 그 문서 전문
 `review` 스킬의 분류기(`scripts/review_tier.py`)가 이 블록을 읽는다. 형식과 규칙 순서는 그 스크립트 머리말이 갖는다.
 
 - **건너뛰기는 경로로 박는다** — Prevue에서는 `*.md`가 곧 동작이다(`skills-src/*/SKILL.md` · `dev-skills-src/` · `AGENTS.md`). 사람용 요약(README 두 벌 · CHANGELOG)과 그림(`assets/`) · 이슈 양식만 건너뛴다.
-- **가벼운 파일은 두지 않는다** — `plugin/daemon/`의 빌드 파일은 버전 핀을 갖고, 그것을 가볍다고 내리면 위험한 diff가 high로 빠진다.
-- **max는 diff 안에서 맞는지 따질 수 있는 한쪽 문만** — 매니페스트 · `plugin/VERSION` · 워크플로 · CLI 계약(입구와 `help/`). JSON 응답의 키(데몬 · `plugin/cli/`가 만든다) · 배포 스킬 본문 · 사용자 기기 저장 형식은 xhigh로 보고 머지 위험 줄로 사람 리뷰에 넘긴다.
+- **가벼운 파일은 두지 않는다** — `plugin/daemon/`의 빌드 파일은 버전 핀을 갖고, 그것을 가볍다고 내리면 위험한 diff가 medium으로 빠진다.
+- **xhigh는 diff 안에서 맞는지 따질 수 있는 한쪽 문만** — 매니페스트 · `plugin/VERSION` · 워크플로 · CLI 계약(입구와 `help/`). JSON 응답의 키(데몬 · `plugin/cli/`가 만든다) · 배포 스킬 본문 · 사용자 기기 저장 형식은 high로 보고 머지 위험 줄로 사람 리뷰에 넘긴다.
 - 레거시 진입점은 아직 없다.
 
 ```json review-tier

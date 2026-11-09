@@ -71,7 +71,7 @@
 
 ## 리뷰
 
-리뷰는 사용자 레벨 스킬 `review`와 리뷰어(`reviewer-high` · `reviewer-xhigh` · `reviewer-max`)가 한다. 이 저장소의 리뷰 규약은 `dev-skills-src/review.md`다 — 코딩 표준 위치 · 린트 명령과 해석 · 기준 ref · 한쪽 문 신호 · 빌드 사각지대 · 등급 분류 패턴을 갖는다. 언제 어느 등급으로 띄우나는 `implement` 4단계가 갖는다.
+리뷰는 사용자 레벨 스킬 `review`와 리뷰어(`reviewer-medium` · `reviewer-high` · `reviewer-xhigh`)가 한다. 이 저장소의 리뷰 규약은 `dev-skills-src/review.md`다 — 코딩 표준 위치 · 린트 명령과 해석 · 기준 ref · 한쪽 문 신호 · 빌드 사각지대 · 등급 분류 패턴을 갖는다. 언제 어느 등급으로 띄우나는 `implement` 4단계가 갖는다.
 
 ## 저장소
 
