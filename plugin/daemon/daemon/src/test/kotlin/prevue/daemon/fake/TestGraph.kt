@@ -6,7 +6,9 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Includes
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.createGraphFactory
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import prevue.application.service.Workspace
@@ -27,6 +29,7 @@ import prevue.infrastructure.bindings.RenderBindings
 import prevue.infrastructure.bindings.SourceBindings
 import prevue.infrastructure.bindings.TargetBindings
 import prevue.infrastructure.process.ProcessMemory
+import prevue.infrastructure.source.ProjectFiles
 import prevue.daemon.DaemonBindings
 import prevue.daemon.StartDaemon
 import prevue.application.service.Boards
@@ -69,6 +72,7 @@ import prevue.application.port.PrevueDispatchers
 )
 internal interface TestGraph {
     val workspace: Workspace
+    val sourceFiles: SourceFileRepository
     val engine: Engine
     val startDaemon: StartDaemon
     val live: Live
@@ -113,7 +117,7 @@ internal class TestPorts(
     private val sessions: LiveSessionFactory,
     private val compiler: Compiler,
     private val previews: PreviewRepository,
-    private val sourceFiles: SourceFileRepository,
+    private val repoRoot: File,
     private val dispatchers: PrevueDispatchers,
     private val resources: ResourceValues? = null,
     private val sources: SourceWatcher? = null,
@@ -125,7 +129,9 @@ internal class TestPorts(
     @Provides fun sessions(): LiveSessionFactory = sessions
     @Provides fun compiler(): Compiler = compiler
     @Provides fun previews(): PreviewRepository = previews
-    @Provides fun sourceFiles(): SourceFileRepository = sourceFiles
+    @Provides @SingleIn(AppScope::class)
+    fun sourceFiles(graph: ModuleGraph, dispatchers: PrevueDispatchers, scope: CoroutineScope): SourceFileRepository =
+        ProjectFiles(repoRoot, graph.roots, dispatchers, scope)
     @Provides fun resources(): ResourceValues? = resources
     @Provides fun sources(): SourceWatcher? = sources
     @Provides fun builds(): BuildWatcher? = builds

@@ -29,7 +29,6 @@ import prevue.infrastructure.render.RendererSurfaces
 import prevue.infrastructure.render.ResourceOverlay
 import prevue.application.port.ResourceKey
 import prevue.application.port.ResourceLookup
-import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
@@ -103,7 +102,7 @@ class RenderIntegrationTest {
         val watched = listOf(appRoot)
         watcher = PollingSourceWatcher(watched, realDispatchers)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope),
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), home.repoRoot,
             realDispatchers, sources = watcher), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out), EntryHooks(0, log = { logs += it }))
         val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
         assertTrue(r.ok, r.shot.out.message?.text)
