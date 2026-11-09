@@ -58,7 +58,10 @@ class SlowDaemon(BaseHTTPRequestHandler):
         pass
 
 
-class Seat(Case):
+class DaemonSeat(Case):
+    """임시 저장소 하나와, 그 저장소 자리(port_of)에 handler 로 답하는 가짜 데몬. 기록도 산 것으로 둔다."""
+    handler = None
+
     def setUp(self):
         super().setUp()
         self.r = self.repo(":app")
@@ -68,11 +71,10 @@ class Seat(Case):
         self.home = os.path.join(self.tmp.name, "home")
         key = P.repo_key(os.path.abspath(self.r.root))
         self.port = PORT_BASE + int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % PORT_SPAN   # bin/prevue port_of
-        SlowDaemon.statuses, SlowDaemon.waited = 0, []
-        SlowDaemon.status = {"overlay": f"{self.home}/.prevue/projects/{key}/daemon/{self.port}/overlay/app", "root": str(ROOT),
+        self.handler.status = {"overlay": f"{self.home}/.prevue/projects/{key}/daemon/{self.port}/overlay/app", "root": str(ROOT),
                              "module": ":app", "modules": [":app"], "variant": "debug"}
         try:
-            self.server = ThreadingHTTPServer(("127.0.0.1", self.port), SlowDaemon)
+            self.server = ThreadingHTTPServer(("127.0.0.1", self.port), self.handler)
         except OSError:
             self.skipTest(f"{self.port} 를 다른 프로세스가 쓰고 있다")
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -85,6 +87,15 @@ class Seat(Case):
         self.addCleanup(stand_in.wait)
         self.addCleanup(stand_in.kill)
         Path(daemons, f"daemon-{self.port}.pid").write_text(str(stand_in.pid))
+
+
+
+class Seat(DaemonSeat):
+    handler = SlowDaemon
+
+    def setUp(self):
+        SlowDaemon.statuses, SlowDaemon.waited = 0, []
+        super().setUp()
 
     def test_첫_status_가_늦어도_같은_저장소의_데몬에게_말한다(self):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"))

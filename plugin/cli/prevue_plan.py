@@ -1170,6 +1170,35 @@ def agent_view(d, viewer="", shown=None):
     return d
 
 
+def previews_of(d, name, rc):
+    """previews --of 의 판정. 데몬은 색인을 뒤집은 자료만 주고, 종료 코드와 에이전트에게 할 말은 여기서 정한다(D-165).
+    판정 필드(ok · message · error)를 앞에, 목록을 뒤에 — 긴 응답을 앞에서 잘라 읽어도 판정이 남는다."""
+    if rc == 3 or not isinstance(d, dict) or "ready" not in d:
+        if isinstance(d, dict) and d.get("daemon") is False:
+            d["error"] = ("No daemon — the composable index lives in it. Find the file that defines or previews %s "
+                          "and run prevue show <file>, which starts one" % name)
+        return d, 3
+    of = d.get("of") or name
+    lists = {k: d.get(k) or [] for k in ("definitions", "previews")}
+    if not d.get("ready"):
+        return {"ok": False, "ready": False, "of": of,
+                "error": "The composable index is still being built — run the same command again in a few seconds"}, 3
+    defs, found = lists["definitions"], lists["previews"]
+    if found:
+        out = {"ok": True}
+        if len(defs) > 1:
+            out["message"] = ("%d composables are named %s — the index can't tell which one these previews call. "
+                              "Show the person the definition paths and let them choose" % (len(defs), of))
+        return dict(out, of=of, **lists), 0
+    if defs:
+        msg = ("No @Preview calls %s directly (one that calls it through a shared wrapper isn't found) — "
+               "show its definition file, or the file of a screen that calls it" % of)
+    else:
+        msg = ("No @Composable named %s is defined in this project — it may be a library composable, "
+               "or the name differs (matched exactly, case-sensitive)" % of)
+    return dict({"ok": False, "message": msg, "of": of}, **lists), 1
+
+
 def autostart(h):
     """show 가 데몬을 스스로 띄울 start 인자, 아니면 None. 빠진 것이 데몬 하나뿐일 때만이다 — 툴체인 · 덤프 · 고를 것은
     승인이나 사람의 답이 들어 응답의 ask 로 묻는다. 샌드박스에서 굽기가 권한 상승을 부를 때도 띄우지 않는다."""
@@ -1271,6 +1300,16 @@ def main(argv):
         # complete:false 는 인터랙티브 중이라 다른 카드에 저장 전 그림이 남았다 — 0 으로 끝내면 에이전트가 옛 그림을 새 그림으로 믿는다
         if isinstance(d, dict) and d.get("complete") is False:
             sys.exit(1)
+    elif cmd == "previews-of":               # <이름> <post 종료 코드> + stdin: 데몬 응답 — 종료 코드가 판정이다
+        raw = sys.stdin.read()
+        try:
+            d = json.loads(raw)
+        except ValueError:
+            sys.stdout.write(raw)
+            sys.exit(int(a[1]) or 1)
+        out, code = previews_of(d, a[0], int(a[1]))
+        print(json.dumps(out, ensure_ascii=False))
+        sys.exit(code)
     elif cmd == "with-lang":                 # stdin: 셸이 지은 응답 — next · then 에 --lang
         _emit(json.load(sys.stdin))
     elif cmd == "prepare-request":
