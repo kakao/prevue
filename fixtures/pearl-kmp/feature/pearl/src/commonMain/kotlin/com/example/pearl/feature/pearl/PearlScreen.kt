@@ -99,6 +99,7 @@ fun PearlScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(top = 214.dp)
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                 .background(PearlColors.sheet),
@@ -170,7 +171,8 @@ private fun Hero(hasMenu: Boolean, bag: Int, bagBounce: Float, kind: Kind?) {
         swap.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = 320f))
     }
     val s = swap.value
-    BoxWithConstraints(Modifier.fillMaxWidth().height(250.dp).background(bg)) {
+    // 상태바가 있으면 머리 전체(바탕 · 장식 · 글자)가 그만큼 내려간다 — 시트도 같은 만큼 내려가 글자를 가리지 않는다
+    BoxWithConstraints(Modifier.fillMaxWidth().background(bg).statusBarsPadding().height(250.dp)) {
         val w = maxWidth
         Blob(blob, Modifier.size(260.dp).align(Alignment.TopEnd).offset(x = 70.dp, y = 30.dp).graphicsLayer { rotationZ = s * 8f })
         Blob(blob.copy(alpha = 0.7f), Modifier.size(110.dp).align(Alignment.TopEnd).offset(x = (-40).dp, y = 12.dp).graphicsLayer { translationX = s * 14.dp.toPx() })
@@ -186,7 +188,7 @@ private fun Hero(hasMenu: Boolean, bag: Int, bagBounce: Float, kind: Kind?) {
         Box(Modifier.size(13.dp).align(Alignment.TopEnd).offset(x = (-150).dp, y = 176.dp).graphicsLayer { translationY = -s * 18.dp.toPx() }.clip(CircleShape).background(PearlColors.pearl))
         Box(Modifier.size(9.dp).align(Alignment.TopEnd).offset(x = (-170).dp, y = 156.dp).graphicsLayer { translationY = -s * 26.dp.toPx() }.clip(CircleShape).background(PearlColors.pearl))
         Box(Modifier.size(10.dp).align(Alignment.TopEnd).offset(x = (-8).dp, y = 96.dp).clip(CircleShape).background(Color(0xFFFFC278)))
-        Column(Modifier.statusBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp)) {
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
             Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (hasMenu) PearlIconButton(DS.drawable.ic_search, stringResource(Res.string.pearl_search), tint = Color.White, background = Color.White.copy(alpha = 0.12f))
                 Spacer(Modifier.weight(1f))
