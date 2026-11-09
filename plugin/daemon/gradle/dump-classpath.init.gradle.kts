@@ -94,21 +94,22 @@ fun kmpCompileTaskName(m: KotlinModule?, variant: String): String? =
 // 새 모양 KMP 모듈은 android 확장이 없어 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 실패 문구에 그 앱들과
 // debug 계열 변형을 실어 CLI 가 Gradle 을 한 번 더 불러 앱을 뜨게 한다. 앱을 다른 곳에서 알 길이 없는 새 클론의 첫 warmup 이 이 길이다.
 // 프로젝트 의존을 따라가므로 평가된 프로젝트만 본다 — configure-on-demand 저장소에서는 앱이 평가 전이라 비어 있을 수 있다.
+// 테스트 구성(testImplementation · androidTestImplementation · commonTestImplementation …)만 뺀다 — 플레이버 이름에 든 test(latest)는 남긴다
+val declaresDependency = Regex("(?i).*(implementation|api|runtimeOnly)$")
+fun isTestConfiguration(name: String) = name.startsWith("test") || name.contains("Test")
+fun declaredProjectDeps(q: Project, keep: (String) -> Boolean = { true }): List<String> = q.configurations
+    .filter { declaresDependency.matches(it.name) && !isTestConfiguration(it.name) && keep(it.name) }
+    .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+    .mapNotNull { d ->
+        // 외부: Gradle 9 는 ProjectDependency.getDependencyProject 를 없앴고 getPath 는 8.11 부터 있다
+        runCatching { d.javaClass.getMethod("getPath").invoke(d) as String }
+            .getOrElse { runCatching { (d.javaClass.getMethod("getDependencyProject").invoke(d) as Project).path }.getOrNull() }
+    }
+
 fun kmpHosts(p: Project, targetPath: String): Map<String, List<String>> = runCatching {
-    // 테스트 구성(testImplementation · androidTestImplementation · commonTestImplementation …)만 뺀다 — 플레이버 이름에 든 test(latest)는 남긴다
-    val declares = Regex("(?i).*(implementation|api|runtimeOnly)$")
-    fun isTest(name: String) = name.startsWith("test") || name.contains("Test")
-    fun deps(q: Project): List<String> = q.configurations
-        .filter { declares.matches(it.name) && !isTest(it.name) }
-        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
-        .mapNotNull { d ->
-            // 외부: Gradle 9 는 ProjectDependency.getDependencyProject 를 없앴고 getPath 는 8.11 부터 있다
-            runCatching { d.javaClass.getMethod("getPath").invoke(d) as String }
-                .getOrElse { runCatching { (d.javaClass.getMethod("getDependencyProject").invoke(d) as Project).path }.getOrNull() }
-        }
     // 거꾸로 따라간다 — 프로젝트마다 구성을 한 번만 훑고, 이 모듈을 쓰는 쪽으로 올라가며 앱을 모은다
     val users = mutableMapOf<String, MutableSet<String>>()
-    for (q in p.rootProject.allprojects) for (d in deps(q)) users.getOrPut(d) { mutableSetOf() }.add(q.path)
+    for (q in p.rootProject.allprojects) for (d in declaredProjectDeps(q)) users.getOrPut(d) { mutableSetOf() }.add(q.path)
     val seen = mutableSetOf(targetPath)
     val todo = ArrayDeque(listOf(targetPath))
     while (todo.isNotEmpty()) for (u in users[todo.removeFirst()].orEmpty()) if (seen.add(u)) todo.add(u)
@@ -119,6 +120,50 @@ fun kmpHosts(p: Project, targetPath: String): Map<String, List<String>> = runCat
             app.path to app.configurations.names.filter { it.endsWith("RuntimeClasspath") }
                 .map { it.removeSuffix("RuntimeClasspath") }.filter { it.contains("ebug") }.sorted()
         }
+}.getOrDefault(emptyMap())
+
+// 앱의 compileClassPath 에는 KMP 모듈의 `implementation` 이 없어, 그 모듈 자신의 Android 컴파일 클래스패스를 덤프에 싣는다.
+// 해석은 그 모듈의 태스크가 한다 — 앱 덤프 태스크가 남의 프로젝트 구성을 풀면 Gradle 9 가 "without an exclusive lock" 으로 막는다.
+val kmpCompileByPath = sharedMap<List<String>>("prevue.kmpCompileByPath")
+fun kmpCompileTask(variant: String) = "prevueKmpCompileClasspath" + variant.replaceFirstChar { it.uppercase() }
+
+// iosMain · desktopMain · release 처럼 이 변형의 Android 컴파일에 안 들어가는 구성은 따라가지 않는다
+fun feedsAndroidCompile(configuration: String, variant: String): Boolean {
+    val scope = configuration.replace(Regex("(?i)(implementation|api|runtimeOnly)$"), "").lowercase()
+    val parts = variant.split(Regex("(?=[A-Z])")).map { it.lowercase() } + variant.lowercase()
+    val rest = listOf("commonmain", "android", "").first { scope.startsWith(it) }.let { scope.removePrefix(it) }
+    return rest.isEmpty() || rest == "main" || rest in parts
+}
+
+fun registerKmpCompileClasspath(q: Project, variant: String) {
+    q.tasks.register(kmpCompileTask(variant)) {
+        val comp = kmpAndroidCompilation(kotlinModules[q.path], variant)
+        val cfgName = comp?.let { runCatching { kmpCall(it, "getCompileDependencyConfigurationName") as String }.getOrNull() }
+        val artifactType = Attribute.of("artifactType", String::class.java)
+        val files: FileCollection? = cfgName?.let { q.configurations.findByName(it) }?.incoming?.artifactView {
+            attributes.attribute(artifactType, "android-classes-jar")
+            lenient(true)
+        }?.files
+        files?.let { dependsOn(it) }
+        val key = (buildTreePath(q) ?: q.path) + "@" + variant
+        doLast { files?.let { fc -> kmpCompileByPath[key] = fc.files.map { it.absolutePath } } }
+    }
+}
+
+/** 대상이 프로젝트 의존으로 닿는 KMP 모듈의 경로 → 결과 맵의 키. */
+fun kmpModulesReached(p: Project, variant: String): Map<String, String> = runCatching {
+    val reached = linkedSetOf<String>()
+    val todo = ArrayDeque(listOf(p.path))
+    while (todo.isNotEmpty()) {
+        val q = p.rootProject.findProject(todo.removeFirst()) ?: continue
+        for (d in declaredProjectDeps(q) { feedsAndroidCompile(it, variant) }) if (d != p.path && reached.add(d)) todo.add(d)
+    }
+    reached.mapNotNull { path ->
+        val q = p.rootProject.findProject(path) ?: return@mapNotNull null
+        if (kmpCompileTask(variant) !in q.tasks.names) return@mapNotNull null
+        kmpAndroidCompilation(kotlinModules[path], variant) ?: return@mapNotNull null
+        path to (buildTreePath(q) ?: q.path) + "@" + variant
+    }.toMap()
 }.getOrDefault(emptyMap())
 
 // 대상은 0부터 번호 붙은 prevue.project.N · prevue.variant.N · prevue.out.N. 라이브러리 모듈과 리소스를 빌릴 앱을 Gradle 한 번에 뜬다 —
@@ -196,6 +241,7 @@ gradle.afterProject {
         val m = KotlinModule(ext, p.layout.buildDirectory)
         kotlinModules[p.path] = m
         kmpRootsByDir[p.projectDir.absolutePath] = java.util.function.BiFunction { v, picked -> kmpAndroidRoots(m, v, picked) }
+        targets.map { it.variant }.distinct().forEach { registerKmpCompileClasspath(p, it) }
         (buildTreePath(p) ?: p.path.takeIf { p.gradle.parent == null })?.let { kmpDirByTreePath[it] = p.projectDir.absolutePath }
     }
     val t = targets.firstOrNull { it.path == p.path } ?: return@afterProject
@@ -305,6 +351,8 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
         // nowinandroid 8/229, 공개 데모 저장소 3/179). 그 모듈의 클래스를 쓰는 프리뷰가 ClassNotFoundException 으로
         // 죽는데, setup 은 ok 를 냈다. FileCollection 은 자기를 만드는 태스크를 달고 다니므로 이 한 줄이면 된다.
         listOfNotNull(depJars, depRes, compileJars).forEach { dependsOn(it) }
+        val kmpModules = kmpModulesReached(p, variant)
+        kmpModules.keys.forEach { dependsOn("$it:${kmpCompileTask(variant)}") }
 
         // 설정 시점에 확정한 값만 붙잡는다 — Gradle 9는 실행 시점 Project 접근을 막는다.
         //
@@ -430,6 +478,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             }
             val projectClassPath = classPath.filter { it.startsWith(repoRoot) }
             val compileClassPath = compileJarsSnapshot?.files.orEmpty().map { it.absolutePath }
+            val kmpModuleCompileClassPaths = kmpModules.mapNotNull { (path, key) -> kmpCompileByPath[key]?.let { path to it } }.toMap()
 
             // 클래스패스가 없는 것을 가리키면 그 모듈을 쓰는 프리뷰가 전부 ClassNotFoundException 으로 죽는다.
             // 덤프가 ok 를 내고 렌더에서야 드러나는 일을 여기서 끊는다.
@@ -458,6 +507,7 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
                   "assetsDirs": ${arr(assetsDirs)},
                   "variantsKnown": ${arr(variantsKnown)},
                   "kmpSourceRoots": ${obj(kmpSourceRoots)},
+                  "moduleCompileClassPaths": ${obj(kmpModuleCompileClassPaths)},
                   "defaultHint": { "buildType": "${esc(defaultBuildType)}", "flavors": ${arr(defaultFlavors)} }
                 }
                 """.trimIndent()

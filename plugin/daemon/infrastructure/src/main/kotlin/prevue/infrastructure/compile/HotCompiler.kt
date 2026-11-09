@@ -155,7 +155,7 @@ internal class HotCompiler(
             .joinToString("\n")
         warmed.value = true
         if (exit == "OK" && dest == u.dir) keepModuleIndex(u, files)
-        return CompileResult(exit == "OK", exit, messages, ms, files.map { it.absolutePath }, u.project, u.spec.derivedFrom)
+        return CompileResult(exit == "OK", exit, messages, ms, files.map { it.absolutePath }, u.project, u.spec.argsFrom)
     }
 
     suspend fun warmUp(module: String, file: File, scratch: File, passes: Int = WARMUP_PASSES, shouldContinue: () -> Boolean = { true }): List<CompileResult> {
