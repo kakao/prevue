@@ -29,6 +29,8 @@ import prevue.application.domain.model.LiveFrame
 import prevue.daemon.fake.awaitUntil
 import prevue.daemon.fake.realDispatchers
 import prevue.daemon.fake.dispatchersOn
+import prevue.daemon.fake.LaneSpy
+import prevue.application.port.PrevueDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 
 /**
@@ -89,6 +91,25 @@ class FrameStreamerTest {
         assertEquals(0x00ff00, lastPicture(socket.bytes())?.getRGB(0, 0)?.and(0xffffff))
         assertNull(mjpegError(socket.bytes()))
         assertTrue(stream.stats.value.conflated > 0, "StateFlow가 덮은 프레임을 세지 않았다")
+    }
+
+    // 구독자 쓰기는 설계상 io 에 바로 올린다 — io 는 뷰를 청하지 않는지만 본다.
+    @Test fun `상태는 default 의 한 줄 뷰, 인코딩은 default 의 두 줄 뷰에서 돈다`() = runTest {
+        val default = LaneSpy(StandardTestDispatcher(testScheduler))
+        val io = LaneSpy(StandardTestDispatcher(testScheduler))
+        val stream = FrameStreamer(screen, watching, backgroundScope, {}, PrevueDispatchers(io, default))
+        watching.value = true
+        val socket = Socket()
+        stream.subscribe(socket)
+        runCurrent()
+        emit(0x0000ff)
+        runCurrent()
+        assertEquals("JPEG", lastType(socket.bytes()))
+        assertEquals(listOf(1 to "prevue-frames", 2 to "prevue-encode"), default.lanes())
+        assertTrue(default.view("prevue-frames").dispatched > 0, "상태 코루틴이 청한 뷰에서 돌지 않았다")
+        assertTrue(default.view("prevue-encode").dispatched > 0, "인코딩이 청한 뷰에서 돌지 않았다")
+        assertEquals(0, default.dispatched, "뷰를 거치지 않고 default 에 바로 올렸다")
+        assertEquals(emptyList<LaneSpy.View>(), io.views)
     }
 
     @Test fun `새 구독자는 지금 화면부터 받는다`() = runTest {

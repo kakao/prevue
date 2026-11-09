@@ -15,9 +15,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
+import prevue.daemon.fake.LaneSpy
+import prevue.daemon.fake.realDispatchers
+import prevue.application.port.PrevueDispatchers
+import prevue.infrastructure.controller.http.Relay
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
 import prevue.daemon.fake.awaitState
@@ -355,6 +360,19 @@ class BrowserPresenterTest {
                 assertEquals("Closed the Cards.kt tab you hadn't looked at in a while", awaitItem().text.text)
             }
         }
+    }
+
+    // 서비스 호출 · 감시 켜기는 설계상 줄 밖(default · io)에서 돈다(D-44) — 뷰만 본다. Relay 는 진짜 디스패처라 스파이에 섞이지 않는다.
+    @Test fun `화면 상태는 default 의 한 줄 뷰에서 짓는다`() {
+        val default = LaneSpy(realDispatchers.default)
+        val io = LaneSpy(realDispatchers.io)
+        val target = ViewerTarget({ null to null }, null, null, null)
+        val relay = Relay(fx.scope, realDispatchers)
+        val own = BrowserPresenter(relay, uc.status, uc.live, target, PrevueDispatchers(io, default))
+        val ran = try { runBlocking { own.onLine { LaneSpy.current() } } } finally { relay.job.cancel() }
+        assertEquals(listOf(1 to "prevue-viewer"), default.lanes())
+        assertSame(default.view("prevue-viewer"), ran, "화면 상태가 청한 뷰에서 돌지 않았다")
+        assertEquals(emptyList<LaneSpy.View>(), io.views)
     }
 
     /** 줄에 앞서 들어온 `WorkspaceEvent`를 다 반영한 상태. */
