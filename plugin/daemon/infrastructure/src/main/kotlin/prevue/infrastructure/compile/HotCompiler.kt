@@ -56,6 +56,8 @@ internal class HotCompiler(
         val derived get() = spec.derivedFrom != null
         /** D-67. 이 모듈의 인자에 live literal 런타임이 있는가. 처음 컴파일할 때 한 번 본다. */
         var liveLiterals: Boolean? = null
+        /** Compose 컴파일러 플러그인을 붙이는가. 처음 컴파일할 때 한 번 본다. */
+        var compose: Boolean? = null
         /** 이 디렉터리에 남긴 최상위 선언 색인 → 그 회차에 컴파일한 소스(정규 경로). [keepModuleIndex]가 낡은 것을 걷는다. */
         val indexes = LinkedHashMap<File, Set<String>>()
         var nextIndex = 1
@@ -78,6 +80,14 @@ internal class HotCompiler(
         add("-module-name"); add(u.spec.kotlinModuleName)
         // 모듈 디렉터리도 friend다 — 앞서 핫 컴파일한 파일의 `internal` 선언을 이 파일이 쓴다
         add("-Xfriend-paths=" + (listOf(u.dir.absolutePath) + u.spec.ownClassPath).joinToString(","))
+        if (compose(u)) composeArgs(u)
+        add("-nowarn")
+        add("-cp"); add(classpath(u))
+        add("-d"); add(dest.absolutePath)
+        files.forEach { add(it.absolutePath) }
+    }.toTypedArray()
+
+    private fun MutableList<String>.composeArgs(u: Module) {
         add("-Xplugin=" + composePlugin.absolutePath)
         // AGP debug 빌드와 같게 켠다 — 없으면 오버레이 클래스에 소스 위치가 안 실려 가리키기가 그 파일을 못 짚고 Gradle이 구운 조상으로 잡힌다.
         add("-P"); add("plugin:androidx.compose.compiler.plugins.kotlin:sourceInformation=true")
@@ -86,17 +96,24 @@ internal class HotCompiler(
         }
         // D-67. 파일마다 켜는 판(v2)이다 — 켜지 않은 파일의 getter는 상수를 돌려줘 지금 코드와 같이 돈다. 값을 넣는 것은 렌더러다.
         if (liveLiterals(u)) { add("-P"); add("plugin:androidx.compose.compiler.plugins.kotlin:liveLiteralsEnabled=true") }
-        add("-nowarn")
-        add("-cp"); add(classpath(u))
-        add("-d"); add(dest.absolutePath)
-        files.forEach { add(it.absolutePath) }
-    }.toTypedArray()
+    }
+
+    /** Compose 를 안 쓰는 모듈에 플러그인을 붙이면 kotlinc 가 "requires the Compose Runtime" 으로 죽는다. 빌린 앱 인자에는 늘 런타임이 있다. */
+    private fun compose(u: Module): Boolean = u.compose ?: (!u.spec.ownCompileArgs ||
+        (u.spec.compileClassPath + u.spec.ownClassPath).map(::File).sortedByDescending { "runtime" in it.name }.any(::hasComposeRuntime))
+        .also { u.compose = it }
+
+    private fun hasComposeRuntime(f: File): Boolean = when {
+        f.isDirectory -> File(f, COMPOSE_RUNTIME).isFile
+        f.isFile && f.name.endsWith(".jar") -> runCatching { ZipFile(f).use { it.getEntry(COMPOSE_RUNTIME) != null } }.getOrDefault(false)
+        else -> false
+    }
 
     override suspend fun compile(module: String, files: List<File>): CompileResult = withContext(confined) {
         asked++
         val u = unit(module)
         // 끌어낸 인자로 실패한 뒤 그 모듈의 덤프를 떴으면 다음 저장부터 그것을 쓴다 — 데몬을 다시 띄우지 않고
-        if (u.derived) u.spec = specOf(module).also { if (it.derivedFrom != u.spec.derivedFrom) u.liveLiterals = null }
+        if (u.derived) u.spec = specOf(module).also { if (it.derivedFrom != u.spec.derivedFrom || it.ownCompileArgs != u.spec.ownCompileArgs) { u.liveLiterals = null; u.compose = null } }
         // 파일 mtime은 파일 시스템에 따라 초 단위로 잘린다 — 넉넉히 앞에서 끊고, 맞는 표는 소스 경로로 고른다.
         val since = System.currentTimeMillis() - 2_000
         val first = compile(u, files, u.dir)
@@ -155,7 +172,7 @@ internal class HotCompiler(
             .joinToString("\n")
         warmed.value = true
         if (exit == "OK" && dest == u.dir) keepModuleIndex(u, files)
-        return CompileResult(exit == "OK", exit, messages, ms, files.map { it.absolutePath }, u.project, u.spec.derivedFrom)
+        return CompileResult(exit == "OK", exit, messages, ms, files.map { it.absolutePath }, u.project, u.spec.argsFrom)
     }
 
     suspend fun warmUp(module: String, file: File, scratch: File, passes: Int = WARMUP_PASSES, shouldContinue: () -> Boolean = { true }): List<CompileResult> {
@@ -289,6 +306,7 @@ internal class HotCompiler(
 //이름으로 넓게 잡으므로 상한이 없으면 흔한 이름 하나가 모듈 전체를 컴파일하게 만든다. 넘치면 사람에게 Gradle을 권한다.
 private const val MAX_CALLERS = 24
 private const val LIVE_LITERAL_RUNTIME = "androidx/compose/runtime/internal/LiveLiteralKt.class"
+private const val COMPOSE_RUNTIME = "androidx/compose/runtime/Composer.class"
 //수렴 지점보다 한 회차 넉넉하게 잡는다. 남는 회차는 예산·저장 감지로 어차피 버려진다.
 private const val WARMUP_PASSES = 10
 //사람이 첫 저장을 하기 전에 끝나야 의미가 있다. 넘으면 남은 회차를 버린다.

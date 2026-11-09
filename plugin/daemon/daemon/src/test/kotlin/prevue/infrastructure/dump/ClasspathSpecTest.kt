@@ -102,7 +102,25 @@ class ClasspathSpecTest {
         assertEquals(listOf(dsJar, "/m2/compose-beta.jar", appR), ds.compileClassPath)
         assertEquals(File(root, "core/designsystem"), ds.moduleDir)
         assertEquals(":app", ds.derivedFrom)                        // 실패하면 그 모듈의 덤프를 권하는 근거다
+        assertEquals(":app", ds.argsFrom)
         assertEquals(null, app.derivedFrom)
+    }
+
+    @Test fun `덤프가 실은 KMP 모듈의 컴파일 클래스패스가 있으면 앱 것 대신 그것으로 컴파일하고 덤프를 권하지 않는다`() {
+        val ownCompile = listOf(dsJar, "/m2/ui-tooling-preview-api.jar", "/m2/foundation-api.jar")
+        val kmpApp = ClasspathSpec(File(root, ":app.json"), ":app", "debug", "", "app.ap_",
+            DumpPaths(classPath = app.classPath, projectClassPath = app.projectClassPath, compileClassPath = app.compileClassPath,
+                rClassJars = app.rClassJars, resourceDirs = emptyList(), moduleCompileClassPaths = mapOf(":feature:foryou" to ownCompile)))
+        val lib = kmpApp.dependency(":feature:foryou")
+        assertEquals(ownCompile + appR, lib.compileClassPath)
+        assertEquals(emptyList<String>(), lib.compileFill)
+        assertEquals(":app", lib.derivedFrom)
+        assertEquals(null, lib.argsFrom)
+        assertTrue(lib.ownCompileArgs)
+        val other = kmpApp.dependency(":core:designsystem")
+        assertEquals(listOf(dsJar, "/m2/compose-beta.jar", appR), other.compileClassPath)
+        assertEquals(":app", other.argsFrom)
+        assertFalse(other.ownCompileArgs)
     }
 
     @Test fun `덤프 JSON 의 필드를 그대로 싣고 compileClassPath 가 없으면 거절한다`() {
@@ -216,6 +234,21 @@ class ClasspathSpecTest {
         assertEquals(listOf(android, common), g.node(":shared")!!.sourceRoots)   // 없는 디렉터리 · iosMain은 보지 않는다
         val (r, _) = ClasspathSpec.forRender(kmpApp.dependency(":shared"), kmpApp, overlay)
         assertEquals(kmpApp.kmpSourceRoots, r.kmpSourceRoots)
+    }
+
+    @Test fun `덤프 JSON 의 moduleCompileClassPaths 를 읽어 KMP 모듈 컴파일에 쓴다`() {
+        val shared = out("shared", "classes.jar")
+        val json = File(root, "app-kmp-compile.json").apply {
+            writeText("""{"project":":app","variant":"debug","resourceApkPath":"app.ap_",
+                "classPath":["$appR","$appClasses","$shared"],"projectClassPath":["$appR","$appClasses","$shared"],
+                "compileClassPath":["/m2/c.jar"],"rClassJars":["$appR"],"resourceDirs":[],
+                "moduleCompileClassPaths":{":shared":["/m2/shared-only.jar"]}}""")
+        }
+        val kmpApp = ClasspathSpec.load(json)
+        assertEquals(mapOf(":shared" to listOf("/m2/shared-only.jar")), kmpApp.moduleCompileClassPaths)
+        assertEquals(listOf("/m2/shared-only.jar", appR), kmpApp.dependency(":shared").compileClassPath)
+        val noField = File(root, "app-old.json").apply { writeText(json.readText().replace(Regex(",\\s*\"moduleCompileClassPaths\":\\{[^}]*\\}"), "")) }
+        assertEquals(listOf("/m2/c.jar", appR), ClasspathSpec.load(noField).dependency(":shared").compileClassPath)
     }
 
     @Test fun `KMP 모듈의 res 와 매니페스트는 androidMain 에서도 찾고 앱의 에셋 디렉터리는 그릴 덤프까지 간다`() {

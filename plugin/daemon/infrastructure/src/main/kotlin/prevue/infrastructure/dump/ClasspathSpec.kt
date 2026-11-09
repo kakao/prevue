@@ -16,6 +16,8 @@ internal class DumpPaths(
     val kmpSourceRoots: Map<String, List<String>> = emptyMap(),
     val assetsDirs: List<String> = emptyList(),
     val layout: RepoLayout = RepoLayout.UNKNOWN,
+    /** KMP 모듈 → 그 모듈의 Android 컴파일 클래스패스. */
+    val moduleCompileClassPaths: Map<String, List<String>> = emptyMap(),
 )
 
 internal class RepoLayout(val root: String?, val moduleDirs: Map<String, String>) {
@@ -32,11 +34,13 @@ internal class Derivation private constructor(
     val borrowedCount: Int,
     val derivedFrom: String?,
     internal val fillFrom: ClasspathSpec?,
+    internal val exactArgs: Boolean = false,
 ) {
     companion object {
         val NONE = Derivation(null, null, 0, null, null)
         fun borrowed(ownClassPath: List<String>, from: String?, count: Int) = Derivation(ownClassPath, from, count, null, null)
         fun derived(ownClassPath: List<String>, from: ClasspathSpec) = Derivation(ownClassPath, null, 0, from.project, from)
+        fun derivedExact(ownClassPath: List<String>, from: ClasspathSpec) = Derivation(ownClassPath, null, 0, from.project, null, exactArgs = true)
         fun rendered(from: String?, count: Int) = Derivation(null, from, count, null, null)
     }
 }
@@ -66,6 +70,13 @@ internal class ClasspathSpec(
     val borrowedCount: Int = derivation.borrowedCount
     val derivedFrom: String? = derivation.derivedFrom
     private val fillFrom: ClasspathSpec? = derivation.fillFrom
+    val moduleCompileClassPaths: Map<String, List<String>> = paths.moduleCompileClassPaths
+
+    /** 컴파일 인자를 빌려 온 덤프. 자기 컴파일 클래스패스가 실렸으면 null — 그때 실패는 인자 탓이 아니다. */
+    val argsFrom: String? = derivedFrom.takeUnless { derivation.exactArgs }
+
+    /** [compileClassPath]가 이 모듈 자신의 것인가. */
+    val ownCompileArgs: Boolean = derivation.exactArgs
 
     /** 이 덤프의 런타임에만 있는 외부 라이브러리의 원본. 첫 끌어낸 컴파일에서 한 번 — 데몬 시작마다 캐시를 훑지 않는다. */
     private val runtimeOnlyOriginals: List<String> by lazy { originals.forRuntimeOnly(classPath, compileClassPath, repoRoot) }
@@ -196,6 +207,7 @@ internal class ClasspathSpec(
             compileClassPath = compileClassPath, rClassJars = app.rClassJars, resourceDirs = resourceDirs,
             kmpSourceRoots = app.kmpSourceRoots + kmpSourceRoots, assetsDirs = app.assetsDirs,
             layout = layout + app.layout,
+            moduleCompileClassPaths = app.moduleCompileClassPaths + moduleCompileClassPaths,
         )
         val derivation = Derivation.borrowed(ownClassPath, app.project.takeIf { borrowed.isNotEmpty() }, borrowed.size)
         return ClasspathSpec(file, project, variant, namespace, app.resourceApkPath, paths, derivation)
@@ -205,12 +217,15 @@ internal class ClasspathSpec(
         val dir = moduleDirs[project] ?: (repoRoot.path + "/" + project.trim(':').replace(':', '/'))
         val own = projectClassPath.filter { it.startsWith("$dir/build/") && it !in rClassJars }
         require(own.isNotEmpty()) { "$project 의 산출물이 ${this.project} 덤프에 없다" }
+        val exact = moduleCompileClassPaths[project]
+        val base = exact ?: compileClassPath
         val paths = DumpPaths(
             classPath = classPath, projectClassPath = projectClassPath,
-            compileClassPath = compileClassPath + rClassJars.filter { it !in compileClassPath }, rClassJars = rClassJars, resourceDirs = resourceDirs,
+            compileClassPath = base + rClassJars.filter { it !in base }, rClassJars = rClassJars, resourceDirs = resourceDirs,
             kmpSourceRoots = kmpSourceRoots, assetsDirs = assetsDirs, layout = layout,
+            moduleCompileClassPaths = moduleCompileClassPaths,
         )
-        val derivation = Derivation.derived(own, from = this)
+        val derivation = if (exact != null) Derivation.derivedExact(own, from = this) else Derivation.derived(own, from = this)
         return ClasspathSpec(file, project, variant, "", resourceApkPath, paths, derivation)
     }
 
@@ -239,6 +254,7 @@ internal class ClasspathSpec(
                 compileClassPath = r.compileClassPath, rClassJars = r.rClassJars, resourceDirs = r.resourceDirs,
                 kmpSourceRoots = r.kmpSourceRoots + home.kmpSourceRoots, assetsDirs = r.assetsDirs,
                 layout = home.layout + r.layout,
+                moduleCompileClassPaths = r.moduleCompileClassPaths + home.moduleCompileClassPaths,
             )
             val borrowedCount = if (onApp) (app!!.classPath.toSet() - home.classPath.toSet()).size else r.borrowedCount
             val derivation = Derivation.rendered(app?.project, borrowedCount)
@@ -254,6 +270,8 @@ internal class ClasspathSpec(
                 kmpSourceRoots = (m["kmpSourceRoots"] as? Map<*, *>).orEmpty()
                     .map { (k, v) -> k.toString() to (v as? List<*>).orEmpty().map { it.toString() } }.toMap(),
                 assetsDirs = m.strings("assetsDirs"),
+                moduleCompileClassPaths = (m["moduleCompileClassPaths"] as? Map<*, *>).orEmpty()
+                    .map { (k, v) -> k.toString() to (v as? List<*>).orEmpty().map { it.toString() } }.toMap(),
                 layout = RepoLayout(
                     m.string("repoRoot"),
                     (m["moduleDirs"] as? Map<*, *>).orEmpty().map { (k, v) -> k.toString() to v.toString() }.toMap(),
