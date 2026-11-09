@@ -26,6 +26,11 @@ class EvalResponses(Case):
         )
         return json.loads(result.stdout), result.returncode
 
+    def test_previews_of_matches_the_real_judgement(self):
+        actual, code = self.invoke("ready", "previews", "--of", "Nope")
+        expected, expected_code = P.previews_of({"ready": True, "of": "Nope", "definitions": [], "previews": []}, "Nope", 0)
+        self.assertEqual((actual, code), (expected, expected_code))
+
     def test_preparation_commands_and_questions_match_the_real_cli(self):
         for scenario in ("unready", "first-install", "choose-app"):
             with self.subTest(scenario=scenario):

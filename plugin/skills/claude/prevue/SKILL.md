@@ -39,7 +39,9 @@ don't search the repository or guess from `status`. **Ask right away**, in the u
 
 > Which screen should I show? Tell me the path of a Kotlin file with `@Preview`, or a composable name.
 
-If you get only a name, find the file by that name and run `prevue show`. If there are several candidates, show their paths and let the person choose.
+If you get only a composable name, **find its previews with `prevue previews --of <name>`** (run it from inside the repository) and show one with `prevue show <fqn>` —
+pick the `previews` entry that fits the request, or the first. If its `message` says several composables share the name, show the person the definition paths and let them choose.
+If it exits 1 or 3, find the file by that name and run `prevue show <file>`. If there are several candidate files, show their paths and let the person choose.
 
 ## Showing it
 

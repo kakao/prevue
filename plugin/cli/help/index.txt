@@ -6,6 +6,7 @@ Viewing
   wait [file...]             waits until saved files compile and the board is redrawn — after an edit, get the result with this
   close <file|FQN>           closes a viewer tab
   previews <file>            the file's @Preview list
+  previews --of <composable> the @Preview functions that call that composable — their FQNs, to show without asking
   board                      each card's generation, success and PNG
   card <index> [--force]     draws just one card of the board — --force redraws a card already drawn
   reload [file...]           recompiles and redraws when the watcher missed a save
