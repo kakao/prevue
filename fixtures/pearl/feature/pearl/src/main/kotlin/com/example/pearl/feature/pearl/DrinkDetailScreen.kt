@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -299,8 +301,8 @@ fun DrinkDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) { options() }
             }
-            // ← · 가방은 위에 붙어 있다 — 무대가 위로 지나가면 흰 바탕 위라 어두운 단추로 바뀐다
-            val onDark = with(LocalDensity.current) { scroll.value < (headerH - 72.dp).toPx() }
+            // ← · 가방은 위에 붙어 있다 — 무대가 위로 지나가면 흰 바탕 위라 어두운 단추로 바뀐다. 단추가 상태바만큼 내려가 있어 그만큼 일찍 넘어간다
+            val onDark = with(LocalDensity.current) { scroll.value < (headerH - 72.dp).toPx() - WindowInsets.statusBars.getTop(this) }
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (showBack) BackButton(onBack, onDark)
                 Spacer(Modifier.weight(1f))
