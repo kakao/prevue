@@ -23,7 +23,6 @@ import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderEngine
-import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.infrastructure.store.InMemoryWorkspaceStore
 import prevue.infrastructure.watch.PollingSourceWatcher
@@ -69,7 +68,7 @@ class BlankRenderIntegrationTest {
         stub = PearlFixture.stubCopy(appRoot)
         val watched = listOf(appRoot)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope),
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), home.repoRoot,
             realDispatchers, sources = PollingSourceWatcher(watched, realDispatchers)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
         ui = uc.entryPoints.also { it.startWatching() }
         val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }

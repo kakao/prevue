@@ -24,7 +24,6 @@ import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
 import prevue.infrastructure.render.RenderEngine
-import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FileMatch
@@ -60,7 +59,6 @@ class KmpRenderIntegrationTest {
     private lateinit var compiler: HotCompiler
     private lateinit var resourceApk: Pair<File, File>
     private lateinit var app: ClasspathSpec
-    private lateinit var sourceIndex: ProjectFiles
     // 덤프만 빈 자리를 Kotlin/Native 자리로 받는다 — 머신에 이미 같은 판이 있어도 받으려 들면 여기에 생긴다
     private val konan = File(out, "konan").apply { mkdirs() }
     private val noKonan = mapOf("KONAN_DATA_DIR" to konan.path)
@@ -78,8 +76,7 @@ class KmpRenderIntegrationTest {
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), listOf(copies), InMemoryWorkspaceStore())
-        sourceIndex = ProjectFiles(home.repoRoot, home.sourceRoots, realDispatchers, scope)
-        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), sourceIndex, realDispatchers), ws, scope,
+        uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), home.repoRoot, realDispatchers), ws, scope,
             PrevueCheckout(File(out, "viewer")), TargetRepo(out))
     }
 
@@ -112,7 +109,7 @@ class KmpRenderIntegrationTest {
         val list = ws.now.board!!.cards.first { it.spec.fqn.endsWith("PearlListPreview") }
         val shot = (list.result as CardResult.Drawn).shot.out
         val node = PearlFixture.tree(shot.tree!!).nodes.first { it.file == "DrinkCard.kt" && it.right > it.left && it.bottom > it.top }
-        runBlocking { sourceIndex.sourceFiles() }
+        runBlocking { uc.sourceFiles.sourceFiles() }
         val match = uc.status.resolveFile(node.file)
         val path = (match as? FileMatch.Path)?.path ?: fail("${node.file}를 풀지 못했다 — $match")
         val expected = File(PearlKmpFixture.dir, "core/ui/src/commonMain/kotlin/com/example/pearl/core/ui/DrinkCard.kt")

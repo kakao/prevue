@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import prevue.infrastructure.source.ProjectFiles
 import prevue.daemon.fake.FakeResourceValues
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
@@ -21,7 +20,6 @@ import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.WaitResult
 import prevue.application.domain.rule.StaleReasons
 import prevue.daemon.fake.TestGraph
-import prevue.daemon.fake.realDispatchers
 
 /**
  * D-68. values XML을 저장하면 컴파일하지 않고 값만 렌더러에 얹어 다시 그린다 — Gradle도 재시작도 없다.
@@ -53,7 +51,7 @@ class ResourcePatchesTest {
         val a = fx.valuesFile(xml("title" to "A"))
         val b = File(fx.root, "app/src/debug/res/values/strings.xml").apply { parentFile.mkdirs(); writeText(xml("title" to "A")) }
         val graph = ModuleGraph(":app", listOf(ModuleNode(":app", emptyList(), emptyList(), resRoots = listOf(fx.resRoot, b.parentFile.parentFile))))
-        val patches = ResourcePatches(values, ProjectFiles(fx.root, emptyList(), realDispatchers, fx.scope), graph)
+        val patches = ResourcePatches(values, fx.graph().sourceFiles, graph)
         assertEquals(2, patches.rememberValues())
         a.writeText(xml("title" to "B"))
         b.writeText(xml("title" to "C"))

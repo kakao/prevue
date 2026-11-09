@@ -25,7 +25,6 @@ import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.dump.DumpPaths
 import prevue.infrastructure.render.RenderOutputs
 import prevue.application.domain.model.Bitmap
-import prevue.infrastructure.source.ProjectFiles
 import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.infrastructure.source.ValueDirs
 import prevue.application.port.BuildChange
@@ -403,7 +402,7 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     ): TestGraph {
         val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
-            ProjectFiles(root, graph.roots, realDispatchers, scope), realDispatchers, resources = resources, sources = sources, builds = builds)
+            root, realDispatchers, resources = resources, sources = sources, builds = builds)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, quietMs)
     }
 
