@@ -13,7 +13,7 @@ type Zoom = { z: number; x: number; y: number };
 
 const sizeKey = (size: AnySize) => {
   if (!size) return 'original';
-  if (size.kind === 'device') return `${size.device === 'duo' ? 'ipduo' : size.device}:${size.half ? 'half' : size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}`;
+  if (size.kind === 'device') return `${size.device === 'duo' ? 'ipduo' : size.device}:${size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}`;
   return size.preset || `custom:${size.widthDp}x${size.heightDp}`;
 };
 
@@ -56,7 +56,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     request: sel => {
       if (preparing) return Promise.resolve(false);
       const [dev, state, turn] = sel.split(':'), device = scene.devices.has(dev);
-      const body = device ? { device: dev === 'ipduo' ? 'duo' : dev, folded: state === 'cover', half: state === 'half', landscape: turn === 'rot' }
+      const body = device ? { device: dev === 'ipduo' ? 'duo' : dev, folded: state === 'cover', landscape: turn === 'rot' }
         : { size: sel.startsWith('custom:') ? sel.slice(7) : sel };
       // 장면이 실패를 알아야 끌던 틀을 지금 크기로 되돌린다 — 성공 여부로 답한다
       return post('/viewer/resize', body).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; })

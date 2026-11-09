@@ -169,9 +169,7 @@
   /* 레일의 KMP 표식. Kotlin 브랜드 가이드가 로고를 다른 색 · 투명도로 바꾸지 못하게 해서
      공식 단색판(kotlin_logos.zip, Kotlin Multiplatform/Secondary)의 검정 · 흰색만 쓴다(D-134). */
   --art-kmp: light-dark(#000, #fff);
-  /* 작업 공간의 기기 몸체. 몸체 · 단추 · 카메라 색은 실제 기기 색이라 라이트 · 다크가 같고,
-     빛 · 두께 · 그림자는 바닥에 따라 다르다 — 밝은 바닥에서는 그림자가 뜬 느낌을 맡고,
-     어두운 바닥에서는 그림자가 묻혀 바깥 테 · 옆면 선을 더 밝게 두어 두께를 읽힌다(D-158). */
+  /* 작업 공간의 기기 몸체. 실제 기기 색이라 라이트 · 다크가 같다. */
   --device-body: #1d1d1f;
   --device-camera: #050505;
   --device-flap: #0b0b0d;
@@ -188,17 +186,8 @@
   --device-gloss: rgb(255 255 255 / .18);
   --device-gloss-clear: rgb(255 255 255 / 0);
   --device-gloss-shade: rgb(0 0 0 / .2);
-  --device-rim: light-dark(rgb(255 255 255 / .14), rgb(255 255 255 / .2));
-  /* 두께 띠 — 옆면은 몸체 색 위에 어둠을 한 겹 더 얹는다. 화면 가장자리는 테 안쪽의 어두운 선과 번짐이다. */
-  --device-side: light-dark(rgb(0 0 0 / .42), rgb(0 0 0 / .3));
-  --device-side-edge: light-dark(rgb(255 255 255 / .08), rgb(255 255 255 / .12));
-  --device-side-line: light-dark(rgb(0 0 0 / .5), rgb(255 255 255 / .16));
-  --device-inner: rgb(0 0 0 / .6);
-  --device-inner-glow: rgb(0 0 0 / .35);
-  /* 바닥 그림자의 색 — 짙고 가까운 접촉 그림자 · 중간 · 옅고 넓은 주변 그림자. 거리 · 번짐은 resize.css 가 화면 기준 아래로 둔다. */
-  --device-shadow-contact: light-dark(rgb(31 35 40 / .34), rgb(1 4 9 / .9));
-  --device-shadow-near: light-dark(rgb(31 35 40 / .18), rgb(1 4 9 / .7));
-  --device-shadow-far: light-dark(rgb(31 35 40 / .16), rgb(1 4 9 / .8));
+  --device-rim: rgb(255 255 255 / .12);
+  --device-inset: rgb(255 255 255 / .1);
   --device-hairline: rgb(0 0 0 / .5);
   --device-crease-light: rgb(255 255 255 / .6);
   --device-crease-dark: rgb(0 0 0 / .18);
