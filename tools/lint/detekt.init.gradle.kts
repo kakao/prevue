@@ -35,20 +35,53 @@ if (gradle.parent != null) {
         allprojects { afterEvaluate {
             if (!plugins.hasPlugin("org.jetbrains.kotlin.jvm")) return@afterEvaluate
             apply(plugin = "dev.detekt")
+            val config = rootDir.resolve("../../tools/lint/detekt.yml")
             // init script 는 플러그인 클래스 없이 컴파일된다 — 확장은 이름으로 만진다.
             extensions.getByName("detekt").withGroovyBuilder {
                 @Suppress("UNCHECKED_CAST")
                 (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
                 @Suppress("UNCHECKED_CAST")
                 (getProperty("ignoreFailures") as Property<Boolean>).set(true)
-                (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
+                (getProperty("config") as ConfigurableFileCollection).setFrom(config)
             }
-            // 층 규칙의 심은 위반(lint.py 가 -Pprevue.layerSeeds 로 넘긴다)을 :application 의 detektMain 에 함께 싣는다 — 같은 실행 ·
-            // 같은 설정 · 같은 판으로 돌아야 판을 올렸을 때 말없이 죽은 갈래가 드러난다. 경로 한정은 절대 경로라 저장소 밖 자리에서도 같은 뜻이다.
-            // 이 모듈 이름이 바뀌어 싣지 못하면 심은 위반이 모두 빠져 lint.py 가 멈춘다
+            // 층 규칙의 심은 위반(lint.py 가 -Pprevue.layerSeeds 로 넘긴다)은 :application 의 전용 태스크 detektLayerSeeds 로 돈다 —
+            // 같은 실행 · 같은 판 · 같은 설정 파일이라 판을 올렸을 때 말없이 죽은 갈래가 드러난다. detektMain 에 얹지 않는 것은
+            // 그 태스크에 baseline · excludes 가 생기면 심은 위반이 삼켜지거나 떨어지기 때문이다. detektMain 에서는 타입 해석 입력만 잇는다.
+            // 경로 한정은 절대 경로라 저장소 밖 자리에서도 같은 뜻이다. 이 모듈 이름이 바뀌어 태스크가 없으면 lint.py 가 멈춘다
             val seeds = providers.gradleProperty("prevue.layerSeeds").orNull
             if (seeds != null && path == ":application") {
-                tasks.named("detektMain") { (this as SourceTask).source(seeds) }
+                val main = tasks.getByName("detektMain")
+                @Suppress("UNCHECKED_CAST")
+                val type = buildscript.classLoader.loadClass("dev.detekt.gradle.Detekt") as Class<SourceTask>
+                tasks.register("detektLayerSeeds", type) {
+                    source(seeds)
+                    withGroovyBuilder {
+                        for (p in listOf("detektClasspath", "pluginClasspath", "classpath")) {
+                            (getProperty(p) as ConfigurableFileCollection).setFrom(main.withGroovyBuilder { getProperty(p) })
+                        }
+                        @Suppress("UNCHECKED_CAST")
+                        for (p in listOf("jvmTarget", "apiVersion", "languageVersion", "noJdk", "jdkHome", "freeCompilerArgs", "optIn")) {
+                            val from = main.withGroovyBuilder { getProperty(p) } as Provider<Any>
+                            when (val to = getProperty(p)) {
+                                is ListProperty<*> -> (to as ListProperty<Any>).set(from as Provider<Iterable<Any>>)
+                                is DirectoryProperty -> to.set(from as Provider<Directory>)
+                                else -> (to as Property<Any>).set(from)
+                            }
+                        }
+                        (getProperty("config") as ConfigurableFileCollection).setFrom(config)
+                        @Suppress("UNCHECKED_CAST")
+                        (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
+                        @Suppress("UNCHECKED_CAST")
+                        (getProperty("ignoreFailures") as Property<Boolean>).set(true)
+                        val reports = getProperty("reports")
+                        for (r in listOf("html", "sarif", "markdown")) {
+                            @Suppress("UNCHECKED_CAST")
+                            (reports.withGroovyBuilder { getProperty(r) }.withGroovyBuilder { getProperty("required") } as Property<Boolean>).set(false)
+                        }
+                        (reports.withGroovyBuilder { getProperty("checkstyle") }.withGroovyBuilder { getProperty("outputLocation") } as RegularFileProperty)
+                            .set(project.layout.buildDirectory.file("reports/detekt/layerSeeds.xml"))
+                    }
+                }
             }
         } }
     }
