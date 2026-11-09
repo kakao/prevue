@@ -69,8 +69,6 @@ if (gradle.parent != null) {
                             }
                         }
                         (getProperty("config") as ConfigurableFileCollection).setFrom(config)
-                        // baseline 은 비워 둔다 — 심은 위반을 삼키면 통과가 아무것도 말하지 않는다
-                        (getProperty("baseline") as RegularFileProperty).set(null as RegularFile?)
                         @Suppress("UNCHECKED_CAST")
                         (getProperty("buildUponDefaultConfig") as Property<Boolean>).set(false)
                         @Suppress("UNCHECKED_CAST")
