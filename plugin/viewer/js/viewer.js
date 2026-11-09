@@ -3698,31 +3698,61 @@ function $i() {
 							className: "duo-edge",
 							"aria-hidden": "true",
 							children: [
-								/* @__PURE__ */ (0, L.jsx)("defs", { children: /* @__PURE__ */ (0, L.jsxs)("linearGradient", {
-									id: "duoSheen",
-									gradientUnits: "userSpaceOnUse",
-									children: [
-										/* @__PURE__ */ (0, L.jsx)("stop", { offset: "0" }),
-										/* @__PURE__ */ (0, L.jsx)("stop", { offset: ".4" }),
-										/* @__PURE__ */ (0, L.jsx)("stop", { offset: "1" })
-									]
-								}) }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "outl" }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "houtl" }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "rim" }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "rimhi" }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "body" }),
-								/* @__PURE__ */ (0, L.jsx)("path", {
+								/* @__PURE__ */ (0, L.jsxs)("defs", { children: [
+									/* @__PURE__ */ (0, L.jsx)("path", { id: "duoSide" }),
+									/* @__PURE__ */ (0, L.jsx)("path", { id: "duoHinge" }),
+									/* @__PURE__ */ (0, L.jsxs)("linearGradient", {
+										id: "duoSheen",
+										gradientUnits: "userSpaceOnUse",
+										children: [
+											/* @__PURE__ */ (0, L.jsx)("stop", { offset: "0" }),
+											/* @__PURE__ */ (0, L.jsx)("stop", { offset: ".4" }),
+											/* @__PURE__ */ (0, L.jsx)("stop", { offset: "1" })
+										]
+									})
+								] }),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "outl",
+									href: "#duoSide"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "houtl",
+									href: "#duoHinge"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "rim",
+									href: "#duoSide"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "rimhi",
+									href: "#duoSide"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "body",
+									href: "#duoSide"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
 									className: "sheen",
+									href: "#duoSide",
 									stroke: "url(#duoSheen)"
 								}),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "hinge" }),
-								/* @__PURE__ */ (0, L.jsx)("path", {
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "hinge",
+									href: "#duoHinge"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
 									className: "hsheen",
+									href: "#duoHinge",
 									stroke: "url(#duoSheen)"
 								}),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "ring" }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "ring hr" })
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "ring",
+									href: "#duoSide"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("use", {
+									className: "ring hr",
+									href: "#duoHinge"
+								})
 							]
 						}),
 						/* @__PURE__ */ (0, L.jsxs)("div", {
