@@ -6,4 +6,4 @@ import { WorkspaceBody } from './workspace';
 const meta = { title: '작업공간/CustomSizeSliders' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Shell: Story = { render: () => <WorkspaceBody><aside className="panel"><CustomSizeSliders /></aside></WorkspaceBody>, play: () => { document.getElementById('pnSl')!.hidden = false; } };
+export const Shell: Story = { render: () => <WorkspaceBody><div className="panel story-dock"><CustomSizeSliders /></div></WorkspaceBody>, play: () => { document.getElementById('pnSl')!.hidden = false; } };

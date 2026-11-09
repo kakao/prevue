@@ -36,13 +36,16 @@ body { margin: 0; background: var(--surface); color: var(--on-surface); font: va
   .story-dot { transition-property: opacity !important; }
   .story-play .story-dot { left: var(--space-4); opacity: .3; }
 }
-/* 한 장 — 패널은 뷰어에서 창 오른쪽에 붙어 있어(fixed) 스토리에서는 제자리에 세우고, 크기 칸은 조작 중(body.resizing-ui)에만 보이던 것을 늘 보인다. */
-.story-surface .story-panel .panel { position: static; height: auto; }
-.story-surface .story-panel .pn-pick { display: flex; }
+/* 한 장 — 조작 독은 뷰어에서 무대 아래 가운데에 떠 있다(fixed). 메뉴 버튼 · 자세 · 슬라이더는 조작 중(body.resizing-ui)에만 보이던 것을 스토리에서는 늘 보인다. */
+.story-surface .story-panel .pn-fold { display: block; }
+.story-surface .story-panel #devCtl:not([hidden]), .story-surface .story-panel #pnSl:not([hidden]) { display: flex; }
+/* 독 하나만 그리는 스토리는 제자리에 세운다. */
+.story-surface .panel.story-dock { position: static; margin-inline: 0; }
 /* 무대의 높이는 뷰어에서 focus.ts 가 창 높이로 잰다(--view-h) — 스토리는 화면 높이를 준다. */
 .story-stage { --view-h: 100vh; display: flex; }
 .story-stage > .story-panel { display: contents; }
 .story-stage #focusView { flex: 1; min-width: 0; }
-/* 배율 메뉴는 확대 줄 위로 열린다 — 그 자리를 비워 둔다. */
-.story-zoom { padding-top: calc(var(--space-64) + var(--space-64)); }
-.story-surface .story-zoom .panel { overflow: visible; }
+/* 확대는 독 오른쪽 끝에 있고 배율 메뉴가 위로 열린다 — 스토리는 그 자리를 비워 둔다. */
+.story-zoom { position: relative; display: flex; align-items: flex-end; height: calc(var(--space-64) * 3); }
+/* 크기 · 기기 메뉴의 몸통만 — 뷰어에서는 버튼 아래 떠 있는 층이라 스토리에서는 제자리에 펴 보인다. */
+.story-surface .pn-body.story-menu { position: static; opacity: 1; visibility: visible; transform: none; }

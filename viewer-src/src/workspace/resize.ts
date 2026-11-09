@@ -1,5 +1,5 @@
 // 크기 · 기기 · 자세 바꾸기(D-99). 틀 · 그림의 전환은 번들 밖의 resize-scene.js 가 갖고, 여기서는 상태를 장면에 넘기고
-// 스트림 <img>(#shot)를 새 크기의 첫 장에 붙인다. 장면 · 패널의 마크업은 React 가 한 번 그린 껍데기다.
+// 스트림 <img>(#shot)를 새 크기의 첫 장에 붙인다. 장면 · 조작 독의 마크업은 React 가 한 번 그린 껍데기다.
 import { post, viewerStream } from '../../legacy/js/api.js';
 import { flash } from '../../legacy/js/capsule.js';
 import { motionMs, motionToken, reduced } from '../../legacy/js/motion.js';
@@ -84,7 +84,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     shot.setAttribute('aria-busy', String(on && !failed));
     loadingView.set({ on, failed });
     for (const el of root.querySelectorAll('input')) el.disabled = on;
-    for (const el of document.querySelectorAll<HTMLButtonElement>('#pnPick button, #devCtl button')) el.disabled = on;
+    for (const el of document.querySelectorAll<HTMLButtonElement>('#pnSum, #pnPick button, #devCtl button')) el.disabled = on;
     scene.sliderOff(on);
     preparation(on, failed);
   }
@@ -214,6 +214,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     suspend() { epoch++; stream = loading = null; shot.onload = null; },
     zoom(animate: boolean) { if (!active) return false; geometry.classList.toggle('zoom-anim', !!animate); transform(); return true; },
     relayout: () => { if (active) scene.relayout(); },
+    closeMenu: () => scene.closeMenu(),
     // 장면이 그린 1dp 의 CSS px — 배율 숫자의 기준. 스트림 그림의 해상도 · 밀도와 무관하다
     pxPerDp: () => active && frameRect ? frameRect.s : null,
     moving: () => active && (!shown || scene.moving()),

@@ -127,7 +127,7 @@ try {
   console.log(`통과 ${++checked}: 헤더(뒤로 · 이름)는 패널과 함께 모프 뒤에 들어옴`);
   await check(`(()=>{const m=document.querySelector('.morph');return m&&m.querySelector('img').src===${JSON.stringify(cardRect.src)}&&getComputedStyle(document.querySelector('#stage')).visibility==='hidden'})()`, "첫 프레임 전에는 카드 그림이 캔버스 자리의 자리 표시");
   await check(`[...document.querySelectorAll('#resizeScene input,#panel button')].every(b=>b.disabled) && !document.querySelector('#back').disabled`, "준비 중 조작 도구만 비활성화하고 출구 유지");
-  await click("#stage"); await click('#pnPick [data-sel="narrow"]'); await key("+");
+  await click("#stage"); await click("#pnSum"); await evaluate(`document.querySelector('#pnPick [data-sel="narrow"]').click()`); await key("+");
   await check(`__requests.length===0`, "준비 중 터치와 크기 변경 전송 차단");
   const loadingShot = await send("Page.captureScreenshot", { format: "png" });
   await writeFile(join(tmpdir(), "prevue-workspace-loading.png"), Buffer.from(loadingShot.data, "base64"));

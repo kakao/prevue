@@ -143,8 +143,8 @@ export function createResizeScene(root, hooks) {
     snap(v) { this.a = this.b = v; this.dur = 0; }
     done(now) { return this.dur <= 0 || now - this.t0 >= this.dur; }
   }
-  // CAPSULE_ROOM — 아래 캡슐(바닥 20 + 높이 약 40)과 그 위 틈. 맞춤일 때 기기가 캡슐에 가리지 않게 이만큼만 비운다.
-  const TOP = 14, RULER_TOP = 34, RULER_SIDE = 90, FRAME_TOP = TOP + RULER_TOP, CAPSULE_ROOM = 64;
+  // CAPSULE_ROOM — 아래 캡슐(바닥 20 + 높이 약 40)과 조작 독(바닥 12 + 슬라이더를 띄운 높이 약 68) 중 큰 쪽과 그 위 틈. 맞춤일 때 기기가 가리지 않게 이만큼만 비운다.
+  const TOP = 14, RULER_TOP = 34, RULER_SIDE = 90, FRAME_TOP = TOP + RULER_TOP, CAPSULE_ROOM = 88;
   // 좁은 판(터미널 옆에 세운 브라우저)에서 양옆 90이 판의 절반 가까이를 먹어 넓은 기기가 작게 그려졌다 —
   // 좁을수록 왼쪽은 높이 자와 그 숫자가 들어갈 만큼만, 오른쪽은 거의 비우고 틀은 남는 자리의 가운데에 둔다
   const NARROW = 400, WIDE = 800, SIDE_L = 60, SIDE_R = 16;
@@ -773,8 +773,8 @@ export function createResizeScene(root, hooks) {
     hooks.layout({ w: V.w.at(now), h: V.h.at(now), s: V.s.at(now), y: V.y.at(now), cx: room().cx, radius: lookAt(now).radius * V.s.at(now) * shellOp.at(now) }, !!tr || !!queued || rig.on || spin.on || !!draft);
   }
   const roll = { w: new Tw(411), h: new Tw(891) };
-  const byId = id => document.getElementById(id);   // 패널은 장면 밖(본문 오른쪽)에 선다 — $ 는 장면 안만 찾는다
-  const PN = { el: byId("panel"), pick: byId("pnPick") };
+  const byId = id => document.getElementById(id);   // 조작 독은 장면 밖(무대 아래 가운데에 뜬다)에 선다 — $ 는 장면 안만 찾는다
+  const PN = { el: byId("panel"), pick: byId("pnPick"), fold: byId("pnFold"), sum: byId("pnSum"), body: byId("pnBody") };
   const CTL = { el: byId("devCtl"), fold: byId("dcFold"), rot: byId("dcRot"), hinge: byId("dcHinge") };
   const ROWS = [...PN.pick.querySelectorAll("[data-sel]")];
   // 칸은 이름과 dp 두 쪽이다. 기기 칸은 몸체 윤곽을 앞에 둔다 — 비율 · 모서리 · 카메라(구멍 · 섬)는 몸체 그림의 값에서 줄이고,
@@ -799,6 +799,28 @@ export function createResizeScene(root, hooks) {
     const d = DEVICES[b.dataset.sel];
     if (d) b.title = d.name;
     b.innerHTML = `${d ? silOf(d) : ""}<span class="nm">${d ? d.short : b.dataset.t ? phrase(b.dataset.t) : b.textContent}</span><span class="d"></span>`;
+  }
+  // 크기 · 기기 메뉴(D-167) — 독의 버튼 위로 열린다. 그림을 가리는 층이라 고르면 닫는다. 방향키로 지나가는 동안(고르기만 한다)은
+  // 열어 둔다. 바깥 누름도 닫는다. Esc 는 다른 떠 있는 층과 한 줄로 단축키의 EscapeLayers 가 closeMenu 로 닫는다.
+  // 자세 · 슬라이더는 독 가운데(#devCtl · #pnSl)가 갖는다.
+  const SUM = { sil: PN.sum.querySelector(".pn-sum-sil"), nm: PN.sum.querySelector(".nm"), dev: null };
+  const menuOpen = () => PN.sum.getAttribute("aria-expanded") === "true";
+  function setOpen(on) {
+    if (!on && PN.body.contains(document.activeElement)) PN.sum.focus({ preventScroll: true });
+    PN.sum.setAttribute("aria-expanded", on);
+    PN.fold.classList.toggle("open", on);
+    PN.body.inert = !on;
+  }
+  PN.sum.addEventListener("click", () => setOpen(!menuOpen()));
+  // 바깥 누름은 창에서 받는다 — 장면이 켜진 동안만 걸고 끌 때 뗀다(Storybook 은 스토리마다 장면을 새로 만든다).
+  const outside = e => { if (menuOpen() && !PN.fold.contains(e.target)) setOpen(false); };
+  // 이름은 목록의 칸 이름 그대로다(기기는 짧은 이름). 치수 · 자세는 치수선과 자세 버튼이 말한다.
+  function paintSum(key) {
+    const dev = key === cur.dev ? DEVICES[key] : null, row = ROWS.find(b => b.dataset.sel === key);
+    if (SUM.dev !== dev) { SUM.dev = dev; SUM.sil.innerHTML = dev ? silOf(dev) : ""; }
+    SUM.nm.textContent = row.querySelector(".nm").textContent;
+    PN.sum.classList.toggle("mono", row.classList.contains("mono"));
+    PN.sum.title = `${dev ? dev.name : SUM.nm.textContent} · ${dims(cur)}`;
   }
   const itemOf = st => st.kind === "device" ? st.dev : st.sel;
   const openDims = d => `${Math.round(d.open.w)}×${Math.round(d.open.h)}`;
@@ -853,9 +875,15 @@ export function createResizeScene(root, hooks) {
     RL.el.classList.toggle("device", !custom && cur.kind === "device");
     CTL.el.hidden = custom || cur.kind !== "device";
     SL.el.hidden = !custom;
+    paintSum(key);
     paintSlider();
   }
-  PN.pick.addEventListener("click", e => { const b = e.target.closest("[data-sel]"); if (b) pick(b.dataset.sel); });
+  PN.pick.addEventListener("click", e => {
+    const b = e.target.closest("[data-sel]");
+    if (!b) return;
+    pick(b.dataset.sel);
+    setOpen(false);
+  });
   CTL.fold.addEventListener("click", () => toggleFold());
   CTL.rot.addEventListener("click", () => toggleTurn());
   CTL.hinge.addEventListener("click", () => toggleHinge());
@@ -1064,7 +1092,8 @@ export function createResizeScene(root, hooks) {
     },
     enable(on) {
       enabled = on; root.hidden = !on;
-      if (!on) CTL.el.hidden = true;
+      if (on) addEventListener("pointerdown", outside, true);
+      if (!on) { CTL.el.hidden = true; setOpen(false); removeEventListener("pointerdown", outside, true); }
       if (!on) roomSize = "";
       if (!on) { cancelAnimationFrame(raf); raf=0; images.clear(); cur=null; tr=null; queued=null; dropDraft(); slFocus=false; }
       else if (!raf) raf=requestAnimationFrame(animate);
@@ -1085,6 +1114,9 @@ export function createResizeScene(root, hooks) {
       if (on) dropDraft();
     },
     clearImages() { images.clear(); },
+    closeMenu() { if (!menuOpen()) return false; setOpen(false); return true; },
+    // 고른 칸(sel)이 그릴 dp — 데몬 없이 장면을 띄우는 곳(Storybook)이 고른 것을 그대로 돌려줄 때 쓴다.
+    sizeOf(sel) { const st = resolve(sel); return st && { w: st.w, h: st.h }; },
   };
 
 }

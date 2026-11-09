@@ -1707,7 +1707,7 @@ function sr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 			failed: r
 		});
 		for (let n of e.querySelectorAll("input")) n.disabled = t;
-		for (let e of document.querySelectorAll("#pnPick button, #devCtl button")) e.disabled = t;
+		for (let e of document.querySelectorAll("#pnSum, #pnPick button, #devCtl button")) e.disabled = t;
 		D.sliderOff(t), l(t, r);
 	}
 	function A(e, t) {
@@ -1839,6 +1839,7 @@ function sr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 		relayout: () => {
 			f && D.relayout();
 		},
+		closeMenu: () => D.closeMenu(),
 		pxPerDp: () => f && d ? d.s : null,
 		moving: () => f && (!b || D.moving())
 	};
@@ -2231,7 +2232,8 @@ function lr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		zoomFit: ze,
 		zoomMenuPick: Ue,
 		toggleZoomMenu: He,
-		closeZoomMenu: Ve
+		closeZoomMenu: Ve,
+		closeDeviceMenu: () => H.closeMenu()
 	};
 }
 var ur = (e) => e && e.naturalWidth ? e.naturalWidth / e.naturalHeight : 0, dr = /* @__PURE__ */ new Map();
@@ -2497,6 +2499,7 @@ function Jr(e, t, n) {
 			if (i === "Escape" && t.helpOpen()) r.preventDefault(), t.toggleHelp(!1);
 			else if (i === "Escape" && n.chooserOpen()) r.preventDefault(), n.cancelChoice();
 			else if (i === "Escape" && n.closeZoomMenu()) r.preventDefault();
+			else if (i === "Escape" && n.closeDeviceMenu()) r.preventDefault();
 			else if (i === "Escape" && n.closeDirPop()) r.preventDefault();
 			else if (i === "Escape" && n.closeCard()) r.preventDefault();
 			else if (!(t.helpOpen() && i !== "?")) {
@@ -3440,10 +3443,10 @@ function Gi({ host: e, shot: t, leaving: n = !1, onLeft: r, children: i }) {
 		}, i = 0, o = "", s = () => {
 			let a = t(), c = e.getBoundingClientRect(), l = "hidden";
 			if (a && a.width) {
-				let t = Wi("rail"), i = Wi("panel"), o = Hi({
+				let t = Wi("rail"), i = Hi({
 					room: {
 						left: Math.max(0, (t?.right ?? 0) - c.left),
-						right: Math.min(e.clientWidth, (i?.left ?? innerWidth) - c.left, innerWidth - c.left)
+						right: Math.min(e.clientWidth, innerWidth - c.left)
 					},
 					shot: {
 						left: a.left - c.left,
@@ -3454,7 +3457,7 @@ function Gi({ host: e, shot: t, leaving: n = !1, onLeft: r, children: i }) {
 					card: { width: n.offsetWidth },
 					space: r
 				});
-				l = `${Math.round(o.left)},${Math.round(o.top)},${o.left < a.left - c.left ? "left" : "right"}`;
+				l = `${Math.round(i.left)},${Math.round(i.top)},${i.left < a.left - c.left ? "left" : "right"}`;
 			}
 			if (l !== o) {
 				if (o = l, l === "hidden") n.style.visibility = "hidden";
@@ -3853,6 +3856,8 @@ var ea = (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
 }), ta = (e, t) => /* @__PURE__ */ (0, L.jsx)("div", {
 	className: "zoom at-fit",
 	id: "zoomCtl",
+	role: "group",
+	"data-t-aria-label": "zoom.label",
 	ref: e,
 	children: t
 });
@@ -3963,8 +3968,7 @@ function aa() {
 						"data-sel": "custom",
 						...e.title("size.custom.tip"),
 						...e.text("size.custom")
-					}),
-					/* @__PURE__ */ (0, L.jsx)(ia, {})
+					})
 				]
 			})]
 		}), /* @__PURE__ */ (0, L.jsxs)("section", {
@@ -4002,59 +4006,123 @@ function aa() {
 		})]
 	});
 }
-function oa() {
+var oa = (e) => /* @__PURE__ */ (0, L.jsx)("svg", {
+	className: "tb-ic",
+	viewBox: "0 0 20 20",
+	fill: "none",
+	stroke: "currentColor",
+	strokeWidth: "1.5",
+	strokeLinecap: "round",
+	strokeLinejoin: "round",
+	"aria-hidden": "true",
+	children: e
+}), sa = oa(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("rect", {
+	x: "6.5",
+	y: "3",
+	width: "7",
+	height: "12",
+	rx: "1.5"
+}), /* @__PURE__ */ (0, L.jsx)("path", { d: "M16.5 9.5a6.5 6.5 0 0 1-3.2 5.6M15.4 17.2l-2.1-2.1 2.6-.9" })] })), ca = oa(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
+	/* @__PURE__ */ (0, L.jsx)("path", {
+		d: "M10 4v12",
+		strokeDasharray: "1.6 1.6"
+	}),
+	/* @__PURE__ */ (0, L.jsx)("path", { d: "M3.5 5.5h13v9h-13z" }),
+	/* @__PURE__ */ (0, L.jsx)("path", { d: "M10 5.5 14 3v9.5l-4 2" })
+] })), la = oa(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("rect", {
+	x: "3.5",
+	y: "4",
+	width: "13",
+	height: "12",
+	rx: "1.5"
+}), /* @__PURE__ */ (0, L.jsx)("path", {
+	d: "M10 4v12",
+	strokeDasharray: "1.6 1.6"
+})] })), ua = /* @__PURE__ */ (0, L.jsx)("svg", {
+	className: "tb-chev",
+	viewBox: "0 0 16 16",
+	fill: "none",
+	stroke: "currentColor",
+	strokeWidth: "1.7",
+	strokeLinecap: "round",
+	strokeLinejoin: "round",
+	"aria-hidden": "true",
+	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "m4.5 6.5 3.5 3.5 3.5-3.5" })
+});
+function da() {
 	let e = Xi();
-	return /* @__PURE__ */ (0, L.jsxs)("section", {
-		className: "pn-sec",
+	return /* @__PURE__ */ (0, L.jsxs)("div", {
+		className: "dock-seg",
 		id: "devCtl",
 		role: "group",
 		...e.label("posture.label"),
 		hidden: !0,
-		children: [/* @__PURE__ */ (0, L.jsx)("h4", {
-			className: "pn-h",
-			...e.text("posture.title")
-		}), /* @__PURE__ */ (0, L.jsxs)("div", {
-			className: "pn-seg",
+		children: [
+			/* @__PURE__ */ (0, L.jsxs)("button", {
+				className: "tb-btn",
+				id: "dcRot",
+				type: "button",
+				children: [sa, /* @__PURE__ */ (0, L.jsx)("span", {
+					id: "dcRotLb",
+					...e.text("posture.rotate")
+				})]
+			}),
+			/* @__PURE__ */ (0, L.jsxs)("button", {
+				className: "tb-btn",
+				id: "dcFold",
+				type: "button",
+				children: [ca, /* @__PURE__ */ (0, L.jsx)("span", {
+					id: "dcFoldLb",
+					...e.text("posture.fold")
+				})]
+			}),
+			/* @__PURE__ */ (0, L.jsxs)("button", {
+				className: "tb-btn",
+				id: "dcHinge",
+				type: "button",
+				"aria-pressed": "true",
+				...e.title("posture.hinge"),
+				children: [la, /* @__PURE__ */ (0, L.jsx)("span", { ...e.text("posture.hinge") })]
+			})
+		]
+	});
+}
+function fa() {
+	let e = Xi();
+	return /* @__PURE__ */ (0, L.jsxs)("div", {
+		className: "pn-fold",
+		id: "pnFold",
+		children: [/* @__PURE__ */ (0, L.jsxs)("button", {
+			className: "tb-btn pn-sum",
+			id: "pnSum",
+			type: "button",
+			"aria-haspopup": "true",
+			"aria-expanded": "false",
+			"aria-controls": "pnBody",
+			...e.title("panel.pick"),
 			children: [
-				/* @__PURE__ */ (0, L.jsx)("button", {
-					className: "pn-it",
-					id: "dcFold",
-					type: "button",
-					children: /* @__PURE__ */ (0, L.jsx)("span", {
-						id: "dcFoldLb",
-						...e.text("posture.fold")
-					})
-				}),
-				/* @__PURE__ */ (0, L.jsx)("button", {
-					className: "pn-it",
-					id: "dcRot",
-					type: "button",
-					children: /* @__PURE__ */ (0, L.jsx)("span", {
-						id: "dcRotLb",
-						...e.text("posture.rotate")
-					})
-				}),
-				/* @__PURE__ */ (0, L.jsx)("button", {
-					className: "pn-it",
-					id: "dcHinge",
-					type: "button",
-					"aria-pressed": "true",
-					...e.title("posture.hinge"),
-					...e.text("posture.hinge")
-				})
+				/* @__PURE__ */ (0, L.jsx)("span", { className: "pn-sum-sil" }),
+				/* @__PURE__ */ (0, L.jsx)("span", { className: "nm" }),
+				ua
 			]
+		}), /* @__PURE__ */ (0, L.jsx)("div", {
+			className: "pn-body",
+			id: "pnBody",
+			inert: !0,
+			children: /* @__PURE__ */ (0, L.jsx)(aa, {})
 		})]
 	});
 }
-function sa({ zoom: e = ta() }) {
+function pa({ zoom: e = ta() }) {
 	return /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
-		/* @__PURE__ */ (0, L.jsx)(aa, {}),
-		/* @__PURE__ */ (0, L.jsx)(oa, {}),
+		/* @__PURE__ */ (0, L.jsx)(fa, {}),
+		/* @__PURE__ */ (0, L.jsx)(da, {}),
+		/* @__PURE__ */ (0, L.jsx)(ia, {}),
 		e
 	] });
 }
 // src/components/Workspace.tsx
-var ca = {
+var ma = {
 	exit() {},
 	zoomIn() {},
 	zoomOut() {},
@@ -4062,7 +4130,7 @@ var ca = {
 	zoomMenuPick() {},
 	toggleZoomMenu() {}
 };
-function la({ host: e }) {
+function ha({ host: e }) {
 	let { phrase: t } = s(), { element: n, place: r } = o(e), { on: i, failed: a } = (0, I.useSyncExternalStore)(mn.subscribe, mn.get);
 	return (0, I.useLayoutEffect)(() => {
 		n && (n.hidden = !i, n.classList.toggle("failed", a));
@@ -4078,14 +4146,14 @@ function la({ host: e }) {
 		children: t(a ? "workspace.loading.failed" : "workspace.loading")
 	})] }), ea);
 }
-var ua = /* @__PURE__ */ (0, L.jsx)("svg", {
+var ga = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
 	strokeWidth: "1.7",
 	strokeLinecap: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M4 8h8" })
-}), da = /* @__PURE__ */ (0, L.jsx)("svg", {
+}), _a = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
@@ -4093,7 +4161,7 @@ var ua = /* @__PURE__ */ (0, L.jsx)("svg", {
 	strokeLinecap: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M4 8h8M8 4v8" })
 });
-function fa({ host: e, actions: t = ca }) {
+function va({ host: e, actions: t = ma }) {
 	let { phrase: n } = s(), { element: r, place: i } = o(e), { pct: a, real: c, atFit: l, menu: u, disabled: d } = (0, I.useSyncExternalStore)(Y.subscribe, Y.get);
 	return (0, I.useLayoutEffect)(() => {
 		r?.classList.toggle("at-fit", l);
@@ -4105,7 +4173,7 @@ function fa({ host: e, actions: t = ca }) {
 			title: n("zoom.out.tip"),
 			disabled: d,
 			onClick: t.zoomOut,
-			children: ua
+			children: ga
 		}),
 		/* @__PURE__ */ (0, L.jsxs)("button", {
 			type: "button",
@@ -4125,9 +4193,8 @@ function fa({ host: e, actions: t = ca }) {
 			title: n("zoom.in.tip"),
 			disabled: d,
 			onClick: t.zoomIn,
-			children: da
+			children: _a
 		}),
-		/* @__PURE__ */ (0, L.jsx)("span", { className: "z-grow" }),
 		/* @__PURE__ */ (0, L.jsx)("button", {
 			type: "button",
 			id: "zoomFitBtn",
@@ -4173,27 +4240,27 @@ function fa({ host: e, actions: t = ca }) {
 		})
 	] }), ta);
 }
-var pa = 12, ma = 48;
-function ha(e, t) {
+var ya = 12, ba = 48;
+function xa(e, t) {
 	let n = e.querySelector("#backName"), r = t.querySelector("#wsName"), i = t.querySelector("#wsFn"), a = e.parentElement, o = document.getElementById("barR");
 	if (!n || !r || !i || !a || !o || (n.style.maxWidth = "", n.style.display = "", t.hidden || !(t.offsetParent instanceof HTMLElement))) return;
 	if (getComputedStyle(t).position !== "absolute") {
 		t.style.removeProperty("--ws-left"), t.style.removeProperty("--ws-max");
 		return;
 	}
-	let s = t.offsetParent.clientWidth, c = o.offsetLeft - pa, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
+	let s = t.offsetParent.clientWidth, c = o.offsetLeft - ya, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
 		let e = 0;
 		for (let t of a.children) t instanceof HTMLElement && t.offsetParent && (e = Math.max(e, a.offsetLeft + t.offsetLeft + t.offsetWidth));
-		return e + pa;
+		return e + ya;
 	}, f = d();
 	if (f > u && !e.hidden) {
 		let e = n.offsetWidth - (f - u);
-		e < ma ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
+		e < ba ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
 	}
 	let p = Math.max(u, f), m = Math.max(0, Math.min(l, c - p));
 	t.style.setProperty("--ws-left", `${p + m / 2}px`), t.style.setProperty("--ws-max", `${m}px`);
 }
-var ga = /* @__PURE__ */ (0, L.jsx)("svg", {
+var Sa = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
@@ -4202,18 +4269,18 @@ var ga = /* @__PURE__ */ (0, L.jsx)("svg", {
 	strokeLinejoin: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M10 3.5 5.5 8l4.5 4.5" })
 });
-function _a({ state: e, hosts: t, actions: n = ca }) {
+function Ca({ state: e, hosts: t, actions: n = ma }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = e?.screen === "focus" ? e.focus : null, l = c ? (e.tabs || []).find((e) => e.active) : void 0, u = c && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0;
 	(0, I.useLayoutEffect)(() => {
-		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && ha(i.element, a.element);
+		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && xa(i.element, a.element);
 	}), (0, I.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, I.useLayoutEffect)(() => {
 		let e = i.element, t = a.element, n = e?.parentElement?.parentElement, r = document.getElementById("barR");
 		if (!e || !t) return;
-		let o = new ResizeObserver(() => ha(e, t));
+		let o = new ResizeObserver(() => xa(e, t));
 		for (let e of [n, r]) e && o.observe(e);
 		return () => o.disconnect();
 	}, [i.element, a.element]);
-	let d = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [ga, /* @__PURE__ */ (0, L.jsx)("span", {
+	let d = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [Sa, /* @__PURE__ */ (0, L.jsx)("span", {
 		id: "backName",
 		children: l ? l.name : r("nav.board")
 	})] }), f = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("span", {
@@ -4244,26 +4311,27 @@ function _a({ state: e, hosts: t, actions: n = ca }) {
 		children: t
 	}))] });
 }
-function va({ screen: e, hosts: t, actions: n = ca }) {
+function wa({ screen: e, hosts: t, actions: n = ma }) {
 	let { phrase: r } = s(), [i, a] = (0, I.useState)(null), o = t?.view ?? i;
 	return (0, I.useLayoutEffect)(() => {
 		o && e !== null && (o.hidden = e !== "focus");
-	}, [e, o]), t ? /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)(la, { host: t.loading }), /* @__PURE__ */ (0, L.jsx)(fa, {
+	}, [e, o]), t ? /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)(ha, { host: t.loading }), /* @__PURE__ */ (0, L.jsx)(va, {
 		host: t.zoom,
 		actions: n
 	})] }) : /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("section", {
 		id: "focusView",
 		ref: a,
-		children: /* @__PURE__ */ (0, L.jsx)(ra, { loading: /* @__PURE__ */ (0, L.jsx)(la, {}) })
-	}), /* @__PURE__ */ (0, L.jsx)("aside", {
+		children: /* @__PURE__ */ (0, L.jsx)(ra, { loading: /* @__PURE__ */ (0, L.jsx)(ha, {}) })
+	}), /* @__PURE__ */ (0, L.jsx)("div", {
 		className: "panel",
 		id: "panel",
+		role: "toolbar",
 		"aria-label": r("panel.label"),
-		children: /* @__PURE__ */ (0, L.jsx)(sa, { zoom: /* @__PURE__ */ (0, L.jsx)(fa, { actions: n }) })
+		children: /* @__PURE__ */ (0, L.jsx)(pa, { zoom: /* @__PURE__ */ (0, L.jsx)(va, { actions: n }) })
 	})] });
 }
 // src/ViewerRoot.tsx
-function ya() {
+function Ta() {
 	let e = (e) => document.getElementById(e);
 	return {
 		bar: e("bar"),
@@ -4304,7 +4372,7 @@ function ya() {
 		chooser: e("chooser")
 	};
 }
-function ba({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
+function Ea({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
 	return (0, I.useLayoutEffect)(() => {
 		e && u(e);
 	}, [t]), o ? /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
@@ -4352,12 +4420,12 @@ function ba({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			vacant: e?.vacant ?? null,
 			host: o.vacant
 		}),
-		/* @__PURE__ */ (0, L.jsx)(va, {
+		/* @__PURE__ */ (0, L.jsx)(wa, {
 			screen: e?.screen ?? null,
 			hosts: o.workspace,
 			actions: c
 		}),
-		/* @__PURE__ */ (0, L.jsx)(_a, {
+		/* @__PURE__ */ (0, L.jsx)(Ca, {
 			state: e,
 			hosts: o.workspaceHeader,
 			actions: c
@@ -4376,12 +4444,12 @@ function ba({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 		})
 	] }) : null;
 }
-function xa({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
+function Da({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
 	let s = document.createElement("div");
 	s.hidden = !0, document.body.append(s);
 	let c = (0, Xr.createRoot)(s), l = null, u = null, f = null, p = null, m = 0, h = () => c.render(/* @__PURE__ */ (0, L.jsx)(d.Provider, {
 		value: t,
-		children: /* @__PURE__ */ (0, L.jsx)(ba, {
+		children: /* @__PURE__ */ (0, L.jsx)(Ea, {
 			state: l,
 			draw: m,
 			statusState: u,
@@ -4412,19 +4480,19 @@ function xa({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 	};
 }
 // src/main.tsx
-var Sa = Bt(), Ca = lr(cr()), wa = (e) => {
-	wr(e), Sa?.update(e);
-}, Ta = () => {
+var Oa = Bt(), ka = lr(cr()), Aa = (e) => {
+	wr(e), Oa?.update(e);
+}, ja = () => {
 	let { cursor: e } = p();
 	e != null && mr(e);
-}, Ea = {
+}, Ma = {
 	exit: hr,
-	zoomIn: Ca.zoomIn,
-	zoomOut: Ca.zoomOut,
-	zoomFit: Ca.zoomFit,
-	zoomMenuPick: Ca.zoomMenuPick,
-	toggleZoomMenu: Ca.toggleZoomMenu
-}, Da = {
+	zoomIn: ka.zoomIn,
+	zoomOut: ka.zoomOut,
+	zoomFit: ka.zoomFit,
+	zoomMenuPick: ka.zoomMenuPick,
+	toggleZoomMenu: ka.toggleZoomMenu
+}, Na = {
 	choose: Zn,
 	cancel: Qn,
 	follow: rr,
@@ -4434,51 +4502,52 @@ var Sa = Bt(), Ca = lr(cr()), wa = (e) => {
 	close: Q
 };
 Xn();
-var Oa = {
+var Pa = {
 	screen: () => F.st ? F.st.screen : "offline",
 	tabCount: wt,
 	moveCursor: v,
-	openCursor: Ta,
+	openCursor: ja,
 	exitFocus: hr,
 	stepTab: St,
 	jumpTab: Ct,
 	openQuickOpen: ct,
 	helpOpen: Gt,
 	toggleHelp: Kt,
-	zoomIn: Ea.zoomIn,
-	zoomOut: Ea.zoomOut,
-	zoomFit: Ea.zoomFit
-}, ka = Gr(k, Oa);
-Jr(ka, Oa, {
+	zoomIn: Ma.zoomIn,
+	zoomOut: Ma.zoomOut,
+	zoomFit: Ma.zoomFit
+}, Fa = Gr(k, Pa);
+Jr(Fa, Pa, {
 	chooserOpen: () => !!document.getElementById("chooser")?.classList.contains("on"),
 	cancelChoice: Qn,
-	closeZoomMenu: Ca.closeZoomMenu,
+	closeZoomMenu: ka.closeZoomMenu,
+	closeDeviceMenu: ka.closeDeviceMenu,
 	closeDirPop: Rt,
 	closeCard: Yn
 });
-var Aa = xa({
-	renderLegacy: wa,
+var Ia = Da({
+	renderLegacy: Aa,
 	messages: {
 		phrase: k,
 		daemonText: O
 	},
-	hosts: ya(),
-	shortcuts: ka,
+	hosts: Ta(),
+	shortcuts: Fa,
 	board: {
 		open: mr,
 		point: ir
 	},
-	workspace: Ea,
-	point: Da
+	workspace: Ma,
+	point: Na
 });
 Wr({
-	workspace: Ca,
-	render: Aa.apply,
-	onConnection: Aa.connection,
+	workspace: ka,
+	render: Ia.apply,
+	onConnection: Ia.connection,
 	onPreviewFiles: () => {
 		lt(), zn();
 	},
-	prepared: Sa
+	prepared: Oa
 });
 for (let e of [
 	"bar",

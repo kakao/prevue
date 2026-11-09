@@ -256,8 +256,8 @@ function PointCardFloat({ host, shot, leaving = false, onLeft, children }: { hos
       const s = shot(), h = host.getBoundingClientRect();
       let next = 'hidden';
       if (s && s.width) {
-        const rail = visibleRect('rail'), panel = visibleRect('panel');
-        const room = { left: Math.max(0, (rail?.right ?? 0) - h.left), right: Math.min(host.clientWidth, (panel?.left ?? innerWidth) - h.left, innerWidth - h.left) };
+        const rail = visibleRect('rail');
+        const room = { left: Math.max(0, (rail?.right ?? 0) - h.left), right: Math.min(host.clientWidth, innerWidth - h.left) };
         const spot = placeCard({ room, shot: { left: s.left - h.left, top: s.top - h.top, width: s.width, height: s.height }, card: { width: el.offsetWidth }, space });
         next = `${Math.round(spot.left)},${Math.round(spot.top)},${spot.left < s.left - h.left ? 'left' : 'right'}`;
       }

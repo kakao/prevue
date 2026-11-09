@@ -9,6 +9,9 @@ export type ResizeScene = {
   update(target: SceneTarget, instant?: boolean): void;
   enable(on: boolean): void;
   clearImages(): void;
+  /** 크기 · 기기 메뉴가 열려 있었으면 닫고 true. */
+  closeMenu(): boolean;
+  sizeOf(sel: string): { w: number; h: number } | null;
   sliderOff(on: boolean): void;
   relayout(): void;
   moving(): boolean;

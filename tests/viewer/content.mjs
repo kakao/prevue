@@ -111,6 +111,9 @@ try {
 
   // 작아지기(@Preview → 320×640) — 캐시가 있다.
   await cached(`p.size.preset==='narrow'`);
+  // 크기 · 기기 목록은 조작 독의 메뉴 안에 있다(D-167) — 열고 고른다. 고르면 메뉴는 닫힌다.
+  const openMenu = async () => { await click("#pnSum"); await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible'`); await pause(250); };
+  await openMenu();
   await record();
   await click(`#pnPick [data-sel="narrow"]`);
   await until(`__store.st.focus.size?.preset==='narrow' && ${settled}`);
@@ -124,6 +127,7 @@ try {
 
   // 커지기(320×640 → Fold8 펼침) — 캐시가 있다.
   await cached(`p.size.device==='fold8' && !p.size.folded && !p.size.landscape`);
+  await openMenu();
   await record();
   await click(`#pnPick [data-sel="fold8"]`);
   await until(`__store.st.focus.size?.device==='fold8' && ${settled}`);

@@ -5,9 +5,10 @@ import type { Focus, ViewerState } from '../state';
 import { loadingView, zoomView } from '../workspace/view';
 import { loadingHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
 
-// 한 장 — 기기를 손에 쥔 작업 공간(D-57). 이름 · 출구는 헤더가, 크기 · 기기 · 자세 · 확대는 오른쪽 검사 패널이 갖고(D-99) 무대에는 기기만 둔다.
-// 장면 · 무대 · 패널의 칸은 빌드가 index.html 에 미리 그린 정적 껍데기다(WorkspaceShell). 여기는 그 안팎에서 움직이는 것 —
-// 확대 줄 · 첫 장 대기 · 내비게이션 바 — 만 그린다.
+// 한 장 — 기기를 손에 쥔 작업 공간(D-57). 이름 · 출구는 헤더가, 크기 · 기기 · 자세 · 확대는 무대 아래 가운데의 조작 독이 갖고(D-167)
+// 무대는 창을 다 쓴다.
+// 장면 · 무대 · 조작 독의 칸은 빌드가 index.html 에 미리 그린 정적 껍데기다(WorkspaceShell). 여기는 그 안팎에서 움직이는 것 —
+// 확대 · 첫 장 대기 · 내비게이션 바 — 만 그린다.
 export type WorkspaceActions = {
   exit(): void;
   zoomIn(): void;
@@ -40,7 +41,7 @@ const MINUS = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeW
 const PLUS = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M4 8h8M8 4v8" /></svg>;
 
 /**
- * 확대는 늘 보인다(W4) — 숨은 제스처(핀치 · ⌘ + 휠)를 받치는 눈에 보이는 컨트롤. 배율의 100% 는 1dp = 1 CSS px(실제 크기)다.
+ * 확대는 늘 보인다(W4) — 숨은 제스처(핀치 · ⌘ + 휠)를 받치는 눈에 보이는 컨트롤. 조작 독의 오른쪽 끝이다(D-167). 배율의 100% 는 1dp = 1 CSS px(실제 크기)다.
  * 맞춤이 아니면 `맞춤` 단추가 폭이 자라며 살아나 처음 화면으로 돌린다 — 그래서 hidden 대신 클래스로 접는다. 메뉴는 그 위로 열린다.
  */
 export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElement; actions?: WorkspaceActions }) {
@@ -53,7 +54,6 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
     <button type="button" id="zoomPct" className="z-pct" aria-haspopup="menu" aria-expanded={menu} disabled={disabled}
       title={phrase(real ? 'zoom.tip.real' : 'zoom.tip.fit')} onClick={e => actions.toggleZoomMenu(e.detail === 0)}>{pct}%</button>
     <button type="button" id="zoomInBtn" aria-label={phrase('zoom.in')} title={phrase('zoom.in.tip')} disabled={disabled} onClick={actions.zoomIn}>{PLUS}</button>
-    <span className="z-grow" />
     <button type="button" id="zoomFitBtn" className="z-fit" title={phrase('zoom.fit.tip')} disabled={disabled}
       tabIndex={atFit ? -1 : 0} aria-hidden={atFit} onClick={actions.zoomFit}>{phrase('zoom.fit')}</button>
     <div className={menu ? 'zoom-menu on' : 'zoom-menu'} id="zoomMenu" role="menu">
@@ -143,7 +143,7 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
 }
 
 /**
- * 한 장의 배치 — 무대(장면 + 캔버스)와 검사 패널. 진입 · 복귀의 틀 모프는 session.ts 가 고르고 focus.ts 가 띄운다.
+ * 한 장의 배치 — 무대(장면 + 캔버스)와 그 아래 가운데의 조작 독. 진입 · 복귀의 틀 모프는 session.ts 가 고르고 focus.ts 가 띄운다.
  * 섹션의 hidden 은 같은 커밋의 레이아웃 효과에서 맞춘다 — session.ts 가 무대의 높이를 재는 것이 그 뒤다.
  * 뷰어에서는 껍데기가 이미 index.html 에 있어 움직이는 칸만 포털로 그리고, Storybook 에서는 껍데기째 그린다.
  */
@@ -155,6 +155,6 @@ export function Workspace({ screen, hosts, actions = NO_ACTIONS }: { screen: Vie
   if (hosts) return <><WorkspaceLoading host={hosts.loading} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
     <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} /></section>
-    <aside className="panel" id="panel" aria-label={phrase('panel.label')}><WorkspacePanel zoom={<ZoomControls actions={actions} />} /></aside>
+    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }

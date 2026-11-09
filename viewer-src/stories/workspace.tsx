@@ -19,7 +19,7 @@ export function useShot(url: string | null = pearlCard.imageUrl) {
   }, [url]);
 }
 
-/** 작업 공간의 본문 — 뷰어에서는 한 장에 들어오면 body.ws 가 붙고 패널 폭(--panel-w)이 거기서 정해진다. 패널을 세우는 스토리는 이 안에서 그린다. */
+/** 작업 공간의 본문 — 뷰어에서는 한 장에 들어오면 body.ws 가 붙는다. 조작 독을 세우는 스토리는 이 안에서 그린다. */
 export function WorkspaceBody({ children }: { children: ReactNode }) {
   useLayoutEffect(() => { document.body.classList.add('ws'); return () => document.body.classList.remove('ws'); }, []);
   return <div className="story-panel">{children}</div>;
@@ -35,7 +35,7 @@ export function WithView<T extends object>({ store, value, children }: { store: 
 
 /**
  * 실제 장면 — 번들 밖의 resize-scene.js 를 페이지처럼 띄워 pearl 첫 카드를 원래 크기(@Preview)로 담는다.
- * 장면은 문서에서 패널(#panel · #pnPick · #devCtl)도 찾으므로 Workspace 를 통째로 그린 뒤에 부른다. 크기를 고르면 틀만 움직인다 — 데몬이 없어 새 그림은 오지 않는다.
+ * 장면은 문서에서 조작 독(#panel · #pnPick · #devCtl)도 찾으므로 Workspace 를 통째로 그린 뒤에 부른다. 크기 · 기기 · 자세를 고르면 틀이 옮겨 간다 — 데몬이 없어 새 그림은 오지 않는다.
  */
 export function useLiveScene() {
   useLayoutEffect(() => {
@@ -45,7 +45,8 @@ export function useLiveScene() {
     document.body.classList.add('resizing-ui'); root.parentElement!.classList.add('resize-wrap'); stage.classList.add('resize-hidden');
     // 첫 장을 기다리는 동안처럼(await-live) 장면이 정지 그림을 기기 안에 담아 보인다.
     root.classList.add('await-live');
-    const scene = createResizeScene(root, { request: () => Promise.resolve(true), layout() {} });
+    // 데몬이 없으니 고른 크기 · 기기 · 자세를 그대로 돌려준다 — 틀 · 독의 메뉴 버튼 · 자세 버튼이 뷰어처럼 옮겨 간다(새 그림은 오지 않는다).
+    const scene = createResizeScene(root, { request: sel => { const size = scene.sizeOf(sel); if (size) scene.update({ sel, ...size }); return Promise.resolve(true); }, layout() {} });
     const image = { url: pearlCard.imageUrl!, dpW: pearlCard.widthDp!, dpH: pearlCard.heightDp!, edge: 'var(--surface-container)' };
     scene.setOriginal(image.dpW, image.dpH, image);
     scene.image('original', image);

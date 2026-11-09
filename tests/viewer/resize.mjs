@@ -51,8 +51,14 @@ try {
   const key = async name => {
     for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: name, code: name });
   };
+  // 크기 · 기기 목록은 조작 독의 메뉴 안에 있다(D-167) — 열고 고른다. 고르면 메뉴는 닫힌다.
+  const openMenu = async () => {
+    if (await evaluate(`document.querySelector('#pnSum').getAttribute('aria-expanded')!=='true'`)) await click("#pnSum");
+    await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible' && !document.querySelector('#pnBody').inert`); await pause(250);
+  };
+  const choose = async sel => { await openMenu(); await click(`#pnPick [data-sel="${sel}"]`); };
   const pick = async (sel, expected) => {
-    await click(`#pnPick [data-sel="${sel}"]`);
+    await choose(sel);
     await until(`__store.st.focus.size?.${expected}`);
     await until(`!document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#shot').getAttribute('src').startsWith('/stream') && Number(document.querySelector('#rlW').value)===Math.round(__store.st.focus.size.widthDp) && Number(document.querySelector('#rlH').value)===Math.round(__store.st.focus.size.heightDp)`);
   };
@@ -70,6 +76,14 @@ try {
   await check(`!document.querySelector('#resizeScene').hidden`, "인터랙티브에서 피커 표시");
   await post("/viewer/resize", { size: "original" });
   await until(`!__store.st.focus.size && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#resizeScene').classList.contains('at-rest')`);
+  // 조작 독(D-167) — 헤더는 한 줄이고, 무대 아래 가운데 독에 크기 · 기기 메뉴와 확대가 있다. @Preview 는 가운데 칸이 없다.
+  const dockAt = `(()=>{const p=document.querySelector('#panel'),d=p.getBoundingClientRect();const w=document.documentElement.clientWidth;return Math.abs(d.left+d.width/2-w/2)<=1 && innerHeight-d.bottom>=8 && innerHeight-d.bottom<=24 && d.left>=0 && d.right<=w && d.height<64 && [...p.children].every(c=>{const r=c.getBoundingClientRect();return !r.width||(r.left>=d.left&&r.right<=d.right)})})()`;
+  const dockClear = `(()=>{const d=document.querySelector('#panel').getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return s.bottom+8<=d.top})()`;
+  await check(`${dockAt} && document.querySelector('#panel').contains(document.querySelector('#zoomCtl')) && !document.querySelector('#pnSum').hidden && document.querySelector('#devCtl').hidden && document.querySelector('#pnSl').hidden && ${dockClear}`, "독은 무대 아래 가운데 · 메뉴와 확대만 · 기기를 가리지 않는다");
+  await check(`document.querySelector('#bar').getBoundingClientRect().bottom+40>document.querySelector('#focusView').getBoundingClientRect().top`, "헤더 밑에 줄이 없다(헤더 한 줄)");
+  await check(`document.querySelector('#pnSum .nm').textContent==='@Preview' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#pnBody').inert && getComputedStyle(document.querySelector('#pnBody')).visibility==='hidden'`, "메뉴 버튼은 고른 것의 이름 · 메뉴는 닫혀 있다");
+  await openMenu();
+  await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='true' && document.querySelector('#pnBody').getBoundingClientRect().bottom<=document.querySelector('#pnSum').getBoundingClientRect().top`, "메뉴는 독 위로 열린다");
   await evaluate(`window.__signals={busy:0,liveOff:0};new MutationObserver(()=>{if(document.querySelector('#bar').classList.contains('busy'))__signals.busy++;if(!document.querySelector('#stage').classList.contains('live'))__signals.liveOff++}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','data-state']})`);
   await evaluate(`window.__widths=[];window.__recordWidths=true;function record(){if(!__recordWidths)return;__widths.push(document.querySelector('#stage').offsetWidth);requestAnimationFrame(record)}requestAnimationFrame(record)`);
   await pick("narrow", "widthDp===320");
@@ -78,7 +92,8 @@ try {
   await check(`document.querySelector('#rlW').value==='320' && document.querySelector('#rlH').value==='640'`, "프리셋 치수와 실제 그림 도착");
   await check(`document.querySelector('#zoomPct').textContent===Math.round(document.querySelector('#stage').getBoundingClientRect().width/320*100)+'%'`, "배율 숫자는 그린 크기(1dp당 px)와 같다");
   await check(`__signals.busy===0 && __signals.liveOff===0`, "크기 변경 중 진행 표시와 LIVE 깜박임 없음");
-  await click('#pnPick [data-sel="custom"]');
+  await check(`document.querySelector('#pnSum .nm').textContent==='320×640' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#devCtl').hidden && document.querySelector('#pnSl').hidden`, "고르면 메뉴가 닫히고 버튼 이름이 바뀐다 · 프리셋은 가운데 칸 없음");
+  await choose("custom");
   await until(`__store.st.focus.size?.widthDp===320 && !__store.st.focus.size?.preset && document.activeElement===document.querySelector('#rlW')`);
   await check(`document.querySelector('#pnPick [data-sel="custom"]').getAttribute('aria-checked')==='true' && document.querySelector('#ruler').classList.contains('custom')`, "커스텀 칸은 지금 크기로 커스텀 · 폭 숫자에 커서");
   await key("Escape"); await pause(100);
@@ -94,7 +109,7 @@ try {
   await check(`document.querySelector('#pnPick [aria-checked="true"]')?.dataset.sel==='custom'`, "프리셋에서 숫자를 누르면 바로 커스텀");
   await check(`document.querySelector('#resizeScene').classList.contains('at-rest') && ![...document.querySelectorAll('#resizeScene .ly')].some(e=>/blur\\([1-9]/.test(e.style.filter))`, "같은 크기 커스텀은 전환 · 흐림 없이");
   await evaluate(`document.querySelector('#rlH').value='999'`);
-  await click('#pnPick [data-sel="foldable"]');
+  await choose("foldable");
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`__store.st.focus.size.preset==='foldable' && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`, "고치던 숫자는 버리고 고른 프리셋으로");
   await pick("fold8", "device==='fold8'");
@@ -106,6 +121,7 @@ try {
   await evaluate(`document.querySelector('#rlW').blur()`);
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await check(`document.querySelector('#rlW').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "접기와 치수 갱신");
+  await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0 && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 글자 붙은 자세 버튼 · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
   await click("#dcRot"); await until(`__store.st.focus.size.landscape && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await check(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "접은 기기의 가로 돌리기");
   await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false'`, "힌지 선 전환");
@@ -171,16 +187,29 @@ try {
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers: 1 });
   await until(`!document.querySelector('#pickBox').hidden && __store.st.selection?.line===51`);
   await check(`(()=>{const b=document.querySelector('#pickBox').getBoundingClientRect(),r=document.querySelector('#shot').getBoundingClientRect(),n=__pointNode.bounds,k=r.width/Number(document.querySelector('#shot').dataset.fullW);return Math.abs(b.x-(r.x+n[0]*k))<2 && Math.abs(b.y-(r.y+n[1]*k))<2 && Math.abs(b.width-(n[2]-n[0])*k)<2})()`, "확대한 그림에서 가리킨 박스 좌표 일치");
-  await check(`!document.querySelector('#zoomCtl').classList.contains('at-fit') && (()=>{const z=document.querySelector('#zoomCtl').getBoundingClientRect(),p=document.querySelector('#panel').getBoundingClientRect();return z.left>=p.left && z.right<=p.right && Math.abs(z.bottom-p.bottom)<=16})()`, "확대 줄은 패널 맨 아래 · 확대 중 맞춤 단추");
+  await check(`!document.querySelector('#zoomCtl').classList.contains('at-fit') && document.querySelector('#panel').contains(document.querySelector('#zoomCtl')) && ${dockAt} && document.elementFromPoint(...(r=>[r.x+r.width/2,r.y+r.height/2])(document.querySelector('#zoomInBtn').getBoundingClientRect()))?.closest('#zoomCtl')`, "확대는 독 오른쪽 끝 · 확대한 그림 위에 뜬다 · 확대 중 맞춤 단추");
   await click("#zoomFitBtn"); await pause(300);
-  await check(`document.querySelector('#zoomCtl').classList.contains('at-fit') && document.querySelector('#zoomPct').textContent!==''`, "맞춤 단추로 처음 화면 · 단추는 숨는다");
+  await check(`document.querySelector('#zoomCtl').classList.contains('at-fit') && document.querySelector('#zoomPct').textContent!=='' && document.querySelector('#zoomFitBtn').getBoundingClientRect().width<1`, "맞춤 단추로 처음 화면 · 단추는 접힌다");
+  // 가리킨 결과 카드(D-162)는 그림 오른쪽 위에 먼저 선다 — 낮은 창에서도 아래 가운데 독과 겹치지 않는다.
+  const pointAt = async () => {
+    const at = await evaluate(`(()=>{const n=__pointNode.bounds,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/Number(document.querySelector('#shot').dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})()`);
+    for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers: 1 });
+    await until(`!!document.querySelector('.pc-float') && getComputedStyle(document.querySelector('.pc-float')).visibility!=='hidden'`);
+  };
+  const apart = `(()=>{const c=document.querySelector('.pc-float')?.getBoundingClientRect(),z=document.querySelector('#panel').getBoundingClientRect();return !!c&&c.width>0&&(c.right<=z.left||c.left>=z.right||c.bottom<=z.top||c.top>=z.bottom)})()`;
+  for (const [width, height] of [[1440, 1000], [1000, 640]]) {
+    await send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false }); await pause(400);
+    await pointAt(); await pause(400);
+    await check(`${apart} && ${dockAt}`, `가리킨 결과 카드와 독이 겹치지 않는다 ${width}×${height}`);
+  }
+  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await click("#zoomInBtn"); await pause(300);
   await click("#zoomPct"); await click('#zoomMenu [data-z="fit"]');
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   await pick("narrow", "preset==='narrow'");
   await check(`document.querySelector('#rig').hidden && document.querySelector('#duo').hidden && document.querySelector('#ua').style.transform===''`, "움직임 줄이기에서 공간 모션 없음");
   // 커서는 장면이 멈춘 다음 프레임에 폭 숫자로 온다 — 그 전에 Esc 를 누르면 작업 공간에서 나간다
-  await click('#pnPick [data-sel="custom"]'); await until(`__store.st.focus.size?.kind==='custom' && document.querySelector('#resizeScene').classList.contains('at-rest') && document.activeElement?.id==='rlW'`);
+  await choose("custom"); await until(`__store.st.focus.size?.kind==='custom' && document.querySelector('#resizeScene').classList.contains('at-rest') && document.activeElement?.id==='rlW'`);
   await key("Escape"); await pause(100);
   await evaluate(`window.__widths=[];window.__recordWidths=true;(function rec(){if(!__recordWidths)return;__widths.push(Math.round(document.querySelector('#ua .stage').getBoundingClientRect().width));requestAnimationFrame(rec)})()`);
   const from = await trackAt("w", 320), to = await trackAt("w", 500);
@@ -191,12 +220,25 @@ try {
   await evaluate(`window.__recordWidths=false`);
   await check(`new Set(__widths).size<=2 && document.querySelector('#ua').style.transform===''`, "움직임 줄이기에서 슬라이더 틀은 이동 · 확대 없이 바뀐다");
   await send("Emulation.setDeviceMetricsOverride", { width: 480, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(200);
-  await click('#pnPick [data-sel="fold8"]'); await until(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#stage').classList.contains('resize-hidden')`);
-  await check(`document.querySelector('#pnPick [data-sel="fold8"]').getAttribute('aria-checked')==='true'`, "좁은 창에서도 패널 목록으로 고른다");
+  await choose("fold8"); await until(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
+  await check(`document.querySelector('#pnPick [data-sel="fold8"]').getAttribute('aria-checked')==='true' && ${dockAt} && (r=>r.left>=0&&r.right<=innerWidth)(document.querySelector('#pnBody').getBoundingClientRect())`, "좁은 창(480)에서도 독은 한 줄로 창 안 · 메뉴로 고른다");
+  await send("Emulation.setDeviceMetricsOverride", { width: 800, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
+  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0`, "800 창에서 독은 한 줄 · 자세 글자가 보인다");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await evaluate(`for(const x of ['s26','narrow','ultra','foldable'])document.querySelector('#pnPick [data-sel="'+x+'"]').click()`);
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`);
   await check(`document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`, "연타의 마지막 크기 적용");
+  await openMenu(); await key("Escape"); await pause(250);
+  await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && __store.st.screen==='focus' && document.querySelector('#pnSum .nm').textContent==='673×841'`, "Esc 는 메뉴만 닫고 작업 공간에 남는다");
+  await openMenu(); await click("#wsTitle"); await pause(250);
+  await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false'`, "메뉴 밖을 누르면 닫힌다");
+  await pick("ipduo", "device==='duo'");
+  // 가장 넓은 독(펼친 Duo — 이름이 긴 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 800 아래 자세는 아이콘만, 560 아래 확대는 배율만
+  for (const width of [1000, 760, 700, 480, 360]) {
+    await send("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
+    await check(dockAt, `펼친 Duo 의 독이 ${width} 창에서 한 줄로 창 안`);
+  }
+  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await check(`__errors.length===0`, "브라우저 오류 0");
   const screenshot = process.env.RESIZE_SCREENSHOT;
   if (screenshot) { const r = await send("Page.captureScreenshot", { format: "png" }); await writeFile(screenshot, Buffer.from(r.data, "base64")); }
