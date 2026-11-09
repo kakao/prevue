@@ -153,7 +153,7 @@ gh pr checks <N> --watch --fail-fast
 - head가 같고 `build`의 `conclusion`이 `SUCCESS`면 초록이다.
 - head가 같고 `build`의 `conclusion`이 `SUCCESS`가 아니면(`FAILURE` · `CANCELLED` · `SKIPPED` · `TIMED_OUT` 등) 실패다 — `gh pr checks`가 종료 0으로 끝났어도 그렇다.
 
-**실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불려 고친 커밋이 있으면 4단계 수정 확인(`medium`)을 거치고, 이 단계의 로컬 검증부터 다시 돌아 민 뒤 CI를 기다린다.
+**실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불려 고친 커밋이 있으면 4단계 리뷰어를 수정 확인으로 띄운다 — 분류기에 `--range <CI가 실패한 head>..HEAD --recheck`(곧 `medium`)를 주고, 위임 프롬프트의 직전 결과 자리에는 CI 실패 요지를 넘긴다. 그다음 이 단계의 로컬 검증부터 다시 돌아 민 뒤 CI를 기다린다.
 
 초록이면 PR 본문의 성공 기준 결과 · 검증 기록(CI 실행 링크 포함)을 채우고 머지한다.
 
