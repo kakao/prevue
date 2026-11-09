@@ -13,6 +13,7 @@ import prevue.application.domain.model.ViewNode
 import prevue.application.domain.rule.NodeTarget
 import prevue.infrastructure.json.Json
 import prevue.daemon.fake.realDispatchers
+import prevue.application.port.PrevueDispatchers
 
 /**
  * 통합 테스트의 대상 `fixtures/pearl`. 덤프는 이 체크아웃의 `bin/prevue warmup`이 뜬다 — 덤프 자리가 체크아웃 경로로 정해져 워크트리마다
@@ -57,10 +58,10 @@ object PearlFixture {
     fun layoutlib(): File? = env("PREVUE_LAYOUTLIB")?.takeIf { File(it, "data").isDirectory }
 
     /** 데몬과 같은 상주 컴파일러 — 저장을 진짜로 컴파일한다. [overlay]는 렌더 클래스패스 앞에 둔 그 자리다. */
-    internal fun hotCompiler(home: ClasspathSpec, overlay: File): HotCompiler {
+    internal fun hotCompiler(home: ClasspathSpec, overlay: File, dispatchers: PrevueDispatchers = realDispatchers): HotCompiler {
         val jars = CompilerJars.find(env("PREVUE_COMPILER")!!)
         return HotCompiler({ home }, jars.jars, env("PREVUE_BRIDGE")!!, jars.composePlugin,
-            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"), realDispatchers)
+            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"), dispatchers)
     }
 
     internal fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(
