@@ -39,6 +39,7 @@ installShortcuts(shortcuts, actions, {
   chooserOpen: () => !!document.getElementById('chooser')?.classList.contains('on'),
   cancelChoice,
   closeZoomMenu: workspace.closeZoomMenu,
+  closeDeviceMenu: workspace.closeDeviceMenu,
   closeDirPop,
   closeCard,
 });

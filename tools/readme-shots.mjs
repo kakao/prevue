@@ -396,27 +396,27 @@ function gifSink() {
 
 /**
  * 작업 공간에 들어가 손이 하는 일을 GIF 로 — 1x, 세로로 긴 프리뷰에 맞춘 좁은 창(README 세 칸 폭).
- * 오른쪽 패널까지 넣으면 좁은 창에서 그림이 패널에 밀려 작아진다 — 패널 폭만큼 넓게 띄워 그리고 패널은 잘라 낸다.
+ * 손이 하는 일이 요점이라 무대 아래 조작 독(D-167)은 숨긴다 — 좁은 창에서 독이 그림 아래를 덮는다.
  */
 async function interactiveGif(c, name, repo, file, fn, act) {
   const url = await viewer(repo, [file]);
   const card = (prevue(repo, "board").json?.cards || []).find(x => x.name === fn);
   if (!card) throw new Error(`${file}: ${fn} 카드가 없다`);
-  const w = +(opt.iw || 480), h = +(opt.ih || 860), panel = 264;
-  await c.send("Emulation.setDeviceMetricsOverride", { width: w + panel, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+  const w = +(opt.iw || 480), h = +(opt.ih || 860);
+  await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
   await c.send("Page.navigate", { url });
   await c.until(BOARD);
+  await c.evaluate(`(() => { const st = document.createElement("style"); st.textContent = "#panel{display:none!important}"; document.head.append(st); return true; })()`);
   await enter(c, card.index);
   await c.evaluate(POINTER);
-  const cut = Math.floor((await c.rect("#panel"))?.x || w);   // 패널이 아직 숨어 있으면 x 가 0 이다
   const title = await c.evaluate("document.title");
   const frames = await record(c, async () => act(await hand(c)));
   await post(url, "/viewer/exit");
-  await gif(c, name, title, url, frames, cut, h, w + panel);
+  await gif(c, name, title, url, frames, w, h, w);
 }
 
 /**
- * 패널에서 크기 · 기기를 바꾸는 GIF — 패널이 요점이라 자르지 않는다. 틀이 새 크기로 옮겨 가는 모프를 보이려고 이 장면만 움직임 줄이기를 끈다.
+ * 조작 독에서 크기 · 기기를 바꾸는 GIF — 독이 요점이라 자르지 않는다. 틀이 새 크기로 옮겨 가는 모프를 보이려고 이 장면만 움직임 줄이기를 끈다.
  */
 async function devicesGif(c, name, repo, file, fn, act) {
   const url = await viewer(repo, [file]);
@@ -497,7 +497,7 @@ const SCENES = {
       await sleep(500);
       await c.until(BOARD);
       await c.evaluate(`(() => { const st = document.createElement("style");
-        st.textContent = "body.ws{--panel-w:0px!important} #panel,#ruler{display:none!important}"; document.head.append(st); return true; })()`);
+        st.textContent = "#panel,#ruler{display:none!important}"; document.head.append(st); return true; })()`);
       // 데운다 — 처음 들어가면 interactive 가 첫 그림을 그리느라 헤더에 Rendering… 이 뜬다. 한 번 들어갔다 나와 두고 찍는다
       await enter(c, card.index);
       await post(url, "/viewer/exit");
@@ -709,10 +709,11 @@ const SCENES = {
       await h.tap(0.88, +(opt.sweet || 0.81), 1600);                         // 100% — 짙어진다
     });
   },
-  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 패널에서 기기 · 접기만 바꿔 다시 그린다. 고를 때마다 그림이 서기를 기다린다
+  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 조작 독에서 기기 · 접기만 바꿔 다시 그린다. 고를 때마다 그림이 서기를 기다린다.
+  // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다
   async devices(c) {
     await devicesGif(c, "devices", opt["pearl-a"], PEARL.showcase, "DevicesPreview", async h => {
-      const pick = async (sel, after = 2000) => { await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
+      const pick = async (sel, after = 2000) => { await h.tapEl("#pnSum", 450); await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
       await pick("s26");                                                     // 폰 — 컵 아래 고르기
       const fold = async (after = 2400) => { await h.tapEl("#dcFold", 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
       await pick("ipduo", 2400);                                             // 펼친 iPhone Duo — 왼쪽 컵 · 오른쪽 패널
