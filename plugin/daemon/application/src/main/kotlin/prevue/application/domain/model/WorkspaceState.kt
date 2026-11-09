@@ -36,7 +36,7 @@ data class WorkspaceState(
 
     fun shownSystemUi(): SystemUiState? {
         val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
-        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown)
+        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, sized(spec).systemBars as? SystemBars.Shown)
     }
 
     fun shownTarget(): Pair<PreviewSpec, ScreenSize>? {

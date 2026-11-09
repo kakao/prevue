@@ -37,6 +37,8 @@ import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.SystemBars
+import prevue.application.domain.model.systemBars
 import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.port.Clock
@@ -156,6 +158,20 @@ class RenderIntegrationTest {
         val strip = withBars.height / 20
         val differs = (0 until strip).sumOf { y -> (0 until withBars.width).count { x -> withBars.getRGB(x, y) != without.getRGB(x, y) } }
         assertTrue(differs > withBars.width, "상태바 줄이 바 없는 그림과 같다 — 렌더러가 데코를 다시 껐다(${differs}px)")
+    }
+
+    @Test @Order(34) fun `기기를 고르면 바 뷰는 숨고 statusBarsPadding 머리가 그 기기의 출처 값만큼 밀린다`() = runBlocking {
+        val phone = ws.now.board!!.cards.first { it.spec.previewId == "PearlPhonePreview" }.spec
+        for (device in listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17))) {
+            val spec = device.applyTo(phone).copy(previewId = "PearlPhonePreview@${device.key}")
+            val insets = (spec.systemBars as SystemBars.Shown).insets!!
+            val out = engine.written(engine.show(spec))
+            assertTrue(out.ok, out.message?.text)
+            val k = device.model.dpi / 160.0
+            val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == HEADER_ROW_LINE }
+            val expected = Math.round(insets.statusDp * k) + Math.round(HEADER_PADDING_DP * k)
+            assertTrue(kotlin.math.abs(header.top - expected) <= 1, "${device.key} 머리 top ${header.top}px — 기대 ${expected}px")
+        }
     }
 
     @AfterAll fun down() {
@@ -970,5 +986,7 @@ class RenderIntegrationTest {
 
     companion object {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
+        private const val HEADER_ROW_LINE = 187
+        private const val HEADER_PADDING_DP = 20
     }
 }

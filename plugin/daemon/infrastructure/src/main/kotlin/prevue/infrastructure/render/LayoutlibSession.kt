@@ -26,6 +26,7 @@ internal class LayoutlibSession(
     private val timeoutSec: () -> Long,
 ) {
     val clock = SessionClock()
+    var barsPlaced = false
     private var lastHash = 0L
     private var anchored = false
     private var pressUnseen = false

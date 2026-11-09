@@ -40,7 +40,12 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     )
 }
 
-internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf("choice" to choice.key, "annotated" to annotated, "shown" to shown)
+internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf(
+    "choice" to choice.key, "annotated" to annotated, "shown" to shown,
+    "bars" to bars?.let { b ->
+        mapOf("look" to b.look.key, "insets" to b.insets?.let { mapOf("statusDp" to it.statusDp, "navDp" to it.navDp, "source" to it.source.key, "sourceUrl" to it.source.url) })
+    },
+)
 
 internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
 

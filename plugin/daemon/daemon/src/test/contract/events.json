@@ -83,6 +83,7 @@
           "streamUrl": "string",
           "systemUi": {
             "annotated": "string",
+            "bars": "string",
             "choice": "string",
             "shown": "string"
           },
@@ -308,6 +309,7 @@
           "streamUrl": "null|string",
           "systemUi": {
             "annotated": "boolean",
+            "bars": "null",
             "choice": "string",
             "shown": "boolean"
           },

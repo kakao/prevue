@@ -32,6 +32,7 @@ import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.SystemBars
 import prevue.application.domain.model.SystemUiState
 import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.ExternalResult
@@ -693,7 +694,7 @@ class UseCaseTest {
         val ws = uc.workspace
         runBlocking { uc.boards.focus(0, on = true, by = "test", systemUi = SystemUi.ON) }
         assertEquals("true", fx.renderer.opened.last().params["showSystemUi"])
-        assertEquals(SystemUiState(SystemUi.ON, annotated = false), uc.status.read().systemUi)
+        assertEquals(SystemUiState(SystemUi.ON, annotated = false, SystemBars.COMMON), uc.status.read().systemUi)
         assertTrue(uc.status.read().systemUi!!.shown)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["showSystemUi"])
         runBlocking { uc.boards.focus(0, on = false, by = "test") }

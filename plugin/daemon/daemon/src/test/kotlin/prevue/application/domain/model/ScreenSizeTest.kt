@@ -24,7 +24,7 @@ class ScreenSizeTest {
 
     @Test fun `기기는 px 와 밀도에 화면 dp 를 반올림해 함께 넣는다 — 가로는 폭과 높이를 바꾼다`() {
         val open = ScreenSize.parse(null, "fold8", folded = false, landscape = false)!!.applyTo(spec("widthDp" to "411", "heightDp" to "891"))
-        assertEquals(mapOf("device" to "spec:width=2448px,height=1848px,dpi=420,orientation=landscape", "widthDp" to "933", "heightDp" to "704"), open.params)
+        assertEquals(mapOf("device" to "spec:width=2448px,height=1848px,dpi=420,orientation=landscape", "prevueDevice" to "fold8", "widthDp" to "933", "heightDp" to "704"), open.params)
         val turned = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8_ULTRA, folded = true, landscape = true)
         assertEquals("spec:width=2520px,height=1080px,dpi=480,orientation=landscape", turned.applyTo(spec()).params["device"])
         assertEquals(840.0, turned.widthDp)
@@ -33,8 +33,8 @@ class ScreenSizeTest {
 
     @Test fun `내용 크기 컴포넌트가 기기 화면을 채우게 시스템 UI 가 아니면 dp 를 함께 넣고 시스템 UI 면 spec 만 넣는다`() {
         val s26 = ScreenSize.Device(DeviceModel.GALAXY_S26)
-        assertEquals(mapOf("device" to "spec:width=1080px,height=2340px,dpi=480", "widthDp" to "360", "heightDp" to "780"), s26.applyTo(spec("widthDp" to "200")).params)
-        assertEquals(mapOf("showSystemUi" to "true", "device" to "spec:width=1080px,height=2340px,dpi=480"), s26.applyTo(spec("showSystemUi" to "true")).params)
+        assertEquals(mapOf("device" to "spec:width=1080px,height=2340px,dpi=480", "prevueDevice" to "s26", "widthDp" to "360", "heightDp" to "780"), s26.applyTo(spec("widthDp" to "200")).params)
+        assertEquals(mapOf("showSystemUi" to "true", "device" to "spec:width=1080px,height=2340px,dpi=480", "prevueDevice" to "s26"), s26.applyTo(spec("showSystemUi" to "true")).params)
         assertEquals(s26.applyTo(spec()), s26.applyTo(s26.applyTo(spec())))
     }
 
