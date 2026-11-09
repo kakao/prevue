@@ -225,9 +225,9 @@ const visibleRect = (id: string) => { const el = document.getElementById(id); re
  * 그림은 보드 스크롤 · 창 크기 · 한 장의 확대 · 이동으로 움직이므로 떠 있는 동안 프레임마다 그림을 재어 따라간다(후보 고르기 팝오버와 같다) — 바뀔 때만 쓴다.
  * 높이는 카드 몸통(.pc-body)을 재어 --h 로 준다. 몸통 안에서 Preview 목록이 펼쳐지는 중이면 끝난 뒤 한 번만 잰다 — 프레임마다 재면 곡선이 매번 다시 시작해 내용을 쫓아간다.
  * 처음 뜰 때는 자리로 바로 서고(data-placed 전에는 높이 전환 없음), 그다음 프레임에 흐려짐 · 확대로 나타난다. 그림 쪽 위 모서리(data-side)에서 커진다.
- * 걷힐 때(leaving)는 누름을 받지 않고 흐려지며, 다 흐려지면 onLeft 를 부른다. 숨은 화면이라 전환이 돌지 않으면 바로 부른다 — transitionend 만 기다리면 카드가 남는다.
+ * 걷힐 때(leaving)는 누름을 받지 않고 흐려지며, 다 흐려지면 onLeft 를 부른다. 숨은 화면이라 전환이 돌지 않으면 바로 부른다 — transitionend 만 기다리면 카드가 남는다. 밖에서는 PointCardLayer 로만 띄운다.
  */
-export function PointCardFloat({ host, shot, leaving = false, onLeft, children }: { host: HTMLElement; shot: () => DOMRect | Rect | null; leaving?: boolean; onLeft?: () => void; children: ReactNode }) {
+function PointCardFloat({ host, shot, leaving = false, onLeft, children }: { host: HTMLElement; shot: () => DOMRect | Rect | null; leaving?: boolean; onLeft?: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const left = useRef(onLeft);
   left.current = onLeft;
@@ -275,17 +275,11 @@ export function PointCardFloat({ host, shot, leaving = false, onLeft, children }
   useEffect(() => {
     const el = ref.current;
     if (!leaving || !el) return;
-    let done = false;
-    // 이벤트는 다음 프레임에 몰아 오므로 되살렸다 곧 다시 걷으면 앞 전환의 취소가 늦게 온다 — 이벤트만 믿지 않고 흐려짐이 아직 도는지 본다.
-    const settle = () => {
-      if (done || el.getAnimations().some(a => a instanceof CSSTransition && a.transitionProperty === 'opacity')) return;
-      done = true; left.current?.();
-    };
-    const ended = (e: TransitionEvent) => { if (e.target === el && e.propertyName === 'opacity') settle(); };
-    el.addEventListener('transitionend', ended);
-    el.addEventListener('transitioncancel', ended);
-    const idle = requestAnimationFrame(settle);
-    return () => { done = true; cancelAnimationFrame(idle); el.removeEventListener('transitionend', ended); el.removeEventListener('transitioncancel', ended); };
+    let on = true;
+    // 지금 도는 흐려짐 하나만 기다린다 — 취소되면 finished 가 거절되어 끝난 것과 같다. 숨은 화면이면 전환이 없어 바로 뺀다.
+    const fade = el.getAnimations().find(a => a instanceof CSSTransition && a.transitionProperty === 'opacity');
+    (fade?.finished ?? Promise.resolve()).catch(() => {}).then(() => { if (on) left.current?.(); });
+    return () => { on = false; };
   }, [leaving]);
   const style: CSSProperties & { '--h'?: string } = { '--h': height ? `${height}px` : undefined };
   return <div ref={ref} className="pc-float" style={style} data-placed={placed || undefined} data-leaving={leaving || undefined} inert={leaving} aria-hidden={leaving || undefined}>{children}</div>;

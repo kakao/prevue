@@ -3474,15 +3474,11 @@ function Gi({ host: e, shot: t, leaving: n = !1, onLeft: r, children: i }) {
 	}, [e, t]), (0, I.useEffect)(() => {
 		let e = a.current;
 		if (!n || !e) return;
-		let t = !1, r = () => {
-			t || e.getAnimations().some((e) => e instanceof CSSTransition && e.transitionProperty === "opacity") || (t = !0, o.current?.());
-		}, i = (t) => {
-			t.target === e && t.propertyName === "opacity" && r();
-		};
-		e.addEventListener("transitionend", i), e.addEventListener("transitioncancel", i);
-		let s = requestAnimationFrame(r);
-		return () => {
-			t = !0, cancelAnimationFrame(s), e.removeEventListener("transitionend", i), e.removeEventListener("transitioncancel", i);
+		let t = !0;
+		return (e.getAnimations().find((e) => e instanceof CSSTransition && e.transitionProperty === "opacity")?.finished ?? Promise.resolve()).catch(() => {}).then(() => {
+			t && o.current?.();
+		}), () => {
+			t = !1;
 		};
 	}, [n]);
 	let d = { "--h": s ? `${s}px` : void 0 };
