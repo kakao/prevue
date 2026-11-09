@@ -43,6 +43,13 @@ if (gradle.parent != null) {
                 (getProperty("ignoreFailures") as Property<Boolean>).set(true)
                 (getProperty("config") as ConfigurableFileCollection).setFrom(rootDir.resolve("../../tools/lint/detekt.yml"))
             }
+            // 층 규칙의 심은 위반(lint.py 가 -Pprevue.layerSeeds 로 넘긴다)을 :application 의 detektMain 에 함께 싣는다 — 같은 실행 ·
+            // 같은 설정 · 같은 판으로 돌아야 판을 올렸을 때 말없이 죽은 갈래가 드러난다. 경로 한정은 절대 경로라 저장소 밖 자리에서도 같은 뜻이다.
+            // 이 모듈 이름이 바뀌어 싣지 못하면 심은 위반이 모두 빠져 lint.py 가 멈춘다
+            val seeds = providers.gradleProperty("prevue.layerSeeds").orNull
+            if (seeds != null && path == ":application") {
+                tasks.named("detektMain") { (this as SourceTask).source(seeds) }
+            }
         } }
     }
 }
