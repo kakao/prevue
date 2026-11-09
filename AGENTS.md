@@ -33,14 +33,14 @@
 
 ## 브랜치와 워크트리
 
-- **`main`은 배포본, `develop`은 통합 브랜치다.** 둘 다 PR로만 움직인다 — develop은 작업 PR과 로컬 검증(`implement` 5단계), main은 릴리즈 PR과 CI(빌드 검증). 빌드 검증은 develop PR에도 돌지만 그곳의 머지 관문은 로컬 검증이다 — 외부 기여 PR을 받는 그물이다. **직접 푸시하지 않는다** — 둘 다 ruleset(PR 필수 · 승인 0개 · 삭제 · 강제 푸시 금지)이 걸려 있지만 저장소 admin은 우회하므로 에이전트의 직접 푸시는 서버가 막아 주지 않는다. main에 미는 순간 배포된다.
+- **`main`은 배포본, `develop`은 통합 브랜치다.** 둘 다 PR로만 움직인다 — develop은 작업 PR과 로컬 검증 · CI(빌드 검증)(`implement` 5단계), main은 릴리즈 PR과 CI(빌드 검증). develop에는 필수 체크가 없어 CI를 기다리는 것은 `implement`가 지킨다 — 외부 기여 PR은 로컬 검증 없이 CI만 거친다. **직접 푸시하지 않는다** — 둘 다 ruleset(PR 필수 · 승인 0개 · 삭제 · 강제 푸시 금지)이 걸려 있지만 저장소 admin은 우회하므로 에이전트의 직접 푸시는 서버가 막아 주지 않는다. main에 미는 순간 배포된다.
 - **작업 하나 = 브랜치 하나 = 워크트리 하나**(브랜치는 `worktree-<작업명>`). Claude Code와 Codex 모두 저장소 루트의 `.worktrees/<작업명>`에 워크트리를 둔다. 베이스 체크아웃은 `develop`에 두고 거기서 코드를 고치지 않는다. **워크트리를 만들고 지우는 것은 작업을 넘기는 쪽(사람이나 오케스트레이터)이다** — 방법은 개인 문서가 갖는다. 그 워크트리 안의 절차(계획 → 개발 → 리뷰 → PR → 머지 → 볼트 캡처 → 치우기)는 **`implement` 스킬**(`dev-skills-src/implement/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 - **클론 직후 한 번 `git remote set-head origin develop`.** 워크트리는 로컬 `origin/HEAD`에서 따는데 GitHub 기본 브랜치는 `main`이라(마켓플레이스가 거기서 읽힌다) 그대로 두면 워크트리가 main에서 시작한다. `git remote set-head -a`를 치면 main으로 돌아간다.
 - **워크트리에서 프리뷰를 볼 때는 그 워크트리를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다.** CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다.
 - **작은 수정은 PR 없이 develop에 바로 넣는다** — 동작이 안 바뀌는 것(문서 · 주석 · 오타)과 릴리즈의 버전 커밋. develop 위로 리베이스해 `git push origin HEAD:develop`(fast-forward만). `plugin/` · `skills-src/` · `dev-skills-src/` · `tools/` · 워크플로 · 빌드 파일을 건드리면 PR로 간다.
 - **워크트리에서 `gh pr merge` · `gh pr close`에 `--delete-branch`를 붙이지 않는다** — 로컬 브랜치를 지우고 워크트리를 `main`으로 옮긴다(그 위에서 리베이스하면 로컬 main이 develop이 된다). 원격 브랜치는 머지한 뒤 따로 지운다.
 - **PR은 `gh pr create --base develop`.** 기본 브랜치가 `main`이라 base를 빠뜨리면 main으로 간다.
-- **develop 머지는 에이전트가 한다.** PR 본문의 성공 기준·검증 기록을 채우고 로컬 검증이 통과했으면 squash로 머지한다.
+- **develop 머지는 에이전트가 한다.** PR 본문의 성공 기준·검증 기록을 채우고 로컬 검증과 CI(빌드 검증)가 통과했으면 squash로 머지한다(`implement` 5단계).
 - **머지한 뒤 그 작업의 것을 치운다** — 데몬 · 원격 작업 브랜치는 워크트리 안의 세션이, 워크트리 · 로컬 브랜치는 만든 쪽이. 다른 세션의 워크트리는 머지됐어도 건드리지 않는다. **저장소의 "머지 후 head 브랜치 자동 삭제"는 켜지 않는다** — 릴리즈 PR의 head가 `develop`이라 켜 두면 릴리즈 머지 때 `develop`이 지워진다(0.9.0에서 실제로 지워져 되살렸다). `develop` · `main`은 지우지 않는다. 쌓인 변화가 릴리즈할 만하면 사용자에게 **권하기만** 한다.
 
 ## 릴리즈 — 사용자가 지시할 때만

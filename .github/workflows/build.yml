@@ -3,8 +3,8 @@
 name: 빌드 검증
 
 on:
-  # 릴리즈 PR(→ main)과 작업 PR(→ develop)에서 돈다. 작업 PR 의 머지 관문은 로컬 검증(implement 스킬)이고,
-  # 여기는 그 검증을 거치지 않는 외부 기여 PR 을 받는 그물이다.
+  # 릴리즈 PR(→ main)과 작업 PR(→ develop)에서 돈다. 작업 PR 은 로컬 검증 뒤 이 결과까지 기다려 머지하고(implement 스킬),
+  # 로컬 검증을 거치지 않는 외부 기여 PR 에는 이것이 유일한 검증이다. develop 에는 필수 체크로 걸지 않는다.
   # push 는 걸지 않는다 — 머지할 때마다 같은 트리를 또 빌드한다(릴리즈 PR 하나에 빌드 셋이 돌았다).
   pull_request:
     branches: [main, develop]
