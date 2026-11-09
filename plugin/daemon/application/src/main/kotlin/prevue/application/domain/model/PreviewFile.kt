@@ -7,4 +7,6 @@ data class PreviewFile(val file: File, val module: String, val mtimeMs: Long, va
 
 data class ComposableDefinition(val file: File, val module: String)
 
+data class PreviewIndex(val files: List<PreviewFile>, val composables: Map<String, List<ComposableDefinition>>)
+
 data class SourceOutline(val composables: List<String>, val calls: Map<String, List<String>>)

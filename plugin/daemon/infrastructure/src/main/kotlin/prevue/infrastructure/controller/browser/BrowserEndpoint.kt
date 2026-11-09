@@ -112,7 +112,7 @@ public class BrowserEndpoint @Inject internal constructor(
                 b.string("fileName") ?: error("fileName이 필요하다"), (b["line"] as? Number)?.toInt() ?: error("line이 필요하다"), b.toPointed(),
             ).toJson())
             "choose" -> ex.json(200, pointing.choose(b.string("path") ?: error("path가 필요하다")).toJson())
-            "open" -> ex.json(200, tabs.open(b.string("file") ?: error("file(풀패스)이 필요하다"), b.string("fn")).toJson())
+            "open" -> ex.json(200, tabs.open(b.string("file") ?: error("file(풀패스)이 필요하다"), b.string("fn")?.takeIf { it.isNotEmpty() }).toJson())
             "reveal" -> revealRepo(ex)
             "catchup" -> ex.json(200, mapOf("ok" to true, "treeUrl" to pointing.catchUp()))
             else -> ex.json(404, mapOf("ok" to false, "error" to "no intent $intent"))

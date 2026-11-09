@@ -10,25 +10,44 @@ internal object ComposableCalls {
             """\bfun\s+(?:<[^>]*>\s*)?(?:[\w.]+\.)?([A-Z]\w*)\s*\(""",
     )
     private val callRe = Regex("""(?<![\w.@:])([A-Z]\w*)\s*(?:<[^<>]*>\s*)?[({]""")
+    private val funRe = Regex("""\bfun\s+(?:<[^>]*>\s*)?(\w+)\s*\(""")
+    private val declaredRe = Regex("""\bfun\s+(?:<[^>]*>\s*)?$""")
     private val bodyStart: Pattern = Pattern.compile("""\s*(?::\s*[\w.<>?, ]+?\s*)?([{=])""")
 
     fun outline(text: String, functions: Collection<String>): SourceOutline {
         val code = blank(text)
-        val defined = definitionRe.findAll(code).map { it.groupValues[1] }.distinct().toList()
-        val calls = functions.associateWith { fn ->
-            bodies(code, fn).flatMap { b -> callRe.findAll(b).map { it.groupValues[1] } }.distinct().toList()
-        }
+        val depth = braceDepths(code)
+        val defined = definitionRe.findAll(code).filter { depth[it.range.first] == 0 }.map { it.groupValues[1] }.distinct().toList()
+        val wanted = functions.toSet()
+        val bodies = funRe.findAll(code).filter { depth[it.range.first] == 0 && it.groupValues[1] in wanted }
+            .mapNotNull { m -> body(code, m)?.let { m.groupValues[1] to it } }
+            .groupBy({ it.first }, { it.second })
+        val calls = functions.associateWith { fn -> bodies[fn].orEmpty().flatMap(::callsIn).distinct() }
         return SourceOutline(defined, calls)
     }
 
-    private fun bodies(code: String, fn: String): Sequence<String> =
-        Regex("""\bfun\s+(?:<[^>]*>\s*)?${Regex.escape(fn)}\s*\(""").findAll(code).mapNotNull { m ->
-            val close = closing(code, m.range.last, '(', ')') ?: return@mapNotNull null
-            val start = bodyStart.matcher(code).region(close + 1, code.length)
-            if (!start.lookingAt()) return@mapNotNull null
-            val at = start.start(1)
-            if (code[at] == '{') closing(code, at, '{', '}')?.let { code.substring(at + 1, it) } else expression(code, at + 1)
+    private fun callsIn(body: String): List<String> =
+        callRe.findAll(body).filterNot { declaredRe.containsMatchIn(body.substring(maxOf(0, it.range.first - 64), it.range.first)) }
+            .map { it.groupValues[1] }.toList()
+
+    private fun braceDepths(code: String): IntArray {
+        val out = IntArray(code.length + 1)
+        var d = 0
+        for (i in code.indices) {
+            out[i] = d
+            if (code[i] == '{') d++ else if (code[i] == '}') d = maxOf(0, d - 1)
         }
+        out[code.length] = d
+        return out
+    }
+
+    private fun body(code: String, m: MatchResult): String? {
+        val close = closing(code, m.range.last, '(', ')') ?: return null
+        val start = bodyStart.matcher(code).region(close + 1, code.length)
+        if (!start.lookingAt()) return null
+        val at = start.start(1)
+        return if (code[at] == '{') closing(code, at, '{', '}')?.let { code.substring(at + 1, it) } else expression(code, at + 1)
+    }
 
     private fun closing(s: String, open: Int, o: Char, c: Char): Int? {
         var depth = 0
@@ -96,12 +115,27 @@ internal object ComposableCalls {
         val q = s[from]
         var i = from + 1
         while (i < s.length) {
-            when (s[i]) {
-                '\\' -> i += 2
-                q -> return i + 1
-                '\n' -> return i
+            when {
+                s[i] == '\\' -> i += 2
+                s[i] == q -> return i + 1
+                s[i] == '\n' -> return i
+                q == '"' && s.startsWith("\${", i) -> i = templateEnd(s, i + 2)
                 else -> i++
             }
+        }
+        return s.length
+    }
+
+    private fun templateEnd(s: String, from: Int): Int {
+        var depth = 0
+        var i = from
+        while (i < s.length) {
+            when (s[i]) {
+                '"', '\'' -> { i = quotedEnd(s, i); continue }
+                '{' -> depth++
+                '}' -> if (depth-- == 0) return i + 1
+            }
+            i++
         }
         return s.length
     }

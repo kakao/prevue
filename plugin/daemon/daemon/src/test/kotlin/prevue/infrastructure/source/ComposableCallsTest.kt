@@ -46,6 +46,29 @@ class ComposableCallsTest {
         assertEquals(listOf("Label", "Real"), calls(src, "P")["P"])
     }
 
+    @Test fun `템플릿 안 문자열의 이름도 호출이 아니고 괄호 수를 흐트러뜨리지 않는다`() {
+        val src = """
+            @Preview @Composable fun P() {
+                Label("${'$'}{tr("Card(s) {")} and ${'$'}{m["}"]}")
+                Real()
+            }
+            @Preview @Composable fun Q() { Other() }
+        """.trimIndent()
+        assertEquals(mapOf("P" to listOf("Label", "Real"), "Q" to listOf("Other")), calls(src, "P", "Q"))
+    }
+
+    @Test fun `본문 안 지역 함수는 정의도 호출도 아니다 — 부른 자리만 호출이다`() {
+        val src = """
+            @Preview @Composable fun P() {
+                @Composable fun Local() { Inner() }
+                Local()
+            }
+            object Holder { @Composable fun Member() {} }
+        """.trimIndent()
+        assertEquals(listOf("P"), defined(src))
+        assertEquals(listOf("Inner", "Local"), calls(src, "P")["P"])
+    }
+
     @Test fun `식 본문 — 이어지는 줄은 따라가고 다음 선언에서 멈춘다`() {
         val src = """
             @Preview @Composable fun P() = AppTheme {
