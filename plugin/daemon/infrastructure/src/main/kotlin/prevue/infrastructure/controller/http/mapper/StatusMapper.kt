@@ -33,13 +33,13 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     ScreenSize.Original -> null
     is ScreenSize.Dp -> mapOf("kind" to if (preset != null) "preset" else "custom", "preset" to preset, "widthDp" to widthDp, "heightDp" to heightDp)
     is ScreenSize.Device -> mapOf(
-        "kind" to "device", "device" to model.id, "name" to model.label, "folded" to folded, "half" to half, "landscape" to landscape,
+        "kind" to "device", "device" to model.id, "name" to model.label, "folded" to folded, "landscape" to landscape,
         "widthDp" to widthDp, "heightDp" to heightDp, "hingeDp" to hingeDp, "dpi" to model.dpi,
     )
 }
 
 internal fun Map<String, Any?>.toScreenSize(): ScreenSize? =
-    ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true, this["half"] == true)
+    ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true)
 
 internal fun LastResult.toJson(): Map<String, Any?> = when (this) {
     is ShowResult -> toJson()

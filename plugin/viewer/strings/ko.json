@@ -103,8 +103,6 @@
   "point.sync.failed": "지금 화면을 맞추지 못했어요: {why}",
   "point.unindexed": "{file}:{line} — 색인에 없는 파일이라 풀패스를 못 붙였어요",
   "posture.fold": "접기",
-  "posture.half": "반 접기",
-  "posture.half.hint": "반쪽 크기로 그린 결과예요. 렌더러에 접힘(FoldingFeature)이 없어요.",
   "posture.hinge": "힌지 선",
   "posture.hinge.hide": "힌지 선 숨기기",
   "posture.hinge.show": "힌지 선 보이기",
