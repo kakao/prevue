@@ -93,7 +93,7 @@ class FrameEncoderTest {
         repeat(3) { enc.submit(img(30, 60, 0xff445566.toInt()), png = true, width = null) }
         runCurrent()
         assertEquals(listOf(3 to "prevue-encode"), spy.lanes())
-        assertEquals(3, done.size, "일꾼 셋이 셋을 함께 그리지 않았다")
+        assertEquals(3, done.size, "일꾼 수만큼 맡기지 않고 한 장을 줄에 남겼다")
         assertTrue(spy.view("prevue-encode").dispatched > 0, "인코딩이 청한 뷰에서 돌지 않았다")
         assertEquals(0, spy.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
