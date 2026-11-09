@@ -338,8 +338,7 @@ internal class RenderEngine(
         if (lostThread != null) return lostOutput(l.preview)
         val t = System.nanoTime()
         val result: RenderResult = try {
-            placeBars(l)
-            l.task.render().get(renderTimeoutSec, TimeUnit.SECONDS)
+            l.renderPlaced(renderTimeoutSec)
         } catch (e: TimeoutException) {
             return renderFailed(l, timing, t, FailureKind.TIMEOUT, phrase("render.timedOut", "sec" to renderTimeoutSec), timedOut = true)
         } catch (e: Exception) {
@@ -349,17 +348,6 @@ internal class RenderEngine(
         if (relayout) refreshTree(l, result)
         val out = outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree)
         return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
-    }
-
-    private fun placeBars(l: LayoutlibSession) {
-        if (l.barsPlaced) return
-        l.barsPlaced = true
-        val insets = LayoutlibBars.insetsOf(l.preview) ?: return
-        l.task.inflate().get(renderTimeoutSec, TimeUnit.SECONDS)
-        var why: String? = null
-        val root = l.viewRoot()
-        if (root == null) why = NO_ROOT else l.onSession { why = LayoutlibBars.measured(root, insets) }
-        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 값으로 그린다: $it") }
     }
 
     private suspend fun renderFailed(

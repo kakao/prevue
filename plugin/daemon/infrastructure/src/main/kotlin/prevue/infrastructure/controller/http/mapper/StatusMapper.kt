@@ -8,6 +8,7 @@ import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
 import prevue.application.domain.model.Work
@@ -42,10 +43,10 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
 
 internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf(
     "choice" to choice.key, "annotated" to annotated, "shown" to shown,
-    "bars" to bars?.let { b ->
-        mapOf("look" to b.look.key, "insets" to b.insets?.let { mapOf("statusDp" to it.statusDp, "navDp" to it.navDp, "source" to it.source.key, "sourceUrl" to it.source.url) })
-    },
+    "bars" to bars?.let { b -> mapOf("look" to b.look.key, "insets" to b.insets?.toJson()) },
 )
+
+private fun BarInsets.toJson(): Map<String, Any?> = mapOf("statusDp" to statusDp, "navDp" to navDp, "source" to source.key, "sourceUrl" to source.url)
 
 internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
 

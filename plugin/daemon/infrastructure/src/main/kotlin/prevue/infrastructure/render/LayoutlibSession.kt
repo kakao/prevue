@@ -15,6 +15,7 @@ import com.android.tools.rendering.RenderTask
 import com.intellij.openapi.util.CheckedDisposable
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
+import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
 
@@ -26,7 +27,7 @@ internal class LayoutlibSession(
     private val timeoutSec: () -> Long,
 ) {
     val clock = SessionClock()
-    var barsPlaced = false
+    private var barsPlaced = false
     private var lastHash = 0L
     private var anchored = false
     private var pressUnseen = false
@@ -39,6 +40,21 @@ internal class LayoutlibSession(
         onSession { repeat(2) { System_Delegate.setNanosTime(start) } }
         advanceCallbacks(start)
         anchored = true
+    }
+
+    fun renderPlaced(timeoutSec: Long): RenderResult {
+        if (!barsPlaced) {
+            barsPlaced = true
+            LayoutlibBars.insetsOf(preview)?.let { placeBars(it, timeoutSec) }
+        }
+        return task.render().get(timeoutSec, TimeUnit.SECONDS)
+    }
+
+    private fun placeBars(insets: BarInsets, timeoutSec: Long) {
+        task.inflate().get(timeoutSec, TimeUnit.SECONDS)
+        var why: String? = "세션의 루트 뷰를 찾지 못했다"
+        viewRoot()?.let { root -> onSession { why = LayoutlibBars.measured(root, insets) } }
+        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 값으로 그린다: $it") }
     }
 
     fun advanceCallbacks(at: Long = clock.next()) {
