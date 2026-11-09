@@ -53,6 +53,40 @@ class EmptyIncludes(unittest.TestCase):
             os.chdir(cwd)
 
 
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+
+
+class LayerSeeds(unittest.TestCase):
+    """심은 위반(tests/lint/layer)과 detekt 결과를 견주는 쪽 — detekt 실행은 lint.py 가 하고, 여기는 견주는 규칙만 본다."""
+
+    def setUp(self):
+        self.cwd = os.getcwd()
+        os.chdir(ROOT)
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+
+    def test_줄_끝_표시만_기대로_읽는다(self):
+        expected = lint.seed_expectations()
+        self.assertIn(("tests/lint/layer/prevue/infrastructure/controller/http/Seed.kt", 5, "ForbiddenImport/http"), expected)
+        self.assertIn(("tests/lint/layer/prevue/application/service/Seed.kt", 13, "ForbiddenMethodCall/application"), expected)
+        self.assertFalse(any(path.endswith("bindings/Seed.kt") for path, _, _ in expected))
+
+    def test_갈래마다_심은_위반이_있다(self):
+        with open(lint.DETEKT_CONFIG, encoding="utf-8") as f:
+            branches = lint.layer_branches(f.read())
+        self.assertEqual(len(branches), 12)
+        self.assertEqual(set(), branches - {rule for _, _, rule in lint.seed_expectations()})
+
+    def test_못_잡은_것과_더_잡은_것을_가른다(self):
+        expected = {("a.kt", 3, "ForbiddenImport/http"), ("a.kt", 4, "ForbiddenImport/http")}
+        seeded = [lint.Finding("a.kt", 3, "layer/http", "", source="ForbiddenImport/http"),
+                  lint.Finding("a.kt", 3, "layer/technology", "", source="ForbiddenImport/technology")]
+        missed, extra = lint.seed_mismatch(expected, seeded)
+        self.assertEqual(missed, [("a.kt", 4, "ForbiddenImport/http")])
+        self.assertEqual(extra, [("a.kt", 3, "ForbiddenImport/technology")])
+
+
 class LayerRule(unittest.TestCase):
     def test_갈래_이름으로_묶는다(self):
         self.assertEqual(lint.layer_rule("ForbiddenImport/controller"), "layer/controller")

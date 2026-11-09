@@ -42,6 +42,8 @@ style:
   # 모두 막고(forbiddenImports) 아는 것만 연다(allowedImports). 새 폴더는 열기 전까지 막힌다.
   # includes · excludes 가 파일을 하나도 못 고르면 lint.py 가 실패로 본다 — 폴더 이름이 바뀌면 규칙이 말없이 죽는다.
   # import 만 본다 — import 없이 전체 이름으로 쓰는 것은 놓친다(D-150).
+  # 갈래마다 심은 위반이 tests/lint/layer 에 있다 — lint.py 가 같은 실행에서 돌려 줄 끝 `// 잡는다 <갈래>` 와 정확히 견준다.
+  # 판을 올려 갈래가 죽거나 허용 목록 · 경로 한정이 안 먹으면 거기서 멈춘다. 갈래를 더하면 심은 위반도 함께 둔다.
   ForbiddenImport/application:
     active: true
     includes: ['**/prevue/application/**']

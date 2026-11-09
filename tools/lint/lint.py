@@ -69,6 +69,9 @@ DETEKT_REPORTS = detekt_reports(MODULES)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
 DETEKT_CONFIG = "tools/lint/detekt.yml"
+# 층 규칙의 심은 위반 — 판을 올리면 갈래가 말없이 죽을 수 있다. 줄 끝의 `// 잡는다 <규칙>` 이 기대다
+LAYER_SEEDS = "tests/lint/layer"
+SEED_MARK = re.compile(r"//\s*잡는다\s+(\S+)\s*$")
 
 DETEKT_GROUPS = {
     "LongMethod": "metric/long-method", "LongParameterList": "metric/long-parameter-list",
@@ -93,8 +96,8 @@ class Unrunnable(Exception):
 
 
 class Finding:
-    def __init__(self, path, line, rule, advice):
-        self.path, self.line, self.rule, self.advice = path, line, rule, advice
+    def __init__(self, path, line, rule, advice, source=None):
+        self.path, self.line, self.rule, self.advice, self.source = path, line, rule, advice, source
 
 
 def git(*args, check=True):
@@ -135,6 +138,7 @@ def detekt_findings(gradle_args):
             os.remove(r)
     # 태스크 실행 기록도 따로 둔다 — 기록은 태스크 경로마다 하나라, 같이 쓰면 평소 빌드가 린트의 클래스패스를 보고 다시 컴파일한다
     cmd = ["./gradlew", "-q", "--init-script", INIT_SCRIPT, "-Pprevue.lintBuildDir=" + LINT_BUILD,
+           "-Pprevue.layerSeeds=" + os.path.abspath(LAYER_SEEDS),
            "--project-cache-dir", LINT_BUILD + "/.gradle"] + gradle_args + ["detektMain", "detektBridge"]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN)
     if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS):
@@ -153,8 +157,38 @@ def detekt_findings(gradle_args):
                 advice = e.get("message", "").strip()
                 if rule in DETEKT_ADVICE:
                     advice = "%s — %s" % (advice, DETEKT_ADVICE[rule])
-                found.append(Finding(path, line, rule, advice))
-    return found
+                found.append(Finding(path, line, rule, advice, source=name))
+    seeded = [f for f in found if f.path.startswith(LAYER_SEEDS + "/")]
+    missed, extra = seed_mismatch(seed_expectations(), seeded)
+    if missed or extra:
+        raise Unrunnable("층 규칙이 심은 위반(%s)과 어긋난다 — 통과가 아무것도 말하지 않는다\n%s" % (
+            LAYER_SEEDS, "\n".join(["못 잡았다  %s:%d  %s" % m for m in missed] + ["더 잡았다  %s:%d  %s" % e for e in extra])))
+    return [f for f in found if f not in seeded]
+
+
+def seed_expectations(root=LAYER_SEEDS):
+    """심은 위반 파일의 기대 {(경로, 줄, 규칙)} — 규칙은 detekt 의 이름 그대로다(ForbiddenImport/application 과 ForbiddenMethodCall/application 을 가른다)."""
+    out = set()
+    for d, _, files in os.walk(root):
+        for name in sorted(f for f in files if f.endswith(".kt")):
+            path = os.path.join(d, name)
+            with open(path, encoding="utf-8") as f:
+                for n, line in enumerate(f, 1):
+                    m = SEED_MARK.search(line)
+                    if m:
+                        out.add((path, n, m.group(1)))
+    return out
+
+
+def seed_mismatch(expected, seeded):
+    """(못 잡은 것, 더 잡은 것) — 더 잡은 것도 어긋남이다. 허용 목록 · 경로 한정이 금지를 못 이기면 거기서 드러난다."""
+    actual = {(f.path, f.line, f.source) for f in seeded}
+    return sorted(expected - actual), sorted(actual - expected)
+
+
+def layer_branches(config):
+    """detekt 설정의 층 규칙 갈래 이름(ForbiddenImport/controller …)."""
+    return {m.group(1) for m in re.finditer(r"^\s+((?:%s)\S+):" % "|".join(LAYER_RULES), config, re.M)}
 
 
 LAYER_RULES = ("ForbiddenImport/", "ForbiddenMethodCall/")
