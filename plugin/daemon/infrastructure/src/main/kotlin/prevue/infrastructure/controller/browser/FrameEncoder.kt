@@ -8,9 +8,9 @@ import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import javax.imageio.ImageWriter
 import javax.imageio.stream.MemoryCacheImageOutputStream
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 internal class FrameEncoder(
     scope: CoroutineScope,
-    context: CoroutineContext,
+    dispatcher: CoroutineDispatcher,
     private val log: (String) -> Unit,
     private val workers: Int = 2,
     private val done: (Encoded) -> Unit,
@@ -43,8 +43,9 @@ internal class FrameEncoder(
     val idle: Boolean get() = inflight == 0 && pending == null
 
     init {
+        val lane = dispatcher.limitedParallelism(workers, "prevue-encode")
         repeat(workers) { i ->
-            scope.launch(context + CoroutineName("prevue-encode-$i")) {
+            scope.launch(lane + CoroutineName("prevue-encode-$i")) {
                 Writers().use { w ->
                     w.warmUp()
                     for (job in work) done(w.encode(job))
