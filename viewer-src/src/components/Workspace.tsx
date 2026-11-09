@@ -1,9 +1,9 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
-import type { Focus, ViewerState } from '../state';
+import type { Focus, SystemUi, ViewerState } from '../state';
 import { loadingView, zoomView } from '../workspace/view';
-import { loadingHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
+import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
 
 // 한 장 — 기기를 손에 쥔 작업 공간(D-57). 이름 · 출구는 헤더가, 크기 · 기기 · 자세 · 확대는 무대 아래 가운데의 조작 독이 갖고(D-167)
 // 무대는 창을 다 쓴다.
@@ -17,11 +17,12 @@ export type WorkspaceActions = {
   zoomMenuPick(z: string): void;
   /** byKey 면 키보드로 누른 것이다 — 메뉴를 닫을 때 포커스를 배율로 돌려준다. */
   toggleZoomMenu(byKey: boolean): void;
+  pickSystemUi(choice: string): void;
 };
-export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
+export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
-const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {} };
+const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
 
 /** 첫 장을 기다리는 자리 표시 — 받지 못했으면 실패 문장. 그동안 조작 도구는 잠기고 출구(#back)는 남는다. */
 export function WorkspaceLoading({ host }: { host?: HTMLElement }) {
@@ -63,6 +64,47 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
     </div>
   </>;
   return place(body, zoomHost);
+}
+
+const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
+const CHOICES = ['annotated', 'on', 'off'] as const;
+
+/**
+ * 시스템 UI 세 값(D-159 ①) — 어노테이션대로 · 켬 · 끔. 버튼은 값과 출처를 함께 보인다(`시스템 UI · 어노테이션(켬)`). 고르면 데몬이 이 한 장의
+ * spec 만 덮어써 렌더러가 실제 상태바 · 내비바를 그리거나 뺀다 — 나가면 어노테이션대로다. 인터랙티브가 아니면(systemUi 가 null) 숨는다.
+ * 메뉴는 배율 메뉴처럼 위로 열리고, 바깥을 누르거나 esc 면 닫힌다. 첫 장을 기다리는 동안은 잠긴다.
+ */
+export function SystemUiControl({ systemUi, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; host?: HTMLElement; actions?: WorkspaceActions }) {
+  const { phrase } = useMessages();
+  const { element, place } = useHost(host);
+  const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
+  const [menu, setMenu] = useState(false);
+  useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
+  useEffect(() => { if (!systemUi || waiting) setMenu(false); }, [systemUi, waiting]);
+  useEffect(() => {
+    if (!menu) return;
+    const outside = (e: PointerEvent) => { if (!element?.contains(e.target as Node)) setMenu(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false); };
+    addEventListener('pointerdown', outside);
+    addEventListener('keydown', esc);
+    return () => { removeEventListener('pointerdown', outside); removeEventListener('keydown', esc); };
+  }, [menu, element]);
+  const state = (on: boolean) => phrase(on ? 'systemUi.on' : 'systemUi.off');
+  const value = !systemUi ? '' : systemUi.choice === 'annotated' ? phrase('systemUi.annotated', { state: state(systemUi.annotated) }) : state(systemUi.choice === 'on');
+  const pick = (choice: string) => { setMenu(false); if (choice !== systemUi?.choice) actions.pickSystemUi(choice); };
+  const body = <>
+    <button type="button" id="sysUiBtn" className="tb-btn" aria-haspopup="menu" aria-expanded={menu} disabled={waiting}
+      title={phrase('systemUi.tip')} onClick={() => setMenu(m => !m)}>
+      {BARS}<span className="sys-lb">{phrase('systemUi.label')}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{value}</span>
+    </button>
+    <div className={menu ? 'sys-menu on' : 'sys-menu'} id="sysUiMenu" role="menu" aria-label={phrase('systemUi.label')}>
+      {CHOICES.map(c => <button type="button" role="menuitemradio" aria-checked={systemUi?.choice === c} key={c} data-ui={c} disabled={waiting} onClick={() => pick(c)}>
+        <span>{c === 'annotated' ? phrase('systemUi.pick.annotated') : state(c === 'on')}</span>
+        {c === 'annotated' && systemUi ? <small>{state(systemUi.annotated)}</small> : null}
+      </button>)}
+    </div>
+  </>;
+  return place(body, systemUiHost);
 }
 
 /*
@@ -147,14 +189,16 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
  * 섹션의 hidden 은 같은 커밋의 레이아웃 효과에서 맞춘다 — session.ts 가 무대의 높이를 재는 것이 그 뒤다.
  * 뷰어에서는 껍데기가 이미 index.html 에 있어 움직이는 칸만 포털로 그리고, Storybook 에서는 껍데기째 그린다.
  */
-export function Workspace({ screen, hosts, actions = NO_ACTIONS }: { screen: ViewerState['screen'] | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions }) {
+export function Workspace({ screen, systemUi = null, hosts, actions = NO_ACTIONS }: {
+  screen: ViewerState['screen'] | null; systemUi?: SystemUi | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions;
+}) {
   const { phrase } = useMessages();
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemUiControl systemUi={systemUi} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
     <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} /></section>
-    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel zoom={<ZoomControls actions={actions} />} /></div>
+    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }

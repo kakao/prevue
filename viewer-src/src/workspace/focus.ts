@@ -518,3 +518,5 @@ export function frameOf(el: HTMLElement | null): Frame | null {
 export function enterFocus(i: number) { post('/viewer/focus', { index: i }).catch(e => setStatus(phrase('focus.enter.failed', { why: (e as Error).message }), 'error')); }
 /** 보드로 — 버튼 · esc · I · 브라우저 뒤로 가기가 모두 이것이다(W7). 한 장은 늘 보드 위에서 열린다(D-155). */
 export function exitFocus() { if (store.st && store.st.focus) post('/viewer/exit'); }
+/** 시스템 UI 세 값(D-159 ①) — 이 한 장만 덮어쓴다. 다시 그린 그림은 돌아올 state 가 붙인다. */
+export function pickSystemUi(choice: string) { post('/viewer/systemUi', { systemUi: choice }).catch(e => flash(phrase('request.failed', { why: (e as Error).message }))); }

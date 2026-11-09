@@ -22,9 +22,12 @@ export type Card = Omit<ContractCard, 'ok' | 'imageUrl' | 'treeUrl' | 'failure' 
 export type Board = Omit<ContractBoard, 'groups'> & {
   groups: Array<Omit<ContractBoard['groups'][number], 'cards'> & { cards: Card[] }>;
 };
-export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp'> & {
+/** 한 장의 시스템 UI — choice 는 고른 값, annotated 는 소스의 showSystemUi, shown 은 지금 바를 그리는가. 인터랙티브가 아니면 null. */
+export type SystemUi = { choice: string; annotated: boolean; shown: boolean };
+export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp' | 'systemUi'> & {
   pxPerDp: number | null;
   size: Size | null;
+  systemUi: SystemUi | null;
   postures: Array<{ size: Size | (DpSize & { kind: 'original'; preset: string }); imageUrl: string }>;
 };
 export type ViewerState = Omit<ContractState, 'screen' | 'header' | 'board' | 'focus' | 'stale' | 'boardNote' | 'who' | 'error' | 'settle' | 'vacant' | 'timing' | 'tabs'> & {
