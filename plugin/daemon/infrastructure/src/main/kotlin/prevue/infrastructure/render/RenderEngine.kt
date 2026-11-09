@@ -24,7 +24,6 @@ import prevue.application.domain.model.ListState
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.SemanticNode
-import prevue.application.domain.model.systemBars
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
@@ -193,7 +192,6 @@ internal class RenderEngine(
         val element = screenshot(p).toPreviewElement(renderer.module)
         val cfg = baseConfiguration.clone()
         Shim.applyTo(element, cfg)
-        LayoutlibBars.configure(cfg, p.systemBars)
         val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null
@@ -244,8 +242,7 @@ internal class RenderEngine(
         return loaders.withPreloaderParked(park) {
             try {
                 val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
-                if (task != null) LayoutlibBars.configure(task, p.systemBars)
-                if (task != null) Built.Task(task)
+                if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
                 else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
             } catch (e: Exception) {
                 Disposer.dispose(disposable)

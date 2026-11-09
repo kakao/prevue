@@ -6,7 +6,8 @@ enum class SystemUi(val key: String) {
         override fun shown(annotated: Boolean): Boolean = annotated
     },
     ON("on") {
-        override fun applyTo(p: PreviewSpec): PreviewSpec = p.copy(params = p.params + (SystemBars.SHOW_SYSTEM_UI to "true"))
+        override fun applyTo(p: PreviewSpec): PreviewSpec =
+            ScreenSize.annotatedDpAsDevice(p.copy(params = p.params + (SystemBars.SHOW_SYSTEM_UI to "true")))
         override fun shown(annotated: Boolean): Boolean = true
     },
     OFF("off") {
