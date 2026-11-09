@@ -19,6 +19,7 @@ import prevue.application.domain.model.Shot
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.domain.model.WorkspaceState
+import prevue.application.domain.model.isUnder
 import prevue.application.port.Clock
 import prevue.application.port.WorkspaceStore
 
@@ -41,7 +42,7 @@ class Workspace(
 
     fun hosts(f: File): Boolean {
         val c = f.canonicalFile
-        return graph.contains(c) || watchRoots.any { c.path.startsWith(it.path + File.separator) }
+        return graph.contains(c) || watchRoots.any { c.isUnder(it) }
     }
 
     fun recordCard(epoch: BoardEpoch, index: Int, gen: Int, r: CardResult) {

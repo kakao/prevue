@@ -16,7 +16,9 @@ data class ModuleNode(
  * 한 데몬이 감시·컴파일하는 모듈들 — 렌더 모듈([home])과 그 프로젝트 의존(Q5). **의존 먼저** 순서다(Q7).
  * 의존 관계는 덤프에 없어 클래스패스 순서(소비자 먼저)를 뒤집어 근사한다 — 틀리면 컴파일이 한 번 더 돈다(`CompileOrder`).
  */
-class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
+class ModuleGraph(val home: String, nodes: List<ModuleNode>) {
+    val nodes: List<ModuleNode> = nodes.map { it.copy(sourceRoots = it.sourceRoots.map(File::getCanonicalFile)) }
+
     init { require(nodes.any { it.path == home }) { "$home 이 모듈 목록에 없다" } }
 
     val roots: List<File> get() = nodes.flatMap { it.sourceRoots }
@@ -42,7 +44,7 @@ class ModuleGraph(val home: String, val nodes: List<ModuleNode>) {
     }
 
     private fun rootOf(f: File): Pair<ModuleNode, File>? = nodes.firstNotNullOfOrNull { n ->
-        n.sourceRoots.firstOrNull { f.path.startsWith(it.path + "/") }?.let { n to it }
+        n.sourceRoots.firstOrNull { f.isUnder(it) }?.let { n to it }
     }
 
     fun node(module: String): ModuleNode? = nodes.firstOrNull { it.path == module }

@@ -1,6 +1,7 @@
 package prevue.application.domain.rule
 
 import java.io.File
+import prevue.application.domain.model.isUnder
 
 /** FR-22. 저장한 파일의 결과가 나왔는가 — 에이전트가 옛 그림을 새 그림으로 믿지 않게 하는 판정. */
 object AwaitPolicy {
@@ -29,5 +30,5 @@ object AwaitPolicy {
 
     /** 이 데몬이 감시하지 않는 파일들 — 이 데몬이 그리는 모듈 밖이다(Q5). */
     fun outside(files: List<File>, roots: List<File>): List<File> =
-        files.filter { f -> roots.none { f.path.startsWith(it.path + File.separator) } }
+        files.filter { f -> roots.none { f.isUnder(it) } }
 }

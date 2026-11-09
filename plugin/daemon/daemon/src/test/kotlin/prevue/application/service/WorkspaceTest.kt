@@ -38,6 +38,19 @@ class WorkspaceTest {
         } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
     }
 
+    @Test fun `감시 루트가 없어도 링크 경로 소스 루트로 만든 그래프의 파일을 품는다`() {
+        val tmp = Files.createTempDirectory("prevue-hosts").toFile()
+        try {
+            val real = File(tmp, "real/src").apply { mkdirs() }
+            val link = Files.createSymbolicLink(File(tmp, "link").toPath(), real.parentFile.toPath()).toFile()
+            val ws = Workspace(ModuleInfo("/r", ":a", "debug", "a", null, null), FakeClock(),
+                ModuleGraph.single(":a", listOf(File(link, "src")), emptyList()), emptyList(), InMemoryWorkspaceStore())
+            assertTrue(ws.hosts(File(real, "A.kt")))
+            assertTrue(ws.hosts(File(link, "src/A.kt")))
+            assertFalse(ws.hosts(File(tmp, "other/A.kt")))
+        } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
+    }
+
     @Test fun `줄 밖의 카드 기록이 동시에 와도 하나도 잃지 않는다`() {
         val ws = workspace()
         val many = (0 until 64).map { PreviewSpec("com.x.P$it", "P$it", emptyMap(), null, it) }
