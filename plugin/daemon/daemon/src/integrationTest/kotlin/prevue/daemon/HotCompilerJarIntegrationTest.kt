@@ -15,6 +15,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
+import prevue.application.port.PrevueDispatchers
+import prevue.daemon.fake.LaneSpy
+import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.json.Json
@@ -35,9 +38,10 @@ class HotCompilerJarIntegrationTest {
     private lateinit var home: ClasspathSpec
     private lateinit var compiler: HotCompiler
     private lateinit var libCompiler: HotCompiler
+    private lateinit var pearl: ClasspathSpec
 
     @BeforeAll fun up() {
-        val pearl = PearlFixture.warmup().first
+        pearl = PearlFixture.warmup().first
         @Suppress("UNCHECKED_CAST")
         val m = Json.parse(pearl.file.readText()) as Map<String, Any?>
         val compile = (m["compileClassPath"] as List<*>).map { it.toString() } + lib.path
@@ -59,6 +63,24 @@ class HotCompilerJarIntegrationTest {
         assertEquals(listOf(LIB_SIZE.toLong(), stamp, inode), listOf(lib.length(), lib.lastModified(), Files.getAttribute(lib.toPath(), "unix:ino")))
         val second = compileUse("fun useApi(): String = lib.Api.greet(\"x\")")
         assertTrue(second.ok, second.messages)
+    }
+
+    // 컴파일러는 진짜 컴파일러 · 브리지 jar 없이는 서지 않아 단위 테스트가 아니라 여기서 줄을 본다 — 이 클래스의 덤프를 같이 쓴다.
+    @Test fun `컴파일러 상태는 io 의 한 줄 뷰에서만 만진다`() = runBlocking {
+        val io = LaneSpy(realDispatchers.io)
+        val default = LaneSpy(realDispatchers.default)
+        val lane = PearlFixture.hotCompiler(pearl, File(out, "lane"), PrevueDispatchers(io, default))
+        try {
+            val src = File(out, "lanesrc/com/example/pearl/lane/Lane.kt").apply { parentFile.mkdirs(); writeText("package com.example.pearl.lane\n\nobject Lane { fun one(): Int = 1 }\n") }
+            val r = lane.compile(pearl.project, listOf(src))
+            assertTrue(r.ok, r.messages)
+            assertTrue(lane.hasClass(pearl.project, "com.example.pearl.lane.Lane"), "컴파일한 클래스가 오버레이에 없다")
+            lane.builtAt(pearl.project)
+        } finally { lane.close() }
+        assertEquals(listOf(1 to "prevue-compiler"), io.lanes())
+        assertTrue(io.view("prevue-compiler").dispatched >= 3, "컴파일 · 클래스 확인 · 표지가 청한 뷰에서 돌지 않았다")
+        assertEquals(emptyList<LaneSpy.View>(), default.views)
+        assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
 
     private suspend fun compileUse(body: String) = compiler.compile(home.project,

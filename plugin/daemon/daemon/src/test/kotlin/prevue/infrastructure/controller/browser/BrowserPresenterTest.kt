@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
@@ -366,10 +367,11 @@ class BrowserPresenterTest {
         val default = LaneSpy(realDispatchers.default)
         val io = LaneSpy(realDispatchers.io)
         val target = ViewerTarget({ null to null }, null, null, null)
-        val own = BrowserPresenter(Relay(fx.scope, realDispatchers), uc.status, uc.live, target, PrevueDispatchers(io, default))
-        runBlocking { own.current() }
+        val relay = Relay(fx.scope, realDispatchers)
+        val own = BrowserPresenter(relay, uc.status, uc.live, target, PrevueDispatchers(io, default))
+        val ran = try { runBlocking { own.onLine { LaneSpy.current() } } } finally { relay.job.cancel() }
         assertEquals(listOf(1 to "prevue-viewer"), default.lanes())
-        assertTrue(default.view("prevue-viewer").dispatched > 0, "화면 상태가 청한 뷰에서 돌지 않았다")
+        assertSame(default.view("prevue-viewer"), ran, "화면 상태가 청한 뷰에서 돌지 않았다")
         assertEquals(emptyList<LaneSpy.View>(), io.views)
     }
 

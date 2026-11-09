@@ -11,7 +11,8 @@ import kotlinx.coroutines.Runnable
 internal class LaneSpy(private val inner: CoroutineDispatcher) : CoroutineDispatcher() {
     class View(val parallelism: Int, val name: String?, val spy: LaneSpy)
 
-    val views: MutableList<View> = CopyOnWriteArrayList()
+    private val recorded = CopyOnWriteArrayList<View>()
+    val views: List<View> get() = recorded
     private val count = AtomicInteger()
     val dispatched: Int get() = count.get()
 
@@ -19,8 +20,22 @@ internal class LaneSpy(private val inner: CoroutineDispatcher) : CoroutineDispat
 
     fun view(name: String): LaneSpy = views.single { it.name == name }.spy
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) { count.incrementAndGet(); inner.dispatch(context, block) }
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        count.incrementAndGet()
+        inner.dispatch(context, Runnable {
+            val before = running.get()
+            running.set(this)
+            try { block.run() } finally { running.set(before) }
+        })
+    }
 
     override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher =
-        LaneSpy(inner.limitedParallelism(parallelism, name)).also { views += View(parallelism, name, it) }
+        LaneSpy(inner.limitedParallelism(parallelism, name)).also { recorded += View(parallelism, name, it) }
+
+    companion object {
+        private val running = ThreadLocal<LaneSpy?>()
+
+        // 지금 이 코드를 돌리는 스파이 — 셈만으로는 다른 코루틴이 같은 뷰를 쓴 것과 가려지지 않는다.
+        fun current(): LaneSpy? = running.get()
+    }
 }

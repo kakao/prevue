@@ -179,7 +179,7 @@ class EngineTest {
         assertTrue(fake.ticks.get() > 0, "라이브 루프가 틱을 돌지 않았다")
         assertEquals(1, fake.codeChanges)
         assertEquals(listOf(1 to "prevue-engine"), io.lanes())
-        assertTrue(io.views.single().spy.dispatched > 0, "청한 뷰에서 돌지 않았다")
+        assertTrue(io.view("prevue-engine").dispatched > 0, "청한 뷰에서 돌지 않았다")
         assertEquals(emptyList<LaneSpy.View>(), default.views)
         assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
