@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import prevue.application.domain.model.ComposableDefinition
+import prevue.application.domain.model.ComposablePreview
+import prevue.application.domain.model.ComposablePreviews
 import prevue.application.domain.model.PreviewFile
 import prevue.application.domain.model.PreviewIndex
 import prevue.application.port.PreviewRepository
@@ -47,6 +49,22 @@ internal class PreviewCatalog(
     fun list(): List<PreviewFile>? = index()?.files
 
     fun index(): PreviewIndex? = catalog.value.takeIf { it.ready }?.index
+
+    fun previewsOf(composable: String): ComposablePreviews? {
+        val index = index() ?: return null
+        val name = composable.substringAfterLast('.')
+        val found = index.files.flatMap { f ->
+            val callers = f.functions.filter { name in f.calls[it].orEmpty() }
+            fqns(f.file, callers).map { ComposablePreview(it, f.file, f.module) }
+        }
+        return ComposablePreviews(name, index.composables[name].orEmpty(), found)
+    }
+
+    private fun fqns(f: File, functions: List<String>): List<String> {
+        if (functions.isEmpty()) return emptyList()
+        val specs = runCatching { previews.inFile(f) }.getOrDefault(emptyList())
+        return functions.mapNotNull { fn -> specs.firstOrNull { it.functionName == fn }?.fqn }
+    }
 
     suspend fun build() {
         for (f in sources.sourceFiles()) { currentCoroutineContext().ensureActive(); scan(f) }

@@ -2,6 +2,8 @@
 package prevue.infrastructure.controller.http.mapper
 
 import prevue.application.port.CompileResult
+import java.io.File
+import prevue.application.domain.model.ComposablePreviews
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.RenderOutput
 import prevue.application.domain.model.Selection
@@ -14,6 +16,18 @@ internal fun PreviewSpec.toJson(): Map<String, Any?> = mapOf(
     "fqn" to fqn, "previewId" to previewId, "params" to params, "file" to file?.absolutePath, "index" to index,
     "methodParams" to methodParams,
 )
+
+internal fun composablePreviewsJson(of: String, found: ComposablePreviews?, repoRoot: String): Map<String, Any?> {
+    fun rel(f: File) = f.path.removePrefix("$repoRoot/")
+    return mapOf(
+        "ready" to (found != null),
+        "of" to (found?.name ?: of),
+        "definitions" to found?.definitions.orEmpty().map { mapOf("path" to it.file.path, "rel" to rel(it.file), "module" to it.module) },
+        "previews" to found?.previews.orEmpty().map {
+            mapOf("fqn" to it.fqn, "fn" to it.fqn.substringAfterLast('.'), "file" to it.file.path, "rel" to rel(it.file), "module" to it.module)
+        },
+    )
+}
 
 internal fun RenderOutput.toJson(): Map<String, Any?> = mapOf(
     "ok" to ok, "warnings" to warnings, "preview" to preview.toJson(), "image" to image?.absolutePath, "tree" to tree?.absolutePath,

@@ -9,4 +9,8 @@ data class ComposableDefinition(val file: File, val module: String)
 
 data class PreviewIndex(val files: List<PreviewFile>, val composables: Map<String, List<ComposableDefinition>>)
 
+data class ComposablePreview(val fqn: String, val file: File, val module: String)
+
+data class ComposablePreviews(val name: String, val definitions: List<ComposableDefinition>, val previews: List<ComposablePreview>)
+
 data class SourceOutline(val composables: List<String>, val calls: Map<String, List<String>>)

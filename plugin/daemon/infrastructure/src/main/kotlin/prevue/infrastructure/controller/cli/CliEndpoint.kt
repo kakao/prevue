@@ -18,6 +18,7 @@ import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.service.Tabs
 import prevue.infrastructure.json.map
+import prevue.infrastructure.controller.http.mapper.composablePreviewsJson
 import prevue.infrastructure.controller.http.mapper.status
 import prevue.infrastructure.controller.http.mapper.toJson
 import prevue.infrastructure.controller.http.mapper.toPointed
@@ -135,7 +136,12 @@ public class CliEndpoint @Inject internal constructor(
     }
 
     private fun previews(ex: HttpExchange) {
-        val f = File(ex.body().string("file") ?: error("file이 필요하다"))
+        val b = ex.body()
+        b.string("of")?.takeIf { it.isNotBlank() }?.let { of ->
+            ex.json(200, composablePreviewsJson(of, status.findPreviews(of), File(status.module().repo).canonicalPath))
+            return
+        }
+        val f = File(b.string("file") ?: error("file 또는 of가 필요하다"))
         ex.json(200, mapOf("file" to f.absolutePath, "previews" to status.listPreviews(f).map { it.toJson() }))
     }
 
