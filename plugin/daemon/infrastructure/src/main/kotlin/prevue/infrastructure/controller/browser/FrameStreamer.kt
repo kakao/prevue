@@ -3,7 +3,7 @@ package prevue.infrastructure.controller.browser
 import java.io.IOException
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets.UTF_8
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -69,7 +69,7 @@ internal class FrameStreamer(
     private val write = dispatchers.io
 
     private val job = parent.launch(dispatchers.default.limitedParallelism(1, "prevue-frames") + CoroutineName("prevue-frames"), CoroutineStart.ATOMIC) {
-        run(screen, watching, dispatchers.default.limitedParallelism(2, "prevue-encode"))
+        run(screen, watching, dispatchers.default)
     }
 
     fun subscribe(out: OutputStream, viewer: String? = null) { if (cmds.trySend(Subscribe(out, viewer)).isFailure) closeQuietly(out) }
@@ -80,7 +80,7 @@ internal class FrameStreamer(
 
     suspend fun awaitStopped() = job.join()
 
-    private suspend fun run(screen: StateFlow<LiveFrame?>, watching: StateFlow<Boolean>, encode: CoroutineContext) = coroutineScope {
+    private suspend fun run(screen: StateFlow<LiveFrame?>, watching: StateFlow<Boolean>, encode: CoroutineDispatcher) = coroutineScope {
         writers = this
         launch { screen.collect { cmds.trySend(Show(it)) } }
         launch { watching.collect { cmds.trySend(Watch(it)) } }

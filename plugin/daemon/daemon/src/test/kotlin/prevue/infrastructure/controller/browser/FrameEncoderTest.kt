@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import prevue.daemon.fake.LaneSpy
 
 /** 인코딩을 틱과 뗀 뒤에도 지켜야 할 셋 — 보이는 폭으로 줄이기, 멈춘 그림은 원래 크기 PNG, 그림이 뒤로 가지 않기. 장부는 부르는 쪽 하나가 쥔다. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,6 +84,18 @@ class FrameEncoderTest {
             assertEquals(null, enc.finished(old))
             assertEquals(1L, skipped)
         }
+    }
+
+    @Test fun `일꾼 수만큼의 encode 뷰를 스스로 청하고 그 뷰에서 그린다`() = runTest {
+        val spy = LaneSpy(StandardTestDispatcher(testScheduler))
+        val done = ArrayList<FrameEncoder.Encoded>()
+        val enc = FrameEncoder(backgroundScope, spy, {}, workers = 3) { done += it }
+        repeat(3) { enc.submit(img(30, 60, 0xff445566.toInt()), png = true, width = null) }
+        runCurrent()
+        assertEquals(listOf(3 to "prevue-encode"), spy.lanes())
+        assertEquals(3, done.size, "일꾼 수만큼 맡기지 않고 한 장을 줄에 남겼다")
+        assertTrue(spy.view("prevue-encode").dispatched > 0, "인코딩이 청한 뷰에서 돌지 않았다")
+        assertEquals(0, spy.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
 
     @Test fun `끄면 돌던 인코딩은 보내지 않는다`() = runTest {
