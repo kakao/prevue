@@ -13,8 +13,9 @@ import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.PreviewSpec
-import prevue.application.domain.model.Resize
+import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ScrollResult
 import prevue.application.domain.model.Selection
 import prevue.application.domain.model.Settled
@@ -157,17 +158,21 @@ class Live(
         live.finish(ed, engine.rerender(p), null, t, by).also { ed.update { it.copy(current = p) } }
     }
 
-    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> resizeWithin(ed, size, by) }
+    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, size, null, by) }
 
-    suspend fun resizeWithin(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult? {
-        if (size == ScreenSize.Original && ws.now.resize == null) return null
-        val target = resizeTarget()
-        val next = size.takeUnless { it == ScreenSize.Original }?.let { Resize(target.previewId, it) }
-        if (next == ws.now.resize) return null
-        ed.update { it.copy(resize = next) }
+    suspend fun setSystemUi(systemUi: SystemUi, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, null, systemUi, by) }
+
+    suspend fun overrideWithin(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String): ShowResult? {
+        val now = ws.now.cardOverride
+        if (now == null && size in setOf(null, ScreenSize.Original) && systemUi in setOf(null, SystemUi.ANNOTATED)) return null
+        val target = overrideTarget()
+        val next = (now?.takeIf { it.previewId == target.previewId } ?: CardOverride(target.previewId)).with(size, systemUi)
+        if (next == now) return null
+        ed.update { it.copy(cardOverride = next) }
+        val sameBars = (next?.systemUi ?: SystemUi.ANNOTATED) == (now?.systemUi ?: SystemUi.ANNOTATED)
         val onBoard = ws.now.board != null
         val r = try {
-            live.show(ed, target, by, keepPostures = true)
+            live.show(ed, target, by, keepPostures = sameBars)
         } finally {
             if (onBoard) {
                 val at = ws.nowMs()
@@ -178,10 +183,10 @@ class Live(
         return r
     }
 
-    private fun resizeTarget(): PreviewSpec {
+    private fun overrideTarget(): PreviewSpec {
         val s = ws.now
         val b = s.board ?: error("보여 주는 프리뷰가 없다 — 먼저 show")
-        require(s.interactive) { "인터랙티브 카드에서만 크기를 바꾼다 — prevue focus <index> --on" }
+        require(s.interactive) { "인터랙티브 카드에서만 크기 · 시스템 UI를 바꾼다 — prevue focus <index> --on" }
         return b.focusCard.spec
     }
 

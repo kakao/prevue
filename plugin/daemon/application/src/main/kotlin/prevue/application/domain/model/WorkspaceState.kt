@@ -24,22 +24,32 @@ data class WorkspaceState(
     val lastShown: LastResult? = null,
     val boardFill: BoardFill? = null,
     val warm: Boolean = false,
-    val resize: Resize? = null,
+    val cardOverride: CardOverride? = null,
     val postures: Postures? = null,
     val postureRound: Long = 0,
 ) {
-    fun sized(p: PreviewSpec): PreviewSpec = resize?.takeIf { it.previewId == p.previewId }?.size?.applyTo(p) ?: p
+    fun sized(p: PreviewSpec): PreviewSpec = overrideOf(p)?.applyTo(p) ?: p
 
-    fun shownSize(): ScreenSize? = resize?.takeIf { it.previewId == (board?.focusCard?.spec ?: current)?.previewId }?.size
+    fun shownOverride(): CardOverride? = (board?.focusCard?.spec ?: current)?.let(::overrideOf)
+
+    fun shownSize(): ScreenSize? = shownOverride()?.size?.takeUnless { it == ScreenSize.Original }
+
+    fun shownSystemUi(): SystemUiState? {
+        val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
+        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, SystemUi.annotatedOn(spec))
+    }
 
     fun shownTarget(): Pair<PreviewSpec, ScreenSize>? {
         val b = board?.takeIf { interactive } ?: return null
-        return b.focusCard.spec to (shownSize() ?: ScreenSize.Original)
+        val spec = b.focusCard.spec
+        return (overrideOf(spec)?.base(spec) ?: spec) to (shownSize() ?: ScreenSize.Original)
     }
+
+    private fun overrideOf(p: PreviewSpec): CardOverride? = cardOverride?.takeIf { it.previewId == p.previewId }
 
     fun livePostures(): Postures? {
         val (base, size) = shownTarget() ?: return null
-        return postures?.takeIf { it.covers(size) && it.spec.previewId == base.previewId }
+        return postures?.takeIf { it.covers(size) && it.spec.previewId == base.previewId && SystemUi.annotatedOn(it.spec) == SystemUi.annotatedOn(base) }
     }
 
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }

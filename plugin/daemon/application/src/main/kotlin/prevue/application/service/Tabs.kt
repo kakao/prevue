@@ -228,7 +228,7 @@ class Tabs @Inject internal constructor(
         val at = ws.nowMs()
         ed.update { s ->
             val parked = s.tabs.map { if (it.key == s.activeTab) it.copy(board = s.board ?: it.board.takeIf { _ -> it.vacant != null }, seenAtMs = at) else it }
-            s.copy(tabs = parked, interactive = false, resize = null)
+            s.copy(tabs = parked, interactive = false, cardOverride = null)
         }
     }
 
@@ -241,7 +241,7 @@ class Tabs @Inject internal constructor(
                 selection = s.selection.takeUnless { mine },
                 selectionTab = s.selectionTab.takeUnless { mine },
             )
-            if (s.activeTab == t.key) left.copy(board = null, current = null, interactive = false, resize = null) else left
+            if (s.activeTab == t.key) left.copy(board = null, current = null, interactive = false, cardOverride = null) else left
         }
     }
 
@@ -269,7 +269,7 @@ class Tabs @Inject internal constructor(
         val s = ws.now
         val kept = s.board?.takeIf { tab.key == s.activeTab } ?: tab.board
         val t = tab.copy(board = kept, stale = true, vacant = why, seenAtMs = ws.nowMs())
-        ed.update { it.withTab(t).copy(board = null, current = null, interactive = false, resize = null) }
+        ed.update { it.withTab(t).copy(board = null, current = null, interactive = false, cardOverride = null) }
         if (tab.vacant != why) ws.emit(WorkspaceEvent.TabVacated(t))
         return t
     }

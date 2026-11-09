@@ -107,5 +107,3 @@ enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open
             listOfNotNull(ScreenSize.Device(this, false, landscape), if (cover != null) ScreenSize.Device(this, true, landscape) else null)
         }
 }
-
-data class Resize(val previewId: String, val size: ScreenSize)
