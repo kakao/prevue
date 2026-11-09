@@ -222,8 +222,10 @@ try {
   await send("Emulation.setDeviceMetricsOverride", { width: 480, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(200);
   await choose("fold8"); await until(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`document.querySelector('#pnPick [data-sel="fold8"]').getAttribute('aria-checked')==='true' && ${dockAt} && (r=>r.left>=0&&r.right<=innerWidth)(document.querySelector('#pnBody').getBoundingClientRect())`, "좁은 창(480)에서도 독은 한 줄로 창 안 · 메뉴로 고른다");
+  await send("Emulation.setDeviceMetricsOverride", { width: 820, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
+  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0`, "820 창에서 독은 한 줄 · 자세 글자가 보인다");
   await send("Emulation.setDeviceMetricsOverride", { width: 800, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
-  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0`, "800 창에서 독은 한 줄 · 자세 글자가 보인다");
+  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width===0 && document.querySelector('#dcFold').getAttribute('aria-label')`, "800 창부터 자세 버튼은 아이콘만 · 이름은 aria-label 에");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await evaluate(`for(const x of ['s26','narrow','ultra','foldable'])document.querySelector('#pnPick [data-sel="'+x+'"]').click()`);
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`);
