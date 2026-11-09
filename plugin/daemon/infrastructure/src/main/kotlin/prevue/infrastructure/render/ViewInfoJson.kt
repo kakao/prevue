@@ -111,13 +111,14 @@ internal object ViewInfoJson {
         val holdsPlacedLayout = layout != null || children.any { it.holdsPlacedLayout }
         if (kids.any { it.isEmpty() } && layout == null && children.none { it.shown }) return emptyList()
         val box = box(call("getBounds"))
-        return listOf(Node(mapOf(
-            "name" to (call("getName")?.toString() ?: ""),
-            "fileName" to (call("getFileName")?.toString() ?: ""),
-            "lineNumber" to (call("getLineNumber") ?: -1),
-            "bounds" to box,
-            "children" to children.map { it.json },
-        ), holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
+        return listOf(Node(buildMap {
+            put("name", call("getName")?.toString() ?: "")
+            put("fileName", call("getFileName")?.toString() ?: "")
+            put("lineNumber", call("getLineNumber") ?: -1)
+            put("bounds", box)
+            if (layout != null) put("modifiers", ModifierChain.of(layout))
+            put("children", children.map { it.json })
+        }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
 
     private fun box(bounds: Any?): List<Int> = listOf("getLeft", "getTop", "getRight", "getBottom").map { n ->
