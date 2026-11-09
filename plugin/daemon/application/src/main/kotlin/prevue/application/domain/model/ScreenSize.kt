@@ -23,7 +23,7 @@ sealed interface ScreenSize {
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
             if (p.systemBars is SystemBars.Shown) return deviceOfDp(p, widthDp, heightDp)
-            return p.copy(params = p.params + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
+            return p.copy(params = p.params - SystemBars.DEVICE_POSTURE + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
         }
     }
 
@@ -84,7 +84,7 @@ sealed interface ScreenSize {
             val dpi = keys["dpi"]?.toIntOrNull() ?: DEFAULT_DPI
             val k = dpi / 160.0
             val device = deviceSpec((widthDp * k).roundToInt(), (heightDp * k).roundToInt(), dpi, keys)
-            return p.copy(params = p.params - "widthDp" - "heightDp" + ("device" to device))
+            return p.copy(params = p.params - "widthDp" - "heightDp" - SystemBars.DEVICE_POSTURE + ("device" to device))
         }
 
         private val SIZED_KEYS = setOf("width", "height", "dpi", "orientation")

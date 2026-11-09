@@ -41,12 +41,12 @@ internal object LayoutlibBars {
     fun measured(root: ViewGroup, insets: BarInsets): String? {
         val layout = find(root) ?: return "layoutlib 의 바 레이아웃을 찾지 못했다"
         val impl = root.parent as? ViewRootImpl ?: return "창의 ViewRootImpl 을 찾지 못했다"
-        hideBars(root)
         val density = layout.context.resources.displayMetrics.density
         val status = (insets.statusDp * density).roundToInt()
         val nav = (insets.navDp * density).roundToInt()
         for (provider in layout.insetsFrameProviders) {
             val size = provider.insetsSize ?: continue
+            if (provider.type and BAR_TYPES == 0) continue
             when {
                 size.top > 0 -> provider.setInsetsSize(Insets.of(size.left, status, size.right, 0))
                 size.bottom > 0 -> provider.setInsetsSize(Insets.of(size.left, 0, size.right, nav))
@@ -54,9 +54,13 @@ internal object LayoutlibBars {
         }
         InsetUtil.setupSysUiInsets(layout.context, impl.insetsController, layout.insetsFrameProviders)
         layout.dispatchApplyWindowInsets(windowInsets(impl))
+        hideBars(root)
         layout.requestLayout()
         return null
     }
+
+    private val BAR_TYPES: Int
+        get() = WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars() or WindowInsets.Type.tappableElement()
 
     // 외부: DecorView 부터 다시 나눠 주면 DecorView 가 inset 을 먹고 앱을 edge-to-edge 밖으로 민다 — 바 레이아웃부터 나눠 준다
     private fun windowInsets(impl: ViewRootImpl): WindowInsets =

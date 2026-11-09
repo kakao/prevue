@@ -168,9 +168,15 @@ class RenderIntegrationTest {
             val out = engine.written(engine.show(spec))
             assertTrue(out.ok, out.message?.text)
             val k = device.model.dpi / 160.0
-            val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == HEADER_ROW_LINE }
+            val row = PearlFixture.lineOf(screenFile, HEADER_ROW)
+            val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == row }
             val expected = Math.round(insets.statusDp * k) + Math.round(HEADER_PADDING_DP * k)
             assertTrue(kotlin.math.abs(header.top - expected) <= 1, "${device.key} 머리 top ${header.top}px — 기대 ${expected}px")
+            val img = ImageIO.read(out.image!!)
+            val (x0, x1, y0, y1) = listOf(8 * k, 80 * k, 4 * k, insets.statusDp * k - 4).map { it.toInt() }
+            val ground = img.getRGB(x0, y0)
+            val marks = (y0 until y1).sumOf { y -> (x0 until x1).count { x -> img.getRGB(x, y) != ground } }
+            assertEquals(0, marks, "${device.key} 상태바 시각 자리에 layoutlib 바가 남았다")
         }
     }
 
@@ -986,7 +992,7 @@ class RenderIntegrationTest {
 
     companion object {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
-        private const val HEADER_ROW_LINE = 187
+        private const val HEADER_ROW = "Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {"
         private const val HEADER_PADDING_DP = 20
     }
 }

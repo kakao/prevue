@@ -46,7 +46,8 @@ internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf(
     "bars" to bars?.let { b -> mapOf("look" to b.look.key, "insets" to b.insets?.toJson()) },
 )
 
-private fun BarInsets.toJson(): Map<String, Any?> = mapOf("statusDp" to statusDp, "navDp" to navDp, "source" to source.key, "sourceUrl" to source.url)
+private fun BarInsets.toJson(): Map<String, Any?> =
+    mapOf("statusDp" to statusDp, "navDp" to navDp, "source" to source.site, "kind" to source.kind, "sourceUrl" to url)
 
 internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
 

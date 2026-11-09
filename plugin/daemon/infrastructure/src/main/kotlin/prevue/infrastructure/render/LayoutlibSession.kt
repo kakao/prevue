@@ -42,19 +42,19 @@ internal class LayoutlibSession(
         anchored = true
     }
 
-    fun renderPlaced(timeoutSec: Long): RenderResult {
+    fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
             barsPlaced = true
-            LayoutlibBars.insetsOf(preview)?.let { placeBars(it, timeoutSec) }
+            LayoutlibBars.insetsOf(preview)?.let(::placeBars)
         }
-        return task.render().get(timeoutSec, TimeUnit.SECONDS)
+        return task.render().get(timeoutSec(), TimeUnit.SECONDS)
     }
 
-    private fun placeBars(insets: BarInsets, timeoutSec: Long) {
-        task.inflate().get(timeoutSec, TimeUnit.SECONDS)
+    private fun placeBars(insets: BarInsets) {
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
         var why: String? = "세션의 루트 뷰를 찾지 못했다"
-        viewRoot()?.let { root -> onSession { why = LayoutlibBars.measured(root, insets) } }
-        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 값으로 그린다: $it") }
+        viewRoot()?.let { root -> onSession { why = runCatching { LayoutlibBars.measured(root, insets) }.getOrElse(Throwable::toString) } }
+        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
     }
 
     fun advanceCallbacks(at: Long = clock.next()) {

@@ -81,7 +81,7 @@ export function SystemUiControl({ systemUi, host, actions = NO_ACTIONS }: { syst
   const shown = !!systemUi?.shown;
   const insets = shown ? systemUi?.bars?.insets : null;
   const tip = insets
-    ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: insets.source }) + '\n' + phrase('systemUi.tip')
+    ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
     : phrase('systemUi.tip');
   const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
   const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={phrase('systemUi.label')} disabled={waiting} title={tip} onClick={flip}>

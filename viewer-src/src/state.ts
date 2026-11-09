@@ -26,7 +26,7 @@ export type Board = Omit<ContractBoard, 'groups'> & {
  * 한 장의 시스템 UI — choice 는 고른 값, annotated 는 소스의 showSystemUi, shown 은 지금 바를 그리는가. 인터랙티브가 아니면 null.
  * bars 는 그리는 바 — look 이 aosp 면 렌더러의 공통 바, 기기를 고르면 그 기기의 모양과 출처 값(insets, 재지 않은 자세는 null)이다(D-169).
  */
-export type BarInsets = { statusDp: number; navDp: number; source: string; sourceUrl: string };
+export type BarInsets = { statusDp: number; navDp: number; source: string; kind: string; sourceUrl: string };
 export type SystemUi = { choice: string; annotated: boolean; shown: boolean; bars?: { look: string; insets: BarInsets | null } | null };
 export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp' | 'systemUi'> & {
   pxPerDp: number | null;

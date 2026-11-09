@@ -4165,9 +4165,9 @@ function Sa(e, t, n) {
 		if (!i) return "dark";
 		let a = e.naturalHeight;
 		i.drawImage(e, 0, t * a, e.naturalWidth, Math.max(1, (n - t) * a), 0, 0, va, ya);
-		let o = i.getImageData(0, 0, va, ya).data, s = 0;
-		for (let e = 0; e < o.length; e += 4) s += (.2126 * o[e] + .7152 * o[e + 1] + .0722 * o[e + 2]) / 255;
-		return s / (o.length / 4) > ba ? "dark" : "light";
+		let o = i.getImageData(0, 0, va, ya).data, s = 0, c = 0;
+		for (let e = 0; e < o.length; e += 4) o[e + 3] && (s += (.2126 * o[e] + .7152 * o[e + 1] + .0722 * o[e + 2]) / 255, c++);
+		return c ? s / c > ba ? "dark" : "light" : "dark";
 	} catch {
 		return "dark";
 	}
@@ -4489,7 +4489,7 @@ function La({ systemUi: e, host: t, actions: n = ja }) {
 	let l = !!e?.shown, u = l ? e?.bars?.insets : null, d = u ? r("systemUi.tip.device", {
 		status: u.statusDp,
 		nav: u.navDp,
-		source: u.source
+		source: `${u.source} (${u.kind})`
 	}) + "\n" + r("systemUi.tip") : r("systemUi.tip");
 	return a(/* @__PURE__ */ (0, L.jsxs)("button", {
 		type: "button",

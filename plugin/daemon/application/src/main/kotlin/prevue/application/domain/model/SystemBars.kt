@@ -2,13 +2,14 @@ package prevue.application.domain.model
 
 enum class BarLook(val key: String) { AOSP("aosp"), ONE_UI("oneui"), PIXEL("pixel"), IOS("ios") }
 
-enum class InsetSource(val key: String, val url: String) {
-    WINDOW_INSETS("windowinsets.info", "https://windowinsets.info"),
-    WINDOW_INSETS_EMULATOR("windowinsets.info · emulator", "https://windowinsets.info"),
-    SAFE_AREA("safearea.info", "https://safearea.info"),
+enum class InsetSource(val site: String, val kind: String) {
+    SAMSUNG_RTL("windowinsets.info", "samsung-rtl"),
+    FIREBASE_TEST_LAB("windowinsets.info", "firebase-test-lab"),
+    ANDROID_EMULATOR("windowinsets.info", "emulator"),
+    SAFE_AREA("safearea.info", "site"),
 }
 
-data class BarInsets(val statusDp: Double, val navDp: Double, val source: InsetSource)
+data class BarInsets(val statusDp: Double, val navDp: Double, val source: InsetSource, val url: String)
 
 sealed interface SystemBars {
     data object Hidden : SystemBars

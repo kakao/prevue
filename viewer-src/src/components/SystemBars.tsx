@@ -30,9 +30,13 @@ function inkOver(img: HTMLImageElement | null, top: number, bottom: number): Ink
     const h = img.naturalHeight;
     g.drawImage(img, 0, top * h, img.naturalWidth, Math.max(1, (bottom - top) * h), 0, 0, SAMPLE_W, SAMPLE_H);
     const px = g.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
-    let sum = 0;
-    for (let i = 0; i < px.length; i += 4) sum += (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
-    return sum / (px.length / 4) > LIGHT_ABOVE ? 'dark' : 'light';
+    let sum = 0, seen = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      if (!px[i + 3]) continue;                       // 못 그린 칸(WebKit 이 MJPEG 를 캔버스에 못 옮기는 경우)은 밝기에 넣지 않는다
+      sum += (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255; seen++;
+    }
+    if (!seen) return 'dark';
+    return sum / seen > LIGHT_ABOVE ? 'dark' : 'light';
   } catch { return 'dark'; }
 }
 
