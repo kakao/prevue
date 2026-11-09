@@ -110,7 +110,7 @@ class ClasspathSpecTest {
         val ownCompile = listOf(dsJar, "/m2/ui-tooling-preview-api.jar", "/m2/foundation-api.jar")
         val kmpApp = ClasspathSpec(File(root, ":app.json"), ":app", "debug", "", "app.ap_",
             DumpPaths(classPath = app.classPath, projectClassPath = app.projectClassPath, compileClassPath = app.compileClassPath,
-                rClassJars = app.rClassJars, resourceDirs = emptyList(), moduleCompileClassPaths = mapOf(":feature:foryou" to ownCompile)))
+                rClassJars = app.rClassJars, resourceDirs = emptyList(), kmp = KmpPaths(moduleCompileClassPaths = mapOf(":feature:foryou" to ownCompile))))
         val lib = kmpApp.dependency(":feature:foryou")
         assertEquals(ownCompile + "/m2/compose-beta.jar" + appR, lib.compileClassPath)
         assertEquals(emptyList<String>(), lib.compileFill)
@@ -254,7 +254,7 @@ class ClasspathSpecTest {
         val kmpApp = ClasspathSpec(File(root, ":app.json"), ":app", "debug", "", "app.ap_",
             DumpPaths(classPath = app.classPath, projectClassPath = app.projectClassPath, compileClassPath = listOf("/m2/compose-runtime.jar"),
                 rClassJars = app.rClassJars, resourceDirs = emptyList(),
-                moduleCompileClassPaths = mapOf(":feature:foryou" to nonCompose, ":core:designsystem" to emptyList())))
+                kmp = KmpPaths(moduleCompileClassPaths = mapOf(":feature:foryou" to nonCompose, ":core:designsystem" to emptyList()))))
         assertEquals(nonCompose + "/m2/compose-runtime.jar" + appR, kmpApp.dependency(":feature:foryou").compileClassPath)
         val empty = kmpApp.dependency(":core:designsystem")
         assertEquals(listOf("/m2/compose-runtime.jar", appR), empty.compileClassPath)
