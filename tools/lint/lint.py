@@ -69,9 +69,9 @@ DETEKT_REPORTS = detekt_reports(MODULES)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
 DETEKT_CONFIG = "tools/lint/detekt.yml"
-# 층 규칙의 심은 위반 — 판을 올리면 갈래가 말없이 죽을 수 있다. 줄 끝의 `// 잡는다 <규칙>` 이 기대다
+# 층 규칙의 심은 위반 — 판을 올리면 갈래가 말없이 죽을 수 있다. 줄 끝의 `// 잡는다 <규칙 이름/갈래> …` 가 기대다
 LAYER_SEEDS = "tests/lint/layer"
-SEED_MARK = re.compile(r"//\s*잡는다\s+(\S+)\s*$")
+SEED_MARK = re.compile(r"//\s*잡는다\s+(\S+(?:\s+\S+)*)\s*$")
 
 DETEKT_GROUPS = {
     "LongMethod": "metric/long-method", "LongParameterList": "metric/long-parameter-list",
@@ -158,17 +158,34 @@ def detekt_findings(gradle_args):
                 if rule in DETEKT_ADVICE:
                     advice = "%s — %s" % (advice, DETEKT_ADVICE[rule])
                 found.append(Finding(path, line, rule, advice, source=name))
-    seeded = [f for f in found if f.path.startswith(LAYER_SEEDS + "/")]
-    missed, extra = seed_mismatch(seed_expectations(), seeded)
+    seeded, rest = [], []
+    for f in found:
+        if not f.path.startswith(LAYER_SEEDS + "/"):
+            rest.append(f)
+        elif f.source.startswith(LAYER_RULES):
+            seeded.append(f)
+    check_seeds(seed_expectations(), seeded)
+    return rest
+
+
+def check_seeds(expected, seeded):
+    """심은 위반을 층 규칙이 정확히 잡았나 — 아니면 통과가 아무것도 말하지 않는다(종료 2). 심은 파일의 다른 규칙 결과는 보지 않는다."""
+    with open(DETEKT_CONFIG, encoding="utf-8") as f:
+        bare = layer_branches(f.read()) - {rule for _, _, rule in expected}
+    if bare:
+        raise Unrunnable("심은 위반이 없는 층 규칙 갈래 — %s 에 `// 잡는다 <규칙 이름/갈래>` 줄을 함께 둔다: %s" % (LAYER_SEEDS, ", ".join(sorted(bare))))
+    if expected and not seeded:
+        raise Unrunnable("심은 위반(%s)이 detekt 에 하나도 실리지 않았다 — init script 가 싣는 모듈(:application)이 바뀌었는지 본다" % LAYER_SEEDS)
+    missed, extra = seed_mismatch(expected, seeded)
     if missed or extra:
         raise Unrunnable("층 규칙이 심은 위반(%s)과 어긋난다 — 통과가 아무것도 말하지 않는다\n%s" % (
             LAYER_SEEDS, "\n".join(["못 잡았다  %s:%d  %s" % m for m in missed] + ["더 잡았다  %s:%d  %s" % e for e in extra])))
-    return [f for f in found if f not in seeded]
 
 
 def seed_expectations(root=LAYER_SEEDS):
-    """심은 위반 파일의 기대 {(경로, 줄, 규칙)} — 규칙은 detekt 의 이름 그대로다(ForbiddenImport/application 과 ForbiddenMethodCall/application 을 가른다)."""
-    out = set()
+    """심은 위반 파일의 기대 [(경로, 줄, 규칙)] — 규칙은 detekt 의 이름 그대로다(ForbiddenImport/application 과 ForbiddenMethodCall/application 을 가른다).
+    한 줄을 두 갈래가 함께 잡으면 표시에 둘 다 적는다"""
+    out = []
     for d, _, files in os.walk(root):
         for name in sorted(f for f in files if f.endswith(".kt")):
             path = os.path.join(d, name)
@@ -176,14 +193,15 @@ def seed_expectations(root=LAYER_SEEDS):
                 for n, line in enumerate(f, 1):
                     m = SEED_MARK.search(line)
                     if m:
-                        out.add((path, n, m.group(1)))
+                        out.extend((path, n, rule) for rule in m.group(1).split())
     return out
 
 
 def seed_mismatch(expected, seeded):
-    """(못 잡은 것, 더 잡은 것) — 더 잡은 것도 어긋남이다. 허용 목록 · 경로 한정이 금지를 못 이기면 거기서 드러난다."""
-    actual = {(f.path, f.line, f.source) for f in seeded}
-    return sorted(expected - actual), sorted(actual - expected)
+    """(못 잡은 것, 더 잡은 것) — 더 잡은 것도 어긋남이다. 허용 목록 · 경로 한정이 금지를 못 이기면 거기서 드러난다.
+    개수로 견준다 — 한 줄을 같은 갈래가 두 번 잡아도 어긋남이다"""
+    want, got = Counter(expected), Counter((f.path, f.line, f.source) for f in seeded)
+    return sorted((want - got).elements()), sorted((got - want).elements())
 
 
 def layer_branches(config):

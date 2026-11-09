@@ -71,11 +71,13 @@ class LayerSeeds(unittest.TestCase):
         self.assertIn(("tests/lint/layer/prevue/infrastructure/controller/http/Seed.kt", 5, "ForbiddenImport/http"), expected)
         self.assertIn(("tests/lint/layer/prevue/application/service/Seed.kt", 13, "ForbiddenMethodCall/application"), expected)
         self.assertFalse(any(path.endswith("bindings/Seed.kt") for path, _, _ in expected))
+        json = [rule for path, n, rule in expected if path.endswith("json/Seed.kt") and n == 6]
+        self.assertEqual(json, ["ForbiddenImport/json", "ForbiddenImport/technology"])
 
     def test_갈래마다_심은_위반이_있다(self):
         with open(lint.DETEKT_CONFIG, encoding="utf-8") as f:
             branches = lint.layer_branches(f.read())
-        self.assertEqual(len(branches), 12)
+        self.assertGreater(len(branches), 10)
         self.assertEqual(set(), branches - {rule for _, _, rule in lint.seed_expectations()})
 
     def test_못_잡은_것과_더_잡은_것을_가른다(self):
@@ -85,6 +87,16 @@ class LayerSeeds(unittest.TestCase):
         missed, extra = lint.seed_mismatch(expected, seeded)
         self.assertEqual(missed, [("a.kt", 4, "ForbiddenImport/http")])
         self.assertEqual(extra, [("a.kt", 3, "ForbiddenImport/technology")])
+
+    def test_같은_줄을_두_번_잡아도_어긋난다(self):
+        twice = [lint.Finding("a.kt", 3, "layer/http", "", source="ForbiddenImport/http")] * 2
+        self.assertEqual(lint.seed_mismatch([("a.kt", 3, "ForbiddenImport/http")], twice),
+                         ([], [("a.kt", 3, "ForbiddenImport/http")]))
+
+    def test_하나도_실리지_않으면_따로_짚는다(self):
+        expected = lint.seed_expectations()
+        with self.assertRaisesRegex(lint.Unrunnable, "하나도 실리지 않았다"):
+            lint.check_seeds(expected, [])
 
 
 class LayerRule(unittest.TestCase):

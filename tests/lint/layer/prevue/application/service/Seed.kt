@@ -14,5 +14,7 @@ fun seed(): List<Any> {
     file.readText() // 잡는다 ForbiddenMethodCall/application
     file.forEachLine { } // 잡는다 ForbiddenMethodCall/application
     FileInputStream(file) // 잡는다 ForbiddenMethodCall/application
+    File.createTempFile("seed", null) // 잡는다 ForbiddenMethodCall/application
+    file.bufferedReader() // 잡는다 ForbiddenMethodCall/application
     return listOf(file.path, file.canonicalPath, "x".reader().readText())
 }
