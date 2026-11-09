@@ -1,22 +1,25 @@
 package prevue.application.domain.model
 
 enum class SystemUi(val key: String) {
-    ANNOTATED("annotated"),
-    ON("on"),
-    OFF("off"),
+    ANNOTATED("annotated") {
+        override fun applyTo(p: PreviewSpec): PreviewSpec = p
+        override fun shown(annotated: Boolean): Boolean = annotated
+    },
+    ON("on") {
+        override fun applyTo(p: PreviewSpec): PreviewSpec = p.copy(params = p.params + (SystemBars.SHOW_SYSTEM_UI to "true"))
+        override fun shown(annotated: Boolean): Boolean = true
+    },
+    OFF("off") {
+        override fun applyTo(p: PreviewSpec): PreviewSpec = p.copy(params = p.params - SystemBars.SHOW_SYSTEM_UI)
+        override fun shown(annotated: Boolean): Boolean = false
+    },
     ;
 
-    fun applyTo(p: PreviewSpec): PreviewSpec = when (this) {
-        ANNOTATED -> p
-        ON -> p.copy(params = p.params + (SHOW_SYSTEM_UI to "true"))
-        OFF -> p.copy(params = p.params - SHOW_SYSTEM_UI)
-    }
+    abstract fun applyTo(p: PreviewSpec): PreviewSpec
+
+    abstract fun shown(annotated: Boolean): Boolean
 
     companion object {
-        const val SHOW_SYSTEM_UI = "showSystemUi"
-
-        fun annotatedOn(p: PreviewSpec): Boolean = p.params[SHOW_SYSTEM_UI] == "true"
-
         fun parse(value: String?): SystemUi? = value?.let { v ->
             entries.firstOrNull { it.key == v } ?: throw IllegalArgumentException("시스템 UI는 ${entries.joinToString(" · ") { it.key }} 중 하나 — $v")
         }
@@ -24,12 +27,7 @@ enum class SystemUi(val key: String) {
 }
 
 data class SystemUiState(val choice: SystemUi, val annotated: Boolean) {
-    val shown: Boolean
-        get() = when (choice) {
-            SystemUi.ANNOTATED -> annotated
-            SystemUi.ON -> true
-            SystemUi.OFF -> false
-        }
+    val shown: Boolean get() = choice.shown(annotated)
 }
 
 data class CardOverride(val previewId: String, val size: ScreenSize = ScreenSize.Original, val systemUi: SystemUi = SystemUi.ANNOTATED) {

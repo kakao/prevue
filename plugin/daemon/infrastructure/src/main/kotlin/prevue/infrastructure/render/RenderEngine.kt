@@ -1,6 +1,5 @@
 package prevue.infrastructure.render
 
-import com.android.ide.common.rendering.api.SessionParams
 import com.android.resources.ResourceFolderType
 import com.android.tools.configurations.Configuration
 import com.android.tools.render.RenderEnvironmentBootstrapper
@@ -25,7 +24,7 @@ import prevue.application.domain.model.ListState
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.SemanticNode
-import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.systemBars
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
@@ -194,7 +193,7 @@ internal class RenderEngine(
         val element = screenshot(p).toPreviewElement(renderer.module)
         val cfg = baseConfiguration.clone()
         Shim.applyTo(element, cfg)
-        if (SystemUi.annotatedOn(p)) cfg.setTheme(SYSTEM_BARS_THEME)
+        LayoutlibBars.configure(cfg, p.systemBars)
         val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null
@@ -245,7 +244,7 @@ internal class RenderEngine(
         return loaders.withPreloaderParked(park) {
             try {
                 val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
-                if (task != null && SystemUi.annotatedOn(p)) task.showSystemBars()
+                if (task != null) LayoutlibBars.configure(task, p.systemBars)
                 if (task != null) Built.Task(task)
                 else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
             } catch (e: Exception) {
@@ -396,14 +395,7 @@ internal class RenderEngine(
 
     private data class LoaderCount(val gen: Int, val tasks: Int)
 
-    // 외부: compose-preview-renderer 부트스트랩이 모든 태스크 빌더에 disableDecorations · SHRINK 를 걸어 showSystemUi 여도 바가 없다
-    private fun RenderTask.showSystemBars() {
-        setDecorations(true)
-        setRenderingMode(SessionParams.RenderingMode.NORMAL)
-    }
-
     private companion object {
-        const val SYSTEM_BARS_THEME = "@android:style/Theme.Material.Light.NoActionBar"
         const val NOTHING_SHOWN = "보여 주는 프리뷰가 없다"
         const val CLOSED = "라이브 세션이 닫혔다"
         const val NO_ROOT = "세션의 루트 뷰를 찾지 못했다"

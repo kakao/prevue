@@ -1,6 +1,7 @@
 package prevue.infrastructure.controller.browser
 
 import prevue.application.domain.model.Phrase
+import prevue.application.domain.model.SystemBars
 import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.phrase
 import kotlin.math.roundToInt
@@ -34,7 +35,7 @@ internal object CardSpecs {
         params["fontScale"]?.toDoubleOrNull()?.takeIf { it != 1.0 }?.let { out += CardSpec("font", "${trim(it)}×") }
         params["locale"]?.takeIf { it.isNotBlank() }?.let { out += CardSpec("locale", it) }
         params["apiLevel"]?.toIntOrNull()?.let { out += CardSpec("api", "API $it") }
-        if (params["showSystemUi"] == "true") out += CardSpec("systemUi", phrase("spec.systemUi"))
+        if (SystemBars.of(params) is SystemBars.Shown) out += CardSpec("systemUi", phrase("spec.systemUi"))
         return out
     }
 

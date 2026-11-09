@@ -36,7 +36,7 @@ data class WorkspaceState(
 
     fun shownSystemUi(): SystemUiState? {
         val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
-        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, SystemUi.annotatedOn(spec))
+        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown)
     }
 
     fun shownTarget(): Pair<PreviewSpec, ScreenSize>? {
@@ -49,7 +49,7 @@ data class WorkspaceState(
 
     fun livePostures(): Postures? {
         val (base, size) = shownTarget() ?: return null
-        return postures?.takeIf { it.covers(size) && it.spec.previewId == base.previewId && SystemUi.annotatedOn(it.spec) == SystemUi.annotatedOn(base) }
+        return postures?.takeIf { it.covers(size) && it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars }
     }
 
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }

@@ -38,6 +38,14 @@ class CardOverrideTest {
         assertTrue(SystemUiState(SystemUi.ON, annotated = false).shown)
     }
 
+    @Test fun `덮어쓴 spec 의 바는 고른 값이 어노테이션을 이긴다`() {
+        val annotated = spec("showSystemUi" to "true", "device" to "id:pixel_7")
+        assertEquals(SystemBars.Shown(BarLook.AOSP), annotated.systemBars)
+        assertEquals(SystemBars.Hidden, CardOverride("id", systemUi = SystemUi.OFF).applyTo(annotated).systemBars)
+        assertEquals(SystemBars.Shown(BarLook.AOSP), CardOverride("id", ScreenSize.Dp(320, 640), SystemUi.ON).applyTo(spec()).systemBars)
+        assertEquals(SystemBars.Hidden, CardOverride("id", ScreenSize.Dp(320, 640)).applyTo(spec()).systemBars)
+    }
+
     @Test fun `세 값 밖은 받지 않는다`() {
         assertEquals(SystemUi.OFF, SystemUi.parse("off"))
         assertNull(SystemUi.parse(null))
