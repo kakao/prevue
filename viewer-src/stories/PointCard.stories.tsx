@@ -79,5 +79,5 @@ function Board({ theme, start = null, still }: { theme: string; start?: Picked |
     </div>
   </section>;
 }
-export const OnPreview: Story = { render: () => <div className="story-sheets"><Board theme="light" start={drink} still /><Board theme="dark" start={find(tree, 'FilterRow')} still /></div> };
-export const BoardPoint: Story = { render: () => <div className="story-sheets"><Board theme="light" /><Board theme="dark" /></div> };
+export const OnPreview: Story = { render: () => <div className="story-sheets story-boards"><Board theme="light" start={drink} still /><Board theme="dark" start={find(tree, 'FilterRow')} still /></div> };
+export const BoardPoint: Story = { render: () => <div className="story-sheets story-boards"><Board theme="light" /><Board theme="dark" /></div> };
