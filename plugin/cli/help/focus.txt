@@ -1,6 +1,7 @@
 prevue focus <index> --on|--off
 prevue focus <index> --size original|narrow|foldable|<W>x<H>
 prevue focus <index> --device <device> [--folded] [--landscape]
+prevue focus <index> --system-ui annotated|on|off
 
 Attaches a task to the card to make it interactive (--on) and back to the board (--off) — also for a card entered by show <FQN>. While it is on, other cards are redrawn on a separate task
 once input has been quiet for a second — until they all are, wait answers complete:false. Turning it off draws whatever is still old.
@@ -15,6 +16,10 @@ Given to a card already on, they redraw at that size without turning interactive
     iPhone   ip17(iPhone 17) · ipair(iPhone Air) · ip17pm(iPhone 17 Pro Max) · duo(iPhone Duo)
   --folded the folded screen (cover) · --landscape the device rotated from its natural orientation — devices only. Without them it is unfolded in its natural orientation
     A phone rotated is landscape; a screen that is naturally landscape (tablet · unfolded fold8) rotated is portrait. status's widthDp · heightDp give the actual orientation
-Giving only --size · --device turns the card on (--on is the default). Running --on again on a card already on, without a size, keeps the size.
+--system-ui draws the status bar and navigation bar (on) or leaves them out (off) on the interactive card, whatever @Preview(showSystemUi) says;
+  annotated goes back to the annotation. Like the size it survives saves and goes back when turned off or when the tab changes — --size original
+  removes only the size and --system-ui annotated only the system UI. status's systemUi gives choice (annotated · on · off), annotated (the source's value)
+  and shown (whether the bars are drawn). The bars are drawn edge-to-edge over the app as on a device with target SDK 35+
+Giving only --size · --device · --system-ui turns the card on (--on is the default). Running --on again on a card already on, without them, keeps them.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.
