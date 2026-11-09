@@ -2,8 +2,6 @@ package prevue.infrastructure.render
 
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.Optional
-import java.util.concurrent.ConcurrentHashMap
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -17,15 +15,11 @@ internal object ModifierChain {
         }
     }
 
-    private val methods = object : ClassValue<ConcurrentHashMap<String, Optional<Method>>>() {
-        override fun computeValue(type: Class<*>) = ConcurrentHashMap<String, Optional<Method>>()
+    private val methods = object : ClassValue<Map<String, Method>>() {
+        override fun computeValue(type: Class<*>): Map<String, Method> = type.methods.filter { it.parameterCount == 0 }.associateBy { it.name }
     }
 
-    private fun call(target: Any, name: String): Any? {
-        val type = target.javaClass
-        val method = methods.get(type).getOrPut(name) { Optional.ofNullable(runCatching { type.getMethod(name) }.getOrNull()) }
-        return method.map { runCatching { it.invoke(target) }.getOrNull() }.orElse(null)
-    }
+    private fun call(target: Any, name: String): Any? = methods.get(target.javaClass)[name]?.let { runCatching { it.invoke(target) }.getOrNull() }
 
     fun describe(modifier: Any): Map<String, Any?>? {
         val name = modifier.javaClass.simpleName

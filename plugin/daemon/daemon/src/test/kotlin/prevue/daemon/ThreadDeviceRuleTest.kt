@@ -25,6 +25,7 @@ class ThreadDeviceRuleTest {
             Allowed("$RENDER/RenderArtifactStore.kt", "runBlocking", 1, "close 입구 — 데몬 정리가 레인에 남은 쓰기를 기다린다"),
             Allowed("$RENDER/LazyListReflection.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/SemanticsTree.kt", "ClassValue", 3, CLASS_LIFETIME),
+            Allowed("$RENDER/ModifierChain.kt", "ClassValue", 2, CLASS_LIFETIME),
             Allowed("$RENDER/SessionDisposal.kt", "CompletableFuture", 1, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
