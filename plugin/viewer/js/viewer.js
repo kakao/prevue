@@ -1656,7 +1656,7 @@ function ir(e, { stage: t, img: n, box: r, pick: i, marks: a }, o) {
 	}, { signal: o });
 }
 // src/workspace/resize.ts
-var ar = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.half ? "half" : e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
+var ar = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
 function or(e, t, n) {
 	try {
 		let r = document.createElement("canvas");
@@ -1688,7 +1688,6 @@ function sr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 			let [t, n, r] = e.split(":"), i = D.devices.has(t) ? {
 				device: t === "ipduo" ? "duo" : t,
 				folded: n === "cover",
-				half: n === "half",
 				landscape: r === "rot"
 			} : { size: e.startsWith("custom:") ? e.slice(7) : e };
 			return M("/viewer/resize", i).then((e) => {
@@ -3708,40 +3707,22 @@ function $i() {
 										/* @__PURE__ */ (0, L.jsx)("stop", { offset: "1" })
 									]
 								}) }),
-								/* @__PURE__ */ (0, L.jsx)("path", { className: "thick" }),
-								/* @__PURE__ */ (0, L.jsxs)("g", {
-									className: "draw",
-									children: [
-										/* @__PURE__ */ (0, L.jsxs)("g", {
-											className: "band",
-											children: [
-												/* @__PURE__ */ (0, L.jsx)("path", { className: "bl" }),
-												/* @__PURE__ */ (0, L.jsx)("path", { className: "bc" }),
-												/* @__PURE__ */ (0, L.jsx)("path", { className: "bd" })
-											]
-										}),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "outl" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "houtl" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "rim" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "rimhi" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "body" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "glow" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "glow" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "glow" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "inner" }),
-										/* @__PURE__ */ (0, L.jsx)("path", {
-											className: "sheen",
-											stroke: "url(#duoSheen)"
-										}),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "hinge" }),
-										/* @__PURE__ */ (0, L.jsx)("path", {
-											className: "hsheen",
-											stroke: "url(#duoSheen)"
-										}),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "ring" }),
-										/* @__PURE__ */ (0, L.jsx)("path", { className: "ring hr" })
-									]
-								})
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "outl" }),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "houtl" }),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "rim" }),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "rimhi" }),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "body" }),
+								/* @__PURE__ */ (0, L.jsx)("path", {
+									className: "sheen",
+									stroke: "url(#duoSheen)"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "hinge" }),
+								/* @__PURE__ */ (0, L.jsx)("path", {
+									className: "hsheen",
+									stroke: "url(#duoSheen)"
+								}),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "ring" }),
+								/* @__PURE__ */ (0, L.jsx)("path", { className: "ring hr" })
 							]
 						}),
 						/* @__PURE__ */ (0, L.jsxs)("div", {
@@ -3761,7 +3742,6 @@ function $i() {
 							/* @__PURE__ */ (0, L.jsxs)("div", {
 								className: "base",
 								children: [
-									/* @__PURE__ */ (0, L.jsx)("div", { className: "edge bez" }),
 									/* @__PURE__ */ (0, L.jsxs)("div", {
 										className: "clip",
 										children: [
@@ -3778,64 +3758,49 @@ function $i() {
 											/* @__PURE__ */ (0, L.jsx)("div", { className: "cam" })
 										]
 									}),
+									/* @__PURE__ */ (0, L.jsx)("div", { className: "edge bez" }),
 									/* @__PURE__ */ (0, L.jsx)("div", { className: "edge ring" })
 								]
 							}),
-							/* @__PURE__ */ (0, L.jsx)("div", { className: "spine" }),
 							/* @__PURE__ */ (0, L.jsxs)("div", {
 								className: "leaf",
 								children: [
 									/* @__PURE__ */ (0, L.jsxs)("div", {
-										className: "lay l-in",
+										className: "clip face inner",
 										children: [
-											/* @__PURE__ */ (0, L.jsx)("div", { className: "edge bez" }),
-											/* @__PURE__ */ (0, L.jsxs)("div", {
-												className: "clip face inner",
-												children: [
-													/* @__PURE__ */ (0, L.jsx)("img", {
-														className: "ly old",
-														alt: ""
-													}),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "veil" }),
-													/* @__PURE__ */ (0, L.jsx)("img", {
-														className: "ly neu",
-														alt: ""
-													}),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "shade" }),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "sheen" }),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "cam" })
-												]
+											/* @__PURE__ */ (0, L.jsx)("img", {
+												className: "ly old",
+												alt: ""
 											}),
-											/* @__PURE__ */ (0, L.jsx)("div", { className: "edge ring" })
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "veil" }),
+											/* @__PURE__ */ (0, L.jsx)("img", {
+												className: "ly neu",
+												alt: ""
+											}),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "shade" }),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "sheen" }),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "cam" })
 										]
 									}),
 									/* @__PURE__ */ (0, L.jsxs)("div", {
-										className: "lay l-out",
+										className: "clip face outer",
 										children: [
-											/* @__PURE__ */ (0, L.jsx)("div", { className: "edge bez" }),
-											/* @__PURE__ */ (0, L.jsxs)("div", {
-												className: "clip face outer",
-												children: [
-													/* @__PURE__ */ (0, L.jsx)("img", {
-														className: "ly old",
-														alt: ""
-													}),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "veil" }),
-													/* @__PURE__ */ (0, L.jsx)("img", {
-														className: "ly neu",
-														alt: ""
-													}),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "shade" }),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "sheen" }),
-													/* @__PURE__ */ (0, L.jsx)("div", { className: "cam" })
-												]
+											/* @__PURE__ */ (0, L.jsx)("img", {
+												className: "ly old",
+												alt: ""
 											}),
-											/* @__PURE__ */ (0, L.jsx)("div", { className: "edge ring" })
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "veil" }),
+											/* @__PURE__ */ (0, L.jsx)("img", {
+												className: "ly neu",
+												alt: ""
+											}),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "shade" }),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "sheen" }),
+											/* @__PURE__ */ (0, L.jsx)("div", { className: "cam" })
 										]
 									}),
-									/* @__PURE__ */ (0, L.jsx)("div", { className: "side s-far" }),
-									/* @__PURE__ */ (0, L.jsx)("div", { className: "side s-a" }),
-									/* @__PURE__ */ (0, L.jsx)("div", { className: "side s-b" })
+									/* @__PURE__ */ (0, L.jsx)("div", { className: "edge bez" }),
+									/* @__PURE__ */ (0, L.jsx)("div", { className: "edge ring" })
 								]
 							}),
 							/* @__PURE__ */ (0, L.jsx)("div", { className: "crease" }),
@@ -4028,16 +3993,6 @@ function oa() {
 					children: /* @__PURE__ */ (0, L.jsx)("span", {
 						id: "dcFoldLb",
 						...e.text("posture.fold")
-					})
-				}),
-				/* @__PURE__ */ (0, L.jsx)("button", {
-					className: "pn-it",
-					id: "dcHalf",
-					type: "button",
-					hidden: !0,
-					children: /* @__PURE__ */ (0, L.jsx)("span", {
-						id: "dcHalfLb",
-						...e.text("posture.half")
 					})
 				}),
 				/* @__PURE__ */ (0, L.jsx)("button", {
