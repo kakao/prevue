@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { Focus, SystemUi, ViewerState } from '../state';
@@ -67,43 +67,21 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
 }
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-const CHOICES = ['annotated', 'on', 'off'] as const;
-
 /**
- * 시스템 UI 세 값(D-159 ①) — 어노테이션대로 · 켬 · 끔. 버튼은 값과 출처를 함께 보인다(`시스템 UI · 어노테이션(켬)`). 고르면 데몬이 이 한 장의
- * spec 만 덮어써 렌더러가 실제 상태바 · 내비바를 그리거나 뺀다 — 나가면 어노테이션대로다. 인터랙티브가 아니면(systemUi 가 null) 숨는다.
- * 메뉴는 배율 메뉴처럼 위로 열리고, 바깥을 누르거나 esc 면 닫힌다. 첫 장을 기다리는 동안은 잠긴다.
+ * 시스템 UI(D-159 ①) — 상태바 · 내비바를 켜고 끄는 토글 하나. 처음 값은 어노테이션(`showSystemUi`)을 따른다. 누르면 데몬이 이 한 장의 spec 만
+ * 덮어써 렌더러가 실제 바를 그리거나 뺀다 — 어노테이션과 같은 값으로 돌아오면 덮어쓰기를 걷고, 나가면 어노테이션대로다.
+ * 인터랙티브가 아니면(systemUi 가 null) 숨고, 첫 장을 기다리는 동안은 잠긴다.
  */
 export function SystemUiControl({ systemUi, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
-  const [menu, setMenu] = useState(false);
   useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
-  useEffect(() => { if (!systemUi || waiting) setMenu(false); }, [systemUi, waiting]);
-  useEffect(() => {
-    if (!menu) return;
-    const outside = (e: PointerEvent) => { if (!element?.contains(e.target as Node)) setMenu(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false); };
-    addEventListener('pointerdown', outside);
-    addEventListener('keydown', esc);
-    return () => { removeEventListener('pointerdown', outside); removeEventListener('keydown', esc); };
-  }, [menu, element]);
-  const state = (on: boolean) => phrase(on ? 'systemUi.on' : 'systemUi.off');
-  const value = !systemUi ? '' : systemUi.choice === 'annotated' ? phrase('systemUi.annotated', { state: state(systemUi.annotated) }) : state(systemUi.choice === 'on');
-  const pick = (choice: string) => { setMenu(false); if (choice !== systemUi?.choice) actions.pickSystemUi(choice); };
-  const body = <>
-    <button type="button" id="sysUiBtn" className="tb-btn" aria-haspopup="menu" aria-expanded={menu} disabled={waiting}
-      title={phrase('systemUi.tip')} onClick={() => setMenu(m => !m)}>
-      {BARS}<span className="sys-lb">{phrase('systemUi.label')}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{value}</span>
-    </button>
-    <div className={menu ? 'sys-menu on' : 'sys-menu'} id="sysUiMenu" role="menu" aria-label={phrase('systemUi.label')}>
-      {CHOICES.map(c => <button type="button" role="menuitemradio" aria-checked={systemUi?.choice === c} key={c} data-ui={c} disabled={waiting} onClick={() => pick(c)}>
-        <span>{c === 'annotated' ? phrase('systemUi.pick.annotated') : state(c === 'on')}</span>
-        {c === 'annotated' && systemUi ? <small>{state(systemUi.annotated)}</small> : null}
-      </button>)}
-    </div>
-  </>;
+  const shown = !!systemUi?.shown;
+  const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
+  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} disabled={waiting} title={phrase('systemUi.tip')} onClick={flip}>
+    {BARS}<span className="sys-lb">{phrase('systemUi.label')}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}</span>
+  </button>;
   return place(body, systemUiHost);
 }
 

@@ -22,8 +22,8 @@ sealed interface ScreenSize {
         override val key: String get() = preset ?: "${widthDp}x$heightDp"
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
-            if (p.systemBars == SystemBars.Hidden) return p.copy(params = p.params - "widthDp" - "heightDp" + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
-            return deviceOfDp(p, widthDp, heightDp)
+            if (p.systemBars is SystemBars.Shown) return deviceOfDp(p, widthDp, heightDp)
+            return p.copy(params = p.params + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
         }
     }
 
