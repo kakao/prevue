@@ -60,6 +60,11 @@
       "pxPerDp": "number",
       "size": "null",
       "streamUrl": "string",
+      "systemUi": {
+        "annotated": "boolean",
+        "choice": "string",
+        "shown": "boolean"
+      },
       "treeUrl": "string"
     },
     "header": {
@@ -230,6 +235,11 @@
       "name": null,
       "fn": "Card0",
       "size": null,
+      "systemUi": {
+        "choice": "annotated",
+        "annotated": false,
+        "shown": false
+      },
       "postures": []
     },
     "stale": [],

@@ -13,8 +13,9 @@ import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.PreviewSpec
-import prevue.application.domain.model.Resize
+import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.SkipReason
 import prevue.application.domain.model.phrase
@@ -125,14 +126,15 @@ class Boards(
         return done
     }
 
-    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult = ws.exclusive { ed ->
+    suspend fun focus(index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null): FocusResult = ws.exclusive { ed ->
         val b = ws.now.board
-        if (on && size != null && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, resized(ed, size, by))
-        else switchFocus(ed, index, on, by, size)
+        val adjusts = size != null || systemUi != null
+        if (on && adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by))
+        else switchFocus(ed, index, on, by, size, systemUi)
     }
 
-    private suspend fun resized(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult =
-        liveService.resizeWithin(ed, size, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
+    private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String): ShowResult =
+        liveService.overrideWithin(ed, size, systemUi, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
     suspend fun unfocus(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
@@ -141,22 +143,26 @@ class Boards(
         switchFocus(ed, b.focus, on = false, by)
     }
 
-    private suspend fun switchFocus(ed: WorkspaceEditor, index: Int, on: Boolean, by: String, size: ScreenSize? = null): FocusResult {
-        require(on || size == null) { "크기는 인터랙티브 카드에만 준다 — --on과 함께" }
-        if (on) return FocusResult.On(index, enter(ed, index, by, size))
+    private suspend fun switchFocus(
+        ed: WorkspaceEditor, index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null,
+    ): FocusResult {
+        require(on || (size == null && systemUi == null)) { "크기 · 시스템 UI는 인터랙티브 카드에만 준다 — --on과 함께" }
+        if (on) return FocusResult.On(index, enter(ed, index, by, size, systemUi))
         val b = boardWith(index)
-        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = false, resize = null) }
+        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = false, cardOverride = null) }
         live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
         fill(by)
         return FocusResult.Off(index)
     }
 
-    internal suspend fun enter(ed: WorkspaceEditor, index: Int, by: String, size: ScreenSize? = null, since: Long? = null): ShowResult {
+    internal suspend fun enter(
+        ed: WorkspaceEditor, index: Int, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, since: Long? = null,
+    ): ShowResult {
         val b = boardWith(index)
         val id = b.cards[index].spec.previewId
-        val kept = ws.now.resize?.takeIf { size == null && ws.now.interactive && it.previewId == id }
-        val sized = size?.takeIf { it != ScreenSize.Original }?.let { Resize(id, it) } ?: kept
-        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, resize = sized) }
+        val kept = ws.now.cardOverride?.takeIf { ws.now.interactive && it.previewId == id }
+        val next = (kept ?: CardOverride(id)).with(size, systemUi)
+        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, cardOverride = next) }
         return attach(ed, b.cards[index].spec, by, since)
     }
 

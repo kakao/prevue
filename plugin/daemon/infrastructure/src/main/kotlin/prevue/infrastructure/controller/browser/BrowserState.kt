@@ -2,6 +2,7 @@ package prevue.infrastructure.controller.browser
 
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Selection
 
 /**
@@ -111,6 +112,7 @@ internal data class FocusScreen(
     /** 제목 아래 줄 — 함수 이름. 제공자 값이 여럿이면 몇 번째인지(` · 2`)를 붙인다. 묶음의 다섯 장이 모두 `foldable`이어도 어느 함수인지 남는다. */
     val fn: String = "",
     val size: ScreenSize? = null,
+    val systemUi: SystemUiState? = null,
     val postures: List<PostureImage> = emptyList(),
 )
 

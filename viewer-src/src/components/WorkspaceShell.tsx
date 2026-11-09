@@ -70,6 +70,9 @@ export function ResizeScene() {
 /** 첫 장 대기 표시의 바깥 요소 — 안과 hidden · failed 는 WorkspaceLoading 이 맞춘다. */
 export const loadingHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="workspace-loading" id="workspaceLoading" role="status" hidden ref={ref}>{children}</div>;
+/** 시스템 UI 의 바깥 요소 — 독의 가운데 조작과 확대 사이. 안과 hidden 은 SystemUiControl 이 맞춘다. */
+export const systemUiHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
+  <div className="sys-ui" id="sysUiCtl" role="group" data-t-aria-label="systemUi.label" hidden ref={ref}>{children}</div>;
 /** 확대의 바깥 요소 — 독의 오른쪽 끝. 안과 at-fit 은 ZoomControls 가 맞춘다. */
 export const zoomHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="zoom at-fit" id="zoomCtl" role="group" data-t-aria-label="zoom.label" ref={ref}>{children}</div>;
@@ -166,8 +169,8 @@ export function DeviceMenu() {
 
 /**
  * 조작 독(D-167) — 무대 아래 가운데에 늘 떠 있는 한 줄. 왼쪽에 크기 · 기기 메뉴, 가운데에 고른 것의 조작(기기면 자세, 커스텀이면 폭 · 높이 슬라이더,
- * @Preview · 프리셋이면 없음), 오른쪽 끝에 확대. 헤더는 한 줄로 두고 무대는 창을 다 쓴다. 가운데 칸의 hidden 은 resize-scene.js 가 정한다.
+ * @Preview · 프리셋이면 없음), 그 뒤에 시스템 UI(D-159 ①), 오른쪽 끝에 확대. 헤더는 한 줄로 두고 무대는 창을 다 쓴다. 가운데 칸의 hidden 은 resize-scene.js 가 정한다.
  */
-export function WorkspacePanel({ zoom = zoomHost() }: { zoom?: ReactNode }) {
-  return <><DeviceMenu /><DevicePosture /><CustomSizeSliders />{zoom}</>;
+export function WorkspacePanel({ systemUi = systemUiHost(), zoom = zoomHost() }: { systemUi?: ReactNode; zoom?: ReactNode }) {
+  return <><DeviceMenu /><DevicePosture /><CustomSizeSliders />{systemUi}{zoom}</>;
 }

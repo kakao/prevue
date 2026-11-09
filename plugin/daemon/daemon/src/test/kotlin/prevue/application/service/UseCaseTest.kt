@@ -31,6 +31,8 @@ import prevue.application.port.FailureKind
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.SystemUiState
 import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.ReloadResult
@@ -674,7 +676,7 @@ class UseCaseTest {
         val uc = opened()
         assertThrows<IllegalArgumentException> { runBlocking { uc.live.resize(ScreenSize.Dp(320, 640), "viewer") } }
         assertThrows<IllegalArgumentException> { runBlocking { uc.boards.focus(0, on = false, by = "test", size = ScreenSize.Dp(320, 640)) } }
-        assertEquals(null, uc.workspace.now.resize)
+        assertEquals(null, uc.workspace.now.cardOverride)
     }
 
     @Test fun `다른 탭으로 옮기면 크기 덮어쓰기를 푼다`() {
@@ -682,8 +684,49 @@ class UseCaseTest {
         runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
         val other = fx.previewFile("Other")
         runBlocking { uc.tabs.openPreview(other.path, null, emptyMap(), "test") }
-        assertEquals(null, uc.workspace.now.resize)
+        assertEquals(null, uc.workspace.now.cardOverride)
         assertEquals(null, uc.status.read().size)
+    }
+
+    @Test fun `시스템 UI를 켜면 그 한 장만 바를 그리고 끄면 어노테이션대로 돌아온다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        runBlocking { uc.boards.focus(0, on = true, by = "test", systemUi = SystemUi.ON) }
+        assertEquals("true", fx.renderer.opened.last().params["showSystemUi"])
+        assertEquals(SystemUiState(SystemUi.ON, annotated = false), uc.status.read().systemUi)
+        assertTrue(uc.status.read().systemUi!!.shown)
+        assertEquals(null, ws.now.board!!.focusCard.spec.params["showSystemUi"])
+        runBlocking { uc.boards.focus(0, on = false, by = "test") }
+        assertEquals(null, ws.now.cardOverride)
+        assertEquals(null, uc.status.read().systemUi)
+        assertEquals(null, ws.now.current!!.params["showSystemUi"])
+    }
+
+    @Test fun `크기와 시스템 UI는 함께 얹히고 따로 풀린다`() {
+        val uc = opened()
+        val ws = uc.workspace
+        runBlocking { uc.boards.focus(0, on = true, by = "test", size = ScreenSize.Dp(320, 640)) }
+        runBlocking { uc.live.setSystemUi(SystemUi.ON, "viewer") }
+        assertEquals("true", ws.now.current!!.params["showSystemUi"])
+        assertEquals("spec:width=840px,height=1680px,dpi=420", ws.now.current!!.params["device"])
+        assertEquals(ScreenSize.Dp(320, 640), uc.status.read().size)
+        runBlocking { uc.live.resize(ScreenSize.Original, "viewer") }
+        assertEquals(null, uc.status.read().size)
+        assertEquals("true", ws.now.current!!.params["showSystemUi"])
+        assertEquals(SystemUi.ON, uc.status.read().systemUi!!.choice)
+        runBlocking { uc.live.setSystemUi(SystemUi.ANNOTATED, "viewer") }
+        assertEquals(null, ws.now.cardOverride)
+        assertEquals(SystemUiState(SystemUi.ANNOTATED, annotated = false), uc.status.read().systemUi)
+        assertFalse(uc.status.read().systemUi!!.shown)
+        assertTrue(ws.now.interactive)
+    }
+
+    @Test fun `보드에서 인터랙티브가 아니면 시스템 UI를 바꾸지 않는다`() {
+        val uc = opened()
+        assertThrows<IllegalArgumentException> { runBlocking { uc.live.setSystemUi(SystemUi.ON, "viewer") } }
+        assertThrows<IllegalArgumentException> { runBlocking { uc.boards.focus(0, on = false, by = "test", systemUi = SystemUi.OFF) } }
+        assertEquals(null, uc.workspace.now.cardOverride)
+        assertEquals(null, uc.status.read().systemUi)
     }
 
     // D-11. 나올 때 새 태스크로 처음 화면을 다시 그린다 — 조작한 화면(상세로 넘어간 목록)이 카드에 남지 않는다.

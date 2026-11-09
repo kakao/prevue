@@ -22,12 +22,8 @@ sealed interface ScreenSize {
         override val key: String get() = preset ?: "${widthDp}x$heightDp"
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
-            val rest = p.params - "widthDp" - "heightDp"
-            if (p.params["showSystemUi"] != "true") return p.copy(params = rest + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
-            val keys = specKeys(p.params["device"])
-            val dpi = keys["dpi"]?.toIntOrNull() ?: DEFAULT_DPI
-            val k = dpi / 160.0
-            return p.copy(params = rest + ("device" to deviceSpec((widthDp * k).roundToInt(), (heightDp * k).roundToInt(), dpi, keys)))
+            if (p.systemBars is SystemBars.Shown) return deviceOfDp(p, widthDp, heightDp)
+            return p.copy(params = p.params + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
         }
     }
 
@@ -46,7 +42,7 @@ sealed interface ScreenSize {
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
             val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi))
-            if (p.params["showSystemUi"] == "true") return p.copy(params = rest)
+            if (p.systemBars is SystemBars.Shown) return p.copy(params = rest)
             return p.copy(params = rest + ("widthDp" to "${widthDp.roundToInt()}") + ("heightDp" to "${heightDp.roundToInt()}"))
         }
 
@@ -72,6 +68,21 @@ sealed interface ScreenSize {
             val m = Regex("""(\d+)\s*[x×]\s*(\d+)""").matchEntire(size)
                 ?: throw IllegalArgumentException("크기는 original · ${PRESETS.joinToString(" · ") { it.preset!! }} · <W>x<H> 중 하나 — $size")
             return Dp(m.groupValues[1].toInt(), m.groupValues[2].toInt())
+        }
+
+        fun annotatedDpAsDevice(p: PreviewSpec): PreviewSpec {
+            val w = p.params["widthDp"]?.toIntOrNull() ?: return p
+            val h = p.params["heightDp"]?.toIntOrNull() ?: return p
+            if (p.params["device"]?.startsWith("spec:") == false) return p
+            return deviceOfDp(p, w, h)
+        }
+
+        private fun deviceOfDp(p: PreviewSpec, widthDp: Int, heightDp: Int): PreviewSpec {
+            val keys = specKeys(p.params["device"])
+            val dpi = keys["dpi"]?.toIntOrNull() ?: DEFAULT_DPI
+            val k = dpi / 160.0
+            val device = deviceSpec((widthDp * k).roundToInt(), (heightDp * k).roundToInt(), dpi, keys)
+            return p.copy(params = p.params - "widthDp" - "heightDp" + ("device" to device))
         }
 
         private val SIZED_KEYS = setOf("width", "height", "dpi", "orientation")
@@ -107,5 +118,3 @@ enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open
             listOfNotNull(ScreenSize.Device(this, false, landscape), if (cover != null) ScreenSize.Device(this, true, landscape) else null)
         }
 }
-
-data class Resize(val previewId: String, val size: ScreenSize)

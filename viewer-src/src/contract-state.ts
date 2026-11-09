@@ -56,6 +56,11 @@ export type ContractState = {
 "pxPerDp": number;
 "size": null;
 "streamUrl": string;
+"systemUi": {
+"annotated": boolean;
+"choice": string;
+"shown": boolean;
+};
 "treeUrl": string;
 };
 "header": {

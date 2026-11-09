@@ -143,6 +143,7 @@
       "subscribers": "number"
     },
     "streamSubscribers": "boolean",
+    "systemUi": "null",
     "tabs": [
       {
         "active": "boolean",
@@ -303,6 +304,7 @@
     },
     "work": null,
     "size": null,
+    "systemUi": null,
     "kmp": false,
     "frames": {
       "frames": 8,

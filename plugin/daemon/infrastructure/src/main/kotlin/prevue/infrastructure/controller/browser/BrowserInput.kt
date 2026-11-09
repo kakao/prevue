@@ -13,6 +13,7 @@ import prevue.application.service.Boards
 import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUi
 import prevue.application.port.PrevueDispatchers
 
 @SingleIn(AppScope::class)
@@ -41,6 +42,8 @@ internal class BrowserInput(
     fun exitFocus() = core.post { boards.unfocus(by = "viewer") }
 
     fun resize(size: ScreenSize) { sizes.trySend(size) }
+
+    fun systemUi(choice: SystemUi) = core.post { if (status.board() != null) live.setSystemUi(choice, by = "viewer") }
 
     private suspend fun resized(s: ScreenSize) {
         if (status.board() == null) return

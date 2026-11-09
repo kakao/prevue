@@ -1078,16 +1078,17 @@ except OSError:
     while [ $# -gt 0 ]; do case "$1" in --force) F=true; shift;; *) usage;; esac; done
     post /card "{\"index\":$I,\"force\":$F,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
   focus)
-    # 크기 · 기기는 켜진 카드에만 — 이미 켜져 있으면 크기만 바꾸고 인터랙티브는 그대로다
-    I="${1:-}"; [ -n "$I" ] || usage; shift; ON=true; SZ=null; DEV=null; FOLD=false; LAND=false
+    # 크기 · 기기 · 시스템 UI는 켜진 카드에만 — 이미 켜져 있으면 그것만 바꾸고 인터랙티브는 그대로다
+    I="${1:-}"; [ -n "$I" ] || usage; shift; ON=true; SZ=null; DEV=null; FOLD=false; LAND=false; SUI=null
     while [ $# -gt 0 ]; do case "$1" in
       --on) ON=true; shift;; --off) ON=false; shift;;
       --size) [ $# -ge 2 ] || usage; SZ=$(jstr "$2"); shift 2;;
+      --system-ui) [ $# -ge 2 ] || usage; SUI=$(jstr "$2"); shift 2;;
       --device) [ $# -ge 2 ] || usage; DEV=$(jstr "$2"); shift 2;;
       --folded) FOLD=true; shift;; --landscape) LAND=true; shift;;
       *) usage;;
     esac; done
-    post /focus "{\"index\":$I,\"interactive\":$ON,\"size\":$SZ,\"device\":$DEV,\"folded\":$FOLD,\"landscape\":$LAND,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
+    post /focus "{\"index\":$I,\"interactive\":$ON,\"size\":$SZ,\"device\":$DEV,\"folded\":$FOLD,\"landscape\":$LAND,\"systemUi\":$SUI,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
   reload)
     FILES=(); for f in "$@"; do [ "$f" = "${f#/}" ] && f="$(cd "$(dirname "$f")" && pwd)/$(basename "$f")"; FILES+=("$f"); done
     J=$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' ${FILES[@]+"${FILES[@]}"})

@@ -81,6 +81,11 @@
           "pxPerDp": "string",
           "size": "string",
           "streamUrl": "string",
+          "systemUi": {
+            "annotated": "string",
+            "choice": "string",
+            "shown": "string"
+          },
           "treeUrl": "string",
           "|": "string"
         },
@@ -301,6 +306,11 @@
           "pxPerDp": "number",
           "size": "null",
           "streamUrl": "null|string",
+          "systemUi": {
+            "annotated": "boolean",
+            "choice": "string",
+            "shown": "boolean"
+          },
           "treeUrl": "string",
           "|": "null"
         },

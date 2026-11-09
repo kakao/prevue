@@ -242,7 +242,7 @@ internal class RenderEngine(
         return loaders.withPreloaderParked(park) {
             try {
                 val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
-                if (task != null) Built.Task(task)
+                if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
                 else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
             } catch (e: Exception) {
                 Disposer.dispose(disposable)

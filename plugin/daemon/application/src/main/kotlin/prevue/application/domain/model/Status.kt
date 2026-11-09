@@ -26,6 +26,7 @@ data class Status(
     val lastShown: LastResult? = null,
     val boardFill: BoardFill? = null,
     val size: ScreenSize? = null,
+    val systemUi: SystemUiState? = null,
     val postures: Map<ScreenSize, Shot> = emptyMap(),
     val kmp: Boolean = false,
 )

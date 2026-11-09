@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemUi
 import prevue.application.port.Clock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
@@ -121,6 +122,19 @@ class DrawPosturesTest {
         assertTrue(uc.workspace.now.postures!!.round > round)
         uc.awaitDrawn(12)
         assertEquals(bar - "foldable", asideKeys().drop(15))
+    }
+
+    @Test fun `시스템 UI를 바꾸면 옛 그림을 빼고 새 회차를 바가 있는 spec 으로 그린다`() {
+        val uc = opened()
+        uc.pick(fold8)
+        uc.awaitDrawn(15)
+        val round = uc.workspace.now.postures!!.round
+        runBlocking { uc.live.setSystemUi(SystemUi.ON, "viewer") }
+        assertTrue(uc.workspace.now.postures!!.round > round)
+        uc.awaitDrawn(15)
+        val after = postureAsides().drop(15)
+        assertEquals(15, after.size)
+        assertTrue(after.all { it.params["showSystemUi"] == "true" }, "${after.map { it.params }}")
     }
 
     @Test fun `저장하면 낡은 그림을 바로 빼고 새 코드로 다시 그린다`() {

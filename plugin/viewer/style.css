@@ -167,10 +167,10 @@ body.ws .app { flex-shrink: 0; }
 body:has(#strip.on) .panel { --dock-bottom: calc(var(--cap-room) + var(--space-4)); }
 /* 작업 공간을 여닫는 모프 동안은 독이 물러났다 들어온다(workspace/focus.ts decorations) */
 .panel.deco-off { opacity: 0; pointer-events: none; }
-body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resizing-ui) #pnSl { display: none; }
+body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resizing-ui) #pnSl, body:not(.resizing-ui) #sysUiCtl { display: none; }
 /* 칸 사이 구분선(--outline-variant, 장식) — 메뉴 · 가운데 조작 · 확대. 칸 높이의 가운데 --control-small 만 긋는다. 가운데가 없으면 메뉴와 확대만 남는다. */
-.panel > .dock-seg, .panel > .pn-sl, .panel > .zoom { position: relative; margin-left: var(--space-4); padding-left: var(--space-8); }
-.panel > .dock-seg::before, .panel > .pn-sl::before, .panel > .zoom::before { content: ""; position: absolute; left: 0; top: 50%; width: 1px; height: var(--control-small); translate: 0 -50%; background: var(--outline-variant); }
+.panel > .dock-seg, .panel > .pn-sl, .panel > .sys-ui, .panel > .zoom { position: relative; margin-left: var(--space-4); padding-left: var(--space-8); }
+.panel > .dock-seg::before, .panel > .pn-sl::before, .panel > .sys-ui::before, .panel > .zoom::before { content: ""; position: absolute; left: 0; top: 50%; width: 1px; height: var(--control-small); translate: 0 -50%; background: var(--outline-variant); }
 /* 가운데 칸은 바뀔 때(자세 ↔ 슬라이더) 제자리에서 페이드로 들어온다 — 움직임 줄이기에서도 페이드는 남는다. */
 .panel > .dock-seg, .panel > .pn-sl { transition: opacity var(--duration-short4) var(--easing-decelerate); }
 @starting-style { .panel > .dock-seg, .panel > .pn-sl { opacity: 0; } }
@@ -260,9 +260,16 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
                     border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface); font: var(--type-body-medium); text-align: left; cursor: pointer; }
 .zoom-menu button:hover { background: var(--state-hover); }
 .zoom-menu kbd { min-width: 18px; height: 18px; font: var(--type-code-small); background: transparent; box-shadow: none; color: inherit; opacity: .7; }
+/* 시스템 UI(D-159 ①) — 독의 가운데 조작과 확대 사이의 토글 하나. 이름 · 값을 한 줄로, 값은 이름보다 옅게. 켜짐은 힌지 선처럼 고름 바탕(--primary-container). */
+.sys-ui { display: flex; align-items: center; }
+.sys-ui .sys-sep, .sys-ui .sys-v { color: var(--on-surface-variant); }
 
-/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 가장 넓은 독(펼친 iPhone Duo, 영어 글자)이 약 720px 다. 800 아래는 자세 버튼이 아이콘만
-   (이름은 툴팁 · aria-label 이 갖는다), 560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
+/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 가장 넓은 독(펼친 iPhone Duo, 영어 글자, 시스템 UI 포함)이 778px 다(Storybook 실측).
+   독은 창 − 32px 까지라 840 아래는 시스템 UI 가 아이콘 · 값만, 800 아래는 자세 버튼이 아이콘만(이름은 툴팁 · aria-label 이 갖는다),
+   560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
+@media (max-width: 840px) {
+  .sys-ui .sys-lb, .sys-ui .sys-sep { display: none; }
+}
 @media (max-width: 800px) {
   .dock-seg .tb-btn span { display: none; }
   .dock-seg .tb-btn { padding: 0 var(--space-8); }
@@ -271,7 +278,7 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
   .pn-sum:has(.pn-sum-sil:not(:empty)) .nm { display: none; }
   .pn-sum { padding: 0 var(--space-6) 0 var(--space-8); }
   #zoomOutBtn, #zoomInBtn { display: none; }
-  .panel > .dock-seg, .panel > .pn-sl, .panel > .zoom { margin-left: var(--space-2); padding-left: var(--space-4); }
+  .panel > .dock-seg, .panel > .pn-sl, .panel > .sys-ui, .panel > .zoom { margin-left: var(--space-2); padding-left: var(--space-4); }
 }
 
 /* 좁은 창(폭 640 아래) — 파일명이 밀려 사라지지 않게 오른쪽을 줄인다. 상태는 점만 남는다(시간은 호버 팝오버에 있다). */

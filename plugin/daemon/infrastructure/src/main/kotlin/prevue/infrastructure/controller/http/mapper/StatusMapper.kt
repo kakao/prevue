@@ -7,6 +7,8 @@ import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
+import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
 import prevue.application.domain.model.Work
 import prevue.infrastructure.json.string
@@ -25,7 +27,7 @@ internal fun Status.toJson(): Map<String, Any?> = mapOf(
     "selection" to selection?.toJson(), "tabs" to tabs.map { it.toJson() }, "stale" to stale.staleJson(),
     "memory" to mapOf("heapUsedMb" to engine.heapUsedMb, "heapMaxMb" to engine.heapMaxMb, "rssMb" to engine.rssMb),
     "last" to (last?.toJson() ?: emptyMap<String, Any?>()),
-    "work" to work?.toJson(), "size" to size?.toJson(), "kmp" to kmp,
+    "work" to work?.toJson(), "size" to size?.toJson(), "systemUi" to systemUi?.toJson(), "kmp" to kmp,
 ) + (module.sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap()) +
     (watch?.let { mapOf("watch" to it.source, "staleWatch" to it.build, "valuesWatch" to it.values) } ?: emptyMap())   // "stale"로 두면 낡음의 이유들을 덮는다
 
@@ -37,6 +39,10 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
         "widthDp" to widthDp, "heightDp" to heightDp, "hingeDp" to hingeDp, "dpi" to model.dpi,
     )
 }
+
+internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf("choice" to choice.key, "annotated" to annotated, "shown" to shown)
+
+internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
 
 internal fun Map<String, Any?>.toScreenSize(): ScreenSize? =
     ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true)
