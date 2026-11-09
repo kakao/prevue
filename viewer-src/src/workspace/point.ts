@@ -1,28 +1,48 @@
-// 가리키기(FR-20·21) — 트리 평탄화 · 히트테스트 · 박스 · 데몬에 보내기 · 후보 고르기. 보드와 한 장이 함께 쓴다.
-// 가리킨 결과는 박스 꼬리표가 말한다 — 캡슐은 오류 · 알림만(D-101). 꼬리표 · 팝오버의 안은 React 의 PointOverlay · ChoicePopover 가 그린다.
-import { get, post } from '../../legacy/js/api.js';
-import { setCursor, trees } from '../../legacy/js/board.js';
+// 가리키기(FR-20·21) — 트리 평탄화 · 히트테스트 · 그림 위 표시 · 데몬에 보내기 · 후보 고르기 · 카드. 보드와 한 장이 함께 쓴다.
+// 가리킨 결과는 그림 밖 옆에 뜬 카드가 말한다(D-162) — 캡슐은 오류 · 알림만. 카드 · 팝오버의 안은 React 의 PointOverlay · ChoicePopover 가 그린다.
+import { fetchPreviewFiles, get, post } from '../../legacy/js/api.js';
+import { applyReveal, cancelReveal, reveal, setCursor, trees } from '../../legacy/js/board.js';
 import { flash } from '../../legacy/js/capsule.js';
 import { cardOf, store } from '../../legacy/js/store.js';
 import { daemonText, phrase } from '../../legacy/js/strings.js';
-import type { Message } from '../state';
-import { tagView, type PointNode, type TagSay } from './view';
+import { activeKey, type Message } from '../state';
+import { boxOf, indexOf, originOf, previewsOf, treeOf, type PreviewFiles, type PreviewIndex, type TreeHit } from './card';
+import { pointView, type CardModifier, type CardPreview, type CardRow, type PointCardData, type PointNode, type PointSay } from './view';
 
-export type TreeNode = PointNode & { children?: TreeNode[] };
-export type Hit = PointNode & { area: number; chain: string[]; uchain: string[] };
+export type TreeNode = PointNode & { children?: TreeNode[]; modifiers?: CardModifier[] };
+export type Hit = TreeHit & { area: number; chain: string[]; uchain: string[] };
+
+const sameBox = (a: number[], b: number[]) => a.every((v, i) => v === b[i]);
+/** 노드 자리의 modifier 체인 — 체인은 레이아웃 노드에 붙는다. 호출 노드(DrinkCard)는 같은 자리를 차지한 첫 레이아웃까지 내려가 그것을 쓴다. */
+function chainAt(n: TreeNode): CardModifier[] | null {
+  if (n.modifiers) return n.modifiers;
+  for (const c of n.children || []) if (sameBox(c.bounds, n.bounds)) { const m = chainAt(c); if (m) return m; }
+  return null;
+}
 
 /**
- * chain 은 이름 그대로 데몬에 간다(`selection`). uchain 은 꼬리표 툴팁에 보일 것 — 호출한 자리가 프로젝트 소스인 노드만.
+ * 크기 있는 노드를 트리 순서로 편다. id 는 그 순서라 같은 트리에서 다시 가리켜도 변하지 않고, ups 로 카드 트리를 다시 잇는다.
+ * chain 은 이름 그대로 데몬에 간다(`selection`). uchain 은 툴팁에 보일 것 — 호출한 자리가 프로젝트 소스인 노드만.
  * 노드의 파일 · 라인은 부른 자리라, `Row`도 내 코드가 불렀으면 남고 `ReusableComposeNode` · `Layout`(Compose 안에서 불림)은 빠진다.
  */
-export function flatten(list: TreeNode[], ancestors: string[], out: Hit[], uancestors: string[] = []) {
+export function flatten(roots: TreeNode[]): Hit[] {
   const mine = store.projectFiles.size ? (n: TreeNode) => store.projectFiles.has(n.fileName) : () => true;
-  for (const n of list) {
-    const [l, t, r, b] = n.bounds, chain = ancestors.concat(n.name ? [n.name] : []);
-    const uchain = n.name && mine(n) ? uancestors.concat([n.name]) : uancestors;
-    if (r > l && b > t && n.lineNumber > 0) out.push({ ...n, area: (r - l) * (b - t), chain, uchain });
-    flatten(n.children || [], chain, out, uchain);
-  }
+  const out: Hit[] = [];
+  const walk = (list: TreeNode[], chain: string[], uchain: string[], ups: number[]) => {
+    for (const n of list) {
+      const { children, modifiers: _, ...node } = n;
+      const [l, t, r, b] = n.bounds, named = chain.concat(n.name ? [n.name] : []);
+      const unamed = n.name && mine(n) ? uchain.concat([n.name]) : uchain;
+      let below = ups;
+      if (r > l && b > t && n.lineNumber > 0) {
+        const id = out.length;
+        out.push({ ...node, id, ups, mods: chainAt(n), area: (r - l) * (b - t), chain: named, uchain: unamed });
+        below = ups.concat([id]);
+      }
+      walk(children || [], named, unamed, below);
+    }
+  };
+  walk(roots, [], [], []);
   return out;
 }
 // 화면급 프리뷰는 클릭 대상의 85%가 Compose 내부 파일이다. 프로젝트 소스로만 좁히고, 색인을 못 받은 경우에만 전체로 폴백한다.
@@ -41,9 +61,41 @@ export function posIn(e: MouseEvent, img: HTMLImageElement): [number, number] {
   const r = img.getBoundingClientRect(), s = scaleOf(img) || 1;
   return [Math.round((e.clientX - r.left) / s), Math.round((e.clientY - r.top) / s)];
 }
-export function drawBox(el: HTMLElement, n: PointNode, s: number) {
+function place(el: HTMLElement, n: PointNode, s: number) {
   const [l, t, r, b] = n.bounds;
-  el.hidden = false; el.style.left = l * s + 'px'; el.style.top = t * s + 'px'; el.style.width = (r - l) * s + 'px'; el.style.height = (b - t) * s + 'px';
+  el.style.left = l * s + 'px'; el.style.top = t * s + 'px'; el.style.width = (r - l) * s + 'px'; el.style.height = (b - t) * s + 'px';
+}
+export function drawBox(el: HTMLElement, n: PointNode, s: number) { el.hidden = false; place(el, n, s); }
+
+/**
+ * 손 아래 노드의 옅은 바탕 — 붙였다 떼면 깜빡여서 늘 그려 두고 투명도(on)와 자리만 옮긴다. 그래서 자리를 옮길 때 미끄러진다.
+ * n 이 없으면 걷는다.
+ */
+export function hover(el: HTMLElement, n: PointNode | null, s: number) {
+  if (!n) { el.classList.remove('on'); return; }
+  place(el, n, s);
+  el.classList.add('on');
+}
+/**
+ * 마우스가 그림을 떠났다 — 손 아래 바탕과 구조 테두리를 걷는다. 카드 트리 줄로 옮겨 간 것이면(peek) 그 줄의 바탕은 남긴다 —
+ * React 의 onMouseEnter 는 옛 요소의 mouseout 에서 돌아, 그림의 mouseleave 보다 먼저 온다.
+ */
+export function leave(box: HTMLElement, marks: HTMLElement) {
+  marks.classList.remove('over');
+  if (!marks.classList.contains('peek')) hover(box, null, 1);
+}
+
+/**
+ * 구조 테두리 — 고를 수 있는 노드마다 옅은 선 하나. 그림 위에 마우스가 있을 때만 보인다(over · peek 클래스, style.css).
+ * 색인이 없으면 Compose 내부까지 수천 개라 그리지 않는다. 같은 목록 · 배율이면 다시 짓지 않는다.
+ */
+const drawn = new WeakMap<HTMLElement, { list: Hit[]; s: number }>();
+export function outline(marks: HTMLElement, list: Hit[], s: number) {
+  const last = drawn.get(marks);
+  if (last && last.list === list && last.s === s) return;
+  drawn.set(marks, { list, s });
+  if (!store.projectFiles.size) { marks.replaceChildren(); return; }
+  marks.replaceChildren(...list.map(n => { const d = document.createElement('div'); d.className = 'ol'; place(d, n, s); return d; }));
 }
 
 type Say = (msg: string | null, ref?: string, copied?: boolean, file?: string, again?: () => void) => void;
@@ -53,7 +105,7 @@ type PointReply = { ref?: string; file?: string; needChoice?: boolean; message?:
  * 가리킨 노드를 데몬에 보낸다. 풀패스는 데몬이 붙이고(베이스네임이 갈리면 state.choice 로 고르게 한다),
  * 클립보드는 브라우저만 만질 수 있어 돌아온 멘션을 여기서 넣는다 — 사람이 터미널에 붙여넣는다.
  */
-export async function point(n: Hit, previewId: string, say: Say) {
+async function point(n: Hit, previewId: string, say: Say) {
   const g = ++gen;
   try {
     const r: PointReply = await post('/viewer/point', { fileName: n.fileName, line: n.lineNumber, node: n.name || null, chain: n.chain || [], userChain: n.uchain || n.chain || [], bounds: n.bounds, previewId }).then(r => r.json());
@@ -65,7 +117,7 @@ export async function point(n: Hit, previewId: string, say: Say) {
 let gen = 0;
 const write = (text: string) => (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error(phrase('point.noClipboard'))));
 /**
- * say(문장, 멘션, 복사됐나, 풀패스, 다시 복사) — 꼬리표가 멘션과 복사 결과를 따로 그리고, 풀패스로 "탭으로 열기"를 단다.
+ * say(문장, 멘션, 복사됐나, 풀패스, 다시 복사) — 카드는 멘션을 그리고 복사가 막혔을 때만 글자 버튼을 단다.
  * 창에 포커스가 없거나(에이전트가 터미널을 쥐고 있을 때) 제스처가 만료되면 브라우저가 쓰기를 막는다. 그때는 "다시 복사"를
  * 건네 사람이 누르는 순간(제스처) 넣는다 — 저절로 다시 넣으면 그 사이 사람이 다른 데서 복사해 둔 것을 덮는다.
  */
@@ -76,71 +128,120 @@ function copy(ref: string, say: Say, file?: string) {
   write(ref).then(copied, () => { if (g === gen) say(phrase('point.copyRetry', { ref }), ref, false, file, again); });
 }
 
-/** 후보를 고른 뒤 결과를 알릴 곳. 마지막으로 가리킨 꼬리표가 정하고, 걷히면(clearPick) 캡슐의 알림으로 돌아간다. */
+/** 후보를 고른 뒤 결과를 알릴 곳. 떠 있는 카드가 정하고, 걷히면(clearPick) 캡슐의 알림으로 돌아간다. */
 const noticeSay: Say = m => { if (m) flash(m); };
 let lastSay: Say = noticeSay;
-export function setSay(f: Say) { lastSay = f; }
+
+/* ---------- Preview 색인 — 카드의 출처 칩과 Preview 점프(PR 127) ---------- */
+// 빠른 열기와 같은 `/preview-files.json` 이다. 목록이 바뀌었다는 알림(previewFiles)이 오면 버리고 다음 가리키기에 다시 받는다.
+let previewIndex: PreviewIndex | null = null, asked: Promise<PreviewIndex | null> | null = null, indexGen = 0;
+export function forgetPreviewIndex() { previewIndex = null; asked = null; indexGen++; }
+function loadPreviewIndex() {
+  if (previewIndex) return Promise.resolve(previewIndex);
+  const g = indexGen;
+  return asked ??= fetchPreviewFiles().then((d: PreviewFiles) => {
+    if (g !== indexGen) return null;
+    asked = null;
+    return d.ready ? (previewIndex = indexOf(d)) : null;
+  }, () => { if (g === indexGen) asked = null; return null; });
+}
+
+/* ---------- 카드 — 가리킨 그림 하나의 세션 ---------- */
+/**
+ * 가리킨 그림 하나. list 는 그 그림에서 고를 수 있는 노드(카드 트리와 같다), hover · pick · marks 는 그림 위 표시, host 는 카드가 서는 영역이다.
+ * seen 은 지금 보는 Preview — 카드의 점프 목록에서 뺀다. dpPerPx 를 모르면 크기를 px 로 보인다.
+ */
+export type PointSpot = {
+  list: Hit[]; img: HTMLImageElement; hover: HTMLElement; pick: HTMLElement; marks: HTMLElement; host: HTMLElement;
+  scale(): number; previewId: string; dpPerPx: number | null; seen: { file: string | null; fn: string | null };
+};
+let spot: (PointSpot & { hit: Hit; shot: () => DOMRect | null }) | null = null;
+export const cardOpen = () => !!spot;
+export const pointedImage = () => spot?.img ?? null;
+
+/** 노드 하나를 가리킨다 — 그림 클릭과 카드 트리 줄이 같은 길이다. 박스 · 카드 · 데몬의 선택 · 클립보드가 함께 바뀐다. */
+export function pointAt(s: PointSpot, n: Hit) {
+  for (const b of document.querySelectorAll<HTMLElement>('.box.pick')) if (b !== s.pick) b.hidden = true;
+  if (spot && spot.hover !== s.hover) hover(spot.hover, null, 1);
+  drawBox(s.pick, n, s.scale());
+  s.pick.style.animation = 'none'; void s.pick.offsetWidth; s.pick.style.animation = '';   // 누름 바탕을 처음부터 다시 튼다
+  const shot = spot?.img === s.img ? spot.shot : () => (s.img.isConnected ? s.img.getBoundingClientRect() : null);
+  spot = { ...s, hit: n, shot };
+  const say = showCard(n);
+  lastSay = say;
+  point(n, s.previewId, say);
+}
+
+function showCard(n: Hit): Say {
+  const s = spot!;
+  const tree = store.projectFiles.size ? treeOf(s.list, n) : null;
+  let said: PointSay = { msg: null, ref: `${n.fileName}:${n.lineNumber}` };
+  const card = (): PointCardData => ({
+    node: n, say: said, box: boxOf(n, s.dpPerPx), tree, modifiers: n.mods,
+    previews: previewsOf(n.name, previewIndex, s.seen), origin: originOf(n.name, previewIndex), repo: store.st?.header?.repo ?? null,
+  });
+  const draw = () => { if (spot?.hit === n) pointView.set({ host: s.host, shot: s.shot, card: card() }); };
+  draw();
+  if (!previewIndex) loadPreviewIndex().then(i => { if (i) draw(); });
+  return (msg, ref, copied, file, again) => { said = { msg, ref, copied, file, again }; draw(); };
+}
+
+/** 트리 줄을 누르면 그 노드를 그림에서 누른 것과 같다. */
+export function pickRow(row: CardRow) {
+  const n = spot?.list.find(h => String(h.id) === row.id);
+  if (spot && n) pointAt(spot, n);
+}
+/** 트리 줄에 올리면 그림 위에 그 노드의 옅은 바탕과 구조 테두리를 보인다. 벗어나면(null) 걷는다. */
+export function peekRow(row: CardRow | null) {
+  if (!spot) return;
+  const n = row ? spot.list.find(h => String(h.id) === row.id) ?? null : null;
+  hover(spot.hover, n, spot.scale());
+  if (n) outline(spot.marks, spot.list, spot.scale());
+  spot.marks.classList.toggle('peek', !!n);
+}
 
 /**
- * U7 — 가리킨 파일을 탭으로. 열 수 없는 까닭(프리뷰 없음 · 다른 앱)은 데몬이 답한다.
- * 탭은 state 가 연다. 다른 앱의 파일이면 이 뷰어의 데몬은 그 앱을 그릴 수 없어 터미널이나 에이전트에 붙여 넣을 명령을 건넨다.
+ * Preview 로 건너간다 — 그 파일의 보드에서 그 함수 묶음으로 스크롤하고 첫 카드에 커서를 둔다(빠른 열기의 함수 고르기와 같다).
+ * 지금 탭이면 데몬에 묻지 않는다 — `/viewer/open` 의 `{ok:true}`는 지금 탭이었는지 말하지 않아, 새 보드를 기다리면 오지 않는다. 한 장이면 나가며 간다.
  */
-export async function openFile(file: string) {
-  const r: { ok?: boolean; command?: string; message?: Message } = await post('/viewer/open', { file }).then(r => r.json())
+export async function jump(p: CardPreview) {
+  clearPick();
+  const st = store.st;
+  reveal(p.file, p.fn);
+  if (p.file === activeKey(st)) {
+    if (st?.screen === 'focus' && st.focus) post('/viewer/exit');
+    else applyReveal();
+    return;
+  }
+  const r: { ok?: boolean; message?: Message } = await post('/viewer/open', { file: p.file, fn: p.fn }).then(r => r.json())
     .catch(e => ({ ok: false, message: phrase('open.failed', { why: (e as Error).message }) }));
   if (r.ok) return;
-  const message = daemonText(r.message ?? null);
-  if (r.command) { const command = r.command; write(command).then(() => flash(message), () => flash(`${message.split(' — ')[0]} — ${command}`)); }
-  else flash(message);
+  cancelReveal();
+  flash(daemonText(r.message ?? null) || phrase('open.cannot'));
 }
 
-/**
- * 꼬리표의 누름이 아래 그림(가리키기 · 이동 · 터치)으로 새지 않게 한다. 마우스로 누른 단추는 포커스를 쥐지 않는다(D-63) —
- * 쥐면 다음 Enter(고른 카드 열기)를 단추가 가져간다.
- */
-function wireTag(tag: HTMLElement) {
-  if (tag.dataset.wired) return;
-  tag.dataset.wired = '1';
-  for (const type of ['mousedown', 'click', 'pointerdown', 'dblclick']) tag.addEventListener(type, e => e.stopPropagation());
-  tag.addEventListener('mousedown', e => { if (e.button === 0 && (e.target as Element).closest('button')) e.preventDefault(); });
-}
-
-/** 꼬리표가 박스 밖에 서는 데 드는 높이 — 꼬리표 높이 + 간격(style.css 의 --tag-h · --space-4). */
-function tagRoom() {
-  const css = getComputedStyle(document.documentElement);
-  return parseFloat(css.getPropertyValue('--tag-h')) + parseFloat(css.getPropertyValue('--space-4'));
-}
-
-/**
- * 박스 하나에 가리킨 결과를 단다(그린 박스 위에서 부른다). 다른 박스의 꼬리표는 걷는다 — 보드에서 옛 카드에 옛 결과가 남으면 틀린 말이다.
- * 꼬리표는 박스를 자르는 틀(보드 카드 · 한 장의 틀) 안에 선다 — 위가 좁으면 아래, 둘 다 좁으면(틀을 채운 노드) 박스 안 위 끝.
- * 틀 오른쪽이 좁으면 꼬리표가 줄어 파일명이 말줄임된다. 재는 것은 화면 px 이다 — 확대해도 꼬리표는 같은 크기다.
- */
-export function sayOn(box: HTMLElement, n: Hit): Say {
-  for (const b of document.querySelectorAll<HTMLElement>('.box.pick')) if (b !== box) b.hidden = true;
-  const tag = box.querySelector<HTMLElement>('.tag')!;
-  wireTag(tag);
-  box.style.animation = 'none';              // 톡 치는 확대가 걸린 채로 재지 않게 먼저 멈춘다
-  const r = box.getBoundingClientRect(), clip = box.parentElement!.closest('.cstage, .wrap');
-  const c = clip ? clip.getBoundingClientRect() : { top: -Infinity, bottom: Infinity, right: Infinity };
-  const room = tagRoom(), up = r.top - c.top >= room, down = c.bottom - r.bottom >= room;
-  box.classList.toggle('below', !up && down);
-  box.classList.toggle('inside', !up && !down);
-  tag.style.maxWidth = Number.isFinite(c.right) ? `min(var(--tag-max-w), ${Math.max(0, Math.floor(c.right - r.left) - 4)}px)` : '';
-  void box.offsetWidth; box.style.animation = '';
-  const say: Say = (msg, ref, copied, file, again) => {
-    const next: TagSay = { msg, ref, copied, file, again };
-    tagView.set({ tag, node: n, say: next });
-  };
-  say(null, `${n.fileName}:${n.lineNumber}`);
-  return say;
-}
-
-/** 가리킨 결과를 걷는다 — 화면이나 카드가 바뀌면 옛 카드의 결과는 틀린 말이다. 늦게 온 결과 · 후보 고르기는 캡슐의 알림으로 간다. */
+/** 가리킨 결과를 걷는다 — 화면 · 카드 · 트리가 바뀌거나 Esc · 닫기 · 빈 곳. 데몬의 선택과 클립보드는 남는다. 늦게 온 결과 · 후보 고르기는 캡슐의 알림으로 간다. */
 export function clearPick() {
   for (const b of document.querySelectorAll<HTMLElement>('.box.pick')) b.hidden = true;
-  tagView.set({ tag: null, node: null, say: null });
+  if (spot) { hover(spot.hover, null, 1); spot.marks.classList.remove('peek'); }
+  spot = null;
+  pointView.set({ host: null, shot: null, card: null });
   lastSay = noticeSay; gen++;
+}
+/** Esc 층 — 카드가 떠 있으면 걷고 true. */
+export function closeCard() { if (!spot) return false; clearPick(); return true; }
+
+/**
+ * 빈 곳을 누르면 걷는다 — 본문(main) 안에서 카드 · 그림 밖. 그림 위는 가리키기(보드)거나 조작(한 장)이라 건드리지 않는다 —
+ * 한 장의 빈 곳은 ⌥+클릭이 노드에 닿지 않을 때다(focus.ts).
+ */
+export function watchBlankClicks() {
+  addEventListener('pointerdown', e => {
+    if (!spot || e.button !== 0) return;
+    const t = e.target as Element | null;
+    if (!t?.closest || !t.closest('main') || t.closest('.point-card, .cstage, #stage')) return;
+    clearPick();
+  }, true);
 }
 
 /* ---------- 후보 고르기 ---------- */
@@ -152,12 +253,12 @@ export async function choose(path: string) {
 export function cancelChoice() { post('/viewer/cancel'); }
 
 const GAP = 8, EDGE = 16;
-/** 꼬리표 바로 아래 — 아래가 모자라면 위. 꼬리표가 없으면(새로 연 페이지) 헤더 아래 가운데. 창 밖으로 나가지 않게 당긴다. */
+/** 카드 머리 바로 아래 — 아래가 모자라면 위. 카드가 없으면(새로 연 페이지) 헤더 아래 가운데. 창 밖으로 나가지 않게 당긴다. */
 function placeChooser(chooser: HTMLElement) {
   const root = document.documentElement, cw = root.clientWidth, ch = root.clientHeight;
   const w = chooser.offsetWidth, h = chooser.offsetHeight;
-  const anchor = tagView.get().tag;
-  const a = anchor && anchor.isConnected && anchor.getClientRects().length ? anchor.getBoundingClientRect() : null;
+  const anchor = document.querySelector<HTMLElement>('.point-card .pc-head');
+  const a = anchor && anchor.getClientRects().length ? anchor.getBoundingClientRect() : null;
   let left: number, top: number, up = false;
   if (a) {
     left = a.left; top = a.bottom + GAP;
@@ -172,7 +273,7 @@ function placeChooser(chooser: HTMLElement) {
   if (chooser.style.top !== t) chooser.style.top = t;
   chooser.classList.toggle('up', up);
 }
-/** 떠 있는 동안 프레임마다 꼬리표를 따라간다 — 상태가 온 뒤 보드가 다시 배치되거나 스크롤 · 창 크기가 바뀌어도 붙어 있다. */
+/** 떠 있는 동안 프레임마다 카드 머리를 따라간다 — 상태가 온 뒤 보드가 다시 배치되거나 스크롤 · 창 크기가 바뀌어도 붙어 있다. */
 let following = false;
 export function followChooser(chooser: HTMLElement) {
   placeChooser(chooser);
@@ -187,11 +288,14 @@ export function followChooser(chooser: HTMLElement) {
 }
 
 /* ---------- 보드 카드 위의 가리키기 ---------- */
-export type CardParts = { stage: HTMLElement; img: HTMLImageElement; box: HTMLElement; pick: HTMLElement };
+export type CardParts = { stage: HTMLElement; img: HTMLImageElement; box: HTMLElement; pick: HTMLElement; marks: HTMLElement };
 type TreeReply = { composeViewInfo?: TreeNode[] };
-/** 카드가 자리(그림 · 박스)를 넘기면 이벤트를 단다. 트리는 마우스가 처음 들어올 때 받는다. */
-export function pointCard(i: number, { stage, img, box, pick }: CardParts, signal: AbortSignal) {
-  let list: Hit[] | null = null;
+/**
+ * 카드가 자리(그림 · 표시)를 넘기면 이벤트를 단다. 트리는 마우스가 처음 들어올 때 받는다.
+ * 그림이 새로 오면(저장 · 다시 그리기) 트리도 새것이라 그 그림의 카드를 걷는다 — 같은 노드를 추정해 다시 찾지 않는다.
+ */
+export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts, signal: AbortSignal) {
+  let list: Hit[] | null = null, over = false;
   const load = async () => {
     const c = store.st && store.st.board && cardOf(i);
     if (!c || !c.ok || !c.treeUrl) return null;
@@ -199,28 +303,29 @@ export function pointCard(i: number, { stage, img, box, pick }: CardParts, signa
     if (hit) { list = hit; return list; }
     try {
       const d: TreeReply = await get(c.treeUrl).then(r => r.json());
-      list = narrow(flatten(d.composeViewInfo || [], [], []).sort(byPick));
+      list = narrow(flatten(d.composeViewInfo || []).sort(byPick));
       trees.set(c.treeUrl, list);
     } catch { list = null; }
     return list;
   };
-  stage.addEventListener('mouseenter', () => { list = null; load(); }, { signal });
-  img.addEventListener('mousemove', e => {
-    if (!list) return;
-    const n = hitIn(list, ...posIn(e, img));
-    if (n) drawBox(box, n, scaleOf(img)); else box.hidden = true;
+  stage.addEventListener('mouseenter', () => {
+    list = null; over = true; marks.classList.add('over');
+    load().then(l => { if (l && over) outline(marks, l, scaleOf(img)); });
   }, { signal });
-  img.addEventListener('mouseleave', () => { box.hidden = true; }, { signal });
+  stage.addEventListener('mouseleave', () => { over = false; leave(box, marks); }, { signal });
+  img.addEventListener('mousemove', e => { if (list) hover(box, hitIn(list, ...posIn(e, img)) ?? null, scaleOf(img)); }, { signal });
+  img.addEventListener('load', () => { if (spot?.img === img) clearPick(); }, { signal });
+  signal.addEventListener('abort', () => { if (spot?.img === img) clearPick(); });
   img.addEventListener('click', async e => {
     setCursor(i);
     const l = list || await load();
     if (!l) return;
     const n = hitIn(l, ...posIn(e, img));
     if (!n) return;
-    const c = cardOf(i)!;
-    drawBox(pick, n, scaleOf(img));
-    const say = sayOn(pick, n);
-    setSay(say);
-    point(n, c.previewId, say);
+    const c = cardOf(i)!, full = natW(img);
+    pointAt({
+      list: l, img, hover: box, pick, marks, host: document.getElementById('boardView')!, scale: () => scaleOf(img), previewId: c.previewId,
+      dpPerPx: c.widthDp && full ? c.widthDp / full : null, seen: { file: store.st?.board?.file ?? null, fn: stage.closest<HTMLElement>('.card')?.dataset.fn ?? null },
+    }, n);
   }, { signal });
 }

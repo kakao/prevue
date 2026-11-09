@@ -13,7 +13,7 @@ import { store } from '../legacy/js/store.js';
 import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
 import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts } from './workspace/focus';
-import { cancelChoice, choose, followChooser, openFile, pointCard } from './workspace/point';
+import { cancelChoice, choose, clearPick, closeCard, followChooser, forgetPreviewIndex, jump, peekRow, pickRow, pointCard, watchBlankClicks } from './workspace/point';
 
 // 남은 기존 모듈(api · store · board · capsule · motion · strings)은 이 번들보다 먼저 평가된다(외부 import). 그 모듈들은 DOM 을 쥐지 않는다.
 // 준비 화면은 첫 상태보다 먼저 서서 본문을 막는다. 그 상태는 화면이 보드를 다 놓은 뒤에 읽는다 — 가운데 카드를 배치로 고른다.
@@ -27,7 +27,8 @@ const workspaceActions: WorkspaceActions = {
   zoomIn: workspace.zoomIn, zoomOut: workspace.zoomOut, zoomFit: workspace.zoomFit,
   zoomMenuPick: workspace.zoomMenuPick, toggleZoomMenu: workspace.toggleZoomMenu,
 };
-const pointActions: PointActions = { openFile, choose, cancel: cancelChoice, follow: followChooser };
+const pointActions: PointActions = { choose, cancel: cancelChoice, follow: followChooser, pick: pickRow, peek: peekRow, jump, close: clearPick };
+watchBlankClicks();
 const actions: ShortcutActions = {
   screen: () => store.st ? store.st.screen : 'offline',
   tabCount, moveCursor, openCursor, exitFocus, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
@@ -39,10 +40,11 @@ installShortcuts(shortcuts, actions, {
   cancelChoice,
   closeZoomMenu: workspace.closeZoomMenu,
   closeDirPop,
+  closeCard,
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
-startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: previewFilesChanged, prepared: preparation });
+startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); forgetPreviewIndex(); }, prepared: preparation });
 
 /*
  * 마우스로 누른 버튼은 포커스를 쥐지 않는다(D-63) — Chromium 은 누른 버튼에 포커스를 줘서, 다음 Enter(고른 카드 열기)를

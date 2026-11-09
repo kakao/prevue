@@ -11,7 +11,7 @@ const meta = { title: '재료/Tokens' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const colors = ['surface', 'surface-container', 'surface-container-high', 'state-hover', 'primary-container', 'on-surface', 'on-surface-variant', 'on-surface-disabled',
-  'outline', 'outline-variant', 'primary', 'on-primary', 'focus-ring', 'pick', 'pick-container', 'on-pick', 'live', 'error', 'error-container', 'on-error', 'warning', 'success', 'scrim',
+  'outline', 'outline-variant', 'primary', 'on-primary', 'focus-ring', 'pick', 'pick-container', 'on-pick', 'pick-outline', 'pick-hover', 'pick-hover-line', 'pick-chosen', 'pick-rest', 'live', 'error', 'error-container', 'on-error', 'warning', 'success', 'scrim',
   'device-body', 'device-tone-s26', 'device-tone-pixel9', 'device-tone-fold8', 'device-tone-ultra', 'device-tone-pixelfold', 'device-tone-tablet',
   'device-tone-ip17', 'device-tone-ipair', 'device-tone-ip17pm', 'device-tone-ipduo', 'device-rim', 'device-side', 'device-side-line', 'device-side-edge', 'device-inner', 'device-inner-glow',
   'device-shadow-contact', 'device-shadow-near', 'device-shadow-far', 'art-kmp',

@@ -42,3 +42,6 @@ export type ViewerState = Omit<ContractState, 'screen' | 'header' | 'board' | 'f
   timing: Array<Omit<ContractState['timing'][number], 'label'> & { label: Message }>;
   tabs: Array<Omit<ContractState['tabs'][number], 'module' | 'sourceSet'> & { module: string | null; sourceSet: string | null }>;
 };
+
+/** 지금 보는 파일 — 활성 탭, 탭이 없으면 보드의 파일. 빠른 열기와 카드의 Preview 점프가 "지금 탭이면 데몬에 묻지 않는다"를 가른다. */
+export const activeKey = (st: ViewerState | null) => { const t = (st?.tabs || []).find(t => t.active); return t ? t.key : st?.board?.file ?? null; };

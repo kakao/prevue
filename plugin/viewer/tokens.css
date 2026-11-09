@@ -87,6 +87,13 @@
   --pick: light-dark(var(--blue-light), var(--blue-dark));
   --pick-container: light-dark(var(--blue-light-muted), var(--blue-dark-muted));
   --on-pick: var(--gray-light-0);
+  /* 그림 위 표시(D-162) — 구조 테두리 · 손 아래 바탕과 선 · 고른 바탕(그림 위에 손이 있을 때 · 떠났을 때). --pick 하나를 섞는다.
+     그림 색은 앱이 정해 대비 쌍에 넣지 않는다 — 짙은 그림 위에서는 3:1 아래다(고른 2px --pick 박스도 같다, 가리키기 카드 연결 2026-11-09). */
+  --pick-outline: color-mix(in srgb, var(--pick) 35%, transparent);
+  --pick-hover: color-mix(in srgb, var(--pick) 16%, transparent);
+  --pick-hover-line: color-mix(in srgb, var(--pick) 70%, transparent);
+  --pick-chosen: color-mix(in srgb, var(--pick) 30%, transparent);
+  --pick-rest: color-mix(in srgb, var(--pick) 22%, transparent);
   --live: var(--pick);
   --error: light-dark(var(--red-light), var(--red-dark));
   --error-container: light-dark(var(--red-light-muted), var(--red-dark-muted));

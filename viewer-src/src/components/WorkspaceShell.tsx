@@ -101,8 +101,8 @@ export function PreviewStage({ loading = loadingHost() }: { loading?: ReactNode 
   return <div className="stage" id="stage">
     <img id="shot" alt="preview" />
     {loading}
-    {/* 박스 · 꼬리표의 자리. 꼬리표의 안은 가리키기/PointOverlay 가 그린다. */}
-    <div className="box" id="box" hidden /><div className="box pick" id="pickBox" hidden><span className="tag" /></div>
+    {/* 그림 위 표시 — 구조 테두리(#marks) · 손 아래 옅은 바탕(#box) · 고른 노드(#pickBox). workspace/point.ts 가 그린다. 카드는 그림 밖 #focusView 에 뜬다. */}
+    <div className="marks" id="marks" aria-hidden="true" /><div className="box" id="box" /><div className="box pick" id="pickBox" hidden />
   </div>;
 }
 

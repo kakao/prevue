@@ -1,4 +1,4 @@
-/* 프로토타입 스토리의 배치 — 상태를 고정폭으로 나란히, 보드는 그림과 그 밖에 뜬 카드. */
+/* 가리키기 카드 스토리의 배치 — 상태를 고정폭으로 나란히, 보드는 그림과 그 밖에 뜬 카드. */
 .story-cards { display: grid; grid-template-columns: repeat(auto-fill, var(--point-card-w)); gap: var(--space-24); align-items: start; }
 .story-case { display: grid; gap: var(--space-8); align-content: start; }
 .story-height { font-variant-numeric: tabular-nums; }

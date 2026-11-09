@@ -13,8 +13,8 @@
   --stage-min-h: 260px;
   /* 떠 있는 캡슐 자리 = 캡슐 바닥 여백 + 한 줄 캡슐 높이 + 간격. 그림이 캡슐 밑으로 들어가지 않게 늘 비워 둔다 — 캡슐이 뜰 때마다 그림이 줄면 출렁인다. */
   --cap-room: calc(var(--space-20) + var(--control-xlarge) + var(--space-16));
-  --tag-h: 20px;        /* 가리킨 박스 꼬리표 높이 — workspace/point.ts tagRoom 은 이 높이 + 간격이다 */
-  --tag-max-w: 360px;   /* 꼬리표가 그림을 가리는 폭의 상한 — 넘치면 파일명이 말줄임된다 */
+  --point-card-w: 320px;  /* 가리킨 결과 카드 폭 — 이름 · 출처 칩 · 버튼 둘과 modifier 한 줄이 들어가는 폭 */
+  --point-glyph: 56px;    /* 카드의 크기 그림 칸 — 비율이 읽히는 가장 작은 정사각형 */
   --chooser-w: 420px;   /* 후보 고르기 팝오버 폭(구조 시안 layers.html 안 3) */
 }
 /* 움직임을 줄여 달라면 페이드만 남긴다 — 이동 · 확대는 tokens.css 가 없애고, 도는 표시와 탭 바탕의 미끄러짐은 여기서 멈춘다. */
@@ -458,29 +458,132 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .spec .aa { color: var(--on-surface-variant); font: var(--type-label-medium); }
 .spec .unit { margin-left: var(--space-2); color: var(--on-surface-variant); font: var(--type-label-small); }
 
-/* ---------- 가리키기 박스 ---------- */
-.box { position: absolute; pointer-events: none; border: 1px solid var(--pick); background: var(--pick-container); border-radius: var(--corner-small); }
-/* 가리킨 것 — 사건이라 색(pick)을 쓴다. 빨강은 오류 전용이다. 굵기 · 이름 태그 · 한 번의 펄스로 호버와 가른다. */
-.box.pick { border: 2px solid var(--pick); background: var(--pick-container); z-index: 2; animation: pick var(--duration-medium2) var(--easing-standard); }
-/* 꼬리표가 가리킨 결과를 말한다(D-101) — `파일명:라인 · ✓ 복사됨`, 막히면 끝에 "눌러서 복사". 단추가 있어 누름을 받는다(workspace/point.ts 가 아래로 새지 않게 막는다). */
-.box.pick .tag { position: absolute; left: -2px; bottom: calc(100% + var(--space-4)); display: inline-flex; align-items: center; gap: var(--space-6);
-                 max-width: var(--tag-max-w); height: var(--tag-h); padding: 0 var(--space-6); border-radius: var(--corner-small);
-                 background: var(--pick); color: var(--on-pick); font: var(--type-code-small); white-space: nowrap; pointer-events: auto; cursor: default; }
-.box.pick .tag:empty { display: none; }
-.box.pick.below .tag { bottom: auto; top: calc(100% + var(--space-4)); }
-.box.pick.inside .tag { bottom: auto; top: var(--space-4); left: var(--space-4); }
-.tag-ref { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tag-ok { flex: 0 0 auto; animation: okmark var(--duration-medium2) var(--easing-standard); }
-.tag-ok.wait { opacity: .8; }
-.tag-again, .tag-open { flex: 0 0 auto; display: inline-flex; align-items: center; height: calc(var(--tag-h) - var(--space-4)); border: 0; border-radius: var(--corner-small); cursor: pointer;
-                        font: var(--type-code-small); transition: opacity var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard); }
-.tag-again { padding: 0 var(--space-6); background: var(--on-pick); color: var(--pick); }
-.tag-again:hover { opacity: .88; }
-.tag-open { padding: 0 var(--space-2); margin-right: calc(var(--space-4) * -1); background: transparent; color: var(--on-pick); }
-.tag-open:hover { background: var(--state-hover); }
-.tag-open svg { width: 14px; height: 14px; }
-.box.pick .tag :focus-visible { outline-color: var(--on-pick); }
-@keyframes pick { from { transform: scale(calc(2 - var(--motion-enter-scale))); opacity: .4; } }
+/* ---------- 그림 위 표시 — 구조 테두리 · 손 아래 · 고른 노드(D-162) ---------- */
+/* 마우스가 그림 위에 있으면 고를 수 있는 노드마다 옅은 선이 페이드로 나타난다. 카드 트리 줄에 올려도(peek) 보인다. */
+.marks { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--duration-short4) var(--easing-standard); }
+.marks.over, .marks.peek { opacity: 1; }
+.marks .ol { position: absolute; border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--pick-outline); }
+/* 손 아래 노드 — 옅은 바탕 하나가 자리와 크기를 미끄러지듯 옮기며 따라온다. 붙였다 떼면 깜빡여서 늘 그려 두고 투명도(on)만 바꾼다. */
+.box { position: absolute; pointer-events: none; border: 1px solid var(--pick-hover-line); background: var(--pick-hover); border-radius: var(--corner-small); opacity: 0;
+       transition: opacity var(--duration-short3) var(--easing-standard), left var(--duration-short3) var(--easing-decelerate), top var(--duration-short3) var(--easing-decelerate),
+                   width var(--duration-short3) var(--easing-decelerate), height var(--duration-short3) var(--easing-decelerate); }
+.box.on { opacity: 1; }
+/* 고른 노드 — 사건이라 색(pick)을 쓴다. 빨강은 오류 전용이다. 더 진한 바탕 + 2px 선, 그림에서 손이 떠나면 바탕이 한 단 옅어진다. 카드는 그림 밖에 뜬다. */
+.box.pick { z-index: 2; opacity: 1; border: 2px solid var(--pick); background: var(--pick-rest); transition: background var(--duration-short3) var(--easing-standard);
+            animation: pick-press var(--duration-short4) var(--easing-decelerate); }
+.cstage:hover .box.pick, .stage:hover .box.pick { background: var(--pick-chosen); }
+@keyframes pick-press { from { background: var(--pick-hover); } }
+
+/* ---------- 가리킨 결과 카드(D-162) ---------- */
+/* 보드 · 한 장 위에 뜨는 층이라 반경과 그림자를 갖는다. 트리와 설명은 한 단 낮은 패널(--surface)에 담고, 파랑은 그림 위의 박스 · 가리킨 줄 · 크기 그림에만 둔다. */
+#boardView { position: relative; }
+.pc-float { position: absolute; z-index: 6; width: var(--point-card-w); }
+.point-card { display: block; width: min(var(--point-card-w), calc(100vw - var(--space-32))); padding: var(--space-8); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); cursor: default; }
+/* 내용이 바뀌면 높이만 감쇠 곡선으로 옮긴다. 처음 뜰 때는 바로 선다(data-placed 전에는 전환 없음). */
+.pc-float .point-card { height: calc(var(--h, auto) + var(--space-8) * 2); overflow: hidden; }
+.pc-float[data-placed] .point-card { transition: height var(--duration-long4) var(--easing-spring); }
+.pc-body { display: grid; gap: var(--space-8); }
+
+/* 머리 — 두 줄(이름 + 출처 칩 / 흐린 파일:라인)과 오른쪽 버튼. 버튼은 첫 줄에 맞춘다. */
+.pc-head { display: flex; align-items: flex-start; gap: var(--space-8); min-width: 0; padding: var(--space-6) var(--space-4) var(--space-4) var(--space-8); margin-bottom: var(--space-4); }
+.pc-head > button { margin-top: calc(var(--space-2) * -1); }
+.pc-id { display: grid; flex: 1; gap: var(--space-4); min-width: 0; }
+.pc-nameline { display: flex; align-items: center; gap: var(--space-6); min-width: 0; }
+.pc-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-small); }
+/* 출처 칩 — 프로젝트 컴포저블은 정의 모듈(채움), Compose 기본은 테두리만 둔 `Compose`. */
+.pc-chip { flex: 0 0 auto; height: var(--space-20); padding: 0 var(--space-8); border-radius: var(--corner-small); font: var(--type-code-small); line-height: var(--space-20); white-space: nowrap; }
+.pc-chip.module { background: var(--primary-container); color: var(--on-surface); }
+.pc-chip.compose { box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); }
+.pc-refline { display: flex; align-items: baseline; gap: var(--space-8); min-width: 0; }
+.pc-ref { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-code-small); }
+/* 복사 막힘 — 자동 복사가 실패할 때만 파일 줄 끝에 글자 버튼 */
+.pc-rescue { flex: 0 0 auto; padding: 0; border: 0; background: none; color: var(--on-surface); font: var(--type-label-small); text-decoration: underline; text-underline-offset: var(--space-2); cursor: pointer; }
+.pc-rescue:hover { color: var(--primary); }
+.pc-rescue.off { color: var(--on-surface-variant); text-decoration: none; cursor: default; }
+.pc-msg { margin: 0; padding: var(--space-8); border-radius: var(--corner-medium); background: var(--surface); color: var(--on-surface-variant); font: var(--type-body-small); }
+
+/* 머리 버튼 — Preview(가리킨 노드에 있을 때만, 여럿이면 개수) · 닫기 */
+.pc-close, .pc-jump { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--control-small); min-width: var(--control-small); border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); cursor: pointer;
+                      transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.pc-jump { padding: 0 var(--space-4); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.pc-close svg, .pc-jump svg, .pc-preview svg { flex: 0 0 auto; width: 14px; height: 14px; }
+.pc-close:hover, .pc-jump:hover, .pc-jump[aria-expanded="true"] { background: var(--state-hover); color: var(--on-surface); }
+/* Preview 여럿 — 머리 아래 목록. 높이를 모르는 목록을 펼치려고 줄 높이를 0fr → 1fr 로 옮긴다. */
+.pc-fold { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: calc(var(--space-8) * -1); transition: grid-template-rows var(--duration-short4) var(--easing-accelerate), opacity var(--duration-short3) var(--easing-accelerate); }
+.pc-fold[data-open] { grid-template-rows: 1fr; opacity: 1; margin-top: 0; transition: grid-template-rows var(--duration-medium1) var(--easing-decelerate), opacity var(--duration-short4) var(--easing-decelerate); }
+.pc-previews { min-height: 0; margin: 0; padding: 0; list-style: none; overflow: hidden; }
+.pc-fold[data-open] .pc-previews { padding: var(--space-2); border-radius: var(--corner-medium); background: var(--surface); }
+.pc-preview { display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-small); padding: 0 var(--space-6); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-label-small); cursor: pointer; text-align: left;
+              transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-preview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-preview:hover { background: var(--state-hover); color: var(--on-surface); }
+
+/* 패널 — 카드보다 한 단 낮은 면 */
+.pc-panel { margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); }
+/* 트리 — 6줄 × 24px 고정. 노드를 옮겨도 트리 칸과 그 아래 설명 패널이 제자리에 있고, 넘치면 안에서 스크롤한다. */
+.pc-tree-panel { height: calc(var(--control-small) * 6 + var(--space-8)); }
+.pc-tree-panel > .pc-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.pc-tree { margin: 0; padding: 0; list-style: none; }
+/* 파일 트리의 모양 — 자식 묶음의 왼쪽 실과 한 칸 들여쓰기 */
+.pc-group { margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; }
+.pc-row { display: flex; align-items: center; height: var(--control-small); border-radius: var(--corner-medium); color: var(--on-surface-variant);
+          transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-row:hover { background: var(--state-hover); color: var(--on-surface); }
+/* 가리킨 노드는 그림 위 박스와 같은 파랑 바탕이라 "지금 고른 그것"으로 이어 읽힌다. */
+.pc-node.here > .pc-row { background: var(--pick-container); color: var(--on-surface); }
+.pc-pick { flex: 1; min-width: 0; height: var(--control-small); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: inherit; font: var(--type-label-small); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-node.here > .pc-row .pc-pick { font: var(--type-label-medium); }
+/* 트리 전환 — 새로 가리킨 노드의 자식 묶음이 접힌 데서 펼쳐지고, 떠나는 옛 자식 묶음은 같은 시간에 접혀 걷힌다. */
+.pc-unfold, .pc-foldout { display: grid; }
+.pc-unfold > ul, .pc-foldout > ul { min-height: 0; overflow: hidden; }
+.pc-unfold { animation: pc-unfold var(--duration-medium2) var(--easing-decelerate); }
+.pc-foldout { grid-template-rows: 0fr; opacity: 0; animation: pc-foldout var(--duration-medium2) var(--easing-accelerate); }
+@keyframes pc-unfold { from { grid-template-rows: 0fr; opacity: 0; } to { grid-template-rows: 1fr; opacity: 1; } }
+@keyframes pc-foldout { from { grid-template-rows: 1fr; opacity: 1; } to { grid-template-rows: 0fr; opacity: 0; } }
+
+/* 설명 패널 — 크기 한 줄과 modifier 체인. 둘 다 "이 노드" 이야기라 한 패널에 담고 가는 선 하나로만 나눈다. */
+.pc-detail-in { display: grid; gap: var(--space-4); }
+.pc-size { display: flex; align-items: center; gap: var(--space-12); padding: var(--space-4); }
+.pc-glyph { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: var(--point-glyph); height: var(--point-glyph); }
+.pc-shape { position: relative; width: min(var(--point-glyph), calc(var(--point-glyph) * var(--ratio))); height: min(var(--point-glyph), calc(var(--point-glyph) / var(--ratio))); border: 1px solid var(--pick); border-radius: var(--corner-small); background: var(--pick-container); }
+.pc-shape.padded i { position: absolute; inset: 22%; border: 1px dashed var(--pick); border-radius: var(--corner-small); background: var(--surface-container); }
+.pc-dims { color: var(--on-surface); font: var(--type-code); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-dims i { margin: 0 var(--space-4); color: var(--on-surface-variant); font-style: normal; font-weight: var(--weight-regular); }
+.pc-unit { margin-left: var(--space-4); color: var(--on-surface-variant); font: var(--type-code-small); }
+/* modifier 는 위에서 아래로 적용되는 순서다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝. 상한 4줄, 넘치면 안에서 스크롤한다. 크기를 정한 줄도 강조하지 않는다.
+   가는 선은 바깥 묶음이 갖고, 흐린 끝(마스크)은 안쪽 목록만 받는다 — 선과 패널 바탕이 흐려지지 않게. */
+.pc-mods { padding-top: var(--space-4); border-top: 1px solid var(--outline-variant); }
+.pc-mods > ol { max-height: calc(var(--control-medium) * 4); margin: 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-medium); padding: 0 var(--space-8) 0 var(--space-4); border-radius: var(--corner-small);
+              transition: background var(--duration-short3) var(--easing-standard); }
+.pc-mods li:hover { background: var(--state-hover); }
+.pc-kind { flex: 0 0 var(--space-16); display: inline-flex; align-items: center; justify-content: center; height: var(--space-16); color: var(--on-surface-variant); }
+.pc-kind svg { width: 14px; height: 14px; }
+.pc-mod-name { flex: 0 0 auto; color: var(--on-surface); font: var(--type-code-small); }
+.pc-mod-value { display: inline-flex; align-items: center; gap: var(--space-6); min-width: 0; margin-left: auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.pc-mod-value span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-swatch { flex: 0 0 auto; width: var(--space-12); height: var(--space-12); border-radius: var(--corner-small); box-shadow: 0 0 0 1px var(--outline-variant); }
+
+/* 스크롤바 — 평소엔 숨기고, 올리거나 포커스가 오면 얇은 무채색 막대. 위아래 끝 8px 는 옅어져 더 있다는 것을 알린다.
+   마스크는 바탕 · 테두리를 그리지 않는 안쪽 스크롤러에만 단다. 마스크는 알파만 보므로 색 자리의 --on-surface 는 색이 아니라 "불투명"이다. */
+.pc-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--on-surface) var(--space-8), var(--on-surface) calc(100% - var(--space-8)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, var(--on-surface) var(--space-8), var(--on-surface) calc(100% - var(--space-8)), transparent 100%); }
+.pc-scroll:hover, .pc-scroll:focus-within, .pc-scroll:focus-visible { scrollbar-color: var(--outline-variant) transparent; }
+.pc-scroll:focus-visible { outline: none; }
+
+/* 내용 전환 — 바뀐 머리 글자와 설명은 이동 없이 옅게만 갈아든다. */
+.pc-swap { animation: pc-fade var(--duration-medium1) var(--easing-decelerate); }
+@keyframes pc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pc-fadeout { from { opacity: 1; } to { opacity: 0; } }
+/* 움직임 줄이기 — 높이 · 미끄러짐은 즉시, 펼침 · 접힘은 높이 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
+@media (prefers-reduced-motion: reduce) {
+  .pc-float[data-placed] .point-card { transition: none; }
+  .pc-fold, .pc-fold[data-open] { transition-property: opacity; }
+  .pc-unfold { animation: pc-fade var(--duration-short4) linear; }
+  .pc-foldout { grid-template-rows: 0fr; animation: pc-fadeout var(--duration-short4) linear; }
+  .box { transition: opacity var(--duration-short3) linear; }
+}
 
 /* ---------- 한 장 ---------- */
 #focusView { position: relative; }
@@ -494,7 +597,6 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 너비/naturalWidth 로 배율을 내므로 축소해도 그대로 맞는다.
    min-height 를 이미지에 걸면 945x184 같은 납작한 프리뷰가 세로로 늘어난다. 하한은 --stage-max-h 를 계산할 때 둔다. */
 .stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px); }
-/* stage 는 넘침을 자르지 않는다 — 고른 박스의 이름 태그가 그림 가장자리 밖으로 나가야 한다. */
 /* 조작 중 — 말 대신 표면으로 알린다. */
 .stage { transform-origin: 0 0; }
 /* 선 · 링은 --z 를 따라 바로 바뀐다 — 전이를 걸면 확대보다 늦게 굵어졌다 가늘어진다. */
@@ -502,17 +604,16 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .stage.grab { cursor: grab !important; }
 .stage.panning { cursor: grabbing !important; }
 .stage.grab img, .stage.panning img { pointer-events: none; }
-/* 확대해도 박스 선 · 이름 태그는 그대로의 굵기 · 크기로 — --z 로 되돌린다. */
+/* 확대해도 그림 위 표시의 선은 그대로의 굵기로 — --z 로 되돌린다. */
 .stage .box { border-width: calc(1px / var(--z, 1)); }
 .stage .box.pick { border-width: calc(2px / var(--z, 1)); }
-.stage .box.pick .tag { transform: scale(calc(1 / var(--z, 1))); transform-origin: left bottom; }
-.stage .box.pick.below .tag, .stage .box.pick.inside .tag { transform-origin: left top; }
+.stage .marks .ol { box-shadow: inset 0 0 0 calc(1px / var(--z, 1)) var(--pick-outline); }
 .stage { z-index: 1; }
 /* 조작 중 — 얇은 링 하나(헤어라인을 갈음한다). 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
 .stage.live { box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 
 /* ---------- 떠 있는 층 — 캡슐 · 후보 고르기 ---------- */
-/* 오류 · 잠깐의 알림이 뜨는 곳. 비어 있으면 안 보인다 — 가리킨 결과는 박스 꼬리표가 말한다(D-101). */
+/* 오류 · 잠깐의 알림이 뜨는 곳. 비어 있으면 안 보인다 — 가리킨 결과는 그림 밖 카드가 말한다(D-162). */
 .capsule { position: fixed; left: calc(50% + (var(--rail-w) - var(--panel-w)) / 2); bottom: var(--space-20); z-index: 18; max-width: min(760px, calc(100vw - var(--rail-w) - var(--panel-w) - 32px));
            padding: var(--space-8) var(--space-16); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3);
            font: var(--type-body-small);
@@ -524,7 +625,6 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .cap-main { display: flex; align-items: baseline; gap: var(--space-12); min-width: 0; }
 .cap-main > :empty { display: none; }
 #sel { min-width: 0; overflow-wrap: anywhere; }
-@keyframes okmark { from { opacity: 0; transform: translateY(calc(var(--motion-enter-shift) / 2)); } }
 .log { color: var(--on-surface-variant); white-space: pre-wrap; }
 /* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce · NotificationCapsule). 앞 문장이 요점이라 진하다.
    오류 줄(.cap-main)과 한 줄에 서지 않고 그 위에 따로 선다 — 오류가 안내에 밀려 좁아지지 않게. */
@@ -538,7 +638,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .error { color: var(--error); white-space: pre-wrap; font: var(--type-code-small); font-weight: var(--weight-medium); }
 .error::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: var(--space-6); border-radius: var(--corner-full); background: currentColor; vertical-align: 1px; }
 
-/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 꼬리표에서 내려오는 팝오버(D-101). 조용히 하나 찍지 않는다. 자리(left · top)는 workspace/point.ts 가 잰다. */
+/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 가리킨 결과 카드의 머리에서 내려오는 팝오버. 조용히 하나 찍지 않는다. 자리(left · top)는 workspace/point.ts 가 잰다. */
 .chooser { position: fixed; left: 0; top: 0; z-index: 22; width: min(var(--chooser-w), calc(100vw - 32px)); padding: var(--space-16);
            border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface);
            opacity: 0; visibility: hidden; transform: translateY(calc(var(--motion-enter-shift) * -1)) scale(var(--motion-enter-scale)); transform-origin: top left;

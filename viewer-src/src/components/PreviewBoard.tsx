@@ -12,7 +12,7 @@ type Group = Board['groups'][number];
 export type BoardActions = {
   /** 카드의 재생 버튼 — 그 카드를 한 장으로 연다. */
   open(index: number): void;
-  /** 카드 위의 가리키기. 박스의 자리는 workspace/point.ts 가 재서 그리므로 자리만 넘긴다 — 꼬리표의 안은 PointOverlay 가 그린다. */
+  /** 카드 위의 가리키기. 그림 위 표시는 workspace/point.ts 가 재서 그리므로 자리만 넘긴다 — 가리킨 결과의 카드는 PointOverlay 가 그림 밖에 띄운다. */
   point(index: number, parts: CardParts, signal: AbortSignal): void;
 };
 export type BoardHosts = { view: HTMLElement; cards: HTMLElement };
@@ -145,13 +145,13 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
 }) {
   const { phrase, daemonText } = useMessages();
   const stage = useRef<HTMLDivElement>(null), img = useRef<HTMLImageElement>(null);
-  const box = useRef<HTMLDivElement>(null), pick = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null), pick = useRef<HTMLDivElement>(null), marks = useRef<HTMLDivElement>(null);
   const ok = !!(c.ok && c.imageUrl);
 
   useLayoutEffect(() => {
     if (!actions) return;
     const abort = new AbortController();
-    actions.point(c.index, { stage: stage.current!, img: img.current!, box: box.current!, pick: pick.current! }, abort.signal);
+    actions.point(c.index, { stage: stage.current!, img: img.current!, box: box.current!, pick: pick.current!, marks: marks.current! }, abort.signal);
     return () => abort.abort();
   }, [actions, c.index]);
   // 그림은 주소가 바뀔 때만 갈아 끼운다 — 새 그림이 디코드되면 옛 그림 위로 크로스페이드한다(swapImage). 그래서 src 는 JSX 가 갖지 않는다.
@@ -159,7 +159,7 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
   useLayoutEffect(() => {
     const image = img.current!;
     if (ok) {
-      if (image.dataset.url !== c.imageUrl) { swapImage(image, c.imageUrl!); box.current!.hidden = true; pick.current!.hidden = true; }
+      if (image.dataset.url !== c.imageUrl) { swapImage(image, c.imageUrl!); box.current!.classList.remove('on'); pick.current!.hidden = true; }
       image.hidden = false;
     } else image.hidden = true;
   }, [ok, c.imageUrl]);
@@ -177,8 +177,8 @@ export const PreviewCard = memo(function PreviewCard({ card: c, fn, cursor = fal
       <div className="sub"><Specs card={c} /></div>
     </div>
     <div className="cstage" ref={stage}>
-      {/* 박스는 workspace/point.ts 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. 꼬리표의 안은 PointOverlay 의 포털이다. */}
-      <img alt="" hidden ref={img} /><div className="box" hidden ref={box} /><div className="box pick" hidden ref={pick}><span className="tag" /></div>
+      {/* 그림 위 표시(구조 테두리 · 손 아래 · 고른 노드)는 workspace/point.ts 가 그린다 — React 는 자리만 한 번 만들고 속성을 다시 쓰지 않는다. */}
+      <img alt="" hidden ref={img} /><div className="marks" aria-hidden="true" ref={marks} /><div className="box" ref={box} /><div className="box pick" hidden ref={pick} />
       <div className={failure ? 'ph bad' : 'ph'} hidden={ok} title={failure ?? ''}>{failure ? <span className="why">{failure}</span> : phrase('card.waiting')}</div>
     </div>
   </article>;

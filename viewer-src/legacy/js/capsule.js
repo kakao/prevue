@@ -1,5 +1,5 @@
 // 아래에 떠 있는 캡슐의 내용 — 오류 · 잠깐의 알림 · 처음 한 번 안내. 그리는 것은 React 의 NotificationCapsule 이다.
-// 보드 · 한 장 · 빠른 열기 · 가리키기가 모두 여기로 알리므로 DOM 없는 저장소로 둔다. 가리킨 결과는 박스 꼬리표가 말한다(D-101).
+// 보드 · 한 장 · 빠른 열기 · 가리키기가 모두 여기로 알리므로 DOM 없는 저장소로 둔다. 가리킨 결과는 그림 밖 카드가 말한다(D-162).
 let content = { error: "", log: "", once: null };
 let summary = "", flashTimer = 0;
 const listeners = new Set();

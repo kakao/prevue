@@ -1,6 +1,7 @@
 package prevue.infrastructure.render
 
 import java.lang.reflect.Field
+import java.util.Locale
 import kotlin.math.roundToInt
 
 internal object ModifierChain {
@@ -14,24 +15,32 @@ internal object ModifierChain {
     }
 
     fun describe(modifier: Any): Map<String, Any?>? {
-        val f = Fields(modifier)
-        return when (modifier.javaClass.simpleName) {
-            "FillElement" -> axis(f.string("inspectorName") ?: "fill", f.enum("direction"), f.float("fraction")?.takeIf { it != 1f }?.let(::number))
-            "WrapContentElement" -> axis(f.string("inspectorName") ?: "wrapContent", f.enum("direction"), null)
-            "SizeElement" -> size(f)
-            "PaddingElement" -> padding(f)
-            "PaddingValuesElement" -> entry("padding")
-            "AspectRatioElement" -> aspect(f)
-            "OffsetElement" -> entry("offset", listOfNotNull(f.float("x"), f.float("y")).joinToString(", ") { dp(it) })
-            "LayoutWeightElement" -> entry("weight", f.float("weight")?.let(::number))
-            "BackgroundElement" -> background(f)
-            "BorderModifierNodeElement" -> entry("border", f.float("width")?.let(::dp))
-            "ClickableElement", "CombinedClickableElement" -> entry("clickable", f.string("onClickLabel")?.let(::quoted))
-            "TextStringSimpleElement", "TextAnnotatedStringElement" -> entry("text", f.raw("text")?.toString()?.let(::quoted))
-            "GraphicsLayerElement" -> entry(if (f.boolean("clip") == true) "clip" else "graphicsLayer")
-            else -> RENAMED[modifier.javaClass.simpleName]?.let { entry(it) } ?: fallback(modifier)
-        }
+        val name = modifier.javaClass.simpleName
+        READERS[name]?.let { return it(Fields(modifier)) }
+        return RENAMED[name]?.let { entry(it) } ?: fallback(modifier)
     }
+
+    private val READERS: Map<String, (Fields) -> Map<String, Any?>> = mapOf(
+        "FillElement" to { f -> axis(f.string("inspectorName") ?: "fill", f.enum("direction"), f.float("fraction")?.takeIf { it != 1f }?.let(::number)) },
+        "WrapContentElement" to { f -> axis(f.string("inspectorName") ?: "wrapContent", f.enum("direction"), null) },
+        "SizeElement" to ::size,
+        "PaddingElement" to ::padding,
+        "PaddingValuesElement" to { _ -> entry("padding") },
+        "AspectRatioElement" to ::aspect,
+        "OffsetElement" to { f -> entry("offset", listOfNotNull(f.float("x"), f.float("y")).joinToString(", ") { dp(it) }) },
+        "LayoutWeightElement" to { f -> entry("weight", f.float("weight")?.let(::number)) },
+        "BackgroundElement" to ::background,
+        "BorderModifierNodeElement" to { f -> entry("border", f.float("width")?.let(::dp)) },
+        "ClickableElement" to ::clickable,
+        "CombinedClickableElement" to ::clickable,
+        "TextStringSimpleElement" to ::text,
+        "TextAnnotatedStringElement" to ::text,
+        "GraphicsLayerElement" to { f -> entry(if (f.boolean("clip") == true) "clip" else "graphicsLayer") },
+    )
+
+    private fun clickable(f: Fields) = entry("clickable", f.string("onClickLabel")?.let(::quoted))
+
+    private fun text(f: Fields) = entry("text", f.raw("text")?.toString()?.let(::quoted))
 
     private val RENAMED = mapOf(
         "BlockGraphicsLayerElement" to "graphicsLayer",
@@ -72,20 +81,16 @@ internal object ModifierChain {
     private fun size(f: Fields): Map<String, Any?> {
         val w = bound(f.float("minWidth"), f.float("maxWidth"))
         val h = bound(f.float("minHeight"), f.float("maxHeight"))
-        val ranged = (w != null && w.first != w.second) || (h != null && h.first != h.second)
-        val stem = when {
-            w != null && h != null -> "size"
-            w != null -> "width"
-            else -> "height"
-        }
+        val stem = if (w != null && h != null) "size" else if (w != null) "width" else "height"
         val required = if (f.boolean("enforceIncoming") == false) "required" + stem.replaceFirstChar { it.uppercase() } else stem
-        val name = required + if (ranged) "In" else ""
-        val value = when {
-            w != null && h != null && w == h && w.first == w.second -> span(w)
-            w != null && h != null -> "${span(w)} × ${span(h)}"
-            else -> (w ?: h)?.let(::span)
-        }
-        return entry(name, value, sizes = listOfNotNull("width".takeIf { w != null }, "height".takeIf { h != null }))
+        val ranged = listOfNotNull(w, h).any { it.first != it.second }
+        return entry(required + if (ranged) "In" else "", sizeValue(w, h), sizes = listOfNotNull("width".takeIf { w != null }, "height".takeIf { h != null }))
+    }
+
+    private fun sizeValue(w: Pair<Float?, Float?>?, h: Pair<Float?, Float?>?): String? = when {
+        w != null && h != null && w == h && w.first == w.second -> span(w)
+        w != null && h != null -> "${span(w)} × ${span(h)}"
+        else -> (w ?: h)?.let(::span)
     }
 
     private fun bound(min: Float?, max: Float?): Pair<Float?, Float?>? {
@@ -123,12 +128,12 @@ internal object ModifierChain {
 
     private fun androidHex(argb: Int): String {
         val alpha = argb ushr ALPHA_SHIFT and BYTE
-        return if (alpha == BYTE) "#%06X".format(argb and RGB_MASK) else "#%08X".format(argb)
+        return if (alpha == BYTE) "#%06X".format(Locale.ROOT, argb and RGB_MASK) else "#%08X".format(Locale.ROOT, argb)
     }
 
-    private fun cssHex(argb: Int): String = "#%06X%02X".format(argb and RGB_MASK, argb ushr ALPHA_SHIFT and BYTE)
+    private fun cssHex(argb: Int): String = "#%06X%02X".format(Locale.ROOT, argb and RGB_MASK, argb ushr ALPHA_SHIFT and BYTE)
 
-    fun number(v: Float): String = if (v == v.roundToInt().toFloat()) v.roundToInt().toString() else "%.2f".format(v).trimEnd('0').trimEnd('.')
+    fun number(v: Float): String = if (v == v.roundToInt().toFloat()) v.roundToInt().toString() else "%.2f".format(Locale.ROOT, v).trimEnd('0').trimEnd('.')
 
     fun dp(v: Float): String = number(v) + ".dp"
 

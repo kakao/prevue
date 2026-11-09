@@ -17,6 +17,7 @@
   { "fg": ["outline"], "bg": ["surface-container"], "need": 3 },
   { "fg": ["focus-ring"], "bg": ["surface"], "need": 3 },
   { "fg": ["pick"], "bg": ["surface-container"], "need": 3 },
+  { "fg": ["on-surface"], "bg": ["pick-container", "surface"], "need": 4.5 },
   { "fg": ["live"], "bg": ["surface"], "need": 3 },
   { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 }
 ]

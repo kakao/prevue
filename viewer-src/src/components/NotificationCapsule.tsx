@@ -3,7 +3,7 @@ import { capsuleContent, dismissOnce, subscribeCapsule, type CapsuleContent } fr
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 
-// 아래에 떠 있는 캡슐 — 오류 · 잠깐의 알림 · 처음 한 번 안내. 보드와 한 장이 함께 쓴다. 가리킨 결과는 박스 꼬리표가 말한다(D-101).
+// 아래에 떠 있는 캡슐 — 오류 · 잠깐의 알림 · 처음 한 번 안내. 보드와 한 장이 함께 쓴다. 가리킨 결과는 그림 밖 카드가 말한다(D-162).
 // 내용은 capsule.js 의 저장소가 갖는다 — 기존 모듈도 그리로 알린다. content 를 주면(Storybook) 저장소 대신 그것을 그린다.
 export const NotificationCapsule = memo(function NotificationCapsule({ content, host }: { content?: CapsuleContent; host?: HTMLElement | null }) {
   const { phrase } = useMessages();
