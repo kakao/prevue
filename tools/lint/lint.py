@@ -66,6 +66,9 @@ def detekt_reports(modules):
 
 
 DETEKT_REPORTS = detekt_reports(MODULES)
+# 층 규칙의 심은 위반은 :application 의 전용 태스크가 따로 보고한다(detekt.init.gradle.kts) — detektMain 의 baseline · excludes 를 타지 않는다
+SEED_TASK = ":application:detektLayerSeeds"
+SEED_REPORT = "%s/%s/application/reports/detekt/layerSeeds.xml" % (PLUGIN, LINT_BUILD)
 EXTERNAL = re.compile(r"^//\s*외부:")
 INIT_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), "detekt.init.gradle.kts"))
 DETEKT_CONFIG = "tools/lint/detekt.yml"
@@ -133,39 +136,46 @@ def slop_findings(src, known_qualifiers=()):
 
 
 def detekt_findings(gradle_args):
-    for r in DETEKT_REPORTS:
+    for r in DETEKT_REPORTS + (SEED_REPORT,):
         if os.path.exists(r):
             os.remove(r)
     # 태스크 실행 기록도 따로 둔다 — 기록은 태스크 경로마다 하나라, 같이 쓰면 평소 빌드가 린트의 클래스패스를 보고 다시 컴파일한다
     cmd = ["./gradlew", "-q", "--init-script", INIT_SCRIPT, "-Pprevue.lintBuildDir=" + LINT_BUILD,
            "-Pprevue.layerSeeds=" + os.path.abspath(LAYER_SEEDS),
-           "--project-cache-dir", LINT_BUILD + "/.gradle"] + gradle_args + ["detektMain", "detektBridge"]
+           "--project-cache-dir", LINT_BUILD + "/.gradle"] + gradle_args + ["detektMain", "detektBridge", SEED_TASK]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN)
-    if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS):
+    if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS + (SEED_REPORT,)):
         tail = "\n".join((r.stdout + r.stderr).strip().splitlines()[-15:])
         hint = "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다" if "--offline" in gradle_args else ""
         raise Unrunnable("detekt 를 못 돌렸다 (%s)\n%s%s" % (" ".join(cmd), tail, hint))
-    found = []
-    for report in DETEKT_REPORTS:
-        for file_el in ET.parse(report).getroot().iter("file"):
-            name = file_el.get("name")
-            path = os.path.relpath(name if os.path.isabs(name) else os.path.join(PLUGIN, name))
-            for e in file_el.iter("error"):
-                name = e.get("source", "").split(".")[-1]
-                rule = layer_rule(name) or DETEKT_GROUPS.get(name, "detekt/" + name)
-                line = int(e.get("line", "1"))
-                advice = e.get("message", "").strip()
-                if rule in DETEKT_ADVICE:
-                    advice = "%s — %s" % (advice, DETEKT_ADVICE[rule])
-                found.append(Finding(path, line, rule, advice, source=name))
-    seeded, rest = [], []
-    for f in found:
-        if not f.path.startswith(LAYER_SEEDS + "/"):
-            rest.append(f)
-        elif f.source.startswith(LAYER_RULES):
-            seeded.append(f)
+    found = [f for report in DETEKT_REPORTS for f in report_findings(report)]
+    check_no_stray_seeds(found)
+    seeded = [f for f in report_findings(SEED_REPORT) if f.source.startswith(LAYER_RULES)]
     check_seeds(seed_expectations(), seeded)
-    return rest
+    return found
+
+
+def check_no_stray_seeds(found):
+    """본 태스크 보고서에 심은 위반이 섞이면 그 파일이 판정 대상에 들어간 것이다 — 심은 위반은 전용 태스크에서만 돈다(종료 2)."""
+    stray = sorted({f.path for f in found if f.path.startswith(LAYER_SEEDS + "/")})
+    if stray:
+        raise Unrunnable("심은 위반(%s)이 본 detekt 태스크에 실렸다 — 전용 태스크(%s)에서만 돈다: %s" % (LAYER_SEEDS, SEED_TASK, ", ".join(stray)))
+
+
+def report_findings(report):
+    found = []
+    for file_el in ET.parse(report).getroot().iter("file"):
+        name = file_el.get("name")
+        path = os.path.relpath(name if os.path.isabs(name) else os.path.join(PLUGIN, name))
+        for e in file_el.iter("error"):
+            name = e.get("source", "").split(".")[-1]
+            rule = layer_rule(name) or DETEKT_GROUPS.get(name, "detekt/" + name)
+            line = int(e.get("line", "1"))
+            advice = e.get("message", "").strip()
+            if rule in DETEKT_ADVICE:
+                advice = "%s — %s" % (advice, DETEKT_ADVICE[rule])
+            found.append(Finding(path, line, rule, advice, source=name))
+    return found
 
 
 def check_seeds(expected, seeded):
@@ -175,7 +185,7 @@ def check_seeds(expected, seeded):
     if bare:
         raise Unrunnable("심은 위반이 없는 층 규칙 갈래 — %s 에 `// 잡는다 <규칙 이름/갈래>` 줄을 함께 둔다: %s" % (LAYER_SEEDS, ", ".join(sorted(bare))))
     if expected and not seeded:
-        raise Unrunnable("심은 위반(%s)이 detekt 에 하나도 실리지 않았다 — init script 가 싣는 모듈(:application)이 바뀌었는지 본다" % LAYER_SEEDS)
+        raise Unrunnable("심은 위반(%s)이 detekt 에 하나도 실리지 않았다 — 전용 태스크(%s)의 소스를 init script 가 싣는지 본다" % (LAYER_SEEDS, SEED_TASK))
     missed, extra = seed_mismatch(expected, seeded)
     if missed or extra:
         raise Unrunnable("층 규칙이 심은 위반(%s)과 어긋난다 — 통과가 아무것도 말하지 않는다\n%s" % (

@@ -98,6 +98,16 @@ class LayerSeeds(unittest.TestCase):
         with self.assertRaisesRegex(lint.Unrunnable, "하나도 실리지 않았다"):
             lint.check_seeds(expected, [])
 
+    def test_본_태스크에_심은_위반이_섞이면_멈춘다(self):
+        stray = [lint.Finding("tests/lint/layer/prevue/daemon/Seed.kt", 3, "layer/daemon", "", source="ForbiddenImport/daemon")]
+        with self.assertRaisesRegex(lint.Unrunnable, "전용 태스크"):
+            lint.check_no_stray_seeds(stray)
+        lint.check_no_stray_seeds([lint.Finding("plugin/daemon/application/src/main/kotlin/A.kt", 1, "detekt/X", "")])
+
+    def test_심은_위반_보고서는_본_보고서와_따로다(self):
+        self.assertNotIn(lint.SEED_REPORT, lint.DETEKT_REPORTS)
+        self.assertTrue(lint.SEED_REPORT.startswith("plugin/daemon/build/lint/application/"))
+
 
 class LayerRule(unittest.TestCase):
     def test_갈래_이름으로_묶는다(self):
