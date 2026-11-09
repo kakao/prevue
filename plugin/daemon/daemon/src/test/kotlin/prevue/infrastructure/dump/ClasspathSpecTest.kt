@@ -106,21 +106,19 @@ class ClasspathSpecTest {
         assertEquals(null, app.derivedFrom)
     }
 
-    @Test fun `덤프가 실은 KMP 모듈의 컴파일 클래스패스가 있으면 앱 것 대신 그것으로 컴파일하고 덤프를 권하지 않는다`() {
+    @Test fun `덤프가 실은 KMP 모듈의 컴파일 클래스패스가 있으면 앱 것보다 앞에 두고 덤프를 권하지 않는다`() {
         val ownCompile = listOf(dsJar, "/m2/ui-tooling-preview-api.jar", "/m2/foundation-api.jar")
         val kmpApp = ClasspathSpec(File(root, ":app.json"), ":app", "debug", "", "app.ap_",
             DumpPaths(classPath = app.classPath, projectClassPath = app.projectClassPath, compileClassPath = app.compileClassPath,
                 rClassJars = app.rClassJars, resourceDirs = emptyList(), moduleCompileClassPaths = mapOf(":feature:foryou" to ownCompile)))
         val lib = kmpApp.dependency(":feature:foryou")
-        assertEquals(ownCompile + appR, lib.compileClassPath)
+        assertEquals(ownCompile + "/m2/compose-beta.jar" + appR, lib.compileClassPath)
         assertEquals(emptyList<String>(), lib.compileFill)
         assertEquals(":app", lib.derivedFrom)
         assertEquals(null, lib.argsFrom)
-        assertTrue(lib.ownCompileArgs)
         val other = kmpApp.dependency(":core:designsystem")
         assertEquals(listOf(dsJar, "/m2/compose-beta.jar", appR), other.compileClassPath)
         assertEquals(":app", other.argsFrom)
-        assertFalse(other.ownCompileArgs)
     }
 
     @Test fun `덤프 JSON 의 필드를 그대로 싣고 compileClassPath 가 없으면 거절한다`() {
@@ -246,7 +244,7 @@ class ClasspathSpecTest {
         }
         val kmpApp = ClasspathSpec.load(json)
         assertEquals(mapOf(":shared" to listOf("/m2/shared-only.jar")), kmpApp.moduleCompileClassPaths)
-        assertEquals(listOf("/m2/shared-only.jar", appR), kmpApp.dependency(":shared").compileClassPath)
+        assertEquals(listOf("/m2/shared-only.jar", "/m2/c.jar", appR), kmpApp.dependency(":shared").compileClassPath)
         val noField = File(root, "app-old.json").apply { writeText(json.readText().replace(Regex(",\\s*\"moduleCompileClassPaths\":\\{[^}]*\\}"), "")) }
         assertEquals(listOf("/m2/c.jar", appR), ClasspathSpec.load(noField).dependency(":shared").compileClassPath)
     }
