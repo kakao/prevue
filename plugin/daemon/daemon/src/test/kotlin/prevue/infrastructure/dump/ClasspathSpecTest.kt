@@ -249,6 +249,18 @@ class ClasspathSpecTest {
         assertEquals(listOf("/m2/c.jar", appR), ClasspathSpec.load(noField).dependency(":shared").compileClassPath)
     }
 
+    @Test fun `KMP 모듈 자신의 컴파일 클래스패스 뒤에 앱 것을 붙여 Compose 런타임 같은 빠진 jar를 메우고 빈 목록은 없는 것으로 본다`() {
+        val nonCompose = listOf("/m2/koin-core.jar")
+        val kmpApp = ClasspathSpec(File(root, ":app.json"), ":app", "debug", "", "app.ap_",
+            DumpPaths(classPath = app.classPath, projectClassPath = app.projectClassPath, compileClassPath = listOf("/m2/compose-runtime.jar"),
+                rClassJars = app.rClassJars, resourceDirs = emptyList(),
+                moduleCompileClassPaths = mapOf(":feature:foryou" to nonCompose, ":core:designsystem" to emptyList())))
+        assertEquals(nonCompose + "/m2/compose-runtime.jar" + appR, kmpApp.dependency(":feature:foryou").compileClassPath)
+        val empty = kmpApp.dependency(":core:designsystem")
+        assertEquals(listOf("/m2/compose-runtime.jar", appR), empty.compileClassPath)
+        assertEquals(":app", empty.argsFrom)
+    }
+
     @Test fun `KMP 모듈의 res 와 매니페스트는 androidMain 에서도 찾고 앱의 에셋 디렉터리는 그릴 덤프까지 간다`() {
         val shared = out("shared", "classes.jar")
         val res = File(root, "shared/src/androidMain/res").apply { mkdirs() }

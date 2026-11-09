@@ -211,7 +211,7 @@ internal class ClasspathSpec(
         val dir = moduleDirs[project] ?: (repoRoot.path + "/" + project.trim(':').replace(':', '/'))
         val own = projectClassPath.filter { it.startsWith("$dir/build/") && it !in rClassJars }
         require(own.isNotEmpty()) { "$project 의 산출물이 ${this.project} 덤프에 없다" }
-        val exact = moduleCompileClassPaths[project]
+        val exact = moduleCompileClassPaths[project]?.takeIf { it.isNotEmpty() }
         val base = exact?.let { it + compileClassPath.filter { p -> p !in it } } ?: compileClassPath
         val paths = DumpPaths(
             classPath = classPath, projectClassPath = projectClassPath,
