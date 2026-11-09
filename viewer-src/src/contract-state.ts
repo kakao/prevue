@@ -58,6 +58,7 @@ export type ContractState = {
 "streamUrl": string;
 "systemUi": {
 "annotated": boolean;
+"bars": null;
 "choice": string;
 "shown": boolean;
 };

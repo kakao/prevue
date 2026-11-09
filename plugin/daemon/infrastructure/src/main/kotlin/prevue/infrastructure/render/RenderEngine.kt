@@ -338,7 +338,7 @@ internal class RenderEngine(
         if (lostThread != null) return lostOutput(l.preview)
         val t = System.nanoTime()
         val result: RenderResult = try {
-            l.task.render().get(renderTimeoutSec, TimeUnit.SECONDS)
+            l.renderPlaced()
         } catch (e: TimeoutException) {
             return renderFailed(l, timing, t, FailureKind.TIMEOUT, phrase("render.timedOut", "sec" to renderTimeoutSec), timedOut = true)
         } catch (e: Exception) {

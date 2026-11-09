@@ -123,3 +123,9 @@ body.resizing-ui main { padding-bottom: 0; }
 .morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container);
          mask-size: calc(100% + 200vmax) calc(100% + 100vmax); mask-position: -100vmax 0; mask-repeat: no-repeat; mask-clip: no-clip; }
 .morph img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 0 0; }
+/* 그림 시작 — 기기별 바(D-169). 그림 위에 dp 좌표 SVG 로 덧그리고, 글자색은 아래 그림의 밝기로 고른다 */
+.stage .sys-bars { position: absolute; inset: 0; pointer-events: none; }
+.stage .sys-bars svg { display: block; width: 100%; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
+.sys-bars .sb-ink-dark { color: var(--device-shade); }
+.sys-bars .sb-ink-light { color: var(--device-veil); }
+/* 그림 끝 */

@@ -248,6 +248,7 @@
   "systemUi.label": "System UI",
   "systemUi.off": "Off",
   "systemUi.on": "On",
+  "systemUi.tip.device": "Device bars — status bar {status}dp · bottom {nav}dp · source {source}",
   "systemUi.tip": "Status and navigation bars on or off — this card only · starts from the annotation · the source stays as is",
   "tabs.close": "Close tab",
   "tabs.evicted": "Closed the {tab} tab you hadn't looked at in a while",

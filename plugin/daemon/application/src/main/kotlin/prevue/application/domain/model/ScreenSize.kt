@@ -23,7 +23,7 @@ sealed interface ScreenSize {
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
             if (p.systemBars is SystemBars.Shown) return deviceOfDp(p, widthDp, heightDp)
-            return p.copy(params = p.params + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
+            return p.copy(params = p.params - SystemBars.DEVICE_POSTURE + ("widthDp" to "$widthDp") + ("heightDp" to "$heightDp"))
         }
     }
 
@@ -41,7 +41,7 @@ sealed interface ScreenSize {
         override val key: String get() = listOfNotNull(model.id, "folded".takeIf { folded }, "land".takeIf { landscape }).joinToString("-")
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
-            val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi))
+            val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi)) + (SystemBars.DEVICE_POSTURE to key)
             if (p.systemBars is SystemBars.Shown) return p.copy(params = rest)
             return p.copy(params = rest + ("widthDp" to "${widthDp.roundToInt()}") + ("heightDp" to "${heightDp.roundToInt()}"))
         }
@@ -53,6 +53,8 @@ sealed interface ScreenSize {
         val PRESETS = listOf(Dp(320, 640, "narrow"), Dp(673, 841, "foldable"))
         val BAR: List<ScreenSize> = listOf(Original) + PRESETS + DeviceModel.entries.map { Device(it) }
         private const val DEFAULT_DPI = 420
+
+        fun postureOf(key: String): Device? = DeviceModel.entries.asSequence().flatMap { it.postures }.firstOrNull { it.key == key }
 
         fun parse(size: String?, device: String?, folded: Boolean, landscape: Boolean): ScreenSize? {
             if (device != null) {
@@ -82,7 +84,7 @@ sealed interface ScreenSize {
             val dpi = keys["dpi"]?.toIntOrNull() ?: DEFAULT_DPI
             val k = dpi / 160.0
             val device = deviceSpec((widthDp * k).roundToInt(), (heightDp * k).roundToInt(), dpi, keys)
-            return p.copy(params = p.params - "widthDp" - "heightDp" + ("device" to device))
+            return p.copy(params = p.params - "widthDp" - "heightDp" - SystemBars.DEVICE_POSTURE + ("device" to device))
         }
 
         private val SIZED_KEYS = setOf("width", "height", "dpi", "orientation")
@@ -100,17 +102,17 @@ sealed interface ScreenSize {
 
 data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Int? = null)
 
-enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?) {
-    GALAXY_S26("s26", "Galaxy S26", 480, Panel(1080, 2340), null),
-    PIXEL_9("pixel9", "Pixel 9", 420, Panel(1080, 2424), null),
-    IPHONE_17("ip17", "iPhone 17", 480, Panel(1206, 2622), null),
-    IPHONE_AIR("ipair", "iPhone Air", 480, Panel(1260, 2736), null),
-    IPHONE_17_PRO_MAX("ip17pm", "iPhone 17 Pro Max", 480, Panel(1320, 2868), null),
-    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2670, 1878, 1335), Panel(1398, 2034)),
-    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224), Panel(1248, 1972)),
-    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128), Panel(1080, 2520)),
-    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038), Panel(1080, 2424)),
-    PIXEL_TABLET("tablet", "Pixel Tablet", 320, Panel(2560, 1600), null),
+enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {
+    GALAXY_S26("s26", "Galaxy S26", 480, Panel(1080, 2340), null, BarLook.ONE_UI),
+    PIXEL_9("pixel9", "Pixel 9", 420, Panel(1080, 2424), null, BarLook.PIXEL),
+    IPHONE_17("ip17", "iPhone 17", 480, Panel(1206, 2622), null, BarLook.IOS),
+    IPHONE_AIR("ipair", "iPhone Air", 480, Panel(1260, 2736), null, BarLook.IOS),
+    IPHONE_17_PRO_MAX("ip17pm", "iPhone 17 Pro Max", 480, Panel(1320, 2868), null, BarLook.IOS),
+    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2670, 1878, 1335), Panel(1398, 2034), BarLook.IOS),
+    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224), Panel(1248, 1972), BarLook.ONE_UI),
+    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128), Panel(1080, 2520), BarLook.ONE_UI),
+    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038), Panel(1080, 2424), BarLook.PIXEL),
+    PIXEL_TABLET("tablet", "Pixel Tablet", 320, Panel(2560, 1600), null, BarLook.PIXEL),
     ;
 
     val postures: List<ScreenSize.Device>

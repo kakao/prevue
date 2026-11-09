@@ -28,7 +28,7 @@ enum class SystemUi(val key: String) {
     }
 }
 
-data class SystemUiState(val choice: SystemUi, val annotated: Boolean) {
+data class SystemUiState(val choice: SystemUi, val annotated: Boolean, val bars: SystemBars.Shown? = null) {
     val shown: Boolean get() = choice.shown(annotated)
 }
 

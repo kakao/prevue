@@ -62,6 +62,7 @@
       "streamUrl": "string",
       "systemUi": {
         "annotated": "boolean",
+        "bars": "null",
         "choice": "string",
         "shown": "boolean"
       },
@@ -238,7 +239,8 @@
       "systemUi": {
         "choice": "annotated",
         "annotated": false,
-        "shown": false
+        "shown": false,
+        "bars": null
       },
       "postures": []
     },

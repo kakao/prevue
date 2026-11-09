@@ -246,6 +246,7 @@
   "systemUi.label": "시스템 UI",
   "systemUi.off": "끔",
   "systemUi.on": "켬",
+  "systemUi.tip.device": "기기 바 — 상태바 {status}dp · 하단 {nav}dp · 출처 {source}",
   "systemUi.tip": "상태바 · 내비바 켜고 끄기 — 이 한 장만 · 처음은 어노테이션대로 · 소스는 그대로",
   "tabs.close": "탭 닫기",
   "tabs.evicted": "오래 안 본 {tab} 탭을 닫았어요",
