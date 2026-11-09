@@ -25,6 +25,8 @@ import kotlinx.coroutines.withTimeout
 import prevue.daemon.fake.Fixture
 import prevue.infrastructure.bindings.EntryHooks
 import prevue.daemon.fake.realDispatchers
+import prevue.daemon.fake.LaneSpy
+import prevue.application.port.PrevueDispatchers
 
 class ServerTest {
     private val fx = Fixture()
@@ -142,6 +144,22 @@ class ServerTest {
         parent.cancel()
         runBlocking { withTimeout(5_000) { server.stop() } }
         ServerSocket(port, 1, InetAddress.getByName("127.0.0.1")).close()
+    }
+
+    @Test fun `요청은 io 의 64줄 뷰에서만 돈다`() {
+        val io = LaneSpy(realDispatchers.io)
+        val default = LaneSpy(realDispatchers.default)
+        val port = ServerSocket(0).use { it.localPort }
+        val server = Server(HttpSeat(port, null, fx.root, fx.root), emptyList(), EmptyCoroutineContext, PrevueDispatchers(io, default)) {}
+        server.start()
+        try {
+            assertEquals(200, getAsync(port, "/daemon").get(5, TimeUnit.SECONDS))
+            assertEquals(404, getAsync(port, "/nothing-here").get(5, TimeUnit.SECONDS))
+        } finally { runBlocking { withTimeout(5_000) { server.stop() } } }
+        assertEquals(listOf(64 to "prevue-http"), io.lanes())
+        assertTrue(io.view("prevue-http").dispatched >= 2, "요청이 청한 뷰에서 돌지 않았다")
+        assertEquals(emptyList<LaneSpy.View>(), default.views)
+        assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
     }
 
     private fun getAsync(port: Int, path: String) = CompletableFuture.supplyAsync {

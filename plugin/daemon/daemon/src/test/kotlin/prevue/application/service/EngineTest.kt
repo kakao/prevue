@@ -3,7 +3,6 @@ package prevue.application.service
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -14,12 +13,10 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
@@ -33,6 +30,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.PreviewSpec
 import prevue.daemon.fake.FakePreviewRenderer
+import prevue.daemon.fake.LaneSpy
 import prevue.daemon.fake.realDispatchers
 import prevue.daemon.fake.dispatchersOn
 import prevue.application.port.EngineLog
@@ -169,7 +167,6 @@ class EngineTest {
         assertEquals(1, fake.closes.get())
     }
 
-    // IO 와 Default 는 워커 이름이 같아 스레드로 가리지 못한다 — 엔진이 어느 디스패처에 어떤 뷰를 청하고 그 뷰에서 도는지로 본다(D-89).
     @Test fun `엔진은 io 의 한 줄 뷰에서만 돌고 default 는 쓰지 않는다`() = runTest {
         val io = LaneSpy(StandardTestDispatcher(testScheduler))
         val default = LaneSpy(StandardTestDispatcher(testScheduler))
@@ -181,18 +178,9 @@ class EngineTest {
         a.codeChanged()
         assertTrue(fake.ticks.get() > 0, "라이브 루프가 틱을 돌지 않았다")
         assertEquals(1, fake.codeChanges)
-        assertEquals(listOf(1 to "prevue-engine"), io.views.map { it.parallelism to it.name })
+        assertEquals(listOf(1 to "prevue-engine"), io.lanes())
         assertTrue(io.views.single().spy.dispatched > 0, "청한 뷰에서 돌지 않았다")
         assertEquals(emptyList<LaneSpy.View>(), default.views)
         assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
-    }
-
-    private class LaneSpy(private val inner: CoroutineDispatcher) : CoroutineDispatcher() {
-        class View(val parallelism: Int, val name: String?, val spy: LaneSpy)
-        val views = mutableListOf<View>()
-        var dispatched = 0
-        override fun dispatch(context: CoroutineContext, block: Runnable) { dispatched++; inner.dispatch(context, block) }
-        override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher =
-            LaneSpy(inner.limitedParallelism(parallelism, name)).also { views += View(parallelism, name, it) }
     }
 }
