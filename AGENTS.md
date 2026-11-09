@@ -33,7 +33,7 @@
 
 ## 브랜치와 워크트리
 
-- **`main`은 배포본, `develop`은 통합 브랜치다.** 둘 다 PR로만 움직인다 — develop은 작업 PR과 로컬 검증(`implement` 5단계), main은 릴리즈 PR과 CI(빌드 검증). 빌드 검증은 develop PR에도 돌지만 그곳의 머지 관문은 로컬 검증이다 — 외부 기여 PR을 받는 그물이다. **직접 푸시하지 않는다** — 둘 다 ruleset(PR 필수 · 승인 0개 · 삭제 · 강제 푸시 금지)이 걸려 있지만 저장소 admin은 우회하므로 에이전트의 직접 푸시는 서버가 막아 주지 않는다. main에 미는 순간 배포된다.
+- **`main`은 배포본, `develop`은 통합 브랜치다.** 둘 다 PR로만 움직인다 — develop은 작업 PR과 로컬 검증 · CI(빌드 검증) — 밀기 전에 로컬 검증, 머지 전에 CI 성공(`implement` 5단계), main은 릴리즈 PR과 CI(빌드 검증). 필수 체크로는 걸지 않아 develop에서 CI를 기다리는 것은 `implement`가 지킨다 — 외부 기여 PR은 로컬 검증 없이 CI만 거친다. **직접 푸시하지 않는다** — 둘 다 ruleset(PR 필수 · 승인 0개 · 삭제 · 강제 푸시 금지)이 걸려 있지만 저장소 admin은 우회하므로 에이전트의 직접 푸시는 서버가 막아 주지 않는다. main에 미는 순간 배포된다.
 - **작업 하나 = 브랜치 하나 = 워크트리 하나**(브랜치는 `worktree-<작업명>`). Claude Code와 Codex 모두 저장소 루트의 `.worktrees/<작업명>`에 워크트리를 둔다. 베이스 체크아웃은 `develop`에 두고 거기서 코드를 고치지 않는다. **워크트리를 만들고 지우는 것은 작업을 넘기는 쪽(사람이나 오케스트레이터)이다** — 방법은 개인 문서가 갖는다. 그 워크트리 안의 절차(계획 → 개발 → 리뷰 → PR → 머지 → 볼트 캡처 → 치우기)는 **`implement` 스킬**(`dev-skills-src/implement/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 - **클론 직후 한 번 `git remote set-head origin develop`.** 워크트리는 로컬 `origin/HEAD`에서 따는데 GitHub 기본 브랜치는 `main`이라(마켓플레이스가 거기서 읽힌다) 그대로 두면 워크트리가 main에서 시작한다. `git remote set-head -a`를 치면 main으로 돌아간다.
 - **워크트리에서 프리뷰를 볼 때는 그 워크트리를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다.** CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다.
