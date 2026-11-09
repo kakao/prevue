@@ -39,7 +39,10 @@ internal class PreviewCatalog(
                 .flatMap { (f, e) -> e.composables.map { it to ComposableDefinition(f, e.module) } }
                 .groupBy({ it.first }, { it.second })
             val files = byFile.filterValues { it.functions.isNotEmpty() }
-                .map { (f, e) -> PreviewFile(f, e.module, e.mtimeMs, e.functions, e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }, e.fqns) }
+                .map { (f, e) ->
+                    val projectCalls = e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }
+                    PreviewFile(f, e.module, e.mtimeMs, e.functions, projectCalls, e.fqns)
+                }
                 .sortedByDescending { it.mtimeMs }
             PreviewIndex(files, composables)
         }
