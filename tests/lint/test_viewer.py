@@ -22,9 +22,7 @@ def js(text):
 
 
 class NodeDeps(unittest.TestCase):
-    NODE = staticmethod(lambda _: "/bin/node")
-
-    def problem(self, files, which=NODE):
+    def problem(self, files, which=lambda _: "/bin/node"):
         with tempfile.TemporaryDirectory() as root:
             for path, text in files.items():
                 full = os.path.join(root, path)
