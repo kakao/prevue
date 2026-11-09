@@ -144,12 +144,16 @@ gh pr create --base develop --title "<무엇을 · 왜 한 줄>" --body "<본문
 gh pr checks <N> --watch --fail-fast
 ```
 
-"빌드 검증"(약 7~10분, job 시간 제한 20분이 기다림의 상한이다)이 초록이어야 한다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
+"빌드 검증"(약 7~10분, job 시간 제한 20분이 기다림의 상한이다)이 초록이어야 한다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 
-초록이면 머지 직전에 그 결과가 지금 PR head의 것인지 한 번 더 본다 — `gh pr view <N> --json headRefOid,statusCheckRollup`의 `headRefOid`가 기다림을 시작할 때의 `git rev-parse HEAD`와 같고, `statusCheckRollup`(head 커밋의 체크)의 `build`가 `SUCCESS`여야 한다. 다르면 새 head의 실행을 다시 기다린다.
+기다림이 끝나면 머지 직전에 `gh pr view <N> --json headRefOid,statusCheckRollup`로 판정한다 — `statusCheckRollup`은 head 커밋의 체크다.
 
-**실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불리면 0단계가 열린 PR로 이 단계를 찾고, 고친 커밋을 밀었으면 로컬 검증부터 다시 돈다.
+- `headRefOid`가 기다림을 시작할 때의 `git rev-parse HEAD`와 다르거나, `build`가 아직 없거나 진행 중이면 조금 뒤 다시 기다린다.
+- head가 같고 `build`의 `conclusion`이 `SUCCESS`면 초록이다.
+- head가 같고 `build`의 `conclusion`이 `SUCCESS`가 아니면(`FAILURE` · `CANCELLED` · `SKIPPED` · `TIMED_OUT` 등) 실패다 — `gh pr checks`가 종료 0으로 끝났어도 그렇다.
+
+**실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불려 고친 커밋이 있으면 4단계 수정 확인(`medium`)을 거치고, 이 단계의 로컬 검증부터 다시 돌아 민 뒤 CI를 기다린다.
 
 초록이면 PR 본문의 성공 기준 결과 · 검증 기록(CI 실행 링크 포함)을 채우고 머지한다.
 
