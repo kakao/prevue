@@ -48,7 +48,7 @@ class ThreadDeviceRuleTest {
         )
         const val DELAY = "delay"
         val delayAllowed = listOf(
-            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", DELAY, 8, "이 검사 — 심은 위반"),
+            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", DELAY, 10, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/fake/Await.kt", DELAY, 2, "$WALL_CLOCK — 기다림 도우미의 폴링 간격"),
             Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
@@ -133,7 +133,8 @@ class ThreadDeviceRuleTest {
     }
 
     // 개수만 보면 같은 파일 안에서 가상 시간 철자를 실제 시간으로 바꿔쳐도 통과한다. 해가 되는 쪽은 이 방향뿐이라
-    // 가상 시간 항목만 철자마다 runTest 테스트 본문 안인지 본다 — 테스트 밖 도우미와 runTest 안의 실제 디스패처는 못 가린다.
+    // 가상 시간 항목만 철자마다 `= runTest` 인 fun 본문 안인지 본다(가장 가까운 앞의 fun 줄로 가른다, 별칭 import 줄은 밖이다).
+    // 함수 밖 최상위 코드와 runTest 안의 실제 디스패처는 못 가린다. runTest 본문 안의 지역 fun 은 그 뒤를 밖으로 잘못 본다 — 실패하는 쪽이다.
     @Test fun `가상 시간 허용은 runTest 테스트 안에만 있다`() {
         assertEquals(3, virtualFiles(delayAllowed + collectAllowed).size, "가상 시간 파일을 못 찾았다")
         assertEquals(
@@ -143,8 +144,12 @@ class ThreadDeviceRuleTest {
         ) { "가상 시간으로 허용한 철자가 runTest 테스트 밖에 있다 — 실제 시간이면 그 이유로 허용 목록을 고친다" }
         val planted = "import kotlinx.coroutines.delay as pause\nfun helper() = delay(3)\n" +
             "@Test fun `가상`() = runTest {\n    fake.onTouch = { delay(100) }\n    f.collect { }\n    // delay(1)\n}\n" +
-            "@Test fun `실제`() = runBlocking {\n    delay(50)\n    g.collect { }\n}\n"
-        assertEquals(listOf("H.kt:2 → delay", "H.kt:9 → delay"), ThreadDeviceRule.outsideRunTest(mapOf("H.kt" to planted), ThreadDeviceRule.delay))
+            "@Test fun `실제`() = runBlocking {\n    delay(50)\n    g.collect { }\n}\n" +
+            "@Test\nfun `머리 둘째 줄`() = runBlocking { delay(6) }\n@Test\nfun `머리 둘째 줄 가상`() = runTest(timeout = t) { delay(7) }\n"
+        assertEquals(
+            listOf("H.kt:1 → delay", "H.kt:2 → delay", "H.kt:9 → delay", "H.kt:13 → delay"),
+            ThreadDeviceRule.outsideRunTest(mapOf("H.kt" to planted), ThreadDeviceRule.delay),
+        )
         assertEquals(listOf("H.kt:10 → .collect"), ThreadDeviceRule.outsideRunTest(mapOf("H.kt" to planted), ThreadDeviceRule.collect))
     }
 
@@ -196,15 +201,14 @@ object ThreadDeviceRule {
             .flatMap { line -> pattern.findAll(line).map { "$path → ${it.value}" } }.toList()
     }.groupingBy { it }.eachCount()
 
-    private val testHeader = Regex("""@Test\s+fun\b""")
-    private val runTestBody = Regex("""=\s*runTest\s*\{""")
-    private val anyImport = Regex("""^\s*import\b""")
+    private val function = Regex("""\bfun\b""")
+    private val runTestBody = Regex("""=\s*runTest\b""")
 
     fun outsideRunTest(files: Map<String, String>, pattern: Regex): List<String> = files.flatMap { (path, text) ->
         var inRunTest = false
         text.lines().flatMapIndexed { i, line ->
-            if (comment.containsMatchIn(line) || anyImport.containsMatchIn(line)) return@flatMapIndexed emptyList()
-            if (testHeader.containsMatchIn(line)) inRunTest = runTestBody.containsMatchIn(line)
+            if (comment.containsMatchIn(line)) return@flatMapIndexed emptyList()
+            if (function.containsMatchIn(line)) inRunTest = runTestBody.containsMatchIn(line)
             if (inRunTest) emptyList() else pattern.findAll(line).map { "$path:${i + 1} → ${it.value}" }.toList()
         }
     }
