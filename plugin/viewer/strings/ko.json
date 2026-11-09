@@ -71,6 +71,7 @@
   "open.cannot": "열 수 없어요",
   "open.failed": "열기 실패: {why}",
   "open.missing": "{file} 파일이 없어요",
+  "open.noFunction": "{file}에 {fn} @Preview가 없어요",
   "open.noPreview": "{file}에는 @Preview가 없어요",
   "open.otherApp": "다른 앱의 파일이라 이 뷰어에서 열 수 없어요. 명령을 복사했어요",
   "panel.device": "기기",

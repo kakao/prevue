@@ -40,12 +40,23 @@ class Tabs @Inject internal constructor(
 ) {
     suspend fun openPreview(target: String, index: Int?, params: Map<String, String>, by: String, since: Long? = null): ShowResult = ws.exclusive { ed ->
         val link = deepLink(target, index)
-        val key = link?.first ?: keyOf(target)
+        switchTo(ed, link?.first ?: keyOf(target), link?.second ?: Pick(index), params, by, since)
+    }
+
+    suspend fun openFile(path: String, function: String?, by: String): ShowResult? = ws.exclusive { ed ->
+        val key = keyOf(path)
+        if (key == ws.now.activeTab && ws.now.board != null) {
+            if (ws.now.interactive) boards.leave(ed, by)
+            null
+        } else switchTo(ed, key, Pick(function = function), emptyMap(), by, null)
+    }
+
+    private suspend fun switchTo(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long?): ShowResult {
         val move = if (find(key) == null) TabMove.OPENED else TabMove.SWITCHED
-        val r = enter(ed, key, link?.second ?: Pick(index), params, by, since)
+        val r = enter(ed, key, pick, params, by, since)
         val evicted = TabPolicy.evict(ws.now.tabs, ws.now.activeTab)?.also { drop(ed, it) }
         evicted?.let { ws.emit(WorkspaceEvent.TabEvicted(it)) }
-        r.copy(tab = move, closedTab = evicted?.key)
+        return r.copy(tab = move, closedTab = evicted?.key)
     }
 
     suspend fun closeTab(target: String, by: String): CloseResult = ws.exclusive { ed ->
@@ -84,12 +95,13 @@ class Tabs @Inject internal constructor(
     internal suspend fun activateOrVacant(ed: WorkspaceEditor, key: String, by: String, since: Long? = null): ShowResult? =
         try { activate(ed, key, Pick(), emptyMap(), by, since) } catch (_: VacantTab) { null }
 
-    internal class Pick(val index: Int? = null, private val fqn: String? = null) {
+    internal class Pick(val index: Int? = null, private val fqn: String? = null, private val function: String? = null) {
         val interactive: Boolean get() = fqn != null
 
         fun within(specs: List<PreviewSpec>): Boolean = specs.any { it.fqn == fqn }
 
         fun of(specs: List<PreviewSpec>, file: String): Int? {
+            if (function != null) return specs.indexOfFirst { it.functionName == function }.takeIf { it >= 0 }
             if (fqn == null) return index?.also { ensure(it in specs.indices) { noIndex(file, specs.size, it) } }
             val mine = specs.indices.filter { specs[it].fqn == fqn }
             val nth = index ?: 0

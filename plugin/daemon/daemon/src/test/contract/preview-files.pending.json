@@ -1,6 +1,9 @@
 {
   "status": 200,
   "schema": {
+    "composables": [
+      "empty"
+    ],
     "files": [
       "empty"
     ],
@@ -8,6 +11,7 @@
   },
   "example": {
     "ready": false,
-    "files": []
+    "files": [],
+    "composables": []
   }
 }

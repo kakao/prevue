@@ -134,8 +134,10 @@ class Boards(
     private suspend fun resized(ed: WorkspaceEditor, size: ScreenSize, by: String): ShowResult =
         liveService.resizeWithin(ed, size, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
-    suspend fun unfocus(by: String): Unit = ws.exclusive { ed ->
-        val b = ws.now.board ?: return@exclusive
+    suspend fun unfocus(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
+
+    internal suspend fun leave(ed: WorkspaceEditor, by: String) {
+        val b = ws.now.board ?: return
         switchFocus(ed, b.focus, on = false, by)
     }
 

@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "schema": {
+    "kind": "string",
+    "message": {
+      "a": {
+        "file": "string",
+        "fn": "string"
+      },
+      "t": "string"
+    },
+    "ok": "boolean"
+  },
+  "example": {
+    "ok": false,
+    "kind": "none",
+    "message": {
+      "t": "open.noFunction",
+      "a": {
+        "file": "Cards.kt",
+        "fn": "없는함수"
+      }
+    }
+  }
+}

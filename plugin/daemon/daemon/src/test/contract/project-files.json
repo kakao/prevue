@@ -2,6 +2,12 @@
   "status": 200,
   "schema": {
     "files": {
+      "Badge.kt": [
+        "string"
+      ],
+      "Badges.kt": [
+        "string"
+      ],
       "Cards.kt": [
         "string"
       ],
@@ -21,6 +27,12 @@
       "app/src/main/kotlin"
     ],
     "files": {
+      "Badge.kt": [
+        "lib/src/main/kotlin/lib/Badge.kt"
+      ],
+      "Badges.kt": [
+        "app/src/main/kotlin/demo/Badges.kt"
+      ],
       "Cards.kt": [
         "app/src/main/kotlin/demo/Cards.kt"
       ],
