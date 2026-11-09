@@ -508,6 +508,8 @@ class Launch(unittest.TestCase):
     이 테스트를 돌린다. PREVUE_JDK 의 java 는 HTTP 를 열지 않고 받은 인자를 문 채 잔다 — start 가 그것을 띄우면 뜨기를 30초
     기다리므로 기록을 보고 끊는다."""
 
+    SLEEP = "import time; time.sleep(30)"
+
     def setUp(self):
         self.home = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.home)
@@ -524,7 +526,7 @@ class Launch(unittest.TestCase):
         self.java = os.path.join(self.home, "jdk", "bin", "java")
         os.makedirs(os.path.dirname(self.java))
         with open(self.java, "w") as f:
-            f.write("#!/bin/sh\nexec '%s' -c 'import time; time.sleep(30)' \"$0\" \"$@\"\n" % sys.executable)
+            f.write("#!/bin/sh\nexec '%s' -c '%s' \"$0\" \"$@\"\n" % (sys.executable, self.SLEEP))
         os.chmod(self.java, 0o755)
         self.cli = os.path.join(plugin, "bin", "prevue")
         self.daemons = os.path.join(self.home, "daemons")
@@ -547,13 +549,15 @@ class Launch(unittest.TestCase):
                 os.kill(pid, signal.SIGKILL)
 
     def launched(self, port):
-        """start 가 띄운 가짜 데몬의 pid. 기록은 fork 직후에 써진다 — exec 전에는 아직 셸의 명령줄이라 이 테스트의 java 가 보일 때까지 기다린다."""
+        """start 가 띄운 가짜 데몬의 pid. 기록은 fork 직후에 써지고, 그 pid 는 bash → python(setsid) → sh(가짜 java) → python(잠) 으로
+        exec 를 잇는다. 리눅스는 exec 하는 사이 /proc/<pid>/cmdline 을 비워 돌려주므로(scan 이 gone 으로 읽는다) 마지막 exec 인 잠이 보일 때까지 기다린다."""
         path = os.path.join(self.daemons, "daemon-%s.pid" % port)
         for _ in range(200):
             try:
                 with open(path) as f:
                     pid = int(f.read())
-                if self.java in (R.command_of(pid) or ""):
+                command = R.command_of(pid) or ""
+                if self.java in command and self.SLEEP in command:
                     return pid
             except (OSError, ValueError):
                 pass
