@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
  * 개수가 늘거나 줄어도 깨진다 — 장치를 걷었으면 목록에서도 지운다. 이 검사는 철자를 센다(주석과 별칭 없는 import 줄은 뺀다).
  */
 class ThreadDeviceRuleTest {
-    private class Allowed(val path: String, val device: String, val count: Int, val reason: String)
+    private class Allowed(val path: String, val device: String, val count: Int, val reason: String, val virtualTime: Boolean = false)
 
     private companion object {
         val mainRoots = Sources.kotlinRoots + Sources.javaRoots
@@ -48,21 +48,21 @@ class ThreadDeviceRuleTest {
         )
         const val DELAY = "delay"
         val delayAllowed = listOf(
-            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", DELAY, 3, "이 검사 — 심은 위반"),
+            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", DELAY, 8, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/fake/Await.kt", DELAY, 2, "$WALL_CLOCK — 기다림 도우미의 폴링 간격"),
             Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
-            Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다"),
+            Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다", virtualTime = true),
         )
         const val COLLECT = ".collect"
         const val VIRTUAL_CLOCK = "가상 시계 — runTest 안의 awaitItem 은 다음 방출까지 시계를 밀어 늦음을 가린다. advanceTimeBy 뒤 리스트로 본다"
         val collectAllowed = listOf(
-            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", COLLECT, 3, "이 검사 — 심은 위반"),
+            Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", COLLECT, 5, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", ".collectLatest", 1, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/ThreadDeviceRuleTest.kt", ".launchIn", 1, "이 검사 — 심은 위반"),
             Allowed("prevue/daemon/fake/Fakes.kt", COLLECT, 1, "onEvent — 알림을 낸 스레드에서 그 순간의 상태를 읽는 콜백"),
-            Allowed("prevue/infrastructure/watch/PollingBuildWatcherTest.kt", COLLECT, 2, VIRTUAL_CLOCK),
-            Allowed("prevue/application/service/LiveLoopTest.kt", COLLECT, 1, VIRTUAL_CLOCK),
+            Allowed("prevue/infrastructure/watch/PollingBuildWatcherTest.kt", COLLECT, 2, VIRTUAL_CLOCK, virtualTime = true),
+            Allowed("prevue/application/service/LiveLoopTest.kt", COLLECT, 1, VIRTUAL_CLOCK, virtualTime = true),
         )
         val testFiles: Map<String, String> by lazy { readTestFiles() }
         fun readTestFiles(): Map<String, String> = testRoots.flatMap { root ->
@@ -75,6 +75,7 @@ class ThreadDeviceRuleTest {
             entries.single().count
         }
         val allowedCounts = counted(allowed)
+        fun virtualFiles(list: List<Allowed>): Map<String, String> = testFiles.filterKeys { path -> list.any { it.virtualTime && it.path == path } }
     }
 
     @Test fun `src main 과 브리지의 스레드 장치는 허용 목록뿐이다`() {
@@ -131,6 +132,22 @@ class ThreadDeviceRuleTest {
         )
     }
 
+    // 개수만 보면 같은 파일 안에서 가상 시간 철자를 실제 시간으로 바꿔쳐도 통과한다. 해가 되는 쪽은 이 방향뿐이라
+    // 가상 시간 항목만 철자마다 runTest 테스트 본문 안인지 본다 — 테스트 밖 도우미와 runTest 안의 실제 디스패처는 못 가린다.
+    @Test fun `가상 시간 허용은 runTest 테스트 안에만 있다`() {
+        assertEquals(3, virtualFiles(delayAllowed + collectAllowed).size, "가상 시간 파일을 못 찾았다")
+        assertEquals(
+            emptyList<String>(),
+            ThreadDeviceRule.outsideRunTest(virtualFiles(delayAllowed), ThreadDeviceRule.delay) +
+                ThreadDeviceRule.outsideRunTest(virtualFiles(collectAllowed), ThreadDeviceRule.collect),
+        ) { "가상 시간으로 허용한 철자가 runTest 테스트 밖에 있다 — 실제 시간이면 그 이유로 허용 목록을 고친다" }
+        val planted = "import kotlinx.coroutines.delay as pause\nfun helper() = delay(3)\n" +
+            "@Test fun `가상`() = runTest {\n    fake.onTouch = { delay(100) }\n    f.collect { }\n    // delay(1)\n}\n" +
+            "@Test fun `실제`() = runBlocking {\n    delay(50)\n    g.collect { }\n}\n"
+        assertEquals(listOf("H.kt:2 → delay", "H.kt:9 → delay"), ThreadDeviceRule.outsideRunTest(mapOf("H.kt" to planted), ThreadDeviceRule.delay))
+        assertEquals(listOf("H.kt:10 → .collect"), ThreadDeviceRule.outsideRunTest(mapOf("H.kt" to planted), ThreadDeviceRule.collect))
+    }
+
     @Test fun `일부러 넣은 위반을 잡는다`() {
         val planted = mapOf(
             "A.kt" to "@Volatile var a = 0\n@Synchronized fun b() {}\nfun c() = synchronized(this) { }\n",
@@ -178,6 +195,19 @@ object ThreadDeviceRule {
         text.lineSequence().filterNot { comment.containsMatchIn(it) || (!imports && plainImport.matches(it)) }
             .flatMap { line -> pattern.findAll(line).map { "$path → ${it.value}" } }.toList()
     }.groupingBy { it }.eachCount()
+
+    private val testHeader = Regex("""@Test\s+fun\b""")
+    private val runTestBody = Regex("""=\s*runTest\s*\{""")
+    private val anyImport = Regex("""^\s*import\b""")
+
+    fun outsideRunTest(files: Map<String, String>, pattern: Regex): List<String> = files.flatMap { (path, text) ->
+        var inRunTest = false
+        text.lines().flatMapIndexed { i, line ->
+            if (comment.containsMatchIn(line) || anyImport.containsMatchIn(line)) return@flatMapIndexed emptyList()
+            if (testHeader.containsMatchIn(line)) inRunTest = runTestBody.containsMatchIn(line)
+            if (inRunTest) emptyList() else pattern.findAll(line).map { "$path:${i + 1} → ${it.value}" }.toList()
+        }
+    }
 
     fun violations(files: Map<String, String>, allowed: Map<String, Int>): List<String> {
         val found = counts(files)
