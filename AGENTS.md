@@ -69,6 +69,10 @@
 - 판정은 `sh tools/lint.sh`가 한다 — 슬롭 규칙 · 지표 · 죽은 코드 · 층 규칙(`tools/lint/detekt.yml`, D-150) · 새 주석 · 뷰어 날값. 규칙을 더할 때는 `tools/lint/`의 규칙과 심은 위반(`tests/lint`)을 함께 둔다.
 - 다른 파일(셸 · JS · 파이썬 · 빌드 스크립트)의 주석은 한국어로 간결하게, 이유 · 제약(why)만 적는다.
 
+## 리뷰
+
+리뷰는 사용자 레벨 스킬 `review`와 리뷰어(`reviewer-high` · `reviewer-xhigh` · `reviewer-max`)가 한다. 이 저장소의 리뷰 규약은 `dev-skills-src/review.md`다 — 코딩 표준 위치 · 린트 명령과 해석 · 기준 ref · 한쪽 문 신호 · 빌드 사각지대 · 등급 분류 패턴을 갖는다. 언제 어느 등급으로 띄우나는 `implement` 4단계가 갖는다.
+
 ## 저장소
 
 원격은 `github.com/kakao/prevue`이고 기본 브랜치는 `main`이다(마켓플레이스가 거기서 읽힌다). `.claude/`는 작업 메모라 gitignore이고(생성물인 `.claude/skills/`만 추적한다), 제품은 **`plugin/`** 하나다 — 마켓플레이스 둘(`.claude-plugin/marketplace.json` · `.agents/plugins/marketplace.json`)이 git-subdir로 그 폴더만 받는다(D-123). 입구 `bin/prevue` · CLI 몸통 `cli/`(파이썬 · `help/`) · 데몬 Gradle 프로젝트 `daemon/` · 뷰어 `viewer/` · `skills/claude/`(Claude Code) · `skills/codex/`(Codex) · `.claude-plugin/plugin.json` · `.codex-plugin/`이 거기 있고, 밖(`viewer-src/` · `fixtures/` · `assets/` · `prototypes/` · `tests/` · `tools/`)은 설치본에 실리지 않는다. `plugin/`의 `LICENSE` · `NOTICE.md`는 루트 원본의 사본이라 `tools/plugin-copies.sh`로만 옮긴다. 스킬은 **`skills-src/`만 고치고 `tools/gen-skills.sh`로 두 벌을 만든다** — `plugin/skills/claude/`·`plugin/skills/codex/`는 생성물이라 손으로 고치지 않는다(CI가 `--check`로 막는다). 이 저장소를 개발할 때만 쓰는 스킬(`implement` · `ship`)은 **`dev-skills-src/`**에 두고, 같은 스크립트가 `.claude/skills/`·`.agents/skills/`(Codex의 저장소 스킬)로 만든다 — 플러그인에 실리지 않아 Prevue 사용자에게 가지 않는다. `skills-src/`에 넣으면 배포된다. 한 에이전트에만 줄 구간은 `<!-- only:claude -->`/`<!-- only:codex -->` … `<!-- /only -->`로 제 줄에 감싼다.
