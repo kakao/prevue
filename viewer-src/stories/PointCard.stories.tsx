@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import '../legacy/style.css';
-import { PointCard, PointCardFloat, type PointActions } from '../src/components/PointOverlay';
+import { PointCard, PointCardLayer, type PointActions } from '../src/components/PointOverlay';
 import { asyncImage, cardOf, find, flat, hit, nia, pearl, PX, rectOf, SHOT, type Picked } from './point-tree';
 import { pearlCard } from './workspace';
 import './point-card.css';
@@ -75,7 +75,7 @@ function Board({ theme, start = null, still }: { theme: string; start?: Picked |
         <div className={`box${shown ? ' on' : ''}`} style={place(shown)} />
         {here && <div key={here.id} className="box pick" style={place(here)} />}
       </div>
-      {here && host && <PointCardFloat host={host} shot={shot}><PointCard card={cardOf(tree, here)} actions={actions} /></PointCardFloat>}
+      <PointCardLayer host={host} shot={shot} card={here && cardOf(tree, here)} actions={actions} />
     </div>
   </section>;
 }

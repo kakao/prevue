@@ -477,7 +477,12 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* ---------- 가리킨 결과 카드(D-162) ---------- */
 /* 보드 · 한 장 위에 뜨는 층이라 반경과 그림자를 갖는다. 트리와 설명은 한 단 낮은 패널(--surface)에 담고, 파랑은 그림 위의 박스 · 가리킨 줄 · 크기 그림에만 둔다. */
 #boardView { position: relative; }
-.pc-float { position: absolute; z-index: 6; width: var(--point-card-w); }
+.pc-float { position: absolute; z-index: 6; width: var(--point-card-w); transform-origin: top left;
+            transition: opacity var(--duration-short4) var(--easing-decelerate), transform var(--duration-short4) var(--easing-decelerate); }
+/* 나타남 · 걷힘 — 그림 쪽 위 모서리에서 커지며 짙어지고, 걷힐 때는 더 짧게 그쪽으로 줄며 흐려진다. 걷히는 카드는 누름을 받지 않는다(이웃 그림 위에 서 있을 수 있다). */
+.pc-float[data-side="left"] { transform-origin: top right; }
+.pc-float:not([data-placed]), .pc-float[data-leaving] { opacity: 0; transform: scale(var(--motion-enter-scale)); }
+.pc-float[data-leaving] { pointer-events: none; transition-duration: var(--duration-short3); transition-timing-function: var(--easing-accelerate); }
 .point-card { display: block; width: min(var(--point-card-w), calc(100vw - var(--space-32))); padding: var(--space-8); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); cursor: default; }
 /* 내용이 바뀌면 높이만 감쇠 곡선으로 옮긴다. 처음 뜰 때는 바로 선다(data-placed 전에는 전환 없음). */
 .pc-float .point-card { height: calc(var(--h, auto) + var(--space-8) * 2); overflow: hidden; }
@@ -576,8 +581,9 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .pc-swap { animation: pc-fade var(--duration-medium1) var(--easing-decelerate); }
 @keyframes pc-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pc-fadeout { from { opacity: 1; } to { opacity: 0; } }
-/* 움직임 줄이기 — 높이 · 미끄러짐은 즉시, 펼침 · 접힘은 높이 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
+/* 움직임 줄이기 — 높이 · 미끄러짐은 즉시, 나타남 · 걷힘과 펼침 · 접힘은 크기 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
 @media (prefers-reduced-motion: reduce) {
+  .pc-float { transition-property: opacity; }
   .pc-float[data-placed] .point-card { transition: none; }
   .pc-fold, .pc-fold[data-open] { transition-property: opacity; }
   .pc-unfold { animation: pc-fade var(--duration-short4) linear; }

@@ -156,6 +156,13 @@ export type PointSpot = {
   scale(): number; previewId: string; dpPerPx: number | null; seen: { file: string | null; fn: string | null };
 };
 let spot: (PointSpot & { hit: Hit; shot: () => DOMRect | null }) | null = null;
+// 그림 하나에 재는 함수 하나 — 카드 층이 이것으로 같은 그림인지 가린다. 걷히는 중에 같은 그림을 다시 가리키면 그 카드가 되살아난다.
+const shots = new WeakMap<HTMLImageElement, () => DOMRect | null>();
+function shotOf(img: HTMLImageElement) {
+  let shot = shots.get(img);
+  if (!shot) shots.set(img, shot = () => (img.isConnected ? img.getBoundingClientRect() : null));
+  return shot;
+}
 export const pointedImage = () => spot?.img ?? null;
 
 /** 노드 하나를 가리킨다 — 그림 클릭과 카드 트리 줄이 같은 길이다. 박스 · 카드 · 데몬의 선택 · 클립보드가 함께 바뀐다. */
@@ -164,8 +171,7 @@ export function pointAt(s: PointSpot, n: Hit) {
   if (spot && spot.hover !== s.hover) hover(spot.hover, null, 1);
   drawBox(s.pick, n, s.scale());
   s.pick.style.animation = 'none'; void s.pick.offsetWidth; s.pick.style.animation = '';   // 누름 바탕을 처음부터 다시 튼다
-  const shot = spot?.img === s.img ? spot.shot : () => (s.img.isConnected ? s.img.getBoundingClientRect() : null);
-  spot = { ...s, hit: n, shot };
+  spot = { ...s, hit: n, shot: shotOf(s.img) };
   const say = showCard(n);
   lastSay = say;
   point(n, s.previewId, say);
@@ -257,7 +263,7 @@ function placeChooser(chooser: HTMLElement) {
   const root = document.documentElement, cw = root.clientWidth, ch = root.clientHeight;
   const w = chooser.offsetWidth, h = chooser.offsetHeight;
   // 카드가 그림을 잃어 숨었으면(visibility) 붙지 않는다 — 숨은 머리를 따라가면 팝오버가 엉뚱한 자리에 뜬다
-  const anchor = document.querySelector<HTMLElement>('.point-card .pc-head');
+  const anchor = document.querySelector<HTMLElement>('.pc-float:not([data-leaving]) .pc-head');
   const a = anchor && anchor.getClientRects().length && getComputedStyle(anchor).visibility !== 'hidden' ? anchor.getBoundingClientRect() : null;
   let left: number, top: number, up = false;
   if (a) {

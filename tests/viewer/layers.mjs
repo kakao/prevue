@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 // 떠 있는 층(D-162) — 가리킨 결과는 그림 밖 옆의 카드가, 후보 고르기는 카드 머리에서 내려오는 팝오버가, 캡슐은 오류 · 알림만.
 // 카드의 트리 줄은 그림 클릭과 같고, 가리킨 컴포저블을 부르는 Preview 로 건너가며, Esc · 닫기 · 빈 곳 · 새 그림이면 걷힌다.
+// 카드는 흐려짐 · 확대로 나타나고 같은 모션을 거꾸로 짧게 타며 걷힌다 — 걷히는 카드(data-leaving)는 아래 card 가 보지 않는다.
 // 가짜 데몬이라 데몬 없이 돈다: node tests/viewer/layers.mjs
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const REPO = '/repo';
@@ -123,7 +124,15 @@ try {
   const pointAt = async (c, line) => mouse(await nodeAt(c, line));
   const key = async k => { for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: k, code: k }); };
   const pick = c => `document.querySelectorAll('#cards .card .box.pick')[${c}]`;
-  const card = `document.querySelector('.point-card')`;
+  const card = `document.querySelector('.pc-float:not([data-leaving]) .point-card')`;
+  const gone = `!document.querySelector('.pc-float')`;
+  // 카드 층을 프레임마다 적는다 — 투명도 · 변형 · 걷히는 중인지. 카드가 없으면 null.
+  const sample = () => evaluate(`window.__fl=[];(function f(){const e=document.querySelector('.pc-float'),c=e&&getComputedStyle(e);__fl.push(e?{o:+c.opacity,t:c.transform,l:e.hasAttribute('data-leaving'),n:document.querySelectorAll('.pc-float').length}:null);if(__fl.length<60)requestAnimationFrame(f)})()`);
+  const frames = async () => { await until(`__fl.length>=60`); return evaluate(`__fl`); };
+  const still = t => t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+  const scaled = t => /^matrix\(0\.9/.test(t);
+  // 걷히는 카드가 나타난 횟수 — 걷히는 길이 모두 같은 모션을 타는지 센다
+  const leaves = `(document.__leaves??0)`;
   const head = `(${card}?.querySelector('.pc-name')?.textContent ?? '')`;
   const ref = `(${card}?.querySelector('.pc-ref')?.textContent ?? '')`;
   const capsuleQuiet = `!document.querySelector('#strip').classList.contains('on') && document.querySelector('#strip').textContent.trim()===''`;
@@ -137,6 +146,7 @@ try {
     window.__block=0;window.__copied=[];const real=navigator.clipboard.writeText.bind(navigator.clipboard);
     navigator.clipboard.writeText=t=>{if(__block>0){__block--;return Promise.reject(new DOMException('blocked','NotAllowedError'))}return real(t).then(()=>{__copied.push(t)})};
     window.__picks=0;document.addEventListener('click',e=>{if(e.target.matches('#cards img'))__picks++},true);` });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: `new MutationObserver(ms=>{for(const m of ms)if(m.target.hasAttribute?.('data-leaving'))document.__leaves=(document.__leaves??0)+1}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-leaving']});` });
   await send('Page.navigate', { url: origin + '/' });
   await until(`document.querySelectorAll('#cards .card img').length===2 && [...document.querySelectorAll('#cards .card img')].every(i=>i.complete&&i.naturalWidth&&!i.hidden)`);
   await evaluate(`document.fonts.ready`);
@@ -149,10 +159,14 @@ try {
   await check(`(()=>{const m=document.querySelectorAll('#cards .marks')[0],h=document.querySelectorAll('#cards .card .box:not(.pick)')[0];return m.classList.contains('over') && m.querySelectorAll('.ol').length===5 && h.classList.contains('on')})()`,
     '그림 위에 마우스가 있으면 고를 수 있는 노드마다 구조 테두리, 손 아래 노드에 옅은 바탕');
 
-  // 1. 그림을 가리키면 꼬리표 없이 카드가 그림 밖 옆에 뜬다
+  // 1. 그림을 가리키면 꼬리표 없이 카드가 그림 밖 옆에 뜬다 — 흐려짐 · 확대에서 제자리로
+  await sample();
   await pointAt(0, 12);
   await until(`${head}==='Text' && __copied.length>0`);
-  await pause(400);
+  let fl = (await frames()).filter(Boolean);
+  assert(fl.some(f => f.o > 0 && f.o < 1 && scaled(f.t)) && fl.at(-1).o === 1 && still(fl.at(-1).t), `카드 등장 ${JSON.stringify(fl)}`);
+  console.log(`통과 ${++checked}: 카드는 옅고 작게 시작해 제자리 · 불투명으로 나타난다`);
+  await check(`document.querySelector('.pc-float').dataset.side==='right' && getComputedStyle(document.querySelector('.pc-float')).transformOrigin.startsWith('0px 0px')`, '그림 오른쪽에 선 카드는 그림 쪽 위 모서리(왼쪽 위)에서 커진다');
   await check(`!document.querySelector('.tag') && ${ref}==='Cards.kt:12' && __copied.at(-1)==='@${FILE}#L12'`, '카드가 파일:라인을 말하고 멘션이 클립보드에 간다 — 꼬리표는 없다');
   await check(capsuleQuiet, '가리킨 결과는 캡슐에 뜨지 않는다');
   await check(`(()=>{const c=${card}.getBoundingClientRect(),i=document.querySelectorAll('#cards .card img')[0].getBoundingClientRect();return c.left>=i.right+15 && Math.abs(c.top-i.top)<1 && ${card}.closest('#boardView')})()`,
@@ -200,21 +214,47 @@ try {
   await pointAt(0, 12);
   await until(`${head}==='Text'`);
   let pointed = calls.point.length, copied = await evaluate('__copied.length');
+  let left = await evaluate(leaves);
+  await sample();
   await key('Escape');
   await until(`!${card}`);
+  await check(`(()=>{const f=document.querySelector('.pc-float[data-leaving]');return !!f && f.inert && getComputedStyle(f).pointerEvents==='none' && f.getAttribute('aria-hidden')==='true'})()`, '걷히는 카드는 누름 · 포커스 · 읽기에서 빠진다');
   await check(`${pick(0)}.hidden && __copied.length===${copied}`, 'Esc 로 카드와 박스가 걷히고 클립보드는 그대로');
+  fl = await frames();
+  assert(fl.some(f => f?.l && f.o > 0 && f.o < 1 && scaled(f.t)) && fl.at(-1) === null, `카드 걷힘 ${JSON.stringify(fl)}`);
+  console.log(`통과 ${++checked}: Esc 로 걷히는 카드는 흐려지고 작아진 뒤 빠진다`);
   assert.equal(calls.point.length, pointed, '걷어도 데몬에 다시 보내지 않는다(선택은 남는다)');
-  await pointAt(0, 12); await until(`!!${card}`);
+  await until(gone);
+  // 걷히는 중에 같은 그림을 다시 가리키면 그 카드가 그 자리에서 되살아난다
+  await pointAt(0, 12); await until(`!!${card}`); await pause(300);
+  await evaluate(`void (window.__card=document.querySelector('.pc-float'))`);
+  await key('Escape');
+  await pointAt(0, 14);
+  await until(`${head}==='Label'`);
+  await check(`document.querySelector('.pc-float')===__card && !__card.hasAttribute('data-leaving') && document.querySelectorAll('.pc-float').length===1`, '걷히는 중에 같은 그림을 다시 가리키면 그 카드가 되살아난다');
+  await pause(300);
+  left = await evaluate(leaves);
   await click('.pc-close'); await until(`!${card}`);
-  await check(`${pick(0)}.hidden`, '닫기 버튼으로 걷힌다');
+  await until(gone);
+  await check(`${pick(0)}.hidden && ${leaves}===${left + 1}`, '닫기 버튼으로 걷힌다 — 같은 걷힘 모션');
   await pointAt(0, 12); await until(`!!${card}`);
   await mouse(await evaluate(`(()=>{const r=document.querySelector('#cards').getBoundingClientRect();return {x:r.right-4,y:r.bottom-4}})()`));
   await until(`!${card}`);
-  await check(`${pick(0)}.hidden`, '빈 곳을 누르면 걷힌다');
+  await until(gone);
+  await check(`${pick(0)}.hidden && ${leaves}===${left + 2}`, '빈 곳을 누르면 걷힌다 — 같은 걷힘 모션');
   await pointAt(0, 12); await until(`!!${card}`);
   push({ board: { ...state.board, groups: state.board.groups.map(g => ({ ...g, cards: g.cards.map(c => c.index === 0 ? { ...c, imageUrl: '/shot.jpg?c=0&v=2' } : c) })) } });
   await until(`!${card}`);
-  await check(`${pick(0)}.hidden`, '그 카드에 새 그림(새 트리)이 오면 걷힌다');
+  await until(gone);
+  await check(`${pick(0)}.hidden && ${leaves}===${left + 3}`, '그 카드에 새 그림(새 트리)이 오면 걷힌다 — 같은 걷힘 모션');
+  // 숨은 화면에서 걷히면 전환이 돌지 않아도 카드가 남지 않는다
+  await moveTo(await stageAt(0)); await pause(300);
+  await pointAt(0, 12); await until(`!!${card}`); await pause(300);
+  await evaluate(`void (document.getElementById('boardView').style.display='none')`);
+  await key('Escape');
+  await evaluate(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+  await check(gone, '숨은 화면에서 걷힌 카드는 전환을 기다리지 않고 바로 빠진다');
+  await evaluate(`document.getElementById('boardView').style.display=''`);
 
   // 6. 복사가 막히면 파일 줄 끝에 글자 버튼 — 실제로 누르면 복사된다. 누름은 아래 그림의 가리키기로 새지 않는다.
   await moveTo(await stageAt(0)); await pause(300);
@@ -244,6 +284,7 @@ try {
   await moveTo(await stageAt(0)); await pause(150);
   await pointAt(0, 14);
   await until(`${head}==='Label' && __copied.at(-1)==='@${FILE}#L14'`);
+  await check(`document.querySelectorAll('.pc-float').length===1 && !document.querySelector('.pc-float[data-leaving]')`, '다른 그림을 가리키면 옛 카드는 바로 빠지고 카드는 한 장이다');
   await pause(900);
   await check(`${pick(1)}.hidden && !${pick(0)}.hidden && ${head}==='Label' && __copied.at(-1)==='@${FILE}#L14' && (()=>{const c=${card}.getBoundingClientRect(),i=document.querySelectorAll('#cards .card img')[0].getBoundingClientRect();return c.left>i.right && Math.abs(c.top-i.top)<1})()`,
     '늦게 온 앞 결과가 뒤 카드 · 클립보드를 덮지 않고 앞 그림의 박스는 걷힌다');
@@ -253,7 +294,7 @@ try {
   await pointAt(0, 31);
   await until(`document.querySelector('#chooser').classList.contains('on')`);
   await pause(300);
-  const g = await evaluate(`(()=>{const t=document.querySelector('.point-card .pc-head').getBoundingClientRect(),c=document.querySelector('#chooser').getBoundingClientRect(),W=document.documentElement.clientWidth;return {t:{l:t.left,b:t.bottom},c:{l:c.left,t:c.top,r:c.right,w:c.width},W}})()`);
+  const g = await evaluate(`(()=>{const t=${card}.querySelector('.pc-head').getBoundingClientRect(),c=document.querySelector('#chooser').getBoundingClientRect(),W=document.documentElement.clientWidth;return {t:{l:t.left,b:t.bottom},c:{l:c.left,t:c.top,r:c.right,w:c.width},W}})()`);
   assert(Math.abs(g.c.t - g.t.b - 8) <= 1 && Math.abs(g.c.l - Math.min(g.t.l, g.W - g.c.w - 16)) < 1 && g.c.r <= g.W - 16, `후보 고르기 자리 ${JSON.stringify(g)}`);
   console.log(`통과 ${++checked}: 후보 고르기는 카드 머리 아래 8px 에 붙고 창 안에 든다`);
   await check(`document.querySelector('#chooser').parentElement===document.body && document.querySelectorAll('#chooser .opt').length===2 && document.querySelector('#chooser .opt').textContent==='core/ui/…/DrinkCard.kt'`, '후보는 저장소 기준으로 접어 보인다');
@@ -296,6 +337,19 @@ try {
   await check(`getComputedStyle(document.querySelector('.pc-float .point-card')).transitionDuration==='0s'`, '움직임 줄이기에서 카드 높이는 감쇠 곡선 없이 바로 바뀐다');
   await key('Escape');
   await until(`!document.querySelector('#chooser').classList.contains('on')`);
+  await pause(300);
+  await sample();
+  await key('Escape');
+  await until(gone);
+  fl = (await frames()).filter(Boolean);
+  assert(fl.length && fl.every(f => still(f.t)) && fl.some(f => f.l && f.o > 0 && f.o < 1), `움직임 줄이기 걷힘 ${JSON.stringify(fl)}`);
+  console.log(`통과 ${++checked}: 움직임 줄이기에서 카드는 크기 변화 없이 흐려지기만 하며 걷힌다`);
+  await sample();
+  await pointAt(0, 12);
+  await until(`!!${card}`);
+  fl = (await frames()).filter(Boolean);
+  assert(fl.every(f => still(f.t)) && fl.some(f => f.o > 0 && f.o < 1) && fl.at(-1).o === 1, `움직임 줄이기 등장 ${JSON.stringify(fl)}`);
+  console.log(`통과 ${++checked}: 움직임 줄이기에서 카드는 크기 변화 없이 짙어지기만 하며 나타난다`);
   await check(`getComputedStyle(document.documentElement).getPropertyValue('--cap-room')==='76px'`, '캡슐 자리(토큰의 합)가 px 로 풀려 읽힌다');
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);

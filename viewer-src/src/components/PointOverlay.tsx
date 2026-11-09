@@ -224,10 +224,13 @@ const visibleRect = (id: string) => { const el = document.getElementById(id); re
  * 떠 있는 카드 — 그림 위쪽 옆에 서고, 내용이 바뀔 때 높이만 감쇠 곡선(--easing-spring)으로 옮긴다.
  * 그림은 보드 스크롤 · 창 크기 · 한 장의 확대 · 이동으로 움직이므로 떠 있는 동안 프레임마다 그림을 재어 따라간다(후보 고르기 팝오버와 같다) — 바뀔 때만 쓴다.
  * 높이는 카드 몸통(.pc-body)을 재어 --h 로 준다. 몸통 안에서 Preview 목록이 펼쳐지는 중이면 끝난 뒤 한 번만 잰다 — 프레임마다 재면 곡선이 매번 다시 시작해 내용을 쫓아간다.
- * 처음 뜰 때는 자리로 바로 서고(data-placed 전에는 전환 없음), 그다음 프레임부터 움직인다.
+ * 처음 뜰 때는 자리로 바로 서고(data-placed 전에는 높이 전환 없음), 그다음 프레임에 흐려짐 · 확대로 나타난다. 그림 쪽 위 모서리(data-side)에서 커진다.
+ * 걷힐 때(leaving)는 누름을 받지 않고 흐려지며, 다 흐려지면 onLeft 를 부른다. 숨은 화면이라 전환이 돌지 않으면 바로 부른다 — transitionend 만 기다리면 카드가 남는다.
  */
-export function PointCardFloat({ host, shot, children }: { host: HTMLElement; shot: () => DOMRect | Rect | null; children: ReactNode }) {
+export function PointCardFloat({ host, shot, leaving = false, onLeft, children }: { host: HTMLElement; shot: () => DOMRect | Rect | null; leaving?: boolean; onLeft?: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  const left = useRef(onLeft);
+  left.current = onLeft;
   const [height, setHeight] = useState(0), [placed, setPlaced] = useState(false);
   useLayoutEffect(() => {
     const body = ref.current?.querySelector<HTMLElement>('.pc-body');
@@ -256,12 +259,12 @@ export function PointCardFloat({ host, shot, children }: { host: HTMLElement; sh
         const rail = visibleRect('rail'), panel = visibleRect('panel');
         const room = { left: Math.max(0, (rail?.right ?? 0) - h.left), right: Math.min(host.clientWidth, (panel?.left ?? innerWidth) - h.left, innerWidth - h.left) };
         const spot = placeCard({ room, shot: { left: s.left - h.left, top: s.top - h.top, width: s.width, height: s.height }, card: { width: el.offsetWidth }, space });
-        next = `${Math.round(spot.left)},${Math.round(spot.top)}`;
+        next = `${Math.round(spot.left)},${Math.round(spot.top)},${spot.left < s.left - h.left ? 'left' : 'right'}`;
       }
       if (next !== last) {
         last = next;
         if (next === 'hidden') el.style.visibility = 'hidden';
-        else { const [l, t] = next.split(','); el.style.left = l + 'px'; el.style.top = t + 'px'; el.style.visibility = ''; }
+        else { const [l, t, side] = next.split(','); el.style.left = l + 'px'; el.style.top = t + 'px'; el.dataset.side = side; el.style.visibility = ''; }
       }
       frame = requestAnimationFrame(follow);
     };
@@ -269,17 +272,49 @@ export function PointCardFloat({ host, shot, children }: { host: HTMLElement; sh
     const ready = requestAnimationFrame(() => setPlaced(true));
     return () => { cancelAnimationFrame(frame); cancelAnimationFrame(ready); };
   }, [host, shot]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!leaving || !el) return;
+    let done = false;
+    // 이벤트는 다음 프레임에 몰아 오므로 되살렸다 곧 다시 걷으면 앞 전환의 취소가 늦게 온다 — 이벤트만 믿지 않고 흐려짐이 아직 도는지 본다.
+    const settle = () => {
+      if (done || el.getAnimations().some(a => a instanceof CSSTransition && a.transitionProperty === 'opacity')) return;
+      done = true; left.current?.();
+    };
+    const ended = (e: TransitionEvent) => { if (e.target === el && e.propertyName === 'opacity') settle(); };
+    el.addEventListener('transitionend', ended);
+    el.addEventListener('transitioncancel', ended);
+    const idle = requestAnimationFrame(settle);
+    return () => { done = true; cancelAnimationFrame(idle); el.removeEventListener('transitionend', ended); el.removeEventListener('transitioncancel', ended); };
+  }, [leaving]);
   const style: CSSProperties & { '--h'?: string } = { '--h': height ? `${height}px` : undefined };
-  return <div ref={ref} className="pc-float" style={style} data-placed={placed || undefined}>{children}</div>;
+  return <div ref={ref} className="pc-float" style={style} data-placed={placed || undefined} data-leaving={leaving || undefined} inert={leaving} aria-hidden={leaving || undefined}>{children}</div>;
 }
 
-/** 마지막으로 가리킨 그림의 카드 — 보드는 #boardView, 한 장은 #focusView 에 선다. 다른 그림을 가리키면 새로 선다(바로 선다). */
+type Shown = { host: HTMLElement; shot: () => DOMRect | Rect | null; card: PointCardData };
+
+/**
+ * 카드 층 — 닫히면(host · shot · card 중 하나가 없다) 마지막 카드를 그대로 붙잡아 걷히는 모습을 보인다.
+ * 걷히는 중에 같은 그림(같은 shot)을 다시 가리키면 그 카드가 그 자리에서 되살아나고, 다른 그림이면 옛 카드는 바로 빠지고 새 카드가 나타난다 — 카드는 늘 한 장이다.
+ */
+export function PointCardLayer({ host, shot, card, actions }: { host: HTMLElement | null; shot: Shown['shot'] | null; card: PointCardData | null; actions?: PointActions }) {
+  const keys = useRef(new WeakMap<object, number>()), seq = useRef(0);
+  const last = useRef<Shown | null>(null);
+  const [gone, setGone] = useState(true);
+  const live = !!(host && shot && card);
+  if (host && shot && card) { last.current = { host, shot, card }; if (gone) setGone(false); }
+  const shown = last.current;
+  if (!shown || gone) return null;
+  if (!keys.current.has(shown.shot)) keys.current.set(shown.shot, ++seq.current);
+  return createPortal(<PointCardFloat key={keys.current.get(shown.shot)} host={shown.host} shot={shown.shot} leaving={!live} onLeft={() => setGone(true)}>
+    <PointCard card={shown.card} actions={actions} />
+  </PointCardFloat>, shown.host);
+}
+
+/** 마지막으로 가리킨 그림의 카드 — 보드는 #boardView, 한 장은 #focusView 에 선다. */
 export function PointOverlay({ actions }: { actions?: PointActions }) {
   const { host, shot, card } = useSyncExternalStore(pointView.subscribe, pointView.get);
-  const keys = useRef(new WeakMap<object, number>()), seq = useRef(0);
-  if (!host || !shot || !card) return null;
-  if (!keys.current.has(shot)) keys.current.set(shot, ++seq.current);
-  return createPortal(<PointCardFloat key={keys.current.get(shot)} host={host} shot={shot}><PointCard card={card} actions={actions} /></PointCardFloat>, host);
+  return <PointCardLayer host={host} shot={shot} card={card} actions={actions} />;
 }
 
 /**
