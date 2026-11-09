@@ -72,6 +72,7 @@
   "open.cannot": "Can't open this",
   "open.failed": "Couldn't open: {why}",
   "open.missing": "{file} doesn't exist",
+  "open.noFunction": "{file} has no @Preview named {fn}",
   "open.noPreview": "{file} has no @Preview",
   "open.otherApp": "This file belongs to another app, so this viewer can't open it. Copied the command instead",
   "panel.device": "Device",

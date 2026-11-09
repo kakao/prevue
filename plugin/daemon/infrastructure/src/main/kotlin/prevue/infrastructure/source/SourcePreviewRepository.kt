@@ -2,6 +2,7 @@ package prevue.infrastructure.source
 
 import java.io.File
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SourceOutline
 import prevue.application.port.PreviewRepository
 
 /** 소스 정규식으로 `@Preview` 함수를 찾고, 클래스 파일의 애노테이션으로 멀티프리뷰를 푼다. */
@@ -10,4 +11,6 @@ internal class SourcePreviewRepository(classPath: List<String>) : PreviewReposit
     private val multiPreview = MultiPreview(classPath)
 
     override fun inFile(file: File): List<PreviewSpec> = PreviewLocator.fromFile(file, multiPreview)
+
+    override fun outline(text: String, functions: Collection<String>): SourceOutline = ComposableCalls.outline(text, functions)
 }

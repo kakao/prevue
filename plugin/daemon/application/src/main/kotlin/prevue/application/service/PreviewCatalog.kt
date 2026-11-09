@@ -9,16 +9,13 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
+import prevue.application.domain.model.ComposableDefinition
 import prevue.application.domain.model.PreviewFile
+import prevue.application.domain.model.PreviewIndex
 import prevue.application.port.PreviewRepository
 import prevue.application.port.SourceFileRepository
 import prevue.application.domain.model.WorkspaceEvent
 
-/**
- * D-56. 이 데몬이 열 수 있는 프리뷰 파일들 — 빠른 열기가 찾는다. 띄울 때 소스 루트를 한 번 훑고([build]), 그 뒤로는 감시가 알린 파일만
- * 다시 본다([update]). 목록(파일 · 함수)이 실제로 바뀔 때만 알린다 — 저장마다 바뀌는 mtime은 조용히 고친다.
- * 작업 공간의 줄을 서지 않는다. 화면이 아니라 색인이고, 줄을 서면 저장 → 화면 뒤로 밀린다.
- */
 @SingleIn(AppScope::class)
 @Inject
 internal class PreviewCatalog(
@@ -26,12 +23,30 @@ internal class PreviewCatalog(
     private val previews: PreviewRepository,
     private val sources: SourceFileRepository,
 ) {
-    private class Catalog(val byFile: Map<File, PreviewFile> = emptyMap(), val ready: Boolean = false)
+    private data class Entry(
+        val module: String, val mtimeMs: Long, val functions: List<String>, val calls: Map<String, List<String>>, val composables: List<String>,
+    ) {
+        fun sameListing(other: Entry?) = other != null && copy(mtimeMs = 0) == other.copy(mtimeMs = 0)
+    }
+
+    private class Catalog(val byFile: Map<File, Entry> = emptyMap(), val ready: Boolean = false) {
+        val index: PreviewIndex by lazy {
+            val composables = byFile.entries.sortedBy { it.key.path }
+                .flatMap { (f, e) -> e.composables.map { it to ComposableDefinition(f, e.module) } }
+                .groupBy({ it.first }, { it.second })
+            val files = byFile.filterValues { it.functions.isNotEmpty() }
+                .map { (f, e) -> PreviewFile(f, e.module, e.mtimeMs, e.functions, e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }) }
+                .sortedByDescending { it.mtimeMs }
+            PreviewIndex(files, composables)
+        }
+    }
 
     private val catalog = MutableStateFlow(Catalog())
 
     /** 다 훑기 전에는 null — "프리뷰 파일이 없다"와 "아직 모른다"를 가른다. */
-    fun list(): List<PreviewFile>? = catalog.value.takeIf { it.ready }?.byFile?.values?.sortedByDescending { it.mtimeMs }
+    fun list(): List<PreviewFile>? = index()?.files
+
+    fun index(): PreviewIndex? = catalog.value.takeIf { it.ready }?.index
 
     suspend fun build() {
         for (f in sources.sourceFiles()) { currentCoroutineContext().ensureActive(); scan(f) }
@@ -46,13 +61,12 @@ internal class PreviewCatalog(
         if (hit && catalog.value.ready) ws.emit(WorkspaceEvent.PreviewFilesChanged)
     }
 
-    /** 목록이 바뀌었으면 참. */
     private fun scan(f: File): Boolean {
         val c = f.canonicalFile
         return put(c, if (c.extension == "kt" && sources.has(c) && ws.hosts(c)) read(c) else null)
     }
 
-    private fun put(c: File, entry: PreviewFile?): Boolean {
+    private fun put(c: File, entry: Entry?): Boolean {
         val old = catalog.getAndUpdate {
             when {
                 it.byFile[c] == entry -> it
@@ -60,15 +74,19 @@ internal class PreviewCatalog(
                 else -> Catalog(it.byFile + (c to entry), it.ready)
             }
         }.byFile[c]
-        return old?.functions != entry?.functions
+        return if (old == null) entry != null else !old.sameListing(entry)
     }
 
-    private fun read(f: File): PreviewFile? {
+    private fun read(f: File): Entry? {
         val text = sources.read(f) ?: return null
-        // 멀티프리뷰를 풀려면 처음 보는 애노테이션마다 클래스패스를 뒤진다. 수천 파일에 그 값을 치르지 않게 "Preview"가 없는 파일은 건너뛴다 —
-        // 이름에 Preview가 없는 멀티프리뷰 애노테이션만 쓰는 파일은 놓친다(androidx 것과 AS 관례는 모두 이름에 있다).
-        if (!text.contains("Preview")) return null
-        val fns = runCatching { previews.inFile(f) }.getOrNull().orEmpty().map { it.functionName }.distinct()
-        return if (fns.isEmpty()) null else PreviewFile(f, ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns)
+        val fns = if (text.contains("Preview")) previewFunctions(f) else emptyList()
+        if (fns.isEmpty() && !text.contains("Composable")) return null
+        val outline = previews.outline(text, fns)
+        if (fns.isEmpty() && outline.composables.isEmpty()) return null
+        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns, outline.calls, outline.composables)
     }
+
+    private fun previewFunctions(f: File): List<String> = runCatching { previews.inFile(f) }
+        .getOrElse { e -> System.err.println("[prevue] ${f.name}의 프리뷰를 읽지 못해 빠른 열기에서 뺀다: $e"); emptyList() }
+        .map { it.functionName }.distinct()
 }
