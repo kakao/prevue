@@ -79,7 +79,7 @@ export function SystemUiControl({ systemUi, host, actions = NO_ACTIONS }: { syst
   useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
   const shown = !!systemUi?.shown;
   const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
-  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} disabled={waiting} title={phrase('systemUi.tip')} onClick={flip}>
+  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={phrase('systemUi.label')} disabled={waiting} title={phrase('systemUi.tip')} onClick={flip}>
     {BARS}<span className="sys-lb">{phrase('systemUi.label')}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}</span>
   </button>;
   return place(body, systemUiHost);

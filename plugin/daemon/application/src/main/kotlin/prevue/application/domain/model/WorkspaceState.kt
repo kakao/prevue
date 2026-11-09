@@ -30,7 +30,7 @@ data class WorkspaceState(
 ) {
     fun sized(p: PreviewSpec): PreviewSpec = overrideOf(p)?.applyTo(p) ?: p
 
-    fun shownOverride(): CardOverride? = (board?.focusCard?.spec ?: current)?.let(::overrideOf)
+    private fun shownOverride(): CardOverride? = (board?.focusCard?.spec ?: current)?.let(::overrideOf)
 
     fun shownSize(): ScreenSize? = shownOverride()?.size?.takeUnless { it == ScreenSize.Original }
 

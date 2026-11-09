@@ -1,9 +1,7 @@
 package prevue.application.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -20,6 +18,8 @@ class CardOverrideTest {
         assertEquals(mapOf("showSystemUi" to "true", "device" to "spec:width=945px,height=2048px,dpi=420"),
             SystemUi.ON.applyTo(spec("widthDp" to "360", "heightDp" to "780")).params)
         assertEquals(mapOf("showSystemUi" to "true", "widthDp" to "360"), SystemUi.ON.applyTo(spec("widthDp" to "360")).params)
+        val annotatedOn = spec("showSystemUi" to "true", "widthDp" to "360", "heightDp" to "780")
+        assertEquals(annotatedOn, SystemUi.ON.applyTo(annotatedOn))
         assertEquals(mapOf("showSystemUi" to "true", "widthDp" to "360", "heightDp" to "780", "device" to "id:pixel_7"),
             SystemUi.ON.applyTo(spec("widthDp" to "360", "heightDp" to "780", "device" to "id:pixel_7")).params)
     }
@@ -38,20 +38,6 @@ class CardOverrideTest {
         assertEquals(CardOverride("id", ScreenSize.Original, SystemUi.ON), both.with(ScreenSize.Original, null))
         assertEquals(CardOverride("id", ScreenSize.Dp(320, 640)), both.with(null, SystemUi.ANNOTATED))
         assertNull(both.with(ScreenSize.Original, SystemUi.ANNOTATED))
-    }
-
-    @Test fun `보이는 값은 고른 값이 어노테이션을 이긴다`() {
-        assertTrue(SystemUiState(SystemUi.ANNOTATED, annotated = true).shown)
-        assertFalse(SystemUiState(SystemUi.OFF, annotated = true).shown)
-        assertTrue(SystemUiState(SystemUi.ON, annotated = false).shown)
-    }
-
-    @Test fun `덮어쓴 spec 의 바는 고른 값이 어노테이션을 이긴다`() {
-        val annotated = spec("showSystemUi" to "true", "device" to "id:pixel_7")
-        assertEquals(SystemBars.Shown(BarLook.AOSP), annotated.systemBars)
-        assertEquals(SystemBars.Hidden, CardOverride("id", systemUi = SystemUi.OFF).applyTo(annotated).systemBars)
-        assertEquals(SystemBars.Shown(BarLook.AOSP), CardOverride("id", ScreenSize.Dp(320, 640), SystemUi.ON).applyTo(spec()).systemBars)
-        assertEquals(SystemBars.Hidden, CardOverride("id", ScreenSize.Dp(320, 640)).applyTo(spec()).systemBars)
     }
 
     @Test fun `세 값 밖은 받지 않는다`() {

@@ -4281,6 +4281,7 @@ function Sa({ systemUi: e, host: t, actions: n = ga }) {
 		id: "sysUiBtn",
 		className: "tb-btn",
 		"aria-pressed": l,
+		"aria-label": r("systemUi.label"),
 		disabled: c,
 		title: r("systemUi.tip"),
 		onClick: () => {

@@ -19,7 +19,8 @@ Given to a card already on, they redraw at that size without turning interactive
 --system-ui draws the status bar and navigation bar (on) or leaves them out (off) on the interactive card, whatever @Preview(showSystemUi) says;
   annotated goes back to the annotation. Like the size it survives saves and goes back when turned off or when the tab changes — --size original
   removes only the size and --system-ui annotated only the system UI. status's systemUi gives choice (annotated · on · off), annotated (the source's value)
-  and shown (whether the bars are drawn). The bars are drawn edge-to-edge over the app as on a device with target SDK 35+
+  and shown (whether the bars are drawn). The bars are drawn edge-to-edge over the app as on a device with target SDK 35+.
+  on keeps a card's widthDp x heightDp as the screen; with only widthDp the screen is the renderer's default device
 Giving only --size · --device · --system-ui turns the card on (--on is the default). Running --on again on a card already on, without them, keeps them.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.

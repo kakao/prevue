@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
+import javax.imageio.ImageIO
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -35,6 +36,7 @@ import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ModuleInfo
 import prevue.application.port.Clock
@@ -141,6 +143,19 @@ class RenderIntegrationTest {
         assertEquals(FailureKind.NOT_FOUND, realFailure.failure)
         assertFalse(image.exists())
         assertTrue(engine.written(engine.show(preview)).ok)
+    }
+
+    @Test @Order(33) fun `showSystemUi 프리뷰는 같은 크기에 상태바 · 내비바를 실제로 그린다`() = runBlocking {
+        val phone = ws.now.board!!.cards.first { it.spec.previewId == "PearlPhonePreview" }.spec
+        val bars = engine.written(engine.show(phone))
+        val bare = engine.written(engine.show(SystemUi.OFF.applyTo(phone).copy(previewId = "PearlPhonePreview@bare")))
+        val night = engine.written(engine.show(phone.copy(previewId = "PearlPhonePreview@night", params = phone.params + ("uiMode" to "33"))))
+        assertTrue(bars.ok && bare.ok && night.ok, listOf(bars, bare, night).mapNotNull { it.message?.text }.joinToString())
+        val (withBars, without) = ImageIO.read(bars.image!!) to ImageIO.read(bare.image!!)
+        assertEquals(without.width to without.height, withBars.width to withBars.height)
+        val strip = withBars.height / 20
+        val differs = (0 until strip).sumOf { y -> (0 until withBars.width).count { x -> withBars.getRGB(x, y) != without.getRGB(x, y) } }
+        assertTrue(differs > withBars.width, "상태바 줄이 바 없는 그림과 같다 — 렌더러가 데코를 다시 껐다(${differs}px)")
     }
 
     @AfterAll fun down() {

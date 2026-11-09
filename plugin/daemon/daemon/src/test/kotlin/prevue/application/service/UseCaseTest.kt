@@ -694,6 +694,7 @@ class UseCaseTest {
         runBlocking { uc.boards.focus(0, on = true, by = "test", systemUi = SystemUi.ON) }
         assertEquals("true", fx.renderer.opened.last().params["showSystemUi"])
         assertEquals(SystemUiState(SystemUi.ON, annotated = false), uc.status.read().systemUi)
+        assertTrue(uc.status.read().systemUi!!.shown)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["showSystemUi"])
         runBlocking { uc.boards.focus(0, on = false, by = "test") }
         assertEquals(null, ws.now.cardOverride)
@@ -716,6 +717,7 @@ class UseCaseTest {
         runBlocking { uc.live.setSystemUi(SystemUi.ANNOTATED, "viewer") }
         assertEquals(null, ws.now.cardOverride)
         assertEquals(SystemUiState(SystemUi.ANNOTATED, annotated = false), uc.status.read().systemUi)
+        assertFalse(uc.status.read().systemUi!!.shown)
         assertTrue(ws.now.interactive)
     }
 

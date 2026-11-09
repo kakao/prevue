@@ -246,7 +246,7 @@
   "systemUi.label": "시스템 UI",
   "systemUi.off": "끔",
   "systemUi.on": "켬",
-  "systemUi.tip": "상태바 · 내비바를 이 한 장에서만 켜고 끈다 — 처음 값은 어노테이션을 따르고 소스는 그대로",
+  "systemUi.tip": "상태바 · 내비바 켜고 끄기 — 이 한 장만 · 처음은 어노테이션대로 · 소스는 그대로",
   "tabs.close": "탭 닫기",
   "tabs.evicted": "오래 안 본 {tab} 탭을 닫았어요",
   "tabs.fqnNoSource": "{target}의 소스 파일을 찾지 못했어요(최상위 @Preview 함수만 찾아요) — 파일 경로로 show 해 주세요",
