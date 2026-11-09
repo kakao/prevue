@@ -41,7 +41,7 @@ class CliEndpointTest {
         assertEquals(500 to "java.lang.IllegalStateException: target(파일 경로 또는 FQN)이 필요하다", error("/close", mapOf("fqn" to "demo.X")))
         assertEquals(500 to "java.lang.IllegalStateException: file(풀패스)이 필요하다", error("/selection", mapOf("file" to " ", "line" to 3)))
         assertEquals(500 to "java.lang.IllegalStateException: line이 필요하다", error("/selection", mapOf("file" to f, "line" to 0)))
-        assertEquals(500 to "java.lang.IllegalStateException: file이 필요하다", error("/previews", emptyMap()))
+        assertEquals(500 to "java.lang.IllegalStateException: file 또는 of가 필요하다", error("/previews", emptyMap()))
     }
 
     @Test fun `status 와 board 는 메서드를 가리지 않는다`() {
