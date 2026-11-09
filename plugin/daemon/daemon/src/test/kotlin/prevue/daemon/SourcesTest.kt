@@ -31,7 +31,7 @@ class SourcesTest {
     @Test fun `층은 패키지부터 조립은 그 아래 이름으로 단다`() {
         val files = mapOf(
             "prevue/daemon/Main.kt" to "m", "prevue/daemon/render/R.kt" to "r",
-            "prevue/infrastructure/X.kt" to "x", "prevue/application/service/S.kt" to "s", "prevue/other/O.kt" to "o",
+            "prevue/infrastructure/X.kt" to "x", "prevue/application/service/S.kt" to "s",
         )
         assertEquals(
             mapOf("Main.kt" to "m", "render/R.kt" to "r", "infrastructure/X.kt" to "x", "application/service/S.kt" to "s"),
@@ -42,6 +42,15 @@ class SourcesTest {
     @Test fun `층 패키지와 같은 이름의 조립 하위 패키지는 멈춘다`() {
         assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/infrastructure/X.kt" to ""), packages) }
         assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/infrastructure/X.kt" to "a", "prevue/infrastructure/X.kt" to "b"), packages) }
+    }
+
+    @Test fun `조립에도 층에도 들지 않는 파일은 멈춘다`() {
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/Main.kt" to "", "prevue/bindings/X.kt" to ""), packages) }
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/Top.kt" to ""), packages) }
+        assertThrows<IllegalStateException> { Sources.keyed(mapOf("other/O.kt" to ""), packages) }
+    }
+
+    @Test fun `층 패키지 이름이 daemon 이면 멈춘다`() {
         assertThrows<IllegalStateException> { Sources.keyed(mapOf("prevue/daemon/Main.kt" to ""), listOf("daemon")) }
     }
 
