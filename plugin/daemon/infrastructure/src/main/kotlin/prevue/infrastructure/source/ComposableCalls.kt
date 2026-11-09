@@ -63,18 +63,20 @@ internal object ComposableCalls {
         val out = StringBuilder(src)
         var i = 0
         while (i < src.length) {
-            val end = when {
-                src.startsWith("//", i) -> src.indexOf('\n', i).let { if (it < 0) src.length else it }
-                src.startsWith("/*", i) -> blockCommentEnd(src, i)
-                src.startsWith("\"\"\"", i) -> src.indexOf("\"\"\"", i + 3).let { if (it < 0) src.length else it + 3 }
-                src[i] == '"' || src[i] == '\'' -> quotedEnd(src, i)
-                else -> null
-            }
+            val end = skippedEnd(src, i)
             if (end == null) { i++; continue }
             for (k in i until end) if (out[k] != '\n') out.setCharAt(k, ' ')
             i = end
         }
         return out.toString()
+    }
+
+    private fun skippedEnd(src: String, i: Int): Int? = when {
+        src.startsWith("//", i) -> src.indexOf('\n', i).let { if (it < 0) src.length else it }
+        src.startsWith("/*", i) -> blockCommentEnd(src, i)
+        src.startsWith("\"\"\"", i) -> src.indexOf("\"\"\"", i + 3).let { if (it < 0) src.length else it + 3 }
+        src[i] == '"' || src[i] == '\'' -> quotedEnd(src, i)
+        else -> null
     }
 
     private fun blockCommentEnd(s: String, from: Int): Int {

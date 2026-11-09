@@ -27,7 +27,9 @@ internal class PreviewCatalog(
     private val previews: PreviewRepository,
     private val sources: SourceFileRepository,
 ) {
-    private data class Entry(val module: String, val mtimeMs: Long, val functions: List<String>, val calls: Map<String, List<String>>, val composables: List<String>) {
+    private data class Entry(
+        val module: String, val mtimeMs: Long, val functions: List<String>, val calls: Map<String, List<String>>, val composables: List<String>,
+    ) {
         fun sameListing(other: Entry?) = other != null && copy(mtimeMs = 0) == other.copy(mtimeMs = 0)
     }
 
@@ -82,9 +84,13 @@ internal class PreviewCatalog(
 
     private fun read(f: File): Entry? {
         val text = sources.read(f) ?: return null
-        val fns = if (text.contains("Preview")) runCatching { previews.inFile(f) }.getOrNull().orEmpty().map { it.functionName }.distinct() else emptyList()
+        val fns = if (text.contains("Preview")) previewFunctions(f) else emptyList()
         val outline = previews.outline(text, fns)
         if (fns.isEmpty() && outline.composables.isEmpty()) return null
         return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fns, outline.calls, outline.composables)
     }
+
+    private fun previewFunctions(f: File): List<String> = runCatching { previews.inFile(f) }
+        .getOrElse { e -> System.err.println("[prevue] ${f.name}의 프리뷰를 읽지 못해 빠른 열기에서 뺀다: $e"); emptyList() }
+        .map { it.functionName }.distinct()
 }
