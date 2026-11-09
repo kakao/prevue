@@ -75,8 +75,11 @@ export function keyOf(e: KeyboardEvent) {
   return e.key;
 }
 
-/** 떠 있는 층이 먼저 Esc 를 먹는다 — 도움말, 그다음 후보 고르기 · 배율 메뉴 · 폴더 팝오버. 닫은 것이 있으면 true. */
-export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDirPop(): boolean };
+/**
+ * 떠 있는 층이 먼저 Esc 를 먹는다 — 도움말, 그다음 후보 고르기 · 배율 메뉴 · 폴더 팝오버 · 가리킨 카드. 닫은 것이 있으면 true.
+ * 카드가 화면의 Esc 보다 먼저라 한 장에서는 첫 Esc 가 카드를 걷고 둘째가 보드로 나간다.
+ */
+export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDirPop(): boolean; closeCard(): boolean };
 
 export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, layers: EscapeLayers) {
   const keydown = (e: KeyboardEvent) => {
@@ -91,6 +94,7 @@ export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, lay
     if (key === 'Escape' && layers.chooserOpen()) { e.preventDefault(); layers.cancelChoice(); return; }
     if (key === 'Escape' && layers.closeZoomMenu()) { e.preventDefault(); return; }
     if (key === 'Escape' && layers.closeDirPop()) { e.preventDefault(); return; }
+    if (key === 'Escape' && layers.closeCard()) { e.preventDefault(); return; }
     if (a.helpOpen() && key !== '?') return;
     for (const g of table) for (const r of g.rows) {
       if (!r.run || !r.keys!.includes(key) || !r.when!()) continue;

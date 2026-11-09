@@ -7,7 +7,7 @@ import { store } from '../../legacy/js/store.js';
 import { hideReactKeys, useHost } from '../host';
 import { matchFile, type FileEntry, type FileMatch, type PreviewFile } from '../match';
 import { useMessages, type Messages } from '../messages';
-import type { ViewerState } from '../state';
+import { activeKey, type ViewerState } from '../state';
 
 // 빠른 열기(D-56 · D-100) — 이 데몬이 열 수 있는 프리뷰 파일을 찾아 탭으로 연다.
 // 레일 맨 아래 "파일 열기"(D-98) · / · ⌘K 로 열면 창 위 가운데에 팔레트가 뜨고, 그 맨 위 입력에 바로 칠 수 있다. 뒤에는 막이 깔린다.
@@ -278,8 +278,6 @@ export function closeQuickOpen(instant = false, back = false) {
 
 /** 목록이 바뀌었다(데몬의 `previewFiles`). 펼쳐져 있으면 다시 받는다 — 닫혀 있으면 다음에 열 때 받는다. */
 export function previewFilesChanged() { if (search.open || docked) load(); }
-
-const activeKey = (st: ViewerState | null) => { const t = (st?.tabs || []).find(t => t.active); return t ? t.key : st?.board?.file ?? null; };
 
 /** 다음 화면 전환이 팔레트를 걷어 가게 한다. 전환이 오지 않으면(데몬이 답만 하고 끝) 잠시 뒤 스스로 닫는다. */
 function arm() {

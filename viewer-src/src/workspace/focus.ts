@@ -8,12 +8,12 @@ import { cardOf, store } from '../../legacy/js/store.js';
 import { phrase } from '../../legacy/js/strings.js';
 import type { Focus, ViewerState } from '../state';
 import { drag, press, pressing, release, wheel } from './input';
-import { byPick, drawBox, flatten, hitIn, narrow, point, posIn, sayOn, setSay, type Hit, type TreeNode } from './point';
+import { byPick, clearPick, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
 import { createResizeController } from './resize';
 import { zoomView } from './view';
 
 export type WorkspaceParts = {
-  focusView: HTMLElement; wrap: HTMLElement; stage: HTMLElement; shot: HTMLImageElement; box: HTMLElement; pickBox: HTMLElement;
+  focusView: HTMLElement; wrap: HTMLElement; stage: HTMLElement; shot: HTMLImageElement; box: HTMLElement; pickBox: HTMLElement; marks: HTMLElement;
   scene: HTMLElement; geometry: HTMLElement; panel: HTMLElement; header: HTMLElement[];
 };
 
@@ -21,7 +21,7 @@ export function findWorkspaceParts(): WorkspaceParts {
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const stage = $('stage');
   return {
-    focusView: $('focusView'), wrap: stage.parentElement!, stage, shot: $<HTMLImageElement>('shot'), box: $('box'), pickBox: $('pickBox'),
+    focusView: $('focusView'), wrap: stage.parentElement!, stage, shot: $<HTMLImageElement>('shot'), box: $('box'), pickBox: $('pickBox'), marks: $('marks'),
     scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle')],
   };
 }
@@ -32,7 +32,7 @@ type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLEle
 
 export type Workspace = ReturnType<typeof createWorkspace>;
 
-export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, scene, geometry, panel, header }: WorkspaceParts) {
+export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, marks, scene, geometry, panel, header }: WorkspaceParts) {
   let all: Hit[] = [], nodes: Hit[] = [], ready = false;
 
   /** 색인이 다시 왔다. 들고 있는 트리를 새 색인으로 다시 거른다. */
@@ -110,10 +110,12 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
       const d: { failure?: unknown; composeViewInfo?: TreeNode[] } = await get(url).then(r => { if (!r.ok) throw new Error(phrase('focus.tree.http', { status: r.status })); return r.json(); });
       if (url !== treeUrl) return;                     // 그 사이에 새 그림이 왔다
       if (d.failure) { ready = false; return; }        // 실패 문장은 state.error 가 갖는다
-      all = flatten(d.composeViewInfo || [], [], []).sort(byPick);
+      all = flatten(d.composeViewInfo || []).sort(byPick);
       nodes = narrow(all);
       setSummary(store.projectFiles.size ? '' : phrase('focus.noIndex', { n: all.length }));
-      ready = true; box.hidden = true; pickBox.hidden = true;
+      // 새 트리다 — 옛 트리로 가리킨 카드는 틀린 말이라 걷는다. 같은 노드를 추정해 다시 찾지 않는다(가리키기 카드 · 결정).
+      ready = true; hover(box, null, 1); pickBox.hidden = true;
+      if (pointedImage() === shot) clearPick();
     } catch (err) { setStatus(phrase('focus.tree.failed', { why: (err as Error).message }), 'error'); }
   }
 
@@ -275,11 +277,17 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
   /* ---------- 마우스 — 가리키기 · 이동 · 터치(input.ts)로 나눈다 ---------- */
   const pos = (e: MouseEvent) => posIn(e, shot);
   const interactiveNow = () => !!(store.st && store.st.focus && store.st.focus.interactive);
+  // 앱을 누르거나 굴리면 화면이 바뀌어 들고 있는 트리가 옛것이 된다 — 그 트리로 가리킨 카드는 걷는다. 다시 가리키면(⌥+클릭) 지금 화면으로 맞춘다(catchup).
+  const dropCard = () => { if (pointedImage() === shot) clearPick(); };
+  // 손 아래 옅은 바탕과 구조 테두리는 보기일 때만 — 조작 중 누름은 앱으로 간다. ⌥ 를 누른 채면 조작 중에도 가리키기라 보인다.
+  const pointing = (e: MouseEvent) => !interactiveNow() || e.altKey;
   stage.addEventListener('mousemove', e => {
-    if (interactiveNow() || !ready) return;
-    const n = hitIn(nodes, ...pos(e)); if (n) drawBox(box, n, layoutScale()); else box.hidden = true;
+    const on = ready && pointing(e);
+    marks.classList.toggle('over', on);
+    if (on) outline(marks, nodes, layoutScale());
+    hover(box, on ? hitIn(nodes, ...pos(e)) ?? null : null, layoutScale());
   });
-  stage.addEventListener('mouseleave', () => { box.hidden = true; });
+  stage.addEventListener('mouseleave', () => leave(box, marks));
 
   stage.addEventListener('mousedown', e => {
     if (e.button !== 0 || resizeUI.moving()) return;
@@ -287,6 +295,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
     if (spaceHeld || (!interactiveNow() && zoom.z > 1 && !e.altKey)) { startPan(e); return; }
     if (!interactiveNow() || e.altKey) return;
     e.preventDefault();                       // 이미지 드래그(ghost)가 mousemove를 가로채지 못하게
+    dropCard();
     press(...pos(e));
   });
   window.addEventListener('mousemove', e => { if (pressing()) drag(...pos(e)); });
@@ -307,11 +316,14 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
       } catch (err) { flash(phrase('point.sync.failed', { why: (err as Error).message })); return; }
     }
     await treeLoad;                                // 새 그림의 트리를 받는 중이면 그것으로 찾는다
-    const n = hitIn(nodes, ...pos(e)); if (!n) return;
-    drawBox(pickBox, n, layoutScale());
-    const show = sayOn(pickBox, n);
-    setSay(show);
-    point(n, store.st.focus.previewId, show);
+    const n = hitIn(nodes, ...pos(e));
+    if (!n) { if (pointedImage() === shot) clearPick(); return; }   // 한 장의 빈 곳 — 카드를 걷는다
+    const st = store.st, f = st.focus!, b = st.board;
+    pointAt({
+      list: nodes, img: shot, hover: box, pick: pickBox, marks, host: focusView, scale: layoutScale, previewId: f.previewId,
+      dpPerPx: f.pxPerDp ? 1 / f.pxPerDp : null,
+      seen: { file: b?.file ?? null, fn: b?.groups.find(g => g.cards.some(c => c.index === b.focus))?.name ?? null },
+    }, n);
   });
 
   /* ---------- 확대 · 이동(macOS 미리보기처럼) ---------- */
@@ -403,7 +415,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, sc
   wrap.addEventListener('wheel', e => {
     if (focusView.hidden) return;
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomAt(zoom.z * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false); }
-    else if (interactiveNow()) { e.preventDefault(); if (!resizeUI.moving()) wheelAt(e); }
+    else if (interactiveNow()) { e.preventDefault(); if (!resizeUI.moving()) { dropCard(); wheelAt(e); } }
     else if (zoom.z > 1) { e.preventDefault(); setZoom(zoom.z, zoom.x - e.deltaX, zoom.y - e.deltaY, false); }
   }, { passive: false });
 

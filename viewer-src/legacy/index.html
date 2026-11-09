@@ -72,13 +72,13 @@
   <section id="focusView" hidden><!-- prerender:stage --></section>
 </main>
 
-<!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 박스 꼬리표가 말한다(D-101). 안은 React 의 NotificationCapsule 이 그린다. -->
+<!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 그림 밖 카드가 말한다(D-162). 안은 React 의 NotificationCapsule 이 그린다. -->
 <div class="capsule" id="strip" role="status"></div>
 
 <!-- 작업 공간의 검사 패널(D-99) — 레일이 접힌 자리 맞은편에 크기 · 기기 · 자세 · 확대가 위에서 아래로 선다. 칸은 빌드가 미리 그려 넣고, 확대 줄의 안은 React 의 ZoomControls 가 그린다. -->
 <aside class="panel" id="panel" data-t-aria-label="panel.label" hidden><!-- prerender:panel --></aside>
 
-<!-- 후보 고르기 — 가리킨 꼬리표에서 내려오는 팝오버(D-101). 안은 React 의 ChoicePopover 가, 자리는 workspace/point.ts 가 꼬리표에서 잰다. -->
+<!-- 후보 고르기 — 가리킨 결과 카드의 머리에서 내려오는 팝오버. 안은 React 의 ChoicePopover 가, 자리는 workspace/point.ts 가 카드 머리에서 잰다. -->
 <div class="chooser" id="chooser" role="dialog" data-t-aria-label="choose.label" aria-hidden="true"></div>
 
 <!-- 빠른 열기의 팔레트와 막(D-100) — 팔레트는 창 위 가운데에 뜨고, 막은 레일 오른쪽 본문을 가린다. 팔레트의 안(검색 상자)은 React 의 QuickOpen 이 그린다. -->
