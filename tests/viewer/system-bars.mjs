@@ -80,9 +80,11 @@ try {
   await post('/viewer/focus', { index: 0 });
   await ready();
   const smoke = process.argv.includes('--smoke');
-  const devices = smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet'];
+  const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
+  const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
   const ios = new Set(['ip17','ipair','ip17pm','duo']);
+  const total = devices.reduce((n,d)=>n+(foldable.has(d)?12:6),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
     await post('/viewer/resize', { device, folded, orientation });
@@ -126,32 +128,36 @@ try {
       await mouse(await atNode(bounds), 1);
       await until(`__store.st.selection?.line===51 && !document.querySelector('#pickBox').hidden`);
       await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
+      await mouse({x:12,y:100});
+      await pause(200);
       await mouse(await atNode(chips[0].bounds));
       await pause(700);
       await post('/viewer/catchup');
       await ready();
       await pause(150);
+      const touchTree=await nodes();
+      const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51)[1].bounds;
       const imageBefore=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
       await evaluate(`window.__touches=[]`);
-      await mouse(await atNode(bounds));
+      await mouse(await atNode(touchBounds));
       await until(`__touches.some(t=>t.type==='release')`);
       const touches = await evaluate(`__touches`);
-      const center = [(bounds[0]+bounds[2])/2,(bounds[1]+bounds[3])/2];
+      const center = [(touchBounds[0]+touchBounds[2])/2,(touchBounds[1]+touchBounds[3])/2];
       const tolerance = await evaluate(`Math.ceil(Number(document.querySelector('#shot').dataset.fullW)/document.querySelector('#shot').getBoundingClientRect().width)`);
-      for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=bounds[0]&&t.x<bounds[2]&&t.y>=bounds[1]&&t.y<bounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
+      for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=touchBounds[0]&&t.x<touchBounds[2]&&t.y>=touchBounds[1]&&t.y<touchBounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
       await pause(700);
       await post('/viewer/catchup');
       const imageAfter=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
       const changed = await nodes();
       const cards = list => new Set(list.filter(n=>n.name==='DrinkCard').map(n=>n.bounds.join(','))).size;
-      assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(tree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
+      assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(touchTree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
       const shot = await send('Page.captureScreenshot', { format:'png' });
       await writeFile(join(evidence,name+'.png'),Buffer.from(shot.data,'base64'));
-      results.push({name,size:state.size,insets:state.deviceInsets,overlay,touches,point:bounds,cardsBefore:cards(tree),cardsAfter:cards(changed)});
-      console.log(`${results.length}/84 ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
+      results.push({name,size:state.size,insets:state.deviceInsets,overlay,touches,point:bounds,touchBounds,cardsBefore:cards(touchTree),cardsAfter:cards(changed)});
+      console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
     }
   }
-  assert.equal(results.length,smoke?12:84);
+  assert.equal(results.length,total);
   await post('/viewer/resize',{device:'duo',folded:true,orientation:'portrait'});
   await until(`__store.st.focus.size?.device==='duo' && __store.st.focus.size.folded && __store.st.focus.size.orientation==='portrait'`);
   await ready();
