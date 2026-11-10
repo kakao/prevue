@@ -209,10 +209,10 @@ try {
   await pick("foldable", "preset==='foldable'");
   await click("#zoomInBtn"); await pause(300);
   await check(`document.querySelector('#stage').getBoundingClientRect().width > document.querySelector('#stage').offsetWidth`, "그림과 몸체 함께 확대");
-  await evaluate(`fetch(__store.st.focus.treeUrl).then(r=>r.json()).then(d=>{const walk=ns=>{for(const n of ns){if(n.name==='Text' && n.fileName==='FilterScreen.kt'&&n.lineNumber===51)return n;const child=walk(n.children||[]);if(child)return child}};window.__pointNode=walk(d.composeViewInfo)})`);
+  await evaluate(`fetch(__store.st.focus.treeUrl).then(r=>r.json()).then(d=>{const walk=ns=>{for(const n of ns){if(n.name==='Text' && n.fileName==='FilterScreen.kt'&&n.lineNumber===52)return n;const child=walk(n.children||[]);if(child)return child}};window.__pointNode=walk(d.composeViewInfo)})`);
   const at = await evaluate(`(()=>{const n=__pointNode.bounds,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/Number(document.querySelector('#shot').dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})()`);
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers: 1 });
-  await until(`!document.querySelector('#pickBox').hidden && __store.st.selection?.line===51`);
+  await until(`!document.querySelector('#pickBox').hidden && __store.st.selection?.line===52`);
   await check(`(()=>{const b=document.querySelector('#pickBox').getBoundingClientRect(),r=document.querySelector('#shot').getBoundingClientRect(),n=__pointNode.bounds,k=r.width/Number(document.querySelector('#shot').dataset.fullW);return Math.abs(b.x-(r.x+n[0]*k))<2 && Math.abs(b.y-(r.y+n[1]*k))<2 && Math.abs(b.width-(n[2]-n[0])*k)<2})()`, "확대한 그림에서 가리킨 박스 좌표 일치");
   await check(`!document.querySelector('#zoomCtl').classList.contains('at-fit') && document.querySelector('#panel').contains(document.querySelector('#zoomCtl')) && ${dockAt} && document.elementFromPoint(...(r=>[r.x+r.width/2,r.y+r.height/2])(document.querySelector('#zoomInBtn').getBoundingClientRect()))?.closest('#zoomCtl')`, "확대는 독 오른쪽 끝 · 확대한 그림 위에 뜬다 · 확대 중 맞춤 단추");
   await click("#zoomFitBtn"); await pause(300);
@@ -278,5 +278,5 @@ try {
 } finally {
   ws?.close(); chrome.kill();
   await new Promise(r => chrome.exitCode!==null ? r() : chrome.once("exit", r));
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
 }

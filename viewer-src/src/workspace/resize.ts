@@ -148,6 +148,13 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       load(p.imageUrl).then(img => { if (active && gen === epoch && current?.postures?.some(x => x.imageUrl === p.imageUrl)) scene.image(sizeKey(p.size), spec(img, p.size)); }).catch(() => {});
     }
     if (original) scene.update(target(f), !previous);
+    if (error) {
+      shown = false; loading = stream = null;
+      shot.onload = null; shot.removeAttribute('src');
+      prepare(true, true);
+      stage.classList.remove('resize-hidden');
+      return true;
+    }
     if (preparing) prepare(true, !!error);
     // 렌더가 끝난 상태만 읽어 옛 PNG를 새 크기의 첫 장으로 쓰지 않는다.
     const attached = !error && !document.hidden && !!f.streamUrl && (!pending || f.streamUrl !== stream || f.imageUrl !== previous?.imageUrl);
@@ -161,9 +168,11 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
           const st = f.size;
           if (!st) {
             const k = f.pxPerDp || 2.625;
-            original = { w: img.naturalWidth / k, h: img.naturalHeight / k, img: spec(img, st) };
+            const measured = { w: img.naturalWidth / k, h: img.naturalHeight / k, img: spec(img, st) };
+            const changed = original?.w !== measured.w || original.h !== measured.h;
+            original = measured;
             scene.setOriginal(original.w, original.h, original.img);
-            if (preparing) scene.update(target(f), true);
+            if (preparing || changed) scene.update(target(f), preparing);
           }
           scene.image(next, spec(img, st));
           stream = f.streamUrl; pending = false;

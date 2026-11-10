@@ -8,6 +8,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
+.resize-scene.preparing :is(#sysBars, #marks, #box, #pickBox) { visibility: hidden; }
 .resize-scene.preparing .ruler { opacity: .45; }
 .resize-scene input:disabled { cursor: default; }
 .workspace-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-8);

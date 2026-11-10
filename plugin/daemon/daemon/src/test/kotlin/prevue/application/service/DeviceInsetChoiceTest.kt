@@ -65,4 +65,26 @@ class DeviceInsetChoiceTest {
         uc.boards.focus(0, true, "test", ScreenSize.Device(DeviceModel.GALAXY_S26))
         assertEquals(DeviceInsetChoice.ON, uc.status.read().deviceInsets!!.choice)
     }
+
+    @Test fun `인셋 적용 렌더가 실패하면 실패를 알리고 선택과 근거는 요청한 환경을 유지한다`() = runBlocking {
+        val uc = fx.graph()
+        uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
+        uc.workspace.awaitBoardFilled()
+        val device = ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true)
+        uc.boards.focus(0, true, "test", device)
+        fx.renderer.exceptions.add("인셋 적용 실패")
+        val result = uc.live.setDeviceInsets(DeviceInsetChoice.OFF, "test")!!
+        assertFalse(result.ok)
+        assertEquals("인셋 적용 실패", result.shot.out.message!!.text)
+        val state = uc.status.read()
+        val last = state.last!!
+        assertFalse(last.ok)
+        assertEquals(device, state.size)
+        val insets = state.deviceInsets!!
+        assertEquals(DeviceInsetChoice.OFF, insets.choice)
+        assertEquals(AppInsets.NONE, insets.values)
+        assertTrue(insets.input.approximate)
+        assertEquals(BarLook.IOS, state.systemUi!!.bars!!.look)
+        assertTrue(uc.live.setDeviceInsets(DeviceInsetChoice.ON, "test")!!.ok)
+    }
 }

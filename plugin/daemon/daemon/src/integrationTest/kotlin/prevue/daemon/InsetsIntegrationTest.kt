@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import java.io.File
 import java.nio.file.Files
+import kotlin.math.roundToInt
 import javax.imageio.ImageIO
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -22,15 +25,20 @@ import org.junit.jupiter.api.condition.EnabledIf
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.DeviceModel
+import prevue.application.domain.model.DeviceInsetChoice
+import prevue.application.domain.model.BarLook
 import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.ViewNode
 import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
+import prevue.infrastructure.render.ApkWithAssets
 import prevue.infrastructure.render.LayoutlibSession
+import prevue.infrastructure.render.LayoutlibInsets
 import prevue.infrastructure.render.RenderEngine
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -55,7 +63,8 @@ internal abstract class InsetsRenderChecks {
         compiler = PearlFixture.hotCompiler(home, overlay)
         val compiled = compiler.compile(home.project, listOf(source))
         assertTrue(compiled.ok, compiled.messages)
-        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
+        val resourceApk = ApkWithAssets.of(File(spec.resourceApkPath), spec.assetsDirs.map(::File), File(out, "apk"))
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers, resourceApk)
         val base = PreviewSpec("com.example.pearl.feature.pearl.InsetProbeKt.InsetProbe", "InsetProbe", mapOf("showSystemUi" to "true"), source, 0)
         preview = ScreenSize.Device(DeviceModel.GALAXY_S26).applyTo(base)
     }
@@ -159,6 +168,81 @@ internal abstract class InsetsRenderChecks {
         off.close()
     }
 
+    @Test fun `마흔두 자세는 입력만 전환하고 Android 기본 바와 iOS 바 숨김을 유지한다`() = runBlocking {
+        for (device in DeviceModel.entries.flatMap { it.postures }) {
+            var shownBars: List<String>? = null
+            for (choice in DeviceInsetChoice.entries) {
+                val card = CardOverride(preview.previewId, device, deviceInsets = choice)
+                val spec = card.applyTo(preview)
+                val handle = engine.open(spec, interactive = true, ownLoader = false)
+                assertTrue(handle.opened.ok, "${device.key} $choice: ${handle.opened.message}")
+                val values = reads(handle)
+                val density = session().viewRoot()!!.context.resources.displayMetrics.density
+                fun pixels(edges: InsetEdges) = listOf(edges.left, edges.top, edges.right, edges.bottom)
+                    .joinToString(",") { (it * density).roundToInt().toString() }
+                val expected = spec.appInsets!!
+                assertEquals(pixels(expected.statusBars), values.getValue("status"), device.key)
+                assertEquals(pixels(expected.navigationBars), values.getValue("nav"), device.key)
+                assertEquals(pixels(expected.displayCutout), values.getValue("cutout"), device.key)
+                assertEquals(0, handle.semantics().first { it.semantics.contentDescription?.startsWith("status=") == true }.top, device.key)
+                val safe = values.getValue("drawing").split(',').map(String::toInt)
+                val outer = box(handle, "safeOuter")
+                val inner = box(handle, "safeInner")
+                assertEquals(listOf(outer[0] + safe[0], outer[1] + safe[1], outer[2] - safe[2], outer[3] - safe[3]), inner, device.key)
+                assertEquals(inner, box(handle, "safeNested"), device.key)
+                val bars = decorations(session())
+                if (device.model.look == BarLook.IOS) assertTrue(bars.all { it.endsWith(",${View.INVISIBLE}") }, device.key)
+                else assertTrue(bars.any { it.endsWith(",${View.VISIBLE}") }, device.key)
+                if (shownBars == null) shownBars = bars else assertEquals(shownBars, bars, device.key)
+                assertIgnoringVisibility(values)
+                handle.close()
+            }
+        }
+    }
+
+    @Test fun `인셋을 적용할 레이아웃이 없으면 실패하고 앱 렌더 실패는 성공 그림을 내지 않는다`() = runBlocking {
+        val card = CardOverride(preview.previewId, ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true))
+        val handle = engine.open(card.applyTo(preview), interactive = true, ownLoader = false)
+        assertTrue(handle.opened.ok)
+        val session = session()
+        session.onSession {
+            val empty = android.widget.FrameLayout(session.viewRoot()!!.context)
+            assertThrows<IllegalStateException> { LayoutlibInsets.apply(empty, AppInsets.NONE) }
+        }
+        handle.close()
+        for (choice in DeviceInsetChoice.entries) {
+            val failure = preview.copy(fqn = "com.example.pearl.feature.pearl.InsetProbeKt.InsetFailure", previewId = "InsetFailure")
+            val result = engine.open(card.copy(deviceInsets = choice).applyTo(failure), interactive = true, ownLoader = false)
+            assertFalse(result.opened.ok)
+            assertNull(result.opened.image)
+            assertTrue(result.opened.message!!.text.contains("system UI render failure probe"), result.opened.message!!.text)
+            result.close()
+        }
+    }
+
+    @Test fun `Pearl 메뉴는 안전 영역 안에 놓이고 배경은 화면 끝까지 유지한다`() = runBlocking {
+        val menu = preview.copy(fqn = "com.example.pearl.feature.pearl.AdaptivePreviewsKt.AdaptivePearlPreview", previewId = "PearlInsets")
+        val devices = listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17)) + DeviceModel.IPHONE_DUO.postures
+        for (device in devices) {
+            val grids = mutableListOf<ViewNode>()
+            val backgrounds = mutableListOf<Int>()
+            for (choice in DeviceInsetChoice.entries) {
+                val handle = engine.open(CardOverride(menu.previewId, device, deviceInsets = choice).applyTo(menu), interactive = true, ownLoader = false)
+                assertTrue(handle.opened.ok, handle.opened.message?.text)
+                grids += handle.look().tree.nodes.single { it.name == "LazyVerticalGrid" }
+                backgrounds += ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0)
+                handle.close()
+            }
+            val (on, off) = grids
+            val area = device.insetProfile.safeArea!!
+            if (area.top > 0) assertTrue(on.top > off.top, device.key) else assertEquals(on.top, off.top, device.key)
+            if (area.left > 0) assertTrue(on.left > off.left, device.key) else assertEquals(on.left, off.left, device.key)
+            if (area.right > 0) assertTrue(on.right < off.right, device.key) else assertEquals(on.right, off.right, device.key)
+            assertTrue(on.bottom < off.bottom, device.key)
+            assertEquals(backgrounds[0], backgrounds[1], device.key)
+        }
+    }
+
     private fun sentinels(): WindowInsets = WindowInsets.Builder()
         .setDisplayCutout(DisplayCutout(Insets.of(21, 0, 0, 0), Rect(0, 0, 21, 30), null, null, null, Insets.of(3, 0, 0, 0)))
         .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, 240))
@@ -204,7 +288,7 @@ internal abstract class InsetsRenderChecks {
             if (v.javaClass.name.startsWith("com.android.layoutlib.bridge.bars.")) {
                 result += "${v.javaClass.name}:${v.left},${v.top},${v.right},${v.bottom},${v.visibility}"
             }
-            if (v is ViewGroup) for (i in 0 until v.childCount) visit(v.getChildAt(i))
+            else if (v is ViewGroup) for (i in 0 until v.childCount) visit(v.getChildAt(i))
         }
         session.onSession { visit(session.viewRoot()!!) }
         assertTrue(result.isNotEmpty())

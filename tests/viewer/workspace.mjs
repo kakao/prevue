@@ -137,7 +137,7 @@ try {
   await check(`__frames.length>10 && __frames.every(r=>r.every((v,i)=>Math.abs(v-__frames[0][i])<.5))`, "모프가 닿은 뒤 캔버스와 피커의 위치·크기 고정");
   await check(`document.querySelector('#workspaceLoading').hidden && !document.querySelector('#rlW').disabled && __arrivals.length===0`, "준비 완료 시 자리 표시 틀만 흐려지고 조작 활성화");
   await check(`__transitions.length>0 && __transitions.every(t=>!t.hero && t.workspace && t.duration==='0.15s')`, "이미지 Hero 없이 바탕은 150ms 페이드");
-  const point = await evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const ns=[];const walk=xs=>xs.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51)ns.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=ns.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds,img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
+  const point = await evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const ns=[];const walk=xs=>xs.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)ns.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=ns.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds,img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...point, button: "left", clickCount: 1 });
   await pause(650);
   const caught = await post("/viewer/catchup");
@@ -303,5 +303,5 @@ try {
 } finally {
   ws?.close(); chrome.kill();
   await new Promise(r => chrome.exitCode !== null ? r() : chrome.once("exit", r));
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
 }

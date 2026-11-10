@@ -1777,7 +1777,8 @@ function sr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 				f && t === v && m?.postures?.some((t) => t.imageUrl === e.imageUrl) && D.image(ar(e.size), A(n, e.size));
 			}).catch(() => {});
 		}
-		if (y && D.update(ne(a), !T), S && O(!0, !!c), !c && !document.hidden && a.streamUrl && (!x || a.streamUrl !== g || a.imageUrl !== T?.imageUrl) && (a.streamUrl !== g || !b || w)) {
+		if (y && D.update(ne(a), !T), c) return b = !1, _ = g = null, n.onload = null, n.removeAttribute("src"), O(!0, !0), r.classList.remove("resize-hidden"), !0;
+		if (S && O(!0, !!c), !c && !document.hidden && a.streamUrl && (!x || a.streamUrl !== g || a.imageUrl !== T?.imageUrl) && (a.streamUrl !== g || !b || w)) {
 			let t = `${v}:${d}:${a.streamUrl}:${a.imageUrl}`;
 			if (_ !== t) {
 				_ = t;
@@ -1786,12 +1787,12 @@ function sr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 					if (!f || document.hidden || i !== v || _ !== t || h !== d) return;
 					let c = a.size;
 					if (!c) {
-						let e = a.pxPerDp || 2.625;
-						y = {
+						let e = a.pxPerDp || 2.625, t = {
 							w: s.naturalWidth / e,
 							h: s.naturalHeight / e,
 							img: A(s, c)
-						}, D.setOriginal(y.w, y.h, y.img), S && D.update(ne(a), !0);
+						}, n = y?.w !== t.w || y.h !== t.h;
+						y = t, D.setOriginal(y.w, y.h, y.img), (S || n) && D.update(ne(a), S);
 					}
 					D.image(d, A(s, c)), g = a.streamUrl, x = !1, o(s.naturalWidth, s.naturalHeight), n.onload = () => {
 						if (n.onload = null, !f || document.hidden || i !== v || h !== d || g !== a.streamUrl) return;
@@ -4179,49 +4180,72 @@ function _a({ systemUi: e = ia(), zoom: t = aa() }) {
 // src/components/SystemBars.tsx
 function va(e, t) {
 	let n = e?.shown ? e.bars : null;
-	return !n?.insets || n.look === "aosp" || t?.kind !== "device" ? null : {
-		look: n.look,
+	if (n?.look !== "ios" || !n.insets || t?.kind !== "device") return null;
+	let r = t.insetProfile?.safeArea, i = t.device === "duo", a = i && r ? r.left > 0 ? "left" : r.right > 0 ? "right" : null : null;
+	return {
+		w: t.widthDp,
+		h: t.heightDp,
 		statusDp: n.insets.statusDp,
 		navDp: n.insets.navDp,
-		w: t.widthDp,
-		h: t.heightDp
+		side: a,
+		sideDp: a && r ? r[a] : 0,
+		duo: i,
+		folded: t.folded
 	};
 }
 var ya = 24, ba = 4, xa = .6, Sa = 1e3;
-function Ca(e, t, n) {
-	if (!e?.naturalWidth) return "dark";
+function Ca(e, [t, n, r, i]) {
+	if (!e.naturalWidth) return "dark";
 	try {
-		let r = document.createElement("canvas");
-		r.width = ya, r.height = ba;
-		let i = r.getContext("2d", { willReadFrequently: !0 });
-		if (!i) return "dark";
-		let a = e.naturalHeight;
-		i.drawImage(e, 0, t * a, e.naturalWidth, Math.max(1, (n - t) * a), 0, 0, ya, ba);
-		let o = i.getImageData(0, 0, ya, ba).data, s = 0, c = 0;
-		for (let e = 0; e < o.length; e += 4) o[e + 3] && (s += (.2126 * o[e] + .7152 * o[e + 1] + .0722 * o[e + 2]) / 255, c++);
-		return c ? s / c > xa ? "dark" : "light" : "dark";
+		let a = document.createElement("canvas");
+		a.width = ya, a.height = ba;
+		let o = a.getContext("2d", { willReadFrequently: !0 });
+		if (!o) return "dark";
+		o.drawImage(e, t * e.naturalWidth, n * e.naturalHeight, Math.max(1, r * e.naturalWidth), Math.max(1, i * e.naturalHeight), 0, 0, ya, ba);
+		let s = o.getImageData(0, 0, ya, ba).data, c = 0, l = 0;
+		for (let e = 0; e < s.length; e += 4) s[e + 3] && (c += (.2126 * s[e] + .7152 * s[e + 1] + .0722 * s[e + 2]) / 255, l++);
+		return l && c / l <= xa ? "light" : "dark";
 	} catch {
 		return "dark";
 	}
 }
 function wa(e, t) {
-	let [n, r] = (0, I.useState)(["dark", "dark"]);
+	let [n, r] = (0, I.useState)(["dark", "dark"]), i = t !== null, { w: a = 1, h: o = 1, statusDp: s = 0, navDp: c = 0, side: l = null, sideDp: u = 0 } = t ?? {};
 	return (0, I.useEffect)(() => {
-		if (!e || !t) return;
-		let n = () => r((n) => {
-			let r = [Ca(e, 0, t.statusDp / t.h), Ca(e, 1 - t.navDp / t.h, 1)];
+		if (!e || !i) return;
+		let t = l ? [
+			l === "left" ? 0 : 1 - u / a,
+			64 / o,
+			u / a,
+			64 / o
+		] : [
+			0,
+			0,
+			1,
+			s / o
+		], n = () => r((n) => {
+			let r = [Ca(e, t), Ca(e, [
+				0,
+				1 - c / o,
+				1,
+				c / o
+			])];
 			return r[0] === n[0] && r[1] === n[1] ? n : r;
 		});
 		n(), e.addEventListener("load", n);
-		let i = window.setInterval(n, Sa);
+		let d = window.setInterval(n, Sa);
 		return () => {
-			e.removeEventListener("load", n), window.clearInterval(i);
+			e.removeEventListener("load", n), window.clearInterval(d);
 		};
 	}, [
 		e,
-		t?.statusDp,
-		t?.navDp,
-		t?.h
+		i,
+		a,
+		o,
+		s,
+		c,
+		l,
+		u
 	]), n;
 }
 var Ta = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
@@ -4289,62 +4313,93 @@ var Ta = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
 		})
 	]
 });
-function Oa({ look: e, w: t, s: n }) {
-	let r = n / 2, i = e === "pixel" ? 24 : 18;
+function Oa({ x: e, y: t }) {
 	return /* @__PURE__ */ (0, L.jsxs)("g", {
-		className: "sb-status",
+		className: "sb-duo-indicator",
+		transform: `translate(${e} ${t})`,
 		children: [
-			/* @__PURE__ */ (0, L.jsx)("text", {
-				x: i,
-				y: r,
-				dominantBaseline: "central",
-				fontSize: "14",
-				fontWeight: e === "pixel" ? 500 : 400,
-				children: "12:45"
+			/* @__PURE__ */ (0, L.jsxs)("g", {
+				fill: "none",
+				stroke: "currentColor",
+				strokeWidth: "2.5",
+				strokeLinecap: "round",
+				children: [/* @__PURE__ */ (0, L.jsx)("path", { d: "M-16 9 A18 18 0 1 1 16 9" }), /* @__PURE__ */ (0, L.jsx)("path", { d: "M-8 -1 Q0 -9 8 -1 M-5 2 Q0 -3 5 2" })]
 			}),
-			e === "oneui" && /* @__PURE__ */ (0, L.jsx)("text", {
-				x: t - i,
-				y: r,
-				dominantBaseline: "central",
-				textAnchor: "end",
-				fontSize: "12",
-				children: "100%"
+			/* @__PURE__ */ (0, L.jsx)("circle", {
+				cy: "5",
+				r: "1.7"
 			}),
-			Ta(t - i - (e === "oneui" ? 100 : 64), r - 5.5, 1),
-			Ea(t - i - (e === "oneui" ? 78 : 42), r - 5.5, 1),
-			Da(t - i - (e === "oneui" ? 58 : 24), r - 6, 1)
+			/* @__PURE__ */ (0, L.jsxs)("g", {
+				opacity: ".35",
+				children: [
+					/* @__PURE__ */ (0, L.jsx)("circle", {
+						cx: "-10",
+						cy: "16",
+						r: "1.6"
+					}),
+					/* @__PURE__ */ (0, L.jsx)("circle", {
+						cx: "-5",
+						cy: "19",
+						r: "1.6"
+					}),
+					/* @__PURE__ */ (0, L.jsx)("circle", {
+						cy: "20",
+						r: "1.6"
+					}),
+					/* @__PURE__ */ (0, L.jsx)("circle", {
+						cx: "5",
+						cy: "19",
+						r: "1.6"
+					}),
+					/* @__PURE__ */ (0, L.jsx)("circle", {
+						cx: "10",
+						cy: "16",
+						r: "1.6"
+					})
+				]
+			})
 		]
 	});
 }
-function ka({ w: e, s: t }) {
-	let n = (e - 126) / 4, r = t / 2 + 2;
+function ka({ bars: e }) {
+	let t = e.side ? e.side === "left" ? e.sideDp / 2 : e.w - e.sideDp / 2 : e.w - 46, n = e.side ? e.folded ? 124 : 78 : 42;
+	return /* @__PURE__ */ (0, L.jsxs)("g", {
+		className: "sb-status sb-duo-status",
+		"data-edge": e.side ?? "top",
+		children: [/* @__PURE__ */ (0, L.jsx)("text", {
+			x: e.side ? t : t - 52,
+			y: e.side ? n - 40 : n,
+			dominantBaseline: "central",
+			textAnchor: "middle",
+			fontSize: "15",
+			fontWeight: 600,
+			children: "9:41"
+		}), /* @__PURE__ */ (0, L.jsx)(Oa, {
+			x: t,
+			y: n
+		})]
+	});
+}
+function Aa({ bars: e }) {
+	if (e.duo) return /* @__PURE__ */ (0, L.jsx)(ka, { bars: e });
+	let t = (e.w - 126) / 4, n = e.statusDp / 2 + 2;
 	return /* @__PURE__ */ (0, L.jsxs)("g", {
 		className: "sb-status",
+		"data-edge": "top",
 		children: [
 			/* @__PURE__ */ (0, L.jsx)("text", {
-				x: n,
-				y: r,
+				x: t,
+				y: n,
 				dominantBaseline: "central",
 				textAnchor: "middle",
 				fontSize: "17",
 				fontWeight: 600,
 				children: "9:41"
 			}),
-			Ta(e - n - 36, r - 5.5, 1),
-			Ea(e - n - 14, r - 5.5, 1),
-			Da(e - n + 6, r - 6, 1)
+			Ta(e.w - t - 36, n - 5.5, 1),
+			Ea(e.w - t - 14, n - 5.5, 1),
+			Da(e.w - t + 6, n - 6, 1)
 		]
-	});
-}
-function Aa({ look: e, w: t, h: n, n: r }) {
-	let [i, a] = e === "ios" ? [134, 5] : e === "pixel" ? [108, 4] : [120, 4], o = e === "ios" ? n - 8 - a : n - r / 2 - a / 2;
-	return /* @__PURE__ */ (0, L.jsx)("rect", {
-		className: "sb-handle",
-		x: (t - i) / 2,
-		y: o,
-		width: i,
-		height: a,
-		rx: a / 2
 	});
 }
 function ja({ systemUi: e, size: t, host: n }) {
@@ -4355,23 +4410,19 @@ function ja({ systemUi: e, size: t, host: n }) {
 		viewBox: `0 0 ${a.w} ${a.h}`,
 		preserveAspectRatio: "none",
 		fill: "currentColor",
-		children: [a.statusDp > 0 && /* @__PURE__ */ (0, L.jsx)("g", {
+		"aria-hidden": "true",
+		children: [(a.statusDp > 0 || a.side) && /* @__PURE__ */ (0, L.jsx)("g", {
 			className: `sb-ink-${s}`,
-			children: a.look === "ios" ? /* @__PURE__ */ (0, L.jsx)(ka, {
-				w: a.w,
-				s: a.statusDp
-			}) : /* @__PURE__ */ (0, L.jsx)(Oa, {
-				look: a.look,
-				w: a.w,
-				s: a.statusDp
-			})
-		}), a.navDp > 0 && /* @__PURE__ */ (0, L.jsx)("g", {
+			children: /* @__PURE__ */ (0, L.jsx)(Aa, { bars: a })
+		}), !a.duo && a.navDp > 0 && /* @__PURE__ */ (0, L.jsx)("g", {
 			className: `sb-ink-${c}`,
-			children: /* @__PURE__ */ (0, L.jsx)(Aa, {
-				look: a.look,
-				w: a.w,
-				h: a.h,
-				n: a.navDp
+			children: /* @__PURE__ */ (0, L.jsx)("rect", {
+				className: "sb-handle",
+				x: (a.w - 134) / 2,
+				y: a.h - 13,
+				width: "134",
+				height: "5",
+				rx: "2.5"
 			})
 		})]
 	}), ra);

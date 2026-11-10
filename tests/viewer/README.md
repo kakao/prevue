@@ -77,3 +77,9 @@ node tests/viewer/contrast.mjs --plant on-surface=surface   # 미달을 심는�
 ```
 
 기준은 본문 글자 4.5:1, 큰 글자 · 조작 테두리 · 가리킨 박스 3:1이다. 구분선(`need` 0)은 장식이라 면제하고 값만 보인다. 반투명한 바탕은 `bg`의 순서대로(위에서 아래) 겹친 색으로, 반투명한 글자는 그 바탕에 겹친 색으로 잰다. `bg`의 끝은 불투명한 면이어야 한다. 색 역할을 더하거나 바꾸면 이 쌍도 같은 PR에서 고친다. Storybook `재료/Tokens`의 Contrast가 같은 쌍과 계산으로 표를 그린다. CI에는 Chrome이 없어 로컬에서 돌린다.
+
+## 기기 시스템 UI와 인셋 통합
+
+전용 워크트리의 `AdaptivePreviews.kt`를 연 서버에서 `node tests/viewer/system-bars.mjs <URL>`을 실행합니다. 10종·42자세의 ON/OFF 84개 조합에서 바 계열, iOS 배치 유지, Duo의 측면과 카메라, 인셋 지원·검증·근사 정보, 실제 필터 터치와 가리키기 박스를 대조합니다. `--smoke`는 Duo 12개 조합만, `--devices=pixelfold,tablet`은 지정한 기기만 실행합니다. 마지막에는 SSE 실패 상태를 재생해 이전 그림·바와 터치가 차단되고 복구되는지 검사합니다. 이 재생은 렌더러 실패 주입을 대신하지 않습니다. 렌더 입력과 Android/CMP 첫 프레임은 `*InsetsIntegrationTest`가 검사합니다.
+
+스크린샷과 원자료는 `.cache/system-bars/`에 남습니다. 스크린샷은 브라우저의 iOS 오버레이를 포함하지만 원본 렌더 PNG에는 그 오버레이·기기 몸체·카메라가 없습니다. Android의 Preview 기본 바는 원본 PNG에 포함됩니다. Safari와 실물 모션은 이 헤드리스 Chrome 검사로 확인하지 않습니다.

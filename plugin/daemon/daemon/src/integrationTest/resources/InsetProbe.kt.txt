@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun InsetProbe() {
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(Color.White)) {
         ReadInset("status", WindowInsets.statusBars)
         ReadInset("nav", WindowInsets.navigationBars)
@@ -39,6 +40,12 @@ fun InsetProbe() {
         }
         Box(Modifier.size(40.dp).background(Color.Yellow).semantics { contentDescription = "bare" })
     }
+    Box(Modifier.fillMaxSize().semantics { contentDescription = "safeOuter" }.safeDrawingPadding()) {
+        Box(Modifier.fillMaxSize().semantics { contentDescription = "safeInner" }.safeDrawingPadding()) {
+            Box(Modifier.fillMaxSize().semantics { contentDescription = "safeNested" })
+        }
+    }
+    }
 }
 
 @Composable
@@ -48,4 +55,9 @@ private fun ReadInset(label: String, inset: WindowInsets) {
     val values = listOf(inset.getLeft(density, direction), inset.getTop(density), inset.getRight(density, direction), inset.getBottom(density))
     val text = "$label=${values.joinToString(",")}"
     Text(text, Modifier.semantics { contentDescription = text })
+}
+
+@Composable
+fun InsetFailure() {
+    error("system UI render failure probe")
 }

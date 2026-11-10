@@ -263,13 +263,7 @@
       "systemUi": {
         "annotated": "boolean",
         "bars": {
-          "insets": {
-            "kind": "string",
-            "navDp": "number",
-            "source": "string",
-            "sourceUrl": "string",
-            "statusDp": "number"
-          },
+          "insets": "null",
           "look": "string"
         },
         "choice": "string",
@@ -524,14 +518,8 @@
         "annotated": false,
         "shown": true,
         "bars": {
-          "look": "oneui",
-          "insets": {
-            "statusDp": 30,
-            "navDp": 15,
-            "source": "windowinsets.info",
-            "kind": "samsung-rtl",
-            "sourceUrl": "https://github.com/easyhooon/windowinsets.info/tree/main/measurements/galaxy-s/galaxy-s26"
-          }
+          "look": "aosp",
+          "insets": null
         }
       },
       "deviceInsets": {
