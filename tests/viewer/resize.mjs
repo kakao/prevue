@@ -48,6 +48,17 @@ try {
     const at = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers });
   };
+  const beginFoldProbe = () => evaluate(`window.__foldFrames=[];window.__foldProbe=true;(()=>{
+    const tick=()=>{if(!__foldProbe)return;const rig=document.querySelector('#rig'),duo=document.querySelector('#duo');
+      if(!rig.hidden)__foldFrames.push(rig.querySelector('.leaf').style.transform);
+      if(!duo.hidden)__foldFrames.push(duo.querySelector('.duo-flap').style.clipPath);
+      requestAnimationFrame(tick)};requestAnimationFrame(tick)})()`);
+  const endFoldProbe = async name => {
+    await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`);
+    const frames=await evaluate(`__foldProbe=false;__foldFrames`);
+    assert(new Set(frames).size>=10, name+' 실제 모션 프레임: '+frames.length);
+    console.log(`통과 ${++checked}: ${name} 실제 버튼 → 서버 응답 → 접기 모션`);
+  };
   const key = async name => {
     for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: name, code: name });
   };
@@ -132,7 +143,9 @@ try {
   await until(`__store.st.focus.deviceInsets.choice==='off'`);
   await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.statusBars.top===0`, "인셋 OFF에서도 바는 남고 앱 입력만 영");
   await orient('portrait');
+  await beginFoldProbe();
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+  await endFoldProbe("Fold8 portrait");
   await check(`document.querySelector('#rlW').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "접기와 치수 갱신");
   await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0 && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 글자 붙은 자세 버튼 · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
   await orient('landscape-left');
@@ -181,8 +194,10 @@ try {
   await pick("ipduo", "device==='duo'");
   await check(`document.querySelector('#pnSl').hidden && __store.st.focus.size.widthPx===2853 && __store.st.focus.size.heightPx===2007 && document.querySelector('#rlW').value==='951' && document.querySelector('#rlH').value==='669'`, "Duo 펼침은 공개 해상도와 같은 951×669dp");
   await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
+  await beginFoldProbe();
   await click("#dcFold");
   await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+  await endFoldProbe('Duo landscape-left');
   await check(`__store.st.focus.size.orientation==='landscape-left'`, "Duo 접기에도 절대 방향 유지");
   await pick("s26", "device==='s26'");
   await check(`__store.st.focus.deviceInsets.choice==='off'`, "기기 · 접기 · 원본과 커스텀을 거쳐 인셋 OFF 유지");
