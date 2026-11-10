@@ -11,6 +11,7 @@ data class AppInsets(
     val navigationBars: InsetEdges = InsetEdges(),
     val captionBar: InsetEdges = InsetEdges(),
     val displayCutout: InsetEdges = InsetEdges(),
+    val systemOverlays: InsetEdges = InsetEdges(),
 ) {
     companion object {
         val NONE = AppInsets()

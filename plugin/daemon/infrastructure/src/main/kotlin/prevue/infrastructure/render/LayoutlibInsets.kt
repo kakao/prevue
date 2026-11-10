@@ -31,6 +31,7 @@ internal object LayoutlibInsets {
             WindowInsets.Type.navigationBars() to insets.navigationBars,
             WindowInsets.Type.captionBar() to insets.captionBar,
             WindowInsets.Type.displayCutout() to insets.displayCutout,
+            WindowInsets.Type.systemOverlays() to insets.systemOverlays,
         )) {
             val px = edges.pixels(density)
             builder.setInsets(type, px)

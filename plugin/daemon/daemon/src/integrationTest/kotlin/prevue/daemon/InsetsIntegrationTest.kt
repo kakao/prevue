@@ -39,7 +39,10 @@ internal abstract class InsetsRenderChecks {
     private lateinit var engine: RenderEngine
     private lateinit var compiler: HotCompiler
     private lateinit var preview: PreviewSpec
-    private val appInsets = AppInsets(InsetEdges(top = 37.0), InsetEdges(bottom = 15.0), InsetEdges(top = 3.0), InsetEdges(left = 7.0))
+    private val appInsets = AppInsets(
+        statusBars = InsetEdges(top = 37.0), navigationBars = InsetEdges(bottom = 15.0), captionBar = InsetEdges(top = 3.0),
+        displayCutout = InsetEdges(left = 7.0), systemOverlays = InsetEdges(right = 9.0),
+    )
 
     protected abstract fun warmup(): Pair<ClasspathSpec, ClasspathSpec>
     protected abstract val fixtureDir: File?
@@ -107,9 +110,17 @@ internal abstract class InsetsRenderChecks {
                 val adjusted = engine.open(preview.copy(appInsets = override), interactive, ownLoader = false)
                 assertTrue(adjusted.opened.ok, adjusted.opened.message?.text)
                 val session = session()
+                var native: Insets? = null
                 session.onSession {
                     val root = session.viewRoot()!!
                     val layout = layout(root)!!
+                    val probe = View(layout.context).apply {
+                        setOnApplyWindowInsetsListener { _, delivered ->
+                            native = delivered.getInsets(WindowInsets.Type.systemBars())
+                            delivered
+                        }
+                    }
+                    layout.addView(probe, 0, ViewGroup.LayoutParams(0, 0))
                     layout.dispatchApplyWindowInsets(sentinels())
                     layout.requestLayout()
                 }
@@ -120,6 +131,7 @@ internal abstract class InsetsRenderChecks {
                 assertEquals("0,0,0,30", values.getValue("mandatory"))
                 assertEquals("0,0,0,18", values.getValue("tappable"))
                 val on = override != AppInsets.NONE
+                assertEquals(if (on) Insets.of(0, 111, 27, 45) else Insets.NONE, native)
                 assertEquals(if (on) "0,111,0,45" else "0,0,0,0", values.getValue("system"))
                 assertEquals(if (on) "21,0,0,0" else "0,0,0,0", values.getValue("cutout"))
                 assertEquals(if (on) "21,111,0,240" else "0,0,0,240", values.getValue("drawing"))
@@ -149,6 +161,7 @@ internal abstract class InsetsRenderChecks {
         .setInsets(WindowInsets.Type.systemGestures(), Insets.of(12, 0, 15, 60))
         .setInsets(WindowInsets.Type.mandatorySystemGestures(), Insets.of(0, 0, 0, 30))
         .setInsets(WindowInsets.Type.tappableElement(), Insets.of(0, 0, 0, 18))
+        .setInsets(WindowInsets.Type.systemOverlays(), Insets.of(0, 0, 33, 0))
         .setVisible(WindowInsets.Type.all(), true)
         .build()
 
