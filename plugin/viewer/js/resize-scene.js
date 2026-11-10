@@ -598,10 +598,17 @@ export function createResizeScene(root, hooks) {
     const quad = [pt(hu, vf - Lv / 2), pt(uF, vf - hF), pt(uF, vf + hF), pt(hu, vf + Lv / 2)];
     // 커버와 내부 반쪽의 폭이 달라도 옆 단추는 접힌 몸체의 끝으로 이어진다.
     const outU = Math.max(hu + Bu, uF);
+    const facePose = rig.from.folded === (th > 90) ? rig.from : rig.to;
+    const buttonOpacity = rig.from.mirrored === rig.to.mirrored ? 1 : Math.abs(cs);
+    const nearU = th > 90 ? hu : hu - Bu;
     lk.btn.forEach((b, i) => { const e = DU.btns[i]; if (!e) return; const a = b.at * s, ln = b.len * s;
       Object.assign(e.style, X ? { left: outU + t - .5 + "px", top: b0 + a + "px", width: "3px", height: ln + "px" }
                                : { left: b0 + Bv - a - ln + "px", top: outU + t - .5 + "px", width: ln + "px", height: "3px" },
-        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? 1 : 0 }); });
+        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? buttonOpacity : 0 });
+      if (facePose.mirrored) Object.assign(e.style, X
+        ? { left: nearU - t - 2.5 + "px", top: b0 + Bv - a - ln + "px" }
+        : { left: b0 + a + "px", top: nearU - t - 2.5 + "px" });
+    });
     // 빛은 멈춘 몸체처럼 기기 전체 상자에 깐다 — 90°까지는 펼친 기기, 넘으면 접힌 장의 상자.
     const box = (u0, u1, v0, v1) => X ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0];
     const vh = Math.max(Lv / 2, hF), openBox = box(hu - Bu - t, hu + Bu + t, b0 - t, b0 + Bv + t);

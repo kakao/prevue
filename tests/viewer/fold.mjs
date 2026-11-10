@@ -91,7 +91,10 @@ try {
             const probe=(parent,x,y)=>{const el=document.createElement('i');el.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';parent.append(el);return el};
             // 원근 변환을 거친 접는 축의 같은 끝점이 화면에서도 이어져야 한다.
             const a=probe(leaf,100,100),b=probe(base,${rotated?100:0},${rotated?0:100});
-            const frames=[];const tick=()=>{
+            const frames=[];let lastButton=null;const tick=()=>{
+              if(${device==='ipduo'} && !document.querySelector('#duo').hidden){
+                const r=document.querySelector('#duo .btn').getBoundingClientRect();lastButton={x:r.x,y:r.y};
+              }
               if(${device==='ipduo'} && !document.querySelector('#duo').hidden){
                 const path=document.querySelector('#duo .duo-flap').style.clipPath;
                 const n=path.match(/-?[\\d.]+/g)?.map(Number);
@@ -108,13 +111,17 @@ try {
                 const th=Math.abs(Number(leaf.style.transform.match(/-?[\\d.]+/)?.[0]));
                 frames.push({error:Math.hypot(A.x-B.x,A.y-B.y),over,th,leaf:leaf.style.cssText,base:base.style.cssText});
               }
-              if(scene.moving())requestAnimationFrame(tick);else{a.remove();b.remove();resolve(frames)}
+              if(scene.moving())requestAnimationFrame(tick);else{
+                if(lastButton&&frames.length){const r=document.querySelector('#ua .btn').getBoundingClientRect();frames.at(-1).buttonJump=Math.max(Math.abs(r.x-lastButton.x),Math.abs(r.y-lastButton.y));}
+                a.remove();b.remove();resolve(frames)
+              }
             };
             scene.update(${JSON.stringify({sel,...dimensions})});
             setTimeout(()=>scene.image(${JSON.stringify(sel)},spec(${dimensions.w},${dimensions.h})),300);
             requestAnimationFrame(tick);
           })`);
           assert(frames.length>=10, '접기 애니메이션 프레임 수');
+          if(device==='ipduo') assert(frames.at(-1).buttonJump<=1, `${device} ${rotated?'가로':'세로'} ${sel}: 옆 단추 이음 ${frames.at(-1).buttonJump}px`);
           const worst=frames.reduce((a,b)=>a.error>b.error?a:b);
           assert(worst.error<=.1, `${device} ${rotated?'가로':'세로'} ${cached?'캐시':'대기'} ${sel}: 하단 이음매 ${JSON.stringify(worst)}`);
           // 다 접힌 마지막 프레임에서 바닥 반쪽이 접힌 장(커버) 밖으로 비어져 나오면 멈추는 순간 단차가 튄다
