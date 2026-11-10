@@ -39,9 +39,10 @@ function inkOver(img: HTMLImageElement, [x, y, w, h]: Region): Ink {
 
 function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
   const [ink, setInk] = useState<[Ink, Ink]>(['dark', 'dark']);
+  const enabled = bars !== null;
   const { w = 1, h = 1, statusDp = 0, navDp = 0, side = null, sideDp = 0 } = bars ?? {};
   useEffect(() => {
-    if (!img) return;
+    if (!img || !enabled) return;
     const status: Region = side ? [side === 'left' ? 0 : 1 - sideDp / w, 64 / h, sideDp / w, 64 / h] : [0, 0, 1, statusDp / h];
     const sample = () => setInk(old => {
       const next: [Ink, Ink] = [inkOver(img, status), inkOver(img, [0, 1 - navDp / h, 1, navDp / h])];
@@ -51,7 +52,7 @@ function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
     img.addEventListener('load', sample);
     const t = window.setInterval(sample, RESAMPLE_MS);
     return () => { img.removeEventListener('load', sample); window.clearInterval(t); };
-  }, [img, w, h, statusDp, navDp, side, sideDp]);
+  }, [img, enabled, w, h, statusDp, navDp, side, sideDp]);
   return ink;
 }
 

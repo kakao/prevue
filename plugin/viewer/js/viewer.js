@@ -4209,32 +4209,32 @@ function Ca(e, [t, n, r, i]) {
 	}
 }
 function wa(e, t) {
-	let [n, r] = (0, I.useState)(["dark", "dark"]), { w: i = 1, h: a = 1, statusDp: o = 0, navDp: s = 0, side: c = null, sideDp: l = 0 } = t ?? {};
+	let [n, r] = (0, I.useState)(["dark", "dark"]), i = t !== null, { w: a = 1, h: o = 1, statusDp: s = 0, navDp: c = 0, side: l = null, sideDp: u = 0 } = t ?? {};
 	return (0, I.useEffect)(() => {
-		if (!e) return;
-		let t = c ? [
-			c === "left" ? 0 : 1 - l / i,
-			64 / a,
-			l / i,
-			64 / a
+		if (!e || !i) return;
+		let t = l ? [
+			l === "left" ? 0 : 1 - u / a,
+			64 / o,
+			u / a,
+			64 / o
 		] : [
 			0,
 			0,
 			1,
-			o / a
+			s / o
 		], n = () => r((n) => {
 			let r = [Ca(e, t), Ca(e, [
 				0,
-				1 - s / a,
+				1 - c / o,
 				1,
-				s / a
+				c / o
 			])];
 			return r[0] === n[0] && r[1] === n[1] ? n : r;
 		});
 		n(), e.addEventListener("load", n);
-		let u = window.setInterval(n, Sa);
+		let d = window.setInterval(n, Sa);
 		return () => {
-			e.removeEventListener("load", n), window.clearInterval(u);
+			e.removeEventListener("load", n), window.clearInterval(d);
 		};
 	}, [
 		e,
@@ -4243,7 +4243,8 @@ function wa(e, t) {
 		o,
 		s,
 		c,
-		l
+		l,
+		u
 	]), n;
 }
 var Ta = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {

@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { toBoard } from "./daemon.mjs";
 
 // 전용 워크트리로 fixtures/pearl의 AdaptivePreviews.kt를 먼저 연다. 첫 카드를 조작한다.
@@ -45,13 +46,6 @@ try {
     throw Error(`시간 초과: ${expression}`);
   };
   const check = async (expression, name) => { assert(await evaluate(expression), name); checked++; console.log(`통과 ${checked}: ${name}`); };
-  const click = async (selector, modifiers = 0) => {
-    const at = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
-    for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers });
-  };
-  const key = async name => {
-    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: name, code: name });
-  };
   const post = async (path, body = {}) => {
     const r = await fetch(new URL(path, viewer), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     assert(r.ok, path); return r.json();
@@ -69,6 +63,8 @@ try {
   const atNode = bounds => evaluate(`(()=>{const b=${JSON.stringify(bounds)},img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return {x:r.x+(b[0]+b[2])/2*k,y:r.y+(b[1]+b[3])/2*k}})()`);
   const evidence = '.cache/system-bars';
   await mkdir(evidence, { recursive: true });
+  const identity = await fetch(new URL('/identity', viewer)).then(r=>r.json());
+  assert.equal(identity.root, fileURLToPath(new URL('../../plugin/', import.meta.url)).replace(/\/$/, ''), '이 워크트리 서버');
   console.log("준비: 보드 복귀");
   await toBoard(viewer);
   await send('Page.enable'); await send('Runtime.enable');
@@ -79,8 +75,6 @@ try {
   await until(`!!document.querySelector('#shot') && !!window.__errors`);
   await evaluate(`import('/js/store.js').then(m=>window.__store=m.store)`);
   await until(`!!__store.st`);
-  const identity = await fetch(new URL('/identity', viewer)).then(r=>r.json());
-  assert.equal(identity.root, new URL('../../plugin/', import.meta.url).pathname.replace(/\/$/, ''), '이 워크트리 서버');
   assert((await evaluate(`__store.st.board.file`)).endsWith('/AdaptivePreviews.kt'), 'AdaptivePearl 픽스처');
   console.log('준비: 인터랙티브 진입');
   await post('/viewer/focus', { index: 0 });
@@ -159,6 +153,10 @@ try {
     }
   }
   assert.equal(results.length,smoke?12:84);
+  await post('/viewer/resize',{device:'duo',folded:true,orientation:'portrait'});
+  await until(`__store.st.focus.size?.device==='duo' && __store.st.focus.size.folded && __store.st.focus.size.orientation==='portrait'`);
+  await ready();
+  await check(`!document.querySelector('#sysBars').hidden`, '실패 전 iOS 바 표시');
   await evaluate(`window.__stable=structuredClone(__store.st);window.__replaying=true;const failed=structuredClone(__stable);failed.version++;failed.error='기기 인셋 적용 실패 검증';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:failed})}))`);
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
   await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림과 바를 숨기고 실패를 표시');
@@ -169,8 +167,6 @@ try {
   await evaluate(`const recovered=structuredClone(__stable);recovered.version+=2;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:recovered})}))`);
   await ready();
   await check(`!document.querySelector('#resizeScene').classList.contains('preparing')`, '복구된 렌더로 그림과 입력을 다시 준비');
-  await send('Page.reload');
-  await until(`!!window.__store || !!document.querySelector('#shot')`);
   await check(`__errors.length===0`, '브라우저 예외 없음');
   await writeFile(join(evidence,'results.json'),JSON.stringify({node:process.version,identity,results},null,2));
   console.log(`통합 검증 ${results.length}개 완료: ${evidence}`);
