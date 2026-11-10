@@ -110,7 +110,7 @@ try {
       const el=document.querySelector(duo?'#duo':'#rig');
       const matrix=new DOMMatrix(getComputedStyle(el).transform),origin=getComputedStyle(el).transformOrigin.split(' ').map(parseFloat);
       const point=(x,y)=>{const p=new DOMPoint(x-origin[0],y-origin[1]).matrixTransform(matrix);return {x:p.x+origin[0],y:p.y+origin[1]}};
-      let error,body,cam,content;
+      let error,body,cam,content,over=0,theta=0;
       if(duo){
         const n=document.querySelector('#duo .duo-flap').style.clipPath.match(/-?[\\d.]+/g).map(Number);
         const x=n[24]+(n[26]-n[24])/.5523,y=n[25]+(n[27]-n[25])/.5523;
@@ -118,17 +118,20 @@ try {
         const corner=point(x,y);error=Math.hypot(corner.x-end.x,corner.y-end.y);
         const back=window.phase>.5;
         const face=document.querySelector('#duo .duo-face');
-        body=back?box(face):union(box(face),box(document.querySelector('#duo .duo-base')));
+        body=union(box(face),box(document.querySelector('#duo .duo-base')));
         cam=box(document.querySelector(back?'#duo .duo-ly .cam':'#duo .duo-scr .cam'));
         content=box(document.querySelector(back?'#duo .duo-ly img':'#duo .duo-scr img'));
       }else{
         const a=box(A),b=box(B);error=Math.hypot(a.x-b.x,a.y-b.y);
         const back=window.phase>.5;
-        body=back?box(document.querySelector('#rig .outer')):union(box(document.querySelector('#rig .inner')),box(document.querySelector('#rig .base')));
+        const base=box(document.querySelector('#rig .base')),outer=box(document.querySelector('#rig .outer'));
+        body=union(box(document.querySelector(back?'#rig .outer':'#rig .inner')),base);
+        theta=Math.abs(Number(document.querySelector('#rig .leaf').style.transform.match(/-?[\\d.]+/)[0]));
+        over=Math.max(0,outer.x-base.x,outer.y-base.y,base.x+base.w-outer.x-outer.w,base.y+base.h-outer.y-outer.h);
         const face=document.querySelector(back?'#rig .outer':'#rig .base .clip');
         cam=box(face.querySelector('.cam'));content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
       }
-      return {duo,rig,error,body,cam,content,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),
+      return {duo,rig,error,body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),
         angle:el.style.transform,leaf:document.querySelector('#rig .leaf').style.transform,path:document.querySelector('#duo .duo-flap').style.clipPath};
     };`);
   const near = (actual, expected, name, tolerance = .2) => {
@@ -174,6 +177,10 @@ try {
           const changing = new Set(frames.map(f=>device==='ipduo'?f.path:f.leaf));
           assert(changing.size>=10,`${device} ${orientation}: 접는 장의 실제 변형`);
           const worst=Math.max(...frames.map(f=>f.error));assert(worst<.1,`${device} ${orientation}: 이음매 ${worst}px`);
+          if(device!=='ipduo'&&to===cover){
+            const shut=frames.filter(f=>f.theta>=179);assert(shut.length,'다 접힌 프레임');
+            assert(Math.max(...shut.map(f=>f.over))<=.5,`${device} ${orientation}: 바닥 반쪽이 커버 밖으로 나오지 않음`);
+          }
           const last=frames.at(-1),expected=refs[to.sel];
           // 마지막 모션 프레임의 몸체·카메라·단추·그림이 정지 장면으로 이어져야 한다.
           near(last.body,expected.body,`${device} ${orientation}: 접힌 몸체`);
