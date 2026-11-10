@@ -36,6 +36,7 @@ import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
+import prevue.infrastructure.render.ApkWithAssets
 import prevue.infrastructure.render.LayoutlibSession
 import prevue.infrastructure.render.LayoutlibInsets
 import prevue.infrastructure.render.RenderEngine
@@ -62,7 +63,8 @@ internal abstract class InsetsRenderChecks {
         compiler = PearlFixture.hotCompiler(home, overlay)
         val compiled = compiler.compile(home.project, listOf(source))
         assertTrue(compiled.ok, compiled.messages)
-        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
+        val resourceApk = ApkWithAssets.of(File(spec.resourceApkPath), spec.assetsDirs.map(::File), File(out, "apk"))
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers, resourceApk)
         val base = PreviewSpec("com.example.pearl.feature.pearl.InsetProbeKt.InsetProbe", "InsetProbe", mapOf("showSystemUi" to "true"), source, 0)
         preview = ScreenSize.Device(DeviceModel.GALAXY_S26).applyTo(base)
     }
