@@ -278,5 +278,5 @@ try {
 } finally {
   ws?.close(); chrome.kill();
   await new Promise(r => chrome.exitCode!==null ? r() : chrome.once("exit", r));
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
 }
