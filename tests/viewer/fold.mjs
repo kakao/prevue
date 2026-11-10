@@ -141,7 +141,7 @@ try {
     const [w,h]=folded?[cw,ch]:[ow,oh],rot=(orientation!=='portrait')!==(w>h);
     return {sel:device+':'+(folded?'cover':'open')+(rot?':rot':'')+(orientation==='landscape-right'?':right':''),w:rot?h:w,h:rot?w:h};
   };
-  // 손에 든 회전 — 펼친 화면이 가로 기본인 Duo · Fold8의 짝. 셋째 값은 짝 없이 바로 선 세로로 가는 경우다.
+  // 손에 든 회전 — 펼친 화면이 가로 기본인 Duo · Fold8의 짝. 둘째 값 true는 짝 없이 바로 선 세로로 가는 경우다.
   const HAND = {
     'cover:portrait':['landscape-left'], 'cover:landscape-right':['portrait'], 'cover:landscape-left':['portrait',true],
     'open:landscape-left':['portrait'], 'open:portrait':['landscape-right'], 'open:landscape-right':['portrait',true],
