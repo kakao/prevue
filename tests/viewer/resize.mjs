@@ -146,7 +146,7 @@ try {
   await beginFoldProbe();
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await endFoldProbe("Fold8 portrait");
-  await check(`document.querySelector('#rlW').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "접기와 치수 갱신");
+  await check(`__store.st.focus.size.orientation==='landscape-right' && document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "펼친 세로를 접으면 손에 든 회전을 이어 커버 가로 오른쪽 · 치수 갱신");
   await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0 && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 글자 붙은 자세 버튼 · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
   await orient('landscape-left');
   await check(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "접은 기기의 가로 돌리기");
@@ -198,7 +198,8 @@ try {
   await click("#dcFold");
   await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await endFoldProbe('Duo landscape-left');
-  await check(`__store.st.focus.size.orientation==='landscape-left'`, "Duo 접기에도 절대 방향 유지");
+  await until(`document.querySelector('#rlW').value==='466'`);
+  await check(`__store.st.focus.size.orientation==='portrait' && document.querySelector('#rlH').value==='678'`, "Duo 펼친 가로(기본)를 접으면 커버 세로");
   await pick("s26", "device==='s26'");
   await check(`__store.st.focus.deviceInsets.choice==='off'`, "기기 · 접기 · 원본과 커스텀을 거쳐 인셋 OFF 유지");
   await orient('landscape-left');
