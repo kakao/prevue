@@ -119,12 +119,6 @@ try {
         assert.equal(cam.opacity>0, folded, name);
         if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
       }
-      const initial = await nodes();
-      const all = initial.find(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51);
-      assert(all,name);
-      await mouse(await atNode(all.bounds));
-      await pause(500);
-      await post('/viewer/catchup');
       const tree = await nodes();
       const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51);
       assert(chips.length>=2, name);
@@ -132,6 +126,11 @@ try {
       await mouse(await atNode(bounds), 1);
       await until(`__store.st.selection?.line===51 && !document.querySelector('#pickBox').hidden`);
       await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
+      await mouse(await atNode(chips[0].bounds));
+      await pause(700);
+      await post('/viewer/catchup');
+      await ready();
+      await pause(150);
       const imageBefore=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
       await evaluate(`window.__touches=[]`);
       await mouse(await atNode(bounds));
