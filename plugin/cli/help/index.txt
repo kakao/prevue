@@ -14,7 +14,7 @@ Viewing
 
 The same screen as the person
   selection [--ref]          where the person last pointed in the viewer — file:line and ancestor chain
-  focus <index> --on|--off   turns a card interactive on and off · --size / --device change that card's screen size · --device-insets toggles the device's app insets; --orientation selects its direction; --system-ui toggles bars for non-device sizes
+  focus <index> --on|--off   turns a card interactive on and off · --size / --device change that card's screen size · --orientation selects the device's direction; --system-ui toggles bars for non-device sizes
   touch --at <file>:<line>   presses the node of that line on the interactive card (touch <x> <y> takes PNG pixel coordinates) · long is a long press
   scroll [<amount>]          scrolls by that many screens with the wheel · --horizontal sideways · --at the container to scroll · --until stops when the target is fully visible
   type "<text>"              types into the focused text field — press the field with touch --at first

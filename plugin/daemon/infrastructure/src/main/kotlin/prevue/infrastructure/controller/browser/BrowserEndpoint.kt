@@ -9,7 +9,6 @@ import prevue.infrastructure.controller.http.mapper.toJson
 import prevue.infrastructure.controller.http.mapper.toPointed
 import prevue.infrastructure.controller.http.mapper.toScreenSize
 import prevue.infrastructure.controller.http.mapper.toSystemUi
-import prevue.infrastructure.controller.http.mapper.toDeviceInsets
 import prevue.infrastructure.json.string
 import prevue.infrastructure.controller.http.HttpEndpoint
 import prevue.infrastructure.controller.http.body
@@ -104,7 +103,6 @@ public class BrowserEndpoint @Inject internal constructor(
         "wheel" to { b -> input.wheel(b.int("x"), b.int("y"), b.float("dx"), b.float("dy")) },
         "cancel" to { _ -> pointing.cancelChoice() },
         "resize" to { b -> input.resize(b.toScreenSize() ?: error("size나 device가 필요하다")) },
-        "deviceInsets" to { b -> input.deviceInsets(b.toDeviceInsets() ?: error("deviceInsets가 필요하다")) },
         "systemUi" to { b -> input.systemUi(b.toSystemUi() ?: error("systemUi가 필요하다")) },
         "tab" to { b -> tabs.switchTab(b.string("key") ?: error("key가 필요하다")) },
         "close" to { b -> tabs.closeTab(b.string("key") ?: error("key가 필요하다")) },

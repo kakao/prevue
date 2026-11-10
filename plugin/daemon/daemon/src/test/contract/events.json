@@ -71,10 +71,8 @@
         "error": "string",
         "focus": {
           "deviceInsets": {
-            "applied": "string",
             "approximate": "string",
             "basisPosture": "string",
-            "choice": "string",
             "evidence": {
               "kind": "string",
               "source": "string",
@@ -83,7 +81,6 @@
             "issue": "string",
             "note": "string",
             "posture": "string",
-            "supported": "string",
             "values": {
               "captionBar": {
                 "bottom": "string",
@@ -197,7 +194,6 @@
                     "right": "string",
                     "top": "string"
                   },
-                  "supported": "string",
                   "verified": "string"
                 },
                 "kind": "string",
@@ -283,7 +279,6 @@
                 "right": "string",
                 "top": "string"
               },
-              "supported": "string",
               "verified": "string"
             },
             "kind": "string",
@@ -522,10 +517,8 @@
         "error": "null",
         "focus": {
           "deviceInsets": {
-            "applied": "string",
             "approximate": "boolean",
             "basisPosture": "string",
-            "choice": "string",
             "evidence": {
               "kind": "string",
               "source": "string",
@@ -534,7 +527,6 @@
             "issue": "null",
             "note": "string",
             "posture": "string",
-            "supported": "boolean",
             "values": {
               "captionBar": {
                 "bottom": "number",
@@ -648,7 +640,6 @@
                     "right": "number",
                     "top": "number"
                   },
-                  "supported": "boolean",
                   "verified": "boolean"
                 },
                 "kind": "string",
@@ -734,7 +725,6 @@
                 "right": "number",
                 "top": "number"
               },
-              "supported": "boolean",
               "verified": "boolean"
             },
             "kind": "string",

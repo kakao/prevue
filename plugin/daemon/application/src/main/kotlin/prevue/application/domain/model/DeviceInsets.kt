@@ -31,7 +31,6 @@ data class DeviceInsetProfile(
             else -> null
         }
     val verified: Boolean get() = issue == null
-    val supported: Boolean get() = true
     val appInsets: AppInsets? get() = measured?.appInsets?.takeIf { verified }
 }
 

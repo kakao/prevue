@@ -8,7 +8,6 @@ import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.SystemUi
-import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
@@ -53,8 +52,6 @@ private fun BarInsets.toJson(): Map<String, Any?> =
     mapOf("statusDp" to statusDp, "navDp" to navDp, "source" to source.site, "kind" to source.kind, "sourceUrl" to url)
 
 internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
-
-internal fun Map<String, Any?>.toDeviceInsets(): DeviceInsetChoice? = DeviceInsetChoice.parse(string("deviceInsets"))
 
 internal fun Map<String, Any?>.toScreenSize(): ScreenSize? =
     ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true, string("orientation"))

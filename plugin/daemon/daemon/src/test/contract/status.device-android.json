@@ -38,10 +38,8 @@
     "borrowedFrom": "null",
     "compilerWarm": "boolean",
     "deviceInsets": {
-      "applied": "string",
       "approximate": "boolean",
       "basisPosture": "string",
-      "choice": "string",
       "evidence": {
         "kind": "string",
         "source": "string",
@@ -50,7 +48,6 @@
       "issue": "null",
       "note": "string",
       "posture": "string",
-      "supported": "boolean",
       "values": {
         "captionBar": {
           "bottom": "number",
@@ -274,7 +271,6 @@
           "right": "number",
           "top": "number"
         },
-        "supported": "boolean",
         "verified": "boolean"
       },
       "kind": "string",
@@ -506,7 +502,6 @@
       "widthPx": 2340,
       "heightPx": 1080,
       "insetProfile": {
-        "supported": true,
         "verified": false,
         "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
         "safeArea": {
@@ -571,9 +566,6 @@
       }
     },
     "deviceInsets": {
-      "choice": "on",
-      "applied": "on",
-      "supported": true,
       "issue": null,
       "posture": "s26-land",
       "approximate": true,

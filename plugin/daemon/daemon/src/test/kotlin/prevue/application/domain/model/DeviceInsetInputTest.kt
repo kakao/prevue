@@ -13,16 +13,12 @@ class DeviceInsetInputTest {
             assertTrue(input.approximate, device.key)
             assertNotNull(input.note, device.key)
             assertNotNull(input.evidence, device.key)
-            assertTrue(device.insetProfile.supported)
             assertFalse(device.insetProfile.verified)
             assertNull(device.insetProfile.measured?.systemOverlays)
             val source = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)
             val on = CardOverride(source.previewId, device).applyTo(source)
-            val off = CardOverride(source.previewId, device, deviceInsets = DeviceInsetChoice.OFF).applyTo(source)
-            assertEquals(on.params, off.params)
             assertTrue(on.systemBars is SystemBars.Shown)
             assertEquals(input.values, on.appInsets)
-            assertEquals(AppInsets.NONE, off.appInsets)
         }
     }
 

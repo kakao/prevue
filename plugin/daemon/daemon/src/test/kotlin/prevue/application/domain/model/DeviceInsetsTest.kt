@@ -46,7 +46,6 @@ class DeviceInsetsTest {
             assertEquals("off", p.evidence.conditions["innerCamera"])
             assertEquals("off", p.evidence.conditions["horizontalToolbar"])
             assertEquals("pt", p.evidence.conditions["unit"])
-            assertTrue(p.supported)
             assertFalse(p.verified)
             assertEquals(DeviceModel.IPHONE_DUO.appInsetsIssue, p.issue)
             assertNull(p.appInsets)
@@ -97,7 +96,6 @@ class DeviceInsetsTest {
         assertNull(missing.evidence)
         assertNull(missing.safeArea)
         assertNull(missing.measured)
-        assertTrue(missing.supported)
         assertFalse(missing.verified)
         all.filter { it.model.look != BarLook.IOS }.mapNotNull { it.insetProfile.measured }.forEach {
             assertNull(it.systemOverlays)
@@ -111,7 +109,6 @@ class DeviceInsetsTest {
         val partial = MeasuredInsets(e, InsetEdges(bottom = 15.0), InsetEdges(), InsetEdges(left = 30.0))
         assertNull(DeviceInsetProfile(measured = partial).appInsets)
         val complete = DeviceInsetProfile(measured = partial.copy(systemOverlays = InsetEdges()))
-        assertTrue(complete.supported)
         assertEquals(e, complete.appInsets!!.statusBars)
         assertEquals(InsetEdges(left = 30.0), complete.appInsets!!.displayCutout)
         assertFalse(complete.copy(mappingIssue = "미검증 매핑").verified)

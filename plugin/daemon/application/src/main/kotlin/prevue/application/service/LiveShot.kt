@@ -66,10 +66,10 @@ class LiveShot(private val ws: Workspace, private val engine: Engine) {
             try { shot(k, null, System.nanoTime(), POSTURE) } catch (e: Exception) { if (e is CancellationException) throw e; null }
         }
         ed.update { s ->
-            val prev = s.postures?.takeIf { keep && it.covers(d) && it.spec.previewId == base.previewId && it.deviceInsets == s.insetChoice() }
+            val prev = s.postures?.takeIf { keep && it.covers(d) && it.spec.previewId == base.previewId }
             val round = prev?.round ?: (s.postureRound + 1)
             val shots = prev?.shots.orEmpty() + listOfNotNull(shot?.let { d to it })
-            s.copy(postures = Postures(base, d, round, shots, s.insetChoice()), postureRound = maxOf(s.postureRound, round))
+            s.copy(postures = Postures(base, d, round, shots), postureRound = maxOf(s.postureRound, round))
         }
     }
 
