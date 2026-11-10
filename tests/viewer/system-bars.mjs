@@ -137,8 +137,9 @@ try {
       await until(`__store.st.selection?.line===52 && !document.querySelector('#pickBox').hidden`);
       await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
       await mouse({x:12,y:100});
-      await pause(200);
-      await mouse(await atNode(chips[0].bounds));
+      const allAt=await atNode(chips[0].bounds);
+      await until(`!!document.elementFromPoint(${allAt.x},${allAt.y})?.closest('#stage')`);
+      await mouse(allAt);
       await pause(700);
       await post('/viewer/catchup');
       await ready();
@@ -158,6 +159,10 @@ try {
       const imageAfter=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
       const changed = await nodes();
       const cards = list => new Set(list.filter(n=>n.name==='DrinkCard').map(n=>n.bounds.join(','))).size;
+      if(imageBefore.equals(imageAfter)) {
+        const shot=await send('Page.captureScreenshot',{format:'png'});
+        await writeFile(join(evidence,name+'-failed.png'),Buffer.from(shot.data,'base64'));
+      }
       assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(touchTree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
       const shot = await send('Page.captureScreenshot', { format:'png' });
       await writeFile(join(evidence,name+'.png'),Buffer.from(shot.data,'base64'));
