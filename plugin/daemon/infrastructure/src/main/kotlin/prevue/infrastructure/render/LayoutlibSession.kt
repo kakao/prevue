@@ -19,9 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.delay
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
-import prevue.application.domain.model.ScreenSize
-import prevue.application.domain.model.SystemBars
-import prevue.application.domain.model.appInsetsIssue
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
 
@@ -58,8 +55,6 @@ internal class LayoutlibSession(
     }
 
     private fun placeInsets(insets: AppInsets) {
-        val issue = preview.params[SystemBars.DEVICE_POSTURE]?.let(ScreenSize::postureOf)?.model?.appInsetsIssue
-        require(insets == AppInsets.NONE || issue == null) { issue!! }
         task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
         task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
         val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")

@@ -36,8 +36,13 @@ data class WorkspaceState(
 
     fun shownSystemUi(): SystemUiState? {
         val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
-        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, sized(spec).systemBars as? SystemBars.Shown)
+        val bars = sized(spec).systemBars as? SystemBars.Shown
+        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, bars, bars != null)
     }
+
+    fun insetChoice(): DeviceInsetChoice = shownOverride()?.deviceInsets ?: DeviceInsetChoice.ON
+
+    fun shownDeviceInsets(): DeviceInsetState? = (shownSize() as? ScreenSize.Device)?.takeIf { interactive }?.let { DeviceInsetState(insetChoice(), it) }
 
     fun shownTarget(): Pair<PreviewSpec, ScreenSize>? {
         val b = board?.takeIf { interactive } ?: return null
@@ -49,7 +54,9 @@ data class WorkspaceState(
 
     fun livePostures(): Postures? {
         val (base, size) = shownTarget() ?: return null
-        return postures?.takeIf { it.covers(size) && it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars }
+        return postures?.takeIf {
+            it.covers(size) && it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars && it.deviceInsets == insetChoice()
+        }
     }
 
     fun activeTabOrNull(): Tab? = activeTab?.let { k -> tabs.firstOrNull { it.key == k } }

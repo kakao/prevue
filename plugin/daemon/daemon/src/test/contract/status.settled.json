@@ -37,6 +37,7 @@
     "borrowedCount": "null",
     "borrowedFrom": "null",
     "compilerWarm": "boolean",
+    "deviceInsets": "null",
     "frameTrace": [
       {
         "changed": "boolean",
@@ -305,6 +306,7 @@
     "work": null,
     "size": null,
     "systemUi": null,
+    "deviceInsets": null,
     "kmp": false,
     "frames": {
       "frames": 8,

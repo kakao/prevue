@@ -23,7 +23,7 @@ internal fun BrowserState.toJson(): Map<String, Any?> = mapOf(
     "focus" to focus?.let { f ->
         mapOf("previewId" to f.previewId, "interactive" to f.interactive,
             "imageUrl" to f.imageUrl, "treeUrl" to f.treeUrl, "streamUrl" to f.streamUrl, "pxPerDp" to f.pxPerDp,
-            "name" to f.name, "fn" to f.fn, "size" to f.size?.toJson(), "systemUi" to f.systemUi?.toJson(),
+            "name" to f.name, "fn" to f.fn, "size" to f.size?.toJson(), "systemUi" to f.systemUi?.toJson(), "deviceInsets" to f.deviceInsets?.toJson(),
             "postures" to f.postures.map { mapOf("size" to it.sizeJson(), "imageUrl" to it.imageUrl) })
     },
     "stale" to stale.map { mapOf("head" to it.head.toJson(), "why" to it.why.map { w -> w.toJson() }) },

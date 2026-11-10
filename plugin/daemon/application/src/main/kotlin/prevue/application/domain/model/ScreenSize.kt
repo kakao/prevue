@@ -67,14 +67,15 @@ sealed interface ScreenSize {
 
         fun postureOf(key: String): Device? = DeviceModel.entries.asSequence().flatMap { it.postures }.firstOrNull { it.key == key }
 
-        fun parse(size: String?, device: String?, folded: Boolean, landscape: Boolean): ScreenSize? {
+        fun parse(size: String?, device: String?, folded: Boolean, landscape: Boolean, orientation: String? = null): ScreenSize? {
             if (device != null) {
                 require(size == null) { "size와 device는 하나만 준다" }
                 val m = DeviceModel.entries.firstOrNull { it.id == device }
                     ?: throw IllegalArgumentException("기기는 ${DeviceModel.entries.joinToString(" · ") { it.id }} 중 하나 — $device")
-                return Device(m, folded, landscape)
+                require(orientation == null || !landscape) { "orientation과 landscape는 하나만 준다" }
+                return if (orientation == null) Device(m, folded, landscape) else Device(m, folded, DeviceOrientation.parse(orientation))
             }
-            require(!folded && !landscape) { "접기 · 가로는 기기(device)에만 있다" }
+            require(!folded && !landscape && orientation == null) { "접기 · 가로는 기기(device)에만 있다" }
             if (size == null) return null
             if (size == "original") return Original
             PRESETS.firstOrNull { it.preset == size }?.let { return it }
@@ -112,7 +113,12 @@ sealed interface ScreenSize {
 }
 
 enum class DeviceOrientation(val key: String) {
-    PORTRAIT("portrait"), LANDSCAPE_LEFT("landscape-left"), LANDSCAPE_RIGHT("landscape-right"),
+    PORTRAIT("portrait"), LANDSCAPE_LEFT("landscape-left"), LANDSCAPE_RIGHT("landscape-right");
+
+    companion object {
+        fun parse(key: String): DeviceOrientation = entries.firstOrNull { it.key == key }
+            ?: throw IllegalArgumentException("방향은 ${entries.joinToString(" · ") { it.key }} 중 하나 — $key")
+    }
 }
 
 data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Double? = null) {

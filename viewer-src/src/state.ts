@@ -6,7 +6,7 @@ export type Message = string | { t: string; a?: { [key: string]: Message | numbe
 type DpSize = { widthDp: number; heightDp: number };
 type InsetEdges = { left: number; top: number; right: number; bottom: number };
 export type DeviceInsetProfile = {
-  supported: boolean; issue: string | null; safeArea: InsetEdges | null;
+  supported: boolean; verified?: boolean; issue: string | null; safeArea: InsetEdges | null;
   measured: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges; systemOverlays: InsetEdges | null } | null;
   evidence: { source: string; kind: string; sourceUrl: string; capturedAt: string | null; conditions: Record<string, string> } | null;
 };
@@ -35,10 +35,15 @@ export type Board = Omit<ContractBoard, 'groups'> & {
  */
 export type BarInsets = { statusDp: number; navDp: number; source: string; kind: string; sourceUrl: string };
 export type SystemUi = { choice: string; annotated: boolean; shown: boolean; bars?: { look: string; insets: BarInsets | null } | null };
-export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp' | 'systemUi'> & {
+export type DeviceInsets = { choice: 'on' | 'off'; applied: 'on' | 'off'; supported: boolean; issue: string | null;
+  posture: string; approximate: boolean; note: string | null; basisPosture: string;
+  values: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges; systemOverlays: InsetEdges };
+  evidence: { source: string; sourceUrl: string; kind: string } | null };
+export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp' | 'systemUi' | 'deviceInsets'> & {
   pxPerDp: number | null;
   size: Size | null;
   systemUi: SystemUi | null;
+  deviceInsets?: DeviceInsets | null;
   postures: Array<{ size: Size | (DpSize & { kind: 'original'; preset: string }); imageUrl: string }>;
 };
 export type ViewerState = Omit<ContractState, 'screen' | 'header' | 'board' | 'focus' | 'stale' | 'boardNote' | 'who' | 'error' | 'settle' | 'vacant' | 'timing' | 'tabs'> & {

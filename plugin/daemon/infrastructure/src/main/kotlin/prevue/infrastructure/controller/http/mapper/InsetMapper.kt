@@ -2,9 +2,11 @@ package prevue.infrastructure.controller.http.mapper
 
 import prevue.application.domain.model.DeviceInsetProfile
 import prevue.application.domain.model.InsetEdges
+import prevue.application.domain.model.DeviceInsetState
+import prevue.application.domain.model.AppInsets
 
 internal fun DeviceInsetProfile.toJson(): Map<String, Any?> = mapOf(
-    "supported" to supported, "issue" to issue,
+    "supported" to supported, "verified" to verified, "issue" to issue,
     "safeArea" to safeArea?.toJson(),
     "measured" to measured?.let {
         mapOf(
@@ -20,3 +22,15 @@ internal fun DeviceInsetProfile.toJson(): Map<String, Any?> = mapOf(
 )
 
 private fun InsetEdges.toJson(): Map<String, Double> = mapOf("left" to left, "top" to top, "right" to right, "bottom" to bottom)
+
+internal fun DeviceInsetState.toJson(): Map<String, Any?> = mapOf(
+    "choice" to choice.key, "applied" to choice.key, "supported" to true, "issue" to null,
+    "posture" to device.key, "approximate" to input.approximate, "note" to input.note, "basisPosture" to input.basisPosture,
+    "values" to values.toJson(),
+    "evidence" to input.evidence?.let { mapOf("source" to it.source.site, "sourceUrl" to it.url, "kind" to it.source.kind) },
+)
+
+internal fun AppInsets.toJson(): Map<String, Any?> = mapOf(
+    "statusBars" to statusBars.toJson(), "navigationBars" to navigationBars.toJson(), "captionBar" to captionBar.toJson(),
+    "displayCutout" to displayCutout.toJson(), "systemOverlays" to systemOverlays.toJson(),
+)

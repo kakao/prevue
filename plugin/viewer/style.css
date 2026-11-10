@@ -844,3 +844,14 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 }
 
 .build-notice { position: sticky; z-index: 9; top: var(--bar-h); translate: calc(var(--rail-w) / 2) 0; margin: var(--space-12) auto; width: fit-content; max-width: calc(100% - var(--rail-w) - 32px); padding: var(--space-8) var(--space-16); border: 1px solid var(--outline-variant); border-radius: var(--corner-large); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
+
+.orientation-pick { position: relative; }
+.orientation-pick .zoom-menu { min-width: var(--dock-slider-w); }
+.orientation-pick [aria-checked="true"] { background: var(--primary-container); }
+
+@media (max-width: 800px) {
+  .orientation-pick .tb-chev { display: none; }
+}
+@media (max-width: 560px) {
+  .sys-ui .sys-approx { display: none; }
+}

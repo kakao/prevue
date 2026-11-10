@@ -30,8 +30,9 @@ data class DeviceInsetProfile(
             measured.systemOverlays == null -> "systemOverlays 인셋 종류의 측정값을 검증하지 못했다"
             else -> null
         }
-    val supported: Boolean get() = issue == null
-    val appInsets: AppInsets? get() = measured?.appInsets?.takeIf { supported }
+    val verified: Boolean get() = issue == null
+    val supported: Boolean get() = true
+    val appInsets: AppInsets? get() = measured?.appInsets?.takeIf { verified }
 }
 
 object DeviceInsets {

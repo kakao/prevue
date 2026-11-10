@@ -49,6 +49,53 @@
     "choice": "null",
     "error": "null",
     "focus": {
+      "deviceInsets": {
+        "applied": "string",
+        "approximate": "boolean",
+        "basisPosture": "string",
+        "choice": "string",
+        "evidence": {
+          "kind": "string",
+          "source": "string",
+          "sourceUrl": "string"
+        },
+        "issue": "null",
+        "note": "string",
+        "posture": "string",
+        "supported": "boolean",
+        "values": {
+          "captionBar": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "displayCutout": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "navigationBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "statusBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "systemOverlays": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          }
+        }
+      },
       "fn": "string",
       "imageUrl": "string",
       "interactive": "boolean",
@@ -128,7 +175,8 @@
                 "right": "number",
                 "top": "number"
               },
-              "supported": "boolean"
+              "supported": "boolean",
+              "verified": "boolean"
             },
             "kind": "string",
             "landscape": "boolean",
@@ -177,7 +225,8 @@
             "right": "number",
             "top": "number"
           },
-          "supported": "boolean"
+          "supported": "boolean",
+          "verified": "boolean"
         },
         "kind": "string",
         "landscape": "boolean",
@@ -189,7 +238,10 @@
       "streamUrl": "string",
       "systemUi": {
         "annotated": "boolean",
-        "bars": "null",
+        "bars": {
+          "insets": "null",
+          "look": "string"
+        },
         "choice": "string",
         "shown": "boolean"
       },
@@ -382,8 +434,9 @@
         "widthPx": 1398,
         "heightPx": 2034,
         "insetProfile": {
-          "supported": false,
-          "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+          "supported": true,
+          "verified": false,
+          "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
           "safeArea": {
             "left": 0,
             "top": 0,
@@ -415,8 +468,58 @@
       "systemUi": {
         "choice": "annotated",
         "annotated": false,
-        "shown": false,
-        "bars": null
+        "shown": true,
+        "bars": {
+          "look": "aosp",
+          "insets": null
+        }
+      },
+      "deviceInsets": {
+        "choice": "on",
+        "applied": "on",
+        "supported": true,
+        "issue": null,
+        "posture": "duo-folded",
+        "approximate": true,
+        "note": "iOS safe area의 상단은 상태바, 하단은 내비게이션 바, 상단·측면은 컷아웃으로 근사",
+        "basisPosture": "duo-folded",
+        "values": {
+          "statusBars": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "navigationBars": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 34
+          },
+          "captionBar": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "displayCutout": {
+            "left": 0,
+            "top": 0,
+            "right": 84,
+            "bottom": 0
+          },
+          "systemOverlays": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          }
+        },
+        "evidence": {
+          "source": "safearea.info",
+          "sourceUrl": "https://safearea.info/iphone-duo.md",
+          "kind": "site"
+        }
       },
       "postures": [
         {
@@ -434,8 +537,9 @@
             "widthPx": 2007,
             "heightPx": 2853,
             "insetProfile": {
-              "supported": false,
-              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "supported": true,
+              "verified": false,
+              "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
               "safeArea": {
                 "left": 0,
                 "top": 82,
@@ -481,8 +585,9 @@
             "widthPx": 2034,
             "heightPx": 1398,
             "insetProfile": {
-              "supported": false,
-              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "supported": true,
+              "verified": false,
+              "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
               "safeArea": {
                 "left": 0,
                 "top": 0,
@@ -528,8 +633,9 @@
             "widthPx": 2034,
             "heightPx": 1398,
             "insetProfile": {
-              "supported": false,
-              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "supported": true,
+              "verified": false,
+              "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
               "safeArea": {
                 "left": 84,
                 "top": 0,

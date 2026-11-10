@@ -49,6 +49,53 @@
     "choice": "null",
     "error": "null",
     "focus": {
+      "deviceInsets": {
+        "applied": "string",
+        "approximate": "boolean",
+        "basisPosture": "string",
+        "choice": "string",
+        "evidence": {
+          "kind": "string",
+          "source": "string",
+          "sourceUrl": "string"
+        },
+        "issue": "null",
+        "note": "string",
+        "posture": "string",
+        "supported": "boolean",
+        "values": {
+          "captionBar": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "displayCutout": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "navigationBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "statusBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "systemOverlays": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          }
+        }
+      },
       "fn": "string",
       "imageUrl": "string",
       "interactive": "boolean",
@@ -128,7 +175,8 @@
                 "right": "number",
                 "top": "number"
               },
-              "supported": "boolean"
+              "supported": "boolean",
+              "verified": "boolean"
             },
             "kind": "string",
             "landscape": "boolean",
@@ -201,7 +249,8 @@
             "right": "number",
             "top": "number"
           },
-          "supported": "boolean"
+          "supported": "boolean",
+          "verified": "boolean"
         },
         "kind": "string",
         "landscape": "boolean",
@@ -213,7 +262,16 @@
       "streamUrl": "string",
       "systemUi": {
         "annotated": "boolean",
-        "bars": "null",
+        "bars": {
+          "insets": {
+            "kind": "string",
+            "navDp": "number",
+            "source": "string",
+            "sourceUrl": "string",
+            "statusDp": "number"
+          },
+          "look": "string"
+        },
         "choice": "string",
         "shown": "boolean"
       },
@@ -406,7 +464,8 @@
         "widthPx": 2340,
         "heightPx": 1080,
         "insetProfile": {
-          "supported": false,
+          "supported": true,
+          "verified": false,
           "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
           "safeArea": {
             "left": 37,
@@ -463,8 +522,64 @@
       "systemUi": {
         "choice": "annotated",
         "annotated": false,
-        "shown": false,
-        "bars": null
+        "shown": true,
+        "bars": {
+          "look": "oneui",
+          "insets": {
+            "statusDp": 30,
+            "navDp": 15,
+            "source": "windowinsets.info",
+            "kind": "samsung-rtl",
+            "sourceUrl": "https://github.com/easyhooon/windowinsets.info/tree/main/measurements/galaxy-s/galaxy-s26"
+          }
+        }
+      },
+      "deviceInsets": {
+        "choice": "on",
+        "applied": "on",
+        "supported": true,
+        "issue": null,
+        "posture": "s26-land",
+        "approximate": true,
+        "note": "미측정 systemOverlays는 0으로 가정한 근삿값",
+        "basisPosture": "s26-land",
+        "values": {
+          "statusBars": {
+            "left": 0,
+            "top": 30,
+            "right": 0,
+            "bottom": 0
+          },
+          "navigationBars": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 15
+          },
+          "captionBar": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "displayCutout": {
+            "left": 37,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "systemOverlays": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          }
+        },
+        "evidence": {
+          "source": "windowinsets.info",
+          "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-landscape-1-gesture.json",
+          "kind": "samsung-rtl"
+        }
       },
       "postures": [
         {
@@ -482,7 +597,8 @@
             "widthPx": 1080,
             "heightPx": 2340,
             "insetProfile": {
-              "supported": false,
+              "supported": true,
+              "verified": false,
               "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
               "safeArea": {
                 "left": 0,
@@ -553,7 +669,8 @@
             "widthPx": 2340,
             "heightPx": 1080,
             "insetProfile": {
-              "supported": false,
+              "supported": true,
+              "verified": false,
               "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
               "safeArea": {
                 "left": 0,

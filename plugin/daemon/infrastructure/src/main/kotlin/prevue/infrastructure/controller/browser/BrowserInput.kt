@@ -13,6 +13,7 @@ import prevue.application.service.Boards
 import prevue.application.service.Live
 import prevue.application.service.Status
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.domain.model.SystemUi
 import prevue.application.port.PrevueDispatchers
 
@@ -44,6 +45,8 @@ internal class BrowserInput(
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
     fun systemUi(choice: SystemUi) = core.post { if (status.board() != null) live.setSystemUi(choice, by = "viewer") }
+
+    fun deviceInsets(choice: DeviceInsetChoice) = core.post { live.setDeviceInsets(choice, by = "viewer") }
 
     private suspend fun resized(s: ScreenSize) {
         if (status.board() == null) return

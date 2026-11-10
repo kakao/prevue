@@ -102,3 +102,36 @@ class Seat(DaemonSeat):
         p = subprocess.run([str(ROOT / "bin/prevue"), "wait", self.file], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         self.assertEqual(SlowDaemon.waited, ["/wait"], p.stdout + p.stderr)
         self.assertGreaterEqual(SlowDaemon.statuses, 2, "첫 물음이 시간을 넘겨야 이 경우다")
+
+
+class FocusDaemon(SlowDaemon):
+    def do_GET(self):
+        self.reply(type(self).status)
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+        type(self).waited.append((self.path, body))
+        self.reply({"ok": True})
+
+
+class FocusOptions(DaemonSeat):
+    handler = FocusDaemon
+
+    def test_인셋과_절대_방향은_기존_시스템_UI와_가로_인자와_구별된다(self):
+        FocusDaemon.waited = []
+        env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        cases = [
+            (["--device", "duo", "--folded", "--orientation", "landscape-right", "--device-insets", "off"],
+             {"device": "duo", "folded": True, "orientation": "landscape-right", "deviceInsets": "off", "systemUi": None, "landscape": False}),
+            (["--device", "tablet", "--landscape"], {"landscape": True, "orientation": None}),
+            (["--system-ui", "off"], {"systemUi": "off", "deviceInsets": None}),
+        ]
+        for args, expected in cases:
+            with self.subTest(args=args):
+                result = subprocess.run([str(ROOT / "bin/prevue"), "focus", "0", *args], cwd=self.r.root, env=env, capture_output=True, text=True)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                path, body = FocusDaemon.waited[-1]
+                self.assertEqual("/focus", path)
+                self.assertTrue(body["interactive"])
+                for key, value in expected.items():
+                    self.assertEqual(value, body[key], body)

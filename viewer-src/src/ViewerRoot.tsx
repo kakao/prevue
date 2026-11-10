@@ -67,7 +67,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <VacantTab screen={state?.screen ?? null} vacant={state?.vacant ?? null} host={hosts.vacant} />
     {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}
-    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} />
+    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} deviceInsets={state?.focus?.deviceInsets ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} />
     <WorkspaceHeader state={state} hosts={hosts.workspaceHeader} actions={workspace} />
     <PointOverlay actions={point} />
     <ChoicePopover choice={state?.choice ?? null} repo={state?.header?.repo} host={hosts.chooser} actions={point} />

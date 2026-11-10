@@ -57,6 +57,14 @@ try {
     await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible' && !document.querySelector('#pnBody').inert`); await pause(250);
   };
   const choose = async sel => { await openMenu(); await click(`#pnPick [data-sel="${sel}"]`); };
+  const orient = async orientation => {
+    await click("#dcRot");
+    await until(`document.querySelector('#dcRot').getAttribute('aria-expanded')==='true'`);
+    await pause(250);
+    await click(`#dcOrientMenu [data-orientation="${orientation}"]`);
+    await until(`__store.st.focus.size?.orientation===${JSON.stringify(orientation)} && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+    await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`);
+  };
   const pick = async (sel, expected) => {
     await choose(sel);
     await until(`__store.st.focus.size?.${expected}`);
@@ -119,10 +127,15 @@ try {
   await evaluate(`document.querySelector('#rlW').focus()`); await pause(300);
   await check(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#devCtl').hidden`, "Tab 으로 숫자에 초점만 와서는 기기를 잃지 않는다");
   await evaluate(`document.querySelector('#rlW').blur()`);
+  await check(`document.querySelector('#sysUiBtn').getAttribute('aria-label')==='Device insets' && !document.querySelector('#sysUiBtn').disabled && __store.st.focus.deviceInsets.approximate && __store.st.focus.systemUi.shown`, "기기는 근사 인셋 토글 활성 · 시스템 UI 상시 표시");
+  await click("#sysUiBtn");
+  await until(`__store.st.focus.deviceInsets.choice==='off'`);
+  await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.statusBars.top===0`, "인셋 OFF에서도 바는 남고 앱 입력만 영");
+  await orient('portrait');
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await check(`document.querySelector('#rlW').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "접기와 치수 갱신");
   await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0 && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 글자 붙은 자세 버튼 · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
-  await click("#dcRot"); await until(`__store.st.focus.size.landscape && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+  await orient('landscape-left');
   await check(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "접은 기기의 가로 돌리기");
   await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false'`, "힌지 선 전환");
   await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===751 && __store.st.focus.size?.heightDp===475 && document.activeElement===document.querySelector('#rlH')`);
@@ -168,17 +181,31 @@ try {
   await pick("ipduo", "device==='duo'");
   await check(`document.querySelector('#pnSl').hidden && __store.st.focus.size.widthPx===2853 && __store.st.focus.size.heightPx===2007 && document.querySelector('#rlW').value==='951' && document.querySelector('#rlH').value==='669'`, "Duo 펼침은 공개 해상도와 같은 951×669dp");
   await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
-  await click("#dcFold"); await until(`!document.querySelector('#duo').hidden`);
-  await check(`document.querySelector('.duo-flap').style.clipPath.startsWith('path(')`, "Duo 평면 접기 윤곽");
+  await click("#dcFold");
   await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+  await check(`__store.st.focus.size.orientation==='landscape-left'`, "Duo 접기에도 절대 방향 유지");
   await pick("s26", "device==='s26'");
+  await check(`__store.st.focus.deviceInsets.choice==='off'`, "기기 · 접기 · 원본과 커스텀을 거쳐 인셋 OFF 유지");
+  await orient('landscape-left');
+  const cameraLeft = await evaluate(`document.querySelector('#ua .cam').getBoundingClientRect().left`);
+  await orient('landscape-right');
+  await check(`document.querySelector('#dcOrientMenu [aria-checked="true"]').dataset.orientation==='landscape-right' && __store.st.focus.size.insetProfile.measured.displayCutout.right===37`, "오른쪽 가로 메뉴와 응답 · 비대칭 프로필 일치");
+  await check(`document.querySelector('#ua .cam').getBoundingClientRect().left>${cameraLeft}`, "반대 가로는 카메라도 반대편");
+  await evaluate(`document.querySelector('#dcRot').focus()`);
+  await key('ArrowDown'); await key('Home');
+  await check(`document.activeElement.dataset.orientation==='portrait'`, "방향 메뉴의 방향키와 Home");
+  await key('Escape');
+  await check(`document.activeElement.id==='dcRot' && __store.st.screen==='focus' && document.querySelector('#dcRot').getAttribute('aria-expanded')==='false'`, "Escape는 방향 메뉴만 닫고 버튼에 초점 복원");
+  await click('#sysUiBtn'); await until(`__store.st.focus.deviceInsets.choice==='on'`);
+  await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.displayCutout.right===37`, "오른쪽 가로에서도 ON 전달과 바 표시");
+
   await check(`document.querySelector('#dcFold').hidden && document.querySelector('#dcHinge').hidden`, "일반 기기는 돌리기만 표시");
   await pick("ip17pm", "device==='ip17pm'");
   await check(`document.querySelector('#rlW').value==='440' && document.querySelector('#rlH').value==='956' && document.querySelector('#pnPick [data-sel="ip17pm"]').title==='iPhone 17 Pro Max'`, "새 기기도 패널에서 골라 스펙 크기로 그린다");
   await pick("tablet", "device==='tablet'");
-  await check(`document.querySelector('#dcRotLb').textContent==='Upright' && document.querySelector('#rlW').value==='1280'`, "원래 가로인 태블릿은 세우기 단추");
-  await click("#dcRot"); await until(`__store.st.focus.size?.landscape && Number(document.querySelector('#rlW').value)===800`);
-  await check(`document.querySelector('#dcRotLb').textContent==='Rotate' && document.querySelector('#rlH').value==='1280'`, "세운 태블릿은 돌리기 단추");
+  await check(`document.querySelector('#dcRotLb').textContent==='Landscape left' && document.querySelector('#rlW').value==='1280'`, "원래 가로인 태블릿의 현재 방향 표시");
+  await orient('portrait');
+  await check(`document.querySelector('#dcRotLb').textContent==='Portrait' && document.querySelector('#rlH').value==='1280'`, "세운 태블릿의 현재 방향 표시");
   await pick("foldable", "preset==='foldable'");
   await click("#zoomInBtn"); await pause(300);
   await check(`document.querySelector('#stage').getBoundingClientRect().width > document.querySelector('#stage').offsetWidth`, "그림과 몸체 함께 확대");

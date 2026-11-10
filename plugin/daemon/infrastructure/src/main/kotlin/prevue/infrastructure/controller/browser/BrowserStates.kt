@@ -116,7 +116,7 @@ internal object BrowserStates {
             imageUrl = "/$id-0.png?t=$stamp", treeUrl = "/$id-0.viewinfo.json?t=$stamp",
             streamUrl = now.focusAttachedAt?.takeIf { now.interactive }?.let { "/stream?t=$it" },
             pxPerDp = CardSpecs.pxPerDp((if (now.size != null) current?.params else card?.params) ?: current?.params.orEmpty()),
-            name = name, fn = fn, size = now.size, systemUi = now.systemUi,
+            name = name, fn = fn, size = now.size, systemUi = now.systemUi, deviceInsets = now.deviceInsets,
             postures = now.postures.mapNotNull { (size, shot) -> postureImage(size, shot) },
         )
     }

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
-import type { Focus, Size, SystemUi, ViewerState } from '../state';
+import type { DeviceInsets, Focus, Size, SystemUi, ViewerState } from '../state';
 import { loadingView, zoomView } from '../workspace/view';
 import { SystemBarsOverlay } from './SystemBars';
 import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
@@ -19,11 +19,12 @@ export type WorkspaceActions = {
   /** byKey 면 키보드로 누른 것이다 — 메뉴를 닫을 때 포커스를 배율로 돌려준다. */
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
+  pickDeviceInsets(choice: string): void;
 };
 export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
-const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
+const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {}, pickDeviceInsets() {} };
 
 /** 첫 장을 기다리는 자리 표시 — 받지 못했으면 실패 문장. 그동안 조작 도구는 잠기고 출구(#back)는 남는다. */
 export function WorkspaceLoading({ host }: { host?: HTMLElement }) {
@@ -68,24 +69,22 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
 }
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-/**
- * 시스템 UI(D-159 ①) — 상태바 · 내비바를 켜고 끄는 토글 하나. 처음 값은 어노테이션(`showSystemUi`)을 따른다. 누르면 데몬이 이 한 장의 spec 만
- * 덮어써 렌더러가 실제 바를 그리거나 뺀다 — 어노테이션과 같은 값으로 돌아오면 덮어쓰기를 걷고, 나가면 어노테이션대로다.
- * 인터랙티브가 아니면(systemUi 가 null) 숨고, 첫 장을 기다리는 동안은 잠긴다.
- */
-export function SystemUiControl({ systemUi, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; host?: HTMLElement; actions?: WorkspaceActions }) {
+/** 기기는 바를 유지하고 앱 인셋만 전환한다. 비기기는 기존 시스템 UI 선택을 사용한다. */
+export function SystemUiControl({ systemUi, deviceInsets = null, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
   useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
-  const shown = !!systemUi?.shown;
+  const shown = deviceInsets ? deviceInsets.choice === 'on' : !!systemUi?.shown;
+  const label = phrase(deviceInsets ? 'deviceInsets.label' : 'systemUi.label');
+  useLayoutEffect(() => { element?.setAttribute('aria-label', label); }, [element, label]);
   const insets = shown ? systemUi?.bars?.insets : null;
-  const tip = insets
+  const tip = deviceInsets ? phrase('deviceInsets.tip') + (deviceInsets.approximate ? '\n' + phrase('deviceInsets.approximate', { why: deviceInsets.note || '' }) : '') : insets
     ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
     : phrase('systemUi.tip');
-  const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
-  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={phrase('systemUi.label')} disabled={waiting} title={tip} onClick={flip}>
-    {BARS}<span className="sys-lb">{phrase('systemUi.label')}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}</span>
+  const flip = () => { if (deviceInsets) { actions.pickDeviceInsets(shown ? 'off' : 'on'); return; } if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
+  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={label} disabled={waiting} title={tip} onClick={flip}>
+    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}{deviceInsets?.approximate && <span className="sys-approx"> ≈</span>}</span>
   </button>;
   return place(body, systemUiHost);
 }
@@ -172,16 +171,16 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
  * 섹션의 hidden 은 같은 커밋의 레이아웃 효과에서 맞춘다 — session.ts 가 무대의 높이를 재는 것이 그 뒤다.
  * 뷰어에서는 껍데기가 이미 index.html 에 있어 움직이는 칸만 포털로 그리고, Storybook 에서는 껍데기째 그린다.
  */
-export function Workspace({ screen, systemUi = null, size = null, hosts, actions = NO_ACTIONS }: {
-  screen: ViewerState['screen'] | null; systemUi?: SystemUi | null; size?: Size | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions;
+export function Workspace({ screen, systemUi = null, deviceInsets = null, size = null, hosts, actions = NO_ACTIONS }: {
+  screen: ViewerState['screen'] | null; systemUi?: SystemUi | null; deviceInsets?: DeviceInsets | null; size?: Size | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions;
 }) {
   const { phrase } = useMessages();
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><SystemUiControl systemUi={systemUi} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
     <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} />} /></section>
-    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
+    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }

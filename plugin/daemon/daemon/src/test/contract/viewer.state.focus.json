@@ -49,6 +49,7 @@
     "choice": "null",
     "error": "null",
     "focus": {
+      "deviceInsets": "null",
       "fn": "string",
       "imageUrl": "string",
       "interactive": "boolean",
@@ -242,6 +243,7 @@
         "shown": false,
         "bars": null
       },
+      "deviceInsets": null,
       "postures": []
     },
     "stale": [],

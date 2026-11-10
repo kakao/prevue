@@ -70,10 +70,12 @@ export function createResizeScene(root, hooks) {
     else if (PRESETS.some(p => p.sel === sel)) st = { ...PRESETS.find(p => p.sel === sel), kind: "preset" };
     else if (/^custom:\d+x\d+$/.test(sel)) { const [w,h] = sel.slice(7).split("x").map(Number); st = { sel, kind: "custom", name: phrase("size.custom"), w, h }; }
     else {
-      const [dev, state, turn] = sel.split(":"), d = DEVICES[dev];
+      const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
       if (!d || !d[state]) return null;
-      const s = d[state], rot = turn === "rot";
-      st = { sel, kind: "device", dev, folded: state === "cover", rot, name: d.name, short: d.short,
+      const s = d[state], rot = turns.includes("rot"), right = turns.includes("right");
+      const orientation = right ? "landscape-right" : ((rot ? s.h : s.w) > (rot ? s.w : s.h) ? "landscape-left" : "portrait");
+      const angle = right ? (s.w > s.h ? 180 : 90) : (rot ? (s.w > s.h ? 90 : -90) : 0);
+      st = { sel, kind: "device", dev, folded: state === "cover", rot, right, orientation, angle, mirrored: angle < 0 || angle === 180, name: d.name, short: d.short,
         w: rot ? s.h : s.w, h: rot ? s.w : s.h, hinge: s.hinge };
     }
     if (target?.sel === sel) { st.w = target.w; st.h = target.h; }
@@ -82,7 +84,10 @@ export function createResizeScene(root, hooks) {
   }
   const lined = st => st.kind === "preset" || st.kind === "custom";
   const shelled = st => st.kind === "device";
-  const devSel = (st, folded, rot) => `${st.dev}:${folded ? "cover" : "open"}${rot ? ":rot" : ""}`;
+  const devSel = (st, folded, orientation) => {
+    const s = DEVICES[st.dev][folded ? "cover" : "open"], landscape = orientation !== "portrait";
+    return `${st.dev}:${folded ? "cover" : "open"}${landscape !== (s.w > s.h) ? ":rot" : ""}${orientation === "landscape-right" ? ":right" : ""}`;
+  };
   const isOpen = st => st.kind === "device" && DEVICES[st.dev].fold && !st.folded;
   const lookOf = st => DEVICES[st.dev].look[st.folded ? "cover" : "open"];
   const bezelOf = st => lookOf(st).bezel * P.shellK;
@@ -198,9 +203,10 @@ export function createResizeScene(root, hooks) {
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
   }
 
-  function camBox(W0, H0, rot, cam, s) {
+  function camBox(W0, H0, rot, cam, s, mirrored = false) {
     const cw = cam.w * s, ch = cam.h * s, cy = cam.y * s, cx = (cam.x ?? .5) * W0 * s;
     const b = rot ? { left: H0 * s - cy - ch, top: cx - cw / 2, width: ch, height: cw } : { left: cx - cw / 2, top: cy, width: cw, height: ch };
+    if (mirrored) { b.left = (rot ? H0 : W0) * s - b.left - b.width; b.top = (rot ? W0 : H0) * s - b.top - b.height; }
     return { ...b, r: Math.min(cw, ch) / 2, on: cw > .5 };
   }
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.r + "px", opacity: b.on ? op : 0 });
@@ -250,8 +256,8 @@ export function createResizeScene(root, hooks) {
     if (!to || !cur || to.sel === cur.sel) return;
     if (rig.on || spin.on) { queued = to.sel; return; }
     const from = cur, same = from.kind === "device" && to.kind === "device" && from.dev === to.dev;
-    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot;
-    const spinning = !reducedOn() && same && from.rot !== to.rot && from.folded === to.folded;
+    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot && !from.right && !to.right;
+    const spinning = !reducedOn() && same && from.angle !== to.angle && from.folded === to.folded;
     if ((folding || spinning) && !atRest(now)) { queued = to.sel; return; }
     queued = null;
 
@@ -340,6 +346,10 @@ export function createResizeScene(root, hooks) {
   }
 
   const rig = { on: false };
+  function rigCamera(folded, scale) {
+    const pose = rig.from.folded === folded ? rig.from : rig.to, panel = rig.d[folded ? "cover" : "open"];
+    return camBox(panel.w, panel.h, pose.rot, rig.d.look[folded ? "cover" : "open"].cam, scale, pose.mirrored);
+  }
   const rigEl = $("rig"), q = (root, s) => root.querySelector(s);
   const RG = {
     lift: q(rigEl, ".lift"), plate: q(rigEl, ".plate"), crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot"),
@@ -402,7 +412,8 @@ export function createResizeScene(root, hooks) {
   function startSpin(from, to, now, cached) {
     freeze(now);
     if (cached) sharpen(now); else hold(now);
-    Object.assign(spin, { on: true, t0: now, dur: P.rotDur, from, to, f0: fit(from), f1: fit(to), dir: to.rot ? 1 : -1, cached });
+    const degrees = ((to.angle - from.angle + 540) % 360) - 180;
+    Object.assign(spin, { on: true, t0: now, dur: P.rotDur, from, to, f0: fit(from), f1: fit(to), dir: degrees / 90, cached });
     roll.w.snap(from.w); roll.h.snap(from.h);
     rulerOp.to(0, 120, now);
     tr = { kind: "spin", from, to, t0: now, arriveAt: Infinity, arrived: false };
@@ -499,8 +510,8 @@ export function createResizeScene(root, hooks) {
     RG.F.outer.el.style.transform = X ? "rotateY(180deg)" : "rotateX(180deg)";
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
-    const dv = rig.d, rot = !!rig.to.rot, oc = camBox(dv.open.w, dv.open.h, rot, dv.look.open.cam, s), sh = dv.open.hinge * s;
-    putCam(RG.F.outer.cam, camBox(dv.cover.w, dv.cover.h, rot, dv.look.cover.cam, s), 0, 0, 1);
+    const oc = rigCamera(false, s), sh = rig.d.open.hinge * s;
+    putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, X ? -sh : 0, X ? 0 : -sh, 1);
     RG.F.inner.shade.style.opacity = th < 90 ? (P.shade * (1 - cs)).toFixed(3) : 1;
@@ -563,7 +574,8 @@ export function createResizeScene(root, hooks) {
   function drawDuo(now) {
     const { th, s, hx: hu, top: T0 } = rigAt(now), X = rig.ax === "x", { cx } = room(), d = rig.d, lk = lookAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), E = P.perspective, t = lk.bezel * P.shellK * s;
-    const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s, Bu = rig.half.u * s, Bv = Lv, H = d.open.hinge * s;
+    const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
+    const Bu = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(150, 180, th)) * s, Bv = Lv, H = d.open.hinge * s;
     const vc = dv => X ? T0 + dv / 2 : cx;
     const pt = (u, v) => X ? [u, v] : [v, u];
     // 반경은 면마다 고정한다 — 기기 모양 모프(펼침 30 → 커버 44)를 따르면 접는 도중 두 장의 모서리가 커진다.
@@ -577,19 +589,26 @@ export function createResizeScene(root, hooks) {
     const bs = duoSrc("open");
     place(DU.baseImg, bs.spec, X ? -H : 0, bs.size.w * s, bs.size.h * s, 1, bs.blur, X ? 0 : -H);
     DU.scr.style.background = bs.spec.edge;
-    putCam(DU.baseCam, camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s), X ? -H : 0, X ? 0 : -H, 1);
+    putCam(DU.baseCam, rigCamera(false, s), X ? -H : 0, X ? 0 : -H, 1);
     const th2 = t * hk, R = r + t, Rh = rh + th2;
     Object.assign(DU.band.style, { left: (X ? -th2 : -t) + "px", top: (X ? -t : -th2) + "px", right: -t + "px", bottom: -t + "px", borderColor: lk.tone,
       borderWidth: X ? `${t}px ${t}px ${t}px ${th2}px` : `${th2}px ${t}px ${t}px ${t}px`,
       borderRadius: X ? `${Rh}px ${R}px ${R}px ${Rh}px` : `${Rh}px ${Rh}px ${R}px ${R}px` });
     const kF = E / Math.max(1, E - Lu * sn), uF = hu - Lu * cs * kF, vf = vc(Lv), hF = Lv / 2 * kF, sq = Math.abs(uF - hu) / Math.max(1, Lu);
     const quad = [pt(hu, vf - Lv / 2), pt(uF, vf - hF), pt(uF, vf + hF), pt(hu, vf + Lv / 2)];
-    // 옆 단추는 몸체의 바깥 끝에 붙는다 — 접힌 장이 펼친 장보다 넓어지면(커버 466 > 반쪽 445dp) 그 끝을 따라간다.
+    // 커버와 내부 반쪽의 폭이 달라도 옆 단추는 접힌 몸체의 끝으로 이어진다.
     const outU = Math.max(hu + Bu, uF);
+    const facePose = rig.from.folded === (th > 90) ? rig.from : rig.to;
+    const buttonOpacity = rig.from.mirrored === rig.to.mirrored ? 1 : Math.abs(cs);
+    const nearU = th > 90 ? hu : hu - Bu;
     lk.btn.forEach((b, i) => { const e = DU.btns[i]; if (!e) return; const a = b.at * s, ln = b.len * s;
       Object.assign(e.style, X ? { left: outU + t - .5 + "px", top: b0 + a + "px", width: "3px", height: ln + "px" }
                                : { left: b0 + Bv - a - ln + "px", top: outU + t - .5 + "px", width: ln + "px", height: "3px" },
-        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? 1 : 0 }); });
+        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? buttonOpacity : 0 });
+      if (facePose.mirrored) Object.assign(e.style, X
+        ? { left: nearU - t - 2.5 + "px", top: b0 + Bv - a - ln + "px" }
+        : { left: b0 + a + "px", top: nearU - t - 2.5 + "px" });
+    });
     // 빛은 멈춘 몸체처럼 기기 전체 상자에 깐다 — 90°까지는 펼친 기기, 넘으면 접힌 장의 상자.
     const box = (u0, u1, v0, v1) => X ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0];
     const vh = Math.max(Lv / 2, hF), openBox = box(hu - Bu - t, hu + Bu + t, b0 - t, b0 + Bv + t);
@@ -622,7 +641,7 @@ export function createResizeScene(root, hooks) {
     Object.assign(DU.face.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash, background: src.spec.edge });
     Object.assign(DU.dark.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash });
     const dir = X ? (back ? "to right" : "to left") : (back ? "to bottom" : "to top");
-    const lift = sn, camB = back ? camBox(d.cover.w, d.cover.h, !!rig.to.rot, d.look.cover.cam, s) : camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s);
+    const lift = sn, camB = rigCamera(back, s);
     DU.layers.forEach((L, i) => {
       const bl2 = i === 0 ? 0 : P.duoBlur * lift * Math.pow(i / 4, 1.35);
       place(L.img, src.spec, 0, src.size.w * s, src.size.h * s, 1, Math.max(bl2, src.blur));
@@ -700,8 +719,14 @@ export function createResizeScene(root, hooks) {
         ? { left: L + (H0 * s - a - ln) + "px", top: (b.side < 0 ? y - t - bw + .5 : y + rect.h + t - .5) + "px", width: ln + "px", height: bw + "px" }
         : { left: (b.side < 0 ? L - t - bw + .5 : L + rect.w + t - .5) + "px", top: y + a + "px", width: bw + "px", height: ln + "px" },
         { backgroundColor: lk.tone, opacity: ln > .5 ? ol.shell : 0 });
+      if (ol.mirrored) {
+        e.style.left = 2 * L + rect.w - parseFloat(e.style.left) - parseFloat(e.style.width) + "px";
+        e.style.top = 2 * y + rect.h - parseFloat(e.style.top) - parseFloat(e.style.height) + "px";
+      }
     });
-    putCam(U.cam, camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s), 0, 0, ol.shell);
+    const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s);
+    if (ol.mirrored) { camera.left = rect.w - camera.left - camera.width; camera.top = rect.h - camera.top - camera.height; }
+    putCam(U.cam, camera, 0, 0, ol.shell);
     const c = ol.crease, hz = ol.rot;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
@@ -730,11 +755,11 @@ export function createResizeScene(root, hooks) {
       UA.el.style.transformOrigin = `${f0.cx}px ${c0y}px`;
       UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4)})`;
     }
-    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
+    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
     if (fadeB) {
       UB.el.hidden = false;
       const f = fadeB.f, g = P.gap, st = fadeB.st;
-      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
+      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, mirrored: !!st.mirrored, look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
     } else UB.el.hidden = true;
   }
 
@@ -776,6 +801,35 @@ export function createResizeScene(root, hooks) {
   const byId = id => document.getElementById(id);   // 조작 독은 장면 밖(무대 아래 가운데에 뜬다)에 선다 — $ 는 장면 안만 찾는다
   const PN = { el: byId("panel"), pick: byId("pnPick"), fold: byId("pnFold"), sum: byId("pnSum"), body: byId("pnBody") };
   const CTL = { el: byId("devCtl"), fold: byId("dcFold"), rot: byId("dcRot"), hinge: byId("dcHinge") };
+  const ORIENT = { el: byId("dcOrientation"), menu: byId("dcOrientMenu") };
+  const directions = [...ORIENT.menu.querySelectorAll("[data-orientation]")];
+  const orientationOpen = () => CTL.rot.getAttribute("aria-expanded") === "true";
+  function setOrientationOpen(on, focus = true) {
+    if (on) setOpen(false);
+    if (!on && ORIENT.menu.contains(document.activeElement)) CTL.rot.focus({ preventScroll: true });
+    CTL.rot.setAttribute("aria-expanded", on);
+    ORIENT.menu.classList.toggle("on", on);
+    ORIENT.menu.inert = !on;
+    if (on && focus) (directions.find(b => b.getAttribute("aria-checked") === "true") || directions[0]).focus();
+  }
+  ORIENT.menu.addEventListener("click", e => {
+    const button = e.target.closest("[data-orientation]");
+    if (!button || cur.kind !== "device") return;
+    request(devSel(cur, cur.folded, button.dataset.orientation));
+    setOrientationOpen(false);
+  });
+  ORIENT.menu.addEventListener("keydown", e => {
+    if (e.key === "Tab") { setOrientationOpen(false); return; }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+    e.preventDefault(); e.stopPropagation();
+    const index = directions.indexOf(document.activeElement);
+    const next = e.key === "Home" ? 0 : e.key === "End" ? directions.length - 1 : (index + (e.key === "ArrowUp" ? -1 : 1) + directions.length) % directions.length;
+    directions[next].focus();
+  });
+  CTL.rot.addEventListener("keydown", e => {
+    if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
+    e.preventDefault(); e.stopPropagation(); setOrientationOpen(true);
+  });
   const ROWS = [...PN.pick.querySelectorAll("[data-sel]")];
   // 칸은 이름과 dp 두 쪽이다. 기기 칸은 몸체 윤곽을 앞에 둔다 — 비율 · 모서리 · 카메라(구멍 · 섬)는 몸체 그림의 값에서 줄이고,
   // 접는 기기는 힌지 선을 긋는다. 이름은 줄이고 전체 이름은 툴팁에 둔다.
@@ -806,6 +860,7 @@ export function createResizeScene(root, hooks) {
   const SUM = { sil: PN.sum.querySelector(".pn-sum-sil"), nm: PN.sum.querySelector(".nm"), dev: null };
   const menuOpen = () => PN.sum.getAttribute("aria-expanded") === "true";
   function setOpen(on) {
+    if (on) setOrientationOpen(false);
     if (!on && PN.body.contains(document.activeElement)) PN.sum.focus({ preventScroll: true });
     PN.sum.setAttribute("aria-expanded", on);
     PN.fold.classList.toggle("open", on);
@@ -813,7 +868,10 @@ export function createResizeScene(root, hooks) {
   }
   PN.sum.addEventListener("click", () => setOpen(!menuOpen()));
   // 바깥 누름은 창에서 받는다 — 장면이 켜진 동안만 걸고 끌 때 뗀다(Storybook 은 스토리마다 장면을 새로 만든다).
-  const outside = e => { if (menuOpen() && !PN.fold.contains(e.target)) setOpen(false); };
+  const outside = e => {
+    if (menuOpen() && !PN.fold.contains(e.target)) setOpen(false);
+    if (orientationOpen() && !ORIENT.el.contains(e.target)) setOrientationOpen(false);
+  };
   // 이름은 목록의 칸 이름 그대로다(기기는 짧은 이름). 치수 · 자세는 치수선과 자세 버튼이 말한다.
   function paintSum(key) {
     const dev = key === cur.dev ? DEVICES[key] : null, row = ROWS.find(b => b.dataset.sel === key);
@@ -851,9 +909,9 @@ export function createResizeScene(root, hooks) {
       setLook(lookOf(st), instant);
       CTL.fold.hidden = CTL.hinge.hidden = !DEVICES[st.dev].fold;
       byId("dcFoldLb").textContent = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
-      // 이름은 누르면 될 모양으로 정한다 — 원래 가로인 화면(Pixel Tablet · 펼친 Fold8)은 돌리지 않은 채로 넓다
-      const turn = st.w > st.h ? phrase("posture.upright") : phrase("posture.rotate");
+      const turn = phrase(`posture.${st.orientation}`);
       byId("dcRotLb").textContent = turn;
+      for (const button of directions) button.setAttribute("aria-checked", button.dataset.orientation === st.orientation);
       CTL.fold.title = (st.folded ? phrase("posture.unfold") : phrase("posture.fold")) + " ";
       CTL.fold.setAttribute("aria-label", st.folded ? phrase("posture.unfold") : phrase("posture.fold"));
       CTL.rot.title = turn + " ";
@@ -874,6 +932,7 @@ export function createResizeScene(root, hooks) {
     RL.el.classList.toggle("custom", custom);
     RL.el.classList.toggle("device", !custom && cur.kind === "device");
     CTL.el.hidden = custom || cur.kind !== "device";
+    if (CTL.el.hidden) setOrientationOpen(false);
     SL.el.hidden = !custom;
     paintSum(key);
     paintSlider();
@@ -885,7 +944,7 @@ export function createResizeScene(root, hooks) {
     setOpen(false);
   });
   CTL.fold.addEventListener("click", () => toggleFold());
-  CTL.rot.addEventListener("click", () => toggleTurn());
+  CTL.rot.addEventListener("click", () => setOrientationOpen(!orientationOpen()));
   CTL.hinge.addEventListener("click", () => toggleHinge());
   function paintHinge() { CTL.hinge.setAttribute("aria-pressed", P.hingeLine); CTL.hinge.title = (P.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show")) + " "; }
   function toggleHinge() {
@@ -894,8 +953,7 @@ export function createResizeScene(root, hooks) {
     hingeOp.to(P.hingeLine ? 1 : 0, 200, performance.now());
     wake();
   }
-  function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(devSel(cur, !cur.folded, cur.rot)); }
-  function toggleTurn() { if (cur.kind === "device") request(devSel(cur, cur.folded, !cur.rot)); }
+  function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(devSel(cur, !cur.folded, cur.orientation)); }
 
   const RL = { el: $("ruler"), ext: $("rlExt"), dim: $("rlDim"), w: $("rlW"), h: $("rlH"), shown: { w: "", h: "" } };
   let editing = false;
@@ -1093,7 +1151,7 @@ export function createResizeScene(root, hooks) {
     enable(on) {
       enabled = on; root.hidden = !on;
       if (on) addEventListener("pointerdown", outside, true);
-      if (!on) { CTL.el.hidden = true; setOpen(false); removeEventListener("pointerdown", outside, true); }
+      if (!on) { CTL.el.hidden = true; setOpen(false); setOrientationOpen(false); removeEventListener("pointerdown", outside, true); }
       if (!on) roomSize = "";
       if (!on) { cancelAnimationFrame(raf); raf=0; images.clear(); cur=null; tr=null; queued=null; dropDraft(); slFocus=false; }
       else if (!raf) raf=requestAnimationFrame(animate);
@@ -1114,7 +1172,11 @@ export function createResizeScene(root, hooks) {
       if (on) dropDraft();
     },
     clearImages() { images.clear(); },
-    closeMenu() { if (!menuOpen()) return false; setOpen(false); return true; },
+    closeMenu() {
+      if (orientationOpen()) { setOrientationOpen(false); return true; }
+      if (!menuOpen()) return false;
+      setOpen(false); return true;
+    },
     // 고른 칸(sel)이 그릴 dp — 데몬 없이 장면을 띄우는 곳(Storybook)이 고른 것을 그대로 돌려줄 때 쓴다.
     sizeOf(sel) { const st = resolve(sel); return st && { w: st.w, h: st.h }; },
   };
