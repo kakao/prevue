@@ -285,5 +285,12 @@
   "zoom.out.tip": "Zoom out (−)",
   "zoom.real": "Actual size",
   "zoom.tip.fit": "Scale: relative to fit (device density unknown, so no actual size)",
-  "zoom.tip.real": "Scale: 100% is actual size (1dp = 1px)"
+  "zoom.tip.real": "Scale: 100% is actual size (1dp = 1px)",
+  "deviceInsets.label": "Device insets",
+  "deviceInsets.tip": "Toggle the system bar and cutout insets delivered to the app. System UI stays visible. App code controls the layout.",
+  "deviceInsets.approximate": "Approximate preview: {why}",
+  "posture.orientation": "Orientation",
+  "posture.portrait": "Portrait",
+  "posture.landscape-left": "Landscape left",
+  "posture.landscape-right": "Landscape right"
 }

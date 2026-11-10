@@ -46,7 +46,8 @@ class DeviceInsetsTest {
             assertEquals("off", p.evidence.conditions["innerCamera"])
             assertEquals("off", p.evidence.conditions["horizontalToolbar"])
             assertEquals("pt", p.evidence.conditions["unit"])
-            assertFalse(p.supported)
+            assertTrue(p.supported)
+            assertFalse(p.verified)
             assertEquals(DeviceModel.IPHONE_DUO.appInsetsIssue, p.issue)
             assertNull(p.appInsets)
             assertNull(p.measured)
@@ -76,8 +77,8 @@ class DeviceInsetsTest {
         assertEquals(41, all.count { it.insetProfile.evidence != null })
         all.forEach { d ->
             val p = d.insetProfile
-            assertEquals(p.supported, p.appInsets != null)
-            assertEquals(!p.supported, p.issue != null)
+            assertEquals(p.verified, p.appInsets != null)
+            assertEquals(!p.verified, p.issue != null)
             p.evidence?.let { evidence ->
                 assertEquals("${d.widthPx}x${d.heightPx}", evidence.conditions["resolutionPx"])
                 assertTrue(evidence.url.startsWith("https://"))
@@ -96,7 +97,8 @@ class DeviceInsetsTest {
         assertNull(missing.evidence)
         assertNull(missing.safeArea)
         assertNull(missing.measured)
-        assertFalse(missing.supported)
+        assertTrue(missing.supported)
+        assertFalse(missing.verified)
         all.filter { it.model.look != BarLook.IOS }.mapNotNull { it.insetProfile.measured }.forEach {
             assertNull(it.systemOverlays)
             assertNull(it.appInsets)
@@ -112,7 +114,7 @@ class DeviceInsetsTest {
         assertTrue(complete.supported)
         assertEquals(e, complete.appInsets!!.statusBars)
         assertEquals(InsetEdges(left = 30.0), complete.appInsets!!.displayCutout)
-        assertFalse(complete.copy(mappingIssue = "미검증 매핑").supported)
+        assertFalse(complete.copy(mappingIssue = "미검증 매핑").verified)
     }
 
     private fun spec() = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)

@@ -24,6 +24,7 @@ import prevue.infrastructure.controller.http.mapper.toJson
 import prevue.infrastructure.controller.http.mapper.toPointed
 import prevue.infrastructure.controller.http.mapper.toScreenSize
 import prevue.infrastructure.controller.http.mapper.toSystemUi
+import prevue.infrastructure.controller.http.mapper.toDeviceInsets
 import prevue.infrastructure.json.string
 import prevue.infrastructure.json.strings
 import prevue.infrastructure.controller.http.HttpEndpoint
@@ -116,7 +117,9 @@ public class CliEndpoint @Inject internal constructor(
 
     private suspend fun focus(ex: HttpExchange) {
         val b = ex.body()
-        val r = boards.focus((b["index"] as Number).toInt(), b["interactive"] == true, b.string("by") ?: "viewer", b.toScreenSize(), b.toSystemUi())
+        val r = boards.focus(
+            (b["index"] as Number).toInt(), b["interactive"] == true, b.string("by") ?: "viewer", b.toScreenSize(), b.toSystemUi(), b.toDeviceInsets(),
+        )
         ex.json(okOr422(r !is FocusResult.On || r.result.ok), r.toJson())
     }
 

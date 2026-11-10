@@ -142,7 +142,8 @@ try {
   // 돌리기 — 몸체만 돌고 내용은 화면 기준 0°.
   await cached(`p.size.device==='fold8' && !p.size.folded && p.size.landscape`);
   await record();
-  await click("#dcRot");
+  await click("#dcRot"); await pause(250);
+  await click('#dcOrientMenu [data-orientation="portrait"]');
   await until(`__store.st.focus.size?.landscape && ${settled}`);
   frames = await stop();
   const turning = frames.filter(f => /rotate\((-?[\d.]+)deg\)/.test(f.uaTf) && Math.abs(Number(/rotate\((-?[\d.]+)deg\)/.exec(f.uaTf)[1])) > 5);

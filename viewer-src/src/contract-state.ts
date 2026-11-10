@@ -47,6 +47,53 @@ export type ContractState = {
 };
 "error": null;
 "focus": null | {
+"deviceInsets": null | {
+"applied": string;
+"approximate": boolean;
+"basisPosture": string;
+"choice": string;
+"evidence": {
+"kind": string;
+"source": string;
+"sourceUrl": string;
+};
+"issue": null;
+"note": string;
+"posture": string;
+"supported": boolean;
+"values": {
+"captionBar": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"displayCutout": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"navigationBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"statusBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"systemOverlays": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+};
+};
 "fn": string;
 "imageUrl": string;
 "interactive": boolean;
@@ -125,6 +172,7 @@ export type ContractState = {
 "top": number;
 };
 "supported": boolean;
+"verified": boolean;
 };
 "kind": string;
 "landscape": boolean;
@@ -207,6 +255,7 @@ export type ContractState = {
 "top": number;
 };
 "supported": boolean;
+"verified": boolean;
 };
 "kind": string;
 "landscape": boolean;
@@ -218,7 +267,16 @@ export type ContractState = {
 "streamUrl": string;
 "systemUi": {
 "annotated": boolean;
-"bars": null;
+"bars": null | {
+"insets": null | {
+"kind": string;
+"navDp": number;
+"source": string;
+"sourceUrl": string;
+"statusDp": number;
+};
+"look": string;
+};
 "choice": string;
 "shown": boolean;
 };

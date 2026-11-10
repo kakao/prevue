@@ -66,6 +66,7 @@ class Status @Inject internal constructor(
             lastRenderMs = s.lastRenderMs,
             focusAttachedAt = s.focusAttachedAt,
             work = s.work, lastShown = s.lastShown, boardFill = s.boardFill, size = s.shownSize(), systemUi = s.shownSystemUi(),
+            deviceInsets = s.shownDeviceInsets(),
             postures = s.livePostures()?.drawn(s.shownTarget()?.second).orEmpty(),
             kmp = ws.graph.kmp,
         )

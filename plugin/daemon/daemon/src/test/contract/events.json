@@ -70,6 +70,54 @@
         },
         "error": "string",
         "focus": {
+          "deviceInsets": {
+            "applied": "string",
+            "approximate": "string",
+            "basisPosture": "string",
+            "choice": "string",
+            "evidence": {
+              "kind": "string",
+              "source": "string",
+              "sourceUrl": "string"
+            },
+            "issue": "string",
+            "note": "string",
+            "posture": "string",
+            "supported": "string",
+            "values": {
+              "captionBar": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "displayCutout": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "navigationBars": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "statusBars": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "systemOverlays": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              }
+            },
+            "|": "string"
+          },
           "fn": "string",
           "imageUrl": "string",
           "interactive": "string",
@@ -149,7 +197,8 @@
                     "right": "string",
                     "top": "string"
                   },
-                  "supported": "string"
+                  "supported": "string",
+                  "verified": "string"
                 },
                 "kind": "string",
                 "landscape": "string",
@@ -234,7 +283,8 @@
                 "right": "string",
                 "top": "string"
               },
-              "supported": "string"
+              "supported": "string",
+              "verified": "string"
             },
             "kind": "string",
             "landscape": "string",
@@ -247,7 +297,18 @@
           "streamUrl": "string",
           "systemUi": {
             "annotated": "string",
-            "bars": "string",
+            "bars": {
+              "insets": {
+                "kind": "string",
+                "navDp": "string",
+                "source": "string",
+                "sourceUrl": "string",
+                "statusDp": "string",
+                "|": "string"
+              },
+              "look": "string",
+              "|": "string"
+            },
             "choice": "string",
             "shown": "string"
           },
@@ -460,6 +521,54 @@
         },
         "error": "null",
         "focus": {
+          "deviceInsets": {
+            "applied": "string",
+            "approximate": "boolean",
+            "basisPosture": "string",
+            "choice": "string",
+            "evidence": {
+              "kind": "string",
+              "source": "string",
+              "sourceUrl": "string"
+            },
+            "issue": "null",
+            "note": "string",
+            "posture": "string",
+            "supported": "boolean",
+            "values": {
+              "captionBar": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "displayCutout": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "navigationBars": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "statusBars": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "systemOverlays": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              }
+            },
+            "|": "null"
+          },
           "fn": "string",
           "imageUrl": "string",
           "interactive": "boolean",
@@ -539,7 +648,8 @@
                     "right": "number",
                     "top": "number"
                   },
-                  "supported": "boolean"
+                  "supported": "boolean",
+                  "verified": "boolean"
                 },
                 "kind": "string",
                 "landscape": "boolean",
@@ -624,7 +734,8 @@
                 "right": "number",
                 "top": "number"
               },
-              "supported": "boolean"
+              "supported": "boolean",
+              "verified": "boolean"
             },
             "kind": "string",
             "landscape": "boolean",
@@ -637,7 +748,18 @@
           "streamUrl": "null|string",
           "systemUi": {
             "annotated": "boolean",
-            "bars": "null",
+            "bars": {
+              "insets": {
+                "kind": "string",
+                "navDp": "number",
+                "source": "string",
+                "sourceUrl": "string",
+                "statusDp": "number",
+                "|": "null"
+              },
+              "look": "string",
+              "|": "null"
+            },
             "choice": "string",
             "shown": "boolean"
           },

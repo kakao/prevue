@@ -151,7 +151,12 @@ const CHEVRON = <svg className="tb-chev" viewBox="0 0 16 16" fill="none" stroke=
 export function DevicePosture() {
   const t = useT();
   return <div className="dock-seg" id="devCtl" role="group" {...t.label('posture.label')} hidden>
-    <button className="tb-btn" id="dcRot" type="button">{ROTATE}<span id="dcRotLb" {...t.text('posture.rotate')} /></button>
+    <div className="orientation-pick" id="dcOrientation">
+      <button className="tb-btn" id="dcRot" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dcOrientMenu">{ROTATE}<span id="dcRotLb" {...t.text('posture.portrait')} />{CHEVRON}</button>
+      <div className="zoom-menu" id="dcOrientMenu" role="menu" {...t.label('posture.orientation')} inert>
+        {['portrait', 'landscape-left', 'landscape-right'].map(value => <button key={value} type="button" role="menuitemradio" tabIndex={-1} aria-checked="false" data-orientation={value} {...t.text(`posture.${value}`)} />)}
+      </div>
+    </div>
     <button className="tb-btn" id="dcFold" type="button">{FOLD}<span id="dcFoldLb" {...t.text('posture.fold')} /></button>
     <button className="tb-btn" id="dcHinge" type="button" aria-pressed="true" {...t.title('posture.hinge')}>{HINGE}<span {...t.text('posture.hinge')} /></button>
   </div>;

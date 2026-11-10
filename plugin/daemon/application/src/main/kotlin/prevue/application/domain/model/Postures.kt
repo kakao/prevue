@@ -5,10 +5,11 @@ data class Postures(
     val from: ScreenSize,
     val round: Long,
     val shots: Map<ScreenSize, Shot> = emptyMap(),
+    val deviceInsets: DeviceInsetChoice = DeviceInsetChoice.ON,
 ) {
     fun idOf(s: ScreenSize): String = idOf(spec, s)
 
-    fun specOf(s: ScreenSize): PreviewSpec = s.applyTo(spec).copy(previewId = idOf(s))
+    fun specOf(s: ScreenSize): PreviewSpec = CardOverride(spec.previewId, s, deviceInsets = deviceInsets).applyTo(spec).copy(previewId = idOf(s))
 
     fun covers(shown: ScreenSize): Boolean = sameFamily(from, shown)
 

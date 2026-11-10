@@ -70,7 +70,7 @@ internal abstract class InsetsRenderChecks {
     @Test fun `첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기와 중첩 패딩이 전달값을 사용한다`() = runBlocking {
         for (interactive in listOf(false, true)) {
             val sized = CardOverride(preview.previewId, ScreenSize.Device(DeviceModel.GALAXY_S26), SystemUi.ON)
-            val on = engine.open(sized.applyTo(preview.copy(appInsets = appInsets)), interactive, ownLoader = false)
+            val on = engine.open(sized.applyTo(preview).copy(appInsets = appInsets), interactive, ownLoader = false)
             assertTrue(on.opened.ok, on.opened.message?.text)
             val raw = reads(on)
             assertEquals("0,111,0,0", raw.getValue("status"))
@@ -87,7 +87,7 @@ internal abstract class InsetsRenderChecks {
             val paddedTop = box(on, "padded")[1]
             on.close()
 
-            val off = engine.open(sized.applyTo(preview.copy(appInsets = AppInsets.NONE)), interactive, ownLoader = false)
+            val off = engine.open(sized.applyTo(preview).copy(appInsets = AppInsets.NONE), interactive, ownLoader = false)
             assertTrue(off.opened.ok, off.opened.message?.text)
             for (key in listOf("status", "nav", "caption", "system", "cutout", "drawing")) assertEquals("0,0,0,0", reads(off).getValue(key), key)
             assertIgnoringVisibility(reads(off))
@@ -142,16 +142,20 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
-    @Test fun `iOS 종류별 매핑은 미지원으로 실패하고 0 전달은 시스템 UI를 둔 채 그린다`() = runBlocking {
-        val phone = ScreenSize.Device(DeviceModel.IPHONE_17).applyTo(preview)
-        val unsupported = engine.show(phone.copy(appInsets = appInsets))
-        assertFalse(unsupported.ok)
-        val issue = unsupported.message!!.text
-        assertTrue(issue.contains("iOS 기기 인셋 ON 미지원"), issue)
-        val off = engine.open(phone.copy(appInsets = AppInsets.NONE), interactive = true, ownLoader = false)
+    @Test fun `iOS safe area 근삿값과 영 전달을 같은 바 표시로 비교한다`() = runBlocking {
+        val size = ScreenSize.Device(DeviceModel.IPHONE_17)
+        val card = CardOverride(preview.previewId, size)
+        val on = engine.open(card.applyTo(preview), interactive = true, ownLoader = false)
+        assertTrue(on.opened.ok, on.opened.message?.text)
+        assertEquals("0,186,0,0", reads(on).getValue("status"))
+        assertEquals("0,0,0,102", reads(on).getValue("nav"))
+        val bars = decorations(session())
+        on.close()
+        val off = engine.open(card.copy(deviceInsets = prevue.application.domain.model.DeviceInsetChoice.OFF).applyTo(preview), interactive = true, ownLoader = false)
         assertTrue(off.opened.ok, off.opened.message?.text)
         assertEquals("0,0,0,0", reads(off).getValue("system"))
         assertEquals("0,0,0,0", reads(off).getValue("cutout"))
+        assertEquals(bars, decorations(session()))
         off.close()
     }
 

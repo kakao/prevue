@@ -2,6 +2,7 @@ package prevue.infrastructure.controller.browser
 
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.DeviceInsetState
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Selection
 
@@ -113,6 +114,7 @@ internal data class FocusScreen(
     val fn: String = "",
     val size: ScreenSize? = null,
     val systemUi: SystemUiState? = null,
+    val deviceInsets: DeviceInsetState? = null,
     val postures: List<PostureImage> = emptyList(),
 )
 

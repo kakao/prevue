@@ -8,6 +8,7 @@ import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
@@ -28,7 +29,7 @@ internal fun Status.toJson(): Map<String, Any?> = mapOf(
     "selection" to selection?.toJson(), "tabs" to tabs.map { it.toJson() }, "stale" to stale.staleJson(),
     "memory" to mapOf("heapUsedMb" to engine.heapUsedMb, "heapMaxMb" to engine.heapMaxMb, "rssMb" to engine.rssMb),
     "last" to (last?.toJson() ?: emptyMap<String, Any?>()),
-    "work" to work?.toJson(), "size" to size?.toJson(), "systemUi" to systemUi?.toJson(), "kmp" to kmp,
+    "work" to work?.toJson(), "size" to size?.toJson(), "systemUi" to systemUi?.toJson(), "deviceInsets" to deviceInsets?.toJson(), "kmp" to kmp,
 ) + (module.sourceSet?.let { mapOf("sourceSet" to it) } ?: emptyMap()) +
     (watch?.let { mapOf("watch" to it.source, "staleWatch" to it.build, "valuesWatch" to it.values) } ?: emptyMap())   // "stale"로 두면 낡음의 이유들을 덮는다
 
@@ -53,8 +54,10 @@ private fun BarInsets.toJson(): Map<String, Any?> =
 
 internal fun Map<String, Any?>.toSystemUi(): SystemUi? = SystemUi.parse(string("systemUi"))
 
+internal fun Map<String, Any?>.toDeviceInsets(): DeviceInsetChoice? = DeviceInsetChoice.parse(string("deviceInsets"))
+
 internal fun Map<String, Any?>.toScreenSize(): ScreenSize? =
-    ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true)
+    ScreenSize.parse(string("size"), string("device"), this["folded"] == true, this["landscape"] == true, string("orientation"))
 
 internal fun LastResult.toJson(): Map<String, Any?> = when (this) {
     is ShowResult -> toJson()
