@@ -146,7 +146,7 @@ try {
       await pause(150);
       const touchTree=await nodes();
       const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)[1].bounds;
-      const imageBefore=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
+      const imageBefore=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
       await evaluate(`window.__touches=[]`);
       await mouse(await atNode(touchBounds));
       await until(`__touches.some(t=>t.type==='release')`);
@@ -154,9 +154,13 @@ try {
       const center = [(touchBounds[0]+touchBounds[2])/2,(touchBounds[1]+touchBounds[3])/2];
       const tolerance = await evaluate(`Math.ceil(Number(document.querySelector('#shot').dataset.fullW)/document.querySelector('#shot').getBoundingClientRect().width)`);
       for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=touchBounds[0]&&t.x<touchBounds[2]&&t.y>=touchBounds[1]&&t.y<touchBounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
-      await pause(700);
-      await post('/viewer/catchup');
-      const imageAfter=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
+      let imageAfter=imageBefore;
+      for(const end=Date.now()+5000;imageBefore.equals(imageAfter)&&Date.now()<end;) {
+        await pause(150);
+        const caught=await post('/viewer/catchup');
+        await until(`__store.st.focus.treeUrl===${JSON.stringify(caught.treeUrl)}`);
+        imageAfter=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
+      }
       const changed = await nodes();
       const cards = list => new Set(list.filter(n=>n.name==='DrinkCard').map(n=>n.bounds.join(','))).size;
       if(imageBefore.equals(imageAfter)) {
