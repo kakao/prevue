@@ -29,6 +29,7 @@ class ThreadDeviceRuleTest {
             Allowed("$RENDER/SessionDisposal.kt", "CompletableFuture", 1, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
+            Allowed("$RENDER/LayoutlibSession.kt", "AtomicBoolean", 2, "렌더러 API — 정리된 공유 로더의 Compose 알림 예약 필드 둘을 복구한다"),
             Allowed("$RENDER/RendererSurfaces.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
             Allowed("$RENDER/SharedLoaders.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
         )

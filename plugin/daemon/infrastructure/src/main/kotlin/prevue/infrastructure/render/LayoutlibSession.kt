@@ -14,8 +14,14 @@ import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderTask
 import com.intellij.openapi.util.CheckedDisposable
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.Callable
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.delay
 import prevue.application.domain.model.BarInsets
+import prevue.application.domain.model.AppInsets
+import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.model.SystemBars
+import prevue.application.domain.model.appInsetsIssue
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
 
@@ -44,10 +50,42 @@ internal class LayoutlibSession(
 
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
+            val insets = preview.appInsets
+            if (insets != null) placeInsets(insets) else LayoutlibBars.insetsOf(preview)?.let(::placeBars)
             barsPlaced = true
-            LayoutlibBars.insetsOf(preview)?.let(::placeBars)
         }
         return task.render().get(timeoutSec(), TimeUnit.SECONDS)
+    }
+
+    private fun placeInsets(insets: AppInsets) {
+        val issue = preview.params[SystemBars.DEVICE_POSTURE]?.let(ScreenSize::postureOf)?.model?.appInsetsIssue
+        require(insets == AppInsets.NONE || issue == null) { issue!! }
+        task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
+        val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
+        onSession {
+            LayoutlibInsets.apply(root, insets)
+            if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
+        }
+        anchor()
+    }
+
+    private fun prepareInsetRuntime() {
+        val loader = task.classLoader as com.android.tools.rendering.classloading.ModuleClassLoader
+        val name = "androidx.compose.ui.platform.GlobalSnapshotManager"
+        if (!loader.hasLoadedClass(name)) return
+        val manager = loader.loadClass(name)
+        val started = manager.getDeclaredField("started").apply { isAccessible = true }.get(null) as AtomicBoolean
+        if (!started.get()) return
+        val dispatcherClass = loader.loadClass("androidx.compose.ui.platform.AndroidUiDispatcher")
+        val companion = dispatcherClass.getField("Companion").get(null)
+        val context = companion.javaClass.getMethod("getMain").invoke(companion)
+        val dispatcher = context.javaClass.getDeclaredField("element").apply { isAccessible = true }.get(context)
+        for (flag in listOf("scheduledTrampolineDispatch", "scheduledFrameDispatch")) {
+            dispatcherClass.getDeclaredField(flag).apply { isAccessible = true }.setBoolean(dispatcher, false)
+        }
+        started.set(false)
+        (manager.getDeclaredField("sent").apply { isAccessible = true }.get(null) as AtomicBoolean).set(false)
     }
 
     private fun placeBars(insets: BarInsets) {

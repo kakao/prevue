@@ -16,6 +16,7 @@ data class PreviewSpec(
     /** 제공자가 낸 값의 개수. 1이면 나눌 것이 없다. 렌더러에 물어봐야 알 수 있어 세션이 채운다. */
     val paramCount: Int = 1,
     val paramLabel: String? = null,
+    val appInsets: AppInsets? = null,
 ) {
     val functionName: String get() = fqn.substringAfterLast('.')
 }

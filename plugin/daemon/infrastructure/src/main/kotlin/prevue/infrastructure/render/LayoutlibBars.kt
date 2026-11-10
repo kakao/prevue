@@ -72,7 +72,7 @@ internal object LayoutlibBars {
         return null
     }
 
-    private fun hideBars(v: View) {
+    fun hideBars(v: View) {
         val name = v.javaClass.name
         if (name.startsWith(BAR_VIEWS) || name == CUTOUT_VIEW) {
             v.visibility = View.INVISIBLE

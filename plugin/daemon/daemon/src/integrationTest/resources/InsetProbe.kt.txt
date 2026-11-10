@@ -1,0 +1,51 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
+package com.example.pearl.feature.pearl
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun InsetProbe() {
+    Column(Modifier.fillMaxSize().background(Color.White)) {
+        ReadInset("status", WindowInsets.statusBars)
+        ReadInset("nav", WindowInsets.navigationBars)
+        ReadInset("caption", WindowInsets.captionBar)
+        ReadInset("system", WindowInsets.systemBars)
+        ReadInset("statusIgnoring", WindowInsets.statusBarsIgnoringVisibility)
+        ReadInset("navIgnoring", WindowInsets.navigationBarsIgnoringVisibility)
+        ReadInset("systemIgnoring", WindowInsets.systemBarsIgnoringVisibility)
+        ReadInset("cutout", WindowInsets.displayCutout)
+        ReadInset("drawing", WindowInsets.safeDrawing)
+        ReadInset("content", WindowInsets.safeContent)
+        ReadInset("ime", WindowInsets.ime)
+        ReadInset("gestures", WindowInsets.systemGestures)
+        ReadInset("mandatory", WindowInsets.mandatorySystemGestures)
+        ReadInset("tappable", WindowInsets.tappableElement)
+        ReadInset("waterfall", WindowInsets.waterfall)
+        Box(Modifier.fillMaxWidth().height(80.dp).background(Color.Red).semantics { contentDescription = "padded" }.systemBarsPadding()) {
+            Box(Modifier.fillMaxSize().background(Color.Blue).systemBarsPadding()) {
+                Box(Modifier.fillMaxSize().background(Color.Green).semantics { contentDescription = "nested" })
+            }
+        }
+        Box(Modifier.size(40.dp).background(Color.Yellow).semantics { contentDescription = "bare" })
+    }
+}
+
+@Composable
+private fun ReadInset(label: String, inset: WindowInsets) {
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val values = listOf(inset.getLeft(density, direction), inset.getTop(density), inset.getRight(density, direction), inset.getBottom(density))
+    val text = "$label=${values.joinToString(",")}"
+    Text(text, Modifier.semantics { contentDescription = text })
+}
