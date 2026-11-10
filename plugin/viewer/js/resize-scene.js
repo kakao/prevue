@@ -378,7 +378,8 @@ export function createResizeScene(root, hooks) {
     const openU = f => f.cx - d.open.w * f.s / 2 + H * f.s;
     const coverU = f => f.cx - d.cover.w * f.s / 2;
     const frame = { w: to.w, h: to.h };
-    const turn = ((to.angle - from.angle + 540) % 360) - 180;
+    // 짝 없는 방향(거꾸로 선 세로 대신 바로 선 세로)은 180° 돌지 않고 접기만 보인 뒤 정지 자세로 맞춘다
+    const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
       on: true, turn, t0: now, dur: d === DEVICES.ipduo ? P.duoDur : P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
       s0: f0.s, s1: f1.s,
@@ -979,7 +980,10 @@ export function createResizeScene(root, hooks) {
     hingeOp.to(P.hingeLine ? 1 : 0, 200, performance.now());
     wake();
   }
-  function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(devSel(cur, !cur.folded, cur.orientation)); }
+  // 접고 펼 때는 손에 든 회전(기본 방향에서 돈 각도)을 잇는다. 다른 화면에 그 각도가 없으면(거꾸로 선 세로) 세로로 간다.
+  const foldSel = st => ["portrait", "landscape-left", "landscape-right"].map(o => devSel(st, !st.folded, o))
+    .find(sel => resolve(sel).angle === st.angle) ?? devSel(st, !st.folded, "portrait");
+  function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(foldSel(cur)); }
 
   const RL = { el: $("ruler"), ext: $("rlExt"), dim: $("rlDim"), w: $("rlW"), h: $("rlH"), shown: { w: "", h: "" } };
   let editing = false;

@@ -156,7 +156,7 @@ try {
   h = handoff(frames);
   check(h && h.stage <= .5 && h.shot <= .5, "돌린 뒤 장면 → 스트림 0.5px 안", h);
 
-  // 기존 CLI의 자연 방향 접기 — UI의 절대 방향 유지와 별도로 접는 장의 기하를 검사한다.
+  // 기존 CLI의 자연 방향 접기 — UI 접기 버튼의 손에 든 회전과 별도로 접는 장의 기하를 검사한다.
   await post("/viewer/resize", { device: "duo", folded: false, landscape: false });
   await until(`__store.st.focus.size?.device==='duo' && !__store.st.focus.size.folded && ${settled}`);
   await cached(`p.size.device==='duo' && p.size.folded && !p.size.landscape`);
