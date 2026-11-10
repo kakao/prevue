@@ -102,8 +102,8 @@ try {
     assert(state.deviceInsets.note, name);
     assert(state.deviceInsets.basisPosture, name);
     assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
-    const info = await evaluate(`(()=>{const e=document.querySelector('#insetsInfo');return e&&{tag:e.tagName,title:e.title,approx:!!e.querySelector('.sys-approx'),button:!!document.querySelector('#sysUiBtn')}})()`);
-    assert(info && info.tag!=='BUTTON' && !info.button && info.approx && info.title.includes(state.deviceInsets.note) && info.title.includes(state.deviceInsets.evidence?.source ?? 'No source'), `${name} 인셋 ≈ 표시: ${JSON.stringify(info)}`);
+    const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden})`);
+    assert(!dock.button && dock.hidden, `${name} 독에 켬끔 버튼 없음: ${JSON.stringify(dock)}`);
     const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
     assert.equal(overlay.hidden, !ios.has(device), name);
     if (ios.has(device)) {

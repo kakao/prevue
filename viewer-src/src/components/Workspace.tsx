@@ -68,38 +68,17 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
 }
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-const INSET_TYPES = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
-const INSET_EDGES = ['left', 'top', 'right', 'bottom'] as const;
-
-/** 기기가 앱에 전달하는 인셋을 한 줄씩 — 영인 종류는 뺀다. */
-function deviceInsetsTip(insets: DeviceInsets, phrase: (key: string, args?: Record<string, string | number>) => string): string {
-  const rows = INSET_TYPES.flatMap(type => {
-    const edges = INSET_EDGES.filter(e => insets.values[type][e] !== 0).map(e => phrase('deviceInsets.edge', { edge: phrase(`deviceInsets.edge.${e}`), dp: insets.values[type][e] }));
-    return edges.length ? [phrase('deviceInsets.row', { type: phrase(`deviceInsets.type.${type}`), edges: edges.join(' · ') })] : [];
-  });
-  return [
-    phrase('deviceInsets.tip'),
-    rows.length ? rows.join('\n') : phrase('deviceInsets.none'),
-    ...(insets.approximate ? [phrase('deviceInsets.approximate', { why: insets.note || '' })] : []),
-    insets.evidence ? phrase('deviceInsets.source', { source: `${insets.evidence.source} (${insets.evidence.kind})` }) : phrase('deviceInsets.noSource'),
-  ].join('\n');
-}
-
-/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 누를 것이 없다 — 전달하는 값과 근삿값 여부만 보인다. 비기기는 기존 시스템 UI 선택을 사용한다. */
+/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 이 자리를 비운다(위험 범위 오버레이 토글이 이어받는다). 비기기는 기존 시스템 UI 선택을 사용한다. */
 export function SystemUiControl({ systemUi, deviceInsets = null, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
-  useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
+  const vacant = !systemUi || !!deviceInsets;
+  useLayoutEffect(() => { if (element) element.hidden = vacant; }, [element, vacant]);
   const shown = !!systemUi?.shown;
-  const label = phrase(deviceInsets ? 'deviceInsets.label' : 'systemUi.label');
+  const label = phrase('systemUi.label');
   useLayoutEffect(() => { element?.setAttribute('aria-label', label); }, [element, label]);
-  if (deviceInsets) {
-    const approx = deviceInsets.approximate ? phrase('deviceInsets.approximate.short') : '';
-    return place(<span id="insetsInfo" className="tb-btn sys-ro" role="note" tabIndex={0} aria-label={label + (approx ? ' ' + approx : '')} title={deviceInsetsTip(deviceInsets, phrase)}>
-      {BARS}<span className="sys-lb">{label}</span>{deviceInsets.approximate && <span className="sys-v sys-approx" aria-hidden="true">≈</span>}
-    </span>, systemUiHost);
-  }
+  if (deviceInsets) return place(null, systemUiHost);
   const insets = shown ? systemUi?.bars?.insets : null;
   const tip = insets
     ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
