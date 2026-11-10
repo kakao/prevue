@@ -4,9 +4,16 @@ export type Message = string | { t: string; a?: { [key: string]: Message | numbe
 
 // 예제에 없는 실행 상태는 BrowserState·BrowserMapper의 계약으로 보완한다.
 type DpSize = { widthDp: number; heightDp: number };
+type InsetEdges = { left: number; top: number; right: number; bottom: number };
+export type DeviceInsetProfile = {
+  supported: boolean; issue: string | null; safeArea: InsetEdges | null;
+  measured: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges; systemOverlays: InsetEdges | null } | null;
+  evidence: { source: string; kind: string; sourceUrl: string; capturedAt: string | null; conditions: Record<string, string> } | null;
+};
 export type Size = DpSize & (
   { kind: 'preset' | 'custom'; preset: string | null } |
-  { kind: 'device'; device: string; name: string; folded: boolean; landscape: boolean; hingeDp: number | null; dpi: number }
+  { kind: 'device'; device: string; name: string; folded: boolean; landscape: boolean; hingeDp: number | null; dpi: number;
+    orientation?: 'portrait' | 'landscape-left' | 'landscape-right'; widthPx?: number; heightPx?: number; insetProfile?: DeviceInsetProfile }
 );
 type ContractBoard = NonNullable<ContractState['board']>;
 type ContractCard = ContractBoard['groups'][number]['cards'][number];

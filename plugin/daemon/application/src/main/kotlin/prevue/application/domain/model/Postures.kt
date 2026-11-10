@@ -33,6 +33,6 @@ data class Postures(
             if (a is ScreenSize.Device && b is ScreenSize.Device) a.model == b.model else a == b
 
         private fun steps(from: ScreenSize.Device, to: ScreenSize.Device): Int =
-            (if (from.folded != to.folded) FOLD else 0) + (if (from.landscape != to.landscape) TURN else 0)
+            (if (from.folded != to.folded) FOLD else 0) + (if (from.orientation != to.orientation) TURN else 0)
     }
 }

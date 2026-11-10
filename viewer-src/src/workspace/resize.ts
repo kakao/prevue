@@ -13,7 +13,7 @@ type Zoom = { z: number; x: number; y: number };
 
 const sizeKey = (size: AnySize) => {
   if (!size) return 'original';
-  if (size.kind === 'device') return `${size.device === 'duo' ? 'ipduo' : size.device}:${size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}`;
+  if (size.kind === 'device') return `${size.device === 'duo' ? 'ipduo' : size.device}:${size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}${size.orientation === 'landscape-right' ? ':right' : ''}`;
   return size.preset || `custom:${size.widthDp}x${size.heightDp}`;
 };
 

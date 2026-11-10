@@ -27,18 +27,29 @@ sealed interface ScreenSize {
         }
     }
 
-    data class Device(val model: DeviceModel, val folded: Boolean = false, val landscape: Boolean = false) : ScreenSize {
+    data class Device(
+        val model: DeviceModel,
+        val folded: Boolean = false,
+        val orientation: DeviceOrientation = model.panel(folded).orientation,
+    ) : ScreenSize {
+        constructor(model: DeviceModel, folded: Boolean = false, landscape: Boolean) :
+            this(model, folded, model.panel(folded).orientation(landscape))
+
         init {
             require(!folded || model.cover != null) { "${model.label}은 접히지 않는다" }
         }
 
-        val panel: Panel get() = if (folded) model.cover!! else model.open
-        val widthPx: Int get() = if (landscape) panel.heightPx else panel.widthPx
-        val heightPx: Int get() = if (landscape) panel.widthPx else panel.heightPx
+        val panel: Panel get() = model.panel(folded)
+        val landscape: Boolean get() = (orientation != DeviceOrientation.PORTRAIT) != (panel.widthPx > panel.heightPx)
+        val widthPx: Int get() = if (orientation == DeviceOrientation.PORTRAIT) minOf(panel.widthPx, panel.heightPx) else maxOf(panel.widthPx, panel.heightPx)
+        val heightPx: Int get() = if (orientation == DeviceOrientation.PORTRAIT) maxOf(panel.widthPx, panel.heightPx) else minOf(panel.widthPx, panel.heightPx)
         val widthDp: Double get() = dp(widthPx)
         val heightDp: Double get() = dp(heightPx)
-        val hingeDp: Double? get() = panel.hingePx?.let(::dp)
-        override val key: String get() = listOfNotNull(model.id, "folded".takeIf { folded }, "land".takeIf { landscape }).joinToString("-")
+        val hingeDp: Double? get() = panel.hingePx?.let { dp(it) }
+        val insetProfile: DeviceInsetProfile get() = DeviceInsets.of(this)
+        override val key: String get() = listOfNotNull(
+            model.id, "folded".takeIf { folded }, "land".takeIf { landscape }, "right".takeIf { orientation == DeviceOrientation.LANDSCAPE_RIGHT },
+        ).joinToString("-")
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
             val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi)) + (SystemBars.DEVICE_POSTURE to key)
@@ -46,7 +57,7 @@ sealed interface ScreenSize {
             return p.copy(params = rest + ("widthDp" to "${widthDp.roundToInt()}") + ("heightDp" to "${heightDp.roundToInt()}"))
         }
 
-        private fun dp(px: Int): Double = Math.round(px * 160.0 / model.dpi * 100) / 100.0
+        private fun dp(px: Number): Double = Math.round(px.toDouble() * 160.0 / model.dpi * 100) / 100.0
     }
 
     companion object {
@@ -100,7 +111,20 @@ sealed interface ScreenSize {
     }
 }
 
-data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Int? = null)
+enum class DeviceOrientation(val key: String) {
+    PORTRAIT("portrait"), LANDSCAPE_LEFT("landscape-left"), LANDSCAPE_RIGHT("landscape-right"),
+}
+
+data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Double? = null) {
+    val orientation: DeviceOrientation
+        get() = if (widthPx > heightPx) DeviceOrientation.LANDSCAPE_LEFT else DeviceOrientation.PORTRAIT
+
+    fun orientation(rotated: Boolean): DeviceOrientation = when {
+        !rotated -> orientation
+        orientation == DeviceOrientation.PORTRAIT -> DeviceOrientation.LANDSCAPE_LEFT
+        else -> DeviceOrientation.PORTRAIT
+    }
+}
 
 enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {
     GALAXY_S26("s26", "Galaxy S26", 480, Panel(1080, 2340), null, BarLook.ONE_UI),
@@ -108,15 +132,17 @@ enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open
     IPHONE_17("ip17", "iPhone 17", 480, Panel(1206, 2622), null, BarLook.IOS),
     IPHONE_AIR("ipair", "iPhone Air", 480, Panel(1260, 2736), null, BarLook.IOS),
     IPHONE_17_PRO_MAX("ip17pm", "iPhone 17 Pro Max", 480, Panel(1320, 2868), null, BarLook.IOS),
-    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2670, 1878, 1335), Panel(1398, 2034), BarLook.IOS),
-    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224), Panel(1248, 1972), BarLook.ONE_UI),
-    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128), Panel(1080, 2520), BarLook.ONE_UI),
-    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038), Panel(1080, 2424), BarLook.PIXEL),
+    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2853, 2007, 1426.5), Panel(1398, 2034), BarLook.IOS),
+    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224.0), Panel(1248, 1972), BarLook.ONE_UI),
+    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128.0), Panel(1080, 2520), BarLook.ONE_UI),
+    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038.0), Panel(1080, 2424), BarLook.PIXEL),
     PIXEL_TABLET("tablet", "Pixel Tablet", 320, Panel(2560, 1600), null, BarLook.PIXEL),
     ;
 
+    fun panel(folded: Boolean): Panel = if (folded) requireNotNull(cover) { "${label}은 접히지 않는다" } else open
+
     val postures: List<ScreenSize.Device>
-        get() = listOf(false, true).flatMap { landscape ->
-            listOfNotNull(ScreenSize.Device(this, false, landscape), if (cover != null) ScreenSize.Device(this, true, landscape) else null)
+        get() = DeviceOrientation.entries.flatMap { orientation ->
+            listOfNotNull(ScreenSize.Device(this, false, orientation), if (cover != null) ScreenSize.Device(this, true, orientation) else null)
         }
 }

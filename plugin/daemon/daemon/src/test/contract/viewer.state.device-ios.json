@@ -1,0 +1,658 @@
+{
+  "status": 200,
+  "schema": {
+    "board": {
+      "file": "string",
+      "focus": "number",
+      "gen": "number",
+      "groups": [
+        {
+          "cards": [
+            {
+              "args": "string",
+              "dpGuess": "boolean",
+              "failure": "null",
+              "heightDp": "number",
+              "imageUrl": "string",
+              "index": "number",
+              "isFocus": "boolean",
+              "label": "string",
+              "ok": "boolean",
+              "previewId": "string",
+              "rendered": "boolean",
+              "specs": [
+                {
+                  "kind": "string",
+                  "text": "string"
+                }
+              ],
+              "stale": "boolean",
+              "title": "string",
+              "treeUrl": "string",
+              "widthDp": "number"
+            }
+          ],
+          "failed": "number",
+          "name": "string"
+        }
+      ]
+    },
+    "boardNote": {
+      "a": {
+        "file": "string",
+        "n": "number"
+      },
+      "t": "string"
+    },
+    "buildPending": "boolean",
+    "busy": "boolean",
+    "choice": "null",
+    "error": "null",
+    "focus": {
+      "fn": "string",
+      "imageUrl": "string",
+      "interactive": "boolean",
+      "name": "null",
+      "postures": [
+        {
+          "imageUrl": "string",
+          "size": {
+            "device": "string",
+            "dpi": "number",
+            "folded": "boolean",
+            "heightDp": "number",
+            "heightPx": "number",
+            "hingeDp": "null|number",
+            "insetProfile": {
+              "evidence": {
+                "capturedAt": "null|string",
+                "conditions": {
+                  "android": "string",
+                  "buildId": "string",
+                  "checkedAt": "string",
+                  "densityDpi": "string",
+                  "displayZoom": "string",
+                  "fontScale": "string",
+                  "horizontalToolbar": "string",
+                  "innerCamera": "string",
+                  "ios": "string",
+                  "multiWindow": "string",
+                  "navigation": "string",
+                  "oneUi": "string",
+                  "orientation": "string",
+                  "pose": "string",
+                  "resolutionPx": "string",
+                  "rotation": "string",
+                  "scale": "string",
+                  "sdk": "string",
+                  "sourceSha256": "string",
+                  "splitView": "string",
+                  "unit": "string"
+                },
+                "kind": "string",
+                "source": "string",
+                "sourceUrl": "string"
+              },
+              "issue": "string",
+              "measured": {
+                "captionBar": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "displayCutout": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "navigationBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "statusBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "systemOverlays": "null",
+                "|": "null"
+              },
+              "safeArea": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "supported": "boolean"
+            },
+            "kind": "string",
+            "landscape": "boolean",
+            "name": "string",
+            "orientation": "string",
+            "preset": "string",
+            "widthDp": "number",
+            "widthPx": "number"
+          }
+        }
+      ],
+      "previewId": "string",
+      "pxPerDp": "number",
+      "size": {
+        "device": "string",
+        "dpi": "number",
+        "folded": "boolean",
+        "heightDp": "number",
+        "heightPx": "number",
+        "hingeDp": "null",
+        "insetProfile": {
+          "evidence": {
+            "capturedAt": "null",
+            "conditions": {
+              "checkedAt": "string",
+              "horizontalToolbar": "string",
+              "innerCamera": "string",
+              "orientation": "string",
+              "pose": "string",
+              "resolutionPx": "string",
+              "scale": "string",
+              "sdk": "string",
+              "sourceSha256": "string",
+              "splitView": "string",
+              "unit": "string"
+            },
+            "kind": "string",
+            "source": "string",
+            "sourceUrl": "string"
+          },
+          "issue": "string",
+          "measured": "null",
+          "safeArea": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "supported": "boolean"
+        },
+        "kind": "string",
+        "landscape": "boolean",
+        "name": "string",
+        "orientation": "string",
+        "widthDp": "number",
+        "widthPx": "number"
+      },
+      "streamUrl": "string",
+      "systemUi": {
+        "annotated": "boolean",
+        "bars": "null",
+        "choice": "string",
+        "shown": "boolean"
+      },
+      "treeUrl": "string"
+    },
+    "header": {
+      "branch": "null",
+      "module": "string",
+      "repo": "string",
+      "repoLeaf": "string",
+      "repoPrefix": "string",
+      "sourceSet": "null",
+      "tabTitle": "string",
+      "title": "string",
+      "variant": "string"
+    },
+    "screen": "string",
+    "selection": {
+      "at": "string",
+      "bounds": "null",
+      "by": "string",
+      "chain": [
+        "empty"
+      ],
+      "file": "string",
+      "image": "string",
+      "interactive": "boolean",
+      "line": "number",
+      "node": "null",
+      "ok": "boolean",
+      "preview": {
+        "file": "string",
+        "fqn": "string",
+        "index": "number",
+        "methodParams": [
+          "empty"
+        ],
+        "params": {},
+        "previewId": "string"
+      },
+      "ref": "string",
+      "tree": "string",
+      "userChain": [
+        "empty"
+      ]
+    },
+    "settle": {
+      "a": {
+        "frames": "number",
+        "tick": "number"
+      },
+      "t": "string"
+    },
+    "stale": [
+      "empty"
+    ],
+    "tabs": [
+      {
+        "active": "boolean",
+        "dim": "string",
+        "key": "string",
+        "module": "null",
+        "name": "string",
+        "sourceSet": "null",
+        "stale": "boolean",
+        "title": "string"
+      }
+    ],
+    "timing": [
+      {
+        "head": "boolean",
+        "label": {
+          "t": "string"
+        },
+        "ms": "number",
+        "over": "boolean",
+        "text": "string"
+      }
+    ],
+    "vacant": "null",
+    "version": "number",
+    "who": {
+      "a": {
+        "by": "string",
+        "time": "string",
+        "what": "string"
+      },
+      "t": "string"
+    }
+  },
+  "example": {
+    "version": 0,
+    "header": {
+      "title": "Cards.kt",
+      "tabTitle": "<repo-name> · Cards.kt",
+      "repoPrefix": "<tmp>/",
+      "repoLeaf": "<repo-name>",
+      "module": "app",
+      "variant": "debug",
+      "repo": "<repo>",
+      "branch": null,
+      "sourceSet": null
+    },
+    "screen": "focus",
+    "board": {
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "gen": 0,
+      "focus": 0,
+      "groups": [
+        {
+          "name": "Card0",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 0,
+              "previewId": "Card0",
+              "label": "",
+              "title": "demo.CardsKt.Card0\nCard0",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": true,
+              "imageUrl": "/Card0-0.png?t=<t>",
+              "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        },
+        {
+          "name": "Card1",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 1,
+              "previewId": "Card1",
+              "label": "",
+              "title": "demo.CardsKt.Card1\nCard1",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": false,
+              "imageUrl": "/Card1-0.png?t=<t>",
+              "treeUrl": "/Card1-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        }
+      ]
+    },
+    "focus": {
+      "previewId": "Card0",
+      "interactive": true,
+      "imageUrl": "/Card0-0.png?t=<t>",
+      "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+      "streamUrl": "/stream?t=<t>",
+      "pxPerDp": 3,
+      "name": null,
+      "fn": "Card0",
+      "size": {
+        "kind": "device",
+        "device": "duo",
+        "name": "iPhone Duo",
+        "folded": true,
+        "landscape": false,
+        "widthDp": 466,
+        "heightDp": 678,
+        "hingeDp": null,
+        "dpi": 480,
+        "orientation": "portrait",
+        "widthPx": 1398,
+        "heightPx": 2034,
+        "insetProfile": {
+          "supported": false,
+          "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+          "safeArea": {
+            "left": 0,
+            "top": 0,
+            "right": 84,
+            "bottom": 34
+          },
+          "measured": null,
+          "evidence": {
+            "source": "safearea.info",
+            "kind": "site",
+            "sourceUrl": "https://safearea.info/iphone-duo.md",
+            "capturedAt": null,
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1398x2034",
+              "orientation": "portrait",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "closed"
+            }
+          }
+        }
+      },
+      "systemUi": {
+        "choice": "annotated",
+        "annotated": false,
+        "shown": false,
+        "bars": null
+      },
+      "postures": [
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": false,
+            "landscape": true,
+            "widthDp": 669,
+            "heightDp": 951,
+            "hingeDp": 475.5,
+            "dpi": 480,
+            "orientation": "portrait",
+            "widthPx": 2007,
+            "heightPx": 2853,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 0,
+                "top": 82,
+                "right": 0,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2007x2853",
+                  "orientation": "portrait",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "fully-open"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-land-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": true,
+            "landscape": true,
+            "widthDp": 678,
+            "heightDp": 466,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "landscape-left",
+            "widthPx": 2034,
+            "heightPx": 1398,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 0,
+                "top": 0,
+                "right": 84,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2034x1398",
+                  "orientation": "landscape-left",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "closed"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-folded-land-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": true,
+            "landscape": true,
+            "widthDp": 678,
+            "heightDp": 466,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "landscape-right",
+            "widthPx": 2034,
+            "heightPx": 1398,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 84,
+                "top": 0,
+                "right": 0,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2034x1398",
+                  "orientation": "landscape-right",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "closed"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-folded-land-right-0.png?t=<t>"
+        }
+      ]
+    },
+    "stale": [],
+    "busy": false,
+    "buildPending": false,
+    "boardNote": {
+      "t": "status.board",
+      "a": {
+        "n": 2,
+        "file": "Cards.kt"
+      }
+    },
+    "who": {
+      "t": "status.who",
+      "a": {
+        "by": "viewer",
+        "time": "<hh:mm:ss>",
+        "what": "Card0-0"
+      }
+    },
+    "timing": [
+      {
+        "label": {
+          "t": "timing.task"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.render"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.first"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": true
+      }
+    ],
+    "error": null,
+    "selection": {
+      "ok": true,
+      "ref": "@<repo>/app/src/main/kotlin/a/Dup.kt#L1",
+      "file": "<repo>/app/src/main/kotlin/a/Dup.kt",
+      "line": 1,
+      "node": null,
+      "chain": [],
+      "userChain": [],
+      "bounds": null,
+      "preview": {
+        "fqn": "demo.CardsKt.Card0",
+        "previewId": "Card0",
+        "params": {},
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "index": 0,
+        "methodParams": []
+      },
+      "image": "<repo>/out/Card0-0.png",
+      "tree": "<repo>/out/Card0-0.viewinfo.json",
+      "interactive": false,
+      "by": "viewer",
+      "at": "<at>"
+    },
+    "choice": null,
+    "tabs": [
+      {
+        "key": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "name": "Cards",
+        "dim": "",
+        "module": null,
+        "title": "app/src/main/kotlin/demo/Cards.kt",
+        "active": true,
+        "stale": false,
+        "sourceSet": null
+      }
+    ],
+    "settle": {
+      "t": "status.settle",
+      "a": {
+        "frames": 7,
+        "tick": 0
+      }
+    },
+    "vacant": null
+  }
+}

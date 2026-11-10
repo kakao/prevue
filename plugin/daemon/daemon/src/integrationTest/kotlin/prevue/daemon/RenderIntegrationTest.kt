@@ -33,6 +33,7 @@ import prevue.application.port.ResourceLookup
 import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
+import prevue.application.domain.model.DeviceOrientation
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ModuleGraph
 import prevue.application.domain.model.PreviewSpec
@@ -940,13 +941,19 @@ class RenderIntegrationTest {
         val on = runBlocking { uc.boards.focus(0, on = true, by = "test", size = fold8) } as FocusResult.On
         try {
             assertTrue(on.result.ok, on.result.shot.out.message?.text)
-            awaitUntil("자세별 그림 세 장 — ${uc.status.read().postures.keys}", 30_000, pollMs = 50) { uc.status.read().postures.keys.count { it is ScreenSize.Device } == 3 }
+            awaitUntil("자세별 그림 세 장 — ${uc.status.read().postures.keys}", 30_000, pollMs = 50) { uc.status.read().postures.keys.count { it is ScreenSize.Device && it.model == DeviceModel.GALAXY_Z_FOLD8 } == 5 }
             runBlocking { engine.awaitWrites() }
             // 기기 자세 셋 뒤에 원래 크기(@Preview)도 미리 그린다 — 그 장은 기기 크기가 아니라 비교에서 뺀다.
             // 렌더러는 정수 dp 만 받아 패널 px 가 dp 로 나눠떨어지지 않는 기기(Fold8 420dpi)는 반올림한 dp 의 px 로 1px 어긋난다
-            val sizes = uc.status.read().postures.filterKeys { it is ScreenSize.Device }.map { (d, shot) -> d to javax.imageio.ImageIO.read(shot.out.image!!).let { it.width to it.height } }.toMap()
+            val sizes = uc.status.read().postures.filterKeys { it is ScreenSize.Device && it.model == DeviceModel.GALAXY_Z_FOLD8 }.map { (d, shot) -> d to javax.imageio.ImageIO.read(shot.out.image!!).let { it.width to it.height } }.toMap()
             assertEquals(
-                mapOf(fold8.copy(folded = true) to (1247 to 1971), fold8.copy(landscape = true) to (1848 to 2449), fold8.copy(folded = true, landscape = true) to (1971 to 1247)),
+                mapOf(
+                    ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true) to (1247 to 1971),
+                    fold8.copy(orientation = DeviceOrientation.PORTRAIT) to (1848 to 2449),
+                    fold8.copy(orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (2449 to 1848),
+                    fold8.copy(folded = true) to (1971 to 1247),
+                    fold8.copy(folded = true, orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (1971 to 1247),
+                ),
                 sizes,
             )
             val png = on.result.shot.out.image!!

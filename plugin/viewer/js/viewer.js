@@ -1656,7 +1656,7 @@ function ir(e, { stage: t, img: n, box: r, pick: i, marks: a }, o) {
 	}, { signal: o });
 }
 // src/workspace/resize.ts
-var ar = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
+var ar = (e) => e ? e.kind === "device" ? `${e.device === "duo" ? "ipduo" : e.device}:${e.folded ? "cover" : "open"}${e.landscape ? ":rot" : ""}${e.orientation === "landscape-right" ? ":right" : ""}` : e.preset || `custom:${e.widthDp}x${e.heightDp}` : "original";
 function or(e, t, n) {
 	try {
 		let r = document.createElement("canvas");
