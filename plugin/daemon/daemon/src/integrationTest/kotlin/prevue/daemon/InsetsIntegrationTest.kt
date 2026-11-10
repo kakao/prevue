@@ -243,6 +243,40 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
+    @Test fun `Pearl 상세의 조작부는 안전 영역을 피하고 컵 무대는 힌지에 남는다`() = runBlocking {
+        val detail = preview.copy(fqn = "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailPreview", previewId = "PearlDetailInsets")
+        val devices = DeviceModel.IPHONE_DUO.postures + ScreenSize.Device(DeviceModel.IPHONE_17)
+        for (device in devices) {
+            val buttons = mutableListOf<ViewNode>()
+            val backs = mutableListOf<ViewNode>()
+            val pictures = mutableListOf<java.awt.image.BufferedImage>()
+            for (choice in DeviceInsetChoice.entries) {
+                val handle = engine.open(CardOverride(detail.previewId, device, deviceInsets = choice).applyTo(detail), interactive = true, ownLoader = false)
+                assertTrue(handle.opened.ok, handle.opened.message?.text)
+                val nodes = handle.look().tree.nodes
+                buttons += nodes.singleOrNull { it.name == "PearlButton" } ?: error("${device.key} purchase node: ${nodes.filter { "Button" in it.name }.map { it.name to it.file }}")
+                backs += nodes.singleOrNull { it.name == "BackButton" } ?: error("${device.key} back node: ${nodes.filter { "Button" in it.name }.map { it.name to it.file }}")
+                pictures += ImageIO.read(engine.written(handle.opened).image!!)
+                handle.close()
+            }
+            val area = device.insetProfile.safeArea!!
+            val density = device.model.dpi / 160.0
+            val (on, off) = buttons
+            assertEquals((area.right * density).roundToInt(), off.right - on.right, device.key)
+            assertEquals((area.bottom * density).roundToInt(), off.bottom - on.bottom, device.key)
+            val (backOn, backOff) = backs
+            assertEquals((area.left * density).roundToInt(), backOn.left - backOff.left, device.key)
+            assertEquals((area.top * density).roundToInt(), backOn.top - backOff.top, device.key)
+            assertEquals(pictures[0].width, pictures[1].width, device.key)
+            assertEquals(pictures[0].height, pictures[1].height, device.key)
+            if (device.widthDp >= 600) {
+                val x = pictures[0].width / 2 - 2
+                val y = pictures[0].height / 2
+                assertEquals(pictures[0].getRGB(x, y), pictures[1].getRGB(x, y), device.key)
+            }
+        }
+    }
+
     private fun sentinels(): WindowInsets = WindowInsets.Builder()
         .setDisplayCutout(DisplayCutout(Insets.of(21, 0, 0, 0), Rect(0, 0, 21, 30), null, null, null, Insets.of(3, 0, 0, 0)))
         .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, 240))
