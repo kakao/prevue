@@ -90,7 +90,7 @@ try {
     await post('/viewer/resize', { device, folded, orientation });
     await until(`__store.st.focus?.size?.device===${JSON.stringify(device)} && __store.st.focus.size.folded===${folded} && __store.st.focus.size.orientation===${JSON.stringify(orientation)}`);
     await ready();
-    let appearance;
+    let appearance, onGrid;
     for (const choice of ['on','off']) {
       await post('/viewer/deviceInsets', { deviceInsets: choice });
       await until(`__store.st.focus.deviceInsets.choice===${JSON.stringify(choice)}`);
@@ -107,10 +107,11 @@ try {
       assert(state.deviceInsets.note, name);
       assert(state.deviceInsets.basisPosture, name);
       if (choice==='off') assert(Object.values(state.deviceInsets.values).every(e=>Object.values(e).every(v=>v===0)), name);
-      const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle')})`);
+      const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
       assert.equal(overlay.hidden, !ios.has(device), name);
       if (ios.has(device)) {
-        assert(overlay.handle, name);
+        assert.equal(overlay.handle, device!=='duo', name);
+        assert.equal(overlay.duo, device==='duo', name);
         const geometry = overlay.svg.replaceAll(/sb-ink-(light|dark)/g, 'sb-ink');
         if (appearance) assert.equal(geometry, appearance, name); else appearance=geometry;
       }
@@ -122,11 +123,18 @@ try {
         if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
       }
       const tree = await nodes();
-      const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51);
+      const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');
+      assert(grid,name);
+      if(choice==='on') onGrid=grid.bounds;
+      else {
+        assert(onGrid[0]>=grid.bounds[0]&&onGrid[1]>=grid.bounds[1]&&onGrid[2]<=grid.bounds[2]&&onGrid[3]<grid.bounds[3], `${name} Pearl 인셋 배치`);
+        assert(onGrid.some((v,i)=>v!==grid.bounds[i]),name);
+      }
+      const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52);
       assert(chips.length>=2, name);
       const bounds = chips[1].bounds;
       await mouse(await atNode(bounds), 1);
-      await until(`__store.st.selection?.line===51 && !document.querySelector('#pickBox').hidden`);
+      await until(`__store.st.selection?.line===52 && !document.querySelector('#pickBox').hidden`);
       await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
       await mouse({x:12,y:100});
       await pause(200);
@@ -136,7 +144,7 @@ try {
       await ready();
       await pause(150);
       const touchTree=await nodes();
-      const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51)[1].bounds;
+      const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)[1].bounds;
       const imageBefore=Buffer.from(await fetch(new URL(state.imageUrl,viewer)).then(r=>r.arrayBuffer()));
       await evaluate(`window.__touches=[]`);
       await mouse(await atNode(touchBounds));
@@ -153,7 +161,7 @@ try {
       assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(touchTree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
       const shot = await send('Page.captureScreenshot', { format:'png' });
       await writeFile(join(evidence,name+'.png'),Buffer.from(shot.data,'base64'));
-      results.push({name,size:state.size,insets:state.deviceInsets,overlay,touches,point:bounds,touchBounds,cardsBefore:cards(touchTree),cardsAfter:cards(changed)});
+      results.push({name,size:state.size,insets:state.deviceInsets,overlay,grid:grid.bounds,touches,point:bounds,touchBounds,cardsBefore:cards(touchTree),cardsAfter:cards(changed)});
       console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
     }
   }

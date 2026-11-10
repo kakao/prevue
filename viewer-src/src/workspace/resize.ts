@@ -168,9 +168,11 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
           const st = f.size;
           if (!st) {
             const k = f.pxPerDp || 2.625;
-            original = { w: img.naturalWidth / k, h: img.naturalHeight / k, img: spec(img, st) };
+            const measured = { w: img.naturalWidth / k, h: img.naturalHeight / k, img: spec(img, st) };
+            const changed = original?.w !== measured.w || original.h !== measured.h;
+            original = measured;
             scene.setOriginal(original.w, original.h, original.img);
-            if (preparing) scene.update(target(f), true);
+            if (preparing || changed) scene.update(target(f), preparing);
           }
           scene.image(next, spec(img, st));
           stream = f.streamUrl; pending = false;

@@ -31,6 +31,7 @@ import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.ViewNode
 import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
@@ -214,6 +215,29 @@ internal abstract class InsetsRenderChecks {
             assertNull(result.opened.image)
             assertTrue(result.opened.message!!.text.contains("system UI render failure probe"), result.opened.message!!.text)
             result.close()
+        }
+    }
+
+    @Test fun `Pearl 메뉴는 안전 영역 안에 놓이고 배경은 화면 끝까지 유지한다`() = runBlocking {
+        val menu = preview.copy(fqn = "com.example.pearl.feature.pearl.AdaptivePreviewsKt.AdaptivePearlPreview", previewId = "PearlInsets")
+        val devices = listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17)) + DeviceModel.IPHONE_DUO.postures
+        for (device in devices) {
+            val grids = mutableListOf<ViewNode>()
+            val backgrounds = mutableListOf<Int>()
+            for (choice in DeviceInsetChoice.entries) {
+                val handle = engine.open(CardOverride(menu.previewId, device, deviceInsets = choice).applyTo(menu), interactive = true, ownLoader = false)
+                assertTrue(handle.opened.ok, handle.opened.message?.text)
+                grids += handle.look().tree.nodes.first { it.name == "LazyVerticalGrid" && it.file == "FilterScreen.kt" }
+                backgrounds += ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0)
+                handle.close()
+            }
+            val (on, off) = grids
+            val area = device.insetProfile.safeArea!!
+            if (area.top > 0) assertTrue(on.top > off.top, device.key) else assertEquals(on.top, off.top, device.key)
+            if (area.left > 0) assertTrue(on.left > off.left, device.key) else assertEquals(on.left, off.left, device.key)
+            if (area.right > 0) assertTrue(on.right < off.right, device.key) else assertEquals(on.right, off.right, device.key)
+            assertTrue(on.bottom < off.bottom, device.key)
+            assertEquals(backgrounds[0], backgrounds[1], device.key)
         }
     }
 
