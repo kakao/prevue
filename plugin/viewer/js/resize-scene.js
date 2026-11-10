@@ -261,7 +261,7 @@ export function createResizeScene(root, hooks) {
     if (!to || !cur || to.sel === cur.sel) return;
     if (rig.on || spin.on) { queued = to.sel; return; }
     const from = cur, same = from.kind === "device" && to.kind === "device" && from.dev === to.dev;
-    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot && !from.right && !to.right;
+    const folding = !reducedOn() && same && from.folded !== to.folded;
     const spinning = !reducedOn() && same && from.angle !== to.angle && from.folded === to.folded;
     if ((folding || spinning) && !atRest(now)) { queued = to.sel; return; }
     queued = null;
@@ -353,8 +353,11 @@ export function createResizeScene(root, hooks) {
   const rig = { on: false };
   function rigCamera(folded, scale) {
     const pose = rig.from.folded === folded ? rig.from : rig.to, panel = rig.d[folded ? "cover" : "open"];
-    if (rig.d === DEVICES.ipduo) return duoCamera(pose, scale);
-    return camBox(panel.w, panel.h, pose.rot, rig.d.look[folded ? "cover" : "open"].cam, scale, pose.mirrored);
+    if (rig.d !== DEVICES.ipduo) return camBox(panel.w, panel.h, false, rig.d.look[folded ? "cover" : "open"].cam, scale);
+    const box = duoCamera(pose, scale), a = -pose.angle * Math.PI / 180;
+    const x = box.left + box.width / 2 - pose.w * scale / 2, y = box.top + box.height / 2 - pose.h * scale / 2;
+    return { ...box, left: panel.w * scale / 2 + x * Math.cos(a) - y * Math.sin(a) - box.width / 2,
+      top: panel.h * scale / 2 + x * Math.sin(a) + y * Math.cos(a) - box.height / 2 };
   }
   const rigEl = $("rig"), q = (root, s) => root.querySelector(s);
   const RG = {
@@ -362,20 +365,22 @@ export function createResizeScene(root, hooks) {
     base: q(rigEl, ".base"), leaf: q(rigEl, ".leaf"),
   };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), shade: q(el, ".shade"), sheen: q(el, ".sheen"), cast: q(el, ".cast") });
+  RG.btns = Array.from({ length: 5 }, () => { const el = document.createElement("div"); el.className = "btn"; RG.lift.append(el); return el; });
   RG.F = { inner: faceOf(q(RG.leaf, ".inner")), outer: faceOf(q(RG.leaf, ".outer")), base: faceOf(q(RG.base, ".clip")) };
   RG.edge = { leafRing: q(RG.leaf, ".ring"), leafBez: q(RG.leaf, ".bez"), baseRing: q(RG.base, ".ring"), baseBez: q(RG.base, ".bez") };
 
   function startFold(from, to, now, cached) {
-    const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", ax = to.rot ? "y" : "x", H = d.open.hinge;
+    const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", H = d.open.hinge;
     const f0 = fit(from), f1 = fit(to);
     freeze(now);
     if (cached) { const o = layer.old; o.fill = false; o.blur.snap(0); o.veil.snap(0); }
     const restBlur = layer.old.blur.at(now);
-    const openU = f => ax === "x" ? f.cx - d.open.w * f.s / 2 + H * f.s : f.y + H * f.s;
-    const coverU = f => ax === "x" ? f.cx - d.cover.w * f.s / 2 : f.y;
+    const openU = f => f.cx - d.open.w * f.s / 2 + H * f.s;
+    const coverU = f => f.cx - d.cover.w * f.s / 2;
     const frame = { w: to.w, h: to.h };
+    const turn = ((to.angle - from.angle + 540) % 360) - 180;
     Object.assign(rig, {
-      on: true, t0: now, dur: d === DEVICES.ipduo ? P.duoDur : P.foldDur, dir, d, ax, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
+      on: true, turn, t0: now, dur: d === DEVICES.ipduo ? P.duoDur : P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
       s0: f0.s, s1: f1.s,
       half: { u: H, v: d.open.h }, cover: { u: d.cover.w, v: d.cover.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
@@ -395,7 +400,21 @@ export function createResizeScene(root, hooks) {
     const t = (now - rig.t0) / 1000, T = Math.max(.05, rig.dur);
     const e = foldEase()(clamp(t / T, 0, 1));
     const th = (rig.dir === "fold" ? e : 1 - e) * 180;
-    return { t, th, p: e, s: lerp(rig.s0, rig.s1, e), hx: lerp(rig.hx0, rig.hx1, e), top: lerp(rig.f0.y, rig.f1.y, e), settled: t >= T };
+    const baseS = lerp(rig.s0, rig.s1, e), cy = lerp(rig.f0.y + rig.f0.h / 2, rig.f1.y + rig.f1.h / 2, e);
+    const angle = rig.from.angle + rig.turn * e, rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
+    const u = lerp(rig.half.u, rig.cover.u, k), v = lerp(rig.half.v, rig.cover.v, k);
+    const hx = lerp(rig.hx0, rig.hx1, e), r = room(), offset = (hx - r.cx) / baseS;
+    const perspective = P.perspective / (P.perspective - u * baseS * Math.sin(rad));
+    const tip = -u * Math.cos(rad) * perspective, bezel = lookAt(now).bezel * P.shellK;
+    // 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 양끝 배율은 원래 fit과 같다.
+    const baseU = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(rig.d === DEVICES.ipduo ? 150 : 90, 180, th));
+    const xs = [offset + Math.min(0, tip) - bezel, offset + Math.max(baseU, tip) + bezel];
+    const ys = [-v * perspective / 2 - bezel, v * perspective / 2 + bezel];
+    const corners = xs.flatMap(x => ys.map(y => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)]));
+    const extent = axis => Math.max(...corners.map(p => Math.abs(p[axis])));
+    const s = Math.min(baseS, r.maxW / (2 * extent(0)), r.maxH / (2 * extent(1)));
+    return { t, th, p: e, s, hx: r.cx + (hx - r.cx) * s / baseS, cy,
+      angle, top: cy - v * s / 2, settled: t >= T };
   }
 
   function endRig(now) {
@@ -455,31 +474,40 @@ export function createResizeScene(root, hooks) {
     img.style.filter = blur > .05 ? `blur(${blur.toFixed(2)}px)` : "none";
   }
 
+  // 접기는 기기 고유 좌표에서 하고, 그림은 장면의 회전을 상쇄해 화면 위로 선다.
+  function foldImage(img, spec, size, folded, du, s, now, blur = 0, opacity = 1) {
+    const panel = rig.d[folded ? "cover" : "open"];
+    place(img, spec, (panel.w - size.w) * s / 2 - du * s, size.w * s, size.h * s, opacity, blur, (panel.h - size.h) * s / 2);
+    img.style.transform = `rotate(${-rigAt(now).angle}deg)`;
+  }
   function paintFace(f, plan, s, now) {
-    const o = layer.old, n = layer.neu, spec = rig.oldSpec;
-    const [x, y] = rig.ax === "x" ? [-plan.du * s, 0] : [0, -plan.du * s];
+    const o = layer.old, n = layer.neu, spec = rig.oldSpec, folded = plan === rig.plan.outer;
+    const put = (img, src, size, blur, op = 1) => foldImage(img, src, size, folded, plan.du, s, now, blur, op);
     if (plan.role === "crisp") {
-      place(f.old, spec, x, spec.dpW * s, spec.dpH * s, 1, rig.restBlur, y);
+      put(f.old, spec, { w: spec.dpW, h: spec.dpH }, rig.restBlur);
       f.veil.style.opacity = 0;
     } else if (rig.cached) {
       const ts = rig.to.img;
-      place(f.old, ts, x, ts.dpW * s, ts.dpH * s, 1, 0, y);
+      put(f.old, ts, { w: ts.dpW, h: ts.dpH }, 0);
       f.veil.style.opacity = 0;
       f.neu.style.opacity = 0;
       f.el.style.background = ts.edge;
       return;
     } else {
-      const hs = holdSize(spec, plan.frame, o.fill);
-      place(f.old, spec, x, hs.w * s, hs.h * s, 1, o.blur.at(now), y);
+      put(f.old, spec, holdSize(spec, plan.frame, o.fill), o.blur.at(now));
       f.veil.style.opacity = o.veil.at(now);
     }
-    if (plan.neu && n.r) place(f.neu, n.r, x, n.r.dpW * s, n.r.dpH * s, n.op.at(now), n.blur.at(now), y);
+    if (plan.neu && n.r) put(f.neu, n.r, { w: n.r.dpW, h: n.r.dpH }, n.blur.at(now), n.op.at(now));
     else f.neu.style.opacity = 0;
     f.el.style.background = (n.r && n.op.at(now) > .5 && plan.neu ? n.r : spec).edge;
   }
-
+  function turnRig(el, now) {
+    const { angle, cy } = rigAt(now);
+    el.style.transformOrigin = `${room().cx}px ${cy}px`;
+    el.style.transform = `rotate(${angle}deg)`;
+  }
   function drawRig(now) {
-    const { th, s, hx: hu, top: T0 } = rigAt(now), X = rig.ax === "x", { cx } = room();
+    const { th, s, hx: hu, top: T0 } = rigAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad);
     const lk = lookAt(now), r = lk.radius * s, t = lk.bezel * P.shellK * s;
     RG.edge.leafBez.style.borderColor = RG.edge.baseBez.style.borderColor = lk.tone;
@@ -487,12 +515,10 @@ export function createResizeScene(root, hooks) {
     // 커버가 펼친 반쪽보다 좁으면(Fold8 Ultra) 바닥 반쪽도 커버 폭으로 줄어야 다 접힌 순간 커버 밖으로 비어져 나오지 않는다.
     // 장이 바닥을 덮기 시작한 뒤(90° 너머)에만 줄인다 — 드러난 바닥의 가장자리가 접는 동안 미끄러지지 않게
     const Bu = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(90, 180, th)) * s, Bv = Lv;
-    const v0 = dv => X ? T0 : cx - dv / 2;
-    const box = (u0, du, dv) => X ? { left: u0 + "px", top: v0(dv) + "px", width: du + "px", height: dv + "px" }
-                                  : { left: v0(dv) + "px", top: u0 + "px", width: dv + "px", height: du + "px" };
-    const sides = (us, ue, vs, ve) => X ? { l: us, r: ue, t: vs, b: ve } : { t: us, b: ue, l: vs, r: ve };
-    const corners = (a, b) => X ? [a, b, b, a] : [a, a, b, b];
-    const pivot = X ? `${hu}px ${T0 + Bv / 2}px` : `${cx}px ${hu}px`;
+    const box = (u0, du, dv) => ({ left: u0 + "px", top: T0 + "px", width: du + "px", height: dv + "px" });
+    const sides = (us, ue, vs, ve) => ({ l: us, r: ue, t: vs, b: ve });
+    const corners = (a, b) => [a, b, b, a];
+    const pivot = `${hu}px ${T0 + Bv / 2}px`;
     RG.lift.style.perspective = P.perspective + "px";
     RG.lift.style.perspectiveOrigin = pivot;
     RG.lift.style.transformOrigin = pivot;
@@ -506,40 +532,38 @@ export function createResizeScene(root, hooks) {
     q(RG.base, ".clip").style.borderRadius = corners(r * hk, r).map(v => v + "px").join(" ");
     paintFace(RG.F.base, rig.plan.base, s, now);
     const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
-    RG.F.base.cast.style.background = `linear-gradient(${X ? 90 : 180}deg, ${shade(cast)}, ${shade(cast * .35)} 45%, ${shade(0)} 90%)`;
+    RG.F.base.cast.style.background = `linear-gradient(90deg, ${shade(cast)}, ${shade(cast * .35)} 45%, ${shade(0)} 90%)`;
     edge(RG.edge.baseRing, sides(-1.5 * hk, -1.5, -1.5, -1.5), sides(1.5 * hk, 1.5, 1.5, 1.5), corners((r + 1.5) * hk, r + 1.5), 1);
     edge(RG.edge.baseBez, sides(-t * hk, -t, -t, -t), sides(t * hk, t, t, t), corners((r + t) * hk, r + t), 1);
-    Object.assign(RG.leaf.style, box(hu - Lu, Lu, Lv), { transformOrigin: X ? "100% 50%" : "50% 100%", transform: X ? `rotateY(${th.toFixed(3)}deg)` : `rotateX(${(-th).toFixed(3)}deg)` });
+    Object.assign(RG.leaf.style, box(hu - Lu, Lu, Lv), { transformOrigin: "100% 50%", transform: `rotateY(${th.toFixed(3)}deg)` });
     const rk = r * hk;
     RG.F.inner.el.style.borderRadius = corners(r, rk).map(v => v + "px").join(" ");
     RG.F.outer.el.style.borderRadius = corners(rk, r).map(v => v + "px").join(" ");
-    RG.F.outer.el.style.transform = X ? "rotateY(180deg)" : "rotateX(180deg)";
+    RG.F.outer.el.style.transform = "rotateY(180deg)";
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
     const oc = rigCamera(false, s), sh = rig.d.open.hinge * s;
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
-    putCam(RG.F.base.cam, oc, X ? -sh : 0, X ? 0 : -sh, 1);
+    putCam(RG.F.base.cam, oc, -sh, 0, 1);
     RG.F.inner.shade.style.opacity = th < 90 ? (P.shade * (1 - cs)).toFixed(3) : 1;
     RG.F.outer.shade.style.opacity = th > 90 ? (P.shade * (1 + cs)).toFixed(3) : 1;
     for (const f of [RG.F.inner, RG.F.outer]) {
-      f.sheen.style.opacity = X ? (P.sheen * sn).toFixed(3) : 0;
+      f.sheen.style.opacity = (P.sheen * sn).toFixed(3);
       f.sheen.style.transform = `translateX(${lerp(-28, 28, k)}%)`;
     }
     edge(RG.edge.leafRing, sides(-1.5, -1.5 * hk, -1.5, -1.5), sides(1.5, 1.5 * hk, 1.5, 1.5), corners(r + 1.5, (r + 1.5) * hk), 1);
     edge(RG.edge.leafBez, sides(-t, -t * hk, -t, -t), sides(t, t * hk, t, t), corners(r + t, (r + t) * hk), 1);
+    lk.btn.forEach((b, i) => {
+      Object.assign(RG.btns[i].style, { left: Math.max(hu + Bu, tip) + t - .5 + "px", top: T0 + b.at * s + "px",
+        width: "3px", height: b.len * s + "px", backgroundColor: lk.tone, opacity: b.len * s > .5 ? 1 : 0 });
+    });
     const ck = P.crease * clamp(1 - th / 24, 0, 1), tk = clamp(1 - th / 24, 0, 1);
-    RG.crease.classList.toggle("h", !X);
-    Object.assign(RG.crease.style, X ? { left: hu + "px", top: T0 + "px", width: "", height: Bv + "px", opacity: ck * hingeOp.at(now) }
-                                     : { left: cx - Bv / 2 + "px", top: hu + "px", width: Bv + "px", height: "", opacity: ck * hingeOp.at(now) });
-    if (X) {
-      Object.assign(RG.tTop.style, { left: hu + "px", top: T0 - t + "px", width: "1px", height: t + "px", opacity: tk });
-      Object.assign(RG.tBot.style, { left: hu + "px", top: T0 + Bv + "px", width: "1px", height: t + "px", opacity: tk });
-    } else {
-      Object.assign(RG.tTop.style, { left: cx - Bv / 2 - t + "px", top: hu + "px", width: t + "px", height: "1px", opacity: tk });
-      Object.assign(RG.tBot.style, { left: cx + Bv / 2 + "px", top: hu + "px", width: t + "px", height: "1px", opacity: tk });
-    }
+    Object.assign(RG.crease.style, { left: hu + "px", top: T0 + "px", height: Bv + "px", opacity: ck * hingeOp.at(now) });
+    Object.assign(RG.tTop.style, { left: hu + "px", top: T0 - t + "px", width: "1px", height: t + "px", opacity: tk });
+    Object.assign(RG.tBot.style, { left: hu + "px", top: T0 + Bv + "px", width: "1px", height: t + "px", opacity: tk });
   }
+
   function edge(el, inset, width, radius, op) {
     Object.assign(el.style, {
       left: inset.l + "px", top: inset.t + "px", right: inset.r + "px", bottom: inset.b + "px",
@@ -575,51 +599,45 @@ export function createResizeScene(root, hooks) {
     const open = rig.dir === "fold" ? rig.from : rig.to, cover = rig.dir === "fold" ? rig.to : rig.from;
     const st = which === "cover" ? cover : open, arriving = st === rig.to;
     if (!arriving || rig.cached) return { spec: st.img, blur: 0, size: { w: st.img.dpW, h: st.img.dpH } };
+    if (layer.neu.r) return { spec: layer.neu.r, blur: layer.neu.blur.at(clock.t), size: { w: layer.neu.r.dpW, h: layer.neu.r.dpH } };
     return { spec: rig.oldSpec, blur: layer.old.blur.at(clock.t), size: holdSize(rig.oldSpec, st, layer.old.fill) };
   }
   function drawDuo(now) {
-    const { th, s, hx: hu, top: T0 } = rigAt(now), X = rig.ax === "x", { cx } = room(), d = rig.d, lk = lookAt(now);
+    const { th, s, hx: hu, top: T0 } = rigAt(now), d = rig.d, lk = lookAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), E = P.perspective, t = lk.bezel * P.shellK * s;
     const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
     const Bu = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(150, 180, th)) * s, Bv = Lv, H = d.open.hinge * s;
-    const vc = dv => X ? T0 + dv / 2 : cx;
-    const pt = (u, v) => X ? [u, v] : [v, u];
+    const vc = dv => T0 + dv / 2;
+    const pt = (u, v) => [u, v];
     // 반경은 면마다 고정한다 — 기기 모양 모프(펼침 30 → 커버 44)를 따르면 접는 도중 두 장의 모서리가 커진다.
     // 힌지 쪽 모서리는 두 장이 겹치는 자리라 같은 반경을 쓴다 — 60~120°에 펼침에서 커버 반경으로 옮겨, 다 접혔을 때 아래 장이 비어져 나오지 않는다.
     const r = d.look.open.radius * s, hk = smooth(20, 160, th), rh = lerp(r, d.look.cover.radius * s, smooth(60, 120, th)) * hk;
-    const b0 = vc(Bv) - Bv / 2, [bl, bt] = pt(hu, b0), [bw, bh] = X ? [Bu, Bv] : [Bv, Bu];
-    Object.assign(DU.base.style, { left: bl + "px", top: bt + "px", width: bw + "px", height: bh + "px", borderRadius: (X ? `${rh}px ${r}px ${r}px ${rh}px` : `${rh}px ${rh}px ${r}px ${r}px`) });
+    const b0 = vc(Bv) - Bv / 2, [bl, bt] = pt(hu, b0), [bw, bh] = [Bu, Bv];
+    Object.assign(DU.base.style, { left: bl + "px", top: bt + "px", width: bw + "px", height: bh + "px", borderRadius: `${rh}px ${r}px ${r}px ${rh}px` });
     DU.scr.style.borderRadius = DU.base.style.borderRadius;
     const A = "var(--live)";
-    DU.scr.style.boxShadow = X ? `1.5px 0 0 0 ${A}, 0 1.5px 0 0 ${A}, 0 -1.5px 0 0 ${A}` : `0 1.5px 0 0 ${A}, 1.5px 0 0 0 ${A}, -1.5px 0 0 0 ${A}`;
+    DU.scr.style.boxShadow = `1.5px 0 0 0 ${A}, 0 1.5px 0 0 ${A}, 0 -1.5px 0 0 ${A}`;
     const bs = duoSrc("open");
-    place(DU.baseImg, bs.spec, X ? -H : 0, bs.size.w * s, bs.size.h * s, 1, bs.blur, X ? 0 : -H);
+    foldImage(DU.baseImg, bs.spec, bs.size, false, d.open.hinge, s, now, bs.blur);
     DU.scr.style.background = bs.spec.edge;
-    putCam(DU.baseCam, rigCamera(false, s), X ? -H : 0, X ? 0 : -H, 1);
+    putCam(DU.baseCam, rigCamera(false, s), -H, 0, 1);
     const th2 = t * hk, R = r + t, Rh = rh + th2;
-    Object.assign(DU.band.style, { left: (X ? -th2 : -t) + "px", top: (X ? -t : -th2) + "px", right: -t + "px", bottom: -t + "px", borderColor: lk.tone,
-      borderWidth: X ? `${t}px ${t}px ${t}px ${th2}px` : `${th2}px ${t}px ${t}px ${t}px`,
-      borderRadius: X ? `${Rh}px ${R}px ${R}px ${Rh}px` : `${Rh}px ${Rh}px ${R}px ${R}px` });
+    Object.assign(DU.band.style, { left: -th2 + "px", top: -t + "px", right: -t + "px", bottom: -t + "px", borderColor: lk.tone,
+      borderWidth: `${t}px ${t}px ${t}px ${th2}px`,
+      borderRadius: `${Rh}px ${R}px ${R}px ${Rh}px` });
     const kF = E / Math.max(1, E - Lu * sn), uF = hu - Lu * cs * kF, vf = vc(Lv), hF = Lv / 2 * kF, sq = Math.abs(uF - hu) / Math.max(1, Lu);
     const quad = [pt(hu, vf - Lv / 2), pt(uF, vf - hF), pt(uF, vf + hF), pt(hu, vf + Lv / 2)];
     // 커버와 내부 반쪽의 폭이 달라도 옆 단추는 접힌 몸체의 끝으로 이어진다.
     const outU = Math.max(hu + Bu, uF);
-    const facePose = rig.from.folded === (th > 90) ? rig.from : rig.to;
-    const buttonOpacity = rig.from.mirrored === rig.to.mirrored ? 1 : Math.abs(cs);
-    const nearU = th > 90 ? hu : hu - Bu;
     lk.btn.forEach((b, i) => { const e = DU.btns[i]; if (!e) return; const a = b.at * s, ln = b.len * s;
-      Object.assign(e.style, X ? { left: outU + t - .5 + "px", top: b0 + a + "px", width: "3px", height: ln + "px" }
-                               : { left: b0 + Bv - a - ln + "px", top: outU + t - .5 + "px", width: ln + "px", height: "3px" },
-        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? buttonOpacity : 0 });
-      if (facePose.mirrored) Object.assign(e.style, X
-        ? { left: nearU - t - 2.5 + "px", top: b0 + Bv - a - ln + "px" }
-        : { left: b0 + a + "px", top: nearU - t - 2.5 + "px" });
+      Object.assign(e.style, { left: outU + t - .5 + "px", top: b0 + a + "px", width: "3px", height: ln + "px" },
+        { backgroundColor: lk.tone, opacity: ln > .5 && b.side > 0 ? 1 : 0 });
     });
     // 빛은 멈춘 몸체처럼 기기 전체 상자에 깐다 — 90°까지는 펼친 기기, 넘으면 접힌 장의 상자.
-    const box = (u0, u1, v0, v1) => X ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0];
+    const box = (u0, u1, v0, v1) => [u0, v0, u1 - u0, v1 - v0];
     const vh = Math.max(Lv / 2, hF), openBox = box(hu - Bu - t, hu + Bu + t, b0 - t, b0 + Bv + t);
     sheenOn(...(th <= 90 ? openBox : box(hu - t, Math.max(hu, uF) + t, vf - vh - t, vf + vh + t)));
-    const bandX = X ? bl - th2 : bl - t, bandY = X ? bt - t : bt - th2;
+    const bandX = bl - th2, bandY = bt - t;
     Object.assign(DU.band.style, { backgroundColor: lk.tone, borderColor: "transparent", backgroundSize: `${openBox[2]}px ${openBox[3]}px`, backgroundPosition: `${openBox[0] - bandX}px ${openBox[1] - bandY}px` });
     // 변 순서는 힌지 위 → 먼 위 → 먼 아래 → 힌지 아래. 접히는 방향(u)은 내용과 같은 sq로, 힌지와 나란한 방향(v)은 그 변의 원근 배율로 준다.
     // 접히는 장은 90°까지 안쪽(펼친 화면), 넘으면 바깥(커버) 면이다. 바뀌는 순간은 장이 옆으로 서 보이지 않는다.
@@ -641,16 +659,16 @@ export function createResizeScene(root, hooks) {
     const back = th > 90;
     const src = back ? duoSrc("cover") : duoSrc("open");
     const u0 = back ? hu : hu - Lu;
-    const [fl, ft] = pt(u0, vf - Lv / 2), [fw, fh] = X ? [Lu, Lv] : [Lv, Lu];
-    const origin = X ? (back ? "0 50%" : "100% 50%") : (back ? "50% 0" : "50% 100%");
-    const squash = X ? `scaleX(${sq.toFixed(4)})` : `scaleY(${sq.toFixed(4)})`;
+    const [fl, ft] = pt(u0, vf - Lv / 2), [fw, fh] = [Lu, Lv];
+    const origin = back ? "0 50%" : "100% 50%";
+    const squash = `scaleX(${sq.toFixed(4)})`;
     Object.assign(DU.face.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash, background: src.spec.edge });
     Object.assign(DU.dark.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash });
-    const dir = X ? (back ? "to right" : "to left") : (back ? "to bottom" : "to top");
+    const dir = back ? "to right" : "to left";
     const lift = sn, camB = rigCamera(back, s);
     DU.layers.forEach((L, i) => {
       const bl2 = i === 0 ? 0 : P.duoBlur * lift * Math.pow(i / 4, 1.35);
-      place(L.img, src.spec, 0, src.size.w * s, src.size.h * s, 1, Math.max(bl2, src.blur));
+      foldImage(L.img, src.spec, src.size, back, 0, s, now, Math.max(bl2, src.blur));
       putCam(L.cam, camB, 0, 0, 1);
       L.el.style.webkitMaskImage = L.el.style.maskImage = i === 0 ? "none" : `linear-gradient(${dir}, transparent ${((i - .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${(i / 4 * 100).toFixed(1)}%)`;
       L.el.style.opacity = i === 0 || bl2 > .2 ? 1 : 0;
@@ -752,6 +770,7 @@ export function createResizeScene(root, hooks) {
     if (rig.on) {
       const duo = rig.d === DEVICES.ipduo;
       UA.el.hidden = true; UB.el.hidden = true; rigEl.hidden = duo; DU.el.hidden = !duo;
+      turnRig(duo ? DU.el : rigEl, now);
       duo ? drawDuo(now) : drawRig(now);
       return;
     }

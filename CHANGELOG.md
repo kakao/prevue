@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- Folding and unfolding now animate on iPhone Duo, Galaxy Z Fold8, Fold8 Ultra and Pixel Fold while keeping the selected Portrait, Landscape left or Landscape right orientation. Previously, the button could change only the resolution without folding the device. Reduced motion keeps the existing fade.
+
 - **iPhone and iPhone Duo previews show iOS system UI in every orientation.** Duo uses its compact clock and circular status indicator beside the content on the cover and in inner landscape, and aligns them horizontally above the content in inner portrait. Its system UI no longer reuses the ordinary iPhone icon row or home indicator. Device insets can be switched off without hiding these bars. Android devices use Preview’s default system bars.
 
 - **Interactive device previews keep system UI visible while you toggle app insets.** The Device insets toggle changes the input delivered to the app. Insets use the available measurements and best-effort approximations, with the basis shown in the tooltip and status. The choice survives device changes, folding, rotation and source saves.
