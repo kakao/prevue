@@ -122,7 +122,7 @@ try {
     assert(grid,name);
     const v = state.deviceInsets.values, k = state.pxPerDp;
     const safe = e => Math.max(v.statusBars[e], v.navigationBars[e], v.displayCutout[e]) * k;
-    const png = await evaluate(`(()=>{const i=document.querySelector('#shot');return {w:i.naturalWidth,h:i.naturalHeight}})()`);
+    const png = { w: state.size.widthPx, h: state.size.heightPx };
     assert(grid.bounds[0]>=safe('left')-1 && grid.bounds[1]>=safe('top')-1 && grid.bounds[2]<=png.w-safe('right')+2 && grid.bounds[3]<=png.h-safe('bottom')+2,
       `${name} Pearl 메뉴는 전달한 인셋 안에 놓인다: ${JSON.stringify({grid:grid.bounds,png,v,k})}`);
     const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52);
