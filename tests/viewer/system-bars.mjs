@@ -84,7 +84,7 @@ try {
   const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
   const ios = new Set(['ip17','ipair','ip17pm','duo']);
-  const total = devices.reduce((n,d)=>n+(foldable.has(d)?12:6),0);
+  const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
     await post('/viewer/resize', { device, folded, orientation });
