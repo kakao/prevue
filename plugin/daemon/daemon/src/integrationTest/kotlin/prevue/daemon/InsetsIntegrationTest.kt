@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -29,21 +30,22 @@ import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
-import prevue.infrastructure.render.LayoutlibInsets
 import prevue.infrastructure.render.LayoutlibSession
 import prevue.infrastructure.render.RenderEngine
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@EnabledIf("prevue.daemon.InsetsIntegrationTest#available")
-class InsetsIntegrationTest {
+internal abstract class InsetsRenderChecks {
     private val out = Files.createTempDirectory("prevue-insets").toFile()
     private lateinit var engine: RenderEngine
     private lateinit var compiler: HotCompiler
     private lateinit var preview: PreviewSpec
     private val appInsets = AppInsets(InsetEdges(top = 37.0), InsetEdges(bottom = 15.0), InsetEdges(top = 3.0), InsetEdges(left = 7.0))
 
+    protected abstract fun warmup(): Pair<ClasspathSpec, ClasspathSpec>
+    protected abstract val fixtureDir: File?
+
     @BeforeAll fun up() = runBlocking {
-        val (home, app) = PearlFixture.warmup()
+        val (home, app) = warmup()
         val overlay = File(out, "overlay")
         val (spec, _) = ClasspathSpec.forRender(home, app, overlay)
         val source = File(out, "InsetProbe.kt").apply { writeText(InsetsIntegrationTest::class.java.getResource("/InsetProbe.kt.txt")!!.readText()) }
@@ -59,13 +61,13 @@ class InsetsIntegrationTest {
         runCatching { engine.close() }
         runCatching { compiler.close() }
         out.deleteRecursively()
-        PearlFixture.stopGradle()
+        PearlFixture.stopGradle(fixtureDir)
     }
 
     @Test fun `첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기와 중첩 패딩이 전달값을 사용한다`() = runBlocking {
         for (interactive in listOf(false, true)) {
             val sized = CardOverride(preview.previewId, ScreenSize.Device(DeviceModel.GALAXY_S26), SystemUi.ON)
-            val on = engine.open(sized.applyTo(preview.copy(appInsets = appInsets)), interactive, ownLoader = true)
+            val on = engine.open(sized.applyTo(preview.copy(appInsets = appInsets)), interactive, ownLoader = false)
             assertTrue(on.opened.ok, on.opened.message?.text)
             val raw = reads(on)
             assertEquals("0,111,0,0", raw.getValue("status"))
@@ -82,7 +84,7 @@ class InsetsIntegrationTest {
             val paddedTop = box(on, "padded")[1]
             on.close()
 
-            val off = engine.open(sized.applyTo(preview.copy(appInsets = AppInsets.NONE)), interactive, ownLoader = true)
+            val off = engine.open(sized.applyTo(preview.copy(appInsets = AppInsets.NONE)), interactive, ownLoader = false)
             assertTrue(off.opened.ok, off.opened.message?.text)
             for (key in listOf("status", "nav", "caption", "system", "cutout", "drawing")) assertEquals("0,0,0,0", reads(off).getValue(key), key)
             assertIgnoringVisibility(reads(off))
@@ -101,21 +103,18 @@ class InsetsIntegrationTest {
 
     @Test fun `시스템 바와 컷아웃만 전환하면 비영 IME 제스처와 탭 영역은 남고 파생값이 맞는다`() = runBlocking {
         for (interactive in listOf(false, true)) {
-            val handle = engine.open(preview.copy(appInsets = appInsets), interactive, ownLoader = true)
-            assertTrue(handle.opened.ok, handle.opened.message?.text)
-            val session = session()
             for (override in listOf(appInsets, AppInsets.NONE)) {
+                val adjusted = engine.open(preview.copy(appInsets = override), interactive, ownLoader = false)
+                assertTrue(adjusted.opened.ok, adjusted.opened.message?.text)
+                val session = session()
                 session.onSession {
                     val root = session.viewRoot()!!
                     val layout = layout(root)!!
-                    val source = sentinels()
-                    val target = LayoutlibInsets.overridden(source, override, 3f)
-                    assertEquals(if (override == AppInsets.NONE) null else Insets.of(3, 0, 0, 0), target.displayCutout?.waterfallInsets)
-                    layout.dispatchApplyWindowInsets(target)
+                    layout.dispatchApplyWindowInsets(sentinels())
                     layout.requestLayout()
                 }
-                repeat(3) { handle.tick(forceImage = true) }
-                val values = reads(handle)
+                repeat(3) { adjusted.tick(forceImage = true) }
+                val values = reads(adjusted)
                 assertEquals("0,0,0,240", values.getValue("ime"))
                 assertEquals("12,0,15,60", values.getValue("gestures"))
                 assertEquals("0,0,0,30", values.getValue("mandatory"))
@@ -126,9 +125,22 @@ class InsetsIntegrationTest {
                 assertEquals(if (on) "21,111,0,240" else "0,0,0,240", values.getValue("drawing"))
                 assertEquals(if (on) "21,111,15,240" else "12,0,15,240", values.getValue("content"))
                 assertIgnoringVisibility(values)
+                adjusted.close()
             }
-            handle.close()
         }
+    }
+
+    @Test fun `iOS 종류별 매핑은 미지원으로 실패하고 0 전달은 시스템 UI를 둔 채 그린다`() = runBlocking {
+        val phone = ScreenSize.Device(DeviceModel.IPHONE_17).applyTo(preview)
+        val unsupported = engine.show(phone.copy(appInsets = appInsets))
+        assertFalse(unsupported.ok)
+        val issue = unsupported.message!!.text
+        assertTrue(issue.contains("iOS 기기 인셋 ON 미지원"), issue)
+        val off = engine.open(phone.copy(appInsets = AppInsets.NONE), interactive = true, ownLoader = false)
+        assertTrue(off.opened.ok, off.opened.message?.text)
+        assertEquals("0,0,0,0", reads(off).getValue("system"))
+        assertEquals("0,0,0,0", reads(off).getValue("cutout"))
+        off.close()
     }
 
     private fun sentinels(): WindowInsets = WindowInsets.Builder()
@@ -146,6 +158,7 @@ class InsetsIntegrationTest {
 
     private fun session(): LayoutlibSession =
         RenderEngine::class.java.getDeclaredField("live").apply { isAccessible = true }.get(engine) as LayoutlibSession
+
 
     private fun layout(v: View): com.android.layoutlib.bridge.impl.Layout? {
         if (v is com.android.layoutlib.bridge.impl.Layout) return v
@@ -181,7 +194,24 @@ class InsetsIntegrationTest {
         return result
     }
 
+}
+
+@EnabledIf("prevue.daemon.InsetsIntegrationTest#available")
+internal class InsetsIntegrationTest : InsetsRenderChecks() {
+    override fun warmup(): Pair<ClasspathSpec, ClasspathSpec> = PearlFixture.warmup()
+    override val fixtureDir: File? get() = PearlFixture.dir
+
     companion object {
         @JvmStatic fun available() = PearlFixture.available()
     }
+}
+
+@EnabledIf("prevue.daemon.KmpRenderIntegrationTest#available")
+internal class KmpInsetsIntegrationTest : InsetsRenderChecks() {
+    override fun warmup(): Pair<ClasspathSpec, ClasspathSpec> {
+        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug")
+        val app = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)!!.groupValues[1]))
+        return app.dependency(":feature:pearl") to app
+    }
+    override val fixtureDir: File? get() = PearlKmpFixture.dir
 }

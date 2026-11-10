@@ -16,11 +16,12 @@ internal object LayoutlibInsets {
         val layout = find(root) ?: error("layoutlib 의 바 레이아웃을 찾지 못했다")
         val impl = root.parent as? ViewRootImpl ?: error("창의 ViewRootImpl 을 찾지 못했다")
         val density = layout.context.resources.displayMetrics.density
-        layout.dispatchApplyWindowInsets(overridden(windowInsets(impl), insets, density))
+        layout.setOnApplyWindowInsetsListener { _, original -> overridden(original, insets, density) }
+        layout.dispatchApplyWindowInsets(windowInsets(impl))
         layout.requestLayout()
     }
 
-    fun overridden(original: WindowInsets, insets: AppInsets, density: Float): WindowInsets {
+    private fun overridden(original: WindowInsets, insets: AppInsets, density: Float): WindowInsets {
         val builder = WindowInsets.Builder(original)
         val cutout = insets.displayCutout.pixels(density)
         val waterfall = original.displayCutout?.waterfallInsets ?: Insets.NONE

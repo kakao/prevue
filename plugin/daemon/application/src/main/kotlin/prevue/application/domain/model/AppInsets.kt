@@ -16,3 +16,6 @@ data class AppInsets(
         val NONE = AppInsets()
     }
 }
+
+val DeviceModel.appInsetsIssue: String?
+    get() = if (look == BarLook.IOS) "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다" else null
