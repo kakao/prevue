@@ -352,7 +352,7 @@
     "systemUi": null,
     "kmp": false,
     "frames": {
-      "frames": 8,
+      "frames": 7,
       "tickMs": 0,
       "burstMs": 0,
       "firstChangeMs": -1,
@@ -361,15 +361,20 @@
     "frameTrace": [
       {
         "ms": 0,
-        "wake": "type"
-      },
-      {
-        "ms": 0,
-        "wake": "type"
+        "wake": "open"
       },
       {
         "ms": 0,
         "n": 1,
+        "changed": false,
+        "hq": 0,
+        "cq": 0,
+        "tickMs": 0,
+        "gapMs": 16
+      },
+      {
+        "ms": 0,
+        "n": 2,
         "changed": false,
         "hq": 0,
         "cq": 0,

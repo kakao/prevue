@@ -54,7 +54,91 @@
       "interactive": "boolean",
       "name": "null",
       "postures": [
-        "empty"
+        {
+          "imageUrl": "string",
+          "size": {
+            "device": "string",
+            "dpi": "number",
+            "folded": "boolean",
+            "heightDp": "number",
+            "heightPx": "number",
+            "hingeDp": "null|number",
+            "insetProfile": {
+              "evidence": {
+                "capturedAt": "null|string",
+                "conditions": {
+                  "android": "string",
+                  "buildId": "string",
+                  "checkedAt": "string",
+                  "densityDpi": "string",
+                  "displayZoom": "string",
+                  "fontScale": "string",
+                  "horizontalToolbar": "string",
+                  "innerCamera": "string",
+                  "ios": "string",
+                  "multiWindow": "string",
+                  "navigation": "string",
+                  "oneUi": "string",
+                  "orientation": "string",
+                  "pose": "string",
+                  "resolutionPx": "string",
+                  "rotation": "string",
+                  "scale": "string",
+                  "sdk": "string",
+                  "sourceSha256": "string",
+                  "splitView": "string",
+                  "unit": "string"
+                },
+                "kind": "string",
+                "source": "string",
+                "sourceUrl": "string"
+              },
+              "issue": "string",
+              "measured": {
+                "captionBar": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "displayCutout": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "navigationBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "statusBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "systemOverlays": "null",
+                "|": "null"
+              },
+              "safeArea": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "supported": "boolean"
+            },
+            "kind": "string",
+            "landscape": "boolean",
+            "name": "string",
+            "orientation": "string",
+            "preset": "string",
+            "widthDp": "number",
+            "widthPx": "number"
+          }
+        }
       ],
       "previewId": "string",
       "pxPerDp": "number",
@@ -152,7 +236,13 @@
         "empty"
       ]
     },
-    "settle": "null",
+    "settle": {
+      "a": {
+        "frames": "number",
+        "tick": "number"
+      },
+      "t": "string"
+    },
     "stale": [
       "empty"
     ],
@@ -328,7 +418,149 @@
         "shown": false,
         "bars": null
       },
-      "postures": []
+      "postures": [
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": false,
+            "landscape": true,
+            "widthDp": 669,
+            "heightDp": 951,
+            "hingeDp": 475.5,
+            "dpi": 480,
+            "orientation": "portrait",
+            "widthPx": 2007,
+            "heightPx": 2853,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 0,
+                "top": 82,
+                "right": 0,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2007x2853",
+                  "orientation": "portrait",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "fully-open"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-land-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": true,
+            "landscape": true,
+            "widthDp": 678,
+            "heightDp": 466,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "landscape-left",
+            "widthPx": 2034,
+            "heightPx": 1398,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 0,
+                "top": 0,
+                "right": 84,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2034x1398",
+                  "orientation": "landscape-left",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "closed"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-folded-land-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "device",
+            "device": "duo",
+            "name": "iPhone Duo",
+            "folded": true,
+            "landscape": true,
+            "widthDp": 678,
+            "heightDp": 466,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "landscape-right",
+            "widthPx": 2034,
+            "heightPx": 1398,
+            "insetProfile": {
+              "supported": false,
+              "issue": "iOS 기기 인셋 ON 미지원: 안전 영역의 Android 인셋 종류별 매핑을 검증하지 못했다",
+              "safeArea": {
+                "left": 84,
+                "top": 0,
+                "right": 0,
+                "bottom": 34
+              },
+              "measured": null,
+              "evidence": {
+                "source": "safearea.info",
+                "kind": "site",
+                "sourceUrl": "https://safearea.info/iphone-duo.md",
+                "capturedAt": null,
+                "conditions": {
+                  "sdk": "Xcode 27.1",
+                  "scale": "3",
+                  "unit": "pt",
+                  "resolutionPx": "2034x1398",
+                  "orientation": "landscape-right",
+                  "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+                  "checkedAt": "2026-11-10",
+                  "splitView": "off",
+                  "innerCamera": "off",
+                  "horizontalToolbar": "off",
+                  "pose": "closed"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@duo-folded-land-right-0.png?t=<t>"
+        }
+      ]
     },
     "stale": [],
     "busy": false,
@@ -414,7 +646,13 @@
         "sourceSet": null
       }
     ],
-    "settle": null,
+    "settle": {
+      "t": "status.settle",
+      "a": {
+        "frames": 7,
+        "tick": 0
+      }
+    },
     "vacant": null
   }
 }

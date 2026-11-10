@@ -75,7 +75,92 @@
           "interactive": "string",
           "name": "string",
           "postures": [
-            "string"
+            {
+              "imageUrl": "string",
+              "size": {
+                "device": "string",
+                "dpi": "string",
+                "folded": "string",
+                "heightDp": "string",
+                "heightPx": "string",
+                "hingeDp": "string",
+                "insetProfile": {
+                  "evidence": {
+                    "capturedAt": "string",
+                    "conditions": {
+                      "android": "string",
+                      "buildId": "string",
+                      "checkedAt": "string",
+                      "densityDpi": "string",
+                      "displayZoom": "string",
+                      "fontScale": "string",
+                      "horizontalToolbar": "string",
+                      "innerCamera": "string",
+                      "ios": "string",
+                      "multiWindow": "string",
+                      "navigation": "string",
+                      "oneUi": "string",
+                      "orientation": "string",
+                      "pose": "string",
+                      "resolutionPx": "string",
+                      "rotation": "string",
+                      "scale": "string",
+                      "sdk": "string",
+                      "sourceSha256": "string",
+                      "splitView": "string",
+                      "unit": "string"
+                    },
+                    "kind": "string",
+                    "source": "string",
+                    "sourceUrl": "string"
+                  },
+                  "issue": "string",
+                  "measured": {
+                    "captionBar": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "displayCutout": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "navigationBars": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "statusBars": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "systemOverlays": "string",
+                    "|": "string"
+                  },
+                  "safeArea": {
+                    "bottom": "string",
+                    "left": "string",
+                    "right": "string",
+                    "top": "string"
+                  },
+                  "supported": "string"
+                },
+                "kind": "string",
+                "landscape": "string",
+                "name": "string",
+                "orientation": "string",
+                "preset": "string",
+                "widthDp": "string",
+                "widthPx": "string"
+              },
+              "|": "string"
+            }
           ],
           "previewId": "string",
           "pxPerDp": "string",
@@ -380,7 +465,92 @@
           "interactive": "boolean",
           "name": "null",
           "postures": [
-            "empty"
+            {
+              "imageUrl": "string",
+              "size": {
+                "device": "string",
+                "dpi": "number",
+                "folded": "boolean",
+                "heightDp": "number",
+                "heightPx": "number",
+                "hingeDp": "null|number",
+                "insetProfile": {
+                  "evidence": {
+                    "capturedAt": "null|string",
+                    "conditions": {
+                      "android": "string",
+                      "buildId": "string",
+                      "checkedAt": "string",
+                      "densityDpi": "string",
+                      "displayZoom": "string",
+                      "fontScale": "string",
+                      "horizontalToolbar": "string",
+                      "innerCamera": "string",
+                      "ios": "string",
+                      "multiWindow": "string",
+                      "navigation": "string",
+                      "oneUi": "string",
+                      "orientation": "string",
+                      "pose": "string",
+                      "resolutionPx": "string",
+                      "rotation": "string",
+                      "scale": "string",
+                      "sdk": "string",
+                      "sourceSha256": "string",
+                      "splitView": "string",
+                      "unit": "string"
+                    },
+                    "kind": "string",
+                    "source": "string",
+                    "sourceUrl": "string"
+                  },
+                  "issue": "string",
+                  "measured": {
+                    "captionBar": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "displayCutout": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "navigationBars": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "statusBars": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "systemOverlays": "null",
+                    "|": "null"
+                  },
+                  "safeArea": {
+                    "bottom": "number",
+                    "left": "number",
+                    "right": "number",
+                    "top": "number"
+                  },
+                  "supported": "boolean"
+                },
+                "kind": "string",
+                "landscape": "boolean",
+                "name": "string",
+                "orientation": "string",
+                "preset": "string",
+                "widthDp": "number",
+                "widthPx": "number"
+              },
+              "|": "empty"
+            }
           ],
           "previewId": "string",
           "pxPerDp": "number",

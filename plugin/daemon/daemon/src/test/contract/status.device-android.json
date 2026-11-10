@@ -61,8 +61,14 @@
     "kotlinModule": "string",
     "last": {
       "by": "string",
-      "compile": "null",
       "failure": "null",
+      "frames": {
+        "burstMs": "number",
+        "firstChangeMs": "number",
+        "firstChangeTick": "number",
+        "frames": "number",
+        "tickMs": "number"
+      },
       "freshLoader": "boolean",
       "height": "number",
       "image": "string",
@@ -425,12 +431,18 @@
       "message": null,
       "freshLoader": false,
       "phases": {},
-      "compile": null,
       "totalMs": 0,
-      "by": "viewer",
+      "by": "interactive",
+      "stale": {},
       "imageUrl": "/Card0-0.png?t=<t>",
       "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
-      "stale": {}
+      "frames": {
+        "frames": 7,
+        "tickMs": 0,
+        "burstMs": 0,
+        "firstChangeMs": -1,
+        "firstChangeTick": -1
+      }
     },
     "work": null,
     "size": {
@@ -509,7 +521,7 @@
     },
     "kmp": false,
     "frames": {
-      "frames": 8,
+      "frames": 7,
       "tickMs": 0,
       "burstMs": 0,
       "firstChangeMs": -1,
@@ -518,15 +530,20 @@
     "frameTrace": [
       {
         "ms": 0,
-        "wake": "type"
-      },
-      {
-        "ms": 0,
-        "wake": "type"
+        "wake": "open"
       },
       {
         "ms": 0,
         "n": 1,
+        "changed": false,
+        "hq": 0,
+        "cq": 0,
+        "tickMs": 0,
+        "gapMs": 16
+      },
+      {
+        "ms": 0,
+        "n": 2,
         "changed": false,
         "hq": 0,
         "cq": 0,

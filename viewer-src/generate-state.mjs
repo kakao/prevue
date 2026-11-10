@@ -9,12 +9,13 @@ function shape(schemas) {
   const parts = new Set();
   const objects = schemas.filter(value => value && !Array.isArray(value) && typeof value === 'object');
   const arrays = schemas.filter(Array.isArray);
-  for (const value of schemas.filter(value => typeof value === 'string')) {
+  const scalars = schemas.filter(value => typeof value === 'string').concat(objects.flatMap(value => value['|'] ? [value['|']] : []));
+  for (const value of scalars.flatMap(value => value.split('|'))) {
     if (!['null', 'string', 'number', 'boolean', 'empty'].includes(value)) throw Error(`알 수 없는 계약 타입: ${value}`);
     parts.add(value === 'empty' ? 'unknown' : value);
   }
   if (objects.length) {
-    const keys = [...new Set(objects.flatMap(Object.keys))].sort();
+    const keys = [...new Set(objects.flatMap(Object.keys))].filter(key => key !== '|').sort();
     parts.add(keys.length ? '{\n' + keys.map(key => {
       const values = objects.filter(value => key in value).map(value => value[key]);
       return `${JSON.stringify(key)}${values.length < objects.length ? '?' : ''}: ${shape(values)};`;

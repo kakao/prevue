@@ -126,10 +126,12 @@ class ContractTest {
         check("viewer.state.focus", get("/viewer/state"))
         post("/viewer/resize", mapOf("device" to "s26", "landscape" to true))
         runBlocking { viewer.drain() }
+        awaitDevice("s26")
         check("viewer.state.device-android", get("/viewer/state"))
         check("status.device-android", get("/status"))
         post("/viewer/resize", mapOf("device" to "duo", "folded" to true))
         runBlocking { viewer.drain() }
+        awaitDevice("duo")
         check("viewer.state.device-ios", get("/viewer/state"))
         check("status.device-ios", get("/status"))
         post("/viewer/resize", mapOf("size" to "original"))
@@ -215,6 +217,12 @@ class ContractTest {
         misses += compareEvents()
 
         if (misses.isNotEmpty()) fail<Unit>("계약이 어긋났다 — 의도한 변화면 -PcontractUpdate=true:\n" + misses.joinToString("\n"))
+    }
+
+    private fun awaitDevice(id: String) = awaitUntil("$id 자세와 응답 준비") {
+        val s = uc.status.read()
+        val size = s.size as? prevue.application.domain.model.ScreenSize.Device
+        size?.model?.id == id && s.work == null && ws.now.postures?.next(size) == null && ws.now.postures != null
     }
 
     private fun awaitIndex(): Pair<Int, Any?> {

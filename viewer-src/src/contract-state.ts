@@ -31,7 +31,7 @@ export type ContractState = {
 }>;
 };
 "boardNote": {
-"a"?: {
+"a": {
 "file": string;
 "n": number;
 };
@@ -51,7 +51,90 @@ export type ContractState = {
 "imageUrl": string;
 "interactive": boolean;
 "name": null;
-"postures": Array<unknown>;
+"postures": Array<{
+"imageUrl": string;
+"size": {
+"device": string;
+"dpi": number;
+"folded": boolean;
+"heightDp": number;
+"heightPx": number;
+"hingeDp": null | number;
+"insetProfile": {
+"evidence": {
+"capturedAt": null | string;
+"conditions": {
+"android": string;
+"buildId": string;
+"checkedAt": string;
+"densityDpi": string;
+"displayZoom": string;
+"fontScale": string;
+"horizontalToolbar": string;
+"innerCamera": string;
+"ios": string;
+"multiWindow": string;
+"navigation": string;
+"oneUi": string;
+"orientation": string;
+"pose": string;
+"resolutionPx": string;
+"rotation": string;
+"scale": string;
+"sdk": string;
+"sourceSha256": string;
+"splitView": string;
+"unit": string;
+};
+"kind": string;
+"source": string;
+"sourceUrl": string;
+};
+"issue": string;
+"measured": null | {
+"captionBar": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"displayCutout": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"navigationBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"statusBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"systemOverlays": null;
+};
+"safeArea": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"supported": boolean;
+};
+"kind": string;
+"landscape": boolean;
+"name": string;
+"orientation": string;
+"preset": string;
+"widthDp": number;
+"widthPx": number;
+};
+}>;
 "previewId": string;
 "pxPerDp": number;
 "size": null | {
@@ -181,7 +264,13 @@ export type ContractState = {
 "tree": string;
 "userChain": Array<string>;
 };
-"settle": null;
+"settle": null | {
+"a": {
+"frames": number;
+"tick": number;
+};
+"t": string;
+};
 "stale": Array<unknown>;
 "tabs": Array<{
 "active": boolean;
