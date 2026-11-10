@@ -72,7 +72,7 @@ const INSET_TYPES = ['statusBars', 'navigationBars', 'captionBar', 'displayCutou
 const INSET_EDGES = ['left', 'top', 'right', 'bottom'] as const;
 
 /** 기기가 앱에 전달하는 인셋을 한 줄씩 — 영인 종류는 뺀다. */
-export function deviceInsetsTip(insets: DeviceInsets, phrase: (key: string, args?: Record<string, string | number>) => string): string {
+function deviceInsetsTip(insets: DeviceInsets, phrase: (key: string, args?: Record<string, string | number>) => string): string {
   const rows = INSET_TYPES.flatMap(type => {
     const edges = INSET_EDGES.filter(e => insets.values[type][e] !== 0).map(e => phrase('deviceInsets.edge', { edge: phrase(`deviceInsets.edge.${e}`), dp: insets.values[type][e] }));
     return edges.length ? [phrase('deviceInsets.row', { type: phrase(`deviceInsets.type.${type}`), edges: edges.join(' · ') })] : [];

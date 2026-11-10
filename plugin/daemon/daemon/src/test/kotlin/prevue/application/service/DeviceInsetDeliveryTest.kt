@@ -73,8 +73,7 @@ class DeviceInsetDeliveryTest {
         assertFalse(state.last!!.ok)
         assertEquals(device, state.size)
         val insets = state.deviceInsets!!
-        assertEquals(DeviceInsetInputs.of(device).values, insets.input.values)
-        assertTrue(insets.input.approximate)
+        assertEquals(device, insets.device)
         assertEquals(BarLook.IOS, state.systemUi!!.bars!!.look)
     }
 }

@@ -117,7 +117,7 @@ class FocusDaemon(SlowDaemon):
 class FocusOptions(DaemonSeat):
     handler = FocusDaemon
 
-    def test_인셋과_절대_방향은_기존_시스템_UI와_가로_인자와_구별된다(self):
+    def test_절대_방향은_가로_인자와_시스템_UI와_구별되고_인셋_필드는_보내지_않는다(self):
         FocusDaemon.waited = []
         env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
         cases = [

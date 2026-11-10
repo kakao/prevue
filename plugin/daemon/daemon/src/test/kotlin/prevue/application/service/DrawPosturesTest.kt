@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import prevue.application.domain.model.DeviceInsetInputs
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
 import prevue.application.port.Clock
@@ -130,7 +131,11 @@ class DrawPosturesTest {
         val asides = postureAsides()
         val devices = asides.filter { it.params.containsKey("prevueDevice") }
         assertTrue(devices.isNotEmpty())
-        assertTrue(devices.all { it.params["showSystemUi"] == "true" && it.appInsets != null && it.appInsets != prevue.application.domain.model.AppInsets.NONE })
+        val byKey = DeviceModel.entries.flatMap { it.postures }.associateBy { it.key }
+        devices.forEach {
+            assertEquals("true", it.params["showSystemUi"], it.previewId)
+            assertEquals(DeviceInsetInputs.of(byKey.getValue(it.previewId.substringAfter('@'))).values, it.appInsets, it.previewId)
+        }
         assertTrue(asides.filterNot { it in devices }.all { it.appInsets == null })
     }
 

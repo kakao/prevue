@@ -2,8 +2,6 @@ package prevue.infrastructure.controller.http.mapper
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import prevue.application.domain.model.DeviceInsetInputs
-import prevue.application.domain.model.DeviceInsetState
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.DeviceOrientation
 import prevue.infrastructure.json.Json
@@ -32,18 +30,6 @@ class DeviceInsetMapperTest {
         val evidence = p["evidence"] as Map<*, *>
         assertEquals("safearea.info", evidence["source"])
         assertNull(evidence["capturedAt"])
-    }
-
-    @Test fun `기기 인셋 상태는 켬끔 필드 없이 늘 전달하는 값과 근거만 응답한다`() {
-        DeviceModel.entries.flatMap { it.postures }.forEach { d ->
-            val json = DeviceInsetState(d).toJson()
-            assertEquals(setOf("issue", "posture", "approximate", "note", "basisPosture", "values", "evidence"), json.keys, d.key)
-            val input = DeviceInsetInputs.of(d)
-            assertEquals(input.values.toJson(), json["values"], d.key)
-            assertEquals(d.key, json["posture"])
-            assertEquals(input.approximate, json["approximate"])
-            assertEquals(input.basisPosture, json["basisPosture"])
-        }
     }
 
     @Test fun `Android 개별 종류의 미측정 값은 영으로 응답하지 않는다`() {
