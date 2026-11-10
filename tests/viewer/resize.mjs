@@ -138,10 +138,9 @@ try {
   await evaluate(`document.querySelector('#rlW').focus()`); await pause(300);
   await check(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#devCtl').hidden`, "Tab 으로 숫자에 초점만 와서는 기기를 잃지 않는다");
   await evaluate(`document.querySelector('#rlW').blur()`);
-  await check(`document.querySelector('#sysUiBtn').getAttribute('aria-label')==='Device insets' && !document.querySelector('#sysUiBtn').disabled && __store.st.focus.deviceInsets.approximate && __store.st.focus.systemUi.shown`, "기기는 근사 인셋 토글 활성 · 시스템 UI 상시 표시");
-  await click("#sysUiBtn");
-  await until(`__store.st.focus.deviceInsets.choice==='off'`);
-  await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.statusBars.top===0`, "인셋 OFF에서도 바는 남고 앱 입력만 영");
+  await check(`!document.querySelector('#sysUiBtn') && document.querySelector('#insetsInfo').tagName==='SPAN' && document.querySelector('#insetsInfo .sys-lb').textContent==='Insets' && !!document.querySelector('#insetsInfo .sys-approx') && __store.st.focus.deviceInsets.approximate && __store.st.focus.systemUi.shown`, "기기는 누를 수 없는 인셋 ≈ 표시 · 시스템 UI 상시 표시");
+  await check(`(()=>{const t=document.querySelector('#insetsInfo').title,d=__store.st.focus.deviceInsets;return t.includes('Status bars — top '+d.values.statusBars.top+'dp') && t.includes(d.note) && t.includes('Source '+d.evidence.source)})()`, "인셋 툴팁에 값 · 사유 · 출처");
+  await check(`!('choice' in __store.st.focus.deviceInsets) && !('applied' in __store.st.focus.deviceInsets) && !('supported' in __store.st.focus.deviceInsets) && __store.st.focus.deviceInsets.values.statusBars.top>0`, "켬끔 필드 없이 인셋을 늘 전달");
   await orient('portrait');
   await beginFoldProbe();
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
@@ -200,7 +199,7 @@ try {
   await endFoldProbe('Duo landscape-left');
   await check(`__store.st.focus.size.orientation==='landscape-left'`, "Duo 접기에도 절대 방향 유지");
   await pick("s26", "device==='s26'");
-  await check(`__store.st.focus.deviceInsets.choice==='off'`, "기기 · 접기 · 원본과 커스텀을 거쳐 인셋 OFF 유지");
+  await check(`__store.st.focus.deviceInsets.posture.startsWith('s26') && __store.st.focus.deviceInsets.values.statusBars.top>0`, "기기 · 접기 · 원본과 커스텀을 거쳐 돌아와도 인셋 전달");
   await orient('landscape-left');
   const cameraLeft = await evaluate(`document.querySelector('#ua .cam').getBoundingClientRect().left`);
   await orient('landscape-right');
@@ -211,8 +210,7 @@ try {
   await check(`document.activeElement.dataset.orientation==='portrait'`, "방향 메뉴의 방향키와 Home");
   await key('Escape');
   await check(`document.activeElement.id==='dcRot' && __store.st.screen==='focus' && document.querySelector('#dcRot').getAttribute('aria-expanded')==='false'`, "Escape는 방향 메뉴만 닫고 버튼에 초점 복원");
-  await click('#sysUiBtn'); await until(`__store.st.focus.deviceInsets.choice==='on'`);
-  await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.displayCutout.right===37`, "오른쪽 가로에서도 ON 전달과 바 표시");
+  await check(`__store.st.focus.systemUi.shown && __store.st.focus.deviceInsets.values.displayCutout.right===37`, "오른쪽 가로에서도 인셋 전달과 바 표시");
 
   await check(`document.querySelector('#dcFold').hidden && document.querySelector('#dcHinge').hidden`, "일반 기기는 돌리기만 표시");
   await pick("ip17pm", "device==='ip17pm'");

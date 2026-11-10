@@ -90,23 +90,22 @@ try {
     await post('/viewer/resize', { device, folded, orientation });
     await until(`__store.st.focus?.size?.device===${JSON.stringify(device)} && __store.st.focus.size.folded===${folded} && __store.st.focus.size.orientation===${JSON.stringify(orientation)}`);
     await ready();
-    let appearance, onGrid;
-    for (const choice of ['on','off']) {
-      await post('/viewer/deviceInsets', { deviceInsets: choice });
-      await until(`__store.st.focus.deviceInsets.choice===${JSON.stringify(choice)}`);
-      await ready();
+    let appearance;
+    {
       await pause(150);
-      const name = `${device}-${folded?'cover':'open'}-${orientation}-${choice}`;
+      const name = `${device}-${folded?'cover':'open'}-${orientation}`;
       const state = await evaluate(`__store.st.focus`);
       assert.equal(state.systemUi.shown, true, name);
       assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : 'aosp', name);
-      assert.equal(state.deviceInsets.supported, true, name);
-      assert.equal(state.deviceInsets.applied, choice, name);
+      for (const k of ['choice','applied','supported']) assert(!(k in state.deviceInsets), `${name} ${k}`);
+      assert(!('supported' in state.size.insetProfile), name);
       assert.equal(state.deviceInsets.approximate, true, name);
       assert.equal(state.size.insetProfile.verified, false, name);
       assert(state.deviceInsets.note, name);
       assert(state.deviceInsets.basisPosture, name);
-      if (choice==='off') assert(Object.values(state.deviceInsets.values).every(e=>Object.values(e).every(v=>v===0)), name);
+      assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
+      const info = await evaluate(`(()=>{const e=document.querySelector('#insetsInfo');return e&&{tag:e.tagName,title:e.title,approx:!!e.querySelector('.sys-approx'),button:!!document.querySelector('#sysUiBtn')}})()`);
+      assert(info && info.tag!=='BUTTON' && !info.button && info.approx && info.title.includes(state.deviceInsets.note) && info.title.includes(state.deviceInsets.evidence?.source ?? 'No source'), `${name} 인셋 ≈ 표시: ${JSON.stringify(info)}`);
       const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
       assert.equal(overlay.hidden, !ios.has(device), name);
       if (ios.has(device)) {
@@ -125,11 +124,9 @@ try {
       const tree = await nodes();
       const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');
       assert(grid,name);
-      if(choice==='on') onGrid=grid.bounds;
-      else {
-        assert(onGrid[0]>=grid.bounds[0]&&onGrid[1]>=grid.bounds[1]&&onGrid[2]<=grid.bounds[2]&&onGrid[3]<grid.bounds[3], `${name} Pearl 인셋 배치`);
-        assert(onGrid.some((v,i)=>v!==grid.bounds[i]),name);
-      }
+      const v = state.deviceInsets.values, k = state.pxPerDp;
+      const safe = e => Math.max(v.statusBars[e], v.navigationBars[e], v.displayCutout[e]) * k;
+      assert(grid.bounds[1]>=safe('top')-1 && grid.bounds[0]>=safe('left')-1, `${name} Pearl 메뉴는 전달한 인셋 안에 놓인다: ${JSON.stringify({grid:grid.bounds,v,k})}`);
       const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52);
       assert(chips.length>=2, name);
       const bounds = chips[1].bounds;

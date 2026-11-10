@@ -48,10 +48,8 @@ export type ContractState = {
 "error": null;
 "focus": null | {
 "deviceInsets": null | {
-"applied": string;
 "approximate": boolean;
 "basisPosture": string;
-"choice": string;
 "evidence": {
 "kind": string;
 "source": string;
@@ -60,7 +58,6 @@ export type ContractState = {
 "issue": null;
 "note": string;
 "posture": string;
-"supported": boolean;
 "values": {
 "captionBar": {
 "bottom": number;
@@ -171,7 +168,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"supported": boolean;
 "verified": boolean;
 };
 "kind": string;
@@ -254,7 +250,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"supported": boolean;
 "verified": boolean;
 };
 "kind": string;

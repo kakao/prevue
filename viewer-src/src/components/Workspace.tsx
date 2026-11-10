@@ -19,12 +19,11 @@ export type WorkspaceActions = {
   /** byKey 면 키보드로 누른 것이다 — 메뉴를 닫을 때 포커스를 배율로 돌려준다. */
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
-  pickDeviceInsets(choice: string): void;
 };
 export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
-const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {}, pickDeviceInsets() {} };
+const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
 
 /** 첫 장을 기다리는 자리 표시 — 받지 못했으면 실패 문장. 그동안 조작 도구는 잠기고 출구(#back)는 남는다. */
 export function WorkspaceLoading({ host }: { host?: HTMLElement }) {
@@ -69,22 +68,45 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
 }
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-/** 기기는 바를 유지하고 앱 인셋만 전환한다. 비기기는 기존 시스템 UI 선택을 사용한다. */
+const INSET_TYPES = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
+const INSET_EDGES = ['left', 'top', 'right', 'bottom'] as const;
+
+/** 기기가 앱에 전달하는 인셋을 한 줄씩 — 영인 종류는 뺀다. */
+export function deviceInsetsTip(insets: DeviceInsets, phrase: (key: string, args?: Record<string, string | number>) => string): string {
+  const rows = INSET_TYPES.flatMap(type => {
+    const edges = INSET_EDGES.filter(e => insets.values[type][e] !== 0).map(e => phrase('deviceInsets.edge', { edge: phrase(`deviceInsets.edge.${e}`), dp: insets.values[type][e] }));
+    return edges.length ? [phrase('deviceInsets.row', { type: phrase(`deviceInsets.type.${type}`), edges: edges.join(' · ') })] : [];
+  });
+  return [
+    phrase('deviceInsets.tip'),
+    rows.length ? rows.join('\n') : phrase('deviceInsets.none'),
+    ...(insets.approximate ? [phrase('deviceInsets.approximate', { why: insets.note || '' })] : []),
+    insets.evidence ? phrase('deviceInsets.source', { source: `${insets.evidence.source} (${insets.evidence.kind})` }) : phrase('deviceInsets.noSource'),
+  ].join('\n');
+}
+
+/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 누를 것이 없다 — 전달하는 값과 근삿값 여부만 보인다. 비기기는 기존 시스템 UI 선택을 사용한다. */
 export function SystemUiControl({ systemUi, deviceInsets = null, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
   useLayoutEffect(() => { if (element) element.hidden = !systemUi; }, [element, systemUi]);
-  const shown = deviceInsets ? deviceInsets.choice === 'on' : !!systemUi?.shown;
+  const shown = !!systemUi?.shown;
   const label = phrase(deviceInsets ? 'deviceInsets.label' : 'systemUi.label');
   useLayoutEffect(() => { element?.setAttribute('aria-label', label); }, [element, label]);
+  if (deviceInsets) {
+    const approx = deviceInsets.approximate ? phrase('deviceInsets.approximate.short') : '';
+    return place(<span id="insetsInfo" className="tb-btn sys-ro" role="note" tabIndex={0} aria-label={label + (approx ? ' ' + approx : '')} title={deviceInsetsTip(deviceInsets, phrase)}>
+      {BARS}<span className="sys-lb">{label}</span>{deviceInsets.approximate && <span className="sys-v sys-approx" aria-hidden="true">≈</span>}
+    </span>, systemUiHost);
+  }
   const insets = shown ? systemUi?.bars?.insets : null;
-  const tip = deviceInsets ? phrase('deviceInsets.tip') + (deviceInsets.approximate ? '\n' + phrase('deviceInsets.approximate', { why: deviceInsets.note || '' }) : '') : insets
+  const tip = insets
     ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
     : phrase('systemUi.tip');
-  const flip = () => { if (deviceInsets) { actions.pickDeviceInsets(shown ? 'off' : 'on'); return; } if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
+  const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
   const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={label} disabled={waiting} title={tip} onClick={flip}>
-    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}{deviceInsets?.approximate && <span className="sys-approx"> ≈</span>}</span>
+    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}</span>
   </button>;
   return place(body, systemUiHost);
 }

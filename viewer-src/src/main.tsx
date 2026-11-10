@@ -12,7 +12,7 @@ import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcu
 import { store } from '../legacy/js/store.js';
 import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
-import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, pickSystemUi, pickDeviceInsets } from './workspace/focus';
+import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, pickSystemUi } from './workspace/focus';
 import { cancelChoice, choose, clearPick, closeCard, followChooser, forgetPreviewIndex, jump, peekRow, pickRow, pointCard, watchBlankClicks } from './workspace/point';
 
 // 남은 기존 모듈(api · store · board · capsule · motion · strings)은 이 번들보다 먼저 평가된다(외부 import). 그 모듈들은 DOM 을 쥐지 않는다.
@@ -26,7 +26,7 @@ const workspaceActions: WorkspaceActions = {
   exit: exitFocus,
   zoomIn: workspace.zoomIn, zoomOut: workspace.zoomOut, zoomFit: workspace.zoomFit,
   zoomMenuPick: workspace.zoomMenuPick, toggleZoomMenu: workspace.toggleZoomMenu,
-  pickSystemUi, pickDeviceInsets,
+  pickSystemUi,
 };
 const pointActions: PointActions = { choose, cancel: cancelChoice, follow: followChooser, pick: pickRow, peek: peekRow, jump, close: clearPick };
 watchBlankClicks();
