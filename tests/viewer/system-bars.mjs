@@ -84,96 +84,90 @@ try {
   const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
   const ios = new Set(['ip17','ipair','ip17pm','duo']);
-  const total = devices.reduce((n,d)=>n+(foldable.has(d)?12:6),0);
+  const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
     await post('/viewer/resize', { device, folded, orientation });
     await until(`__store.st.focus?.size?.device===${JSON.stringify(device)} && __store.st.focus.size.folded===${folded} && __store.st.focus.size.orientation===${JSON.stringify(orientation)}`);
     await ready();
-    let appearance, onGrid;
-    for (const choice of ['on','off']) {
-      await post('/viewer/deviceInsets', { deviceInsets: choice });
-      await until(`__store.st.focus.deviceInsets.choice===${JSON.stringify(choice)}`);
-      await ready();
-      await pause(150);
-      const name = `${device}-${folded?'cover':'open'}-${orientation}-${choice}`;
-      const state = await evaluate(`__store.st.focus`);
-      assert.equal(state.systemUi.shown, true, name);
-      assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : 'aosp', name);
-      assert.equal(state.deviceInsets.supported, true, name);
-      assert.equal(state.deviceInsets.applied, choice, name);
-      assert.equal(state.deviceInsets.approximate, true, name);
-      assert.equal(state.size.insetProfile.verified, false, name);
-      assert(state.deviceInsets.note, name);
-      assert(state.deviceInsets.basisPosture, name);
-      if (choice==='off') assert(Object.values(state.deviceInsets.values).every(e=>Object.values(e).every(v=>v===0)), name);
-      const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
-      assert.equal(overlay.hidden, !ios.has(device), name);
-      if (ios.has(device)) {
-        assert.equal(overlay.handle, device!=='duo', name);
-        assert.equal(overlay.duo, device==='duo', name);
-        const geometry = overlay.svg.replaceAll(/sb-ink-(light|dark)/g, 'sb-ink');
-        if (appearance) assert.equal(geometry, appearance, name); else appearance=geometry;
-      }
-      if (device==='duo') {
-        const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-right' ? 'left' : 'right';
-        assert.equal(overlay.edge, expected, name);
-        const cam = await evaluate(`(()=>{const c=document.querySelector('#ua .cam');return {opacity:Number(c.style.opacity),left:parseFloat(c.style.left),width:parseFloat(c.style.width),screen:document.querySelector('#ua .stage').getBoundingClientRect().width}})()`);
-        assert.equal(cam.opacity>0, folded, name);
-        if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
-      }
-      const tree = await nodes();
-      const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');
-      assert(grid,name);
-      if(choice==='on') onGrid=grid.bounds;
-      else {
-        assert(onGrid[0]>=grid.bounds[0]&&onGrid[1]>=grid.bounds[1]&&onGrid[2]<=grid.bounds[2]&&onGrid[3]<grid.bounds[3], `${name} Pearl 인셋 배치`);
-        assert(onGrid.some((v,i)=>v!==grid.bounds[i]),name);
-      }
-      const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52);
-      assert(chips.length>=2, name);
-      const bounds = chips[1].bounds;
-      await mouse(await atNode(bounds), 1);
-      await until(`__store.st.selection?.line===52 && !document.querySelector('#pickBox').hidden`);
-      await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
-      await mouse({x:12,y:100});
-      const allAt=await atNode(chips[0].bounds);
-      await until(`!!document.elementFromPoint(${allAt.x},${allAt.y})?.closest('#stage')`);
-      await mouse(allAt);
-      await pause(700);
-      await post('/viewer/catchup');
-      await ready();
-      await pause(150);
-      const touchTree=await nodes();
-      const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)[1].bounds;
-      const imageBefore=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
-      await evaluate(`window.__touches=[]`);
-      await mouse(await atNode(touchBounds));
-      await until(`__touches.some(t=>t.type==='release')`);
-      const touches = await evaluate(`__touches`);
-      const center = [(touchBounds[0]+touchBounds[2])/2,(touchBounds[1]+touchBounds[3])/2];
-      const tolerance = await evaluate(`Math.ceil(Number(document.querySelector('#shot').dataset.fullW)/document.querySelector('#shot').getBoundingClientRect().width)`);
-      for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=touchBounds[0]&&t.x<touchBounds[2]&&t.y>=touchBounds[1]&&t.y<touchBounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
-      await pause(700);
-      let imageAfter=imageBefore;
-      for(const end=Date.now()+5000;imageBefore.equals(imageAfter)&&Date.now()<end;) {
-        await pause(150);
-        const caught=await post('/viewer/catchup');
-        await until(`__store.st.focus.treeUrl===${JSON.stringify(caught.treeUrl)}`);
-        imageAfter=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
-      }
-      const changed = await nodes();
-      const cards = list => new Set(list.filter(n=>n.name==='DrinkCard').map(n=>n.bounds.join(','))).size;
-      if(imageBefore.equals(imageAfter)) {
-        const shot=await send('Page.captureScreenshot',{format:'png'});
-        await writeFile(join(evidence,name+'-failed.png'),Buffer.from(shot.data,'base64'));
-      }
-      assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(touchTree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
-      const shot = await send('Page.captureScreenshot', { format:'png' });
-      await writeFile(join(evidence,name+'.png'),Buffer.from(shot.data,'base64'));
-      results.push({name,size:state.size,insets:state.deviceInsets,overlay,grid:grid.bounds,touches,point:bounds,touchBounds,cardsBefore:cards(touchTree),cardsAfter:cards(changed)});
-      console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
+    await pause(150);
+    const name = `${device}-${folded?'cover':'open'}-${orientation}`;
+    const state = await evaluate(`__store.st.focus`);
+    assert.equal(state.systemUi.shown, true, name);
+    assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : 'aosp', name);
+    for (const k of ['choice','applied','supported']) assert(!(k in state.deviceInsets), `${name} ${k}`);
+    assert(!('supported' in state.size.insetProfile), name);
+    assert.equal(state.deviceInsets.approximate, true, name);
+    assert.equal(state.size.insetProfile.verified, false, name);
+    assert(state.deviceInsets.note, name);
+    assert(state.deviceInsets.basisPosture, name);
+    assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
+    const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden})`);
+    assert(!dock.button && dock.hidden, `${name} 독에 켬끔 버튼 없음: ${JSON.stringify(dock)}`);
+    const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
+    assert.equal(overlay.hidden, !ios.has(device), name);
+    if (ios.has(device)) {
+      assert.equal(overlay.handle, device!=='duo', name);
+      assert.equal(overlay.duo, device==='duo', name);
     }
+    if (device==='duo') {
+      const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-right' ? 'left' : 'right';
+      assert.equal(overlay.edge, expected, name);
+      const cam = await evaluate(`(()=>{const c=document.querySelector('#ua .cam');return {opacity:Number(c.style.opacity),left:parseFloat(c.style.left),width:parseFloat(c.style.width),screen:document.querySelector('#ua .stage').getBoundingClientRect().width}})()`);
+      assert.equal(cam.opacity>0, folded, name);
+      if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
+    }
+    const tree = await nodes();
+    const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');
+    assert(grid,name);
+    const v = state.deviceInsets.values, k = state.pxPerDp;
+    const safe = e => Math.max(v.statusBars[e], v.navigationBars[e], v.displayCutout[e]) * k;
+    const png = { w: state.size.widthPx, h: state.size.heightPx };
+    assert(grid.bounds[0]>=safe('left')-1 && grid.bounds[1]>=safe('top')-1 && grid.bounds[2]<=png.w-safe('right')+2 && grid.bounds[3]<=png.h-safe('bottom')+2,
+      `${name} Pearl 메뉴는 전달한 인셋 안에 놓인다: ${JSON.stringify({grid:grid.bounds,png,v,k})}`);
+    const chips = tree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52);
+    assert(chips.length>=2, name);
+    const bounds = chips[1].bounds;
+    await mouse(await atNode(bounds), 1);
+    await until(`__store.st.selection?.line===52 && !document.querySelector('#pickBox').hidden`);
+    await check(`(()=>{const p=document.querySelector('#pickBox').getBoundingClientRect(),img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW),b=${JSON.stringify(bounds)};return Math.abs(p.left-r.left-b[0]*k)<2&&Math.abs(p.top-r.top-b[1]*k)<2&&Math.abs(p.width-(b[2]-b[0])*k)<2})()`, `${name} 가리키기 박스`);
+    await mouse({x:12,y:100});
+    const allAt=await atNode(chips[0].bounds);
+    await until(`!!document.elementFromPoint(${allAt.x},${allAt.y})?.closest('#stage')`);
+    await mouse(allAt);
+    await pause(700);
+    await post('/viewer/catchup');
+    await ready();
+    await pause(150);
+    const touchTree=await nodes();
+    const touchBounds=touchTree.filter(n=>n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)[1].bounds;
+    const imageBefore=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
+    await evaluate(`window.__touches=[]`);
+    await mouse(await atNode(touchBounds));
+    await until(`__touches.some(t=>t.type==='release')`);
+    const touches = await evaluate(`__touches`);
+    const center = [(touchBounds[0]+touchBounds[2])/2,(touchBounds[1]+touchBounds[3])/2];
+    const tolerance = await evaluate(`Math.ceil(Number(document.querySelector('#shot').dataset.fullW)/document.querySelector('#shot').getBoundingClientRect().width)`);
+    for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=touchBounds[0]&&t.x<touchBounds[2]&&t.y>=touchBounds[1]&&t.y<touchBounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
+    await pause(700);
+    let imageAfter=imageBefore;
+    for(const end=Date.now()+5000;imageBefore.equals(imageAfter)&&Date.now()<end;) {
+      await pause(150);
+      const caught=await post('/viewer/catchup');
+      await until(`__store.st.focus.treeUrl===${JSON.stringify(caught.treeUrl)}`);
+      imageAfter=Buffer.from(await fetch(new URL(await evaluate('__store.st.focus.imageUrl'),viewer)).then(r=>r.arrayBuffer()));
+    }
+    const changed = await nodes();
+    const cards = list => new Set(list.filter(n=>n.name==='DrinkCard').map(n=>n.bounds.join(','))).size;
+    if(imageBefore.equals(imageAfter)) {
+      const shot=await send('Page.captureScreenshot',{format:'png'});
+      await writeFile(join(evidence,name+'-failed.png'),Buffer.from(shot.data,'base64'));
+    }
+    assert(!imageBefore.equals(imageAfter), `${name} 실제 필터 조작이 원본 PNG를 바꾼다: ${JSON.stringify({touches,bounds,before:cards(touchTree),after:cards(changed),state:await evaluate("({busy:__store.st.busy,size:__store.st.focus.size.device})")})}`);
+    const shot = await send('Page.captureScreenshot', { format:'png' });
+    await writeFile(join(evidence,name+'.png'),Buffer.from(shot.data,'base64'));
+    results.push({name,size:state.size,insets:state.deviceInsets,overlay,grid:grid.bounds,touches,point:bounds,touchBounds,cardsBefore:cards(touchTree),cardsAfter:cards(changed)});
+    console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
   }
   assert.equal(results.length,total);
   await post('/viewer/resize',{device:'duo',folded:true,orientation:'portrait'});

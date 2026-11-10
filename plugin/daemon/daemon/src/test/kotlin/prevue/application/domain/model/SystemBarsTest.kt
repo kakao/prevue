@@ -19,10 +19,7 @@ class SystemBarsTest {
                 assertEquals(area.bottom, shown.insets.navDp, device.key)
                 assertEquals(device.insetProfile.evidence!!.url, shown.insets.url, device.key)
             } else assertEquals(SystemBars.COMMON, shown, device.key)
-            val onCard = CardOverride(on.previewId, device).applyTo(on)
-            val offCard = CardOverride(on.previewId, device, deviceInsets = DeviceInsetChoice.OFF).applyTo(on)
-            assertEquals(onCard.systemBars, offCard.systemBars, device.key)
-            assertEquals(AppInsets.NONE, offCard.appInsets, device.key)
+            assertEquals(DeviceInsetInputs.of(device).values, CardOverride(on.previewId, device).applyTo(on).appInsets, device.key)
         }
         assertEquals(SystemBars.COMMON, barsOn(ScreenSize.Dp(320, 640)))
         assertEquals(SystemBars.COMMON, on.systemBars)

@@ -117,14 +117,14 @@ class FocusDaemon(SlowDaemon):
 class FocusOptions(DaemonSeat):
     handler = FocusDaemon
 
-    def test_인셋과_절대_방향은_기존_시스템_UI와_가로_인자와_구별된다(self):
+    def test_절대_방향은_가로_인자와_시스템_UI와_구별되고_인셋_필드는_보내지_않는다(self):
         FocusDaemon.waited = []
         env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
         cases = [
-            (["--device", "duo", "--folded", "--orientation", "landscape-right", "--device-insets", "off"],
-             {"device": "duo", "folded": True, "orientation": "landscape-right", "deviceInsets": "off", "systemUi": None, "landscape": False}),
+            (["--device", "duo", "--folded", "--orientation", "landscape-right"],
+             {"device": "duo", "folded": True, "orientation": "landscape-right", "systemUi": None, "landscape": False}),
             (["--device", "tablet", "--landscape"], {"landscape": True, "orientation": None}),
-            (["--system-ui", "off"], {"systemUi": "off", "deviceInsets": None}),
+            (["--system-ui", "off"], {"systemUi": "off"}),
         ]
         for args, expected in cases:
             with self.subTest(args=args):
@@ -135,3 +135,15 @@ class FocusOptions(DaemonSeat):
                 self.assertTrue(body["interactive"])
                 for key, value in expected.items():
                     self.assertEqual(value, body[key], body)
+                self.assertNotIn("deviceInsets", body)
+
+    def test_기기_인셋_켬끔_옵션은_없어_사용법_오류다(self):
+        FocusDaemon.waited = []
+        env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        for value in ("on", "off"):
+            with self.subTest(value=value):
+                result = subprocess.run([str(ROOT / "bin/prevue"), "focus", "0", "--device", "s26", "--device-insets", value],
+                                        cwd=self.r.root, env=env, capture_output=True, text=True)
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("--device-insets", result.stderr)
+        self.assertEqual([], FocusDaemon.waited)

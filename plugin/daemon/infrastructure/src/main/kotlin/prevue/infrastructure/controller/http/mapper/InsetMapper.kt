@@ -6,7 +6,7 @@ import prevue.application.domain.model.DeviceInsetState
 import prevue.application.domain.model.AppInsets
 
 internal fun DeviceInsetProfile.toJson(): Map<String, Any?> = mapOf(
-    "supported" to supported, "verified" to verified, "issue" to issue,
+    "verified" to verified, "issue" to issue,
     "safeArea" to safeArea?.toJson(),
     "measured" to measured?.let {
         mapOf(
@@ -24,9 +24,8 @@ internal fun DeviceInsetProfile.toJson(): Map<String, Any?> = mapOf(
 private fun InsetEdges.toJson(): Map<String, Double> = mapOf("left" to left, "top" to top, "right" to right, "bottom" to bottom)
 
 internal fun DeviceInsetState.toJson(): Map<String, Any?> = mapOf(
-    "choice" to choice.key, "applied" to choice.key, "supported" to true, "issue" to null,
-    "posture" to device.key, "approximate" to input.approximate, "note" to input.note, "basisPosture" to input.basisPosture,
-    "values" to values.toJson(),
+    "issue" to null, "posture" to device.key, "approximate" to input.approximate, "note" to input.note, "basisPosture" to input.basisPosture,
+    "values" to input.values.toJson(),
     "evidence" to input.evidence?.let { mapOf("source" to it.source.site, "sourceUrl" to it.url, "kind" to it.source.kind) },
 )
 

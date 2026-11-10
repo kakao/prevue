@@ -1,15 +1,5 @@
 package prevue.application.domain.model
 
-enum class DeviceInsetChoice(val key: String) {
-    ON("on"), OFF("off");
-
-    companion object {
-        fun parse(value: String?): DeviceInsetChoice? = value?.let { v ->
-            entries.firstOrNull { it.key == v } ?: throw IllegalArgumentException("기기 인셋은 on · off 중 하나 — $v")
-        }
-    }
-}
-
 data class DeviceInsetInput(val values: AppInsets, val approximate: Boolean, val note: String?, val evidence: InsetEvidence?, val basisPosture: String)
 
 object DeviceInsetInputs {
@@ -45,7 +35,6 @@ object DeviceInsetInputs {
     private fun InsetEdges.mirrored(): InsetEdges = copy(left = right, right = left)
 }
 
-data class DeviceInsetState(val choice: DeviceInsetChoice, val device: ScreenSize.Device) {
+data class DeviceInsetState(val device: ScreenSize.Device) {
     val input: DeviceInsetInput get() = DeviceInsetInputs.of(device)
-    val values: AppInsets get() = if (choice == DeviceInsetChoice.ON) input.values else AppInsets.NONE
 }

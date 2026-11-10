@@ -520,5 +520,3 @@ export function enterFocus(i: number) { post('/viewer/focus', { index: i }).catc
 export function exitFocus() { if (store.st && store.st.focus) post('/viewer/exit'); }
 /** 시스템 UI 세 값(D-159 ①) — 이 한 장만 덮어쓴다. 다시 그린 그림은 돌아올 state 가 붙인다. */
 export function pickSystemUi(choice: string) { post('/viewer/systemUi', { systemUi: choice }).catch(e => flash(phrase('request.failed', { why: (e as Error).message }))); }
-
-export function pickDeviceInsets(choice: string) { post('/viewer/deviceInsets', { deviceInsets: choice }).catch(e => flash(phrase('request.failed', { why: (e as Error).message }))); }

@@ -852,6 +852,3 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 @media (max-width: 800px) {
   .orientation-pick .tb-chev { display: none; }
 }
-@media (max-width: 560px) {
-  .sys-ui .sys-approx { display: none; }
-}

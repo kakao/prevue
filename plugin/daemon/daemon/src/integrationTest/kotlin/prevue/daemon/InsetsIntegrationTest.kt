@@ -25,7 +25,6 @@ import org.junit.jupiter.api.condition.EnabledIf
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.DeviceModel
-import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.domain.model.BarLook
 import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
@@ -151,7 +150,7 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
-    @Test fun `iOS safe area 근삿값과 영 전달을 같은 바 표시로 비교한다`() = runBlocking {
+    @Test fun `iOS safe area 근삿값을 전달하고 영 입력과 같은 바 표시를 유지한다`() = runBlocking {
         val size = ScreenSize.Device(DeviceModel.IPHONE_17)
         val card = CardOverride(preview.previewId, size)
         val on = engine.open(card.applyTo(preview), interactive = true, ownLoader = false)
@@ -160,7 +159,7 @@ internal abstract class InsetsRenderChecks {
         assertEquals("0,0,0,102", reads(on).getValue("nav"))
         val bars = decorations(session())
         on.close()
-        val off = engine.open(card.copy(deviceInsets = prevue.application.domain.model.DeviceInsetChoice.OFF).applyTo(preview), interactive = true, ownLoader = false)
+        val off = engine.open(card.applyTo(preview).zeroed(), interactive = true, ownLoader = false)
         assertTrue(off.opened.ok, off.opened.message?.text)
         assertEquals("0,0,0,0", reads(off).getValue("system"))
         assertEquals("0,0,0,0", reads(off).getValue("cutout"))
@@ -168,12 +167,11 @@ internal abstract class InsetsRenderChecks {
         off.close()
     }
 
-    @Test fun `마흔두 자세는 입력만 전환하고 Android 기본 바와 iOS 바 숨김을 유지한다`() = runBlocking {
+    @Test fun `마흔두 자세는 그 자세의 인셋을 전달하고 Android 기본 바와 iOS 바 숨김을 유지한다`() = runBlocking {
         for (device in DeviceModel.entries.flatMap { it.postures }) {
             var shownBars: List<String>? = null
-            for (choice in DeviceInsetChoice.entries) {
-                val card = CardOverride(preview.previewId, device, deviceInsets = choice)
-                val spec = card.applyTo(preview)
+            for (spec in compared(CardOverride(preview.previewId, device).applyTo(preview))) {
+                val choice = if (spec.appInsets == AppInsets.NONE) "zero" else "device"
                 val handle = engine.open(spec, interactive = true, ownLoader = false)
                 assertTrue(handle.opened.ok, "${device.key} $choice: ${handle.opened.message}")
                 val values = reads(handle)
@@ -210,9 +208,9 @@ internal abstract class InsetsRenderChecks {
             assertThrows<IllegalStateException> { LayoutlibInsets.apply(empty, AppInsets.NONE) }
         }
         handle.close()
-        for (choice in DeviceInsetChoice.entries) {
-            val failure = preview.copy(fqn = "com.example.pearl.feature.pearl.InsetProbeKt.InsetFailure", previewId = "InsetFailure")
-            val result = engine.open(card.copy(deviceInsets = choice).applyTo(failure), interactive = true, ownLoader = false)
+        val failure = preview.copy(fqn = "com.example.pearl.feature.pearl.InsetProbeKt.InsetFailure", previewId = "InsetFailure")
+        for (spec in compared(card.applyTo(failure))) {
+            val result = engine.open(spec, interactive = true, ownLoader = false)
             assertFalse(result.opened.ok)
             assertNull(result.opened.image)
             assertTrue(result.opened.message!!.text.contains("system UI render failure probe"), result.opened.message!!.text)
@@ -226,8 +224,8 @@ internal abstract class InsetsRenderChecks {
         for (device in devices) {
             val grids = mutableListOf<ViewNode>()
             val backgrounds = mutableListOf<Int>()
-            for (choice in DeviceInsetChoice.entries) {
-                val handle = engine.open(CardOverride(menu.previewId, device, deviceInsets = choice).applyTo(menu), interactive = true, ownLoader = false)
+            for (spec in compared(CardOverride(menu.previewId, device).applyTo(menu))) {
+                val handle = engine.open(spec, interactive = true, ownLoader = false)
                 assertTrue(handle.opened.ok, handle.opened.message?.text)
                 grids += handle.look().tree.nodes.single { it.name == "LazyVerticalGrid" }
                 backgrounds += ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0)
@@ -250,8 +248,8 @@ internal abstract class InsetsRenderChecks {
             val buttons = mutableListOf<ViewNode>()
             val backs = mutableListOf<ViewNode>()
             val pictures = mutableListOf<java.awt.image.BufferedImage>()
-            for (choice in DeviceInsetChoice.entries) {
-                val handle = engine.open(CardOverride(detail.previewId, device, deviceInsets = choice).applyTo(detail), interactive = true, ownLoader = false)
+            for (spec in compared(CardOverride(detail.previewId, device).applyTo(detail))) {
+                val handle = engine.open(spec, interactive = true, ownLoader = false)
                 assertTrue(handle.opened.ok, handle.opened.message?.text)
                 val nodes = handle.look().tree.nodes
                 buttons += nodes.singleOrNull { it.name == "PearlButton" } ?: error("${device.key} purchase node: ${nodes.filter { "Button" in it.name }.map { it.name to it.file }}")
@@ -300,6 +298,10 @@ internal abstract class InsetsRenderChecks {
         if (v is ViewGroup) for (i in 0 until v.childCount) layout(v.getChildAt(i))?.let { return it }
         return null
     }
+
+    private fun PreviewSpec.zeroed(): PreviewSpec = copy(appInsets = AppInsets.NONE)
+
+    private fun compared(spec: PreviewSpec): List<PreviewSpec> = listOf(spec, spec.zeroed())
 
     private fun reads(handle: LiveSession): Map<String, String> = handle.semantics().mapNotNull {
         it.semantics.contentDescription?.takeIf { "=" in it }?.let { it.substringBefore('=') to it.substringAfter('=') }

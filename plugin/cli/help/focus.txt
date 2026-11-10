@@ -1,7 +1,6 @@
 prevue focus <index> --on|--off
 prevue focus <index> --size original|narrow|foldable|<W>x<H>
 prevue focus <index> --device <device> [--folded] [--orientation portrait|landscape-left|landscape-right]
-prevue focus <index> --device-insets on|off
 prevue focus <index> --system-ui annotated|on|off
 
 Attaches a task to the card to make it interactive (--on) and back to the board (--off) — also for a card entered by show <FQN>. While it is on, other cards are redrawn on a separate task
@@ -19,18 +18,17 @@ Given to a card already on, they redraw at that size without turning interactive
     A phone rotated is landscape; a screen that is naturally landscape (tablet · unfolded fold8) rotated is portrait. status's widthDp · heightDp give the actual orientation
 --orientation selects an absolute direction on any device, including both foldable screens. The viewer uses the same three-direction menu.
   --landscape keeps its legacy meaning above; do not combine it with --orientation.
---device-insets toggles the system bar and cutout insets delivered to the Composable. Devices default to on and always show system UI, even with insets off.
-  off delivers zero system bar and cutout insets; keyboard and gesture insets are preserved. The app decides its own padding and edge-to-edge layout.
+A device always shows its system UI and always delivers its system bar and cutout insets to the Composable; there is no switch to turn them off.
+  Whether content draws under the bars or stays inside them is decided by the Composable (its Modifiers), as on a real device.
   All device postures are available as a best-effort preview. Missing systemOverlays are assumed zero; iOS safe areas are mapped approximately to bar and cutout types.
   A missing right-landscape measurement uses the opposite landscape's horizontal mirror. These are approximations, not a promise of exact device behavior.
-  status.deviceInsets gives choice, applied, supported, approximate, note, posture, basisPosture, values (four edges per type), and evidence.
+  status.deviceInsets gives the delivered values (four edges per type) with approximate, note, posture, basisPosture and evidence.
   status.size.insetProfile keeps the source measurements (null means unmeasured); verified distinguishes complete type-specific evidence from an approximation.
-  The choice survives device changes, folding, rotation, source saves and a temporary return to non-device sizes. It resets when interactive ends or the tab changes.
 --system-ui draws or hides the status and navigation bars for original, preset and custom sizes; annotated follows @Preview(showSystemUi).
   It survives saves and resets on exit or tab change. --size original removes only the size; --system-ui annotated removes only the system UI override.
-  With a device selected, --system-ui is rejected with an explanation; use --device-insets instead. A prior system UI choice is restored when returning to a non-device size.
+  With a device selected, --system-ui is rejected with an explanation. A prior system UI choice is restored when returning to a non-device size.
   status.systemUi.choice records that choice, annotated records the source annotation, and shown reports whether bars are actually displayed.
   Device bars may be drawn by the viewer over the PNG. Inspect the browser for their appearance and status.deviceInsets.values for the app's input.
-Giving only --size, --device, --system-ui or --device-insets turns the card on (--on is the default). Running --on again without these options keeps the choices.
+Giving only --size, --device or --system-ui turns the card on (--on is the default). Running --on again without these options keeps the choices.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.

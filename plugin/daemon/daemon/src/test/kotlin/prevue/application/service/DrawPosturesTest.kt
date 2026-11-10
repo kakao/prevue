@@ -9,9 +9,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import prevue.application.domain.model.DeviceInsetInputs
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.ScreenSize
-import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.port.Clock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
@@ -124,19 +124,19 @@ class DrawPosturesTest {
         assertEquals(bar - "foldable", asideKeys().drop(17))
     }
 
-    @Test fun `기기 인셋을 끄면 옛 그림을 빼고 새 회차에 기기의 인셋만 영으로 그린다`() {
+    @Test fun `옆 태스크는 기기 자세마다 그 기기의 인셋을 전달하고 비기기 칸에는 전달하지 않는다`() {
         val uc = opened()
         uc.pick(fold8)
         uc.awaitDrawn(17)
-        val round = uc.workspace.now.postures!!.round
-        runBlocking { uc.live.setDeviceInsets(DeviceInsetChoice.OFF, "viewer") }
-        assertTrue(uc.workspace.now.postures!!.round > round)
-        uc.awaitDrawn(17)
-        val after = postureAsides().drop(17)
-        assertEquals(17, after.size)
-        val devices = after.filter { it.params.containsKey("prevueDevice") }
-        assertTrue(devices.all { it.params["showSystemUi"] == "true" && it.appInsets == prevue.application.domain.model.AppInsets.NONE })
-        assertTrue(after.filterNot { it in devices }.all { it.appInsets == null })
+        val asides = postureAsides()
+        val devices = asides.filter { it.params.containsKey("prevueDevice") }
+        assertTrue(devices.isNotEmpty())
+        val byKey = DeviceModel.entries.flatMap { it.postures }.associateBy { it.key }
+        devices.forEach {
+            assertEquals("true", it.params["showSystemUi"], it.previewId)
+            assertEquals(DeviceInsetInputs.of(byKey.getValue(it.previewId.substringAfter('@'))).values, it.appInsets, it.previewId)
+        }
+        assertTrue(asides.filterNot { it in devices }.all { it.appInsets == null })
     }
 
     @Test fun `저장하면 낡은 그림을 바로 빼고 새 코드로 다시 그린다`() {

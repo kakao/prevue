@@ -38,10 +38,8 @@
     "borrowedFrom": "null",
     "compilerWarm": "boolean",
     "deviceInsets": {
-      "applied": "string",
       "approximate": "boolean",
       "basisPosture": "string",
-      "choice": "string",
       "evidence": {
         "kind": "string",
         "source": "string",
@@ -50,7 +48,6 @@
       "issue": "null",
       "note": "string",
       "posture": "string",
-      "supported": "boolean",
       "values": {
         "captionBar": {
           "bottom": "number",
@@ -250,7 +247,6 @@
           "right": "number",
           "top": "number"
         },
-        "supported": "boolean",
         "verified": "boolean"
       },
       "kind": "string",
@@ -274,11 +270,11 @@
       "annotated": "boolean",
       "bars": {
         "insets": {
-          "statusDp": "number",
+          "kind": "string",
           "navDp": "number",
           "source": "string",
-          "kind": "string",
-          "sourceUrl": "string"
+          "sourceUrl": "string",
+          "statusDp": "number"
         },
         "look": "string"
       },
@@ -488,7 +484,6 @@
       "widthPx": 1398,
       "heightPx": 2034,
       "insetProfile": {
-        "supported": true,
         "verified": false,
         "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
         "safeArea": {
@@ -535,9 +530,6 @@
       }
     },
     "deviceInsets": {
-      "choice": "on",
-      "applied": "on",
-      "supported": true,
       "issue": null,
       "posture": "duo-folded",
       "approximate": true,

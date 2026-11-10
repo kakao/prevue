@@ -80,6 +80,6 @@ node tests/viewer/contrast.mjs --plant on-surface=surface   # 미달을 심는�
 
 ## 기기 시스템 UI와 인셋 통합
 
-전용 워크트리의 `AdaptivePreviews.kt`를 연 서버에서 `node tests/viewer/system-bars.mjs <URL>`을 실행합니다. 10종·42자세의 ON/OFF 84개 조합에서 바 계열, iOS 배치 유지, Duo의 측면과 카메라, 인셋 지원·검증·근사 정보, 실제 필터 터치와 가리키기 박스를 대조합니다. `--smoke`는 Duo 12개 조합만, `--devices=pixelfold,tablet`은 지정한 기기만 실행합니다. 마지막에는 SSE 실패 상태를 재생해 이전 그림·바와 터치가 차단되고 복구되는지 검사합니다. 이 재생은 렌더러 실패 주입을 대신하지 않습니다. 렌더 입력과 Android/CMP 첫 프레임은 `*InsetsIntegrationTest`가 검사합니다.
+전용 워크트리의 `AdaptivePreviews.kt`를 연 서버에서 `node tests/viewer/system-bars.mjs <URL>`을 실행합니다. 10종·42자세 각각에서 바 계열, Duo의 측면과 카메라, 늘 전달하는 인셋과 검증·근사 정보, 독에 켬끔 버튼이 없음, 전달한 인셋 안의 Pearl 메뉴, 실제 필터 터치와 가리키기 박스를 대조합니다. `--smoke`는 Duo 6개 자세만, `--devices=pixelfold,tablet`은 지정한 기기만 실행합니다. 마지막에는 SSE 실패 상태를 재생해 이전 그림·바와 터치가 차단되고 복구되는지 검사합니다. 이 재생은 렌더러 실패 주입을 대신하지 않습니다. 렌더 입력과 Android/CMP 첫 프레임은 `*InsetsIntegrationTest`가 검사합니다.
 
 스크린샷과 원자료는 `.cache/system-bars/`에 남습니다. 스크린샷은 브라우저의 iOS 오버레이를 포함하지만 원본 렌더 PNG에는 그 오버레이·기기 몸체·카메라가 없습니다. Android의 Preview 기본 바는 원본 PNG에 포함됩니다. Safari와 실물 모션은 이 헤드리스 Chrome 검사로 확인하지 않습니다.

@@ -13,7 +13,6 @@ import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.PreviewSpec
-import prevue.application.domain.model.DeviceInsetChoice
 import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
@@ -163,19 +162,17 @@ class Live(
 
     suspend fun setSystemUi(systemUi: SystemUi, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, null, systemUi, by) }
 
-    suspend fun setDeviceInsets(choice: DeviceInsetChoice, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, null, null, by, choice) }
-
-    suspend fun overrideWithin(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, deviceInsets: DeviceInsetChoice? = null): ShowResult? {
+    suspend fun overrideWithin(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String): ShowResult? {
         val now = ws.now.cardOverride
-        if (deviceInsets == null && now == null && size in setOf(null, ScreenSize.Original) && systemUi in setOf(null, SystemUi.ANNOTATED)) return null
+        if (now == null && size in setOf(null, ScreenSize.Original) && systemUi in setOf(null, SystemUi.ANNOTATED)) return null
         val target = overrideTarget()
-        val next = (now?.takeIf { it.previewId == target.previewId } ?: CardOverride(target.previewId)).with(size, systemUi, deviceInsets)
+        val next = (now?.takeIf { it.previewId == target.previewId } ?: CardOverride(target.previewId)).with(size, systemUi)
         if (next == now) return null
         ed.update { it.copy(cardOverride = next) }
         val sameBars = (next?.systemUi ?: SystemUi.ANNOTATED) == (now?.systemUi ?: SystemUi.ANNOTATED)
         val onBoard = ws.now.board != null
         val r = try {
-            live.show(ed, target, by, keepPostures = sameBars && (next?.deviceInsets ?: DeviceInsetChoice.ON) == (now?.deviceInsets ?: DeviceInsetChoice.ON))
+            live.show(ed, target, by, keepPostures = sameBars)
         } finally {
             if (onBoard) {
                 val at = ws.nowMs()

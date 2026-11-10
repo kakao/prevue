@@ -9,25 +9,24 @@ import prevue.application.domain.model.*
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
 
-class DeviceInsetChoiceTest {
+class DeviceInsetDeliveryTest {
     private val fx = Fixture()
 
     @AfterEach fun down() = fx.close()
 
-    @Test fun `선택은 모든 자세 기기 원본 커스텀 저장을 거쳐 유지되고 종료하면 초기화된다`() = runBlocking {
+    @Test fun `기기는 모든 자세와 원본 커스텀 경유 저장 뒤에도 그 자세의 인셋을 늘 전달한다`() = runBlocking {
         val uc = fx.graph()
         uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
         uc.workspace.awaitBoardFilled()
         val first = ScreenSize.Device(DeviceModel.GALAXY_S26)
         uc.boards.focus(0, true, "test", first)
-        assertEquals(DeviceInsetChoice.ON, uc.status.read().deviceInsets!!.choice)
-        uc.live.setDeviceInsets(DeviceInsetChoice.OFF, "test")
         for (d in DeviceModel.entries.flatMap { it.postures }) {
             uc.live.resize(d, "test")
             val state = uc.status.read()
             assertEquals(d, state.size)
-            assertEquals(DeviceInsetChoice.OFF, state.deviceInsets!!.choice)
-            assertEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets)
+            assertEquals(d, state.deviceInsets!!.device)
+            assertEquals(DeviceInsetInputs.of(d).values, fx.renderer.opened.last().appInsets, d.key)
+            assertNotEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets, d.key)
             assertTrue(state.systemUi!!.shown)
         }
         for (s in listOf(ScreenSize.Original, ScreenSize.Dp(500, 600))) {
@@ -38,11 +37,7 @@ class DeviceInsetChoiceTest {
         }
         uc.live.resize(first, "test")
         uc.hotReload.applySave(listOf(fx.file), "test")
-        assertEquals(DeviceInsetChoice.OFF, uc.status.read().deviceInsets!!.choice)
-        assertEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets)
-        uc.boards.focus(0, false, "test")
-        uc.boards.focus(0, true, "test", first)
-        assertEquals(DeviceInsetChoice.ON, uc.status.read().deviceInsets!!.choice)
+        assertEquals(DeviceInsetInputs.of(first).values, fx.renderer.opened.last().appInsets)
     }
 
     @Test fun `기기의 시스템 UI 변경은 상태를 바꾸지 않고 거절하며 이전 비기기 선택은 복원된다`() = runBlocking {
@@ -52,39 +47,33 @@ class DeviceInsetChoiceTest {
         uc.boards.focus(0, true, "test", systemUi = SystemUi.OFF)
         uc.live.resize(ScreenSize.Device(DeviceModel.IPHONE_DUO), "test")
         val before = uc.workspace.now.cardOverride
-        assertThrows<IllegalArgumentException> { uc.live.setSystemUi(SystemUi.OFF, "test") }
+        val e = assertThrows<IllegalArgumentException> { uc.live.setSystemUi(SystemUi.OFF, "test") }
+        assertFalse(e.message!!.contains("--device-insets"))
         assertEquals(before, uc.workspace.now.cardOverride)
         assertTrue(uc.status.read().systemUi!!.shown)
         assertEquals(SystemUi.OFF, uc.status.read().systemUi!!.choice)
-        uc.live.setDeviceInsets(DeviceInsetChoice.OFF, "test")
         uc.live.resize(ScreenSize.Original, "test")
         assertFalse(uc.status.read().systemUi!!.shown)
         val other = fx.previewFile("Other")
         uc.tabs.openPreview(other.path, null, emptyMap(), "test")
         assertNull(uc.workspace.now.cardOverride)
-        uc.boards.focus(0, true, "test", ScreenSize.Device(DeviceModel.GALAXY_S26))
-        assertEquals(DeviceInsetChoice.ON, uc.status.read().deviceInsets!!.choice)
     }
 
-    @Test fun `인셋 적용 렌더가 실패하면 실패를 알리고 선택과 근거는 요청한 환경을 유지한다`() = runBlocking {
+    @Test fun `인셋 적용 렌더가 실패하면 실패를 알리고 근거는 요청한 환경을 유지한다`() = runBlocking {
         val uc = fx.graph()
         uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
         uc.workspace.awaitBoardFilled()
+        uc.boards.focus(0, true, "test", ScreenSize.Device(DeviceModel.GALAXY_S26))
         val device = ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true)
-        uc.boards.focus(0, true, "test", device)
         fx.renderer.exceptions.add("인셋 적용 실패")
-        val result = uc.live.setDeviceInsets(DeviceInsetChoice.OFF, "test")!!
+        val result = uc.live.resize(device, "test")!!
         assertFalse(result.ok)
         assertEquals("인셋 적용 실패", result.shot.out.message!!.text)
         val state = uc.status.read()
-        val last = state.last!!
-        assertFalse(last.ok)
+        assertFalse(state.last!!.ok)
         assertEquals(device, state.size)
         val insets = state.deviceInsets!!
-        assertEquals(DeviceInsetChoice.OFF, insets.choice)
-        assertEquals(AppInsets.NONE, insets.values)
-        assertTrue(insets.input.approximate)
+        assertEquals(device, insets.device)
         assertEquals(BarLook.IOS, state.systemUi!!.bars!!.look)
-        assertTrue(uc.live.setDeviceInsets(DeviceInsetChoice.ON, "test")!!.ok)
     }
 }

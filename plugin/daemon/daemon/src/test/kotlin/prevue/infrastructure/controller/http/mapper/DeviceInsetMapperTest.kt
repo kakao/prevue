@@ -13,7 +13,8 @@ class DeviceInsetMapperTest {
             val profile = json["insetProfile"] as Map<*, *>
             assertEquals(d.orientation.key, json["orientation"])
             assertEquals(d.widthPx to d.heightPx, json["widthPx"] to json["heightPx"])
-            assertEquals(d.insetProfile.supported, profile["supported"])
+            assertFalse(profile.containsKey("supported"), d.key)
+            assertEquals(d.insetProfile.verified, profile["verified"])
             assertEquals(d.insetProfile.issue, profile["issue"])
             assertEquals(d.insetProfile.evidence?.conditions, (profile["evidence"] as? Map<*, *>)?.get("conditions"))
             assertNotNull(Json.parse(Json.str(json)))
@@ -24,7 +25,6 @@ class DeviceInsetMapperTest {
         val cover = DeviceModel.IPHONE_DUO.postures.single { it.folded && it.orientation == DeviceOrientation.LANDSCAPE_RIGHT }
         val p = cover.toJson()!!["insetProfile"] as Map<*, *>
         assertEquals(mapOf("left" to 84.0, "top" to 0.0, "right" to 0.0, "bottom" to 34.0), p["safeArea"])
-        assertEquals(true, p["supported"])
         assertEquals(false, p["verified"])
         assertNull(p["measured"])
         val evidence = p["evidence"] as Map<*, *>
