@@ -154,6 +154,7 @@ try {
       const center = [(touchBounds[0]+touchBounds[2])/2,(touchBounds[1]+touchBounds[3])/2];
       const tolerance = await evaluate(`Math.ceil(Number(document.querySelector('#shot').dataset.fullW)/document.querySelector('#shot').getBoundingClientRect().width)`);
       for (const t of touches) assert(Math.abs(t.x-center[0])<=tolerance&&Math.abs(t.y-center[1])<=tolerance&&t.x>=touchBounds[0]&&t.x<touchBounds[2]&&t.y>=touchBounds[1]&&t.y<touchBounds[3], `${name} 터치 좌표: ${JSON.stringify({touch:t,center,bounds})}`);
+      await pause(700);
       let imageAfter=imageBefore;
       for(const end=Date.now()+5000;imageBefore.equals(imageAfter)&&Date.now()<end;) {
         await pause(150);
