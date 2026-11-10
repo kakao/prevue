@@ -229,7 +229,7 @@ internal abstract class InsetsRenderChecks {
             for (choice in DeviceInsetChoice.entries) {
                 val handle = engine.open(CardOverride(menu.previewId, device, deviceInsets = choice).applyTo(menu), interactive = true, ownLoader = false)
                 assertTrue(handle.opened.ok, handle.opened.message?.text)
-                grids += handle.look().tree.nodes.first { it.name == "LazyVerticalGrid" && it.file == "FilterScreen.kt" }
+                grids += handle.look().tree.nodes.single { it.name == "LazyVerticalGrid" }
                 backgrounds += ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0)
                 handle.close()
             }
