@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **iPhone and iPhone Duo previews show iOS system UI in every orientation.** Duo places its status indicators beside the content on the cover and in inner landscape, and above it in inner portrait. Device insets can be switched off without hiding these bars. Android devices use Preview’s default system bars.
+
 - **Interactive device previews keep system UI visible while you toggle app insets.** The Device insets toggle changes the input delivered to the app. Insets use the available measurements and best-effort approximations, with the basis shown in the tooltip and status. The choice survives device changes, folding, rotation and source saves.
 - **All devices now offer Portrait, Landscape left and Landscape right in an orientation menu.** CLI adds `focus --device-insets on|off` and `--orientation`; legacy `--landscape` keeps its meaning, and `--system-ui` remains available for non-device sizes.
 - **iPhone Duo uses the Xcode 27.1 screen dimensions.** Its inner display now renders at 2853×2007px in landscape and 2007×2853px in portrait, with a matching device frame.

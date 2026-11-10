@@ -239,7 +239,13 @@
       "systemUi": {
         "annotated": "boolean",
         "bars": {
-          "insets": "null",
+          "insets": {
+            "statusDp": "number",
+            "navDp": "number",
+            "source": "string",
+            "kind": "string",
+            "sourceUrl": "string"
+          },
           "look": "string"
         },
         "choice": "string",
@@ -470,8 +476,14 @@
         "annotated": false,
         "shown": true,
         "bars": {
-          "look": "aosp",
-          "insets": null
+          "look": "ios",
+          "insets": {
+            "statusDp": 0,
+            "navDp": 34,
+            "source": "safearea.info",
+            "kind": "site",
+            "sourceUrl": "https://safearea.info/iphone-duo.md"
+          }
         }
       },
       "deviceInsets": {

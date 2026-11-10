@@ -148,6 +148,13 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       load(p.imageUrl).then(img => { if (active && gen === epoch && current?.postures?.some(x => x.imageUrl === p.imageUrl)) scene.image(sizeKey(p.size), spec(img, p.size)); }).catch(() => {});
     }
     if (original) scene.update(target(f), !previous);
+    if (error) {
+      shown = false; loading = stream = null;
+      shot.onload = null; shot.removeAttribute('src');
+      prepare(true, true);
+      stage.classList.remove('resize-hidden');
+      return true;
+    }
     if (preparing) prepare(true, !!error);
     // 렌더가 끝난 상태만 읽어 옛 PNG를 새 크기의 첫 장으로 쓰지 않는다.
     const attached = !error && !document.hidden && !!f.streamUrl && (!pending || f.streamUrl !== stream || f.imageUrl !== previous?.imageUrl);

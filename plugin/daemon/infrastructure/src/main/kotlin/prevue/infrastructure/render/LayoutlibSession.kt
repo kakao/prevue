@@ -19,7 +19,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.delay
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
+import prevue.application.domain.model.BarLook
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SystemBars
+import prevue.application.domain.model.systemBars
 import prevue.application.port.Frame
 
 internal class LayoutlibSession(
@@ -60,7 +63,7 @@ internal class LayoutlibSession(
         val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
         onSession {
             LayoutlibInsets.apply(root, insets)
-            if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
+            if ((preview.systemBars as? SystemBars.Shown)?.look == BarLook.IOS) LayoutlibBars.hideBars(root)
         }
         anchor()
     }
