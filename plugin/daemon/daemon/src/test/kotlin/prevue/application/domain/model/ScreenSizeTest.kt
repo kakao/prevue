@@ -44,7 +44,7 @@ class ScreenSizeTest {
         val cover = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true)
         assertEquals(listOf(475.43, 751.24), listOf(cover.widthDp, cover.heightDp))
         assertEquals(listOf(360.0, 780.0), ScreenSize.Device(DeviceModel.GALAXY_S26).let { listOf(it.widthDp, it.heightDp) })
-        assertEquals(listOf(890.0, 626.0, 445.0), ScreenSize.Device(DeviceModel.IPHONE_DUO).let { listOf(it.widthDp, it.heightDp, it.hingeDp) })
+        assertEquals(listOf(951.0, 669.0, 475.5), ScreenSize.Device(DeviceModel.IPHONE_DUO).let { listOf(it.widthDp, it.heightDp, it.hingeDp) })
     }
 
     @Test fun `새 기기의 dp 크기는 공개 스펙의 px 과 밀도로 나온다`() {

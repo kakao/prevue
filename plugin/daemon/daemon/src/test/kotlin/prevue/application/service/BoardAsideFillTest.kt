@@ -73,14 +73,14 @@ class BoardAsideFillTest {
     @Test fun `지금 기기의 자세 · 크기 칸을 다 그린 뒤에 보드 카드를 그린다`() {
         val uc = opened()
         uc.focus(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
-        awaitUntil("자세 칸 열다섯") { fx.renderer.asides.size >= 15 }
+        awaitUntil("자세 칸 열다섯") { fx.renderer.asides.size >= 17 }
         val before = fx.renderer.asides.size
         uc.save()
         uc.workspace.awaitBoardFilled()
-        awaitUntil("자세 칸 서른") { fx.renderer.asides.count { '@' in it.previewId } == 30 }
+        awaitUntil("자세 칸 서른") { fx.renderer.asides.count { '@' in it.previewId } == 34 }
         val after = fx.renderer.asides.drop(before)
         val firstCard = after.indexOfFirst { '@' !in it.previewId }
-        assertEquals(15, firstCard, "보드 카드가 자세 칸보다 먼저 그려졌다 — $after")
+        assertEquals(17, firstCard, "보드 카드가 자세 칸보다 먼저 그려졌다 — $after")
         assertEquals(uc.cardSpecs().drop(1), after.drop(firstCard))
     }
 

@@ -38,6 +38,8 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     is ScreenSize.Device -> mapOf(
         "kind" to "device", "device" to model.id, "name" to model.label, "folded" to folded, "landscape" to landscape,
         "widthDp" to widthDp, "heightDp" to heightDp, "hingeDp" to hingeDp, "dpi" to model.dpi,
+        "orientation" to orientation.key, "widthPx" to widthPx, "heightPx" to heightPx,
+        "insetProfile" to insetProfile.toJson(),
     )
 }
 

@@ -34,7 +34,7 @@ export function createResizeScene(root, hooks) {
       open: { w: 1280, h: 800 },
       look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
     ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
-      cover: { w: 466, h: 678 }, open: { w: 890, h: 626, hinge: 445 },
+      cover: { w: 466, h: 678 }, open: { w: 951, h: 669, hinge: 475.5 },
       look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 96, h: 30, y: 10 }, btn: [[1, 200, 80], [1, 470, 46]] },
               open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 10, h: 10, y: 11, x: .75 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
     fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,

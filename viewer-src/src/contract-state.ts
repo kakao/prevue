@@ -31,7 +31,7 @@ export type ContractState = {
 }>;
 };
 "boardNote": {
-"a": {
+"a"?: {
 "file": string;
 "n": number;
 };
@@ -54,7 +54,84 @@ export type ContractState = {
 "postures": Array<unknown>;
 "previewId": string;
 "pxPerDp": number;
-"size": null;
+"size": null | {
+"device": string;
+"dpi": number;
+"folded": boolean;
+"heightDp": number;
+"heightPx": number;
+"hingeDp": null;
+"insetProfile": {
+"evidence": {
+"capturedAt": null | string;
+"conditions": {
+"android"?: string;
+"buildId"?: string;
+"checkedAt"?: string;
+"densityDpi"?: string;
+"fontScale"?: string;
+"horizontalToolbar"?: string;
+"innerCamera"?: string;
+"multiWindow"?: string;
+"navigation"?: string;
+"oneUi"?: string;
+"orientation"?: string;
+"pose"?: string;
+"resolutionPx": string;
+"rotation"?: string;
+"scale"?: string;
+"sdk"?: string;
+"sourceSha256"?: string;
+"splitView"?: string;
+"unit"?: string;
+};
+"kind": string;
+"source": string;
+"sourceUrl": string;
+};
+"issue": string;
+"measured": null | {
+"captionBar": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"displayCutout": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"navigationBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"statusBars": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"systemOverlays": null;
+};
+"safeArea": {
+"bottom": number;
+"left": number;
+"right": number;
+"top": number;
+};
+"supported": boolean;
+};
+"kind": string;
+"landscape": boolean;
+"name": string;
+"orientation": string;
+"widthDp": number;
+"widthPx": number;
+};
 "streamUrl": string;
 "systemUi": {
 "annotated": boolean;

@@ -124,6 +124,16 @@ class ContractTest {
         check("viewer.focus", post("/viewer/focus", mapOf("index" to 0)))
         runBlocking { viewer.drain() }
         check("viewer.state.focus", get("/viewer/state"))
+        post("/viewer/resize", mapOf("device" to "s26", "landscape" to true))
+        runBlocking { viewer.drain() }
+        check("viewer.state.device-android", get("/viewer/state"))
+        check("status.device-android", get("/status"))
+        post("/viewer/resize", mapOf("device" to "duo", "folded" to true))
+        runBlocking { viewer.drain() }
+        check("viewer.state.device-ios", get("/viewer/state"))
+        check("status.device-ios", get("/status"))
+        post("/viewer/resize", mapOf("size" to "original"))
+        runBlocking { viewer.drain() }
         check("viewer.touch", post("/viewer/touch", mapOf("type" to "tap", "x" to 5, "y" to 5)))
         check("viewer.exit", post("/viewer/exit", emptyMap()))
         runBlocking { viewer.drain() }

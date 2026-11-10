@@ -113,7 +113,7 @@ try {
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`__store.st.focus.size.preset==='foldable' && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`, "고치던 숫자는 버리고 고른 프리셋으로");
   await pick("fold8", "device==='fold8'");
-  await until(`__store.st.focus.postures.filter(p=>p.size.device==='fold8').length===3`);
+  await until(`__store.st.focus.postures.filter(p=>p.size.device==='fold8').length===5`);
   await check(`!document.querySelector('#dcFold').hidden && document.querySelector('#rlW').value==='933'`, "Fold8 펼침과 자세 캐시");
   await check(`document.querySelector('#ruler').classList.contains('device') && !document.querySelector('#rlW').readOnly && document.querySelector('#pnPick [data-sel="fold8"]').title==='Galaxy Z Fold8'`, "기기 치수도 누를 수 있고 기기 칸 툴팁은 전체 이름");
   await evaluate(`document.querySelector('#rlW').focus()`); await pause(300);
@@ -166,8 +166,8 @@ try {
   await check(`document.querySelector('#rlW').value===String(${wNow}) && document.querySelector('#pnSl [data-axis="w"] .v b').textContent===String(${wNow})`, "요청이 실패하면 틀 · 숫자 · 슬라이더가 지금 크기로 돌아온다");
   await evaluate(`window.fetch=__realFetch;document.activeElement.blur()`);
   await pick("ipduo", "device==='duo'");
-  await check(`document.querySelector('#pnSl').hidden`, "기기를 고르면 슬라이더가 접힌다");
-  await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===3`);
+  await check(`document.querySelector('#pnSl').hidden && __store.st.focus.size.widthPx===2853 && __store.st.focus.size.heightPx===2007 && document.querySelector('#rlW').value==='951' && document.querySelector('#rlH').value==='669'`, "Duo 펼침은 공개 해상도와 같은 951×669dp");
+  await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
   await click("#dcFold"); await until(`!document.querySelector('#duo').hidden`);
   await check(`document.querySelector('.duo-flap').style.clipPath.startsWith('path(')`, "Duo 평면 접기 윤곽");
   await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
