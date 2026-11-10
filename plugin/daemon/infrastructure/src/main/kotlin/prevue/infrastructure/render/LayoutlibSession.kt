@@ -16,6 +16,7 @@ import com.intellij.openapi.util.CheckedDisposable
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
 import prevue.application.domain.model.BarInsets
+import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
 
@@ -44,10 +45,21 @@ internal class LayoutlibSession(
 
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
+            val insets = preview.appInsets
+            if (insets != null) placeInsets(insets) else LayoutlibBars.insetsOf(preview)?.let(::placeBars)
             barsPlaced = true
-            LayoutlibBars.insetsOf(preview)?.let(::placeBars)
         }
         return task.render().get(timeoutSec(), TimeUnit.SECONDS)
+    }
+
+    private fun placeInsets(insets: AppInsets) {
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
+        val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
+        onSession {
+            LayoutlibInsets.apply(root, insets)
+            if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
+        }
+        anchor()
     }
 
     private fun placeBars(insets: BarInsets) {
