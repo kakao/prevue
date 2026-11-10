@@ -16,17 +16,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -279,11 +282,11 @@ fun DrinkDetailScreen(
             Row(Modifier.fillMaxSize()) {
                 Box(Modifier.width(stageW).fillMaxHeight()) {
                     stage(Modifier.fillMaxSize(), 0.5f)
-                    if (showBack) Box(Modifier.statusBarsPadding().padding(24.dp)) { BackButton(onBack) }
+                    if (showBack) Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Start)).padding(24.dp)) { BackButton(onBack) }
                 }
-                Box(Modifier.weight(1f).fillMaxHeight()) {
+                Box(Modifier.weight(1f).fillMaxHeight().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical + WindowInsetsSides.End))) {
                     Column(
-                        Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 104.dp),
+                        Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 104.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Row { Spacer(Modifier.weight(1f)); bagButton(false) }
@@ -301,18 +304,19 @@ fun DrinkDetailScreen(
                         .offset(y = (-32).dp)
                         .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                         .background(PearlColors.sheet)
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
                         .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) { options() }
             }
             // ← · 가방은 위에 붙어 있다 — 무대가 위로 지나가면 흰 바탕 위라 어두운 단추로 바뀐다. 단추가 상태바만큼 내려가 있어 그만큼 일찍 넘어간다
             val onDark = with(LocalDensity.current) { scroll.value < (headerH - 72.dp).toPx() - WindowInsets.statusBars.getTop(this) }
-            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (showBack) BackButton(onBack, onDark)
                 Spacer(Modifier.weight(1f))
                 bagButton(onDark)
             }
-            AddBar(Modifier.align(Alignment.BottomCenter))
+            AddBar(Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)))
         }
         // 담은 컵이 가방으로 — 컵 자리에서 출발해 포물선을 그리며 작아진다
         if (fly.value > 0f && cupBox != Rect.Zero && bagBox != Rect.Zero) {
