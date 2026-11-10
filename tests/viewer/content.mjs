@@ -156,12 +156,12 @@ try {
   h = handoff(frames);
   check(h && h.stage <= .5 && h.shot <= .5, "돌린 뒤 장면 → 스트림 0.5px 안", h);
 
-  // iPhone Duo 접기 — 장 윤곽의 모서리가 눌린 내용과 같은 비율의 타원으로 남는다.
+  // 기존 CLI의 자연 방향 접기 — UI의 절대 방향 유지와 별도로 접는 장의 기하를 검사한다.
   await post("/viewer/resize", { device: "duo", folded: false, landscape: false });
   await until(`__store.st.focus.size?.device==='duo' && !__store.st.focus.size.folded && ${settled}`);
   await cached(`p.size.device==='duo' && p.size.folded && !p.size.landscape`);
   await record();
-  await click("#dcFold");
+  await post("/viewer/resize", { device: "duo", folded: true, landscape: false });
   await until(`__store.st.focus.size?.folded && ${settled}`);
   frames = await stop();
   // 모서리마다 a C p1 p2 b(3차, K=0.5523) — 꼭짓점은 a + (p1 - a) / K로 되짚는다.

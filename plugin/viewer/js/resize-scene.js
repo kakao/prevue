@@ -203,9 +203,10 @@ export function createResizeScene(root, hooks) {
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
   }
 
-  function camBox(W0, H0, rot, cam, s) {
+  function camBox(W0, H0, rot, cam, s, mirrored = false) {
     const cw = cam.w * s, ch = cam.h * s, cy = cam.y * s, cx = (cam.x ?? .5) * W0 * s;
     const b = rot ? { left: H0 * s - cy - ch, top: cx - cw / 2, width: ch, height: cw } : { left: cx - cw / 2, top: cy, width: cw, height: ch };
+    if (mirrored) { b.left = (rot ? H0 : W0) * s - b.left - b.width; b.top = (rot ? W0 : H0) * s - b.top - b.height; }
     return { ...b, r: Math.min(cw, ch) / 2, on: cw > .5 };
   }
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.r + "px", opacity: b.on ? op : 0 });
@@ -255,7 +256,7 @@ export function createResizeScene(root, hooks) {
     if (!to || !cur || to.sel === cur.sel) return;
     if (rig.on || spin.on) { queued = to.sel; return; }
     const from = cur, same = from.kind === "device" && to.kind === "device" && from.dev === to.dev;
-    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot && !from.right && !to.right && !from.mirrored && !to.mirrored;
+    const folding = !reducedOn() && same && from.folded !== to.folded && from.rot === to.rot && !from.right && !to.right;
     const spinning = !reducedOn() && same && from.angle !== to.angle && from.folded === to.folded;
     if ((folding || spinning) && !atRest(now)) { queued = to.sel; return; }
     queued = null;
@@ -345,6 +346,10 @@ export function createResizeScene(root, hooks) {
   }
 
   const rig = { on: false };
+  function rigCamera(folded, scale) {
+    const pose = rig.from.folded === folded ? rig.from : rig.to, panel = rig.d[folded ? "cover" : "open"];
+    return camBox(panel.w, panel.h, pose.rot, rig.d.look[folded ? "cover" : "open"].cam, scale, pose.mirrored);
+  }
   const rigEl = $("rig"), q = (root, s) => root.querySelector(s);
   const RG = {
     lift: q(rigEl, ".lift"), plate: q(rigEl, ".plate"), crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot"),
@@ -505,8 +510,8 @@ export function createResizeScene(root, hooks) {
     RG.F.outer.el.style.transform = X ? "rotateY(180deg)" : "rotateX(180deg)";
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
-    const dv = rig.d, rot = !!rig.to.rot, oc = camBox(dv.open.w, dv.open.h, rot, dv.look.open.cam, s), sh = dv.open.hinge * s;
-    putCam(RG.F.outer.cam, camBox(dv.cover.w, dv.cover.h, rot, dv.look.cover.cam, s), 0, 0, 1);
+    const oc = rigCamera(false, s), sh = rig.d.open.hinge * s;
+    putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, X ? -sh : 0, X ? 0 : -sh, 1);
     RG.F.inner.shade.style.opacity = th < 90 ? (P.shade * (1 - cs)).toFixed(3) : 1;
@@ -569,7 +574,8 @@ export function createResizeScene(root, hooks) {
   function drawDuo(now) {
     const { th, s, hx: hu, top: T0 } = rigAt(now), X = rig.ax === "x", { cx } = room(), d = rig.d, lk = lookAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), E = P.perspective, t = lk.bezel * P.shellK * s;
-    const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s, Bu = rig.half.u * s, Bv = Lv, H = d.open.hinge * s;
+    const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
+    const Bu = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(150, 180, th)) * s, Bv = Lv, H = d.open.hinge * s;
     const vc = dv => X ? T0 + dv / 2 : cx;
     const pt = (u, v) => X ? [u, v] : [v, u];
     // 반경은 면마다 고정한다 — 기기 모양 모프(펼침 30 → 커버 44)를 따르면 접는 도중 두 장의 모서리가 커진다.
@@ -583,14 +589,14 @@ export function createResizeScene(root, hooks) {
     const bs = duoSrc("open");
     place(DU.baseImg, bs.spec, X ? -H : 0, bs.size.w * s, bs.size.h * s, 1, bs.blur, X ? 0 : -H);
     DU.scr.style.background = bs.spec.edge;
-    putCam(DU.baseCam, camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s), X ? -H : 0, X ? 0 : -H, 1);
+    putCam(DU.baseCam, rigCamera(false, s), X ? -H : 0, X ? 0 : -H, 1);
     const th2 = t * hk, R = r + t, Rh = rh + th2;
     Object.assign(DU.band.style, { left: (X ? -th2 : -t) + "px", top: (X ? -t : -th2) + "px", right: -t + "px", bottom: -t + "px", borderColor: lk.tone,
       borderWidth: X ? `${t}px ${t}px ${t}px ${th2}px` : `${th2}px ${t}px ${t}px ${t}px`,
       borderRadius: X ? `${Rh}px ${R}px ${R}px ${Rh}px` : `${Rh}px ${Rh}px ${R}px ${R}px` });
     const kF = E / Math.max(1, E - Lu * sn), uF = hu - Lu * cs * kF, vf = vc(Lv), hF = Lv / 2 * kF, sq = Math.abs(uF - hu) / Math.max(1, Lu);
     const quad = [pt(hu, vf - Lv / 2), pt(uF, vf - hF), pt(uF, vf + hF), pt(hu, vf + Lv / 2)];
-    // 옆 단추는 몸체의 바깥 끝에 붙는다 — 접힌 장이 펼친 장보다 넓어지면(커버 466 > 반쪽 445dp) 그 끝을 따라간다.
+    // 커버와 내부 반쪽의 폭이 달라도 옆 단추는 접힌 몸체의 끝으로 이어진다.
     const outU = Math.max(hu + Bu, uF);
     lk.btn.forEach((b, i) => { const e = DU.btns[i]; if (!e) return; const a = b.at * s, ln = b.len * s;
       Object.assign(e.style, X ? { left: outU + t - .5 + "px", top: b0 + a + "px", width: "3px", height: ln + "px" }
@@ -628,7 +634,7 @@ export function createResizeScene(root, hooks) {
     Object.assign(DU.face.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash, background: src.spec.edge });
     Object.assign(DU.dark.style, { left: fl + "px", top: ft + "px", width: fw + "px", height: fh + "px", transformOrigin: origin, transform: squash });
     const dir = X ? (back ? "to right" : "to left") : (back ? "to bottom" : "to top");
-    const lift = sn, camB = back ? camBox(d.cover.w, d.cover.h, !!rig.to.rot, d.look.cover.cam, s) : camBox(d.open.w, d.open.h, !!rig.to.rot, d.look.open.cam, s);
+    const lift = sn, camB = rigCamera(back, s);
     DU.layers.forEach((L, i) => {
       const bl2 = i === 0 ? 0 : P.duoBlur * lift * Math.pow(i / 4, 1.35);
       place(L.img, src.spec, 0, src.size.w * s, src.size.h * s, 1, Math.max(bl2, src.blur));

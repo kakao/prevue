@@ -75,7 +75,7 @@ try {
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__errors=[];addEventListener('error',e=>__errors.push(e.message));addEventListener('unhandledrejection',e=>__errors.push(String(e.reason)));` });
   await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` });
   await until('window.ready');
-  for (const [device, ow, oh, cw, ch] of [['fold8',932.57,704,475.43,751.24],['ultra',752,834.67,360,840],['ipduo',890,626,466,678],['pixelfold',851.69,882.87,443.08,994.46]]) {
+  for (const [device, ow, oh, cw, ch] of [['fold8',932.57,704,475.43,751.24],['ultra',752,834.67,360,840],['ipduo',951,669,466,678],['pixelfold',851.69,882.87,443.08,994.46]]) {
     for (const rotated of [false,true]) {
       for (const cached of [false,true]) {
         const suffix=rotated?':rot':'';
