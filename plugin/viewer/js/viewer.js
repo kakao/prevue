@@ -4552,7 +4552,10 @@ function Ra({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Ma }) {
 			}),
 			/* @__PURE__ */ (0, L.jsxs)("span", {
 				className: "sys-v",
-				children: [i(u ? "systemUi.on" : "systemUi.off"), t?.approximate ? " ≈" : ""]
+				children: [i(u ? "systemUi.on" : "systemUi.off"), t?.approximate && /* @__PURE__ */ (0, L.jsx)("span", {
+					className: "sys-approx",
+					children: " ≈"
+				})]
 			})
 		]
 	}), ia);

@@ -84,7 +84,7 @@ export function SystemUiControl({ systemUi, deviceInsets = null, host, actions =
     : phrase('systemUi.tip');
   const flip = () => { if (deviceInsets) { actions.pickDeviceInsets(shown ? 'off' : 'on'); return; } if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
   const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={label} disabled={waiting} title={tip} onClick={flip}>
-    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}{deviceInsets?.approximate ? ' ≈' : ''}</span>
+    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}{deviceInsets?.approximate && <span className="sys-approx"> ≈</span>}</span>
   </button>;
   return place(body, systemUiHost);
 }

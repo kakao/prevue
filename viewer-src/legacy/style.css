@@ -848,3 +848,10 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .orientation-pick { position: relative; }
 .orientation-pick .zoom-menu { min-width: var(--dock-slider-w); }
 .orientation-pick [aria-checked="true"] { background: var(--primary-container); }
+
+@media (max-width: 800px) {
+  .orientation-pick .tb-chev { display: none; }
+}
+@media (max-width: 560px) {
+  .sys-ui .sys-approx { display: none; }
+}
