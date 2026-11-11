@@ -57,9 +57,7 @@ class StaleCallers(
      * [before]는 [files]를 컴파일 **전**에 읽은 내용이다(D-67).
      */
     suspend fun compileWithNew(ed: WorkspaceEditor, files: List<File>, before: Map<String, String?> = literals.read(files)): Batch {
-        val asked = files.map { it.canonicalPath }.toSet()
-        val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
-            .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
+        val (newer, built) = waiting(files)
         val fresh = holdExpectActual(ed, newer)
         ed.forgetNew(built)
         // 읽는 사이에 또 저장되면 옛 값이 남아 기다림이 다음 저장을 기다린다.
@@ -80,14 +78,15 @@ class StaleCallers(
         return if (again.ok) done(ed, rest, seen, again) else Batch(first, seen, c)
     }
 
-    suspend fun compileOpening(ed: WorkspaceEditor, files: List<File>): Batch {
-        val before = literals.read(files)
-        val seen = seen(files)
-        val alone = compileAll(files, before)
-        if (alone.ok) return done(ed, files, seen, alone)
-        val asked = files.map { it.canonicalPath }.toSet()
-        return if (ws.now.newFiles.any { it !in asked }) compileWithNew(ed, files, before) else Batch(files, seen, alone)
+    suspend fun newWaiting(beside: List<File>): Boolean = waiting(beside).first.isNotEmpty()
+
+    private suspend fun waiting(beside: List<File>): Pair<List<File>, List<File>> {
+        val asked = beside.map { it.canonicalPath }.toSet()
+        return ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
+            .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
     }
+
+    fun declaresExpectActual(f: File): Boolean = sources.read(f)?.let(ExpectActual::declares) == true
 
     fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
         val (held, code) = files.partition { (texts[it.absolutePath] ?: sources.read(it))?.let(ExpectActual::declares) == true }
