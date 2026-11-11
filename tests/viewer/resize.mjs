@@ -138,7 +138,9 @@ try {
   await evaluate(`document.querySelector('#rlW').focus()`); await pause(300);
   await check(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#devCtl').hidden`, "Tab 으로 숫자에 초점만 와서는 기기를 잃지 않는다");
   await evaluate(`document.querySelector('#rlW').blur()`);
-  await check(`!document.querySelector('#sysUiBtn') && document.querySelector('#sysUiCtl').hidden && !!__store.st.focus.deviceInsets?.evidence && __store.st.focus.systemUi.shown`, "기기는 독에 켬끔 버튼이 없고 시스템 UI 상시 표시");
+  await check(`!document.querySelector('#sysUiBtn') && !document.querySelector('#sysUiCtl').hidden && document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='false' && document.querySelector('#insetOverlay').hidden && !!__store.st.focus.deviceInsets?.evidence && __store.st.focus.systemUi.shown`, "기기는 독에 시스템 UI 켬끔 대신 인셋 영역 보기(처음엔 꺼짐) · 시스템 UI 상시 표시");
+  await click("#insetBtn");
+  await check(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden && !document.querySelector('#insetLegend').hidden && ${dockAt}`, "인셋 영역 보기를 켜면 띠 · 범례 · 독은 제자리");
   await check(`!('choice' in __store.st.focus.deviceInsets) && !('applied' in __store.st.focus.deviceInsets) && !('supported' in __store.st.focus.deviceInsets) && __store.st.focus.deviceInsets.values.statusBars.top>0`, "켬끔 필드 없이 인셋을 늘 전달");
   await orient('portrait');
   await beginFoldProbe();
@@ -151,6 +153,7 @@ try {
   await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false'`, "힌지 선 전환");
   await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===751 && __store.st.focus.size?.heightDp===475 && document.activeElement===document.querySelector('#rlH')`);
   await check(`document.querySelector('#pnPick [aria-checked="true"]')?.dataset.sel==='custom' && document.querySelector('#devCtl').hidden`, "기기에서 숫자를 누르면 그 크기로 커스텀 · 자세 칸은 걷힘");
+  await check(`!!document.querySelector('#sysUiBtn') && !document.querySelector('#insetBtn') && document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`, "비기기 크기는 시스템 UI 토글 그대로 · 인셋 오버레이는 켜 둔 채여도 숨는다");
   await evaluate(`document.querySelector('#rlH').value='500'`); await key("Enter");
   await until(`__store.st.focus.size?.widthDp===751 && __store.st.focus.size?.heightDp===500 && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await check(`document.querySelector('#rlH').value==='500' && document.querySelector('#pnPick [data-sel="custom"] .d').textContent==='751×500'`, "기기에서 들어간 커스텀 숫자를 바로 고친다");
@@ -190,6 +193,7 @@ try {
   await check(`document.querySelector('#rlW').value===String(${wNow}) && document.querySelector('#pnSl [data-axis="w"] .v b').textContent===String(${wNow})`, "요청이 실패하면 틀 · 숫자 · 슬라이더가 지금 크기로 돌아온다");
   await evaluate(`window.fetch=__realFetch;document.activeElement.blur()`);
   await pick("ipduo", "device==='duo'");
+  await check(`document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden`, "비기기 크기를 거쳐 기기로 돌아오면 인셋 영역 보기가 켜진 그대로");
   await check(`document.querySelector('#pnSl').hidden && __store.st.focus.size.widthPx===2853 && __store.st.focus.size.heightPx===2007 && document.querySelector('#rlW').value==='951' && document.querySelector('#rlH').value==='669'`, "Duo 펼침은 공개 해상도와 같은 951×669dp");
   await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
   await beginFoldProbe();

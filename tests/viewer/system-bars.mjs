@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -61,6 +61,19 @@ try {
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...at, button: 'left', clickCount: 1, modifiers });
   };
   const atNode = bounds => evaluate(`(()=>{const b=${JSON.stringify(bounds)},img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return {x:r.x+(b[0]+b[2])/2*k,y:r.y+(b[1]+b[3])/2*k}})()`);
+  // 띠 · 선의 화면 사각형을 #shot 사각형과 인셋 × pxPerDp ÷ PNG px 로 낸 기대값에 견준다. 오버레이가 쓰는 dp 뷰박스와 다른 길(PNG px)로 잰다.
+  const insetGeometry = `(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp,E=['top','right','bottom','left'],out=[];
+    const box=(e,t)=>({top:[r.left,r.top,r.width,t],bottom:[r.left,r.bottom-t,r.width,t],left:[r.left,r.top,t,r.height],right:[r.right-t,r.top,t,r.height]})[e];
+    const near=(el,exp,tag)=>{const b=el.getBoundingClientRect(),got=[b.left,b.top,b.width,b.height];if(got.some((g,i)=>Math.abs(g-exp[i])>1))out.push({tag,got,exp})};
+    for(const k of Object.keys(v))for(const e of E){const el=document.querySelector('#insetOverlay [data-kind="'+k+'"] [data-edge="'+e+'"] .io-fill');
+      if(!(v[k][e]>0)){if(el)out.push(k+' '+e+' 0인데 띠');continue}
+      if(!el){out.push(k+' '+e+' 띠 없음');continue}
+      near(el,box(e,v[k][e]*s),k+' '+e)}
+    const m=Object.fromEntries(E.map(e=>[e,Math.max(0,...Object.values(v).map(x=>x[e]))*s]));
+    near(document.querySelector('#insetOverlay .io-safe-line'),[r.left+m.left,r.top+m.top,r.width-m.left-m.right,r.height-m.top-m.bottom],'safeDrawing');
+    const rows=[...document.querySelectorAll('#insetLegend li')].map(li=>li.dataset.kind),want=Object.keys(v).filter(k=>E.some(e=>v[k][e]>0)).concat('safeDrawing');
+    if(document.querySelector('#insetLegend').hidden||rows.join()!==want.join())out.push({legend:rows,want});
+    return out})()`;
   const evidence = '.cache/system-bars';
   await mkdir(evidence, { recursive: true });
   const identity = await fetch(new URL('/identity', viewer)).then(r=>r.json());
@@ -101,8 +114,18 @@ try {
     for (const k of ['verified','issue']) assert(!(k in state.size.insetProfile), `${name} ${k}`);
     assert(state.deviceInsets.basisPosture && state.deviceInsets.evidence?.sourceUrl, name);
     assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
-    const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden})`);
-    assert(!dock.button && dock.hidden, `${name} 독에 켬끔 버튼 없음: ${JSON.stringify(dock)}`);
+    const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden,inset:document.querySelector('#insetBtn')?.getAttribute('aria-pressed'),title:document.querySelector('#insetBtn')?.title})`);
+    assert(!dock.button && !dock.hidden, `${name} 독에 시스템 UI 켬끔 대신 인셋 영역 보기: ${JSON.stringify(dock)}`);
+    if (!results.length) {
+      assert.equal(dock.inset, 'false', `${name} 인셋 영역 보기는 처음엔 꺼짐`);
+      assert(await evaluate(`document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`), `${name} 끈 동안 오버레이 · 범례 없음`);
+      await evaluate(`document.querySelector('#insetBtn').click()`);
+      await until(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden`);
+      const named = await evaluate(`(b=>({title:b.title,label:b.getAttribute('aria-label'),text:b.textContent.trim()}))(document.querySelector('#insetBtn'))`);
+      assert(named.title !== dock.title && named.title === named.label && !named.text, `${name} 아이콘만 · 켜면 title · aria-label 이 켬으로: ${JSON.stringify({ before: dock.title, ...named })}`);
+    } else assert.equal(dock.inset, 'true', `${name} 기기 변경 · 접기 · 회전에도 켜 둔 채 유지`);
+    const insetMiss = await evaluate(insetGeometry);
+    assert.deepEqual(insetMiss, [], `${name} 인셋 띠 · safeDrawing 선이 전달한 인셋과 화면 좌표로 맞는다: ${JSON.stringify(insetMiss)}`);
     const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
     assert.equal(overlay.hidden, !ios.has(device), name);
     if (ios.has(device)) {
@@ -175,7 +198,7 @@ try {
   await check(`!document.querySelector('#sysBars').hidden`, '실패 전 iOS 바 표시');
   await evaluate(`window.__stable=structuredClone(__store.st);window.__replaying=true;const failed=structuredClone(__stable);failed.version++;failed.error='기기 인셋 적용 실패 검증';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:failed})}))`);
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
-  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림과 바를 숨기고 실패를 표시');
+  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetOverlay')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림 · 바 · 인셋 띠를 숨기고 실패를 표시');
   const beforeFailureInput = await evaluate(`__touches.length`);
   const middle = await evaluate(`(()=>{const r=document.querySelector('#stage').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
   await mouse(middle);
@@ -183,6 +206,29 @@ try {
   await evaluate(`const recovered=structuredClone(__stable);recovered.version+=2;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:recovered})}))`);
   await ready();
   await check(`!document.querySelector('#resizeScene').classList.contains('preparing')`, '복구된 렌더로 그림과 입력을 다시 준비');
+  // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 범례 · safeDrawing 선을 본다.
+  await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;fake.focus.deviceInsets.values.captionBar.top=20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
+  await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
+  await check(`(${insetGeometry}).length===0 && [...document.querySelectorAll('#insetLegend li')].some(li=>li.dataset.kind==='systemOverlays')`, 'captionBar · systemOverlays 띠와 범례 · 안쪽 선');
+  // 재생한 상태는 version 을 앞질렀다 — 데몬의 다음 상태가 버려지지 않게 되돌린 뒤 실제 이벤트를 다시 받는다.
+  await evaluate(`const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false`);
+  await until(`!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
+  await ready();
+  // 수명 — 소스 저장(다시 그리기)에도 남고, 인터랙티브를 나갔다 오면 꺼진다. 탭 전환도 한 장을 떠나 보드로 가므로 같은 길이다.
+  const version = await evaluate(`__store.st.version`);
+  const file = await evaluate('__store.st.board.file');
+  await new Promise((resolve, reject) => execFile(fileURLToPath(new URL('../../plugin/bin/prevue', import.meta.url)), ['reload', file], e => e ? reject(e) : resolve()));
+  await until(`__store.st.version>${version}`);
+  await ready();
+  await check(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden && (${insetGeometry}).length===0`, '소스를 다시 그려도 켜 둔 채 유지');
+  await toBoard(viewer);
+  await until(`__store.st.screen==='board'`);
+  await post('/viewer/focus', { index: 0 });
+  await ready();
+  await post('/viewer/resize', { device: 'duo', folded: true, orientation: 'portrait' });
+  await until(`__store.st.focus.size?.device==='duo'`);
+  await ready();
+  await check(`document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='false' && document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`, '인터랙티브를 나갔다 오면 꺼짐');
   await check(`__errors.length===0`, '브라우저 예외 없음');
   await writeFile(join(evidence,'results.json'),JSON.stringify({node:process.version,identity,results},null,2));
   console.log(`통합 검증 ${results.length}개 완료: ${evidence}`);
