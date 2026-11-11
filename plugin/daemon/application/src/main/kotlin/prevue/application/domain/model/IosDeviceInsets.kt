@@ -264,5 +264,5 @@ internal object IosDeviceInsets {
         ),
     )
 
-    fun of(device: ScreenSize.Device): DeviceInsetProfile? = profiles[device]?.copy(mappingIssue = device.model.appInsetsIssue)
+    fun of(device: ScreenSize.Device): DeviceInsetProfile? = profiles[device]
 }

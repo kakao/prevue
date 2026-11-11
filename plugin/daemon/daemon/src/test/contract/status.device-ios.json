@@ -38,15 +38,12 @@
     "borrowedFrom": "null",
     "compilerWarm": "boolean",
     "deviceInsets": {
-      "approximate": "boolean",
       "basisPosture": "string",
       "evidence": {
         "kind": "string",
         "source": "string",
         "sourceUrl": "string"
       },
-      "issue": "null",
-      "note": "string",
       "posture": "string",
       "values": {
         "captionBar": {
@@ -239,15 +236,13 @@
           "source": "string",
           "sourceUrl": "string"
         },
-        "issue": "string",
         "measured": "null",
         "safeArea": {
           "bottom": "number",
           "left": "number",
           "right": "number",
           "top": "number"
-        },
-        "verified": "boolean"
+        }
       },
       "kind": "string",
       "landscape": "boolean",
@@ -484,8 +479,6 @@
       "widthPx": 1398,
       "heightPx": 2034,
       "insetProfile": {
-        "verified": false,
-        "issue": "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다",
         "safeArea": {
           "left": 0,
           "top": 0,
@@ -530,10 +523,7 @@
       }
     },
     "deviceInsets": {
-      "issue": null,
       "posture": "duo-folded",
-      "approximate": true,
-      "note": "iOS safe area의 상단은 상태바, 하단은 내비게이션 바, 상단·측면은 컷아웃으로 근사",
       "basisPosture": "duo-folded",
       "values": {
         "statusBars": {

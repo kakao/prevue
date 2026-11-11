@@ -97,10 +97,9 @@ try {
     assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : 'aosp', name);
     for (const k of ['choice','applied','supported']) assert(!(k in state.deviceInsets), `${name} ${k}`);
     assert(!('supported' in state.size.insetProfile), name);
-    assert.equal(state.deviceInsets.approximate, true, name);
-    assert.equal(state.size.insetProfile.verified, false, name);
-    assert(state.deviceInsets.note, name);
-    assert(state.deviceInsets.basisPosture, name);
+    for (const k of ['approximate','note','issue']) assert(!(k in state.deviceInsets), `${name} ${k}`);
+    for (const k of ['verified','issue']) assert(!(k in state.size.insetProfile), `${name} ${k}`);
+    assert(state.deviceInsets.basisPosture && state.deviceInsets.evidence?.sourceUrl, name);
     assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
     const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden})`);
     assert(!dock.button && dock.hidden, `${name} 독에 켬끔 버튼 없음: ${JSON.stringify(dock)}`);

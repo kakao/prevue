@@ -138,7 +138,7 @@ try {
   await evaluate(`document.querySelector('#rlW').focus()`); await pause(300);
   await check(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#devCtl').hidden`, "Tab 으로 숫자에 초점만 와서는 기기를 잃지 않는다");
   await evaluate(`document.querySelector('#rlW').blur()`);
-  await check(`!document.querySelector('#sysUiBtn') && document.querySelector('#sysUiCtl').hidden && __store.st.focus.deviceInsets.approximate && __store.st.focus.systemUi.shown`, "기기는 독에 켬끔 버튼이 없고 시스템 UI 상시 표시");
+  await check(`!document.querySelector('#sysUiBtn') && document.querySelector('#sysUiCtl').hidden && !!__store.st.focus.deviceInsets?.evidence && __store.st.focus.systemUi.shown`, "기기는 독에 켬끔 버튼이 없고 시스템 UI 상시 표시");
   await check(`!('choice' in __store.st.focus.deviceInsets) && !('applied' in __store.st.focus.deviceInsets) && !('supported' in __store.st.focus.deviceInsets) && __store.st.focus.deviceInsets.values.statusBars.top>0`, "켬끔 필드 없이 인셋을 늘 전달");
   await orient('portrait');
   await beginFoldProbe();

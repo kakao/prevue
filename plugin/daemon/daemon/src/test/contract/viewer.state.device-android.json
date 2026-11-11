@@ -50,15 +50,12 @@
     "error": "null",
     "focus": {
       "deviceInsets": {
-        "approximate": "boolean",
         "basisPosture": "string",
         "evidence": {
           "kind": "string",
           "source": "string",
           "sourceUrl": "string"
         },
-        "issue": "null",
-        "note": "string",
         "posture": "string",
         "values": {
           "captionBar": {
@@ -137,7 +134,6 @@
                 "source": "string",
                 "sourceUrl": "string"
               },
-              "issue": "string",
               "measured": {
                 "captionBar": {
                   "bottom": "number",
@@ -163,7 +159,6 @@
                   "right": "number",
                   "top": "number"
                 },
-                "systemOverlays": "null",
                 "|": "null"
               },
               "safeArea": {
@@ -171,8 +166,7 @@
                 "left": "number",
                 "right": "number",
                 "top": "number"
-              },
-              "verified": "boolean"
+              }
             },
             "kind": "string",
             "landscape": "boolean",
@@ -211,7 +205,6 @@
             "source": "string",
             "sourceUrl": "string"
           },
-          "issue": "string",
           "measured": {
             "captionBar": {
               "bottom": "number",
@@ -236,16 +229,14 @@
               "left": "number",
               "right": "number",
               "top": "number"
-            },
-            "systemOverlays": "null"
+            }
           },
           "safeArea": {
             "bottom": "number",
             "left": "number",
             "right": "number",
             "top": "number"
-          },
-          "verified": "boolean"
+          }
         },
         "kind": "string",
         "landscape": "boolean",
@@ -453,8 +444,6 @@
         "widthPx": 2340,
         "heightPx": 1080,
         "insetProfile": {
-          "verified": false,
-          "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
           "safeArea": {
             "left": 37,
             "top": 30,
@@ -485,8 +474,7 @@
               "top": 0,
               "right": 0,
               "bottom": 0
-            },
-            "systemOverlays": null
+            }
           },
           "evidence": {
             "source": "windowinsets.info",
@@ -517,10 +505,7 @@
         }
       },
       "deviceInsets": {
-        "issue": null,
         "posture": "s26-land",
-        "approximate": true,
-        "note": "미측정 systemOverlays는 0으로 가정한 근삿값",
         "basisPosture": "s26-land",
         "values": {
           "statusBars": {
@@ -576,8 +561,6 @@
             "widthPx": 1080,
             "heightPx": 2340,
             "insetProfile": {
-              "verified": false,
-              "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
               "safeArea": {
                 "left": 0,
                 "top": 37,
@@ -608,8 +591,7 @@
                   "top": 37,
                   "right": 0,
                   "bottom": 0
-                },
-                "systemOverlays": null
+                }
               },
               "evidence": {
                 "source": "windowinsets.info",
@@ -647,8 +629,6 @@
             "widthPx": 2340,
             "heightPx": 1080,
             "insetProfile": {
-              "verified": false,
-              "issue": "systemOverlays 인셋 종류의 측정값을 검증하지 못했다",
               "safeArea": {
                 "left": 0,
                 "top": 30,
@@ -679,8 +659,7 @@
                   "top": 0,
                   "right": 37,
                   "bottom": 0
-                },
-                "systemOverlays": null
+                }
               },
               "evidence": {
                 "source": "windowinsets.info",
