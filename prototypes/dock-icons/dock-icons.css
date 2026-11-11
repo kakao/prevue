@@ -1,0 +1,24 @@
+/* 조작 독 아이콘 시안 — 값은 뷰어 토큰(plugin/viewer/tokens.css)만 쓴다. */
+.di-sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); margin: calc(var(--space-24) * -1); }
+.di-sheet { display: grid; align-content: start; gap: var(--space-24); min-width: 0; padding: var(--space-24); background: var(--surface); color: var(--on-surface); box-shadow: 0 0 0 1px var(--outline-variant); }
+.di-sheet h2 { margin: 0; font: var(--type-title-medium); }
+.di-sheet h3 { margin: 0 0 var(--space-8); font: var(--type-title-small); }
+.di-note { margin: var(--space-4) 0 0; color: var(--on-surface-variant); font: var(--type-body-small); }
+.di-docks { display: grid; gap: var(--space-12); justify-items: start; }
+.di-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+.di-tag { min-width: 96px; color: var(--on-surface-variant); font: var(--type-code-small); }
+.di-cands { display: grid; gap: var(--space-8); }
+.di-cand { display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: var(--space-12); }
+.di-cand > p { margin: 0; color: var(--on-surface-variant); font: var(--type-body-small); }
+/* 버튼 줄은 독과 같은 떠 있는 층 위에 놓아 실제 바탕 · 호버 · 눌린 모양으로 본다. */
+.di-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-6); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: inset 0 0 0 1px var(--outline); }
+.di-big { display: inline-flex; gap: var(--space-8); color: var(--on-surface); }
+.di-big svg { width: var(--control-xlarge); height: var(--control-xlarge); }
+
+/* 돌리기 — 그림 하나를 CSS 로 돌려 세 방향을 만든다. 가로 왼쪽은 기기 위가 왼쪽으로, 가로 오른쪽은 오른쪽으로 눕는다(resize-scene.js 의 각도와 같다). */
+.di-turn { transform-box: view-box; transform-origin: center; transition: rotate var(--duration-short4) var(--easing-standard); }
+[data-orientation="landscape-left"] > svg .di-turn { rotate: -90deg; }
+[data-orientation="landscape-right"] > svg .di-turn { rotate: 90deg; }
+/* 시안의 독은 아이콘만 — 글자가 없으니 양쪽 여백이 같다. */
+.di-icons .dock-seg .tb-btn { padding: 0 var(--space-8); }
+.di-icons .orientation-pick .tb-btn { gap: var(--space-2); padding: 0 var(--space-6) 0 var(--space-8); }

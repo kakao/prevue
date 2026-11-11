@@ -935,14 +935,16 @@ export function createResizeScene(root, hooks) {
     if (st.kind === "device") {
       setLook(lookOf(st), instant);
       CTL.fold.hidden = CTL.hinge.hidden = !DEVICES[st.dev].fold;
-      byId("dcFoldLb").textContent = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
-      const turn = phrase(`posture.${st.orientation}`);
-      byId("dcRotLb").textContent = turn;
-      for (const button of directions) button.setAttribute("aria-checked", button.dataset.orientation === st.orientation);
-      CTL.fold.title = (st.folded ? phrase("posture.unfold") : phrase("posture.fold")) + " ";
-      CTL.fold.setAttribute("aria-label", st.folded ? phrase("posture.unfold") : phrase("posture.fold"));
-      CTL.rot.title = turn + " ";
+      // 버튼은 아이콘만이다 — 그림은 data-* 로 상태를 따라가고(style.css), 이름은 툴팁 · aria-label 이 갖는다.
+      const foldName = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
+      CTL.fold.dataset.folded = st.folded;
+      CTL.fold.title = foldName;
+      CTL.fold.setAttribute("aria-label", foldName);
+      const turn = phrase("posture.orientation.tip", { orientation: phrase(`posture.${st.orientation}`) });
+      CTL.rot.dataset.orientation = st.orientation;
+      CTL.rot.title = turn;
       CTL.rot.setAttribute("aria-label", turn);
+      for (const button of directions) button.setAttribute("aria-checked", button.dataset.orientation === st.orientation);
     }
     paintPick();
   }
@@ -973,7 +975,7 @@ export function createResizeScene(root, hooks) {
   CTL.fold.addEventListener("click", () => toggleFold());
   CTL.rot.addEventListener("click", () => setOrientationOpen(!orientationOpen()));
   CTL.hinge.addEventListener("click", () => toggleHinge());
-  function paintHinge() { CTL.hinge.setAttribute("aria-pressed", P.hingeLine); CTL.hinge.title = (P.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show")) + " "; }
+  function paintHinge() { CTL.hinge.setAttribute("aria-pressed", P.hingeLine); CTL.hinge.title = P.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show"); }
   function toggleHinge() {
     if (cur.kind !== "device" || !DEVICES[cur.dev].fold) return;
     P.hingeLine = !P.hingeLine; paintHinge();
