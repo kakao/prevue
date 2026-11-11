@@ -291,5 +291,13 @@
   "posture.orientation.tip": "{orientation} — change orientation",
   "posture.portrait": "Portrait",
   "posture.landscape-left": "Landscape left",
-  "posture.landscape-right": "Landscape right"
+  "posture.landscape-right": "Landscape right",
+  "insetOverlay.label": "Show inset areas",
+  "insetOverlay.now": "Show inset areas — {value}",
+  "insetOverlay.legend": "Insets passed (dp)",
+  "insetOverlay.safe": "dashed inner line",
+  "insetOverlay.edge.top": "top",
+  "insetOverlay.edge.right": "right",
+  "insetOverlay.edge.bottom": "bottom",
+  "insetOverlay.edge.left": "left"
 }

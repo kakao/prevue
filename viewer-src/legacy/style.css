@@ -680,6 +680,21 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .stage .box.pick { border-width: calc(2px / var(--z, 1)); }
 .stage .marks .ol { box-shadow: inset 0 0 0 calc(1px / var(--z, 1)) var(--pick-outline); }
 .stage { z-index: 1; }
+/* 인셋 범례 — 무대 왼쪽 위의 떠 있는 층. 그림을 덮지 않게 무대 밖 여백에 서고, 손이 지나가도 막지 않는다. */
+.inset-legend { position: absolute; top: var(--space-16); left: var(--space-16); z-index: 3; padding: var(--space-8) var(--space-12); border-radius: var(--corner-large);
+  background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); font: var(--type-body-small); pointer-events: none; }
+.inset-legend .il-head { color: var(--on-surface-variant); font: var(--type-label-medium); margin-bottom: var(--space-4); }
+.inset-legend ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: auto auto 1fr; column-gap: var(--space-6); row-gap: var(--space-2); align-items: center; }
+.inset-legend li { display: contents; }
+.inset-legend code { font: var(--type-code-small); }
+.inset-legend li > span { color: var(--on-surface-variant); }
+.il-swatch { width: var(--space-12); height: var(--space-12); border-radius: var(--corner-small); background: currentColor; }
+.inset-legend [data-kind="statusBars"] .il-swatch { color: var(--inset-status); }
+.inset-legend [data-kind="navigationBars"] .il-swatch { color: var(--inset-nav); }
+.inset-legend [data-kind="captionBar"] .il-swatch { color: var(--inset-caption); }
+.inset-legend [data-kind="displayCutout"] .il-swatch { color: var(--inset-cutout); }
+.inset-legend [data-kind="systemOverlays"] .il-swatch { color: var(--inset-overlays); }
+.il-swatch.il-safe { background: none; border: 2px dashed var(--on-surface); }
 /* 조작 중 — 얇은 링 하나(헤어라인을 갈음한다). 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
 .stage.live { box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 

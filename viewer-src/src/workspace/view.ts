@@ -49,3 +49,7 @@ export type PointCardData = {
 /** 떠 있는 카드 — host 는 카드가 서는 영역(보드 · 한 장), shot 은 가리킨 그림의 화면 사각형을 잰다. */
 export type PointView = { host: HTMLElement | null; shot: (() => DOMRect | null) | null; card: PointCardData | null };
 export const pointView = createStore<PointView>({ host: null, shot: null, card: null });
+
+/** 인셋 영역 보기 — 뷰어만의 표시라 데몬에 묻지 않는다. 같은 카드의 인터랙티브 동안 남고, 그 밖으로 나가면 session.ts 가 끈다. */
+export type InsetOverlayView = { on: boolean };
+export const insetOverlayView = createStore<InsetOverlayView>({ on: false });

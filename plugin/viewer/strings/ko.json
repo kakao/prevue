@@ -288,5 +288,13 @@
   "posture.orientation.tip": "{orientation} — 방향 바꾸기",
   "posture.portrait": "세로",
   "posture.landscape-left": "가로 왼쪽",
-  "posture.landscape-right": "가로 오른쪽"
+  "posture.landscape-right": "가로 오른쪽",
+  "insetOverlay.label": "인셋 영역 보기",
+  "insetOverlay.now": "인셋 영역 보기 — {value}",
+  "insetOverlay.legend": "전달한 인셋 (dp)",
+  "insetOverlay.safe": "안쪽 점선",
+  "insetOverlay.edge.top": "위",
+  "insetOverlay.edge.right": "오른쪽",
+  "insetOverlay.edge.bottom": "아래",
+  "insetOverlay.edge.left": "왼쪽"
 }

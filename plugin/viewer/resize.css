@@ -8,7 +8,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
-.resize-scene.preparing :is(#sysBars, #marks, #box, #pickBox) { visibility: hidden; }
+.resize-scene.preparing :is(#sysBars, #insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
 .resize-scene.preparing .ruler { opacity: .45; }
 .resize-scene input:disabled { cursor: default; }
 .workspace-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-8);
@@ -129,4 +129,17 @@ body.resizing-ui main { padding-bottom: 0; }
 .stage .sys-bars svg { display: block; width: 100%; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
 .sys-bars .sb-ink-dark { color: var(--device-shade); }
 .sys-bars .sb-ink-light { color: var(--device-veil); }
+/* 인셋 영역 보기 — 바와 같은 dp 좌표 SVG. 띠는 옅게 채우고 안쪽 경계에 선을 둬서 겹쳐도 각 종류의 끝이 보인다. 선 굵기는 확대해도 화면 px 이다(non-scaling-stroke). */
+.stage .inset-overlay { position: absolute; inset: 0; pointer-events: none; }
+.stage .inset-overlay svg { display: block; width: 100%; height: 100%; }
+.io-band[data-kind="statusBars"] { color: var(--inset-status); }
+.io-band[data-kind="navigationBars"] { color: var(--inset-nav); }
+.io-band[data-kind="captionBar"] { color: var(--inset-caption); }
+.io-band[data-kind="displayCutout"] { color: var(--inset-cutout); }
+.io-band[data-kind="systemOverlays"] { color: var(--inset-overlays); }
+.io-fill { fill: currentColor; fill-opacity: var(--inset-band); }
+.io-line { stroke: currentColor; stroke-width: 2; }
+.io-safe rect { fill: none; }
+.io-safe-halo { stroke: var(--inset-safe-halo); stroke-width: 3; }
+.io-safe-line { stroke: var(--inset-safe-line); stroke-width: 1.5; stroke-dasharray: 6 4; }
 /* 그림 끝 */
