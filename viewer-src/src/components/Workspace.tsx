@@ -178,9 +178,9 @@ export function Workspace({ screen, systemUi = null, deviceInsets = null, size =
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetLegend deviceInsets={deviceInsets} size={size} host={hosts.legend} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} deviceInsets={deviceInsets} host={hosts.bars} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetLegend deviceInsets={deviceInsets} size={size} host={hosts.legend} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
-    <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} />}
+    <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} deviceInsets={deviceInsets} />}
       inset={<InsetOverlay deviceInsets={deviceInsets} size={size} />} legend={<InsetLegend deviceInsets={deviceInsets} size={size} />} /></section>
     <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;

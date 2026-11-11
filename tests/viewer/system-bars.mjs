@@ -96,7 +96,7 @@ try {
   const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
   const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
-  const ios = new Set(['ip17','ipair','ip17pm','duo']);
+  const ios = new Set(['ip17','ipair','ip17pm','duo']), pixel = new Set(['pixel9','pixelfold','tablet']);
   const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
@@ -107,7 +107,8 @@ try {
     const name = `${device}-${folded?'cover':'open'}-${orientation}`;
     const state = await evaluate(`__store.st.focus`);
     assert.equal(state.systemUi.shown, true, name);
-    assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : 'aosp', name);
+    assert.equal(state.systemUi.bars.look, ios.has(device) ? 'ios' : pixel.has(device) ? 'pixel' : 'oneui', name);
+    assert.deepEqual([state.systemUi.bars.insets.statusDp, state.systemUi.bars.insets.navDp], [state.deviceInsets.values.statusBars.top, state.deviceInsets.values.navigationBars.bottom], `${name} 바 높이는 전달 인셋`);
     for (const k of ['choice','applied','supported']) assert(!(k in state.deviceInsets), `${name} ${k}`);
     assert(!('supported' in state.size.insetProfile), name);
     for (const k of ['approximate','note','issue']) assert(!(k in state.deviceInsets), `${name} ${k}`);
@@ -127,11 +128,10 @@ try {
     const insetMiss = await evaluate(insetGeometry);
     assert.deepEqual(insetMiss, [], `${name} 인셋 띠 · safeDrawing 선이 전달한 인셋과 화면 좌표로 맞는다: ${JSON.stringify(insetMiss)}`);
     const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
-    assert.equal(overlay.hidden, !ios.has(device), name);
-    if (ios.has(device)) {
-      assert.equal(overlay.handle, device!=='duo', name);
-      assert.equal(overlay.duo, device==='duo', name);
-    }
+    assert.equal(overlay.hidden, false, `${name} 기기는 늘 뷰어가 바를 덧그린다`);
+    assert.equal(overlay.handle, device!=='duo', name);
+    assert.equal(overlay.duo, device==='duo', name);
+    assert(await evaluate(`document.querySelectorAll('#sysBars .sb-status').length`) <= 1, `${name} 상태 표시는 많아야 한 벌`);
     if (ios.has(device) && device!=='duo') {
       // 오버레이의 dp 뷰박스가 아니라 #shot · 아일랜드(#ua .cam) · 전달 인셋으로 낸 화면 좌표에 견준다.
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
@@ -145,6 +145,21 @@ try {
         assert(time.r < cam.l && icons.l > cam.r, `${name} 상태바가 아일랜드와 겹치지 않는다: ${JSON.stringify(bars)}`);
         assert(Math.abs(mid(icons) - mid(cam)) <= bars.k && Math.abs(mid(time) - mid(cam)) <= 1.5 * bars.k, `${name} 아이콘 ±1dp · 시각 ±1.5dp(글꼴 상자)로 아일랜드 가운데 높이: ${JSON.stringify(bars)}`);
       } else assert(!time && !icons, `${name} 가로에는 상태바가 없다`);
+    }
+    if (!ios.has(device)) {
+      // Android 상태 줄은 모든 자세에서 위 띠 안, 옆 컷아웃 안쪽에 놓이고 보이는 카메라와 겹치지 않는다. 핸들은 아래 띠 안 가운데다.
+      const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
+        const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
+        const c=document.querySelector('#ua .cam');
+        return {shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
+          time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:c&&Number(c.style.opacity)>0?box('#ua .cam'):null}})()`);
+      const { shot, time, icons, handle, cam } = bars;
+      assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
+      for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l + bars.cutL - 1 && b.r <= shot.r - bars.cutR + 1, `${name} 상태 줄이 위 띠 · 옆 컷아웃 안: ${JSON.stringify(bars)}`);
+      assert(time.r < icons.l, `${name} 시각과 아이콘이 겹치지 않는다: ${JSON.stringify(bars)}`);
+      const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
+      if (cam) for (const b of [time, icons]) assert(apart(b, cam), `${name} 상태 줄이 카메라와 겹치지 않는다: ${JSON.stringify(bars)}`);
+      assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
     }
     if (device==='duo') {
       const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-right' ? 'left' : 'right';
