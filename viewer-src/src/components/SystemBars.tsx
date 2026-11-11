@@ -1,26 +1,27 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { cameraOf } from '../../legacy/js/resize-scene.js';
 import { useHost } from '../host';
 import type { DeviceInsets, Size, SystemUi } from '../state';
+import { sizeKey } from '../workspace/resize';
 import { systemBarsHost } from './WorkspaceShell';
 
 // 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, 기기의 바(iOS · Android)는 이 층이, 기기 없는 크기의 Preview 기본 바는 렌더러가 그린다.
-// cut 은 전달 인셋의 옆 컷아웃(좌 · 우)이다 — Android 상태 줄이 그만큼 안으로 들어간다. cornerCam 은 위 가장자리 구석 카메라의 왼쪽 끝 x 다.
-export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; cornerCam: number | null };
-
-// 위 가장자리 구석에 카메라가 있는 자세 — 장면(resize-scene.js)의 Pixel 9 Pro Fold 펼침 카메라(x .92 · 지름 9)다. 가로에서는 옆으로 가서 상태 줄과 만나지 않는다.
-const CORNER_CAM: Record<string, { x: number; r: number }> = { pixelfold: { x: .92, r: 4.5 } };
+// cut 은 전달 인셋의 옆 컷아웃(좌 · 우)이다 — Android 상태 줄이 그만큼 안으로 들어간다.
+// topCam 은 위 띠에서 시작하는 장면 카메라(resize-scene.js cameraOf)의 좌우 끝과 세로 가운데다 — 옆 · 아래 가장자리 카메라는 null 이다.
+export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; topCam: TopCam | null };
+export type TopCam = { x0: number; x1: number; cy: number };
 type Ink = 'dark' | 'light';
 type Region = [number, number, number, number];
 
 export function barsOf(systemUi: SystemUi | null, size: Size | null, deviceInsets: DeviceInsets | null = null): Bars | null {
   const b = systemUi?.shown ? systemUi.bars : null;
   if (!b?.insets || size?.kind !== 'device') return null;
-  const cutout = deviceInsets?.values.displayCutout, corner = CORNER_CAM[size.device];
-  const cornerCam = corner && !size.folded && size.orientation === 'portrait' ? size.widthDp * corner.x - corner.r : null;
+  const cutout = deviceInsets?.values.displayCutout, cam = cameraOf(sizeKey(size));
+  const topCam = cam && cam.y < b.insets.statusDp ? { x0: cam.x, x1: cam.x + cam.w, cy: cam.y + cam.h / 2 } : null;
   const area = size.insetProfile?.safeArea, duo = size.device === 'duo';
   const side = duo && area ? (area.left > 0 ? 'left' : area.right > 0 ? 'right' : null) : null;
   return { device: size.device, ios: b.look === 'ios', w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
-    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], cornerCam };
+    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], topCam };
 }
 
 const SAMPLE_W = 24, SAMPLE_H = 4, LIGHT_ABOVE = 0.6, RESAMPLE_MS = 1000;
@@ -124,8 +125,9 @@ export function IosStatus({ bars }: { bars: Bars }) {
 }
 
 // Android 기기는 제조사와 상관없이 공통 Material(AOSP) 모양 한 벌이다(시안: prototypes/android-status-bar, 2026-11-11 사용자가 골랐다).
-// 아이콘은 Material 아이콘을 따른 근사다. 상태 줄은 상태바 가운데(최대 ROW_MAX)에, 좌우는 EDGE 와 옆 컷아웃만큼 안에, 구석 카메라 앞에서 멈춘다.
-const ROW_MAX = 17, EDGE = 20, CAM_GAP = 8, A_ICONS_W = 46;
+// 아이콘은 Material 아이콘을 따른 근사다. 상태 줄의 세로 가운데는 위 띠의 카메라 가운데(없으면 띠 가운데)이고, 좌우는 EDGE 와 옆 컷아웃만큼 안에서 위 카메라를 비켜 선다.
+// 크기는 상태바 높이에 비례한다 — ROW_BASE(띠 24dp)에서 1배, ROW_TOP(66dp, Pixel 9 세로)부터 ROW_GROW 만큼 큰 상한이다.
+const EDGE = 20, CAM_GAP = 8, A_ICONS_W = 46, A_ICONS_H = 13, A_TIME = 14, ROW_BASE = 24, ROW_TOP = 66, ROW_GROW = .3;
 const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
   <path d={`M8.85 12.5 L${at(8.85, 12.5, 12, -45)} A12 12 0 0 1 ${at(8.85, 12.5, 12, 45)} Z`} />
   <path d="M22 13 L35 13 L35 0 Z" />
@@ -135,12 +137,19 @@ const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
 // 제스처 핸들 108×4 — 측정 자료가 모두 제스처 내비게이션이라 버튼 바는 없다. 내비 띠 가운데(24dp 보다 두꺼우면 아래 24dp 의 가운데)에 둔다.
 const A_HANDLE = { w: 108, h: 4, band: 24 };
 
+function androidRow(bars: Bars) {
+  const k = 1 + ROW_GROW * Math.min(1, Math.max(0, (bars.statusDp - ROW_BASE) / (ROW_TOP - ROW_BASE))), cam = bars.topCam;
+  const camLeft = cam && cam.x1 < bars.w / 2, camRight = cam && cam.x0 > bars.w / 2;
+  const left = Math.max(EDGE + bars.cut[0], camLeft ? cam.x1 + CAM_GAP : 0);
+  const right = Math.min(bars.w - EDGE - bars.cut[1], camRight ? cam.x0 - CAM_GAP : Infinity);
+  return { k, y: cam ? cam.cy : bars.statusDp / 2, left, right };
+}
+
 function AndroidStatus({ bars }: { bars: Bars }) {
-  const y = Math.min(bars.statusDp / 2, ROW_MAX), left = EDGE + bars.cut[0];
-  const right = Math.min(bars.w - EDGE - bars.cut[1], bars.cornerCam === null ? Infinity : bars.cornerCam - CAM_GAP);
+  const { k, y, left, right } = androidRow(bars);
   return <g className="sb-status sb-android-status" data-edge="top">
-    <text className="sb-time" x={left} y={y} dominantBaseline="central" fontSize="14" fontWeight={500}>9:41</text>
-    <g className="sb-icons" transform={`translate(${right - A_ICONS_W} ${y - 6.5})`}>{A_ICONS}</g>
+    <text className="sb-time" x={left} y={y} dominantBaseline="central" fontSize={A_TIME * k} fontWeight={500}>9:41</text>
+    <g className="sb-icons" transform={`translate(${right - A_ICONS_W * k} ${y - A_ICONS_H / 2 * k}) scale(${k})`}>{A_ICONS}</g>
   </g>;
 }
 

@@ -111,6 +111,16 @@ try {
   const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
   const ios = new Set(['ip17','ipair','ip17pm','duo']), pixel = new Set(['pixel9','pixelfold','tablet']);
+  // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
+  // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
+  const RAW_CAM = {
+    'pixel9-open-portrait': [205.52, 32.95], 'pixel9-open-landscape-left': [32.95, 205.90], 'pixel9-open-landscape-right': [890.48, 205.52],
+    'pixelfold-cover-portrait': [221.54, 35.28], 'pixelfold-cover-landscape-left': [35.28, 221.54], 'pixelfold-cover-landscape-right': [959.18, 221.54],
+    'pixelfold-open-portrait': [815.38, 32.82], 'pixelfold-open-landscape-left': [32.82, 36.31], 'pixelfold-open-landscape-right': [850.05, 815.38],
+    's26-open-portrait': [180, 18.5], 's26-open-landscape-left': [18.5, 180], 's26-open-landscape-right': [761.5, 180],
+    'fold8-cover-portrait': [237.71, 19.81], 'fold8-cover-landscape-left': [19.81, 237.71], 'fold8-cover-landscape-right': [731.43, 237.71],
+    'ultra-cover-portrait': [180, 18], 'ultra-cover-landscape-left': [18, 180], 'ultra-cover-landscape-right': [822, 180],
+  };
   const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
@@ -162,13 +172,21 @@ try {
     }
     if (!ios.has(device)) {
       // Android 상태 줄은 모든 자세에서 위 띠 안, 옆 컷아웃 안쪽에 놓이고 보이는 카메라와 겹치지 않는다. 핸들은 아래 띠 안 가운데다.
+      // 장면 카메라는 원자료 컷아웃 가운데와 ±0.5dp, 상태 줄의 세로 가운데는 위 띠에서 시작하는 카메라 가운데(아이콘 ±1dp · 시각 ±1.5dp), 그런 카메라가 없으면 띠 가운데다.
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
         const c=document.querySelector('#ua .cam');
-        return {shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
+        return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
           time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:c&&Number(c.style.opacity)>0?box('#ua .cam'):null}})()`);
-      const { shot, time, icons, handle, cam } = bars;
+      const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2, raw = RAW_CAM[name];
+      if (raw) {
+        assert(cam, `${name} 카메라가 보인다: ${JSON.stringify(bars)}`);
+        const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, (mid(cam) - shot.t) / bars.k];
+        assert(Math.abs(got[0] - raw[0]) <= .5 && Math.abs(got[1] - raw[1]) <= .5, `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got, raw })}`);
+      } else assert(!cam, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
       assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
+      const rowY = cam && cam.t < shot.t + bars.top ? mid(cam) : shot.t + bars.top / 2;
+      assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 상태 줄이 ${cam && cam.t < shot.t + bars.top ? '카메라' : '띠'} 가운데 높이: ${JSON.stringify({ rowY, ...bars })}`);
       for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l + bars.cutL - 1 && b.r <= shot.r - bars.cutR + 1, `${name} 상태 줄이 위 띠 · 옆 컷아웃 안: ${JSON.stringify(bars)}`);
       assert(time.r < icons.l, `${name} 시각과 아이콘이 겹치지 않는다: ${JSON.stringify(bars)}`);
       const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;

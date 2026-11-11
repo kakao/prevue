@@ -20,3 +20,5 @@ export function createResizeScene(root: HTMLElement, hooks: {
   request(sel: string): Promise<boolean>;
   layout(rect: SceneRect, moving: boolean): void;
 }): ResizeScene;
+/** 기기 자세(sel)의 화면 dp 좌표 카메라. 카메라가 없거나 iPhone Duo 면 null. */
+export function cameraOf(sel: string): { x: number; y: number; w: number; h: number } | null;

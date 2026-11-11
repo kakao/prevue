@@ -1,6 +1,72 @@
 import { reduced } from "./motion.js";
 import { phrase } from "./strings.js";
 
+// 안드로이드 카메라(cam)는 windowinsets.info 의 displayCutout 이다 — Pixel 은 path 원의 가운데 · 지름, Samsung 은 path 가 위 가장자리에 붙은 상자라 그 가운데만 따르고 지름은 눈대중이다.
+const DEVICES = {
+  s26: { name: "Galaxy S26", short: "S26", fold: false,
+    open: { w: 360, h: 780 },
+    look: { open: { tone: "var(--device-tone-s26)", bezel: 5, radius: 26, cam: { w: 9, h: 9, y: 14 }, btn: [[1, 175, 95], [1, 300, 50]] } } },
+  pixel9: { name: "Pixel 9", short: "Pixel 9", fold: false,
+    open: { w: 411.43, h: 923.43 },
+    look: { open: { tone: "var(--device-tone-pixel9)", bezel: 6, radius: 34, cam: { w: 32, h: 32, y: 16.95 }, btn: [[1, 190, 50], [1, 270, 95]] } } },
+  ip17: { name: "iPhone 17", short: "iPhone 17", fold: false,
+    open: { w: 402, h: 874 },
+    look: { open: { tone: "var(--device-tone-ip17)", bezel: 5, radius: 55, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]] } } },
+  ipair: { name: "iPhone Air", short: "iPhone Air", fold: false,
+    open: { w: 420, h: 912 },
+    look: { open: { tone: "var(--device-tone-ipair)", bezel: 4, radius: 57, cam: { w: 125.33, h: 36.67, y: 20 }, btn: [[-1, 155, 32], [-1, 215, 62], [-1, 292, 62], [1, 245, 104]] } } },
+  ip17pm: { name: "iPhone 17 Pro Max", short: "17 Pro Max", fold: false,
+    open: { w: 440, h: 956 },
+    look: { open: { tone: "var(--device-tone-ip17pm)", bezel: 5, radius: 60, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 160, 34], [-1, 225, 66], [-1, 305, 66], [1, 255, 110]] } } },
+  pixelfold: { name: "Pixel 9 Pro Fold", short: "9 Pro Fold", fold: true,
+    cover: { w: 443.08, h: 994.46 }, open: { w: 851.69, h: 882.87, hinge: 425.85 },
+    look: { cover: { tone: "var(--device-tone-pixelfold)", bezel: 6, radius: 30, cam: { w: 34.05, h: 34.05, y: 18.26 }, btn: [[1, 200, 50], [1, 280, 95]] },
+            open:  { tone: "var(--device-tone-pixelfold)", bezel: 7, radius: 24, cam: { w: 32.41, h: 32.41, y: 16.62, x: .9574 }, btn: [[1, 200, 50], [1, 280, 95]] } } },
+  tablet: { name: "Pixel Tablet", short: "Pixel Tablet", fold: false,
+    open: { w: 1280, h: 800 },
+    look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
+  ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
+    cover: { w: 466, h: 678 }, open: { w: 951, h: 669, hinge: 475.5 },
+    look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 30, h: 30, y: 24, x: .91 }, btn: [[1, 200, 80], [1, 470, 46]] },
+            open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 0, h: 0, y: 11 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
+  fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
+    cover: { w: 475.43, h: 751.24 }, open: { w: 932.57, h: 704, hinge: 466.29 },
+    look: { cover: { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 9, h: 9, y: 15.31 }, btn: [[1, 170, 80], [1, 270, 55]] },
+            open:  { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] } } },
+  ultra: { name: "Galaxy Z Fold8 Ultra", short: "Fold8 Ultra", fold: true,
+    cover: { w: 360, h: 840 }, open: { w: 752, h: 834.67, hinge: 376 },
+    look: { cover: { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 8, h: 8, y: 14 }, btn: [[1, 190, 85], [1, 300, 55]] },
+            open:  { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 190, 85], [1, 300, 55]] } } },
+};
+for (const d of Object.values(DEVICES)) for (const lk of Object.values(d.look)) {
+  const b = lk.btn.map(([side, at, len]) => ({ side, at, len }));
+  while (b.length < 5) { const l = b[b.length - 1]; b.push({ side: l.side, at: l.at + l.len, len: 0 }); }
+  lk.btn = b;
+}
+
+// 자연 방향 화면(panel)을 sel 의 rot · right 로 돌린 자세 — 세로 / 가로 왼쪽 / 가로 오른쪽과 손에 든 회전 각도.
+function turnOf(panel, rot, right) {
+  const wide = panel.w > panel.h;
+  const orientation = right ? "landscape-right" : ((rot ? panel.h : panel.w) > (rot ? panel.w : panel.h) ? "landscape-left" : "portrait");
+  const angle = right ? (wide ? 180 : 90) : (rot ? (wide ? 90 : -90) : 0);
+  return { orientation, angle, mirrored: angle < 0 || angle === 180 };
+}
+
+// 기기 자세(sel)의 화면 dp 좌표 카메라 — 뷰어의 시스템 바가 장면과 같은 카메라를 피하고 맞춘다. 없으면 null.
+export function cameraOf(sel) {
+  const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
+  if (!d?.[state] || dev === "ipduo") return null;
+  const panel = d[state], rot = turns.includes("rot"), b = camBox(panel.w, panel.h, rot, d.look[state].cam, 1, turnOf(panel, rot, turns.includes("right")).mirrored);
+  return b.on ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
+}
+
+function camBox(W0, H0, rot, cam, s, mirrored = false) {
+  const cw = cam.w * s, ch = cam.h * s, cy = cam.y * s, cx = (cam.x ?? .5) * W0 * s;
+  const b = rot ? { left: H0 * s - cy - ch, top: cx - cw / 2, width: ch, height: cw } : { left: cx - cw / 2, top: cy, width: cw, height: ch };
+  if (mirrored) { b.left = (rot ? H0 : W0) * s - b.left - b.width; b.top = (rot ? W0 : H0) * s - b.top - b.height; }
+  return { ...b, r: Math.min(cw, ch) / 2, on: cw > .5 };
+}
+
 export function createResizeScene(root, hooks) {
   // 시제품에서 확정한 기하와 곡선을 유지하고, 그림 도착은 실제 디코드가 알린다.
   const $ = id => root.querySelector(`#${id}`);
@@ -10,47 +76,6 @@ export function createResizeScene(root, hooks) {
   const easeOut = k => 1 - Math.pow(1 - k, 3);
   // 몸체가 드리우는 그림자 — 짙기는 매 프레임 바뀌고 색은 tokens.css 의 --device-shade 다.
   const shade = a => `color-mix(in srgb, var(--device-shade) ${(a * 100).toFixed(1)}%, transparent)`;
-  const DEVICES = {
-    s26: { name: "Galaxy S26", short: "S26", fold: false,
-      open: { w: 360, h: 780 },
-      look: { open: { tone: "var(--device-tone-s26)", bezel: 5, radius: 26, cam: { w: 9, h: 9, y: 12 }, btn: [[1, 175, 95], [1, 300, 50]] } } },
-    pixel9: { name: "Pixel 9", short: "Pixel 9", fold: false,
-      open: { w: 411.43, h: 923.43 },
-      look: { open: { tone: "var(--device-tone-pixel9)", bezel: 6, radius: 34, cam: { w: 10, h: 10, y: 13 }, btn: [[1, 190, 50], [1, 270, 95]] } } },
-    ip17: { name: "iPhone 17", short: "iPhone 17", fold: false,
-      open: { w: 402, h: 874 },
-      look: { open: { tone: "var(--device-tone-ip17)", bezel: 5, radius: 55, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]] } } },
-    ipair: { name: "iPhone Air", short: "iPhone Air", fold: false,
-      open: { w: 420, h: 912 },
-      look: { open: { tone: "var(--device-tone-ipair)", bezel: 4, radius: 57, cam: { w: 125.33, h: 36.67, y: 20 }, btn: [[-1, 155, 32], [-1, 215, 62], [-1, 292, 62], [1, 245, 104]] } } },
-    ip17pm: { name: "iPhone 17 Pro Max", short: "17 Pro Max", fold: false,
-      open: { w: 440, h: 956 },
-      look: { open: { tone: "var(--device-tone-ip17pm)", bezel: 5, radius: 60, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 160, 34], [-1, 225, 66], [-1, 305, 66], [1, 255, 110]] } } },
-    pixelfold: { name: "Pixel 9 Pro Fold", short: "9 Pro Fold", fold: true,
-      cover: { w: 443.08, h: 994.46 }, open: { w: 851.69, h: 882.87, hinge: 425.85 },
-      look: { cover: { tone: "var(--device-tone-pixelfold)", bezel: 6, radius: 30, cam: { w: 10, h: 10, y: 13 }, btn: [[1, 200, 50], [1, 280, 95]] },
-              open:  { tone: "var(--device-tone-pixelfold)", bezel: 7, radius: 24, cam: { w: 9, h: 9, y: 12, x: .92 }, btn: [[1, 200, 50], [1, 280, 95]] } } },
-    tablet: { name: "Pixel Tablet", short: "Pixel Tablet", fold: false,
-      open: { w: 1280, h: 800 },
-      look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
-    ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
-      cover: { w: 466, h: 678 }, open: { w: 951, h: 669, hinge: 475.5 },
-      look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 30, h: 30, y: 24, x: .91 }, btn: [[1, 200, 80], [1, 470, 46]] },
-              open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 0, h: 0, y: 11 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
-    fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
-      cover: { w: 475.43, h: 751.24 }, open: { w: 932.57, h: 704, hinge: 466.29 },
-      look: { cover: { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 9, h: 9, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] },
-              open:  { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] } } },
-    ultra: { name: "Galaxy Z Fold8 Ultra", short: "Fold8 Ultra", fold: true,
-      cover: { w: 360, h: 840 }, open: { w: 752, h: 834.67, hinge: 376 },
-      look: { cover: { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 8, h: 8, y: 10 }, btn: [[1, 190, 85], [1, 300, 55]] },
-              open:  { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 190, 85], [1, 300, 55]] } } },
-  };
-  for (const d of Object.values(DEVICES)) for (const lk of Object.values(d.look)) {
-    const b = lk.btn.map(([side, at, len]) => ({ side, at, len }));
-    while (b.length < 5) { const l = b[b.length - 1]; b.push({ side: l.side, at: l.at + l.len, len: 0 }); }
-    lk.btn = b;
-  }
   const P = { rotDur: .6, rotLift: .42, rotLand: .18, rotDip: .12, shellK: 1.6,
     frameDur: .45, frameBounce: 0, outlineBounce: 0, outlineLead: 0, veil: .06,
     foldDur: .6, foldLift: .42, foldLand: .18, perspective: 3200, shade: .22, sheen: .1, lift: 0,
@@ -73,9 +98,7 @@ export function createResizeScene(root, hooks) {
       const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
       if (!d || !d[state]) return null;
       const s = d[state], rot = turns.includes("rot"), right = turns.includes("right");
-      const orientation = right ? "landscape-right" : ((rot ? s.h : s.w) > (rot ? s.w : s.h) ? "landscape-left" : "portrait");
-      const angle = right ? (s.w > s.h ? 180 : 90) : (rot ? (s.w > s.h ? 90 : -90) : 0);
-      st = { sel, kind: "device", dev, folded: state === "cover", rot, right, orientation, angle, mirrored: angle < 0 || angle === 180, name: d.name, short: d.short,
+      st = { sel, kind: "device", dev, folded: state === "cover", rot, right, ...turnOf(s, rot, right), name: d.name, short: d.short,
         w: rot ? s.h : s.w, h: rot ? s.w : s.h, hinge: s.hinge };
     }
     if (target?.sel === sel) { st.w = target.w; st.h = target.h; }
@@ -203,12 +226,6 @@ export function createResizeScene(root, hooks) {
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
   }
 
-  function camBox(W0, H0, rot, cam, s, mirrored = false) {
-    const cw = cam.w * s, ch = cam.h * s, cy = cam.y * s, cx = (cam.x ?? .5) * W0 * s;
-    const b = rot ? { left: H0 * s - cy - ch, top: cx - cw / 2, width: ch, height: cw } : { left: cx - cw / 2, top: cy, width: cw, height: ch };
-    if (mirrored) { b.left = (rot ? H0 : W0) * s - b.left - b.width; b.top = (rot ? W0 : H0) * s - b.top - b.height; }
-    return { ...b, r: Math.min(cw, ch) / 2, on: cw > .5 };
-  }
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.r + "px", opacity: b.on ? op : 0 });
 
   function duoCamera(st, s) {
