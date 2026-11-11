@@ -31,6 +31,7 @@ import prevue.infrastructure.render.ResourceOverlay
 import prevue.application.port.ResourceKey
 import prevue.application.port.ResourceLookup
 import prevue.infrastructure.source.SourcePreviewRepository
+import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.DeviceOrientation
@@ -179,6 +180,31 @@ class RenderIntegrationTest {
             val marks = (y0 until y1).sumOf { y -> (x0 until x1).count { x -> img.getRGB(x, y) != ground } }
             assertEquals(0, marks, "${device.key} 상태바 시각 자리에 layoutlib 바가 남았다")
         }
+    }
+
+    // 옆 인셋이 있는 자세는 인셋을 넣으면 격자 폭이 줄어 animateItem 이 칸을 옮긴다. 첫 그림은 그 이동의 중간이 아니라 정착한 라이브와 같아야 한다.
+    @Test @Order(35) fun `옆 인셋 자세의 첫 그림은 공유 로더 옆 그림 · 새 렌더 모두 정착한 라이브와 같다`() {
+        val adaptive = single("com.example.pearl.feature.pearl.AdaptivePreviewsKt.AdaptivePearlPreview")
+        for (device in listOf(ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true), ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true, orientation = DeviceOrientation.LANDSCAPE_LEFT))) {
+            val spec = CardOverride(adaptive.previewId, device).applyTo(adaptive).copy(previewId = "${adaptive.previewId}@${device.key}")
+            val side = spec.appInsets!!.displayCutout
+            assertTrue(side.left + side.right > 0, "${device.key} 에 옆 인셋이 없다 — 이 회귀를 잴 수 없다")
+            val s = runBlocking { engine.open(spec, interactive = true, ownLoader = false) }
+            val settled = try {
+                assertTrue(s.opened.ok, s.opened.message?.text)
+                val out = runBlocking { s.renderAt(SETTLE_MS, 16) }
+                assertTrue(out.ok, out.message?.text)
+                runBlocking { engine.written(out) }.let { ImageIO.read(it.image!!) }
+            } finally {
+                s.close()
+            }
+            val drawn = List(2) { aside(spec) } + runBlocking { engine.show(spec) }
+            drawn.forEachIndexed { i, out ->
+                val img = ImageIO.read(runBlocking { engine.written(out) }.image!!)
+                assertTrue(samePixels(settled, img), "${device.key} ${i + 1}번째 첫 그림이 정착한 라이브와 다르다 — 인셋 전 배치에서 칸이 움직이는 중이다")
+            }
+        }
+        assertAlive()
     }
 
     @AfterAll fun down() {
@@ -1001,5 +1027,6 @@ class RenderIntegrationTest {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
         private const val HEADER_ROW = "Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {"
         private const val HEADER_PADDING_DP = 20
+        private const val SETTLE_MS = 1_000L
     }
 }
