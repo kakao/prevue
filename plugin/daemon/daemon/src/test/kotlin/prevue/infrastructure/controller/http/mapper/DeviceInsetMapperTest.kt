@@ -15,6 +15,7 @@ class DeviceInsetMapperTest {
             assertEquals(d.widthPx to d.heightPx, json["widthPx"] to json["heightPx"])
             assertFalse(profile.containsKey("supported"), d.key)
             assertEquals(setOf("safeArea", "measured", "evidence"), profile.keys, d.key)
+            (profile["measured"] as? Map<*, *>)?.let { assertEquals(setOf("statusBars", "navigationBars", "captionBar", "displayCutout"), it.keys, d.key) }
             assertEquals(d.insetProfile.evidence?.conditions, (profile["evidence"] as? Map<*, *>)?.get("conditions"))
             assertNotNull(Json.parse(Json.str(json)))
         }
@@ -28,11 +29,5 @@ class DeviceInsetMapperTest {
         val evidence = p["evidence"] as Map<*, *>
         assertEquals("safearea.info", evidence["source"])
         assertNull(evidence["capturedAt"])
-    }
-
-    @Test fun `Android 원자료는 사이트가 주는 네 종류만 응답한다`() {
-        val p = DeviceModel.GALAXY_S26.postures.first().toJson()!!["insetProfile"] as Map<*, *>
-        val measured = p["measured"] as Map<*, *>
-        assertEquals(setOf("statusBars", "navigationBars", "captionBar", "displayCutout"), measured.keys)
     }
 }

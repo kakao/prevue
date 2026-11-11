@@ -17,4 +17,3 @@ data class AppInsets(
         val NONE = AppInsets()
     }
 }
-

@@ -24,5 +24,5 @@ data class DeviceInsetProfile(
 
 object DeviceInsets {
     fun of(device: ScreenSize.Device): DeviceInsetProfile =
-        AndroidDeviceInsets.profiles[device] ?: IosDeviceInsets.of(device) ?: DeviceInsetProfile()
+        AndroidDeviceInsets.profiles[device] ?: IosDeviceInsets.profiles[device] ?: DeviceInsetProfile()
 }

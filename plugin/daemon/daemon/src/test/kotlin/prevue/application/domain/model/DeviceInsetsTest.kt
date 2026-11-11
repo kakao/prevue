@@ -94,11 +94,5 @@ class DeviceInsetsTest {
         assertTrue(all.filter { it.model.look != BarLook.IOS && it.insetProfile.evidence != null }.all { it.insetProfile.measured != null })
     }
 
-    @Test fun `측정값은 systemOverlays 없이 네 종류를 그대로 AppInsets로 옮긴다`() {
-        val e = InsetEdges(top = 10.0, right = 5.0)
-        val measured = MeasuredInsets(e, InsetEdges(bottom = 15.0), InsetEdges(), InsetEdges(left = 30.0))
-        assertEquals(AppInsets(e, InsetEdges(bottom = 15.0), InsetEdges(), InsetEdges(left = 30.0)), measured.appInsets)
-    }
-
     private fun spec() = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)
 }

@@ -24,7 +24,7 @@ A device always shows its system UI and always delivers its system bar and cutou
   An iOS safe area becomes status bars (top), navigation bars (bottom) and display cutout (top and sides).
   Galaxy Z Fold8 unfolded Landscape right, which the site does not list, mirrors Landscape left.
   status.deviceInsets gives the delivered values (four edges per type) with posture, basisPosture (the posture whose data was used) and evidence.
-  status.size.insetProfile keeps the site's own record: safeArea, measured (four Android types) and evidence; null means the site has no entry.
+  status.size.insetProfile keeps the source record: safeArea (iOS: the site's value; Android: systemBars and displayCutout combined), measured (Android's four types) and evidence; null means the site has no entry.
 --system-ui draws or hides the status and navigation bars for original, preset and custom sizes; annotated follows @Preview(showSystemUi).
   It survives saves and resets on exit or tab change. --size original removes only the size; --system-ui annotated removes only the system UI override.
   With a device selected, --system-ui is rejected with an explanation. A prior system UI choice is restored when returning to a non-device size.

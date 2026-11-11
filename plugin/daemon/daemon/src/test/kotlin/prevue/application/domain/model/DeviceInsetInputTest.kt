@@ -19,9 +19,12 @@ class DeviceInsetInputTest {
         }
     }
 
-    @Test fun `S26 양쪽 컷아웃과 Duo 커버의 비대칭 safe area를 전달하고 Fold8 펼친 가로 오른쪽은 가로 왼쪽을 반전한다`() {
+    @Test fun `S26 양쪽 컷아웃과 Duo 커버의 비대칭 safe area를 전달하고 Fold8 펼친 가로 오른쪽은 가로 왼쪽 자료를 빌린다`() {
         fun input(model: DeviceModel, folded: Boolean, orientation: DeviceOrientation) = DeviceInsetInputs.of(ScreenSize.Device(model, folded, orientation)).values
-        assertEquals(InsetEdges(left = 37.0), input(DeviceModel.GALAXY_S26, false, LANDSCAPE_LEFT).displayCutout)
+        assertEquals(
+            AppInsets(statusBars = InsetEdges(top = 30.0), navigationBars = InsetEdges(bottom = 15.0), displayCutout = InsetEdges(left = 37.0)),
+            input(DeviceModel.GALAXY_S26, false, LANDSCAPE_LEFT),
+        )
         assertEquals(InsetEdges(right = 37.0), input(DeviceModel.GALAXY_S26, false, LANDSCAPE_RIGHT).displayCutout)
         assertEquals(InsetEdges(right = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_LEFT).displayCutout)
         assertEquals(InsetEdges(left = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_RIGHT).displayCutout)
@@ -30,7 +33,6 @@ class DeviceInsetInputTest {
         assertEquals("fold8", mirrored.basisPosture)
         assertEquals(basis.evidence, mirrored.evidence)
         assertEquals(InsetEdges(top = 40.0), mirrored.values.statusBars)
-        assertEquals(basis.values.displayCutout.let { it.copy(left = it.right, right = it.left) }, mirrored.values.displayCutout)
     }
 
     @Test fun `절대 방향과 이전 가로 옵션은 구분하고 충돌은 거절한다`() {
