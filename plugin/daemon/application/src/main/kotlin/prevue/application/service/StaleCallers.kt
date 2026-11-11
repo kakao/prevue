@@ -57,9 +57,7 @@ class StaleCallers(
      * [before]는 [files]를 컴파일 **전**에 읽은 내용이다(D-67).
      */
     suspend fun compileWithNew(ed: WorkspaceEditor, files: List<File>, before: Map<String, String?> = literals.read(files)): Batch {
-        val asked = files.map { it.canonicalPath }.toSet()
-        val (newer, built) = ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
-            .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
+        val (newer, built) = waiting(files)
         val fresh = holdExpectActual(ed, newer)
         ed.forgetNew(built)
         // 읽는 사이에 또 저장되면 옛 값이 남아 기다림이 다음 저장을 기다린다.
@@ -80,19 +78,15 @@ class StaleCallers(
         return if (again.ok) done(ed, rest, seen, again) else Batch(first, seen, c)
     }
 
-    suspend fun compileOpening(ed: WorkspaceEditor, files: List<File>): Batch {
-        if (pendingBeside(files)) return compileWithNew(ed, files)
-        val before = literals.read(files)
-        val seen = seen(files)
-        val alone = compileAll(files, before)
-        return if (alone.ok) done(ed, files, seen, alone) else Batch(files, seen, alone)
+    suspend fun newWaiting(beside: List<File>): Boolean = waiting(beside).first.isNotEmpty()
+
+    private suspend fun waiting(beside: List<File>): Pair<List<File>, List<File>> {
+        val asked = beside.map { it.canonicalPath }.toSet()
+        return ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
+            .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
     }
 
-    private suspend fun pendingBeside(files: List<File>): Boolean {
-        val asked = files.map { it.canonicalPath }.toSet()
-        return ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
-            .any { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
-    }
+    fun declaresExpectActual(f: File): Boolean = sources.read(f)?.let(ExpectActual::declares) == true
 
     fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
         val (held, code) = files.partition { (texts[it.absolutePath] ?: sources.read(it))?.let(ExpectActual::declares) == true }
@@ -134,10 +128,11 @@ class StaleCallers(
         return Batch(batch, seen.filterKeys { it in keys }, c)
     }
 
+    /** [f]를 열기 전에 컴파일해야 하나 — 새 파일이거나 [FreshnessPolicy.compileOnOpen]. */
     suspend fun dueOnOpen(f: File, previewClasses: () -> Collection<String>): Boolean {
         val c = f.canonicalFile
         val module = ws.graph.ownerOf(c)
-        return c.path in ws.now.newFiles || pendingBeside(listOf(c)) ||
+        return c.path in ws.now.newFiles ||
             FreshnessPolicy.compileOnOpen(mtime(c), ws.now.compiledMtime[c.path], compiler.builtAt(module)) {
                 previewClasses().all { compiler.hasClass(module, it) }
             }
