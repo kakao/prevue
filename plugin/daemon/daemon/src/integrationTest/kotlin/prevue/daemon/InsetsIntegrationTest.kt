@@ -228,16 +228,23 @@ internal abstract class InsetsRenderChecks {
         val devices = listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17)) + DeviceModel.IPHONE_DUO.postures
         for (device in devices) {
             val grids = mutableListOf<ViewNode>()
+            val titles = mutableListOf<ViewNode>()
             val backgrounds = mutableListOf<Int>()
             for (spec in compared(CardOverride(menu.previewId, device).applyTo(menu))) {
                 val handle = engine.open(spec, interactive = true, ownLoader = false)
                 assertTrue(handle.opened.ok, handle.opened.message?.text)
-                grids += handle.look().tree.nodes.single { it.name == "LazyVerticalGrid" }
+                val nodes = handle.look().tree.nodes
+                grids += nodes.single { it.name == "LazyVerticalGrid" }
+                titles += nodes.filter { it.name == "Text" && it.file.endsWith("FilterScreen.kt") }.minBy { it.top }
                 backgrounds += ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0)
                 handle.close()
             }
             val (on, off) = grids
             val area = device.insetProfile.safeArea!!
+            val density = device.model.dpi / 160.0
+            val titleGap = (24 * density).roundToInt()
+            assertEquals((area.top * density).roundToInt() + titleGap, titles[0].top, device.key)
+            assertEquals(titleGap, titles[1].top, device.key)
             if (area.top > 0) assertTrue(on.top > off.top, device.key) else assertEquals(on.top, off.top, device.key)
             if (area.left > 0) assertTrue(on.left > off.left, device.key) else assertEquals(on.left, off.left, device.key)
             if (area.right > 0) assertTrue(on.right < off.right, device.key) else assertEquals(on.right, off.right, device.key)

@@ -271,16 +271,40 @@ class TabsTest {
         assertTrue(ws.now.newFiles.isEmpty())
     }
 
-    // 콜드 첫 PNG(NFR-11) — 빌드 뒤로 바뀐 소스를 다 실으면 모듈마다 콜드 컴파일이라 첫 그림이 그만큼 늦었다
-    @Test fun `열 때는 여는 파일만 먼저 컴파일하고 함께 실을 새 파일은 다음 컴파일에 남긴다`() {
+    // 첫 PNG가 옛 산출물이면 안 된다 — 여는 파일만 컴파일하던 때는 함께 실을 파일이 다음 저장까지 남아 그 사이 그림이 옛 코드였다
+    @Test fun `열 때 함께 실을 새 파일이 있으면 여는 파일과 한 번에 컴파일한다`() {
         show(fx.file)
         val card = fx.previewFile("NewsCard")
         val other = fx.previewFile("Other")
         ws.noteCreated(listOf(card, other), emptyList())
         fx.compiler.compiled.clear()
         show(card)
-        assertEquals(listOf(listOf(card.canonicalFile)), fx.compiler.compiled.toList())
-        assertEquals(setOf(other.canonicalPath), ws.now.newFiles)
+        assertEquals(listOf(listOf(card.canonicalFile, other.canonicalFile)), fx.compiler.compiled.toList())
+        assertTrue(ws.now.newFiles.isEmpty())
+    }
+
+    // 2026-11-11 pearl: 데몬이 꺼진 사이 FilterScreen.kt에 safeDrawingPadding을 넣었는데, 여는 AdaptivePreviews.kt는 빌드보다 옛것이라
+    // 컴파일 없이 열려 옛 산출물로 그렸다 — 기기 인셋이 0으로 들어간 것처럼 보였다
+    @Test fun `여는 파일이 최신이어도 빌드 뒤에 바뀐 소스가 있으면 첫 그림 전에 함께 컴파일한다`() {
+        val screen = fx.file.apply { setLastModified(1_000_000) }
+        val callee = java.io.File(fx.srcRoot, "demo/Callee.kt").apply { writeText("package demo\nval inset = 1\n"); setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        ws.noteCreated(listOf(callee), emptyList())
+
+        show(screen)
+
+        assertEquals(listOf(listOf(screen.canonicalFile, callee.canonicalFile)), fx.compiler.compiled.toList())
+        assertTrue(ws.now.newFiles.isEmpty())
+        assertEquals(1, fx.renderer.codeChanges)
+    }
+
+    @Test fun `Gradle이 따라잡은 새 파일만 남았으면 최신 파일은 컴파일 없이 연다`() {
+        val screen = fx.file.apply { setLastModified(1_000_000) }
+        val built = java.io.File(fx.srcRoot, "demo/Built.kt").apply { writeText("package demo\n"); setLastModified(1_500_000) }
+        ws.noteCreated(listOf(built), emptyList())
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        show(screen)
+        assertTrue(fx.compiler.compiled.isEmpty())
     }
 
     // D-126 — 렌더러는 컴파일하는 동안 옛 산출물로 데우되 그 그림은 내보내지 않는다
@@ -315,7 +339,7 @@ class TabsTest {
         assertEquals(1, fx.compiler.compiled.size)
     }
 
-    @Test fun `여는 파일만으로 실패하면 새 파일을 함께 실어 다시 한다`() {
+    @Test fun `여는 파일이 부르는 새 파일은 처음부터 함께 실어 한 번에 성공한다`() {
         show(fx.file)
         val card = fx.previewFile("NewsCard")
         val needed = fx.previewFile("Needed")
@@ -323,7 +347,7 @@ class TabsTest {
         fx.compiler.needs = setOf(needed.canonicalFile)
         fx.compiler.compiled.clear()
         show(card)
-        assertEquals(listOf(listOf(card.canonicalFile), listOf(card.canonicalFile, needed.canonicalFile)), fx.compiler.compiled.toList())
+        assertEquals(listOf(listOf(card.canonicalFile, needed.canonicalFile)), fx.compiler.compiled.toList())
         assertTrue(ws.now.newFiles.isEmpty())
         assertNull(ws.now.lastCompileFailure)
     }

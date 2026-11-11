@@ -81,12 +81,17 @@ class StaleCallers(
     }
 
     suspend fun compileOpening(ed: WorkspaceEditor, files: List<File>): Batch {
+        if (pendingBeside(files)) return compileWithNew(ed, files)
         val before = literals.read(files)
         val seen = seen(files)
         val alone = compileAll(files, before)
-        if (alone.ok) return done(ed, files, seen, alone)
+        return if (alone.ok) done(ed, files, seen, alone) else Batch(files, seen, alone)
+    }
+
+    private suspend fun pendingBeside(files: List<File>): Boolean {
         val asked = files.map { it.canonicalPath }.toSet()
-        return if (ws.now.newFiles.any { it !in asked }) compileWithNew(ed, files, before) else Batch(files, seen, alone)
+        return ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
+            .any { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
     }
 
     fun holdExpectActual(ed: WorkspaceEditor, files: List<File>, texts: Map<String, String?> = emptyMap()): List<File> {
@@ -129,11 +134,10 @@ class StaleCallers(
         return Batch(batch, seen.filterKeys { it in keys }, c)
     }
 
-    /** [f]를 열기 전에 컴파일해야 하나 — 새 파일이거나 [FreshnessPolicy.compileOnOpen]. */
     suspend fun dueOnOpen(f: File, previewClasses: () -> Collection<String>): Boolean {
         val c = f.canonicalFile
         val module = ws.graph.ownerOf(c)
-        return c.path in ws.now.newFiles ||
+        return c.path in ws.now.newFiles || pendingBeside(listOf(c)) ||
             FreshnessPolicy.compileOnOpen(mtime(c), ws.now.compiledMtime[c.path], compiler.builtAt(module)) {
                 previewClasses().all { compiler.hasClass(module, it) }
             }
