@@ -14,7 +14,7 @@ import { zoomView } from './view';
 
 export type WorkspaceParts = {
   focusView: HTMLElement; wrap: HTMLElement; stage: HTMLElement; shot: HTMLImageElement; box: HTMLElement; pickBox: HTMLElement; marks: HTMLElement;
-  scene: HTMLElement; geometry: HTMLElement; panel: HTMLElement; header: HTMLElement[];
+  scene: HTMLElement; insetMarks: HTMLElement; geometry: HTMLElement; panel: HTMLElement; header: HTMLElement[];
 };
 
 export function findWorkspaceParts(): WorkspaceParts {
@@ -22,7 +22,7 @@ export function findWorkspaceParts(): WorkspaceParts {
   const stage = $('stage');
   return {
     focusView: $('focusView'), wrap: stage.parentElement!, stage, shot: $<HTMLImageElement>('shot'), box: $('box'), pickBox: $('pickBox'), marks: $('marks'),
-    scene: $('resizeScene'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle')],
+    scene: $('resizeScene'), insetMarks: $('insetMarks'), geometry: $('resizeGeometry'), panel: $('panel'), header: [$('back'), $('wsTitle')],
   };
 }
 
@@ -32,7 +32,7 @@ type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLEle
 
 export type Workspace = ReturnType<typeof createWorkspace>;
 
-export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, marks, scene, geometry, panel, header }: WorkspaceParts) {
+export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, marks, scene, insetMarks, geometry, panel, header }: WorkspaceParts) {
   let all: Hit[] = [], nodes: Hit[] = [], ready = false;
 
   /** 색인이 다시 왔다. 들고 있는 트리를 새 색인으로 다시 거른다. */
@@ -471,6 +471,8 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       stage.style.width = r.w + 'px';
       stage.style.height = r.h + 'px';
       stage.style.borderRadius = r.radius + 'px';
+      Object.assign(insetMarks.style, { left: stage.style.left, top: stage.style.top, width: stage.style.width, height: stage.style.height });
+      insetMarks.style.setProperty('--im-bezel', r.bezel + 'px');
       showZoom();
       reportViewport();
     },

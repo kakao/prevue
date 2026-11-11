@@ -3,7 +3,7 @@ import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { DeviceInsets, Focus, Size, SystemUi, ViewerState } from '../state';
 import { loadingView, zoomView } from '../workspace/view';
-import { InsetLegend, InsetOverlay, InsetOverlayButton } from './InsetOverlay';
+import { InsetMarks, InsetOverlay, InsetOverlayButton } from './InsetOverlay';
 import { SystemBarsOverlay } from './SystemBars';
 import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
 
@@ -21,7 +21,7 @@ export type WorkspaceActions = {
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
 };
-export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; inset: HTMLElement; legend: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
+export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; inset: HTMLElement; insetMarks: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
 const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
@@ -178,10 +178,10 @@ export function Workspace({ screen, systemUi = null, deviceInsets = null, size =
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetLegend deviceInsets={deviceInsets} size={size} host={hosts.legend} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetMarks deviceInsets={deviceInsets} size={size} host={hosts.insetMarks} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
     <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} />}
-      inset={<InsetOverlay deviceInsets={deviceInsets} size={size} />} legend={<InsetLegend deviceInsets={deviceInsets} size={size} />} /></section>
+      inset={<InsetOverlay deviceInsets={deviceInsets} size={size} />} marks={<InsetMarks deviceInsets={deviceInsets} size={size} />} /></section>
     <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }

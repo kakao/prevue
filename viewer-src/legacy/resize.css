@@ -9,6 +9,8 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
 .resize-scene.preparing :is(#sysBars, #insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
+/* 몸체 밖 인셋 표지는 #stage 밖이라 무대의 숨김을 따로 따른다 — 준비 중 · 크기 전환 중(resize-hidden) · 진입 모프 동안 */
+.resize-scene.preparing #insetMarks, #resizeGeometry:has(> #stage.resize-hidden) #insetMarks, #focusView.morph-hold #insetMarks { visibility: hidden; }
 .resize-scene.preparing .ruler { opacity: .45; }
 .resize-scene input:disabled { cursor: default; }
 .workspace-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-8);
@@ -139,7 +141,39 @@ body.resizing-ui main { padding-bottom: 0; }
 .io-band[data-kind="systemOverlays"] { color: var(--inset-overlays); }
 .io-fill { fill: currentColor; fill-opacity: var(--inset-band); }
 .io-line { stroke: currentColor; stroke-width: 2; }
-.io-safe rect { fill: none; }
-.io-safe-halo { stroke: var(--inset-safe-halo); stroke-width: 3; }
-.io-safe-line { stroke: var(--inset-safe-line); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.io-safe { fill: var(--inset-safe); fill-opacity: var(--inset-safe-band); }
+/* 인셋 표지 — 화면과 같은 상자(workspace/focus.ts layout)에서 몸체 두께(--im-bezel, 장면 px라 확대를 따른다) 밖으로 나간다.
+   선은 제 칸의 가운데에 서고, 간격 · 칸 · 선 굵기 · 배지는 --z 로 되돌려 확대해도 화면에서 같은 크기다. */
+.resize-scene .inset-marks { position: absolute; z-index: 5; pointer-events: none; --im-gap: var(--space-16); --im-lane-w: var(--space-64); --im-lane-h: var(--space-24);
+  --im-cap: calc(var(--space-8) / var(--z, 1)); --im-hair: calc(1px / var(--z, 1)); }
+.inset-marks[hidden] { display: none; }
+.im-dim { position: absolute; color: var(--im-color); }
+.im-dim[data-side="right"] { left: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); width: 0; border-left: var(--im-hair) solid currentColor; }
+.im-dim[data-side="bottom"] { top: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); height: 0; border-top: var(--im-hair) solid currentColor; }
+.im-dim::before, .im-dim::after { content: ""; position: absolute; background: currentColor; }
+.im-dim[data-side="right"]::before, .im-dim[data-side="right"]::after { left: calc(var(--im-cap) / -2); width: var(--im-cap); height: var(--im-hair); }
+.im-dim[data-side="right"]::before { top: 0; }
+.im-dim[data-side="right"]::after { bottom: 0; }
+.im-dim[data-side="bottom"]::before, .im-dim[data-side="bottom"]::after { top: calc(var(--im-cap) / -2); height: var(--im-cap); width: var(--im-hair); }
+.im-dim[data-side="bottom"]::before { left: 0; }
+.im-dim[data-side="bottom"]::after { right: 0; }
+/* 끝에서 화면 가장자리까지의 점선 — 치수가 띠의 어디서 어디까지인지 잇는다 */
+.im-ext { position: absolute; opacity: .6; }
+.im-dim[data-side="right"] .im-ext { right: 0; width: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); border-top: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="right"] .im-from { top: 0; }
+.im-dim[data-side="right"] .im-to { bottom: 0; }
+.im-dim[data-side="bottom"] .im-ext { bottom: 0; height: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); border-left: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="bottom"] .im-from { left: 0; }
+.im-dim[data-side="bottom"] .im-to { right: 0; }
+.im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; line-height: 1; }
+.im-badge { left: 50%; top: 50%; padding: var(--space-4) var(--space-6); border-radius: var(--corner-small); background: var(--im-color); color: var(--im-ink); font: var(--type-code-small); }
+.im-dim[data-kind="statusBars"] { --im-color: var(--inset-status); --im-ink: var(--inset-ink); }
+.im-dim[data-kind="navigationBars"] { --im-color: var(--inset-nav); --im-ink: var(--inset-ink-inverse); }
+.im-dim[data-kind="captionBar"] { --im-color: var(--inset-caption); --im-ink: var(--inset-ink); }
+.im-dim[data-kind="displayCutout"] { --im-color: var(--inset-cutout); --im-ink: var(--inset-ink); }
+.im-dim[data-kind="systemOverlays"] { --im-color: var(--inset-overlays); --im-ink: var(--inset-ink); }
+/* SAFE AREA — 앱 그림 위에 서므로 진한 초록 칩에 흰 글자로 읽히게 한다 */
+.im-safe { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-8); border-radius: var(--corner-small);
+  background: var(--inset-safe-chip); color: var(--inset-ink-inverse); font: var(--type-code-small); }
+.im-safe b { font-weight: var(--weight-medium); letter-spacing: .04em; }
 /* 그림 끝 */
