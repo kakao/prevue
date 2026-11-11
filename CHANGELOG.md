@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **The interactive dock's Rotate, Fold, Hinge line and System UI buttons are icons only.** The icon shows the state — the phone tilts to the current orientation, Fold and Unfold have their own arrows, and Hinge line and System UI look pressed when on. Hover a button for its name and current state; screen readers read the same name. The dock is narrower, so it fits on one line in smaller windows. The size and device menu keeps its name.
+- **The interactive dock's Rotate, Fold, Hinge line and System UI buttons are icons only.** The icon shows the state — the phone tilts to the current orientation, Fold and Unfold have their own arrows, and Hinge line and System UI look pressed when on. Hover a button for its name and current state; screen readers read the same name. The buttons used to show their names and dropped them only in windows narrower than 800px. The size and device menu keeps its name.
 - **Folding and unfolding animate on iPhone Duo, Galaxy Z Fold8, Fold8 Ultra and Pixel Fold, and the device stays turned the way you hold it.** The Fold button used to change only the resolution without folding the device. Now it folds in place: on iPhone Duo and Fold8, whose inner screen is landscape by default, the portrait cover opens to the landscape inner screen and the Landscape right cover opens to the portrait inner screen, with no extra 90° turn. Cover Landscape left and inner Landscape right have no upright partner, so they fold without a turn and land on Portrait. Fold8 Ultra and Pixel Fold keep the selected orientation. `--orientation` and `--landscape` on the command line are unchanged. Reduced motion keeps the existing fade.
 - Pearl 상세 화면의 옵션·구매 버튼이 기기 안전 영역을 피하고 배경·컵 그림은 화면 끝까지 유지합니다.
 

@@ -270,7 +270,7 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 /* 시스템 UI(D-159 ①) — 독의 가운데 조작과 확대 사이의 아이콘 토글 하나. 켜짐은 힌지 선처럼 고름 바탕(--primary-container), 이름과 값은 툴팁 · aria-label 이 갖는다. */
 .sys-ui { display: flex; align-items: center; }
 
-/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 독의 조작 버튼은 아이콘만이라 가장 넓은 기기 독(펼친 Duo, 영어)이 466px 다(tests/viewer/resize.mjs 실측).
+/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 독의 조작 버튼은 아이콘만이다(폭 상한은 tests/viewer/resize.mjs 의 DOCK_MAX).
    독은 창 − 32px 까지라 560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
 @media (max-width: 560px) {
   .pn-sum:has(.pn-sum-sil:not(:empty)) .nm { display: none; }
