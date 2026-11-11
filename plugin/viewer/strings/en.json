@@ -248,6 +248,7 @@
   "systemUi.label": "System UI",
   "systemUi.off": "Off",
   "systemUi.on": "On",
+  "systemUi.now": "System UI — {value}",
   "systemUi.tip.device": "Device bars — status bar {status}dp · bottom {nav}dp · source {source}",
   "systemUi.tip": "Status and navigation bars on or off — this card only · starts from the annotation · the source stays as is",
   "tabs.close": "Close tab",
@@ -287,6 +288,7 @@
   "zoom.tip.fit": "Scale: relative to fit (device density unknown, so no actual size)",
   "zoom.tip.real": "Scale: 100% is actual size (1dp = 1px)",
   "posture.orientation": "Orientation",
+  "posture.orientation.tip": "{orientation} — change orientation",
   "posture.portrait": "Portrait",
   "posture.landscape-left": "Landscape left",
   "posture.landscape-right": "Landscape right"

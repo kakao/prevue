@@ -142,23 +142,28 @@ export function SizePicker() {
 }
 
 const icon = (d: ReactNode) => <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
-const ROTATE = icon(<><rect x="6.5" y="3" width="7" height="12" rx="1.5" /><path d="M16.5 9.5a6.5 6.5 0 0 1-3.2 5.6M15.4 17.2l-2.1-2.1 2.6-.9" /></>);
-const FOLD = icon(<><path d="M10 4v12" strokeDasharray="1.6 1.6" /><path d="M3.5 5.5h13v9h-13z" /><path d="M10 5.5 14 3v9.5l-4 2" /></>);
+const ROTATE = icon(<g className="turn"><rect x="6.5" y="3" width="7" height="14" rx="1.6" /><circle cx="10" cy="5.8" r=".6" fill="currentColor" /></g>);
+const FOLD = icon(<g className="fold-ic"><path d="M10 3.5v13" /><path d="M3 10h4.5M5.5 7.8 7.7 10l-2.2 2.2M17 10h-4.5M14.5 7.8 12.3 10l2.2 2.2" /></g>);
+const UNFOLD = icon(<g className="unfold-ic"><path d="M10 3.5v13" /><path d="M7.5 10H3M5.2 7.8 3 10l2.2 2.2M12.5 10H17M14.8 7.8 17 10l-2.2 2.2" /></g>);
 const HINGE = icon(<><rect x="3.5" y="4" width="13" height="12" rx="1.5" /><path d="M10 4v12" strokeDasharray="1.6 1.6" /></>);
 const CHEVRON = <svg className="tb-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5" /></svg>;
 
-/** 기기의 돌리기 · 접기 · 힌지 표시 — 독 가운데의 글자 붙은 버튼. 가능한 자세만 보이고 이름(글자 · 툴팁 · aria-label)은 resize-scene.js 가 자세에 맞춰 바꾼다. */
+/**
+ * 기기의 돌리기 · 접기 · 힌지 표시 — 독 가운데의 아이콘 버튼. 그림이 상태를 보인다 — 돌리기는 폰이 지금 방향(data-orientation)으로 눕고,
+ * 접기는 접힘(data-folded)에 따라 모으기 · 벌리기 화살표가 바뀌고, 힌지는 켜지면 눌린 모양이다. 가능한 자세만 보이고
+ * 이름(툴팁 · aria-label)은 resize-scene.js 가 자세에 맞춰 바꾼다. 아래 값은 장면이 칠하기 전의 이름이다.
+ */
 export function DevicePosture() {
   const t = useT();
   return <div className="dock-seg" id="devCtl" role="group" {...t.label('posture.label')} hidden>
     <div className="orientation-pick" id="dcOrientation">
-      <button className="tb-btn" id="dcRot" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="dcOrientMenu">{ROTATE}<span id="dcRotLb" {...t.text('posture.portrait')} />{CHEVRON}</button>
+      <button className="tb-btn" id="dcRot" type="button" data-orientation="portrait" aria-haspopup="menu" aria-expanded="false" aria-controls="dcOrientMenu" {...t.title('posture.orientation')} {...t.label('posture.orientation')}>{ROTATE}{CHEVRON}</button>
       <div className="zoom-menu" id="dcOrientMenu" role="menu" {...t.label('posture.orientation')} inert>
         {['portrait', 'landscape-left', 'landscape-right'].map(value => <button key={value} type="button" role="menuitemradio" tabIndex={-1} aria-checked="false" data-orientation={value} {...t.text(`posture.${value}`)} />)}
       </div>
     </div>
-    <button className="tb-btn" id="dcFold" type="button">{FOLD}<span id="dcFoldLb" {...t.text('posture.fold')} /></button>
-    <button className="tb-btn" id="dcHinge" type="button" aria-pressed="true" {...t.title('posture.hinge')}>{HINGE}<span {...t.text('posture.hinge')} /></button>
+    <button className="tb-btn" id="dcFold" type="button" data-folded="false" {...t.title('posture.fold')} {...t.label('posture.fold')}>{FOLD}{UNFOLD}</button>
+    <button className="tb-btn" id="dcHinge" type="button" aria-pressed="true" {...t.title('posture.hinge.hide')} {...t.label('posture.hinge')}>{HINGE}</button>
   </div>;
 }
 
