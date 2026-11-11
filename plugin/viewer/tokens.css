@@ -194,15 +194,19 @@
   --device-sheen: rgb(255 255 255 / .85);
   --device-veil: #ffffff;
   --device-shade: #000000;
-  /* 인셋 영역 보기 — 그림 위에 덧그리는 종류별 띠. 앱 색 위에 서므로 라이트 · 다크가 같고, 가리키기의 파랑 · 상태의 빨강 · 노랑 · 초록을 피한다. */
+  /* 인셋 영역 보기 — 그림 위에 덧그리는 종류별 띠와 몸체 밖 배지. 앱 색 위에 서므로 라이트 · 다크가 같고, 가리키기의 파랑 · 상태의 빨강 · 노랑을 피한다.
+     초록은 SAFE AREA(safeDrawing) 면 하나에만 쓴다 — 사용자가 더한 예외. 배지 글자는 종류 색과 4.5:1 이상인 쪽(--inset-ink · --inset-ink-inverse)이다. */
   --inset-status: #f0883e;
   --inset-nav: #8957e5;
   --inset-caption: #1b9aaa;
   --inset-cutout: #db61a2;
   --inset-overlays: #8a8f2a;
   --inset-band: .22;
-  --inset-safe-line: #ffffff;
-  --inset-safe-halo: #000000;
+  --inset-safe: #3fb950;
+  --inset-safe-band: .16;
+  --inset-safe-chip: #1a7f37;
+  --inset-ink: #1f2328;
+  --inset-ink-inverse: #ffffff;
 }
 
 /* 그림용 — 준비 화면 일러스트. 조각이 모이는 움직임만 두고 색은 크롬과 같은 무채색 역할에 잇는다(D-102). */

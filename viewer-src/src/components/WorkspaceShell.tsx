@@ -33,10 +33,11 @@ export function Ruler() {
 }
 
 /** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig(책처럼) · #duo(조개처럼)가 맡는다. */
-export function ResizeScene() {
+export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode }) {
   return <div className="resize-scene" id="resizeScene" hidden><div className="resize-geometry" id="resizeGeometry">
     <Unit id="ua" /><Unit id="ub" hidden />
     <Ruler />
+    {marks}
     <div className="duo" id="duo" hidden>
       <div className="duo-base"><div className="duo-band" /><div className="duo-scr"><img className="ly" alt="" /><div className="cam" /></div></div>
       <div className="btn" /><div className="btn" />
@@ -76,9 +77,9 @@ export const systemBarsHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) 
 /** 인셋 영역을 덧그리는 층 — 바 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
 export const insetOverlayHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="inset-overlay" id="insetOverlay" aria-hidden="true" hidden ref={ref}>{children}</div>;
-/** 인셋 범례 — 무대 왼쪽 위, 그림 밖. 안과 hidden 은 InsetLegend 가 맞춘다. */
-export const insetLegendHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
-  <div className="inset-legend" id="insetLegend" hidden ref={ref}>{children}</div>;
+/** 인셋 표지 — 화면과 같은 상자에 서되 #stage 밖이라 잘리지 않아, 기기 몸체 바깥에 dp 배지 · 치수선을 둔다. 상자는 workspace/focus.ts 의 layout 이, 안과 hidden 은 InsetMarks 가 맞춘다. */
+export const insetMarksHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
+  <div className="inset-marks" id="insetMarks" aria-hidden="true" hidden ref={ref}>{children}</div>;
 
 /** 시스템 UI 의 바깥 요소 — 독의 가운데 조작과 확대 사이. 안과 hidden 은 SystemUiControl 이 맞춘다. */
 export const systemUiHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
@@ -103,8 +104,8 @@ export function PreviewStage({ loading = loadingHost(), bars = systemBarsHost(),
 }
 
 /** 무대 — 장면(기기 틀)과 캔버스. 조작 중에는 workspace/resize.ts 가 캔버스(#stage)를 장면의 틀 안으로 옮긴다. */
-export function WorkspaceStage({ loading, bars, inset, legend = insetLegendHost() }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode; legend?: ReactNode }) {
-  return <div className="wrap"><ResizeScene /><PreviewStage loading={loading} bars={bars} inset={inset} />{legend}</div>;
+export function WorkspaceStage({ loading, bars, inset, marks }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
+  return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} bars={bars} inset={inset} /></div>;
 }
 
 /** 커스텀일 때만 조작 독 가운데에 뜬다. 끄는 동안은 틀만 따라오고 놓을 때 한 번 그린다(D-99). 눈금 위치 · 값은 resize-scene.js 가 잡는다. */
