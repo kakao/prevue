@@ -27,6 +27,8 @@ out/
 !.claude/skills/
 CLAUDE.local.md
 .handoff.md
+# 회고 노트와 장부(dev-skills-src/retro.md) — 베이스 체크아웃에만 쌓이고 에이전트가 함께 쓴다
+agentdocs/
 
 # IDE
 .idea/
