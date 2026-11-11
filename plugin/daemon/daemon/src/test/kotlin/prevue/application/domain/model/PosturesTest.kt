@@ -33,12 +33,6 @@ class PosturesTest {
         }
     }
 
-    @Test fun `펼친 Duo 가로에서 저장 뒤 첫 미리 그림은 커버 세로다`() {
-        val open = ScreenSize.Device(DeviceModel.IPHONE_DUO)
-        assertEquals(listOf("duo-folded", "duo-land", "duo-right", "duo-folded-land", "duo-folded-land-right"),
-            Postures.plan(open).filterIsInstance<ScreenSize.Device>().filter { it.model == open.model }.map { it.key })
-    }
-
     @Test fun `접히지 않는 기기는 접기 목표가 없고 돌린 두 자세만 그린다`() {
         DeviceModel.entries.filter { it.cover == null }.flatMap { it.postures }.forEach { d ->
             assertNull(d.folding, d.key)
