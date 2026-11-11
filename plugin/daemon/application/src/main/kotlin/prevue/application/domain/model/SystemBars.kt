@@ -25,8 +25,7 @@ sealed interface SystemBars {
         fun of(params: Map<String, String>): SystemBars {
             if (params[SHOW_SYSTEM_UI] != "true") return Hidden
             val posture = params[DEVICE_POSTURE]?.let(ScreenSize::postureOf) ?: return COMMON
-            if (posture.model.look != BarLook.IOS) return COMMON
-            return Shown(BarLook.IOS, DeviceBars.of(posture))
+            return Shown(posture.model.look, DeviceBars.of(posture))
         }
     }
 }

@@ -9,18 +9,18 @@ class SystemBarsTest {
 
     private fun barsOn(size: ScreenSize): SystemBars = size.applyTo(on).systemBars
 
-    @Test fun `모든 Android 자세는 Preview 기본 바이고 iOS 자세는 출처가 있는 전용 바다`() {
+    @Test fun `모든 기기 자세는 제 계열의 바를 전달 인셋의 위 · 아래 높이와 출처로 그리고 기기 없는 크기는 Preview 기본 바다`() {
         DeviceModel.entries.flatMap { it.postures }.forEach { device ->
             val shown = barsOn(device) as SystemBars.Shown
-            if (device.model.look == BarLook.IOS) {
-                assertEquals(BarLook.IOS, shown.look, device.key)
-                val area = device.insetProfile.safeArea!!
-                assertEquals(area.top, shown.insets!!.statusDp, device.key)
-                assertEquals(area.bottom, shown.insets.navDp, device.key)
-                assertEquals(device.insetProfile.evidence!!.url, shown.insets.url, device.key)
-            } else assertEquals(SystemBars.COMMON, shown, device.key)
-            assertEquals(DeviceInsetInputs.of(device).values, CardOverride(on.previewId, device).applyTo(on).appInsets, device.key)
+            val input = DeviceInsetInputs.of(device)
+            assertEquals(device.model.look, shown.look, device.key)
+            assertEquals(input.values.statusBars.top, shown.insets!!.statusDp, device.key)
+            assertEquals(input.values.navigationBars.bottom, shown.insets.navDp, device.key)
+            assertEquals(input.evidence.url, shown.insets.url, device.key)
+            assertEquals(input.values, CardOverride(on.previewId, device).applyTo(on).appInsets, device.key)
         }
+        val ios = DeviceModel.IPHONE_17.postures.first()
+        assertEquals(ios.insetProfile.safeArea!!.top, (barsOn(ios) as SystemBars.Shown).insets!!.statusDp)
         assertEquals(SystemBars.COMMON, barsOn(ScreenSize.Dp(320, 640)))
         assertEquals(SystemBars.COMMON, on.systemBars)
     }

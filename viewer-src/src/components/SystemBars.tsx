@@ -1,20 +1,26 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useHost } from '../host';
-import type { Size, SystemUi } from '../state';
+import type { DeviceInsets, Size, SystemUi } from '../state';
 import { systemBarsHost } from './WorkspaceShell';
 
-// 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, iOS 바는 이 층이, Android 기본 바는 렌더러가 그린다.
-type Bars = { device: string; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean };
+// 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, 기기의 바(iOS · Android)는 이 층이, 기기 없는 크기의 Preview 기본 바는 렌더러가 그린다.
+// cut 은 전달 인셋의 옆 컷아웃(좌 · 우)이다 — Android 상태 줄이 그만큼 안으로 들어간다. cornerCam 은 위 가장자리 구석 카메라의 왼쪽 끝 x 다.
+export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; cornerCam: number | null };
+
+// 위 가장자리 구석에 카메라가 있는 자세 — 장면(resize-scene.js)의 Pixel 9 Pro Fold 펼침 카메라(x .92 · 지름 9)다. 가로에서는 옆으로 가서 상태 줄과 만나지 않는다.
+const CORNER_CAM: Record<string, { x: number; r: number }> = { pixelfold: { x: .92, r: 4.5 } };
 type Ink = 'dark' | 'light';
 type Region = [number, number, number, number];
 
-export function barsOf(systemUi: SystemUi | null, size: Size | null): Bars | null {
+export function barsOf(systemUi: SystemUi | null, size: Size | null, deviceInsets: DeviceInsets | null = null): Bars | null {
   const b = systemUi?.shown ? systemUi.bars : null;
-  if (b?.look !== 'ios' || !b.insets || size?.kind !== 'device') return null;
+  if (!b?.insets || size?.kind !== 'device') return null;
+  const cutout = deviceInsets?.values.displayCutout, corner = CORNER_CAM[size.device];
+  const cornerCam = corner && !size.folded && size.orientation === 'portrait' ? size.widthDp * corner.x - corner.r : null;
   const area = size.insetProfile?.safeArea, duo = size.device === 'duo';
   const side = duo && area ? (area.left > 0 ? 'left' : area.right > 0 ? 'right' : null) : null;
-  return { device: size.device, w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
-    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded };
+  return { device: size.device, ios: b.look === 'ios', w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
+    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], cornerCam };
 }
 
 const SAMPLE_W = 24, SAMPLE_H = 4, LIGHT_ABOVE = 0.6, RESAMPLE_MS = 1000;
@@ -107,7 +113,7 @@ function DuoStatus({ bars }: { bars: Bars }) {
   </g>;
 }
 
-function IosStatus({ bars }: { bars: Bars }) {
+export function IosStatus({ bars }: { bars: Bars }) {
   if (bars.duo) return <DuoStatus bars={bars} />;
   const layout = IOS_STATUS[bars.device];
   if (!layout) return null;
@@ -117,17 +123,42 @@ function IosStatus({ bars }: { bars: Bars }) {
   </g>;
 }
 
-export function SystemBarsOverlay({ systemUi, size, host }: { systemUi: SystemUi | null; size: Size | null; host?: HTMLElement }) {
+// Android 기기는 제조사와 상관없이 공통 Material(AOSP) 모양 한 벌이다(시안: prototypes/android-status-bar, 2026-11-11 사용자가 골랐다).
+// 아이콘은 Material 아이콘을 따른 근사다. 상태 줄은 상태바 가운데(최대 ROW_MAX)에, 좌우는 EDGE 와 옆 컷아웃만큼 안에, 구석 카메라 앞에서 멈춘다.
+const ROW_MAX = 17, EDGE = 20, CAM_GAP = 8, A_ICONS_W = 46;
+const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
+  <path d={`M8.85 12.5 L${at(8.85, 12.5, 12, -45)} A12 12 0 0 1 ${at(8.85, 12.5, 12, 45)} Z`} />
+  <path d="M22 13 L35 13 L35 0 Z" />
+  <rect x="41.5" y="-.2" width="3" height="1.6" rx=".5" strokeWidth="0" />
+  <rect x="40" y="1.4" width="6" height="11.6" rx="1.2" strokeWidth="0" />
+</g>;
+// 제스처 핸들 108×4 — 측정 자료가 모두 제스처 내비게이션이라 버튼 바는 없다. 내비 띠 가운데(24dp 보다 두꺼우면 아래 24dp 의 가운데)에 둔다.
+const A_HANDLE = { w: 108, h: 4, band: 24 };
+
+function AndroidStatus({ bars }: { bars: Bars }) {
+  const y = Math.min(bars.statusDp / 2, ROW_MAX), left = EDGE + bars.cut[0];
+  const right = Math.min(bars.w - EDGE - bars.cut[1], bars.cornerCam === null ? Infinity : bars.cornerCam - CAM_GAP);
+  return <g className="sb-status sb-android-status" data-edge="top">
+    <text className="sb-time" x={left} y={y} dominantBaseline="central" fontSize="14" fontWeight={500}>9:41</text>
+    <g className="sb-icons" transform={`translate(${right - A_ICONS_W} ${y - 6.5})`}>{A_ICONS}</g>
+  </g>;
+}
+
+function NavHandle({ bars }: { bars: Bars }) {
+  if (bars.ios) return <rect className="sb-handle" x={(bars.w - 134) / 2} y={bars.h - 13} width="134" height="5" rx="2.5" />;
+  const cy = bars.h - Math.min(bars.navDp, A_HANDLE.band) / 2;
+  return <rect className="sb-handle" x={(bars.w - A_HANDLE.w) / 2} y={cy - A_HANDLE.h / 2} width={A_HANDLE.w} height={A_HANDLE.h} rx={A_HANDLE.h / 2} />;
+}
+
+export function SystemBarsOverlay({ systemUi, size, deviceInsets = null, host }: { systemUi: SystemUi | null; size: Size | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement }) {
   const { element, place } = useHost(host);
-  const bars = barsOf(systemUi, size);
+  const bars = barsOf(systemUi, size, deviceInsets);
   const img = element?.parentElement?.querySelector<HTMLImageElement>('#shot') ?? null;
   const [status, bottom] = useInk(img, bars);
   useLayoutEffect(() => { if (element) element.hidden = !bars; }, [element, bars]);
   const body = bars && <svg viewBox={`0 0 ${bars.w} ${bars.h}`} preserveAspectRatio="none" fill="currentColor" aria-hidden="true">
-    {(bars.statusDp > 0 || bars.side) && <g className={`sb-ink-${status}`}><IosStatus bars={bars} /></g>}
-    {!bars.duo && bars.navDp > 0 && <g className={`sb-ink-${bottom}`}>
-      <rect className="sb-handle" x={(bars.w - 134) / 2} y={bars.h - 13} width="134" height="5" rx="2.5" />
-    </g>}
+    {(bars.statusDp > 0 || bars.side) && <g className={`sb-ink-${status}`}>{bars.ios ? <IosStatus bars={bars} /> : <AndroidStatus bars={bars} />}</g>}
+    {!bars.duo && bars.navDp > 0 && <g className={`sb-ink-${bottom}`}><NavHandle bars={bars} /></g>}
   </svg>;
   return place(body, systemBarsHost);
 }

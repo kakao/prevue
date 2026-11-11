@@ -25,7 +25,6 @@ import org.junit.jupiter.api.condition.EnabledIf
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.DeviceModel
-import prevue.application.domain.model.BarLook
 import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
@@ -150,6 +149,13 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
+    @Test fun `기기 없는 크기는 렌더러 바를 그대로 그린다`() = runBlocking {
+        val handle = engine.open(ScreenSize.Dp(360, 780).applyTo(preview), interactive = true, ownLoader = false)
+        assertTrue(handle.opened.ok, handle.opened.message?.text)
+        assertTrue(decorations(session()).any { it.endsWith(",${View.VISIBLE}") })
+        handle.close()
+    }
+
     @Test fun `iOS safe area를 종류별로 나눠 전달하고 영 입력과 같은 바 표시를 유지한다`() = runBlocking {
         val size = ScreenSize.Device(DeviceModel.IPHONE_17)
         val card = CardOverride(preview.previewId, size)
@@ -167,7 +173,7 @@ internal abstract class InsetsRenderChecks {
         off.close()
     }
 
-    @Test fun `마흔두 자세는 그 자세의 인셋을 전달하고 Android 기본 바와 iOS 바 숨김을 유지한다`() = runBlocking {
+    @Test fun `마흔두 자세는 그 자세의 인셋을 전달하고 렌더러 바를 숨긴다`() = runBlocking {
         for (device in DeviceModel.entries.flatMap { it.postures }) {
             var shownBars: List<String>? = null
             for (spec in compared(CardOverride(preview.previewId, device).applyTo(preview))) {
@@ -189,8 +195,7 @@ internal abstract class InsetsRenderChecks {
                 assertEquals(listOf(outer[0] + safe[0], outer[1] + safe[1], outer[2] - safe[2], outer[3] - safe[3]), inner, device.key)
                 assertEquals(inner, box(handle, "safeNested"), device.key)
                 val bars = decorations(session())
-                if (device.model.look == BarLook.IOS) assertTrue(bars.all { it.endsWith(",${View.INVISIBLE}") }, device.key)
-                else assertTrue(bars.any { it.endsWith(",${View.VISIBLE}") }, device.key)
+                assertTrue(bars.all { it.endsWith(",${View.INVISIBLE}") }, device.key)
                 if (shownBars == null) shownBars = bars else assertEquals(shownBars, bars, device.key)
                 assertIgnoringVisibility(values)
                 handle.close()

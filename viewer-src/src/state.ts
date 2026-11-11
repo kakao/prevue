@@ -31,7 +31,7 @@ export type Board = Omit<ContractBoard, 'groups'> & {
 };
 /**
  * 한 장의 시스템 UI — choice 는 고른 값, annotated 는 소스의 showSystemUi, shown 은 지금 바를 그리는가. 인터랙티브가 아니면 null.
- * bars 는 그리는 바 — aosp 는 렌더러의 Preview 기본 바, ios 는 자세별 안전 영역을 기준으로 뷰어가 그리는 바다.
+ * bars 는 그리는 바 — insets 가 없으면(aosp) 렌더러의 Preview 기본 바, 있으면(기기의 ios · pixel · oneui) 그 높이로 뷰어가 덧그리는 바다.
  */
 export type BarInsets = { statusDp: number; navDp: number; source: string; kind: string; sourceUrl: string };
 export type SystemUi = { choice: string; annotated: boolean; shown: boolean; bars?: { look: string; insets: BarInsets | null } | null };

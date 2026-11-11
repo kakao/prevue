@@ -518,19 +518,19 @@
             "device": "duo",
             "name": "iPhone Duo",
             "folded": false,
-            "landscape": true,
-            "widthDp": 669,
-            "heightDp": 951,
+            "landscape": false,
+            "widthDp": 951,
+            "heightDp": 669,
             "hingeDp": 475.5,
             "dpi": 480,
-            "orientation": "portrait",
-            "widthPx": 2007,
-            "heightPx": 2853,
+            "orientation": "landscape-left",
+            "widthPx": 2853,
+            "heightPx": 2007,
             "insetProfile": {
               "safeArea": {
                 "left": 0,
-                "top": 82,
-                "right": 0,
+                "top": 0,
+                "right": 84,
                 "bottom": 34
               },
               "measured": null,
@@ -543,8 +543,8 @@
                   "sdk": "Xcode 27.1",
                   "scale": "3",
                   "unit": "pt",
-                  "resolutionPx": "2007x2853",
-                  "orientation": "portrait",
+                  "resolutionPx": "2853x2007",
+                  "orientation": "landscape-left",
                   "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
                   "checkedAt": "2026-11-10",
                   "splitView": "off",
@@ -555,7 +555,7 @@
               }
             }
           },
-          "imageUrl": "/Card0@duo-land-0.png?t=<t>"
+          "imageUrl": "/Card0@duo-0.png?t=<t>"
         },
         {
           "size": {
