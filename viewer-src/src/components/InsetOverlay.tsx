@@ -88,13 +88,13 @@ export function InsetMarks({ deviceInsets, size, host }: { deviceInsets: DeviceI
   const body = <>
     {marksOf(plan).map(m => {
       const span: CSSProperties = m.side === 'right' ? { top: pct(m.from), height: pct(m.to - m.from) } : { left: pct(m.from), width: pct(m.to - m.from) };
-      return <div key={`${m.kind} ${m.edge}`} className="im-dim" data-kind={m.kind} data-edge={m.edge} data-side={m.side} data-value={m.value}
+      return <div key={`${m.kind} ${m.edge}`} className="im-dim" data-kind={m.kind} data-edge={m.edge} data-side={m.side}
         style={{ ...span, '--lane': m.lane } as CSSProperties}>
         <i className="im-ext im-from" /><i className="im-ext im-to" />
         <span className="im-badge">{dpText(m.value)}</span>
       </div>;
     })}
-    <div className="im-safe" data-kind="safeDrawing" data-w={safe.w} data-h={safe.h}
+    <div className="im-safe" data-kind="safeDrawing"
       style={{ left: pct((safe.x + safe.w / 2) / w), top: pct((safe.y + safe.h / 2) / h) }}>
       <b>{phrase('insetOverlay.safeArea')}</b><span>{dpText(safe.w)} × {dpText(safe.h)}</span>
     </div>

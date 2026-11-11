@@ -4371,7 +4371,6 @@ function Ma({ deviceInsets: e, size: t, host: n }) {
 			"data-kind": e.kind,
 			"data-edge": e.edge,
 			"data-side": e.side,
-			"data-value": e.value,
 			style: {
 				...t,
 				"--lane": e.lane
@@ -4388,8 +4387,6 @@ function Ma({ deviceInsets: e, size: t, host: n }) {
 	}), /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: "im-safe",
 		"data-kind": "safeDrawing",
-		"data-w": d.w,
-		"data-h": d.h,
 		style: {
 			left: ja((d.x + d.w / 2) / l),
 			top: ja((d.y + d.h / 2) / u)

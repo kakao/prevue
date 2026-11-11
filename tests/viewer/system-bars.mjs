@@ -62,7 +62,7 @@ try {
   };
   const atNode = bounds => evaluate(`(()=>{const b=${JSON.stringify(bounds)},img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return {x:r.x+(b[0]+b[2])/2*k,y:r.y+(b[1]+b[3])/2*k}})()`);
   // 띠 · 면 · 치수선의 화면 사각형을 #shot 사각형과 인셋 × pxPerDp ÷ PNG px 로 낸 기대값에 견준다. 오버레이가 쓰는 dp 뷰박스 · 비율과 다른 길(PNG px)로 잰다.
-  // 치수선은 몸체 밖(위 · 아래 변은 오른쪽, 왼쪽 · 오른쪽 변은 아래)에 서고, 배지 글은 그 값, 배지끼리는 겹치지 않고 창 안에 든다.
+  // 치수선은 몸체 밖(위 · 아래 변은 오른쪽, 왼쪽 · 오른쪽 변은 아래)에 서고, 배지 글은 그 값, 배지끼리 · 조작 독과 겹치지 않고 창 안에 든다.
   const insetGeometry = `(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp,E=['top','right','bottom','left'],out=[];
     const dp=x=>String(Math.round(x*100)/100);
     const box=(e,t)=>({top:[r.left,r.top,r.width,t],bottom:[r.left,r.bottom-t,r.width,t],left:[r.left,r.top,t,r.height],right:[r.right-t,r.top,t,r.height]})[e];
@@ -85,7 +85,8 @@ try {
     if(!safe||safe.querySelector('b').textContent!=='SAFE AREA'||safe.querySelector('span').textContent!==dp(sw)+' × '+dp(sh))out.push({tag:'SAFE AREA',got:safe?.textContent,want:dp(sw)+' × '+dp(sh)});
     else{const c=safe.getBoundingClientRect(),cx=r.left+(m.left*s+r.width-m.right*s)/2,cy=r.top+(m.top*s+r.height-m.bottom*s)/2;if(Math.abs(c.left+c.width/2-cx)>1||Math.abs(c.top+c.height/2-cy)>1)out.push({tag:'SAFE AREA 자리',got:[c.left+c.width/2,c.top+c.height/2],exp:[cx,cy]})}
     const badges=[...document.querySelectorAll('#insetMarks .im-badge')].map(x=>{const b=x.getBoundingClientRect();return {text:x.textContent,left:b.left,top:b.top,right:b.right,bottom:b.bottom}});
-    badges.forEach((a,i)=>{if(a.left<0||a.top<0||a.right>innerWidth||a.bottom>innerHeight)out.push({tag:'배지가 창 밖',a});badges.slice(i+1).forEach(b=>{if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)out.push({tag:'배지 겹침',a,b})})});
+    const dock=document.querySelector('#panel').getBoundingClientRect();
+    badges.forEach((a,i)=>{if(a.left<0||a.top<0||a.right>innerWidth||a.bottom>innerHeight)out.push({tag:'배지가 창 밖',a});if(a.left<dock.right&&dock.left<a.right&&a.top<dock.bottom&&dock.top<a.bottom)out.push({tag:'배지가 조작 독 아래',a});badges.slice(i+1).forEach(b=>{if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)out.push({tag:'배지 겹침',a,b})})});
     return out})()`;
   const evidence = '.cache/system-bars';
   await mkdir(evidence, { recursive: true });
@@ -219,7 +220,7 @@ try {
   await evaluate(`const recovered=structuredClone(__stable);recovered.version+=2;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:recovered})}))`);
   await ready();
   await check(`!document.querySelector('#resizeScene').classList.contains('preparing')`, '복구된 렌더로 그림과 입력을 다시 준비');
-  // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 범례 · safeDrawing 선을 본다.
+  // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 배지 · 치수선 · SAFE AREA 를 본다.
   await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;fake.focus.deviceInsets.values.captionBar.top=20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
   await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
   await check(`(${insetGeometry}).length===0 && !!document.querySelector('#insetMarks .im-dim[data-kind="systemOverlays"][data-edge="right"]')`, 'captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA');
