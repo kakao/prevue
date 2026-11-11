@@ -4,7 +4,7 @@ import type { Size, SystemUi } from '../state';
 import { systemBarsHost } from './WorkspaceShell';
 
 // 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, iOS 바는 이 층이, Android 기본 바는 렌더러가 그린다.
-type Bars = { w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean };
+type Bars = { device: string; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean };
 type Ink = 'dark' | 'light';
 type Region = [number, number, number, number];
 
@@ -13,7 +13,7 @@ export function barsOf(systemUi: SystemUi | null, size: Size | null): Bars | nul
   if (b?.look !== 'ios' || !b.insets || size?.kind !== 'device') return null;
   const area = size.insetProfile?.safeArea, duo = size.device === 'duo';
   const side = duo && area ? (area.left > 0 ? 'left' : area.right > 0 ? 'right' : null) : null;
-  return { w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
+  return { device: size.device, w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
     side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded };
 }
 
@@ -56,17 +56,35 @@ function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
   return ink;
 }
 
-const SIGNAL = (x: number, y: number, s: number) => <g transform={`translate(${x} ${y}) scale(${s})`}>
-  <rect x="0" y="7" width="3" height="4" rx=".8" /><rect x="4.5" y="5" width="3" height="6" rx=".8" />
-  <rect x="9" y="2.5" width="3" height="8.5" rx=".8" /><rect x="13.5" y="0" width="3" height="11" rx=".8" />
+// 세로 상태바의 자리 · 크기는 iOS 27.0 시뮬레이터(9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%) 3x 스크린숏을 pt 로 잰 값이다(시안: prototypes/ios-status-bar).
+// top · right 는 오른쪽 아이콘 묶음(신호 왼쪽 끝 ~ 배터리 꼭지)의 윗변 · 오른쪽 끝, s 는 iPhone 17 대비 배율, time 은 시각의 가운데 · 기준선 · 글자 크기다.
+// 묶음 가운데가 아일랜드 가운데(resize-scene.js 의 cam)와 같은 높이에 놓인다.
+type IosLayout = { top: number; right: number; s: number; time: { cx: number; base: number; size: number } };
+const IOS_STATUS: Record<string, IosLayout> = {
+  ip17: { top: 26.33, right: 366.67, s: 1, time: { cx: 72.67, base: 39, size: 17 } },
+  ipair: { top: 31.33, right: 385.33, s: 1.12, time: { cx: 76.33, base: 45.33, size: 17.7 } },
+  ip17pm: { top: 25.33, right: 399.33, s: 1.12, time: { cx: 82.33, base: 39.33, size: 17.7 } },
+};
+
+// 아래 그림의 좌표는 배율 1 의 묶음 안이다 — 윗변 y 0, 신호 왼쪽 끝 x 0, 꼭지 오른쪽 끝 x 78.33.
+const GROUP_W = 78.33;
+const SIGNAL = <>{[4.67, 7, 9.67, 12.33].map((h, i) => <rect key={i} x={i * 5.33} y={12.33 - h} width="3.33" height={h} rx="1" />)}</>;
+const at = (cx: number, cy: number, r: number, deg: number) => { const a = deg * Math.PI / 180; return `${(cx + r * Math.sin(a)).toFixed(2)} ${(cy - r * Math.cos(a)).toFixed(2)}`; };
+// Wi-Fi 부채꼴 한 겹 — 가운데에서 반지름 inner~outer, 위로 ±half 도(inner 0 이면 쐐기). 모서리는 획의 round join 으로 둥글리고 그만큼 반지름을 줄여 둔다.
+const band = (cx: number, cy: number, inner: number, outer: number, half: number) => inner > 0
+  ? `M${at(cx, cy, outer, -half)} A${outer} ${outer} 0 0 1 ${at(cx, cy, outer, half)} L${at(cx, cy, inner, half)} A${inner} ${inner} 0 0 0 ${at(cx, cy, inner, -half)} Z`
+  : `M${cx} ${cy} L${at(cx, cy, outer, -half)} A${outer} ${outer} 0 0 1 ${at(cx, cy, outer, half)} Z`;
+const ROUND = .5, WIFI_X = 35.33, WIFI_Y = 12.6, WIFI_HALF = 41;
+const WIFI = <g stroke="currentColor" strokeWidth={ROUND * 2} strokeLinejoin="round">
+  <path d={band(WIFI_X, WIFI_Y, 10 + ROUND, 12.6 - ROUND, WIFI_HALF)} />
+  <path d={band(WIFI_X, WIFI_Y, 6 + ROUND, 8.27 - ROUND, WIFI_HALF)} />
+  <path d={band(WIFI_X, WIFI_Y - ROUND, 0, 3.93 - ROUND, WIFI_HALF)} />
 </g>;
-const WIFI = (x: number, y: number, s: number) => <g transform={`translate(${x} ${y}) scale(${s})`}>
-  <path d="M7.5 11 L0 3.2 A11 11 0 0 1 15 3.2 Z" />
-</g>;
-const BATTERY = (x: number, y: number, s: number) => <g transform={`translate(${x} ${y}) scale(${s})`}>
-  <rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45" />
-  <rect x="2" y="2" width="19" height="8" rx="1.8" /><rect x="23.5" y="4" width="1.6" height="4" rx=".8" opacity=".45" />
-</g>;
+const BATTERY = <>
+  <rect x="51.5" y=".17" width="24" height="12" rx="3.7" fill="none" stroke="currentColor" opacity=".4" />
+  <rect x="53" y="1.67" width="21" height="9" rx="2.3" />
+  <path d="M77 4.17h.4a.93.93 0 0 1 .93.93v2.14a.93.93 0 0 1-.93.93H77z" opacity=".5" />
+</>;
 
 function DuoIndicator({ x, y }: { x: number; y: number }) {
   return <g className="sb-duo-indicator" transform={`translate(${x} ${y})`}>
@@ -91,12 +109,11 @@ function DuoStatus({ bars }: { bars: Bars }) {
 
 function IosStatus({ bars }: { bars: Bars }) {
   if (bars.duo) return <DuoStatus bars={bars} />;
-  const ear = (bars.w - 126) / 4, mid = bars.statusDp / 2 + 2;
+  const layout = IOS_STATUS[bars.device];
+  if (!layout) return null;
   return <g className="sb-status" data-edge="top">
-    <text x={ear} y={mid} dominantBaseline="central" textAnchor="middle" fontSize="17" fontWeight={600}>9:41</text>
-    {SIGNAL(bars.w - ear - 36, mid - 5.5, 1)}
-    {WIFI(bars.w - ear - 14, mid - 5.5, 1)}
-    {BATTERY(bars.w - ear + 6, mid - 6, 1)}
+    <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>
+    <g className="sb-icons" transform={`translate(${layout.right - GROUP_W * layout.s} ${layout.top}) scale(${layout.s})`}>{SIGNAL}{WIFI}{BATTERY}</g>
   </g>;
 }
 

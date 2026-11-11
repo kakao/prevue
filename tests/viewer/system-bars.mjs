@@ -132,6 +132,21 @@ try {
       assert.equal(overlay.handle, device!=='duo', name);
       assert.equal(overlay.duo, device==='duo', name);
     }
+    if (ios.has(device) && device!=='duo') {
+      // 오버레이의 dp 뷰박스가 아니라 #shot · 아일랜드(#ua .cam) · 전달 인셋으로 낸 화면 좌표에 견준다.
+      const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
+        const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
+        return {shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:box('#ua .cam')}})()`);
+      const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2;
+      assert(handle && handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 홈 인디케이터가 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
+      if (orientation==='portrait') {
+        assert(time && icons && cam, `${name} 시각 · 아이콘 · 아일랜드: ${JSON.stringify(bars)}`);
+        for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l && b.r <= shot.r, `${name} 상태바가 위 띠 안: ${JSON.stringify(bars)}`);
+        assert(time.r < cam.l && icons.l > cam.r, `${name} 상태바가 아일랜드와 겹치지 않는다: ${JSON.stringify(bars)}`);
+        const k = (shot.r - shot.l) / Number((await evaluate(`__store.st.focus.size.widthDp`)));
+        assert(Math.abs(mid(icons) - mid(cam)) <= k && Math.abs(mid(time) - mid(cam)) <= 1.5 * k, `${name} 시각 · 아이콘 가운데가 아일랜드 가운데 높이(±1dp): ${JSON.stringify(bars)}`);
+      } else assert(!time && !icons, `${name} 가로에는 상태바가 없다`);
+    }
     if (device==='duo') {
       const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-right' ? 'left' : 'right';
       assert.equal(overlay.edge, expected, name);
