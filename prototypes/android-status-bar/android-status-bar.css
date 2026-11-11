@@ -1,0 +1,18 @@
+/* Android 시스템 바 시안 — 값은 뷰어 토큰(plugin/viewer/tokens.css)만 쓴다. */
+.asb-sheets { display: grid; margin: calc(var(--space-24) * -1); }
+.asb-sheet { display: grid; align-content: start; gap: var(--space-24); min-width: 0; padding: var(--space-24); background: var(--surface); color: var(--on-surface); box-shadow: 0 0 0 1px var(--outline-variant); }
+.asb-sheet h2 { margin: 0; font: var(--type-title-medium); }
+.asb-sheet h3 { margin: 0; font: var(--type-title-small); }
+.asb-note { margin: var(--space-4) 0 var(--space-12); color: var(--on-surface-variant); font: var(--type-body-small); max-width: 72ch; }
+.asb-grid { display: flex; flex-wrap: wrap; gap: var(--space-24); align-items: start; }
+.asb-col { display: grid; align-content: start; gap: var(--space-8); }
+.asb-tag { color: var(--on-surface-variant); font: var(--type-code-small); }
+.asb-phone { display: grid; gap: var(--space-4); margin: 0; }
+.asb-big { display: grid; gap: var(--space-16); }
+.asb-big > div { display: grid; gap: var(--space-8); justify-items: start; }
+/* 뷰어의 바(.stage .sys-bars svg)와 같은 글꼴이다. */
+.asb-strip { display: block; font-family: var(--font-sans); }
+.asb-body { fill: var(--device-body); }
+.asb-cam { fill: var(--device-camera); }
+.asb-bright { fill: var(--device-veil); }
+.asb-dark { fill: var(--device-shade); }
