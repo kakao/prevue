@@ -19,5 +19,11 @@
   { "fg": ["pick"], "bg": ["surface-container"], "need": 3 },
   { "fg": ["on-surface"], "bg": ["pick-container", "surface"], "need": 4.5 },
   { "fg": ["live"], "bg": ["surface"], "need": 3 },
-  { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 }
+  { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 },
+  { "fg": ["inset-ink"], "bg": ["inset-status"], "need": 4.5 },
+  { "fg": ["inset-ink-inverse"], "bg": ["inset-nav"], "need": 4.5 },
+  { "fg": ["inset-ink"], "bg": ["inset-caption"], "need": 4.5 },
+  { "fg": ["inset-ink"], "bg": ["inset-cutout"], "need": 4.5 },
+  { "fg": ["inset-ink"], "bg": ["inset-overlays"], "need": 4.5 },
+  { "fg": ["inset-ink-inverse"], "bg": ["inset-safe-chip"], "need": 4.5 }
 ]
