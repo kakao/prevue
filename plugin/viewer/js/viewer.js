@@ -4058,20 +4058,27 @@ var ma = (e) => /* @__PURE__ */ (0, L.jsx)("svg", {
 	strokeLinejoin: "round",
 	"aria-hidden": "true",
 	children: e
-}), ha = ma(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("rect", {
-	x: "6.5",
-	y: "3",
-	width: "7",
-	height: "12",
-	rx: "1.5"
-}), /* @__PURE__ */ (0, L.jsx)("path", { d: "M16.5 9.5a6.5 6.5 0 0 1-3.2 5.6M15.4 17.2l-2.1-2.1 2.6-.9" })] })), ga = ma(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
-	/* @__PURE__ */ (0, L.jsx)("path", {
-		d: "M10 4v12",
-		strokeDasharray: "1.6 1.6"
-	}),
-	/* @__PURE__ */ (0, L.jsx)("path", { d: "M3.5 5.5h13v9h-13z" }),
-	/* @__PURE__ */ (0, L.jsx)("path", { d: "M10 5.5 14 3v9.5l-4 2" })
-] })), _a = ma(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("rect", {
+}), ha = ma(/* @__PURE__ */ (0, L.jsxs)("g", {
+	className: "turn",
+	children: [/* @__PURE__ */ (0, L.jsx)("rect", {
+		x: "6.5",
+		y: "3",
+		width: "7",
+		height: "14",
+		rx: "1.6"
+	}), /* @__PURE__ */ (0, L.jsx)("circle", {
+		cx: "10",
+		cy: "5.8",
+		r: ".6",
+		fill: "currentColor"
+	})]
+})), ga = ma(/* @__PURE__ */ (0, L.jsxs)("g", {
+	className: "fold-ic",
+	children: [/* @__PURE__ */ (0, L.jsx)("path", { d: "M10 3.5v13" }), /* @__PURE__ */ (0, L.jsx)("path", { d: "M3 10h4.5M5.5 7.8 7.7 10l-2.2 2.2M17 10h-4.5M14.5 7.8 12.3 10l2.2 2.2" })]
+})), _a = ma(/* @__PURE__ */ (0, L.jsxs)("g", {
+	className: "unfold-ic",
+	children: [/* @__PURE__ */ (0, L.jsx)("path", { d: "M10 3.5v13" }), /* @__PURE__ */ (0, L.jsx)("path", { d: "M7.5 10H3M5.2 7.8 3 10l2.2 2.2M12.5 10H17M14.8 7.8 17 10l-2.2 2.2" })]
+})), va = ma(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("rect", {
 	x: "3.5",
 	y: "4",
 	width: "13",
@@ -4080,7 +4087,7 @@ var ma = (e) => /* @__PURE__ */ (0, L.jsx)("svg", {
 }), /* @__PURE__ */ (0, L.jsx)("path", {
 	d: "M10 4v12",
 	strokeDasharray: "1.6 1.6"
-})] })), va = /* @__PURE__ */ (0, L.jsx)("svg", {
+})] })), ya = /* @__PURE__ */ (0, L.jsx)("svg", {
 	className: "tb-chev",
 	viewBox: "0 0 16 16",
 	fill: "none",
@@ -4091,7 +4098,7 @@ var ma = (e) => /* @__PURE__ */ (0, L.jsx)("svg", {
 	"aria-hidden": "true",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "m4.5 6.5 3.5 3.5 3.5-3.5" })
 });
-function ya() {
+function ba() {
 	let e = ea();
 	return /* @__PURE__ */ (0, L.jsxs)("div", {
 		className: "dock-seg",
@@ -4107,17 +4114,13 @@ function ya() {
 					className: "tb-btn",
 					id: "dcRot",
 					type: "button",
+					"data-orientation": "portrait",
 					"aria-haspopup": "menu",
 					"aria-expanded": "false",
 					"aria-controls": "dcOrientMenu",
-					children: [
-						ha,
-						/* @__PURE__ */ (0, L.jsx)("span", {
-							id: "dcRotLb",
-							...e.text("posture.portrait")
-						}),
-						va
-					]
+					...e.title("posture.orientation"),
+					...e.label("posture.orientation"),
+					children: [ha, ya]
 				}), /* @__PURE__ */ (0, L.jsx)("div", {
 					className: "zoom-menu",
 					id: "dcOrientMenu",
@@ -4142,23 +4145,24 @@ function ya() {
 				className: "tb-btn",
 				id: "dcFold",
 				type: "button",
-				children: [ga, /* @__PURE__ */ (0, L.jsx)("span", {
-					id: "dcFoldLb",
-					...e.text("posture.fold")
-				})]
+				"data-folded": "false",
+				...e.title("posture.fold"),
+				...e.label("posture.fold"),
+				children: [ga, _a]
 			}),
-			/* @__PURE__ */ (0, L.jsxs)("button", {
+			/* @__PURE__ */ (0, L.jsx)("button", {
 				className: "tb-btn",
 				id: "dcHinge",
 				type: "button",
 				"aria-pressed": "true",
-				...e.title("posture.hinge"),
-				children: [_a, /* @__PURE__ */ (0, L.jsx)("span", { ...e.text("posture.hinge") })]
+				...e.title("posture.hinge.hide"),
+				...e.label("posture.hinge"),
+				children: va
 			})
 		]
 	});
 }
-function ba() {
+function xa() {
 	let e = ea();
 	return /* @__PURE__ */ (0, L.jsxs)("div", {
 		className: "pn-fold",
@@ -4174,7 +4178,7 @@ function ba() {
 			children: [
 				/* @__PURE__ */ (0, L.jsx)("span", { className: "pn-sum-sil" }),
 				/* @__PURE__ */ (0, L.jsx)("span", { className: "nm" }),
-				va
+				ya
 			]
 		}), /* @__PURE__ */ (0, L.jsx)("div", {
 			className: "pn-body",
@@ -4184,31 +4188,31 @@ function ba() {
 		})]
 	});
 }
-function xa({ systemUi: e = ca(), zoom: t = la() }) {
+function Sa({ systemUi: e = ca(), zoom: t = la() }) {
 	return /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
+		/* @__PURE__ */ (0, L.jsx)(xa, {}),
 		/* @__PURE__ */ (0, L.jsx)(ba, {}),
-		/* @__PURE__ */ (0, L.jsx)(ya, {}),
 		/* @__PURE__ */ (0, L.jsx)(fa, {}),
 		e,
 		t
 	] });
 }
 // src/components/InsetOverlay.tsx
-var Sa = [
+var Ca = [
 	"statusBars",
 	"navigationBars",
 	"captionBar",
 	"displayCutout",
 	"systemOverlays"
-], Ca = [
+], wa = [
 	"top",
 	"right",
 	"bottom",
 	"left"
 ];
-function wa(e, t, n) {
+function Ta(e, t, n) {
 	if (!e || !t || n?.kind !== "device") return null;
-	let r = Object.fromEntries(Ca.map((e) => [e, Math.max(0, ...Sa.map((n) => t.values[n][e]))]));
+	let r = Object.fromEntries(wa.map((e) => [e, Math.max(0, ...Ca.map((n) => t.values[n][e]))]));
 	return {
 		w: n.widthDp,
 		h: n.heightDp,
@@ -4216,7 +4220,7 @@ function wa(e, t, n) {
 		safe: r
 	};
 }
-function Ta(e, t, n, r) {
+function Ea(e, t, n, r) {
 	switch (e) {
 		case "top": return {
 			fill: {
@@ -4276,8 +4280,8 @@ function Ta(e, t, n, r) {
 		};
 	}
 }
-function Ea({ deviceInsets: e, size: t, host: n }) {
-	let { element: r, place: i } = o(n), { on: a } = (0, I.useSyncExternalStore)(gn.subscribe, gn.get), s = wa(a, e, t);
+function Da({ deviceInsets: e, size: t, host: n }) {
+	let { element: r, place: i } = o(n), { on: a } = (0, I.useSyncExternalStore)(gn.subscribe, gn.get), s = Ta(a, e, t);
 	if ((0, I.useLayoutEffect)(() => {
 		r && (r.hidden = !s);
 	}, [r, s]), !s) return i(null, oa);
@@ -4291,11 +4295,11 @@ function Ea({ deviceInsets: e, size: t, host: n }) {
 		viewBox: `0 0 ${c} ${l}`,
 		preserveAspectRatio: "none",
 		"aria-hidden": "true",
-		children: [Sa.map((e) => /* @__PURE__ */ (0, L.jsx)("g", {
+		children: [Ca.map((e) => /* @__PURE__ */ (0, L.jsx)("g", {
 			className: "io-band",
 			"data-kind": e,
-			children: Ca.filter((t) => s.insets.values[e][t] > 0).map((t) => {
-				let { fill: n, line: r } = Ta(t, s.insets.values[e][t], c, l);
+			children: wa.filter((t) => s.insets.values[e][t] > 0).map((t) => {
+				let { fill: n, line: r } = Ea(t, s.insets.values[e][t], c, l);
 				return /* @__PURE__ */ (0, L.jsxs)("g", {
 					"data-edge": t,
 					children: [/* @__PURE__ */ (0, L.jsx)("rect", {
@@ -4334,13 +4338,13 @@ function Ea({ deviceInsets: e, size: t, host: n }) {
 		})]
 	}), oa);
 }
-var Da = (e) => String(Math.round(e * 10) / 10);
-function Oa({ deviceInsets: e, size: t, host: n }) {
-	let { phrase: r } = s(), { element: i, place: a } = o(n), { on: c } = (0, I.useSyncExternalStore)(gn.subscribe, gn.get), l = wa(c, e, t);
+var Oa = (e) => String(Math.round(e * 10) / 10);
+function ka({ deviceInsets: e, size: t, host: n }) {
+	let { phrase: r } = s(), { element: i, place: a } = o(n), { on: c } = (0, I.useSyncExternalStore)(gn.subscribe, gn.get), l = Ta(c, e, t);
 	if ((0, I.useLayoutEffect)(() => {
 		i && (i.hidden = !l);
 	}, [i, l]), !l) return a(null, sa);
-	let u = (e) => Ca.filter((t) => e[t] > 0).map((t) => `${r(`insetOverlay.edge.${t}`)} ${Da(e[t])}`).join(" · "), d = Sa.filter((e) => Ca.some((t) => l.insets.values[e][t] > 0));
+	let u = (e) => wa.filter((t) => e[t] > 0).map((t) => `${r(`insetOverlay.edge.${t}`)} ${Oa(e[t])}`).join(" · "), d = Ca.filter((e) => wa.some((t) => l.insets.values[e][t] > 0));
 	return a(/* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("div", {
 		className: "il-head",
 		children: r("insetOverlay.legend")
@@ -4366,7 +4370,7 @@ function Oa({ deviceInsets: e, size: t, host: n }) {
 		]
 	})] })] }), sa);
 }
-var ka = /* @__PURE__ */ (0, L.jsxs)("svg", {
+var Aa = /* @__PURE__ */ (0, L.jsxs)("svg", {
 	className: "tb-ic",
 	viewBox: "0 0 20 20",
 	fill: "none",
@@ -4389,7 +4393,7 @@ var ka = /* @__PURE__ */ (0, L.jsxs)("svg", {
 		strokeDasharray: "1.6 1.6"
 	})]
 });
-function Aa() {
+function ja() {
 	let { phrase: e } = s(), { on: t } = (0, I.useSyncExternalStore)(gn.subscribe, gn.get), { on: n } = (0, I.useSyncExternalStore)(mn.subscribe, mn.get), r = e("insetOverlay.now", { value: e(t ? "systemUi.on" : "systemUi.off") });
 	return /* @__PURE__ */ (0, L.jsx)("button", {
 		type: "button",
@@ -4400,11 +4404,11 @@ function Aa() {
 		title: r,
 		disabled: n,
 		onClick: () => gn.set({ on: !t }),
-		children: ka
+		children: Aa
 	});
 }
 // src/components/SystemBars.tsx
-function ja(e, t) {
+function Ma(e, t) {
 	let n = e?.shown ? e.bars : null;
 	if (n?.look !== "ios" || !n.insets || t?.kind !== "device") return null;
 	let r = t.insetProfile?.safeArea, i = t.device === "duo", a = i && r ? r.left > 0 ? "left" : r.right > 0 ? "right" : null : null;
@@ -4419,23 +4423,23 @@ function ja(e, t) {
 		folded: t.folded
 	};
 }
-var Ma = 24, Na = 4, Pa = .6, Fa = 1e3;
-function Ia(e, [t, n, r, i]) {
+var Na = 24, Pa = 4, Fa = .6, Ia = 1e3;
+function La(e, [t, n, r, i]) {
 	if (!e.naturalWidth) return "dark";
 	try {
 		let a = document.createElement("canvas");
-		a.width = Ma, a.height = Na;
+		a.width = Na, a.height = Pa;
 		let o = a.getContext("2d", { willReadFrequently: !0 });
 		if (!o) return "dark";
-		o.drawImage(e, t * e.naturalWidth, n * e.naturalHeight, Math.max(1, r * e.naturalWidth), Math.max(1, i * e.naturalHeight), 0, 0, Ma, Na);
-		let s = o.getImageData(0, 0, Ma, Na).data, c = 0, l = 0;
+		o.drawImage(e, t * e.naturalWidth, n * e.naturalHeight, Math.max(1, r * e.naturalWidth), Math.max(1, i * e.naturalHeight), 0, 0, Na, Pa);
+		let s = o.getImageData(0, 0, Na, Pa).data, c = 0, l = 0;
 		for (let e = 0; e < s.length; e += 4) s[e + 3] && (c += (.2126 * s[e] + .7152 * s[e + 1] + .0722 * s[e + 2]) / 255, l++);
-		return l && c / l <= Pa ? "light" : "dark";
+		return l && c / l <= Fa ? "light" : "dark";
 	} catch {
 		return "dark";
 	}
 }
-function La(e, t) {
+function Ra(e, t) {
 	let [n, r] = (0, I.useState)(["dark", "dark"]), i = t !== null, { w: a = 1, h: o = 1, statusDp: s = 0, navDp: c = 0, side: l = null, sideDp: u = 0 } = t ?? {};
 	return (0, I.useEffect)(() => {
 		if (!e || !i) return;
@@ -4450,7 +4454,7 @@ function La(e, t) {
 			1,
 			s / o
 		], n = () => r((n) => {
-			let r = [Ia(e, t), Ia(e, [
+			let r = [La(e, t), La(e, [
 				0,
 				1 - c / o,
 				1,
@@ -4459,7 +4463,7 @@ function La(e, t) {
 			return r[0] === n[0] && r[1] === n[1] ? n : r;
 		});
 		n(), e.addEventListener("load", n);
-		let d = window.setInterval(n, Fa);
+		let d = window.setInterval(n, Ia);
 		return () => {
 			e.removeEventListener("load", n), window.clearInterval(d);
 		};
@@ -4474,7 +4478,7 @@ function La(e, t) {
 		u
 	]), n;
 }
-var Ra = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
+var za = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
 	transform: `translate(${e} ${t}) scale(${n})`,
 	children: [
 		/* @__PURE__ */ (0, L.jsx)("rect", {
@@ -4506,10 +4510,10 @@ var Ra = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
 			rx: ".8"
 		})
 	]
-}), za = (e, t, n) => /* @__PURE__ */ (0, L.jsx)("g", {
+}), Ba = (e, t, n) => /* @__PURE__ */ (0, L.jsx)("g", {
 	transform: `translate(${e} ${t}) scale(${n})`,
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M7.5 11 L0 3.2 A11 11 0 0 1 15 3.2 Z" })
-}), Ba = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
+}), Va = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
 	transform: `translate(${e} ${t}) scale(${n})`,
 	children: [
 		/* @__PURE__ */ (0, L.jsx)("rect", {
@@ -4539,7 +4543,7 @@ var Ra = (e, t, n) => /* @__PURE__ */ (0, L.jsxs)("g", {
 		})
 	]
 });
-function Va({ x: e, y: t }) {
+function Ha({ x: e, y: t }) {
 	return /* @__PURE__ */ (0, L.jsxs)("g", {
 		className: "sb-duo-indicator",
 		transform: `translate(${e} ${t})`,
@@ -4587,7 +4591,7 @@ function Va({ x: e, y: t }) {
 		]
 	});
 }
-function Ha({ bars: e }) {
+function Ua({ bars: e }) {
 	let t = e.side ? e.side === "left" ? e.sideDp / 2 : e.w - e.sideDp / 2 : e.w - 46, n = e.side ? e.folded ? 124 : 78 : 42;
 	return /* @__PURE__ */ (0, L.jsxs)("g", {
 		className: "sb-status sb-duo-status",
@@ -4600,14 +4604,14 @@ function Ha({ bars: e }) {
 			fontSize: "15",
 			fontWeight: 600,
 			children: "9:41"
-		}), /* @__PURE__ */ (0, L.jsx)(Va, {
+		}), /* @__PURE__ */ (0, L.jsx)(Ha, {
 			x: t,
 			y: n
 		})]
 	});
 }
-function Ua({ bars: e }) {
-	if (e.duo) return /* @__PURE__ */ (0, L.jsx)(Ha, { bars: e });
+function Wa({ bars: e }) {
+	if (e.duo) return /* @__PURE__ */ (0, L.jsx)(Ua, { bars: e });
 	let t = (e.w - 126) / 4, n = e.statusDp / 2 + 2;
 	return /* @__PURE__ */ (0, L.jsxs)("g", {
 		className: "sb-status",
@@ -4622,14 +4626,14 @@ function Ua({ bars: e }) {
 				fontWeight: 600,
 				children: "9:41"
 			}),
-			Ra(e.w - t - 36, n - 5.5, 1),
-			za(e.w - t - 14, n - 5.5, 1),
-			Ba(e.w - t + 6, n - 6, 1)
+			za(e.w - t - 36, n - 5.5, 1),
+			Ba(e.w - t - 14, n - 5.5, 1),
+			Va(e.w - t + 6, n - 6, 1)
 		]
 	});
 }
-function Wa({ systemUi: e, size: t, host: n }) {
-	let { element: r, place: i } = o(n), a = ja(e, t), [s, c] = La(r?.parentElement?.querySelector("#shot") ?? null, a);
+function Ga({ systemUi: e, size: t, host: n }) {
+	let { element: r, place: i } = o(n), a = Ma(e, t), [s, c] = Ra(r?.parentElement?.querySelector("#shot") ?? null, a);
 	return (0, I.useLayoutEffect)(() => {
 		r && (r.hidden = !a);
 	}, [r, a]), i(a && /* @__PURE__ */ (0, L.jsxs)("svg", {
@@ -4639,7 +4643,7 @@ function Wa({ systemUi: e, size: t, host: n }) {
 		"aria-hidden": "true",
 		children: [(a.statusDp > 0 || a.side) && /* @__PURE__ */ (0, L.jsx)("g", {
 			className: `sb-ink-${s}`,
-			children: /* @__PURE__ */ (0, L.jsx)(Ua, { bars: a })
+			children: /* @__PURE__ */ (0, L.jsx)(Wa, { bars: a })
 		}), !a.duo && a.navDp > 0 && /* @__PURE__ */ (0, L.jsx)("g", {
 			className: `sb-ink-${c}`,
 			children: /* @__PURE__ */ (0, L.jsx)("rect", {
@@ -4654,7 +4658,7 @@ function Wa({ systemUi: e, size: t, host: n }) {
 	}), aa);
 }
 // src/components/Workspace.tsx
-var Ga = {
+var Ka = {
 	exit() {},
 	zoomIn() {},
 	zoomOut() {},
@@ -4663,7 +4667,7 @@ var Ga = {
 	toggleZoomMenu() {},
 	pickSystemUi() {}
 };
-function Ka({ host: e }) {
+function qa({ host: e }) {
 	let { phrase: t } = s(), { element: n, place: r } = o(e), { on: i, failed: a } = (0, I.useSyncExternalStore)(mn.subscribe, mn.get);
 	return (0, I.useLayoutEffect)(() => {
 		n && (n.hidden = !i, n.classList.toggle("failed", a));
@@ -4679,14 +4683,14 @@ function Ka({ host: e }) {
 		children: t(a ? "workspace.loading.failed" : "workspace.loading")
 	})] }), ia);
 }
-var qa = /* @__PURE__ */ (0, L.jsx)("svg", {
+var Ja = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
 	strokeWidth: "1.7",
 	strokeLinecap: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M4 8h8" })
-}), Ja = /* @__PURE__ */ (0, L.jsx)("svg", {
+}), Ya = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
@@ -4694,7 +4698,7 @@ var qa = /* @__PURE__ */ (0, L.jsx)("svg", {
 	strokeLinecap: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M4 8h8M8 4v8" })
 });
-function Ya({ host: e, actions: t = Ga }) {
+function Xa({ host: e, actions: t = Ka }) {
 	let { phrase: n } = s(), { element: r, place: i } = o(e), { pct: a, real: c, atFit: l, menu: u, disabled: d } = (0, I.useSyncExternalStore)(Y.subscribe, Y.get);
 	return (0, I.useLayoutEffect)(() => {
 		r?.classList.toggle("at-fit", l);
@@ -4706,7 +4710,7 @@ function Ya({ host: e, actions: t = Ga }) {
 			title: n("zoom.out.tip"),
 			disabled: d,
 			onClick: t.zoomOut,
-			children: qa
+			children: Ja
 		}),
 		/* @__PURE__ */ (0, L.jsxs)("button", {
 			type: "button",
@@ -4726,7 +4730,7 @@ function Ya({ host: e, actions: t = Ga }) {
 			title: n("zoom.in.tip"),
 			disabled: d,
 			onClick: t.zoomIn,
-			children: Ja
+			children: Ya
 		}),
 		/* @__PURE__ */ (0, L.jsx)("button", {
 			type: "button",
@@ -4773,7 +4777,7 @@ function Ya({ host: e, actions: t = Ga }) {
 		})
 	] }), la);
 }
-var Xa = /* @__PURE__ */ (0, L.jsxs)("svg", {
+var Za = /* @__PURE__ */ (0, L.jsxs)("svg", {
 	className: "tb-ic",
 	viewBox: "0 0 20 20",
 	fill: "none",
@@ -4790,7 +4794,7 @@ var Xa = /* @__PURE__ */ (0, L.jsxs)("svg", {
 		rx: "1.8"
 	}), /* @__PURE__ */ (0, L.jsx)("path", { d: "M5.5 5.5h9M8.5 15h3" })]
 });
-function Za({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Ga }) {
+function Qa({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Ka }) {
 	let { phrase: i } = s(), { element: a, place: c } = o(n), { on: l } = (0, I.useSyncExternalStore)(mn.subscribe, mn.get), u = !e && !t;
 	(0, I.useLayoutEffect)(() => {
 		a && (a.hidden = u);
@@ -4798,13 +4802,17 @@ function Za({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Ga }) {
 	let d = !!e?.shown, f = i(t ? "insetOverlay.label" : "systemUi.label");
 	if ((0, I.useLayoutEffect)(() => {
 		a?.setAttribute("aria-label", f);
-	}, [a, f]), t) return c(/* @__PURE__ */ (0, L.jsx)(Aa, {}), ca);
-	let p = d ? e?.bars?.insets : null, m = p ? i("systemUi.tip.device", {
-		status: p.statusDp,
-		nav: p.navDp,
-		source: `${p.source} (${p.kind})`
-	}) + "\n" + i("systemUi.tip") : i("systemUi.tip");
-	return c(/* @__PURE__ */ (0, L.jsxs)("button", {
+	}, [a, f]), t) return c(/* @__PURE__ */ (0, L.jsx)(ja, {}), ca);
+	let p = d ? e?.bars?.insets : null, m = [
+		i("systemUi.now", { value: i(d ? "systemUi.on" : "systemUi.off") }),
+		p && i("systemUi.tip.device", {
+			status: p.statusDp,
+			nav: p.navDp,
+			source: `${p.source} (${p.kind})`
+		}),
+		i("systemUi.tip")
+	].filter(Boolean).join("\n");
+	return c(/* @__PURE__ */ (0, L.jsx)("button", {
 		type: "button",
 		id: "sysUiBtn",
 		className: "tb-btn",
@@ -4815,45 +4823,30 @@ function Za({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Ga }) {
 		onClick: () => {
 			e && r.pickSystemUi(!d === e.annotated ? "annotated" : d ? "off" : "on");
 		},
-		children: [
-			Xa,
-			/* @__PURE__ */ (0, L.jsx)("span", {
-				className: "sys-lb",
-				children: f
-			}),
-			/* @__PURE__ */ (0, L.jsx)("span", {
-				className: "sys-sep",
-				"aria-hidden": "true",
-				children: "·"
-			}),
-			/* @__PURE__ */ (0, L.jsx)("span", {
-				className: "sys-v",
-				children: i(d ? "systemUi.on" : "systemUi.off")
-			})
-		]
+		children: Za
 	}), ca);
 }
-var Qa = 12, $a = 48;
-function eo(e, t) {
+var $a = 12, eo = 48;
+function to(e, t) {
 	let n = e.querySelector("#backName"), r = t.querySelector("#wsName"), i = t.querySelector("#wsFn"), a = e.parentElement, o = document.getElementById("barR");
 	if (!n || !r || !i || !a || !o || (n.style.maxWidth = "", n.style.display = "", t.hidden || !(t.offsetParent instanceof HTMLElement))) return;
 	if (getComputedStyle(t).position !== "absolute") {
 		t.style.removeProperty("--ws-left"), t.style.removeProperty("--ws-max");
 		return;
 	}
-	let s = t.offsetParent.clientWidth, c = o.offsetLeft - Qa, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
+	let s = t.offsetParent.clientWidth, c = o.offsetLeft - $a, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
 		let e = 0;
 		for (let t of a.children) t instanceof HTMLElement && t.offsetParent && (e = Math.max(e, a.offsetLeft + t.offsetLeft + t.offsetWidth));
-		return e + Qa;
+		return e + $a;
 	}, f = d();
 	if (f > u && !e.hidden) {
 		let e = n.offsetWidth - (f - u);
-		e < $a ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
+		e < eo ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
 	}
 	let p = Math.max(u, f), m = Math.max(0, Math.min(l, c - p));
 	t.style.setProperty("--ws-left", `${p + m / 2}px`), t.style.setProperty("--ws-max", `${m}px`);
 }
-var to = /* @__PURE__ */ (0, L.jsx)("svg", {
+var no = /* @__PURE__ */ (0, L.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
@@ -4862,18 +4855,18 @@ var to = /* @__PURE__ */ (0, L.jsx)("svg", {
 	strokeLinejoin: "round",
 	children: /* @__PURE__ */ (0, L.jsx)("path", { d: "M10 3.5 5.5 8l4.5 4.5" })
 });
-function no({ state: e, hosts: t, actions: n = Ga }) {
+function ro({ state: e, hosts: t, actions: n = Ka }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = e?.screen === "focus" ? e.focus : null, l = c ? (e.tabs || []).find((e) => e.active) : void 0, u = c && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0;
 	(0, I.useLayoutEffect)(() => {
-		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && eo(i.element, a.element);
+		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && to(i.element, a.element);
 	}), (0, I.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, I.useLayoutEffect)(() => {
 		let e = i.element, t = a.element, n = e?.parentElement?.parentElement, r = document.getElementById("barR");
 		if (!e || !t) return;
-		let o = new ResizeObserver(() => eo(e, t));
+		let o = new ResizeObserver(() => to(e, t));
 		for (let e of [n, r]) e && o.observe(e);
 		return () => o.disconnect();
 	}, [i.element, a.element]);
-	let d = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [to, /* @__PURE__ */ (0, L.jsx)("span", {
+	let d = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [no, /* @__PURE__ */ (0, L.jsx)("span", {
 		id: "backName",
 		children: l ? l.name : r("nav.board")
 	})] }), f = /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, L.jsx)("span", {
@@ -4904,34 +4897,34 @@ function no({ state: e, hosts: t, actions: n = Ga }) {
 		children: t
 	}))] });
 }
-function ro({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = null, hosts: i, actions: a = Ga }) {
+function io({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = null, hosts: i, actions: a = Ka }) {
 	let { phrase: o } = s(), [c, l] = (0, I.useState)(null), u = i?.view ?? c;
 	return (0, I.useLayoutEffect)(() => {
 		u && e !== null && (u.hidden = e !== "focus");
 	}, [e, u]), i ? /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
-		/* @__PURE__ */ (0, L.jsx)(Ka, { host: i.loading }),
-		/* @__PURE__ */ (0, L.jsx)(Wa, {
+		/* @__PURE__ */ (0, L.jsx)(qa, { host: i.loading }),
+		/* @__PURE__ */ (0, L.jsx)(Ga, {
 			systemUi: t,
 			size: r,
 			host: i.bars
 		}),
-		/* @__PURE__ */ (0, L.jsx)(Ea, {
+		/* @__PURE__ */ (0, L.jsx)(Da, {
 			deviceInsets: n,
 			size: r,
 			host: i.inset
 		}),
-		/* @__PURE__ */ (0, L.jsx)(Oa, {
+		/* @__PURE__ */ (0, L.jsx)(ka, {
 			deviceInsets: n,
 			size: r,
 			host: i.legend
 		}),
-		/* @__PURE__ */ (0, L.jsx)(Za, {
+		/* @__PURE__ */ (0, L.jsx)(Qa, {
 			systemUi: t,
 			deviceInsets: n,
 			host: i.systemUi,
 			actions: a
 		}),
-		/* @__PURE__ */ (0, L.jsx)(Ya, {
+		/* @__PURE__ */ (0, L.jsx)(Xa, {
 			host: i.zoom,
 			actions: a
 		})
@@ -4939,16 +4932,16 @@ function ro({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = n
 		id: "focusView",
 		ref: l,
 		children: /* @__PURE__ */ (0, L.jsx)(da, {
-			loading: /* @__PURE__ */ (0, L.jsx)(Ka, {}),
-			bars: /* @__PURE__ */ (0, L.jsx)(Wa, {
+			loading: /* @__PURE__ */ (0, L.jsx)(qa, {}),
+			bars: /* @__PURE__ */ (0, L.jsx)(Ga, {
 				systemUi: t,
 				size: r
 			}),
-			inset: /* @__PURE__ */ (0, L.jsx)(Ea, {
+			inset: /* @__PURE__ */ (0, L.jsx)(Da, {
 				deviceInsets: n,
 				size: r
 			}),
-			legend: /* @__PURE__ */ (0, L.jsx)(Oa, {
+			legend: /* @__PURE__ */ (0, L.jsx)(ka, {
 				deviceInsets: n,
 				size: r
 			})
@@ -4958,18 +4951,18 @@ function ro({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = n
 		id: "panel",
 		role: "toolbar",
 		"aria-label": o("panel.label"),
-		children: /* @__PURE__ */ (0, L.jsx)(xa, {
-			systemUi: /* @__PURE__ */ (0, L.jsx)(Za, {
+		children: /* @__PURE__ */ (0, L.jsx)(Sa, {
+			systemUi: /* @__PURE__ */ (0, L.jsx)(Qa, {
 				systemUi: t,
 				deviceInsets: n,
 				actions: a
 			}),
-			zoom: /* @__PURE__ */ (0, L.jsx)(Ya, { actions: a })
+			zoom: /* @__PURE__ */ (0, L.jsx)(Xa, { actions: a })
 		})
 	})] });
 }
 // src/ViewerRoot.tsx
-function io() {
+function ao() {
 	let e = (e) => document.getElementById(e);
 	return {
 		bar: e("bar"),
@@ -5014,7 +5007,7 @@ function io() {
 		chooser: e("chooser")
 	};
 }
-function ao({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
+function oo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
 	return (0, I.useLayoutEffect)(() => {
 		e && u(e);
 	}, [t]), o ? /* @__PURE__ */ (0, L.jsxs)(L.Fragment, { children: [
@@ -5062,7 +5055,7 @@ function ao({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			vacant: e?.vacant ?? null,
 			host: o.vacant
 		}),
-		/* @__PURE__ */ (0, L.jsx)(ro, {
+		/* @__PURE__ */ (0, L.jsx)(io, {
 			screen: e?.screen ?? null,
 			systemUi: e?.focus?.systemUi ?? null,
 			deviceInsets: e?.focus?.deviceInsets ?? null,
@@ -5070,7 +5063,7 @@ function ao({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			hosts: o.workspace,
 			actions: c
 		}),
-		/* @__PURE__ */ (0, L.jsx)(no, {
+		/* @__PURE__ */ (0, L.jsx)(ro, {
 			state: e,
 			hosts: o.workspaceHeader,
 			actions: c
@@ -5089,12 +5082,12 @@ function ao({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 		})
 	] }) : null;
 }
-function oo({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
+function so({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
 	let s = document.createElement("div");
 	s.hidden = !0, document.body.append(s);
 	let c = (0, ei.createRoot)(s), l = null, u = null, f = null, p = null, m = 0, h = () => c.render(/* @__PURE__ */ (0, L.jsx)(d.Provider, {
 		value: t,
-		children: /* @__PURE__ */ (0, L.jsx)(ao, {
+		children: /* @__PURE__ */ (0, L.jsx)(oo, {
 			state: l,
 			draw: m,
 			statusState: u,
@@ -5125,12 +5118,12 @@ function oo({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 	};
 }
 // src/main.tsx
-var so = Bt(), $ = dr(ur()), co = (e) => {
-	Dr(e), so?.update(e);
-}, lo = () => {
+var co = Bt(), $ = dr(ur()), lo = (e) => {
+	Dr(e), co?.update(e);
+}, uo = () => {
 	let { cursor: e } = p();
 	e != null && gr(e);
-}, uo = {
+}, fo = {
 	exit: _r,
 	zoomIn: $.zoomIn,
 	zoomOut: $.zoomOut,
@@ -5138,7 +5131,7 @@ var so = Bt(), $ = dr(ur()), co = (e) => {
 	zoomMenuPick: $.zoomMenuPick,
 	toggleZoomMenu: $.toggleZoomMenu,
 	pickSystemUi: vr
-}, fo = {
+}, po = {
 	choose: $n,
 	cancel: er,
 	follow: ar,
@@ -5148,22 +5141,22 @@ var so = Bt(), $ = dr(ur()), co = (e) => {
 	close: Z
 };
 Qn();
-var po = {
+var mo = {
 	screen: () => F.st ? F.st.screen : "offline",
 	tabCount: wt,
 	moveCursor: v,
-	openCursor: lo,
+	openCursor: uo,
 	exitFocus: _r,
 	stepTab: St,
 	jumpTab: Ct,
 	openQuickOpen: ct,
 	helpOpen: Gt,
 	toggleHelp: Kt,
-	zoomIn: uo.zoomIn,
-	zoomOut: uo.zoomOut,
-	zoomFit: uo.zoomFit
-}, mo = Yr(k, po);
-Qr(mo, po, {
+	zoomIn: fo.zoomIn,
+	zoomOut: fo.zoomOut,
+	zoomFit: fo.zoomFit
+}, ho = Yr(k, mo);
+Qr(ho, mo, {
 	chooserOpen: () => !!document.getElementById("chooser")?.classList.contains("on"),
 	cancelChoice: er,
 	closeZoomMenu: $.closeZoomMenu,
@@ -5171,29 +5164,29 @@ Qr(mo, po, {
 	closeDirPop: Rt,
 	closeCard: Zn
 });
-var ho = oo({
-	renderLegacy: co,
+var go = so({
+	renderLegacy: lo,
 	messages: {
 		phrase: k,
 		daemonText: O
 	},
-	hosts: io(),
-	shortcuts: mo,
+	hosts: ao(),
+	shortcuts: ho,
 	board: {
 		open: gr,
 		point: or
 	},
-	workspace: uo,
-	point: fo
+	workspace: fo,
+	point: po
 });
 Jr({
 	workspace: $,
-	render: ho.apply,
-	onConnection: ho.connection,
+	render: go.apply,
+	onConnection: go.connection,
 	onPreviewFiles: () => {
 		lt(), Vn();
 	},
-	prepared: so
+	prepared: co
 });
 for (let e of [
 	"bar",

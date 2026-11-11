@@ -46,6 +46,12 @@ sealed interface ScreenSize {
         val widthDp: Double get() = dp(widthPx)
         val heightDp: Double get() = dp(heightPx)
         val hingeDp: Double? get() = panel.hingePx?.let { dp(it) }
+        val heldDegrees: Int get() = orientation.degrees - panel.orientation.degrees
+        val folding: Device?
+            get() = model.cover?.let {
+                DeviceOrientation.entries.map { Device(model, !folded, it) }.firstOrNull { it.heldDegrees == heldDegrees }
+                    ?: Device(model, !folded, DeviceOrientation.PORTRAIT)
+            }
         val insetProfile: DeviceInsetProfile get() = DeviceInsets.of(this)
         override val key: String get() = listOfNotNull(
             model.id, "folded".takeIf { folded }, "land".takeIf { landscape }, "right".takeIf { orientation == DeviceOrientation.LANDSCAPE_RIGHT },
@@ -112,8 +118,8 @@ sealed interface ScreenSize {
     }
 }
 
-enum class DeviceOrientation(val key: String) {
-    PORTRAIT("portrait"), LANDSCAPE_LEFT("landscape-left"), LANDSCAPE_RIGHT("landscape-right");
+enum class DeviceOrientation(val key: String, val degrees: Int) {
+    PORTRAIT("portrait", 0), LANDSCAPE_LEFT("landscape-left", -90), LANDSCAPE_RIGHT("landscape-right", 90);
 
     companion object {
         fun parse(key: String): DeviceOrientation = entries.firstOrNull { it.key == key }

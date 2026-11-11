@@ -32,7 +32,11 @@ data class Postures(
         fun sameFamily(a: ScreenSize, b: ScreenSize): Boolean =
             if (a is ScreenSize.Device && b is ScreenSize.Device) a.model == b.model else a == b
 
-        private fun steps(from: ScreenSize.Device, to: ScreenSize.Device): Int =
-            (if (from.folded != to.folded) FOLD else 0) + (if (from.orientation != to.orientation) TURN else 0)
+        private fun steps(from: ScreenSize.Device, to: ScreenSize.Device): Int = when {
+            to == from.folding -> FOLD
+            from.folded != to.folded -> FOLD + TURN
+            from.orientation != to.orientation -> TURN
+            else -> 0
+        }
     }
 }

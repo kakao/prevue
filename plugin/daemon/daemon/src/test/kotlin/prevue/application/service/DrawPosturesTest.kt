@@ -45,17 +45,17 @@ class DrawPosturesTest {
 
     private fun asideKeys(): List<String> = postureAsides().map { it.previewId.substringAfter('@') }
 
-    @Test fun `폴더블을 고르면 다른 자세 셋을 먼저, 그다음 막대 칸을 왼쪽부터 옆 태스크에 그린다`() {
+    @Test fun `폴더블을 고르면 접기 버튼이 갈 자세부터 다른 자세를 먼저, 그다음 막대 칸을 왼쪽부터 옆 태스크에 그린다`() {
         val uc = opened()
         uc.pick(fold8)
         uc.awaitDrawn(17)
         val id = uc.id()
-        assertEquals(listOf("fold8-folded-land", "fold8-land", "fold8-right", "fold8-folded", "fold8-folded-land-right") + (bar - "fold8"), asideKeys())
-        assertEquals("spec:width=1248px,height=1972px,dpi=420", postureAsides()[3].params["device"])
+        assertEquals(listOf("fold8-folded", "fold8-land", "fold8-right", "fold8-folded-land", "fold8-folded-land-right") + (bar - "fold8"), asideKeys())
+        assertEquals("spec:width=1248px,height=1972px,dpi=420", postureAsides()[0].params["device"])
         assertEquals("spec:width=1848px,height=2448px,dpi=420", postureAsides()[1].params["device"])
         assertEquals(listOf(id to "$id@fold8"), fx.renderer.copies)
         assertTrue(fold8 !in uc.drawn(), "지금 자세는 싣지 않는다 — ${uc.drawn()}")
-        assertTrue(uc.workspace.now.keepIds().containsAll((listOf("fold8-folded-land", "fold8-land", "fold8-right", "fold8-folded", "fold8-folded-land-right") + bar).map { "$id@$it" }))
+        assertTrue(uc.workspace.now.keepIds().containsAll((listOf("fold8-folded", "fold8-land", "fold8-right", "fold8-folded-land", "fold8-folded-land-right") + bar).map { "$id@$it" }))
     }
 
     @Test fun `막대 칸은 원래 크기 · 프리셋 · 기기의 펼친 세로 자세로 그린다`() {
@@ -156,6 +156,7 @@ class DrawPosturesTest {
         }
         uc.awaitDrawn(17)
         assertEquals(34, postureAsides().size)
+        assertEquals("fold8-folded", asideKeys()[17], "저장 뒤 접기 버튼이 갈 자세를 먼저 그린다")
     }
 
     @Test fun `그리는 도중에 크기를 바꾸면 그 그림을 싣지 않는다`() {
@@ -170,7 +171,7 @@ class DrawPosturesTest {
         runBlocking { resized.await() }
         uc.awaitDrawn(12)
         assertEquals(bar - "original", uc.drawn().keys.map { it.key })
-        assertEquals(listOf("fold8-folded-land") + (bar - "original"), asideKeys())
+        assertEquals(listOf("fold8-folded") + (bar - "original"), asideKeys())
     }
 
     @Test fun `기기를 고른 뒤 잠잠해지기 전에는 그리지 않는다`() {

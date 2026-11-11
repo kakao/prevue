@@ -96,6 +96,8 @@ try {
   await post("/viewer/resize", { size: "original" });
   await until(`!__store.st.focus.size && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#resizeScene').classList.contains('at-rest')`);
   // 조작 독(D-167) — 헤더는 한 줄이고, 무대 아래 가운데 독에 크기 · 기기 메뉴와 확대가 있다. @Preview 는 가운데 칸이 없다.
+  // 기기 독의 폭 상한 — 독의 조작 버튼이 아이콘만이라 가장 넓은 독(펼친 Duo, 영어)이 466px 다(1000 창 실측). 버튼에 글자가 돌아오면 넘는다.
+  const DOCK_MAX = 480;
   const dockAt = `(()=>{const p=document.querySelector('#panel'),d=p.getBoundingClientRect();const w=document.documentElement.clientWidth;return Math.abs(d.left+d.width/2-w/2)<=1 && innerHeight-d.bottom>=8 && innerHeight-d.bottom<=24 && d.left>=0 && d.right<=w && d.height<64 && [...p.children].every(c=>{const r=c.getBoundingClientRect();return !r.width||(r.left>=d.left&&r.right<=d.right)})})()`;
   const dockClear = `(()=>{const d=document.querySelector('#panel').getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return s.bottom+8<=d.top})()`;
   await check(`${dockAt} && document.querySelector('#panel').contains(document.querySelector('#zoomCtl')) && !document.querySelector('#pnSum').hidden && document.querySelector('#devCtl').hidden && document.querySelector('#pnSl').hidden && ${dockClear}`, "독은 무대 아래 가운데 · 메뉴와 확대만 · 기기를 가리지 않는다");
@@ -112,6 +114,12 @@ try {
   await check(`document.querySelector('#zoomPct').textContent===Math.round(document.querySelector('#stage').getBoundingClientRect().width/320*100)+'%'`, "배율 숫자는 그린 크기(1dp당 px)와 같다");
   await check(`__signals.busy===0 && __signals.liveOff===0`, "크기 변경 중 진행 표시와 LIVE 깜박임 없음");
   await check(`document.querySelector('#pnSum .nm').textContent==='320×640' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#devCtl').hidden && document.querySelector('#pnSl').hidden`, "고르면 메뉴가 닫히고 버튼 이름이 바뀐다 · 프리셋은 가운데 칸 없음");
+  const sysUi = `(b=>!!b && !b.querySelector('span') && b.getAttribute('aria-label')==='System UI' && b.getAttribute('aria-pressed')===String(__store.st.focus.systemUi.shown) && b.title.startsWith('System UI — '+(__store.st.focus.systemUi.shown?'On':'Off')+'\\n') && !document.querySelector('#sysUiCtl').hidden)(document.querySelector('#sysUiBtn'))`;
+  await check(sysUi, "비기기의 시스템 UI 토글은 아이콘만 · 켬끔은 눌린 모양 · 이름과 값은 툴팁 · aria-label");
+  const sysWas = await evaluate(`__store.st.focus.systemUi.shown`);
+  await click("#sysUiBtn"); await until(`__store.st.focus.systemUi.shown===${!sysWas} && !document.querySelector('#sysUiBtn').disabled`);
+  await check(sysUi, "시스템 UI 를 누르면 눌린 모양과 툴팁이 함께 바뀐다");
+  await click("#sysUiBtn"); await until(`__store.st.focus.systemUi.shown===${sysWas} && !document.querySelector('#sysUiBtn').disabled`);
   await choose("custom");
   await until(`__store.st.focus.size?.widthDp===320 && !__store.st.focus.size?.preset && document.activeElement===document.querySelector('#rlW')`);
   await check(`document.querySelector('#pnPick [data-sel="custom"]').getAttribute('aria-checked')==='true' && document.querySelector('#ruler').classList.contains('custom')`, "커스텀 칸은 지금 크기로 커스텀 · 폭 숫자에 커서");
@@ -146,11 +154,13 @@ try {
   await beginFoldProbe();
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await endFoldProbe("Fold8 portrait");
-  await check(`__store.st.focus.size.orientation==='landscape-right' && document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475' && document.querySelector('#dcFoldLb').textContent==='Unfold'`, "펼친 세로를 접으면 손에 든 회전을 이어 커버 가로 오른쪽 · 치수 갱신");
-  await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0 && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 글자 붙은 자세 버튼 · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
+  await check(`__store.st.focus.size.orientation==='landscape-right' && document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "펼친 세로를 접으면 손에 든 회전을 이어 커버 가로 오른쪽 · 치수 갱신");
+  await check(`document.querySelector('#dcFold').dataset.folded==='true' && document.querySelector('#dcFold').getAttribute('aria-label')==='Unfold' && document.querySelector('#dcFold').title==='Unfold' && document.querySelector('#dcFold .unfold-ic').getBoundingClientRect().width>0 && document.querySelector('#dcFold .fold-ic').closest('svg').getBoundingClientRect().width===0 && document.querySelector('#dcFold').getBoundingClientRect().width===document.querySelector('#dcHinge').getBoundingClientRect().width`, "접은 기기의 접기 버튼은 펼치기 그림과 이름");
+  await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && [...document.querySelectorAll('#devCtl .tb-btn')].every(b=>b.innerText.trim()==='' && b.getAttribute('aria-label')) && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 아이콘만인 자세 버튼(이름은 aria-label) · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
   await orient('landscape-left');
   await check(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "접은 기기의 가로 돌리기");
-  await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false'`, "힌지 선 전환");
+  await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='true' && document.querySelector('#dcHinge').title==='Hide hinge line' && document.querySelector('#dcHinge').getAttribute('aria-label')==='Hinge line'`, "힌지 선은 켜지면 눌린 모양 · 툴팁은 할 동작");
+  await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false' && document.querySelector('#dcHinge').title==='Show hinge line'`, "힌지 선 전환");
   await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===751 && __store.st.focus.size?.heightDp===475 && document.activeElement===document.querySelector('#rlH')`);
   await check(`document.querySelector('#pnPick [aria-checked="true"]')?.dataset.sel==='custom' && document.querySelector('#devCtl').hidden`, "기기에서 숫자를 누르면 그 크기로 커스텀 · 자세 칸은 걷힘");
   await check(`!!document.querySelector('#sysUiBtn') && !document.querySelector('#insetBtn') && document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`, "비기기 크기는 시스템 UI 토글 그대로 · 인셋 오버레이는 켜 둔 채여도 숨는다");
@@ -209,6 +219,7 @@ try {
   await orient('landscape-right');
   await check(`document.querySelector('#dcOrientMenu [aria-checked="true"]').dataset.orientation==='landscape-right' && __store.st.focus.size.insetProfile.measured.displayCutout.right===37`, "오른쪽 가로 메뉴와 응답 · 비대칭 프로필 일치");
   await check(`document.querySelector('#ua .cam').getBoundingClientRect().left>${cameraLeft}`, "반대 가로는 카메라도 반대편");
+  await check(`(b=>b.dataset.orientation==='landscape-right' && b.title==='Landscape right — change orientation' && getComputedStyle(b.querySelector('.turn')).rotate==='90deg')(document.querySelector('#dcRot'))`, "가로 오른쪽은 돌리기 그림이 반대로 눕는다");
   await evaluate(`document.querySelector('#dcRot').focus()`);
   await key('ArrowDown'); await key('Home');
   await check(`document.activeElement.dataset.orientation==='portrait'`, "방향 메뉴의 방향키와 Home");
@@ -220,9 +231,9 @@ try {
   await pick("ip17pm", "device==='ip17pm'");
   await check(`document.querySelector('#rlW').value==='440' && document.querySelector('#rlH').value==='956' && document.querySelector('#pnPick [data-sel="ip17pm"]').title==='iPhone 17 Pro Max'`, "새 기기도 패널에서 골라 스펙 크기로 그린다");
   await pick("tablet", "device==='tablet'");
-  await check(`document.querySelector('#dcRotLb').textContent==='Landscape left' && document.querySelector('#rlW').value==='1280'`, "원래 가로인 태블릿의 현재 방향 표시");
+  await check(`(b=>b.dataset.orientation==='landscape-left' && b.title==='Landscape left — change orientation' && b.getAttribute('aria-label')===b.title && getComputedStyle(b.querySelector('.turn')).rotate==='-90deg' && getComputedStyle(b.querySelector('.tb-chev')).display!=='none')(document.querySelector('#dcRot')) && document.querySelector('#rlW').value==='1280'`, "원래 가로인 태블릿은 돌리기 그림이 가로 왼쪽으로 눕고 이름은 툴팁 · aria-label");
   await orient('portrait');
-  await check(`document.querySelector('#dcRotLb').textContent==='Portrait' && document.querySelector('#rlH').value==='1280'`, "세운 태블릿의 현재 방향 표시");
+  await check(`(b=>b.dataset.orientation==='portrait' && b.title==='Portrait — change orientation' && b.getAttribute('aria-label')===b.title && getComputedStyle(b.querySelector('.turn')).rotate==='none' && getComputedStyle(b.querySelector('.tb-chev')).display!=='none')(document.querySelector('#dcRot')) && document.querySelector('#rlH').value==='1280'`, "세운 태블릿은 돌리기 그림이 서고 이름이 세로");
   await pick("foldable", "preset==='foldable'");
   await click("#zoomInBtn"); await pause(300);
   await check(`document.querySelector('#stage').getBoundingClientRect().width > document.querySelector('#stage').offsetWidth`, "그림과 몸체 함께 확대");
@@ -267,9 +278,7 @@ try {
   await choose("fold8"); await until(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`document.querySelector('#pnPick [data-sel="fold8"]').getAttribute('aria-checked')==='true' && ${dockAt} && (r=>r.left>=0&&r.right<=innerWidth)(document.querySelector('#pnBody').getBoundingClientRect())`, "좁은 창(480)에서도 독은 한 줄로 창 안 · 메뉴로 고른다");
   await send("Emulation.setDeviceMetricsOverride", { width: 820, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
-  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width>0`, "820 창에서 독은 한 줄 · 자세 글자가 보인다");
-  await send("Emulation.setDeviceMetricsOverride", { width: 800, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
-  await check(`${dockAt} && document.querySelector('#dcFoldLb').getBoundingClientRect().width===0 && document.querySelector('#dcFold').getAttribute('aria-label')`, "800 창부터 자세 버튼은 아이콘만 · 이름은 aria-label 에");
+  await check(`${dockAt} && document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX} && getComputedStyle(document.querySelector('#dcRot .tb-chev')).display!=='none'`, "820 창에서 독은 한 줄 · 펼친 Fold8 독 폭이 기준 이하 · 돌리기 ▾ 유지");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await evaluate(`for(const x of ['s26','narrow','ultra','foldable'])document.querySelector('#pnPick [data-sel="'+x+'"]').click()`);
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`);
@@ -279,7 +288,9 @@ try {
   await openMenu(); await click("#wsTitle"); await pause(250);
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false'`, "메뉴 밖을 누르면 닫힌다");
   await pick("ipduo", "device==='duo'");
-  // 가장 넓은 독(펼친 Duo — 이름이 긴 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 800 아래 자세는 아이콘만, 560 아래 확대는 배율만
+  // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
+  await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
+  await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Duo 의 독 폭이 ${DOCK_MAX}px 이하`);
   for (const width of [1000, 760, 700, 480, 360]) {
     await send("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
     await check(dockAt, `펼친 Duo 의 독이 ${width} 창에서 한 줄로 창 안`);

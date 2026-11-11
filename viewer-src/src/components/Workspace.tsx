@@ -81,13 +81,11 @@ export function SystemUiControl({ systemUi, deviceInsets = null, host, actions =
   useLayoutEffect(() => { element?.setAttribute('aria-label', label); }, [element, label]);
   if (deviceInsets) return place(<InsetOverlayButton />, systemUiHost);
   const insets = shown ? systemUi?.bars?.insets : null;
-  const tip = insets
-    ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
-    : phrase('systemUi.tip');
+  const now = phrase('systemUi.now', { value: phrase(shown ? 'systemUi.on' : 'systemUi.off') });
+  const tip = [now, insets && phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }), phrase('systemUi.tip')]
+    .filter(Boolean).join('\n');
   const flip = () => { if (systemUi) actions.pickSystemUi(!shown === systemUi.annotated ? 'annotated' : !shown ? 'on' : 'off'); };
-  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={label} disabled={waiting} title={tip} onClick={flip}>
-    {BARS}<span className="sys-lb">{label}</span><span className="sys-sep" aria-hidden="true">·</span><span className="sys-v">{phrase(shown ? 'systemUi.on' : 'systemUi.off')}</span>
-  </button>;
+  const body = <button type="button" id="sysUiBtn" className="tb-btn" aria-pressed={shown} aria-label={label} disabled={waiting} title={tip} onClick={flip}>{BARS}</button>;
   return place(body, systemUiHost);
 }
 

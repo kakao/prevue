@@ -183,7 +183,14 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 .tb-ic { flex: 0 0 auto; width: var(--dock-icon); height: var(--dock-icon); }
 .panel button:disabled { color: var(--on-surface-disabled); background: transparent; cursor: default; pointer-events: none; }
 .dock-seg { display: flex; align-items: center; gap: var(--space-2); }
-.dock-seg .tb-btn { padding: 0 var(--space-12) 0 var(--space-8); }
+/* 자세 버튼은 아이콘만이다 — 그림이 상태를 보인다. 돌리기는 폰 하나를 지금 방향으로 눕히고(가로 왼쪽은 위가 왼쪽, resize-scene.js 의 각도와 같다),
+   접기는 접힘에 따라 모으기 · 벌리기 화살표를 바꾼다. ▾ 는 메뉴가 열린다는 표시라 남는다. */
+.dock-seg .tb-btn { padding: 0 var(--space-8); }
+.orientation-pick .tb-btn { gap: var(--space-2); padding: 0 var(--space-6) 0 var(--space-8); }
+#dcRot .turn { transform-box: view-box; transform-origin: center; transition: rotate var(--duration-short4) var(--easing-standard); }
+#dcRot[data-orientation="landscape-left"] .turn { rotate: -90deg; }
+#dcRot[data-orientation="landscape-right"] .turn { rotate: 90deg; }
+#dcFold[data-folded="true"] .tb-ic:has(> .fold-ic), #dcFold:not([data-folded="true"]) .tb-ic:has(> .unfold-ic) { display: none; }
 .panel > .pn-sl { display: flex; gap: var(--space-24); padding-top: var(--space-6); padding-right: var(--space-8); }
 .panel .sl { width: clamp(var(--dock-slider-min), 14vw, var(--dock-slider-w)); }
 
@@ -260,20 +267,11 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
                     border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface); font: var(--type-body-medium); text-align: left; cursor: pointer; }
 .zoom-menu button:hover { background: var(--state-hover); }
 .zoom-menu kbd { min-width: 18px; height: 18px; font: var(--type-code-small); background: transparent; box-shadow: none; color: inherit; opacity: .7; }
-/* 시스템 UI(D-159 ①) — 독의 가운데 조작과 확대 사이의 토글 하나. 이름 · 값을 한 줄로, 값은 이름보다 옅게. 켜짐은 힌지 선처럼 고름 바탕(--primary-container). */
+/* 시스템 UI(D-159 ①) — 독의 가운데 조작과 확대 사이의 아이콘 토글 하나. 켜짐은 힌지 선처럼 고름 바탕(--primary-container), 이름과 값은 툴팁 · aria-label 이 갖는다. */
 .sys-ui { display: flex; align-items: center; }
-.sys-ui .sys-sep, .sys-ui .sys-v { color: var(--on-surface-variant); }
 
-/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 가장 넓은 독(펼친 iPhone Duo, 영어 글자, 시스템 UI 포함)이 778px 다(Storybook 실측).
-   독은 창 − 32px 까지라 840 아래는 시스템 UI 가 아이콘 · 값만, 800 아래는 자세 버튼이 아이콘만(이름은 툴팁 · aria-label 이 갖는다),
-   560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
-@media (max-width: 840px) {
-  .sys-ui .sys-lb, .sys-ui .sys-sep { display: none; }
-}
-@media (max-width: 800px) {
-  .dock-seg .tb-btn span { display: none; }
-  .dock-seg .tb-btn { padding: 0 var(--space-8); }
-}
+/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 독의 조작 버튼은 아이콘만이다(폭 상한은 tests/viewer/resize.mjs 의 DOCK_MAX).
+   독은 창 − 32px 까지라 560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
 @media (max-width: 560px) {
   .pn-sum:has(.pn-sum-sil:not(:empty)) .nm { display: none; }
   .pn-sum { padding: 0 var(--space-6) 0 var(--space-8); }
@@ -864,6 +862,3 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .orientation-pick .zoom-menu { min-width: var(--dock-slider-w); }
 .orientation-pick [aria-checked="true"] { background: var(--primary-container); }
 
-@media (max-width: 800px) {
-  .orientation-pick .tb-chev { display: none; }
-}
