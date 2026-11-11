@@ -10,6 +10,7 @@ import type { Preparation } from './preparation/PreparationScreen';
 import type { ViewerState } from './state';
 import { frameOf, type Workspace } from './workspace/focus';
 import { clearPick } from './workspace/point';
+import { insetOverlayView } from './workspace/view';
 
 export type Connection = 'restarting' | 'lost';
 
@@ -69,6 +70,9 @@ function tabDir(prev: ViewerState, from: string | null, to: string | null) {
   return Math.sign(at(to) - at(from));
 }
 
+/** 인셋 영역 보기가 사는 범위 — 탭 · 카드의 인터랙티브 한 번. 크기 · 자세 · 소스 저장은 넘어가고, 벗어나면 끈다. 새로고침은 저장소째 사라진다. */
+const insetScope = (st: ViewerState | null) => st?.screen === 'focus' && st.focus?.interactive ? `${tabOf(st)} ${st.board?.focus ?? ''} ${st.focus.previewId}` : null;
+
 /** 상태 하나를 그린다. 같은 version 이거나 옛것이면 버린다. 화면 전환 중에 온 것은 전환이 끝나면 마지막 것만 그린다. */
 let held = false;
 function apply(s: ViewerState) {
@@ -78,6 +82,7 @@ function apply(s: ViewerState) {
     resizeStatus = { id: s.focus.previewId, stream: prev.focus.streamUrl, image: prev.focus.imageUrl };
   }
   store.st = s;
+  if (insetScope(prev) !== insetScope(s)) insetOverlayView.set({ on: false });
   if (transitioning()) { held = true; return; }
   const from = prev && prev.screen, to = s.screen;
   const tabMoved = prev && tabOf(prev) && tabOf(s) && tabOf(prev) !== tabOf(s);

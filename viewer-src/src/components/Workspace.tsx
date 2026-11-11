@@ -3,6 +3,7 @@ import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { DeviceInsets, Focus, Size, SystemUi, ViewerState } from '../state';
 import { loadingView, zoomView } from '../workspace/view';
+import { InsetLegend, InsetOverlay, InsetOverlayButton } from './InsetOverlay';
 import { SystemBarsOverlay } from './SystemBars';
 import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
 
@@ -20,7 +21,7 @@ export type WorkspaceActions = {
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
 };
-export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
+export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; bars: HTMLElement; inset: HTMLElement; legend: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
 const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
@@ -68,17 +69,17 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
 }
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 이 자리를 비운다(위험 범위 오버레이 토글이 이어받는다). 비기기는 기존 시스템 UI 선택을 사용한다. */
+/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 이 자리에 인셋 영역 보기 토글을 둔다. 비기기는 기존 시스템 UI 선택을 사용한다. */
 export function SystemUiControl({ systemUi, deviceInsets = null, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const { on: waiting } = useSyncExternalStore(loadingView.subscribe, loadingView.get);
-  const vacant = !systemUi || !!deviceInsets;
+  const vacant = !systemUi && !deviceInsets;
   useLayoutEffect(() => { if (element) element.hidden = vacant; }, [element, vacant]);
   const shown = !!systemUi?.shown;
-  const label = phrase('systemUi.label');
+  const label = phrase(deviceInsets ? 'insetOverlay.label' : 'systemUi.label');
   useLayoutEffect(() => { element?.setAttribute('aria-label', label); }, [element, label]);
-  if (deviceInsets) return place(null, systemUiHost);
+  if (deviceInsets) return place(<InsetOverlayButton />, systemUiHost);
   const insets = shown ? systemUi?.bars?.insets : null;
   const tip = insets
     ? phrase('systemUi.tip.device', { status: insets.statusDp, nav: insets.navDp, source: `${insets.source} (${insets.kind})` }) + '\n' + phrase('systemUi.tip')
@@ -179,9 +180,10 @@ export function Workspace({ screen, systemUi = null, deviceInsets = null, size =
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><SystemBarsOverlay systemUi={systemUi} size={size} host={hosts.bars} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetLegend deviceInsets={deviceInsets} size={size} host={hosts.legend} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
-    <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} />} /></section>
+    <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />} bars={<SystemBarsOverlay systemUi={systemUi} size={size} />}
+      inset={<InsetOverlay deviceInsets={deviceInsets} size={size} />} legend={<InsetLegend deviceInsets={deviceInsets} size={size} />} /></section>
     <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }
