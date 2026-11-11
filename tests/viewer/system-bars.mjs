@@ -61,18 +61,31 @@ try {
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...at, button: 'left', clickCount: 1, modifiers });
   };
   const atNode = bounds => evaluate(`(()=>{const b=${JSON.stringify(bounds)},img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return {x:r.x+(b[0]+b[2])/2*k,y:r.y+(b[1]+b[3])/2*k}})()`);
-  // 띠 · 선의 화면 사각형을 #shot 사각형과 인셋 × pxPerDp ÷ PNG px 로 낸 기대값에 견준다. 오버레이가 쓰는 dp 뷰박스와 다른 길(PNG px)로 잰다.
+  // 띠 · 면 · 치수선의 화면 사각형을 #shot 사각형과 인셋 × pxPerDp ÷ PNG px 로 낸 기대값에 견준다. 오버레이가 쓰는 dp 뷰박스 · 비율과 다른 길(PNG px)로 잰다.
+  // 치수선은 몸체 밖(위 · 아래 변은 오른쪽, 왼쪽 · 오른쪽 변은 아래)에 서고, 배지 글은 그 값, 배지끼리는 겹치지 않고 창 안에 든다.
   const insetGeometry = `(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp,E=['top','right','bottom','left'],out=[];
+    const dp=x=>String(Math.round(x*100)/100);
     const box=(e,t)=>({top:[r.left,r.top,r.width,t],bottom:[r.left,r.bottom-t,r.width,t],left:[r.left,r.top,t,r.height],right:[r.right-t,r.top,t,r.height]})[e];
-    const near=(el,exp,tag)=>{const b=el.getBoundingClientRect(),got=[b.left,b.top,b.width,b.height];if(got.some((g,i)=>Math.abs(g-exp[i])>1))out.push({tag,got,exp})};
-    for(const k of Object.keys(v))for(const e of E){const el=document.querySelector('#insetOverlay [data-kind="'+k+'"] [data-edge="'+e+'"] .io-fill');
-      if(!(v[k][e]>0)){if(el)out.push(k+' '+e+' 0인데 띠');continue}
-      if(!el){out.push(k+' '+e+' 띠 없음');continue}
-      near(el,box(e,v[k][e]*s),k+' '+e)}
-    const m=Object.fromEntries(E.map(e=>[e,Math.max(0,...Object.values(v).map(x=>x[e]))*s]));
-    near(document.querySelector('#insetOverlay .io-safe-line'),[r.left+m.left,r.top+m.top,r.width-m.left-m.right,r.height-m.top-m.bottom],'safeDrawing');
-    const rows=[...document.querySelectorAll('#insetLegend li')].map(li=>li.dataset.kind),want=Object.keys(v).filter(k=>E.some(e=>v[k][e]>0)).concat('safeDrawing');
-    if(document.querySelector('#insetLegend').hidden||rows.join()!==want.join())out.push({legend:rows,want});
+    const near=(el,exp,tag)=>{const b=el.getBoundingClientRect(),got=[b.left,b.top,b.width,b.height];if(got.some((g,i)=>exp[i]!==null&&Math.abs(g-exp[i])>1))out.push({tag,got,exp})};
+    const body=document.querySelector('#ua .shell').getBoundingClientRect();
+    let marks=0;
+    for(const k of Object.keys(v))for(const e of E){const el=document.querySelector('#insetOverlay [data-kind="'+k+'"] [data-edge="'+e+'"] .io-fill'),dim=document.querySelector('#insetMarks .im-dim[data-kind="'+k+'"][data-edge="'+e+'"]');
+      if(!(v[k][e]>0)){if(el||dim)out.push(k+' '+e+' 0인데 띠 · 치수');continue}
+      if(!el||!dim){out.push(k+' '+e+' 띠 · 치수 없음');continue}
+      marks++;
+      near(el,box(e,v[k][e]*s),k+' '+e);
+      const b=box(e,v[k][e]*s),d=dim.getBoundingClientRect(),badge=dim.querySelector('.im-badge').textContent;
+      if(badge!==dp(v[k][e]))out.push({tag:k+' '+e+' 배지',badge,want:dp(v[k][e])});
+      if(e==='top'||e==='bottom'){if(Math.abs(d.top-b[1])>1||Math.abs(d.height-b[3])>1||!(d.left>body.right))out.push({tag:k+' '+e+' 치수선',got:[d.left,d.top,d.height],exp:[body.right,b[1],b[3]]})}
+      else if(Math.abs(d.left-b[0])>1||Math.abs(d.width-b[2])>1||!(d.top>body.bottom))out.push({tag:k+' '+e+' 치수선',got:[d.left,d.top,d.width],exp:[b[0],body.bottom,b[2]]})}
+    if(document.querySelectorAll('#insetMarks .im-dim').length!==marks)out.push('남는 치수');
+    const m=Object.fromEntries(E.map(e=>[e,Math.max(0,...Object.values(v).map(x=>x[e]))]));
+    near(document.querySelector('#insetOverlay .io-safe'),[r.left+m.left*s,r.top+m.top*s,r.width-(m.left+m.right)*s,r.height-(m.top+m.bottom)*s],'safeDrawing');
+    const safe=document.querySelector('#insetMarks .im-safe'),sw=st.size.widthDp-m.left-m.right,sh=st.size.heightDp-m.top-m.bottom;
+    if(!safe||safe.querySelector('b').textContent!=='SAFE AREA'||safe.querySelector('span').textContent!==dp(sw)+' × '+dp(sh))out.push({tag:'SAFE AREA',got:safe?.textContent,want:dp(sw)+' × '+dp(sh)});
+    else{const c=safe.getBoundingClientRect(),cx=r.left+(m.left*s+r.width-m.right*s)/2,cy=r.top+(m.top*s+r.height-m.bottom*s)/2;if(Math.abs(c.left+c.width/2-cx)>1||Math.abs(c.top+c.height/2-cy)>1)out.push({tag:'SAFE AREA 자리',got:[c.left+c.width/2,c.top+c.height/2],exp:[cx,cy]})}
+    const badges=[...document.querySelectorAll('#insetMarks .im-badge')].map(x=>{const b=x.getBoundingClientRect();return {text:x.textContent,left:b.left,top:b.top,right:b.right,bottom:b.bottom}});
+    badges.forEach((a,i)=>{if(a.left<0||a.top<0||a.right>innerWidth||a.bottom>innerHeight)out.push({tag:'배지가 창 밖',a});badges.slice(i+1).forEach(b=>{if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)out.push({tag:'배지 겹침',a,b})})});
     return out})()`;
   const evidence = '.cache/system-bars';
   await mkdir(evidence, { recursive: true });
@@ -118,7 +131,7 @@ try {
     assert(!dock.button && !dock.hidden, `${name} 독에 시스템 UI 켬끔 대신 인셋 영역 보기: ${JSON.stringify(dock)}`);
     if (!results.length) {
       assert.equal(dock.inset, 'false', `${name} 인셋 영역 보기는 처음엔 꺼짐`);
-      assert(await evaluate(`document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`), `${name} 끈 동안 오버레이 · 범례 없음`);
+      assert(await evaluate(`document.querySelector('#insetOverlay').hidden && document.querySelector('#insetMarks').hidden`), `${name} 끈 동안 오버레이 · 표지 없음`);
       await evaluate(`document.querySelector('#insetBtn').click()`);
       await until(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden`);
       const named = await evaluate(`(b=>({title:b.title,label:b.getAttribute('aria-label'),text:b.textContent.trim()}))(document.querySelector('#insetBtn'))`);
@@ -198,7 +211,7 @@ try {
   await check(`!document.querySelector('#sysBars').hidden`, '실패 전 iOS 바 표시');
   await evaluate(`window.__stable=structuredClone(__store.st);window.__replaying=true;const failed=structuredClone(__stable);failed.version++;failed.error='기기 인셋 적용 실패 검증';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:failed})}))`);
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
-  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetOverlay')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림 · 바 · 인셋 띠를 숨기고 실패를 표시');
+  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetOverlay')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetMarks')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림 · 바 · 인셋 띠를 숨기고 실패를 표시');
   const beforeFailureInput = await evaluate(`__touches.length`);
   const middle = await evaluate(`(()=>{const r=document.querySelector('#stage').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
   await mouse(middle);
@@ -209,7 +222,7 @@ try {
   // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 범례 · safeDrawing 선을 본다.
   await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;fake.focus.deviceInsets.values.captionBar.top=20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
   await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
-  await check(`(${insetGeometry}).length===0 && [...document.querySelectorAll('#insetLegend li')].some(li=>li.dataset.kind==='systemOverlays')`, 'captionBar · systemOverlays 띠와 범례 · 안쪽 선');
+  await check(`(${insetGeometry}).length===0 && !!document.querySelector('#insetMarks .im-dim[data-kind="systemOverlays"][data-edge="right"]')`, 'captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA');
   // 재생한 상태는 version 을 앞질렀다 — 데몬의 다음 상태가 버려지지 않게 되돌린 뒤 실제 이벤트를 다시 받는다.
   await evaluate(`const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false`);
   await until(`!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
@@ -228,7 +241,7 @@ try {
   await post('/viewer/resize', { device: 'duo', folded: true, orientation: 'portrait' });
   await until(`__store.st.focus.size?.device==='duo'`);
   await ready();
-  await check(`document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='false' && document.querySelector('#insetOverlay').hidden && document.querySelector('#insetLegend').hidden`, '인터랙티브를 나갔다 오면 꺼짐');
+  await check(`document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='false' && document.querySelector('#insetOverlay').hidden && document.querySelector('#insetMarks').hidden`, '인터랙티브를 나갔다 오면 꺼짐');
   await check(`__errors.length===0`, '브라우저 예외 없음');
   await writeFile(join(evidence,'results.json'),JSON.stringify({node:process.version,identity,results},null,2));
   console.log(`통합 검증 ${results.length}개 완료: ${evidence}`);
