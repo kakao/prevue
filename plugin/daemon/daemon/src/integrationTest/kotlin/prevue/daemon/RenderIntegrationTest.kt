@@ -944,15 +944,15 @@ class RenderIntegrationTest {
             awaitUntil("자세별 그림 세 장 — ${uc.status.read().postures.keys}", 30_000, pollMs = 50) { uc.status.read().postures.keys.count { it is ScreenSize.Device && it.model == DeviceModel.GALAXY_Z_FOLD8 } == 5 }
             runBlocking { engine.awaitWrites() }
             // 기기 자세 셋 뒤에 원래 크기(@Preview)도 미리 그린다 — 그 장은 기기 크기가 아니라 비교에서 뺀다.
-            // 렌더러는 정수 dp 만 받아 패널 px 가 dp 로 나눠떨어지지 않는 기기(Fold8 420dpi)는 반올림한 dp 의 px 로 1px 어긋난다
+            // 기기는 늘 시스템 UI 를 켜 device 스펙의 패널 px 그대로 그린다 — 반올림한 dp 로 1px 어긋나지 않는다
             val sizes = uc.status.read().postures.filterKeys { it is ScreenSize.Device && it.model == DeviceModel.GALAXY_Z_FOLD8 }.map { (d, shot) -> d to javax.imageio.ImageIO.read(shot.out.image!!).let { it.width to it.height } }.toMap()
             assertEquals(
                 mapOf(
-                    ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true) to (1247 to 1971),
-                    fold8.copy(orientation = DeviceOrientation.PORTRAIT) to (1848 to 2449),
-                    fold8.copy(orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (2449 to 1848),
-                    fold8.copy(folded = true) to (1971 to 1247),
-                    fold8.copy(folded = true, orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (1971 to 1247),
+                    ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true) to (1248 to 1972),
+                    fold8.copy(orientation = DeviceOrientation.PORTRAIT) to (1848 to 2448),
+                    fold8.copy(orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (2448 to 1848),
+                    fold8.copy(folded = true) to (1972 to 1248),
+                    fold8.copy(folded = true, orientation = DeviceOrientation.LANDSCAPE_RIGHT) to (1972 to 1248),
                 ),
                 sizes,
             )
