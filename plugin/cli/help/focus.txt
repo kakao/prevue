@@ -29,7 +29,7 @@ A device always shows its system UI and always delivers its system bar and cutou
   It survives saves and resets on exit or tab change. --size original removes only the size; --system-ui annotated removes only the system UI override.
   With a device selected, --system-ui is rejected with an explanation. A prior system UI choice is restored when returning to a non-device size.
   status.systemUi.choice records that choice, annotated records the source annotation, and shown reports whether bars are actually displayed.
-  Device bars may be drawn by the viewer over the PNG. Inspect the browser for their appearance and status.deviceInsets.values for the app's input.
+  With a device selected, the viewer draws the bars over the picture and the PNG has none. Inspect the browser for their appearance and status.deviceInsets.values for the app's input.
 Giving only --size, --device or --system-ui turns the card on (--on is the default). Running --on again without these options keeps the choices.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.

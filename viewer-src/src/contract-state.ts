@@ -254,7 +254,7 @@ export type ContractState = {
 "systemUi": {
 "annotated": boolean;
 "bars": null | {
-"insets": {
+"insets": null | {
 "kind": string;
 "navDp": number;
 "source": string;

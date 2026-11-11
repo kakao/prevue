@@ -136,6 +136,10 @@ class ContractTest {
         check("status.device-ios", get("/status"))
         post("/viewer/resize", mapOf("size" to "original"))
         runBlocking { viewer.drain() }
+        post("/viewer/systemUi", mapOf("systemUi" to "on"))
+        runBlocking { viewer.drain() }
+        check("viewer.state.system-ui-common", get("/viewer/state"))
+        check("status.system-ui-common", get("/status"))
         check("viewer.touch", post("/viewer/touch", mapOf("type" to "tap", "x" to 5, "y" to 5)))
         check("viewer.exit", post("/viewer/exit", emptyMap()))
         runBlocking { viewer.drain() }
