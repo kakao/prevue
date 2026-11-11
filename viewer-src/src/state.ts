@@ -6,8 +6,8 @@ export type Message = string | { t: string; a?: { [key: string]: Message | numbe
 type DpSize = { widthDp: number; heightDp: number };
 type InsetEdges = { left: number; top: number; right: number; bottom: number };
 export type DeviceInsetProfile = {
-  verified?: boolean; issue: string | null; safeArea: InsetEdges | null;
-  measured: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges; systemOverlays: InsetEdges | null } | null;
+  safeArea: InsetEdges | null;
+  measured: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges } | null;
   evidence: { source: string; kind: string; sourceUrl: string; capturedAt: string | null; conditions: Record<string, string> } | null;
 };
 export type Size = DpSize & (
@@ -35,10 +35,10 @@ export type Board = Omit<ContractBoard, 'groups'> & {
  */
 export type BarInsets = { statusDp: number; navDp: number; source: string; kind: string; sourceUrl: string };
 export type SystemUi = { choice: string; annotated: boolean; shown: boolean; bars?: { look: string; insets: BarInsets | null } | null };
-export type DeviceInsets = { issue: string | null;
-  posture: string; approximate: boolean; note: string | null; basisPosture: string;
+export type DeviceInsets = {
+  posture: string; basisPosture: string;
   values: { statusBars: InsetEdges; navigationBars: InsetEdges; captionBar: InsetEdges; displayCutout: InsetEdges; systemOverlays: InsetEdges };
-  evidence: { source: string; sourceUrl: string; kind: string } | null };
+  evidence: { source: string; sourceUrl: string; kind: string } };
 export type Focus = Omit<NonNullable<ContractState['focus']>, 'size' | 'postures' | 'pxPerDp' | 'systemUi' | 'deviceInsets'> & {
   pxPerDp: number | null;
   size: Size | null;

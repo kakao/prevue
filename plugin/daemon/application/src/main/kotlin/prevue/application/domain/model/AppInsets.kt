@@ -17,6 +17,3 @@ data class AppInsets(
         val NONE = AppInsets()
     }
 }
-
-val DeviceModel.appInsetsIssue: String?
-    get() = if (look == BarLook.IOS) "iOS 안전 영역의 Android 인셋 종류별 매핑은 근삿값이다" else null

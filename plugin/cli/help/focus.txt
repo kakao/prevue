@@ -20,10 +20,11 @@ Given to a card already on, they redraw at that size without turning interactive
   --landscape keeps its legacy meaning above; do not combine it with --orientation.
 A device always shows its system UI and always delivers its system bar and cutout insets to the Composable; there is no switch to turn them off.
   Whether content draws under the bars or stays inside them is decided by the Composable (its Modifiers), as on a real device.
-  All device postures are available as a best-effort preview. Missing systemOverlays are assumed zero; iOS safe areas are mapped approximately to bar and cutout types.
-  A missing right-landscape measurement uses the opposite landscape's horizontal mirror. These are approximations, not a promise of exact device behavior.
-  status.deviceInsets gives the delivered values (four edges per type) with approximate, note, posture, basisPosture and evidence.
-  status.size.insetProfile keeps the source measurements (null means unmeasured); verified distinguishes complete type-specific evidence from an approximation.
+  Inset values come from windowinsets.info (Android) and safearea.info (iOS). systemOverlays is zero because neither site lists it.
+  An iOS safe area becomes status bars (top), navigation bars (bottom) and display cutout (top and sides).
+  Galaxy Z Fold8 unfolded Landscape right, which the site does not list, mirrors Landscape left.
+  status.deviceInsets gives the delivered values (four edges per type) with posture, basisPosture (the posture whose data was used) and evidence.
+  status.size.insetProfile keeps the source record: safeArea (iOS: the site's value; Android: systemBars and displayCutout combined), measured (Android's four types) and evidence; null means the site has no entry.
 --system-ui draws or hides the status and navigation bars for original, preset and custom sizes; annotated follows @Preview(showSystemUi).
   It survives saves and resets on exit or tab change. --size original removes only the size; --system-ui annotated removes only the system UI override.
   With a device selected, --system-ui is rejected with an explanation. A prior system UI choice is restored when returning to a non-device size.

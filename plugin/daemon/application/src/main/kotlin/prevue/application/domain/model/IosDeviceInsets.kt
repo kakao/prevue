@@ -9,7 +9,7 @@ import prevue.application.domain.model.DeviceModel.IPHONE_17_PRO_MAX
 import prevue.application.domain.model.DeviceModel.IPHONE_DUO
 
 internal object IosDeviceInsets {
-    private val profiles: Map<ScreenSize.Device, DeviceInsetProfile> = mapOf(
+    val profiles: Map<ScreenSize.Device, DeviceInsetProfile> = mapOf(
         ScreenSize.Device(IPHONE_17, false, PORTRAIT) to DeviceInsetProfile(
             safeArea = InsetEdges(top = 62.0, bottom = 34.0),
             evidence = InsetEvidence(
@@ -263,6 +263,4 @@ internal object IosDeviceInsets {
             ),
         ),
     )
-
-    fun of(device: ScreenSize.Device): DeviceInsetProfile? = profiles[device]?.copy(mappingIssue = device.model.appInsetsIssue)
 }
