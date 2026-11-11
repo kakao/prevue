@@ -7,14 +7,13 @@ import { insetLegendHost, insetOverlayHost } from './WorkspaceShell';
 
 // 인셋 영역 보기 — 기기가 Composable에 전달한 인셋을 그림 위에 덧그린다. 뷰어만의 표시라 PNG · CLI · 데몬은 모른다(D-172와 같은 자리).
 // 띠는 종류마다 따로 그려 겹치면 색이 섞이고, 어느 종류가 몇 dp인지는 범례가 적는다. 둥근 모서리 · 카메라 구멍은 인셋 값에 없어 그리지 않는다.
-export const INSET_KINDS = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
-export type InsetKind = typeof INSET_KINDS[number];
+const INSET_KINDS = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
 const EDGES = ['top', 'right', 'bottom', 'left'] as const;
 type Edge = typeof EDGES[number];
 type Rect = { x: number; y: number; w: number; h: number };
 
 /** 그릴 것 — 꺼져 있거나 기기가 아니면 null. safe 는 다섯 종류를 모두 뺀 안쪽(safeDrawing)이다. */
-export function insetPlanOf(on: boolean, insets: DeviceInsets | null | undefined, size: Size | null): { w: number; h: number; insets: DeviceInsets; safe: Record<Edge, number> } | null {
+function insetPlanOf(on: boolean, insets: DeviceInsets | null | undefined, size: Size | null): { w: number; h: number; insets: DeviceInsets; safe: Record<Edge, number> } | null {
   if (!on || !insets || size?.kind !== 'device') return null;
   const safe = Object.fromEntries(EDGES.map(e => [e, Math.max(0, ...INSET_KINDS.map(k => insets.values[k][e]))])) as Record<Edge, number>;
   return { w: size.widthDp, h: size.heightDp, insets, safe };
