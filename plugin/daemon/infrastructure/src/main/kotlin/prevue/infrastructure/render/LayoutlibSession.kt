@@ -21,6 +21,7 @@ import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
+import prevue.application.port.RenderOutput
 
 internal class LayoutlibSession(
     val preview: PreviewSpec,
@@ -31,6 +32,7 @@ internal class LayoutlibSession(
 ) {
     val clock = SessionClock()
     private var barsPlaced = false
+    private var placedWarning: String? = null
     private var lastHash = 0L
     private var anchored = false
     private var pressUnseen = false
@@ -43,6 +45,12 @@ internal class LayoutlibSession(
         onSession { repeat(2) { System_Delegate.setNanosTime(start) } }
         advanceCallbacks(start)
         anchored = true
+    }
+
+    fun withPlacedWarning(out: RenderOutput): RenderOutput {
+        val why = placedWarning ?: return out
+        placedWarning = null
+        return if (out.ok) out.copy(warnings = out.warnings + why) else out
     }
 
     fun renderPlaced(): RenderResult {
@@ -61,6 +69,7 @@ internal class LayoutlibSession(
         onSession {
             LayoutlibInsets.apply(root, insets)
             if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
+            placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning)
         }
         anchor()
     }

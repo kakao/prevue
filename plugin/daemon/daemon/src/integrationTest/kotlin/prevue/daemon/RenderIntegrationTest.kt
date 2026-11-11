@@ -31,6 +31,7 @@ import prevue.infrastructure.render.ResourceOverlay
 import prevue.application.port.ResourceKey
 import prevue.application.port.ResourceLookup
 import prevue.infrastructure.source.SourcePreviewRepository
+import prevue.application.domain.model.DeviceInsetInputs
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.DeviceOrientation
@@ -46,6 +47,7 @@ import prevue.application.port.Clock
 import prevue.application.port.FailureKind
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.render.ViewInfoJson
+import prevue.infrastructure.json.Json
 import prevue.infrastructure.store.InMemoryWorkspaceStore
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.domain.model.ViewNode
@@ -179,6 +181,50 @@ class RenderIntegrationTest {
             val marks = (y0 until y1).sumOf { y -> (x0 until x1).count { x -> img.getRGB(x, y) != ground } }
             assertEquals(0, marks, "${device.key} 상태바 시각 자리에 layoutlib 바가 남았다")
         }
+    }
+
+    // 옆 인셋이 있는 자세는 인셋을 넣으면 격자 폭이 줄어 animateItem 이 칸을 옮긴다. 미리 그린 자세 · 켠 첫 그림은 그 이동의 중간이 아니라 정착한 그림과 같아야 한다.
+    @Test @Order(35) fun `옆 인셋 자세의 미리 그린 그림과 켠 첫 그림은 정착한 그림과 같다`() {
+        val file = File(PearlFixture.board!!.parentFile, "AdaptivePreviews.kt")
+        assertTrue(runBlocking { uc.tabs.openPreview(file.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        val index = ws.now.board!!.cards.indexOfFirst { it.spec.fqn.endsWith("AdaptivePearlPreview") }
+        val cover = ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true)
+        val turned = cover.copy(orientation = DeviceOrientation.LANDSCAPE_RIGHT)
+        try {
+            val first = runBlocking { uc.boards.focus(index, on = true, by = "test", size = cover) } as FocusResult.On
+            assertTrue(first.result.ok, first.result.shot.out.message?.text)
+            awaitUntil("${turned.key} 미리 그림 — ${uc.status.read().postures.keys}", 30_000, pollMs = 50) { uc.status.read().postures[turned]?.out?.ok == true }
+            runBlocking { engine.awaitWrites() }
+            val drawnAhead = ImageIO.read(uc.status.read().postures.getValue(turned).out.image!!)
+            assertSettled(cover, first.result.shot.out)
+            val next = runBlocking { uc.boards.focus(index, on = true, by = "test", size = turned) } as FocusResult.On
+            assertTrue(next.result.ok, next.result.shot.out.message?.text)
+            val settled = assertSettled(turned, next.result.shot.out)
+            assertTrue(samePixels(settled, drawnAhead), "${turned.key} 미리 그린 그림이 정착한 그림과 다르다 — 인셋 전 배치에서 칸이 움직이는 중이다")
+        } finally {
+            runBlocking { uc.boards.focus(index, on = false, by = "test") }
+        }
+        assertAlive()
+    }
+
+    private fun assertSettled(d: ScreenSize.Device, opened: prevue.application.port.RenderOutput): java.awt.image.BufferedImage {
+        val side = DeviceInsetInputs.of(d).values.displayCutout
+        assertTrue(side.left + side.right > 0, "${d.key} 에 옆 인셋이 없다 — 이 회귀를 잴 수 없다")
+        assertTrue(opened.warnings.isEmpty(), "${d.key} 켠 첫 그림 경고: ${opened.warnings}")
+        val first = runBlocking { engine.written(opened) }
+        val firstImage = ImageIO.read(first.image!!)
+        val firstCards = PearlFixture.cards(first.tree!!).map { it.sameBox }
+        @Suppress("UNCHECKED_CAST")
+        val roots = (Json.parse(first.tree!!.readText()) as Map<String, Any?>)["composeViewInfo"] as List<*>
+        assertEquals(1, roots.size, "${d.key} 켠 첫 그림 트리의 컴포지션 루트가 ${roots.size}개 — 버린 컴포지션이 남았다")
+        val settled = runBlocking { uc.live.renderAt(SETTLE_MS, "test") }
+        assertTrue(settled.ok, settled.shot.out.message?.text)
+        val out = runBlocking { engine.written(settled.shot.out) }
+        val image = ImageIO.read(out.image!!)
+        assertTrue(samePixels(image, firstImage), "${d.key} 켠 첫 그림이 정착한 그림과 다르다 — 인셋 전 배치에서 칸이 움직이는 중이다")
+        assertEquals(PearlFixture.cards(out.tree!!).map { it.sameBox }, firstCards, "${d.key} 켠 첫 그림 트리의 카드 자리가 정착한 그림과 다르다")
+        return image
     }
 
     @AfterAll fun down() {
@@ -1001,5 +1047,6 @@ class RenderIntegrationTest {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
         private const val HEADER_ROW = "Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {"
         private const val HEADER_PADDING_DP = 20
+        private const val SETTLE_MS = 1_000L
     }
 }
