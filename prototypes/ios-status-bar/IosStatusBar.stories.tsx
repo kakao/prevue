@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 import '../../viewer-src/legacy/resize.css';
 import './ios-status-bar.css';
 
-// iPhone 시스템 바(SystemBars.tsx 의 IosStatus)를 iOS 처럼 다시 그릴 때의 후보 — 지금 모양을 기준으로 기기 실제 크기(1dp = 1px)에서 본다.
+// iPhone 시스템 바(SystemBars.tsx 의 IosStatus)를 iOS 처럼 다시 그릴 때의 후보 — 옮기기 전 모양을 기준으로 기기 실제 크기(1dp = 1px)에서 본다.
 // 수치는 iOS 27.0 시뮬레이터(Xcode 27.1, status_bar override 9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%)의 3x 스크린숏을 pt 로 잰 값이다(2026-11-11).
 // 고른 것(2026-11-11, 사용자): A 실측. SystemBars.tsx 의 IosStatus 와 장면의 iPhone 아일랜드(cam)에 옮겼고, 이 스토리는 고른 기록으로 남는다.
-// 모서리는 장면(plugin/viewer/js/resize-scene.js)의 값이다. 아일랜드는 알림이 뜨는 순간의 스크린숏에서 잰 값(125.33×36.67, 위 14 · Air 20)이고, 지금 장면은 셋 다 124×36 · 위 11 이다.
+// 모서리는 장면(plugin/viewer/js/resize-scene.js)의 값이다. 아일랜드는 알림이 뜨는 순간의 스크린숏에서 잰 값(125.33×36.67, 위 14 · Air 20)이고, 옮기기 전 장면은 셋 다 124×36 · 위 11 이었다.
 const meta = { title: '시안/iPhone 시스템 바' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -27,7 +27,7 @@ type Island = { w: number; h: number; y: number };
 const NOW_ISLAND: Island = { w: 124, h: 36, y: 11 };
 const islandOf = (d: Device): Island => ({ w: 125.33, h: 36.67, y: d.islandY });
 
-// 지금 — SystemBars.tsx 의 IosStatus 그대로.
+// 옮기기 전 — 그때 SystemBars.tsx 의 IosStatus 그대로.
 const NOW_SIGNAL = (x: number, y: number) => <g transform={`translate(${x} ${y})`}>
   <rect x="0" y="7" width="3" height="4" rx=".8" /><rect x="4.5" y="5" width="3" height="6" rx=".8" />
   <rect x="9" y="2.5" width="3" height="8.5" rx=".8" /><rect x="13.5" y="0" width="3" height="11" rx=".8" />
@@ -77,12 +77,12 @@ function MeasuredStatus({ d, percent = false }: { d: Device; percent?: boolean }
   </>;
 }
 
-// 홈 인디케이터 — 지금과 후보가 같다(시뮬레이터 앱 화면에서 잰 값으로 맞춘다).
+// 홈 인디케이터 — 옮기기 전과 후보가 같다. 시뮬레이터 스크린숏에 찍히지 않아 기존 값(134×5 · 아래 8pt) 그대로다.
 const HOME = (d: Device) => <rect x={(d.w - 134) / 2} y={d.h - 13} width="134" height="5" rx="2.5" />;
 
 type Look = { key: string; name: string; why: string; island: (d: Device) => Island; status: (d: Device) => ReactNode };
 const LOOKS: Look[] = [
-  { key: 'now', name: '지금', why: 'Wi-Fi 가 쐐기 하나, 아이콘이 작고 자리가 기기마다 같은 식(귀 가운데 · statusDp/2)입니다. 아일랜드가 3pt 높고 작습니다.', island: () => NOW_ISLAND, status: d => <NowStatus d={d} /> },
+  { key: 'now', name: '옮기기 전', why: 'Wi-Fi 가 쐐기 하나, 아이콘이 작고 자리가 기기마다 같은 식(귀 가운데 · statusDp/2)입니다. 아일랜드가 3pt 높고 작습니다.', island: () => NOW_ISLAND, status: d => <NowStatus d={d} /> },
   { key: 'A', name: 'A 실측 ✓', why: '시뮬레이터에서 잰 자리 · 크기 · 모양. Wi-Fi 부채꼴 세 겹, 막대 넷, 테두리가 옅은 배터리. Air · Pro Max 는 아이콘이 1.12배이고, 아이콘 줄 가운데가 아일랜드 가운데와 같습니다. 아일랜드도 실측 자리로 옮깁니다.', island: islandOf, status: d => <MeasuredStatus d={d} /> },
   { key: 'B', name: 'B 실측 + 배터리 숫자', why: 'A 에 "배터리 잔량(%)" 설정을 켠 모양 — 배터리 안에 숫자를 뚫어 그립니다.', island: islandOf, status: d => <MeasuredStatus d={d} percent /> },
 ];
