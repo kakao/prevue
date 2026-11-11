@@ -1,0 +1,18 @@
+/* iPhone 시스템 바 시안 — 값은 뷰어 토큰(plugin/viewer/tokens.css)만 쓴다. */
+.isb-sheets { display: grid; margin: calc(var(--space-24) * -1); }
+.isb-sheet { display: grid; align-content: start; gap: var(--space-24); min-width: 0; padding: var(--space-24); background: var(--surface); color: var(--on-surface); box-shadow: 0 0 0 1px var(--outline-variant); }
+.isb-sheet h2 { margin: 0; font: var(--type-title-medium); }
+.isb-sheet h3 { margin: 0; font: var(--type-title-small); }
+.isb-note { margin: var(--space-4) 0 var(--space-12); color: var(--on-surface-variant); font: var(--type-body-small); }
+.isb-grid { display: flex; flex-wrap: wrap; gap: var(--space-24); }
+.isb-col { display: grid; align-content: start; gap: var(--space-12); }
+.isb-tag { color: var(--on-surface-variant); font: var(--type-code-small); }
+.isb-phone { display: grid; gap: var(--space-4); margin: 0; }
+.isb-big { display: grid; gap: var(--space-16); }
+.isb-big > div { display: grid; gap: var(--space-8); justify-items: start; }
+/* 뷰어의 바(.stage .sys-bars svg)와 같은 글꼴 — 시스템 글꼴(맥에서는 SF)이다. */
+.isb-strip { display: block; font-family: var(--font-sans); }
+.isb-body { fill: var(--device-body); }
+.isb-island { fill: var(--device-camera); }
+.isb-bright { fill: var(--device-veil); }
+.isb-dark { fill: var(--device-shade); }
