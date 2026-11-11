@@ -96,8 +96,8 @@ try {
   await post("/viewer/resize", { size: "original" });
   await until(`!__store.st.focus.size && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#resizeScene').classList.contains('at-rest')`);
   // 조작 독(D-167) — 헤더는 한 줄이고, 무대 아래 가운데 독에 크기 · 기기 메뉴와 확대가 있다. @Preview 는 가운데 칸이 없다.
-  // 기기 독의 폭 상한 — 독의 조작 버튼이 아이콘만이라 가장 넓은 독(펼친 Duo, 영어)이 466px 다(1000 창 실측). 버튼에 글자가 돌아오면 넘는다.
-  const DOCK_MAX = 480;
+  // 기기 독의 폭 상한 — 독의 조작 버튼이 아이콘만이라 가장 넓은 독(펼친 Duo, 영어)이 인셋 영역 보기 칸까지 522px 다(1000 창 실측). 버튼에 글자가 돌아오면 넘는다.
+  const DOCK_MAX = 536;
   const dockAt = `(()=>{const p=document.querySelector('#panel'),d=p.getBoundingClientRect();const w=document.documentElement.clientWidth;return Math.abs(d.left+d.width/2-w/2)<=1 && innerHeight-d.bottom>=8 && innerHeight-d.bottom<=24 && d.left>=0 && d.right<=w && d.height<64 && [...p.children].every(c=>{const r=c.getBoundingClientRect();return !r.width||(r.left>=d.left&&r.right<=d.right)})})()`;
   const dockClear = `(()=>{const d=document.querySelector('#panel').getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return s.bottom+8<=d.top})()`;
   await check(`${dockAt} && document.querySelector('#panel').contains(document.querySelector('#zoomCtl')) && !document.querySelector('#pnSum').hidden && document.querySelector('#devCtl').hidden && document.querySelector('#pnSl').hidden && ${dockClear}`, "독은 무대 아래 가운데 · 메뉴와 확대만 · 기기를 가리지 않는다");
@@ -278,7 +278,7 @@ try {
   await choose("fold8"); await until(`__store.st.focus.size?.device==='fold8' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
   await check(`document.querySelector('#pnPick [data-sel="fold8"]').getAttribute('aria-checked')==='true' && ${dockAt} && (r=>r.left>=0&&r.right<=innerWidth)(document.querySelector('#pnBody').getBoundingClientRect())`, "좁은 창(480)에서도 독은 한 줄로 창 안 · 메뉴로 고른다");
   await send("Emulation.setDeviceMetricsOverride", { width: 820, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
-  await check(`${dockAt} && document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX} && getComputedStyle(document.querySelector('#dcRot .tb-chev')).display!=='none'`, "820 창에서 독은 한 줄 · 펼친 Fold8 독 폭이 기준 이하 · 돌리기 ▾ 유지");
+  await check(`${dockAt} && document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX} && getComputedStyle(document.querySelector('#dcRot .tb-chev')).display!=='none'`, `820 창에서 독은 한 줄 · 펼친 Fold8 독 폭이 기준 이하 · 돌리기 ▾ 유지(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await evaluate(`for(const x of ['s26','narrow','ultra','foldable'])document.querySelector('#pnPick [data-sel="'+x+'"]').click()`);
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`);
@@ -290,7 +290,7 @@ try {
   await pick("ipduo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
-  await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Duo 의 독 폭이 ${DOCK_MAX}px 이하`);
+  await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Duo 의 독 폭이 ${DOCK_MAX}px 이하(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
   for (const width of [1000, 760, 700, 480, 360]) {
     await send("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
     await check(dockAt, `펼친 Duo 의 독이 ${width} 창에서 한 줄로 창 안`);
