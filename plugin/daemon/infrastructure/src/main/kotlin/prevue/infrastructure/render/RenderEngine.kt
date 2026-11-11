@@ -346,8 +346,7 @@ internal class RenderEngine(
         }
         val renderMs = msSince(t)
         if (relayout) refreshTree(l, result)
-        val out = outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree)
-            .let { o -> l.takePlacedWarning()?.takeIf { o.ok }?.let { o.copy(warnings = o.warnings + it) } ?: o }
+        val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
         return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
     }
 

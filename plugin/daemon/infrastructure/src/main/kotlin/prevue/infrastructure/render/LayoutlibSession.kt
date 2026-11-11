@@ -21,6 +21,7 @@ import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
+import prevue.application.port.RenderOutput
 
 internal class LayoutlibSession(
     val preview: PreviewSpec,
@@ -46,7 +47,11 @@ internal class LayoutlibSession(
         anchored = true
     }
 
-    fun takePlacedWarning(): String? = placedWarning.also { placedWarning = null }
+    fun withPlacedWarning(out: RenderOutput): RenderOutput {
+        val why = placedWarning ?: return out
+        placedWarning = null
+        return if (out.ok) out.copy(warnings = out.warnings + why) else out
+    }
 
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
