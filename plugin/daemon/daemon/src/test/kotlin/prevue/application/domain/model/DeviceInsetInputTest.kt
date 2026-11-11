@@ -6,15 +6,12 @@ import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.DeviceOrientation.*
 
 class DeviceInsetInputTest {
-    @Test fun `42자세 모두 근삿값으로 켜지고 측정 원자료의 빈칸은 남는다`() {
+    @Test fun `42자세 모두 사이트 자료에서 인셋을 받고 systemOverlays는 영이다`() {
         DeviceModel.entries.flatMap { it.postures }.forEach { device ->
             val input = DeviceInsetInputs.of(device)
             assertNotEquals(AppInsets.NONE, input.values, device.key)
-            assertTrue(input.approximate, device.key)
-            assertNotNull(input.note, device.key)
-            assertNotNull(input.evidence, device.key)
-            assertFalse(device.insetProfile.verified)
-            assertNull(device.insetProfile.measured?.systemOverlays)
+            assertEquals(InsetEdges(), input.values.systemOverlays, device.key)
+            assertEquals(ScreenSize.postureOf(input.basisPosture)!!.insetProfile.evidence, input.evidence, device.key)
             val source = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)
             val on = CardOverride(source.previewId, device).applyTo(source)
             assertTrue(on.systemBars is SystemBars.Shown)
@@ -22,16 +19,20 @@ class DeviceInsetInputTest {
         }
     }
 
-    @Test fun `S26 양쪽 컷아웃과 Duo 커버의 비대칭 safe area를 전달한다`() {
+    @Test fun `S26 양쪽 컷아웃과 Duo 커버의 비대칭 safe area를 전달하고 Fold8 펼친 가로 오른쪽은 가로 왼쪽 자료를 빌린다`() {
         fun input(model: DeviceModel, folded: Boolean, orientation: DeviceOrientation) = DeviceInsetInputs.of(ScreenSize.Device(model, folded, orientation)).values
-        assertEquals(InsetEdges(left = 37.0), input(DeviceModel.GALAXY_S26, false, LANDSCAPE_LEFT).displayCutout)
+        assertEquals(
+            AppInsets(statusBars = InsetEdges(top = 30.0), navigationBars = InsetEdges(bottom = 15.0), displayCutout = InsetEdges(left = 37.0)),
+            input(DeviceModel.GALAXY_S26, false, LANDSCAPE_LEFT),
+        )
         assertEquals(InsetEdges(right = 37.0), input(DeviceModel.GALAXY_S26, false, LANDSCAPE_RIGHT).displayCutout)
         assertEquals(InsetEdges(right = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_LEFT).displayCutout)
         assertEquals(InsetEdges(left = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_RIGHT).displayCutout)
-        val missing = DeviceInsetInputs.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, false, LANDSCAPE_RIGHT))
-        assertEquals("fold8", missing.basisPosture)
-        assertTrue(missing.note!!.contains("반전"))
-        assertEquals(InsetEdges(top = 40.0), missing.values.statusBars)
+        val mirrored = DeviceInsetInputs.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, false, LANDSCAPE_RIGHT))
+        val basis = DeviceInsetInputs.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, false, LANDSCAPE_LEFT))
+        assertEquals("fold8", mirrored.basisPosture)
+        assertEquals(basis.evidence, mirrored.evidence)
+        assertEquals(InsetEdges(top = 40.0), mirrored.values.statusBars)
     }
 
     @Test fun `절대 방향과 이전 가로 옵션은 구분하고 충돌은 거절한다`() {

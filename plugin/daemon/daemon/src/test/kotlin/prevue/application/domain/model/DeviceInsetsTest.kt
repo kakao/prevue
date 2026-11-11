@@ -46,9 +46,6 @@ class DeviceInsetsTest {
             assertEquals("off", p.evidence.conditions["innerCamera"])
             assertEquals("off", p.evidence.conditions["horizontalToolbar"])
             assertEquals("pt", p.evidence.conditions["unit"])
-            assertFalse(p.verified)
-            assertEquals(DeviceModel.IPHONE_DUO.appInsetsIssue, p.issue)
-            assertNull(p.appInsets)
             assertNull(p.measured)
         }
         expect(true, PORTRAIT, 1398 to 2034, InsetEdges(right = 84.0, bottom = 34.0))
@@ -76,8 +73,6 @@ class DeviceInsetsTest {
         assertEquals(41, all.count { it.insetProfile.evidence != null })
         all.forEach { d ->
             val p = d.insetProfile
-            assertEquals(p.verified, p.appInsets != null)
-            assertEquals(!p.verified, p.issue != null)
             p.evidence?.let { evidence ->
                 assertEquals("${d.widthPx}x${d.heightPx}", evidence.conditions["resolutionPx"])
                 assertTrue(evidence.url.startsWith("https://"))
@@ -91,27 +86,12 @@ class DeviceInsetsTest {
         }
     }
 
-    @Test fun `폴드8 내부 반대쪽 가로와 미측정 종류는 다른 자세에서 복사하지 않는다`() {
+    @Test fun `원자료는 사이트가 준 것만 갖고 폴드8 펼친 가로 오른쪽은 자기 자료가 없다`() {
         val missing = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, orientation = LANDSCAPE_RIGHT).insetProfile
-        assertNull(missing.evidence)
-        assertNull(missing.safeArea)
-        assertNull(missing.measured)
-        assertFalse(missing.verified)
-        all.filter { it.model.look != BarLook.IOS }.mapNotNull { it.insetProfile.measured }.forEach {
-            assertNull(it.systemOverlays)
-            assertNull(it.appInsets)
-        }
-        assertTrue(ScreenSize.Device(DeviceModel.GALAXY_S26).insetProfile.issue!!.contains("systemOverlays"))
-    }
-
-    @Test fun `종류가 모두 검증된 프로필만 기존 AppInsets 입력으로 연결된다`() {
-        val e = InsetEdges(top = 10.0, right = 5.0)
-        val partial = MeasuredInsets(e, InsetEdges(bottom = 15.0), InsetEdges(), InsetEdges(left = 30.0))
-        assertNull(DeviceInsetProfile(measured = partial).appInsets)
-        val complete = DeviceInsetProfile(measured = partial.copy(systemOverlays = InsetEdges()))
-        assertEquals(e, complete.appInsets!!.statusBars)
-        assertEquals(InsetEdges(left = 30.0), complete.appInsets!!.displayCutout)
-        assertFalse(complete.copy(mappingIssue = "미검증 매핑").verified)
+        assertEquals(DeviceInsetProfile(), missing)
+        assertEquals(listOf("fold8-right"), all.filter { it.insetProfile.evidence == null }.map { it.key })
+        assertTrue(all.filter { it.model.look == BarLook.IOS }.all { it.insetProfile.measured == null && it.insetProfile.safeArea != null })
+        assertTrue(all.filter { it.model.look != BarLook.IOS && it.insetProfile.evidence != null }.all { it.insetProfile.measured != null })
     }
 
     private fun spec() = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)

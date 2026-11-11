@@ -48,15 +48,12 @@ export type ContractState = {
 "error": null;
 "focus": null | {
 "deviceInsets": null | {
-"approximate": boolean;
 "basisPosture": string;
 "evidence": {
 "kind": string;
 "source": string;
 "sourceUrl": string;
 };
-"issue": null;
-"note": string;
 "posture": string;
 "values": {
 "captionBar": {
@@ -134,7 +131,6 @@ export type ContractState = {
 "source": string;
 "sourceUrl": string;
 };
-"issue": string;
 "measured": null | {
 "captionBar": {
 "bottom": number;
@@ -160,7 +156,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"systemOverlays": null;
 };
 "safeArea": {
 "bottom": number;
@@ -168,7 +163,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"verified": boolean;
 };
 "kind": string;
 "landscape": boolean;
@@ -216,7 +210,6 @@ export type ContractState = {
 "source": string;
 "sourceUrl": string;
 };
-"issue": string;
 "measured": null | {
 "captionBar": {
 "bottom": number;
@@ -242,7 +235,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"systemOverlays": null;
 };
 "safeArea": {
 "bottom": number;
@@ -250,7 +242,6 @@ export type ContractState = {
 "right": number;
 "top": number;
 };
-"verified": boolean;
 };
 "kind": string;
 "landscape": boolean;

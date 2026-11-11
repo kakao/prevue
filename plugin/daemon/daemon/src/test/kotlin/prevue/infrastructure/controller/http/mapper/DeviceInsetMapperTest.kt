@@ -7,15 +7,15 @@ import prevue.application.domain.model.DeviceOrientation
 import prevue.infrastructure.json.Json
 
 class DeviceInsetMapperTest {
-    @Test fun `기기 응답은 모든 자세의 네 방향 값과 지원 이유와 조건을 구분한다`() {
+    @Test fun `기기 응답은 모든 자세의 네 방향 값과 출처 조건을 담고 검증 판정은 없다`() {
         DeviceModel.entries.flatMap { it.postures }.forEach { d ->
             val json = d.toJson()!!
             val profile = json["insetProfile"] as Map<*, *>
             assertEquals(d.orientation.key, json["orientation"])
             assertEquals(d.widthPx to d.heightPx, json["widthPx"] to json["heightPx"])
             assertFalse(profile.containsKey("supported"), d.key)
-            assertEquals(d.insetProfile.verified, profile["verified"])
-            assertEquals(d.insetProfile.issue, profile["issue"])
+            assertEquals(setOf("safeArea", "measured", "evidence"), profile.keys, d.key)
+            (profile["measured"] as? Map<*, *>)?.let { assertEquals(setOf("statusBars", "navigationBars", "captionBar", "displayCutout"), it.keys, d.key) }
             assertEquals(d.insetProfile.evidence?.conditions, (profile["evidence"] as? Map<*, *>)?.get("conditions"))
             assertNotNull(Json.parse(Json.str(json)))
         }
@@ -25,18 +25,9 @@ class DeviceInsetMapperTest {
         val cover = DeviceModel.IPHONE_DUO.postures.single { it.folded && it.orientation == DeviceOrientation.LANDSCAPE_RIGHT }
         val p = cover.toJson()!!["insetProfile"] as Map<*, *>
         assertEquals(mapOf("left" to 84.0, "top" to 0.0, "right" to 0.0, "bottom" to 34.0), p["safeArea"])
-        assertEquals(false, p["verified"])
         assertNull(p["measured"])
         val evidence = p["evidence"] as Map<*, *>
         assertEquals("safearea.info", evidence["source"])
         assertNull(evidence["capturedAt"])
-    }
-
-    @Test fun `Android 개별 종류의 미측정 값은 영으로 응답하지 않는다`() {
-        val p = DeviceModel.GALAXY_S26.postures.first().toJson()!!["insetProfile"] as Map<*, *>
-        assertTrue((p["issue"] as String).contains("systemOverlays"))
-        val measured = p["measured"] as Map<*, *>
-        assertTrue(measured.containsKey("systemOverlays"))
-        assertNull(measured["systemOverlays"])
     }
 }

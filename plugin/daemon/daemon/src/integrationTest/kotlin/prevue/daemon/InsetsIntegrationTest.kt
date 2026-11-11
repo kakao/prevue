@@ -150,7 +150,7 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
-    @Test fun `iOS safe area 근삿값을 전달하고 영 입력과 같은 바 표시를 유지한다`() = runBlocking {
+    @Test fun `iOS safe area를 종류별로 나눠 전달하고 영 입력과 같은 바 표시를 유지한다`() = runBlocking {
         val size = ScreenSize.Device(DeviceModel.IPHONE_17)
         val card = CardOverride(preview.previewId, size)
         val on = engine.open(card.applyTo(preview), interactive = true, ownLoader = false)

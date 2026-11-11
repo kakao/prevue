@@ -71,15 +71,12 @@
         "error": "string",
         "focus": {
           "deviceInsets": {
-            "approximate": "string",
             "basisPosture": "string",
             "evidence": {
               "kind": "string",
               "source": "string",
               "sourceUrl": "string"
             },
-            "issue": "string",
-            "note": "string",
             "posture": "string",
             "values": {
               "captionBar": {
@@ -159,7 +156,6 @@
                     "source": "string",
                     "sourceUrl": "string"
                   },
-                  "issue": "string",
                   "measured": {
                     "captionBar": {
                       "bottom": "string",
@@ -185,7 +181,6 @@
                       "right": "string",
                       "top": "string"
                     },
-                    "systemOverlays": "string",
                     "|": "string"
                   },
                   "safeArea": {
@@ -193,8 +188,7 @@
                     "left": "string",
                     "right": "string",
                     "top": "string"
-                  },
-                  "verified": "string"
+                  }
                 },
                 "kind": "string",
                 "landscape": "string",
@@ -244,7 +238,6 @@
                 "source": "string",
                 "sourceUrl": "string"
               },
-              "issue": "string",
               "measured": {
                 "captionBar": {
                   "bottom": "string",
@@ -270,7 +263,6 @@
                   "right": "string",
                   "top": "string"
                 },
-                "systemOverlays": "string",
                 "|": "string"
               },
               "safeArea": {
@@ -278,8 +270,7 @@
                 "left": "string",
                 "right": "string",
                 "top": "string"
-              },
-              "verified": "string"
+              }
             },
             "kind": "string",
             "landscape": "string",
@@ -517,15 +508,12 @@
         "error": "null",
         "focus": {
           "deviceInsets": {
-            "approximate": "boolean",
             "basisPosture": "string",
             "evidence": {
               "kind": "string",
               "source": "string",
               "sourceUrl": "string"
             },
-            "issue": "null",
-            "note": "string",
             "posture": "string",
             "values": {
               "captionBar": {
@@ -605,7 +593,6 @@
                     "source": "string",
                     "sourceUrl": "string"
                   },
-                  "issue": "string",
                   "measured": {
                     "captionBar": {
                       "bottom": "number",
@@ -631,7 +618,6 @@
                       "right": "number",
                       "top": "number"
                     },
-                    "systemOverlays": "null",
                     "|": "null"
                   },
                   "safeArea": {
@@ -639,8 +625,7 @@
                     "left": "number",
                     "right": "number",
                     "top": "number"
-                  },
-                  "verified": "boolean"
+                  }
                 },
                 "kind": "string",
                 "landscape": "boolean",
@@ -690,7 +675,6 @@
                 "source": "string",
                 "sourceUrl": "string"
               },
-              "issue": "string",
               "measured": {
                 "captionBar": {
                   "bottom": "number",
@@ -716,7 +700,6 @@
                   "right": "number",
                   "top": "number"
                 },
-                "systemOverlays": "null",
                 "|": "null"
               },
               "safeArea": {
@@ -724,8 +707,7 @@
                 "left": "number",
                 "right": "number",
                 "top": "number"
-              },
-              "verified": "boolean"
+              }
             },
             "kind": "string",
             "landscape": "boolean",
