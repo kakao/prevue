@@ -9,7 +9,7 @@ import './android-status-bar.css';
 // 아이콘 모양 · 자리는 Material 아이콘과 실기기 인상을 따른 근사다 — iOS 처럼 기기 스크린숏으로 잰 값이 아니다.
 // 모서리 · 카메라는 고를 때(2026-11-11)의 장면(plugin/viewer/js/resize-scene.js) 값이다 — 지금 장면 카메라는 windowinsets.info 컷아웃을 따른다.
 // 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. SystemBars.tsx 의 AndroidStatus · NavHandle 에 옮겼고, 이 스토리는 고른 기록으로 남는다.
-// 뷰어는 장면의 카메라 · 모서리를 모르므로 줄 높이는 상태바 가운데(최대 17), 좌우 여백은 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피한다.
+// 고를 때 뷰어는 장면의 카메라 · 모서리를 몰라 줄 높이를 상태바 가운데(최대 17), 좌우 여백을 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피했다 — 지금은 SystemBars.tsx 가 장면의 cameraOf 로 위 띠 카메라 가운데에 맞춘다.
 const meta = { title: '시안/Android 시스템 바' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -184,9 +184,9 @@ try {
         const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, (mid(cam) - shot.t) / bars.k];
         assert(Math.abs(got[0] - raw[0]) <= .5 && Math.abs(got[1] - raw[1]) <= .5, `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got, raw })}`);
       } else assert(!cam, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
+      assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
       const rowY = cam && cam.t < shot.t + bars.top ? mid(cam) : shot.t + bars.top / 2;
       assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 상태 줄이 ${cam && cam.t < shot.t + bars.top ? '카메라' : '띠'} 가운데 높이: ${JSON.stringify({ rowY, ...bars })}`);
-      assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
       for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l + bars.cutL - 1 && b.r <= shot.r - bars.cutR + 1, `${name} 상태 줄이 위 띠 · 옆 컷아웃 안: ${JSON.stringify(bars)}`);
       assert(time.r < icons.l, `${name} 시각과 아이콘이 겹치지 않는다: ${JSON.stringify(bars)}`);
       const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
