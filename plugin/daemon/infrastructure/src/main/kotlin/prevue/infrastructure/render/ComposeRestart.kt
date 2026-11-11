@@ -2,15 +2,28 @@ package prevue.infrastructure.render
 
 import android.view.View
 import android.view.ViewGroup
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 
 internal object ComposeRestart {
-    fun withPlacedInsets(root: View): String? = runCatching {
-        val views = topComposeViews(root)
-        views.forEach { it.javaClass.getMethod("disposeComposition").invoke(it) }
-        forgetToolingRecords(root)
-        views.forEach { it.javaClass.getMethod("createComposition").invoke(it) }
-        null
-    }.getOrElse { (it.cause ?: it).toString() }
+    fun withPlacedInsets(root: View): String? {
+        val views = try {
+            topComposeViews(root).map { it to Lifecycle(it.javaClass.getMethod("disposeComposition"), it.javaClass.getMethod("createComposition")) }
+        } catch (e: Exception) {
+            return failed(e)
+        }
+        return runCatching {
+            views.forEach { (v, m) -> m.dispose.invoke(v) }
+            views.forEach { (v, m) -> m.create.invoke(v) }
+            null
+        }.getOrElse(::failed)
+    }
+
+    fun warning(why: String) = "$FAILED: $why"
+
+    private fun failed(e: Throwable): String = ((e as? InvocationTargetException)?.cause ?: e).toString()
+
+    private class Lifecycle(val dispose: Method, val create: Method)
 
     private fun topComposeViews(v: View): List<View> = when {
         isComposeView(v.javaClass) -> listOf(v)
@@ -24,15 +37,6 @@ internal object ComposeRestart {
         else -> isComposeView(c.superclass)
     }
 
-    private fun forgetToolingRecords(v: View) {
-        if (v.javaClass.name == ADAPTER) {
-            val record = v.javaClass.getDeclaredField("slotTableRecord").apply { isAccessible = true }.get(v)
-            val store = record.javaClass.getMethod("getStore").apply { isAccessible = true }.invoke(record) as MutableSet<*>
-            store.clear()
-        }
-        if (v is ViewGroup) for (i in 0 until v.childCount) forgetToolingRecords(v.getChildAt(i))
-    }
-
     private const val COMPOSE_VIEW = "androidx.compose.ui.platform.AbstractComposeView"
-    private const val ADAPTER = "androidx.compose.ui.tooling.ComposeViewAdapter"
+    private const val FAILED = "인셋을 넣은 뒤 컴포지션을 다시 만들지 못했다 — 옆 인셋 자세에서는 칸이 인셋 전 자리에서 움직이는 중인 그림일 수 있다"
 }

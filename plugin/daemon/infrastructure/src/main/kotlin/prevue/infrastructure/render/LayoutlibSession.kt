@@ -31,6 +31,7 @@ internal class LayoutlibSession(
 ) {
     val clock = SessionClock()
     private var barsPlaced = false
+    private var placedWarning: String? = null
     private var lastHash = 0L
     private var anchored = false
     private var pressUnseen = false
@@ -44,6 +45,8 @@ internal class LayoutlibSession(
         advanceCallbacks(start)
         anchored = true
     }
+
+    fun takePlacedWarning(): String? = placedWarning.also { placedWarning = null }
 
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
@@ -61,7 +64,7 @@ internal class LayoutlibSession(
         onSession {
             LayoutlibInsets.apply(root, insets)
             if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
-            ComposeRestart.withPlacedInsets(root)?.let { System.err.println("[prevue] 인셋을 넣은 뒤 컴포지션을 다시 만들지 못했다 — 첫 그림이 인셋 전 배치에서 움직이는 중일 수 있다: $it") }
+            placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning)
         }
         anchor()
     }
