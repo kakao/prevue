@@ -7,7 +7,7 @@ import './android-status-bar.css';
 // Android 기기 시스템 바를 뷰어 오버레이로 그릴 때의 후보(D-176) — 기기 실제 크기(1dp = 1px, 넓은 기기는 줄여서)에서 본다.
 // 상태바 · 내비게이션 높이는 windowinsets.info 측정값(PixelDeviceInsets · SamsungDeviceInsets)이고, 측정 26건이 모두 제스처 내비게이션이라 버튼 바는 없다.
 // 아이콘 모양 · 자리는 Material 아이콘과 실기기 인상을 따른 근사다 — iOS 처럼 기기 스크린숏으로 잰 값이 아니다.
-// 모서리 · 카메라는 장면(plugin/viewer/js/resize-scene.js)의 값이다.
+// 모서리 · 카메라는 고를 때(2026-11-11)의 장면(plugin/viewer/js/resize-scene.js) 값이다 — 지금 장면 카메라는 windowinsets.info 컷아웃을 따른다.
 // 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. SystemBars.tsx 의 AndroidStatus · NavHandle 에 옮겼고, 이 스토리는 고른 기록으로 남는다.
 // 뷰어는 장면의 카메라 · 모서리를 모르므로 줄 높이는 상태바 가운데(최대 17), 좌우 여백은 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피한다.
 const meta = { title: '시안/Android 시스템 바' } satisfies Meta;
@@ -119,7 +119,7 @@ function Phone({ d, look, ground }: { d: Device; look: Look; ground: Ground }) {
 }
 
 // 비교용 — 이미 고른 iPhone 17 상태바(SystemBars.tsx 의 IosStatus, 시안 A 실측)와 홈 인디케이터.
-const IP17: Bars = { device: 'ip17', ios: true, cut: [0, 0], cornerCam: null, w: 402, h: 874, statusDp: 62, navDp: 34, side: null, sideDp: 0, duo: false, folded: false };
+const IP17: Bars = { device: 'ip17', ios: true, cut: [0, 0], topCam: null, w: 402, h: 874, statusDp: 62, navDp: 34, side: null, sideDp: 0, duo: false, folded: false };
 function IosStrip({ ground, zoom = 1 }: { ground: Ground; zoom?: number }) {
   const ink = ground === 'bright' ? 'dark' : 'light';
   return <svg className="asb-strip" width={IP17.w * zoom} height={76 * zoom} viewBox={`0 0 ${IP17.w} 76`} fill="currentColor" aria-hidden="true">
