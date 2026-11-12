@@ -91,7 +91,10 @@ class CallerCli(test_lang.CliCase):
 
     def test_PATH_의_prevue_로_부르면_지금과_같다(self):
         out, _ = self.run_on(installed_path(), "health", self.file)
-        self.assertTrue(out["next"].startswith("prevue warmup "), out)
+        commands = [out[k] for k in ("next", "then") if k in out]     # 툴체인이 없으면 next 가 setup, then 이 warmup 이다
+        self.assertTrue(commands, out)
+        for command in commands:
+            self.assertTrue(command.startswith("prevue "), out)
 
     def test_show_가_되읽은_warmup_도_이_체크아웃의_것이고_show_는_한_번이다(self):
         out, code = self.run_on(search_path(self.decoy()), "show", self.file)
