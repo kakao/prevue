@@ -9,20 +9,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -99,10 +102,11 @@ fun PearlScreen(
         Column(
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
                 .padding(top = 214.dp)
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                .background(PearlColors.sheet),
+                .background(PearlColors.sheet)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
             if (hasMenu) {
                 Row(
@@ -171,9 +175,9 @@ private fun Hero(hasMenu: Boolean, bag: Int, bagBounce: Float, kind: Kind?) {
         swap.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = 320f))
     }
     val s = swap.value
-    // 상태바가 있으면 머리 전체(바탕 · 장식 · 글자)가 그만큼 내려간다 — 시트도 같은 만큼 내려가 글자를 가리지 않는다
-    BoxWithConstraints(Modifier.fillMaxWidth().background(bg).statusBarsPadding().height(250.dp)) {
-        val w = maxWidth
+    // 위쪽 안전 영역만큼 머리 전체(바탕 · 장식 · 글자)가 내려간다 — 시트도 같은 만큼 내려가 글자를 가리지 않는다.
+    // 좌우 인셋은 글자 · 버튼만 피하고, 바탕 · 장식 · 컵은 화면 끝까지 그린다
+    Box(Modifier.fillMaxWidth().background(bg).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)).height(250.dp)) {
         Blob(blob, Modifier.size(260.dp).align(Alignment.TopEnd).offset(x = 70.dp, y = 30.dp).graphicsLayer { rotationZ = s * 8f })
         Blob(blob.copy(alpha = 0.7f), Modifier.size(110.dp).align(Alignment.TopEnd).offset(x = (-40).dp, y = 12.dp).graphicsLayer { translationX = s * 14.dp.toPx() })
         Cup(
@@ -188,8 +192,8 @@ private fun Hero(hasMenu: Boolean, bag: Int, bagBounce: Float, kind: Kind?) {
         Box(Modifier.size(13.dp).align(Alignment.TopEnd).offset(x = (-150).dp, y = 176.dp).graphicsLayer { translationY = -s * 18.dp.toPx() }.clip(CircleShape).background(PearlColors.pearl))
         Box(Modifier.size(9.dp).align(Alignment.TopEnd).offset(x = (-170).dp, y = 156.dp).graphicsLayer { translationY = -s * 26.dp.toPx() }.clip(CircleShape).background(PearlColors.pearl))
         Box(Modifier.size(10.dp).align(Alignment.TopEnd).offset(x = (-8).dp, y = 96.dp).clip(CircleShape).background(Color(0xFFFFC278)))
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-            Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)).padding(horizontal = 24.dp, vertical = 20.dp)) {
+            Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (hasMenu) PearlIconButton(DS.drawable.ic_search, stringResource(Res.string.pearl_search), tint = Color.White, background = Color.White.copy(alpha = 0.12f))
                 Spacer(Modifier.weight(1f))
                 Text(stringResource(Res.string.pearl_title), style = PearlType.card, color = Color.White)
