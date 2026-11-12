@@ -502,6 +502,38 @@ async function svgPng(c, name) {
   console.log(`${name}.png  ${W * SCALE}×${H * SCALE}`);
 }
 
+/**
+ * 루프 그림 두 장(이전 · 이후)을 위아래로 한 장에 — 두 SVG 의 바탕이 같은 #f5f5f7 이라 한 판으로 이어지고, 판마다 머리 제목을 단다.
+ * 나란히 두면 README 폭의 반씩이라 글자가 읽히지 않고 둥근 바탕 둘 사이에 이음매가 진다. SVG 는 data: 그림으로 담아 서로의 스타일이 섞이지 않게 한다.
+ */
+async function loopPair(c, name, before, after, titles) {
+  const svg = n => `data:image/svg+xml;base64,${readFileSync(join(OUT, `${n}.svg`)).toString("base64")}`;
+  const W = 960, SH = 404, HEAD = 44, H = (HEAD + SH) * 2;
+  const html = `<!doctype html><meta charset="utf-8"><style>
+    html, body { margin: 0; background: transparent; }
+    .pair { width: ${W}px; height: ${H}px; border-radius: 16px; background: #f5f5f7; overflow: hidden; }
+    h2 { margin: 0; height: ${HEAD}px; padding-top: 18px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px;
+      font: 600 19px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; color: #1d1d1f; letter-spacing: -.01em; }
+    h2 i { width: 10px; height: 10px; border-radius: 50%; } img { display: block; }
+  </style><div class="pair">
+    <h2><i style="background:#ff6b2c"></i>${esc(titles[0])}</h2><img src="${svg(before)}" width="${W}" height="${SH}">
+    <h2><i style="background:#007aff"></i>${esc(titles[1])}</h2><img src="${svg(after)}" width="${W}" height="${SH}">
+  </div>`;
+  await c.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: SCALE, mobile: false });
+  await c.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
+  await c.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
+  const { frameTree } = await c.send("Page.getFrameTree");
+  await c.send("Page.setDocumentContent", { frameId: frameTree.frame.id, html });
+  await c.until(`[...document.images].every(i => i.complete && i.naturalWidth > 0)`);
+  await c.evaluate(`document.fonts.ready.then(() => true)`);
+  await sleep(500);
+  const { data } = await c.send("Page.captureScreenshot", { format: "png" });
+  await c.send("Emulation.setDefaultBackgroundColorOverride", {});
+  writeFileSync(join(OUT, `${name}.png`), Buffer.from(data, "base64"));
+  console.log(`${name}.png  ${W * SCALE}×${H * SCALE}`);
+}
+
 // ── 저장 장면(worktrees · match) — 사본에 실제로 저장하고 prevue wait 결과를 창 아래 터미널 띠에 찍는다 ──
 
 /** 고칠 자리가 사본에 그대로 있을 때만 바꾼다 — 픽스처가 바뀌어 맞는 자리가 없으면 그 자리에서 멈춘다. */
@@ -907,8 +939,11 @@ const SCENES = {
       await sleep(1500);
     });
   },
-  // 맡기기의 루프 그림 · 벤치마크(두 판 × 영어 · 한국어) — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
-  async loop(c) { for (const n of ["agent-loop", "agent-loop.ko", "agent-loop-before", "agent-loop-before.ko"]) await svgPng(c, n); },
+  // 도입부의 루프 그림(이전 · 이후를 한 장에) · 벤치마크(두 판), 영어 · 한국어 — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
+  async loop(c) {
+    await loopPair(c, "agent-loop", "agent-loop-before", "agent-loop", ["Before Prevue — you're in every loop", "With Prevue — the agent loops on its own"]);
+    await loopPair(c, "agent-loop.ko", "agent-loop-before.ko", "agent-loop.ko", ["Prevue 이전 — 루프마다 사람이 끼어든다", "Prevue에서 — 에이전트가 혼자 돈다"]);
+  },
   async bench(c) { for (const n of ["benchmark-vs", "benchmark-redraw", "benchmark-vs.ko", "benchmark-redraw.ko"]) await svgPng(c, n); },
 };
 

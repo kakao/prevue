@@ -34,11 +34,9 @@
 Prevue는 저장할 때마다 Preview를 1초 안팎에 다시 그려 에이전트가 직접 보게 하고, 사람은 루프 밖에서 끝난 화면만 확인합니다.
 
 <p align="center">
-  <img src="assets/agent-loop-before.ko.png" width="50%"
-       alt="Prevue 이전의 UI 수정 루프. 개발자가 주황으로 강조된 채 루프 안에 있다. 코딩 에이전트가 고쳐 저장하면 Android Studio가 약 4초 빌드해 Preview를 그리고, 개발자가 보고 스크린샷을 찍어 무엇이 틀렸는지 설명하면 에이전트가 다시 고친다. 루프마다"><img src="assets/agent-loop.ko.png" width="50%"
-       alt="Prevue에서의 UI 수정 루프. 개발자는 루프 밖에 있다. 목표와 기준을 코딩 에이전트에게 주면 에이전트가 고쳐 저장하고, Prevue가 약 1초에 그린 PNG를 기준과 비교하며 혼자 루프를 돈다. 끝나면 개발자가 브라우저의 같은 Preview로 확인한다">
+  <img src="assets/agent-loop.ko.png" width="720"
+       alt="UI 수정 루프를 위아래로 견준 그림. 위는 Prevue 이전으로, 개발자가 주황으로 강조된 채 루프 안에 있다. 코딩 에이전트가 고쳐 저장하면 Android Studio가 약 4초 빌드해 Preview를 그리고, 개발자가 보고 스크린샷을 찍어 무엇이 틀렸는지 설명하면 에이전트가 다시 고친다. 루프마다. 아래는 Prevue에서로, 개발자는 루프 밖에 있다. 목표와 기준을 코딩 에이전트에게 주면 에이전트가 고쳐 저장하고, Prevue가 약 1초에 그린 PNG를 기준과 비교하며 혼자 루프를 돈다. 끝나면 개발자가 브라우저의 같은 Preview로 확인한다">
 </p>
-<p align="center"><sub>왼쪽: Prevue 이전 · 오른쪽: Prevue에서</sub></p>
 
 ## 확인도 에이전트가 합니다
 

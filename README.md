@@ -34,11 +34,9 @@ You take a screenshot of what's wrong, explain it, and wait again. **The agent w
 Prevue redraws the Preview about a second after each save so the agent sees it for itself, and you step outside the loop and check only the finished screen.
 
 <p align="center">
-  <img src="assets/agent-loop-before.png" width="50%"
-       alt="The UI fix loop before Prevue. The developer sits inside the loop, highlighted in orange: the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again — every loop"><img src="assets/agent-loop.png" width="50%"
-       alt="The UI fix loop with Prevue. The developer stays outside the loop: they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
+  <img src="assets/agent-loop.png" width="720"
+       alt="The UI fix loop, before and after, stacked. Top, before Prevue: the developer sits inside the loop, highlighted in orange — the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again, every loop. Bottom, with Prevue: the developer stays outside the loop — they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
 </p>
-<p align="center"><sub>Left: before Prevue · Right: with Prevue</sub></p>
 
 ## Your agent checks its own work
 
