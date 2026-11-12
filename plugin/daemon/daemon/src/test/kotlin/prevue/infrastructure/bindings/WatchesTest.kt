@@ -16,7 +16,7 @@ class WatchesTest {
     private val tmp = Files.createTempDirectory("prevue-watches").toFile().canonicalFile
     @AfterEach fun tearDown() { tmp.deleteRecursively() }
 
-    private val classes = File(tmp, "app/build/classes").apply { File(this, "META-INF").mkdirs(); File(this, "META-INF/app.kotlin_module").writeText("") }.path
+    private val classes = File(tmp, "app/build/classes").path
     private val spec = ClasspathSpec(File(tmp, "app.json"), ":app", "debug", "", "",
         DumpPaths(classPath = listOf(classes), projectClassPath = listOf(classes), compileClassPath = emptyList(), rClassJars = emptyList(), resourceDirs = emptyList()))
     private val config = InfraConfig(File(tmp, "app.json"), File("/l"), File("/c"), File("/b"), 8791)
