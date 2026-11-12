@@ -3,10 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { requireDaemon } from "./daemon.mjs";
 
 // 전용 서버로 연 AdaptivePreviews.kt에서 같은 브라우저의 여러 탭과 실제 터치를 검사한다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/tabs.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-tabs-check-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [

@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
-import { toBoard } from './daemon.mjs';
+import { requireDaemon, toBoard } from './daemon.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2);
@@ -15,6 +15,7 @@ const viewer = args[0];
 assert(viewer && !viewer.startsWith('--'), 'node tests/viewer/baseline.mjs <전용 Pearl 뷰어 URL> [--samples 30] [--output 파일] [--check 기준 JSON]');
 assert(typeof WebSocket === 'function', 'Node 22 이상이 필요하다');
 assert(['localhost', '127.0.0.1', '[::1]'].includes(new URL(viewer).hostname), '전용 로컬 픽스처에서만 실행한다');
+await requireDaemon(viewer);
 const samples = Number(option('--samples', 30));
 assert(Number.isInteger(samples) && samples >= 10, '--samples는 10 이상의 정수');
 const output = resolve(option('--output', join(root, '.cache/viewer-baseline', `${Date.now()}.json`)));
