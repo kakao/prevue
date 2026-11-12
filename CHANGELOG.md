@@ -8,18 +8,18 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-![Prevue 0.22 — See what it's made of. See where it fits.](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
+![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
 
-**See what it's made of. See where it fits.** Point at an element and a card shows its composable, size and modifiers, on a device that now delivers its real insets and draws its own system UI. The single view also gets one dock under the picture.
+**See what it's made of. See where it fits.** Point at an element and a card shows its composable, size and modifiers. Pick a device and your Composable gets its real insets, and Show inset areas draws the unsafe bands over the picture. The single view also gets one dock under the picture.
 
-### Pointing
+### See what it's made of
 
 ![Clicking beside the price on a drink card in a board of Pearl previews opens a card next to the picture with DrinkCard.kt:106, its size in dp, its modifiers and a tree of the elements around it; rows in the tree point at the whole drink card and the next one, and the Preview button jumps to MenuCardsPreview](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0-pointing.webp)
 
 - **Click an element → a card beside the picture** shows its composable, `file:line`, size and modifiers, with a tree to move around and a jump to its `@Preview`.
 - **`prevue previews --of <composable>`** finds a composable's previews by name.
 
-### Devices
+### See where it fits
 
 ![Changing devices from the dock under the picture: S26, then iPhone Duo unfolded, folded to its cover and unfolded again, then Pixel Tablet; back on the unfolded iPhone Duo, Show inset areas tints the 84 dp status band and the 34 dp bottom band and labels the SAFE AREA between them](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/devices.gif)
 
