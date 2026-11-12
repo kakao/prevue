@@ -51,7 +51,6 @@ Only changes users can see go here.
 
 @citytexi ([#129](https://github.com/kakao/prevue/issues/129), [#130](https://github.com/kakao/prevue/pull/130))
 
-
 ## [0.21.0] — 2026-11-02
 
 ![Prevue 0.21 — Kotlin Multiplatform, in your browser](https://raw.githubusercontent.com/kakao/prevue/v0.21.0/assets/release-0.21.0.png)
