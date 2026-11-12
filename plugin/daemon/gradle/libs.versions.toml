@@ -8,6 +8,7 @@ kotlin = "2.4.10"
 coroutines = "1.8.0"
 # 데몬 본체는 코루틴을 따로 싣지 않는다 — 렌더러 jar 가 이 판(1.10.2-intellij-1)을 품고 있어 둘을 실으면 같은 클래스가 두 벌이 된다.
 # 컴파일만 이 판에 대고 한다. 렌더러를 올리면 품은 판도 바뀌므로 함께 본다.
+# 테스트 가짜 LaneSpy 가 내부 API Delay 를 위임한다 — 판이 바뀌면 LaneSpyTest 의 가상 시간 테스트가 깨진 위임을 잡는다.
 coroutines-renderer = "1.10.2"
 annotations = "13.0"
 # 테스트만. 오프라인 캐시에 있는 판이다 — kotlin-test 는 2.4 판이 없어 쓰지 않는다.
