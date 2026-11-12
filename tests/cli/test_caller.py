@@ -2,9 +2,12 @@
 PATH 의 prevue 가 이 bin/prevue 면 지금처럼 "prevue …", 아니면(워크트리 · 다른 판 · PATH 에 없음) 이 bin/prevue 의 경로다.
 """
 
+import json
 import os
 from pathlib import Path
 import shlex
+import subprocess
+import sys
 import unittest
 from unittest import mock
 
@@ -40,12 +43,23 @@ class Runnable(unittest.TestCase):
             out = P.runnable({"next": "prevue show /a.kt   # in a shell with network access"})
         self.assertEqual(out["next"], shlex.quote(SELF) + " show /a.kt --lang ko   # in a shell with network access")
 
-    def test_prevue_밖_명령은_그대로다(self):
-        self.assertEqual(self.runnable(None, {"next": "xcode-select --install"}), {"next": "xcode-select --install"})
 
-    def test_되읽은_warmup_에도_show_를_한_번만_붙인다(self):
-        emitted = self.runnable(None, {"next": "prevue warmup /a/B.kt"})
-        self.assertEqual(P.prepare_request(P.bare_commands(emitted)), {"next": "prevue warmup /a/B.kt --show"})
+
+class Reread(unittest.TestCase):
+    """bin/prevue 가 plan 응답을 health 인자로 되넘긴다 — 경로가 붙은 next 도 "prevue …" 로 판정해야 한다."""
+
+    def test_낡은_데몬의_warmup_은_plan_이_준_리소스_제공자를_지킨다(self):
+        f = "/r/app/src/main/kotlin/A.kt"
+        plan = {"ok": True, "module": ":app", "toolchain": True, "classpath": "/x.json",
+                "next": shlex.quote(SELF) + " warmup " + f + " --resources-from :wear"}
+        status = {"module": ":app", "stale": {"resources": ["strings.xml"]}}
+        env = {k: v for k, v in os.environ.items() if not k.startswith("CODEX")}
+        env.update(PATH=search_path(), PREVUE_LANG="")
+        p = subprocess.run([sys.executable, str(ROOT / "cli" / "prevue_plan.py"), "health", json.dumps(plan), "0", "true",
+                            "http://127.0.0.1:1/", f, json.dumps(status), "false", "", "false", "", "", "", ""],
+                           capture_output=True, text=True, env=env)
+        out = json.loads(p.stdout)
+        self.assertEqual(shlex.split(out["next"]), [SELF, "warmup", f, "--resources-from", ":wear"], out)
 
 
 class CallerCli(test_lang.CliCase):

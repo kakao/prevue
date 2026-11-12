@@ -1239,17 +1239,14 @@ def caller():
     return "prevue" if found and os.path.realpath(found) == SELF else shlex.quote(SELF)
 
 
-def bare(command):
-    head = shlex.quote(SELF) + " "
-    return "prevue " + command[len(head):] if command.startswith(head) else command
-
-
 # 셸과 다른 하위 명령이 이미 낸 응답을 다시 읽을 때 — 판정은 "prevue …" 모양으로 한다.
 def bare_commands(resp):
+    head = shlex.quote(SELF) + " "
     if isinstance(resp, dict):
         for key in ("next", "then"):
-            if isinstance(resp.get(key), str):
-                resp[key] = bare(resp[key])
+            command = resp.get(key)
+            if isinstance(command, str) and command.startswith(head):
+                resp[key] = "prevue " + command[len(head):]
     return resp
 
 
@@ -1259,10 +1256,7 @@ def runnable(resp):
     head = caller()
     for key in ("next", "then"):
         command = resp.get(key)
-        if not isinstance(command, str):
-            continue
-        command = bare(command)
-        if not command.startswith("prevue "):
+        if not isinstance(command, str) or not command.startswith("prevue "):
             continue
         if lang() and " --lang " not in command:
             body, mark, note = command.partition("   #")
