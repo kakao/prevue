@@ -25,20 +25,18 @@
 
 <p align="center">
   <img src="assets/intro.webp" width="1000"
-       alt="Prevue in 20 seconds, on the Pearl sample app. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes seven colors in Theme.kt to a dark theme, and all 30 Previews redraw each time. Interactive: the live Preview scrolls, a drink opens, and choosing size L, a topping and extra pearls changes the cup. Every screen: that drink screen steps through 320×640, 673×841 and a custom width dragged to 900, splitting into two panes from 673 wide, then iPhone Duo unfolds and folds shut to its cover screen">
+       alt="Prevue in under 30 seconds, on the Pearl sample app. Point at it: clicking the Thai Milk Tea card opens a card beside the picture with DrinkCard, PearlScreen.kt:135, its size, its modifiers and the tree around it. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes the colors in Theme.kt to a dark theme, and all 30 Previews redraw each time — layout in 1.2 s, colors in 0.6 s, no Gradle build. Interactive: the live Preview scrolls, Mango Smoothie opens, and picking size L, ice, pearls and a topping redraws the cup with every tap. Every screen: the drink screen goes from 673×841 to a custom width dragged to 897, then iPhone Duo unfolds and folds shut">
 </p>
-<p align="center"><sub>Hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
+<p align="center"><sub>Point at it, hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
 
 Your agent says the screen is done, so you open Android Studio and wait for the build to check it.
 You take a screenshot of what's wrong, explain it, and wait again. **The agent writes the code, but you're still its eyes — every loop.**
 Prevue redraws the Preview about a second after each save so the agent sees it for itself, and you step outside the loop and check only the finished screen.
 
 <p align="center">
-  <img src="assets/agent-loop-before.png" width="50%"
-       alt="The UI fix loop before Prevue. The developer sits inside the loop, highlighted in orange: the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again — every loop"><img src="assets/agent-loop.png" width="50%"
-       alt="The UI fix loop with Prevue. The developer stays outside the loop: they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
+  <img src="assets/agent-loop.png" width="720"
+       alt="The UI fix loop, before and after, stacked. Top, before Prevue: the developer sits inside the loop, highlighted in orange — the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again, every loop. Bottom, with Prevue: the developer stays outside the loop — they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
 </p>
-<p align="center"><sub>Left: before Prevue · Right: with Prevue</sub></p>
 
 ## Your agent checks its own work
 
@@ -48,6 +46,11 @@ Give it a design — a Figma frame, a screenshot, a mockup — and the agent edi
 Make the ForYouScreen header match this screenshot
 ```
 
+<p align="center">
+  <img src="assets/match.gif" width="640"
+       alt="Matching a mockup with no hands on the viewer. On the left, mockup.png: the Pearl menu screen with a green header. In the middle, the Prevue board showing PearlListPreview, which starts with a blue header, a smaller headline, and the drink grid pressed against the edges. Below it, the agent's terminal. Asked to make PearlListPreview match mockup.png, the agent saves three times — grid padding 8 → 24 dp, the header color back to forest green, the headline 22 → 28 sp — and runs prevue wait after each save, so the board redraws one difference at a time. After the third save the Preview is identical to the mockup and the terminal prints matches mockup.png">
+</p>
+
 Screens that only change when you tap or drag work the same way. The agent switches the Preview into interactive mode, sends touches, and gets the new picture back.
 
 ## Hot swap
@@ -56,7 +59,7 @@ Save, and the Preview redraws in about a second without Gradle. Change only a va
 Every `@Preview` in a file is laid out on a board grouped by function and redrawn on every save. The agent and you look at the same board, so "it's done" and "I see it" happen at the same moment.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time">
+  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom. Each Preview's name and size sit above its picture"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time, and the name and size of each sit above the card">
 </p>
 <p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf app</a>, Compose Multiplatform (Apache-2.0)</sub></p>
 
@@ -91,7 +94,7 @@ Without touching the source, change the screen size or the device (six Android, 
 - **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars, in the browser only.
 
 <p align="center">
-  <img src="assets/devices.gif" width="50%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25%" alt="In the workspace, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
+  <img src="assets/devices.gif" width="49.2%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25.4%" alt="In the workspace, with the control dock under the stage, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25.4%" alt="In the workspace, with the control dock under the stage, on the detail screen Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
 </p>
 
 ## Three agents, still light

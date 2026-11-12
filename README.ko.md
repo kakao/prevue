@@ -25,20 +25,18 @@
 
 <p align="center">
   <img src="assets/intro.webp" width="1000"
-       alt="Pearl 예제 앱으로 보는 20초 Prevue. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색 일곱 개를 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 인터랙티브: 라이브 Preview를 스크롤하고 음료를 열어 사이즈 L, 토핑, 펄 추가를 고르면 컵이 바뀐다. 모든 화면: 그 음료 화면이 320×640, 673×841, 커스텀 너비 900을 거치며 673부터 두 칸으로 나뉘고, 이어 iPhone Duo가 펼쳐졌다가 커버 화면으로 접힌다">
+       alt="Pearl 예제 앱으로 보는 30초 안쪽의 Prevue. 가리키기: Thai Milk Tea 카드를 누르면 그림 옆에 카드가 서고 DrinkCard, PearlScreen.kt:135, 크기, Modifier, 둘레의 트리가 보인다. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색을 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 레이아웃은 1.2초, 색은 0.6초, Gradle 빌드 없이. 인터랙티브: 라이브 Preview를 스크롤하고 Mango Smoothie를 열어 사이즈 L, 얼음, 펄, 토핑을 고르면 누를 때마다 컵이 다시 그려진다. 모든 화면: 그 음료 화면이 673×841에서 커스텀 너비 897로 늘어나고, 이어 iPhone Duo가 펼쳐졌다가 접힌다">
 </p>
-<p align="center"><sub>핫스왑, 인터랙티브, 모든 화면 — 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)을 실제로 그린 화면입니다.</sub></p>
+<p align="center"><sub>가리키기, 핫스왑, 인터랙티브, 모든 화면 — 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)을 실제로 그린 화면입니다.</sub></p>
 
 에이전트가 화면을 다 고쳤다고 하면, 사람이 Android Studio를 열고 빌드를 기다려 확인합니다.
 틀린 곳은 스크린샷을 찍어 설명하고 다시 기다립니다. **코드는 에이전트가 쓰는데 화면은 루프마다 사람이 대신 봐 줍니다.**
 Prevue는 저장할 때마다 Preview를 1초 안팎에 다시 그려 에이전트가 직접 보게 하고, 사람은 루프 밖에서 끝난 화면만 확인합니다.
 
 <p align="center">
-  <img src="assets/agent-loop-before.ko.png" width="50%"
-       alt="Prevue 이전의 UI 수정 루프. 개발자가 주황으로 강조된 채 루프 안에 있다. 코딩 에이전트가 고쳐 저장하면 Android Studio가 약 4초 빌드해 Preview를 그리고, 개발자가 보고 스크린샷을 찍어 무엇이 틀렸는지 설명하면 에이전트가 다시 고친다. 루프마다"><img src="assets/agent-loop.ko.png" width="50%"
-       alt="Prevue에서의 UI 수정 루프. 개발자는 루프 밖에 있다. 목표와 기준을 코딩 에이전트에게 주면 에이전트가 고쳐 저장하고, Prevue가 약 1초에 그린 PNG를 기준과 비교하며 혼자 루프를 돈다. 끝나면 개발자가 브라우저의 같은 Preview로 확인한다">
+  <img src="assets/agent-loop.ko.png" width="720"
+       alt="UI 수정 루프를 위아래로 견준 그림. 위는 Prevue 이전으로, 개발자가 주황으로 강조된 채 루프 안에 있다. 코딩 에이전트가 고쳐 저장하면 Android Studio가 약 4초 빌드해 Preview를 그리고, 개발자가 보고 스크린샷을 찍어 무엇이 틀렸는지 설명하면 에이전트가 다시 고친다. 루프마다. 아래는 Prevue에서로, 개발자는 루프 밖에 있다. 목표와 기준을 코딩 에이전트에게 주면 에이전트가 고쳐 저장하고, Prevue가 약 1초에 그린 PNG를 기준과 비교하며 혼자 루프를 돈다. 끝나면 개발자가 브라우저의 같은 Preview로 확인한다">
 </p>
-<p align="center"><sub>왼쪽: Prevue 이전 · 오른쪽: Prevue에서</sub></p>
 
 ## 확인도 에이전트가 합니다
 
@@ -48,6 +46,11 @@ Prevue는 저장할 때마다 Preview를 1초 안팎에 다시 그려 에이전�
 이 스크린샷처럼 ForYouScreen 헤더 맞춰줘
 ```
 
+<p align="center">
+  <img src="assets/match.gif" width="640"
+       alt="사람 손 없이 시안에 맞춰 가는 장면. 왼쪽은 mockup.png로, 머리가 초록인 Pearl 메뉴 화면이다. 가운데는 PearlListPreview를 띄운 Prevue 보드로, 머리가 파랗고 제목 글자가 작고 음료 그리드가 양옆에 붙은 채 시작한다. 그 아래는 에이전트의 터미널이다. PearlListPreview를 mockup.png에 맞추라고 하자 에이전트가 세 번 저장한다. 그리드 여백 8 → 24dp, 머리 색을 초록으로, 제목 22 → 28sp. 저장할 때마다 prevue wait를 돌려 보드가 차이를 하나씩 지우며 다시 그려진다. 세 번째 저장 뒤 Preview가 시안과 똑같아지고 터미널에 matches mockup.png가 찍힌다">
+</p>
+
 탭하거나 드래그해야 바뀌는 화면도 같습니다. 에이전트가 Preview를 인터랙티브 모드로 켜고 터치를 보낸 뒤 바뀐 화면을 받아 봅니다.
 
 ## 핫스왑
@@ -56,7 +59,7 @@ Prevue는 저장할 때마다 Preview를 1초 안팎에 다시 그려 에이전�
 파일 하나의 `@Preview`가 함수별로 묶여 보드에 펼쳐지고 저장할 때마다 모두 다시 그립니다. 에이전트와 사람이 같은 보드를 보니, 에이전트가 "다 됐어요" 하는 순간 사람도 이미 보고 있습니다.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview가 함수별 묶음으로 깔린 보드. 헤더에 앱 이름과 폴더 · 브랜치 · 모듈 · 변형, 오른쪽에 ✓ 알약이 있다. 왼쪽 열린 파일 목록에 ForYouScreen · InterestsScreen · NewsResourceCard가 있고, 묶음 머리에 장 수와 배율이 적혀 있다"><img src="assets/board-kotlinconf.png" width="50%" alt="KotlinConf 앱 ui-components 모듈의 commonMain에 있는 TalkCard.kt 보드. 헤더에 KotlinConf와 kotlinconf-app · main · app:ui-components · commonMain · debug가 적혀 있다. 왼쪽 열린 파일 목록의 SpeakerCard · MainHeader · Kodee · TalkCard 파일 아이콘마다 Kotlin Multiplatform 표식이 붙어 있다. TalkCardLivePreview와 TalkCardUpcomingPreview 두 묶음에 Asynchronous Programming With Kotlin Coroutines 세션 카드가 라이트와 다크로 한 장씩 놓이고, 태그 · 연사 · 장소 · 시간이 보인다">
+  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview가 함수별 묶음으로 깔린 보드. 헤더에 앱 이름과 폴더 · 브랜치 · 모듈 · 변형, 오른쪽에 ✓ 알약이 있다. 왼쪽 열린 파일 목록에 ForYouScreen · InterestsScreen · NewsResourceCard가 있고, 묶음 머리에 장 수와 배율이 적혀 있다. Preview마다 이름과 크기가 그림 위에 놓인다"><img src="assets/board-kotlinconf.png" width="50%" alt="KotlinConf 앱 ui-components 모듈의 commonMain에 있는 TalkCard.kt 보드. 헤더에 KotlinConf와 kotlinconf-app · main · app:ui-components · commonMain · debug가 적혀 있다. 왼쪽 열린 파일 목록의 SpeakerCard · MainHeader · Kodee · TalkCard 파일 아이콘마다 Kotlin Multiplatform 표식이 붙어 있다. TalkCardLivePreview와 TalkCardUpcomingPreview 두 묶음에 Asynchronous Programming With Kotlin Coroutines 세션 카드가 라이트와 다크로 한 장씩 놓이고, 태그 · 연사 · 장소 · 시간이 보이고, 카드마다 이름과 크기가 그림 위에 놓인다">
 </p>
 <p align="center"><sub>왼쪽: <a href="https://github.com/android/nowinandroid">Now in Android</a>(Apache-2.0) · 오른쪽: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf 앱</a>, Compose Multiplatform(Apache-2.0)</sub></p>
 
@@ -91,7 +94,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 - **기기마다 자기 시스템 UI를 그립니다** — Android · iOS · iPhone Duo의 상태 표시줄을 브라우저에서만 그립니다.
 
 <p align="center">
-  <img src="assets/devices.gif" width="50%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25%" alt="작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
+  <img src="assets/devices.gif" width="49.2%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간의 상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
 </p>
 
 ## 에이전트가 셋이어도 가볍게
