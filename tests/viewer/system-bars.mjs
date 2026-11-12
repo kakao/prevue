@@ -122,6 +122,8 @@ try {
     'fold8-cover-portrait': [237.71, 19.81], 'fold8-cover-landscape-left': [19.81, 237.71], 'fold8-cover-landscape-right': [731.43, 237.71],
     'ultra-cover-portrait': [180, 18], 'ultra-cover-landscape-left': [18, 180], 'ultra-cover-landscape-right': [822, 180],
   };
+  // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
+  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5 };
   const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
@@ -177,7 +179,7 @@ try {
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
         const c=document.querySelector('#ua .cam');
-        return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
+        return {k:s,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
           time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:c&&Number(c.style.opacity)>0?box('#ua .cam'):null}})()`);
       const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2, raw = RAW_CAM[name];
       if (raw) {
@@ -193,6 +195,11 @@ try {
       const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
       if (cam) for (const b of [time, icons]) assert(apart(b, cam), `${name} 상태 줄이 카메라와 겹치지 않는다: ${JSON.stringify(bars)}`);
       assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
+      // 화면 모서리는 원자료 반경 ±0.5dp 이고, 시각 · 아이콘 · 핸들 상자의 네 꼭짓점이 그 둥근 화면 안에 있다 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
+      const rawR = RAW_RADIUS[`${device}-${folded?'cover':'open'}`];
+      if (rawR != null) assert(Math.abs(bars.radius / bars.k - rawR) <= .5, `${name} 화면 모서리 반경이 원자료 ±0.5dp: ${JSON.stringify({ got: bars.radius / bars.k, raw: rawR })}`);
+      const rr = bars.radius, inRound = ([x, y]) => { const cx = Math.min(Math.max(x, shot.l + rr), shot.r - rr), cy = Math.min(Math.max(y, shot.t + rr), shot.b - rr); return Math.hypot(x - cx, y - cy) <= rr + 1; };
+      for (const [part, b] of Object.entries({ time, icons, handle })) for (const p of [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]]) assert(inRound(p), `${name} ${part} 가 둥근 화면 모서리에 잘리지 않는다: ${JSON.stringify({ p, radius: rr, ...bars })}`);
     }
     if (device==='duo') {
       const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-left' ? 'left' : 'right';

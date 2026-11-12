@@ -9,6 +9,7 @@ Only changes users can see go here.
 ## [Unreleased]
 
 - **The README is reorganized around five features** — your agent checking its own work, hot swap, pointing, interactive mode and light worktrees — under the new headline "Close Android Studio. Your Previews still show."
+- Android device frames now use the measured screen corner radius of each device and posture (Pixel 9, Pixel 9 Pro Fold, Galaxy S26, Galaxy Z Fold8).
 
 ## [0.22.0] — 2026-11-12
 
