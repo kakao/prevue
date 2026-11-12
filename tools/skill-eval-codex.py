@@ -231,7 +231,8 @@ def run_one(case, i, args):
 
 # ── 트레이스 ──────────────────────────────────────────────────────────────────
 
-SKILL_READ = re.compile(r"/skills/([\w-]+)/SKILL\.md")
+# 플러그인 스킬은 skills/codex/<이름>/ 에 있다(D-138) — 그 갈래를 빼면 prevue 스킬 읽기를 놓친다
+SKILL_READ = re.compile(r"/skills/(?:codex/)?([\w-]+)/SKILL\.md")
 
 
 def parse(jsonl):
