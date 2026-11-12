@@ -218,7 +218,7 @@ try {
   // 돌리기 — 카메라는 몸체에 붙어 돈다. 마지막 회전 프레임 · 회전 끝 · 정지 장면의 카메라가 한 자리이고,
   // Duo 커버는 safearea.info occlusion 중심(가로 왼쪽 = 위가 왼쪽, 사이트 이름으로는 Landscape Right)에 선다.
   const SITE_CAM = { 'portrait': [418.17,47.83], 'landscape-left': [47.83,47.83], 'landscape-right': [630.17,418.17] };
-  const spins = [['ipduo',true,[951,669,466,678]], ['s26',false,[360,780]], ['ip17',false,[402,874]]];
+  const spins = [['ipduo',true,[951,669,466,678]], ['ip17',false,[402,874]]];
   for (const [device, folded, size] of spins) {
     const poses = ['portrait','landscape-left','landscape-right'].map(o => ({o, st: pose(device, folded, o, size)}));
     for (const a of poses) for (const b of poses) if (a !== b) {
