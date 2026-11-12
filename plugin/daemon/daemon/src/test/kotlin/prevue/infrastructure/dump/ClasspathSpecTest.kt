@@ -243,6 +243,25 @@ class ClasspathSpecTest {
         assertEquals(kmpApp.kmpSourceRoots, r.kmpSourceRoots)
     }
 
+    @Test fun `링크 경로로 적힌 소스 루트의 감시 그래프도 실제 경로의 파일을 품고 그 모듈이 갖는다`() {
+        val shared = out("shared", "classes.jar")
+        val real = File(root, "shared/src/commonMain/kotlin").apply { mkdirs() }
+        val links = Files.createTempDirectory("prevue-spec-link").toFile()
+        val link = Files.createSymbolicLink(File(links, "shared").toPath(), File(root, "shared").toPath()).toFile()
+        try {
+            val json = File(root, "app-link.json").apply {
+                writeText("""{"project":":app","variant":"debug","resourceApkPath":"app.ap_",
+                    "classPath":["$appR","$appClasses","$shared"],"projectClassPath":["$appR","$appClasses","$shared"],
+                    "compileClassPath":["/m2/c.jar"],"rClassJars":["$appR"],"resourceDirs":[],
+                    "kmpSourceRoots":{":shared":["${File(link, "src/commonMain/kotlin")}"]}}""")
+            }
+            val g = WatchGraph.ofApp(ClasspathSpec.load(json), ClasspathSpec.load(json))
+            val f = File(real, "a/Screen.kt")
+            assertTrue(g.contains(f))
+            assertEquals(":shared", g.ownerOf(f))
+        } finally { link.delete(); links.deleteRecursively() }
+    }
+
     @Test fun `덤프 JSON 의 moduleCompileClassPaths 를 읽어 KMP 모듈 컴파일에 쓴다`() {
         val shared = out("shared", "classes.jar")
         val json = File(root, "app-kmp-compile.json").apply {
