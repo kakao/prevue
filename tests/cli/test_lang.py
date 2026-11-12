@@ -10,28 +10,33 @@ import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
-from test_plan import Case, P, fake_sdk
+from test_plan import Case, P, fake_sdk, installed_path
 import prevue_prepare as preparation
 
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
 
 class Helpers(unittest.TestCase):
+    def setUp(self):
+        which = mock.patch.object(P.shutil, "which", return_value=P.SELF)   # PATH 의 prevue 가 이 체크아웃의 것 — test_caller 가 나머지를 본다
+        which.start()
+        self.addCleanup(which.stop)
+
     def test_다음_명령에_언어를_한_번만_싣는다(self):
         with mock.patch.dict(os.environ, {"PREVUE_LANG": "ko"}):
-            out = P.with_lang({"next": "prevue setup", "then": "prevue warmup /a/B.kt --show"})
+            out = P.runnable({"next": "prevue setup", "then": "prevue warmup /a/B.kt --show"})
             self.assertEqual(out, {"next": "prevue setup --lang ko", "then": "prevue warmup /a/B.kt --show --lang ko"})
-            self.assertEqual(P.with_lang(dict(out)), out)
+            self.assertEqual(P.runnable(dict(out)), out)
 
     def test_셸_주석과_prevue_밖_명령은_그대로다(self):
         with mock.patch.dict(os.environ, {"PREVUE_LANG": "ko"}):
-            self.assertEqual(P.with_lang({"next": "prevue show /a.kt   # in a shell with network access"})["next"],
+            self.assertEqual(P.runnable({"next": "prevue show /a.kt   # in a shell with network access"})["next"],
                              "prevue show /a.kt --lang ko   # in a shell with network access")
-            self.assertEqual(P.with_lang({"next": "xcode-select --install"})["next"], "xcode-select --install")
+            self.assertEqual(P.runnable({"next": "xcode-select --install"})["next"], "xcode-select --install")
 
     def test_언어가_없으면_건드리지_않는다(self):
         with mock.patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(P.with_lang({"next": "prevue setup"}), {"next": "prevue setup"})
+            self.assertEqual(P.runnable({"next": "prevue setup"}), {"next": "prevue setup"})
             self.assertEqual(P.viewer_at(8801), "http://127.0.0.1:8801/")
         with mock.patch.dict(os.environ, {"PREVUE_LANG": "en"}):
             self.assertEqual(P.viewer_at(8801), "http://127.0.0.1:8801/?lang=en")
@@ -48,8 +53,11 @@ class Helpers(unittest.TestCase):
         self.assertEqual(opened.call_args[0][0], "http://127.0.0.1:12345/status")
 
 
-class Cli(Case):
-    """진짜 bin/prevue — 덤프가 없는 모듈이라 승인이 드는 warmup 이 next 다. 데몬을 띄우지 않는다."""
+class CliCase(Case):
+    """진짜 bin/prevue — 덤프가 없는 모듈이라 승인이 드는 warmup 이 next 다. 데몬을 띄우지 않는다.
+    PATH 는 고정한다(installed_path) — 바꿀 테스트는 path 에 PATH 문자열을 둔다."""
+
+    path = None
 
     def setUp(self):
         super().setUp()
@@ -68,11 +76,13 @@ class Cli(Case):
 
     def run_cli(self, *args):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=self.jdk,
-                   ANDROID_HOME=self.sdk)
+                   ANDROID_HOME=self.sdk, PATH=self.path or installed_path())
         env.pop("PREVUE_LANG", None)
         p = subprocess.run([str(ROOT / "bin/prevue"), *args], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         return json.loads(p.stdout), p.returncode
 
+
+class Cli(CliCase):
     def test_health_의_next_에_언어가_실린다(self):
         out, code = self.run_cli("health", self.file, "--lang", "ko")
         self.assertEqual(code, 1, out)

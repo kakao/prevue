@@ -4,6 +4,7 @@
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,7 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import prevue_plan as P  # noqa: E402
-from test_plan import Repo  # noqa: E402
+from test_plan import Repo, search_path  # noqa: E402
 
 PREVUE = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "prevue")
 PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli", "prevue_plan.py")
@@ -306,8 +307,10 @@ class Warmup(unittest.TestCase):
         self.assertTrue(out["classpath"].endswith("app-debug.json"))
 
     def test_KMP_모듈을_담은_앱이_여럿이면_고르게_하고_멈춘다(self):
-        rc, out = self.warmup(self.repo(built=False), kmp={":core:ui": ":app [debug]; :tb [debug]"})
+        with mock.patch.dict(os.environ, {"PATH": search_path()}):     # PATH 에 prevue 가 없다 — next 는 이 체크아웃의 경로다
+            rc, out = self.warmup(self.repo(built=False), kmp={":core:ui": ":app [debug]; :tb [debug]"})
         self.assertEqual((rc, out.get("need")), (2, "choose"), out)
+        self.assertEqual(shlex.split(out["next"])[0], P.SELF, out)
         self.assertEqual(len(self.calls()), 1)
 
     def test_KMP_모듈의_앱을_못_찾으면_지금_안내로_멈춘다(self):
