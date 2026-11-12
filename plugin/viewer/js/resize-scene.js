@@ -2,6 +2,7 @@ import { reduced } from "./motion.js";
 import { phrase } from "./strings.js";
 
 // 안드로이드 카메라(cam)는 windowinsets.info 의 displayCutout 이다 — Pixel 은 path 원의 가운데 · 지름, Samsung 은 path 가 위 가장자리에 붙은 상자라 그 가운데만 따르고 지름은 눈대중이다.
+// Duo 커버 카메라는 safearea.info 세로 자세의 37pt occlusion 이다. 가로는 몸체와 함께 돌려 얻는다 — 사이트의 가로 두 자세 occlusion 과 같은 자리다.
 const DEVICES = {
   s26: { name: "Galaxy S26", short: "S26", fold: false,
     open: { w: 360, h: 780 },
@@ -27,7 +28,7 @@ const DEVICES = {
     look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
   ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
     cover: { w: 466, h: 678 }, open: { w: 951, h: 669, hinge: 475.5 },
-    look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 30, h: 30, y: 24, x: .91 }, btn: [[1, 200, 80], [1, 470, 46]] },
+    look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 37, h: 37, y: 29.33, x: .8974 }, btn: [[1, 200, 80], [1, 470, 46]] },
             open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 0, h: 0, y: 11 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
   fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
     cover: { w: 475.43, h: 751.24 }, open: { w: 932.57, h: 704, hinge: 466.29 },
@@ -55,7 +56,7 @@ function turnOf(panel, rot, right) {
 // 기기 자세(sel)의 화면 dp 좌표 카메라 — 뷰어의 시스템 바가 장면과 같은 카메라를 피하고 맞춘다. 없으면 null.
 export function cameraOf(sel) {
   const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
-  if (!d?.[state] || dev === "ipduo") return null;
+  if (!d?.[state]) return null;
   const panel = d[state], rot = turns.includes("rot"), b = camBox(panel.w, panel.h, rot, d.look[state].cam, 1, turnOf(panel, rot, turns.includes("right")).mirrored);
   return b.on ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
 }
@@ -228,11 +229,6 @@ export function createResizeScene(root, hooks) {
 
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.r + "px", opacity: b.on ? op : 0 });
 
-  function duoCamera(st, s) {
-    const left = st.orientation === "landscape-right" ? 27 : st.w - 57;
-    return { left: left * s, top: 24 * s, width: 30 * s, height: 30 * s, r: 15 * s, on: st.folded };
-  }
-
   function snapTo(sel) {
     const st = resolve(sel), f = fit(st);
     cur = st; tr = null; queued = null; rig.on = false; spin.on = false; fadeB = null; UA.el.style.transform = "";
@@ -369,12 +365,8 @@ export function createResizeScene(root, hooks) {
 
   const rig = { on: false };
   function rigCamera(folded, scale) {
-    const pose = rig.from.folded === folded ? rig.from : rig.to, panel = rig.d[folded ? "cover" : "open"];
-    if (rig.d !== DEVICES.ipduo) return camBox(panel.w, panel.h, false, rig.d.look[folded ? "cover" : "open"].cam, scale);
-    const box = duoCamera(pose, scale), a = -pose.angle * Math.PI / 180;
-    const x = box.left + box.width / 2 - pose.w * scale / 2, y = box.top + box.height / 2 - pose.h * scale / 2;
-    return { ...box, left: panel.w * scale / 2 + x * Math.cos(a) - y * Math.sin(a) - box.width / 2,
-      top: panel.h * scale / 2 + x * Math.sin(a) + y * Math.cos(a) - box.height / 2 };
+    const panel = rig.d[folded ? "cover" : "open"];
+    return camBox(panel.w, panel.h, false, rig.d.look[folded ? "cover" : "open"].cam, scale);
   }
   const rigEl = $("rig"), q = (root, s) => root.querySelector(s);
   const RG = {
@@ -766,9 +758,7 @@ export function createResizeScene(root, hooks) {
         e.style.top = 2 * y + rect.h - parseFloat(e.style.top) - parseFloat(e.style.height) + "px";
       }
     });
-    const duo = ol.posture?.dev === "ipduo";
-    const camera = duo ? duoCamera({ ...ol.posture, w: rect.w / s }, s) : camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s);
-    if (!duo && ol.mirrored) { camera.left = rect.w - camera.left - camera.width; camera.top = rect.h - camera.top - camera.height; }
+    const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s, ol.mirrored);
     putCam(U.cam, camera, 0, 0, ol.shell);
     const c = ol.crease, hz = ol.rot;
     U.crease.classList.toggle("h", hz);
@@ -799,11 +789,11 @@ export function createResizeScene(root, hooks) {
       UA.el.style.transformOrigin = `${f0.cx}px ${c0y}px`;
       UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4)})`;
     }
-    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, posture: ua, look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
+    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
     if (fadeB) {
       UB.el.hidden = false;
       const f = fadeB.f, g = P.gap, st = fadeB.st;
-      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, mirrored: !!st.mirrored, posture: st, look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
+      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, mirrored: !!st.mirrored, look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
     } else UB.el.hidden = true;
   }
 
