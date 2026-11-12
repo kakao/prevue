@@ -1,5 +1,9 @@
 package prevue.application.service
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -93,6 +97,51 @@ class BoardAsideFillTest {
         assertEquals(uc.cardSpecs().drop(1), cardAsides())
         val tried = fx.renderer.asides.count { '@' in it.previewId }
         assertTrue(tried in 1..2, "회차마다 자세를 한 번 던지면 접는다 — ${tried}번")
+    }
+
+    /** [gate]에 선 옆 태스크부터 하나씩 들여보내다 보드 카드가 들어오면 그 자리에 세운다. 돌려준 빗장을 풀면 이어 간다. */
+    private fun holdAtFirstCard(gate: CountDownLatch): CountDownLatch {
+        var held = gate
+        while ('@' in fx.renderer.asides.last().previewId) {
+            val next = CountDownLatch(1)
+            fx.renderer.asideGate = next
+            held.countDown()
+            held = next
+            assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "옆 태스크가 시작하지 않았다 — ${fx.renderer.asides.map { it.previewId }}")
+        }
+        return held
+    }
+
+    @Test fun `같은 회차 안 크기 바꾸기로 새로 빠진 자세 칸은 카드 단계 뒤에도 그린다`() {
+        val uc = opened()
+        val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
+        uc.focus()
+        awaitUntil("원래 크기 회차의 막대 칸") { fx.renderer.asides.size >= 12 }
+        fx.renderer.asideEntered.drainPermits()
+
+        val gate = CountDownLatch(1)
+        fx.renderer.asideGate = gate
+        uc.save()
+        assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "저장 뒤 옆 태스크가 시작하지 않았다")
+        fx.renderer.exceptions += "렌더 예외"
+        val failed = fx.scope.async(start = CoroutineStart.UNDISPATCHED) { uc.live.resize(fold8, "viewer") }
+        val card = holdAtFirstCard(gate)
+        runBlocking { failed.await() }
+        val round = uc.workspace.now.postures!!.round
+        assertTrue(fold8 !in uc.workspace.now.postures!!.shots, "라이브 첫 장이 실패했는데 fold8 칸이 있다")
+        val firstCard = fx.renderer.asides.size - 1
+
+        val resized = fx.scope.async(start = CoroutineStart.UNDISPATCHED) { uc.live.resize(fold8.copy(folded = true), "viewer") }
+        card.countDown()
+        fx.renderer.asideGate = null
+        runBlocking { resized.await() }
+        uc.workspace.awaitBoardFilled()
+        val id = uc.workspace.now.board!!.focusCard.spec.previewId
+        awaitUntil("새로 빠진 fold8 칸") { fold8 in uc.workspace.now.postures!!.shots }
+
+        assertEquals(round, uc.workspace.now.postures!!.round, "크기 바꾸기가 회차를 새로 열었다")
+        val after = fx.renderer.asides.drop(firstCard + 1).map { it.previewId }
+        assertTrue("$id@${fold8.key}" in after, "카드 단계 뒤에 fold8 칸을 그리지 않았다 — $after")
     }
 
     @Test fun `저장 뒤 이미 새로 그린 카드는 나갈 때 다시 그리지 않는다`() {
