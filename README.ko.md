@@ -48,6 +48,11 @@ Prevue는 저장할 때마다 Preview를 1초 안팎에 다시 그려 에이전�
 이 스크린샷처럼 ForYouScreen 헤더 맞춰줘
 ```
 
+<p align="center">
+  <img src="assets/match.gif" width="640"
+       alt="사람 손 없이 시안에 맞춰 가는 장면. 왼쪽은 mockup.png로, 머리가 초록인 Pearl 메뉴 화면이다. 가운데는 PearlListPreview를 띄운 Prevue 보드로, 머리가 파랗고 제목 글자가 작고 음료 그리드가 양옆에 붙은 채 시작한다. 그 아래는 에이전트의 터미널이다. PearlListPreview를 mockup.png에 맞추라고 하자 에이전트가 세 번 저장한다. 그리드 여백 8 → 24dp, 머리 색을 초록으로, 제목 22 → 28sp. 저장할 때마다 prevue wait를 돌려 보드가 차이를 하나씩 지우며 다시 그려진다. 세 번째 저장 뒤 Preview가 시안과 똑같아지고 터미널에 matches mockup.png가 찍힌다">
+</p>
+
 탭하거나 드래그해야 바뀌는 화면도 같습니다. 에이전트가 Preview를 인터랙티브 모드로 켜고 터치를 보낸 뒤 바뀐 화면을 받아 봅니다.
 
 ## 핫스왑
@@ -91,7 +96,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 - **기기마다 자기 시스템 UI를 그립니다** — Android · iOS · iPhone Duo의 상태 표시줄을 브라우저에서만 그립니다.
 
 <p align="center">
-  <img src="assets/devices.gif" width="50%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25%" alt="작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
+  <img src="assets/devices.gif" width="50%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25%" alt="무대 아래 조작 독이 놓인 작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25%" alt="무대 아래 조작 독이 놓인 작업 공간의 상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
 </p>
 
 ## 에이전트가 셋이어도 가볍게

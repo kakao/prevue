@@ -48,6 +48,11 @@ Give it a design — a Figma frame, a screenshot, a mockup — and the agent edi
 Make the ForYouScreen header match this screenshot
 ```
 
+<p align="center">
+  <img src="assets/match.gif" width="640"
+       alt="Matching a mockup with no hands on the viewer. On the left, mockup.png: the Pearl menu screen with a green header. In the middle, the Prevue board showing PearlListPreview, which starts with a blue header, a smaller headline, and the drink grid pressed against the edges. Below it, the agent's terminal. Asked to make PearlListPreview match mockup.png, the agent saves three times — grid padding 8 → 24 dp, the header color back to forest green, the headline 22 → 28 sp — and runs prevue wait after each save, so the board redraws one difference at a time. After the third save the Preview is identical to the mockup and the terminal prints matches mockup.png">
+</p>
+
 Screens that only change when you tap or drag work the same way. The agent switches the Preview into interactive mode, sends touches, and gets the new picture back.
 
 ## Hot swap
@@ -91,7 +96,7 @@ Without touching the source, change the screen size or the device (six Android, 
 - **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars, in the browser only.
 
 <p align="center">
-  <img src="assets/devices.gif" width="50%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25%" alt="In the workspace, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
+  <img src="assets/devices.gif" width="50%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25%" alt="In the workspace, with the control dock under the stage, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25%" alt="In the workspace, with the control dock under the stage, on the detail screen Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
 </p>
 
 ## Three agents, still light
