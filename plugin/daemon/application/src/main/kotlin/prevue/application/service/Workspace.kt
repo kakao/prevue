@@ -1,6 +1,7 @@
 package prevue.application.service
 
 import java.io.File
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,12 @@ class Workspace(
         val added = created.map { it.canonicalPath }; val gone = deleted.map { it.canonicalPath }.toSet()
         store.edit { it.withCreated(added, gone) }
     }
+
+    private val seeding = MutableStateFlow<Job?>(null)
+
+    fun seededBy(job: Job) { seeding.value = job }
+
+    suspend fun seedsNoted() { seeding.value?.join() }
 
     private val turn = Mutex()
     private val savesWaiting = MutableStateFlow(0)

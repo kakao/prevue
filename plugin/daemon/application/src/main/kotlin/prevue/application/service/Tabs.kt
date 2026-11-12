@@ -185,13 +185,15 @@ class Tabs @Inject internal constructor(
 
     private suspend fun compileBeforeOpen(ed: WorkspaceEditor, key: String, by: String): Pair<StaleCallers.Batch, Long>? {
         val f = File(key).takeIf(sources::has)?.canonicalFile ?: return null
+        ws.seedsNoted()
         val due = modules.dueOnOpen(f) { previewClasses(f) }
         val opening = if (due) modules.holdExpectActual(ed, listOf(f)) else listOf(f).filterNot(modules::declaresExpectActual)
         if ((!due || opening.isEmpty()) && !modules.newWaiting(listOf(f))) return null
+        val warm = f.path !in ws.now.newFiles || modules.drawnByGradle(f) { previewClasses(f) }
         val t = System.nanoTime()
         live.compiling(ed, listOf(f), by)
         val batch = coroutineScope {
-            if (f.path !in ws.now.newFiles) launch { warmRenderer(f) }
+            if (warm) launch { warmRenderer(f) }
             modules.compileWithNew(ed, opening)
         }
         if (batch.result.ok) engine.codeChanged()

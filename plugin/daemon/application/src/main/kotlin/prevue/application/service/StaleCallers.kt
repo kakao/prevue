@@ -81,6 +81,7 @@ class StaleCallers(
     suspend fun newWaiting(beside: List<File>): Boolean = waiting(beside).first.isNotEmpty()
 
     private suspend fun waiting(beside: List<File>): Pair<List<File>, List<File>> {
+        ws.seedsNoted()
         val asked = beside.map { it.canonicalPath }.toSet()
         return ws.now.newFiles.filter { it !in asked }.map(::File).filter(sources::has)
             .partition { FreshnessPolicy.newerThanBuild(mtime(it), compiler.builtAt(ws.graph.ownerOf(it))) }
@@ -126,6 +127,11 @@ class StaleCallers(
         ed.forgetNew(batch)
         val keys = batch.map { it.canonicalPath }.toSet()
         return Batch(batch, seen.filterKeys { it in keys }, c)
+    }
+
+    suspend fun drawnByGradle(f: File, previewClasses: () -> Collection<String>): Boolean {
+        val module = ws.graph.ownerOf(f.canonicalFile)
+        return compiler.builtAt(module) != null && previewClasses().all { compiler.hasClass(module, it) }
     }
 
     /** [f]를 열기 전에 컴파일해야 하나 — 새 파일이거나 [FreshnessPolicy.compileOnOpen]. */

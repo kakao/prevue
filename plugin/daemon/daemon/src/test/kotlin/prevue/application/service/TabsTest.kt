@@ -319,6 +319,44 @@ class TabsTest {
         assertTrue(fx.renderer.asides.isEmpty())
     }
 
+    // 2026-11-12: 데몬이 꺼진 사이 고친 파일을 열면 시드로 잡혀 새 파일처럼 데우기를 건너뛰었다 — 콜드 첫 PNG가 렌더러 부트스트랩을 기다렸다
+    @Test fun `빌드 뒤에 바뀐 여는 파일은 옛 산출물에 클래스가 있어 컴파일하는 동안 데운다`() {
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        ws.noteCreated(listOf(card), emptyList())
+        show(card)
+        assertEquals(listOf(listOf(card.canonicalFile)), fx.compiler.compiled.toList())
+        assertEquals(1, fx.renderer.asides.size)
+        assertTrue(fx.renderer.shown.none { it.previewId.endsWith("-warm") })
+    }
+
+    @Test fun `Gradle 산출물에 클래스가 없는 새 파일은 데우지 않는다`() {
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        fx.compiler.unbuilt = setOf("demo.NewsCardKt")
+        ws.noteCreated(listOf(card), emptyList())
+        show(card)
+        assertTrue(fx.renderer.asides.isEmpty())
+    }
+
+    // 시드 적재는 감시 코루틴이, 첫 열기는 다른 코루틴이 한다 — 열기가 먼저 시드를 읽으면 옛 산출물로 그렸다
+    @Test fun `시드 적재가 끝나기 전에 열면 적재를 기다려 시드와 함께 컴파일한다`() {
+        val screen = fx.file.apply { setLastModified(1_000_000) }
+        val callee = java.io.File(fx.srcRoot, "demo/Callee.kt").apply { writeText("package demo\nval inset = 1\n"); setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        val noting = kotlinx.coroutines.Job()
+        ws.seededBy(noting)
+
+        val opened = CompletableFuture.supplyAsync { show(screen) }
+        org.junit.jupiter.api.assertThrows<java.util.concurrent.TimeoutException> { opened.get(300, TimeUnit.MILLISECONDS) }
+        ws.noteCreated(listOf(callee), emptyList())
+        noting.complete()
+        opened.get(10, TimeUnit.SECONDS)
+
+        assertEquals(listOf(listOf(screen.canonicalFile, callee.canonicalFile)), fx.compiler.compiled.toList())
+        assertTrue(ws.now.newFiles.isEmpty())
+    }
+
     @Test fun `여는 파일만 실패하고 함께 실을 새 파일이 없으면 다시 하지 않는다`() {
         val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
         fx.compiler.built = mapOf(":app" to 2_000_000L)
