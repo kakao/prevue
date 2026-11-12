@@ -16,9 +16,9 @@
 //
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
-// 장면: hero · board · party · point · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out · --q(party, img2webp 필요) · --at(point 비율) · --sweet(cup 의 Sweetness 줄 비율).
-// GIF 장면(files · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
+// 장면: hero · board · party · pointing · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
+// GIF 장면(pointing · files · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
 // 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
 
@@ -313,6 +313,34 @@ async function hand(c) {
   };
 }
 
+/**
+ * 보드처럼 #shot 이 없는 화면의 손 — hand() 는 작업 공간의 그림을 기준으로 해 보드에서는 못 쓴다. 포인터를 미끄러뜨려
+ * 요소 한가운데(선택자)나 화면 좌표로 옮기고 누른다.
+ */
+function glide(c, x, y) {
+  const mouse = (type, extra = {}) => c.send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", buttons: 0, ...extra });
+  const to = async (tx, ty, n = 32) => {
+    const x0 = x, y0 = y;
+    for (let i = 1; i <= n; i++) {
+      const k = i / n, e = k < 0.5 ? 2 * k * k : 1 - (2 - 2 * k) ** 2 / 2;
+      x = x0 + (tx - x0) * e; y = y0 + (ty - y0) * e;
+      await mouse("mouseMoved");
+      await sleep(16);
+    }
+  };
+  const toEl = async sel => {
+    const r = await c.rect(sel);
+    if (!r) throw new Error(`${sel} 이 없다`);
+    await to(r.x + r.w / 2, r.y + r.h / 2);
+  };
+  const tap = async () => { await sleep(160); await mouse("mousePressed", { clickCount: 1 }); await sleep(90); await mouse("mouseReleased", { clickCount: 1 }); };
+  return {
+    at: () => mouse("mouseMoved"),
+    async press(sel) { await toEl(sel); await tap(); },
+    async pressAt(tx, ty) { await to(tx, ty); await tap(); },
+  };
+}
+
 /** 화면을 녹화한다 — screencast 는 그림이 바뀔 때만 프레임을 주므로 시각을 함께 받아 길이로 쓴다. */
 async function record(c, act, hold = 1400) {
   const frames = [];
@@ -327,6 +355,17 @@ async function record(c, act, hold = 1400) {
   await c.send("Page.stopScreencast");
   c.on("Page.screencastFrame", null);
   return frames.map((f, i) => ({ data: f.data, d: i + 1 < frames.length ? frames[i + 1].t - f.t : hold / 1000 }));
+}
+
+/** 프레임을 초당 fps 장 이하로 솎는다 — 짧은 프레임은 다음 프레임에 길이를 넘기고 빠진다. 마지막 프레임은 남긴다. */
+function thin(frames, fps) {
+  const out = [];
+  let carry = 0;
+  for (const [i, f] of frames.entries()) {
+    carry += f.d;
+    if (carry >= 1 / fps || i === frames.length - 1) { out.push({ data: f.data, d: carry }); carry = 0; }
+  }
+  return out;
 }
 
 /**
@@ -505,34 +544,17 @@ const SCENES = {
       await sleep(1500);
       await c.evaluate(POINTER);
       await sleep(800);
-      // 포인터를 미끄러뜨려 요소 한가운데를 누른다 — hand() 는 작업 공간의 그림을 기준으로 해 보드에서는 못 쓴다
-      let x = w * 0.5, y = (h - BAR) * 0.55;
-      const mouse = (type, extra = {}) => c.send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", buttons: 0, ...extra });
-      const press = async sel => {
-        const r = await c.rect(sel);
-        if (!r) throw new Error(`${sel} 이 없다`);
-        const x0 = x, y0 = y, tx = r.x + r.w / 2, ty = r.y + r.h / 2, n = 32;
-        for (let i = 1; i <= n; i++) {
-          const k = i / n, e = k < 0.5 ? 2 * k * k : 1 - (2 - 2 * k) ** 2 / 2;
-          x = x0 + (tx - x0) * e; y = y0 + (ty - y0) * e;
-          await mouse("mouseMoved");
-          await sleep(16);
-        }
-        await sleep(160);
-        await mouse("mousePressed", { clickCount: 1 });
-        await sleep(90);
-        await mouse("mouseReleased", { clickCount: 1 });
-      };
-      await mouse("mouseMoved");
+      const g = glide(c, w * 0.5, (h - BAR) * 0.55);
+      await g.at();
       const go = `.card[data-i="${card.index}"] .go`;
       await c.evaluate(`document.querySelector('${go}').scrollIntoView({ block: "center" }); true`);
       await sleep(600);
       const frames = await record(c, async () => {
         await sleep(900);
-        await press(go);
+        await g.press(go);
         await c.until(FOCUS, 20_000);
         await sleep(party * 1000);
-        await press("#back");
+        await g.press("#back");
         await c.until(BOARD, 20_000);
         await c.evaluate(`document.querySelector('${go}').scrollIntoView({ block: "center" }); true`);
         await sleep(400);
@@ -542,17 +564,91 @@ const SCENES = {
       await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
     }
   },
-  // 가리키기 — 작업 공간에서 ⌥+클릭한 박스와 캡슐의 파일:라인 · 사슬
-  async point(c) {
-    const url = await viewer(opt.nia, [NIA.foryou]);
-    await frame(c, "point", [await window_(c, url, 1280, 820, async c => {
-      await enter(c, 0);
-      const s = await c.rect("#shot");
-      const [fx, fy] = (opt.at || "0.34,0.29").split(",").map(Number);   // 첫 뉴스 카드의 제목 — 캡슐 사슬에 NewsResourceTitle
-      await c.click(s.x + s.w * fx, s.y + s.h * fy, 1);
-      await sleep(1200);
-    })]);
-    await post(url, "/viewer/exit");
+  // 가리키기 카드 — Pearl 쇼케이스 보드에서 홈 그림의 음료 카드를 누르면 그림 옆에 카드가 선다(이름 · 파일:줄 · 크기 · Modifier · 트리).
+  // 트리 줄로 부모를 가리켰다가 옆 음료 카드(형제)로 내려오고, 머리의 🖼 로 그 컴포저블을 부르는 Preview 목록을 펼쳐 다른 파일의 보드로 건너간다.
+  // 카드가 커지고 트리가 접히는 모션을 보이려고 움직임 줄이기를 끈다. 한 번 녹화해 README GIF(assets/pointing.gif, 창 테두리)와
+  // Release 본문 webp(assets/<--out, pointing>.webp, 뷰어만)를 함께 낸다. --pw · --ph(창) · --at(누를 자리, 그림 안 비율)
+  async pointing(c) {
+    const repo = opt["pearl-a"];
+    const url = await viewer(repo, [PEARL.showcase]);
+    const card = (prevue(repo, "board").json?.cards || []).find(x => x.name === "HomeTourPreview");
+    if (!card) throw new Error("ShowcasePreviews 의 HomeTourPreview 카드가 없다");
+    const w = +(opt.pw || 1280), h = +(opt.ph || 820);
+    const named = name => `document.querySelector(".point-card .pc-name")?.textContent === ${JSON.stringify(name)}`;
+    const stage = `.card[data-i="${card.index}"] .cstage`;
+    const tagged = '[data-rs="go"]';
+    // 지금 줄 위에서 가장 가까운 그 이름의 조상 줄에 표지를 단다 — 줄 id 는 그림마다 달라 이름으로 찾는다
+    const up = name => `(() => { const here = document.querySelector(".pc-tree .pc-node.here"); if (!here) return false;
+      let r = here.parentElement.closest(".pc-node");
+      while (r && r.querySelector(":scope > .pc-row .pc-pick").textContent !== ${JSON.stringify(name)}) r = r.parentElement.closest(".pc-node");
+      if (!r) return false;
+      for (const e of document.querySelectorAll("[data-rs]")) e.removeAttribute("data-rs");
+      r.querySelector(":scope > .pc-row .pc-pick").dataset.rs = "go"; return true; })()`;
+    // 형제 줄의 차례는 렌더마다 바뀐다(Lazy 그리드의 아이템 순서) — 같은 이름의 형제를 하나씩 가리켜 그림 위 자리를 재고,
+    // 지금 것 바로 오른쪽에 있는 줄의 id 를 낸다
+    const rightOf = `(async () => { const box = () => document.querySelector(${JSON.stringify(stage + " .box.pick")}).getBoundingClientRect();
+      const here = document.querySelector(".pc-tree .pc-node.here"), a = box(), name = here.querySelector(":scope > .pc-row .pc-pick").textContent;
+      const ids = [...here.parentElement.children].filter(li => li !== here && li.querySelector(":scope > .pc-row .pc-pick")?.textContent === name).map(li => li.dataset.id);
+      let best = null;
+      for (const id of ids) {
+        document.querySelector('.pc-tree .pc-node[data-id="' + id + '"] > .pc-row .pc-pick').click();
+        await new Promise(r => setTimeout(r, 400));
+        const b = box();
+        if (Math.abs(b.top - a.top) < a.height / 2 && b.left > a.left && (!best || b.left < best.left)) best = { id, left: b.left };
+      }
+      return best && best.id; })()`;
+    await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "no-preference" }] });
+    try {
+      await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+      await c.send("Page.navigate", { url });
+      await c.until(BOARD);
+      await sleep(800);
+      await c.evaluate(POINTER);
+      const title = await c.evaluate("document.title");
+      const s = await c.rect(`${stage} img`);
+      const [fx, fy] = (opt.at || "0.40,0.555").split(",").map(Number);   // Taro 카드의 가격 오른쪽 — 카드 안 글 묶음(Column)이 잡힌다
+      // 미리 한 번 가리켜 옆 카드의 줄 id 를 잰다 — 녹화에 담기지 않게 카드를 닫고 시작한다
+      await c.click(s.x + s.w * fx, s.y + s.h * fy);
+      await c.until(up("DrinkCard"), 10_000);
+      await c.evaluate(`document.querySelector('${tagged}').click(); true`);
+      await c.until(named("DrinkCard"), 5_000);
+      const next = await c.evaluate(rightOf);
+      if (!next) throw new Error("pointing: 누른 음료 카드 오른쪽의 형제 DrinkCard 를 트리에서 못 찾았다");
+      await c.key("Escape", "Escape");
+      await c.until(`!document.querySelector(".point-card")`, 5_000);
+      const g = glide(c, w * 0.5, (h - BAR) * 0.8);
+      // 트리 패널은 스크롤된다 — 줄이 패널 밖으로 잘려 있으면 그 자리를 눌러도 줄에 닿지 않아, 먼저 패널 안으로 들인다
+      const pickRow = async sel => {
+        await c.evaluate(`document.querySelector('${sel}').scrollIntoView({ block: "nearest" }); true`);
+        await sleep(300);
+        await g.press(sel);
+      };
+      await g.at();
+      const frames = await record(c, async () => {
+        await sleep(pace(600));
+        await g.pressAt(s.x + s.w * fx, s.y + s.h * fy);
+        await c.until(up("DrinkCard"), 10_000);
+        await sleep(pace(2000));
+        await pickRow(tagged);                                               // 조상 — 카드가 DrinkCard 의 크기 · Modifier 로 바뀐다
+        await c.until(named("DrinkCard"), 5_000);
+        await sleep(pace(1600));
+        await pickRow(`.pc-tree .pc-node[data-id="${next}"] > .pc-row .pc-pick`);   // 옆 음료 카드 — 형제로 옮겨 가면 그림 위 표시도 따라간다
+        await c.until(`document.querySelector(".pc-tree .pc-node.here")?.dataset.id === ${JSON.stringify(next)}`, 5_000);
+        await sleep(pace(1600));
+        await g.press(".pc-jump");                                           // 🖼 — 부르는 Preview 가 여럿이면 목록이 펼쳐진다
+        await c.until(`!!document.querySelector(".pc-fold[data-open]")`, 5_000);
+        await sleep(pace(1000));
+        await g.press(`.pc-preview[title^="MenuCardsPreview"]`);
+        await c.until(`document.title.startsWith("ComponentPreviews")`, 20_000);
+        await sleep(300);
+        await c.until(BOARD, 20_000);
+        await sleep(pace(2000));
+      }, 600);
+      await gif(c, "pointing", title, url, frames, w, h);
+      await webpOf(c, opt.out || "pointing", thin(frames, 20), w, h);   // 화면 녹화는 초당 30장 가까이 온다 — Release 본문에 싣기엔 무겁다
+    } finally {
+      await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+    }
   },
   // 파일 오가기 — 빠른 열기(/)로 파일 이름 · 머리글자를 쳐서 열면 왼쪽 열린 파일 목록에 쌓이고, 숫자 키로 그 사이를 오간다
   async files(c) {
