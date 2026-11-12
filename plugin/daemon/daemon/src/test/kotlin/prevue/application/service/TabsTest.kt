@@ -357,6 +357,22 @@ class TabsTest {
         assertTrue(ws.now.newFiles.isEmpty())
     }
 
+    @Test fun `시드 적재가 끝나기 전에 연 새 파일은 적재 뒤에 새 파일로 보고 데우지 않는다`() {
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        fx.compiler.unbuilt = setOf("demo.NewsCardKt")
+        val noting = kotlinx.coroutines.Job()
+        ws.seededBy(noting)
+
+        val opened = CompletableFuture.supplyAsync { show(card) }
+        org.junit.jupiter.api.assertThrows<java.util.concurrent.TimeoutException> { opened.get(300, TimeUnit.MILLISECONDS) }
+        ws.noteCreated(listOf(card), emptyList())
+        noting.complete()
+        opened.get(10, TimeUnit.SECONDS)
+
+        assertTrue(fx.renderer.asides.isEmpty())
+    }
+
     @Test fun `여는 파일만 실패하고 함께 실을 새 파일이 없으면 다시 하지 않는다`() {
         val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
         fx.compiler.built = mapOf(":app" to 2_000_000L)
