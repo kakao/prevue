@@ -55,6 +55,9 @@ class ModuleGraphTest {
             assertTrue(g.contains(f))
             assertEquals(":lib", g.ownerOf(f))
             assertEquals(listOf(real.canonicalFile), g.roots)
+            val res = File(tmp, "real/lib/src/main/res").apply { mkdirs() }
+            val withRes = ModuleGraph(":lib", listOf(ModuleNode(":lib", emptyList(), emptyList(), resRoots = listOf(File(link, "lib/src/main/res")))))
+            assertEquals(listOf(res.canonicalFile), withRes.resRoots)
             assertFalse(g.contains(File(tmp, "other/Screen.kt").canonicalFile))
         } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
     }

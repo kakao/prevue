@@ -33,7 +33,7 @@ internal object WatchGraph {
         s.project, s.sourceRoots,
         s.ownClassPath.filter { it !in skip }.map { File(it) },
         runCatching { s.kotlinModuleName }.getOrNull(),
-        s.resourceRoots.map { it.canonicalFile },
+        s.resourceRoots,
         s.isKmp,
     )
 }
