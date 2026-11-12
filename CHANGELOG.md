@@ -26,9 +26,9 @@ Only changes users can see go here.
 - **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
 - **Show inset areas** draws each inset band and the safe area.
 - **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars, in the browser only.
-- **`showSystemUi = true` draws the bars**; turn them on or off from the dock or `focus --system-ui`.
+- **`showSystemUi = true` draws the bars**; off a device, turn them on or off from the dock or `focus --system-ui`.
 - **Portrait, Landscape left and Landscape right on every device** (`focus --orientation`, Android naming).
-- **Folding keeps the orientation you hold.**
+- **Folding keeps the device the way you hold it.**
 
 ### Single view and board
 
@@ -40,7 +40,7 @@ Only changes users can see go here.
 ### Starting and updating
 
 - **The first start after updating downloads about 11 MB once** — run `prevue setup` when `health` asks.
-- **Opening a file draws code changed while the daemon was off**, and a restarted daemon reuses its compiles.
+- **Opening a file draws code changed while the daemon was off**, and a restarted daemon reuses the last one's compiles when nothing changed.
 
 ### Fixes
 
@@ -67,7 +67,7 @@ Only changes users can see go here.
 - **실제 기기 인셋이 Composable에 전달됩니다** — [windowinsets.info](https://windowinsets.info/) · [safearea.info](https://safearea.info/) 기준.
 - **Show inset areas**가 인셋 띠와 safe area를 그립니다.
 - **기기마다 자기 시스템 UI** — Android · iOS · iPhone Duo 상태 표시줄, 브라우저에만 그립니다.
-- **`showSystemUi = true`에 바가 보입니다** — 독이나 `focus --system-ui`로 켜고 끕니다.
+- **`showSystemUi = true`에 바가 보입니다** — 기기가 아닐 때는 독이나 `focus --system-ui`로 켜고 끕니다.
 - **모든 기기에 Portrait · Landscape left · Landscape right**(`focus --orientation`, Android 이름 기준).
 - **접어도 손에 든 방향이 그대로입니다.**
 
@@ -81,7 +81,7 @@ Only changes users can see go here.
 #### 시작과 업데이트
 
 - **업데이트 뒤 첫 시작에 약 11 MB를 한 번 받습니다** — `health`가 물으면 `prevue setup`.
-- **파일을 열면 데몬이 꺼진 동안 바뀐 코드로 그리고**, 다시 띄운 데몬은 컴파일을 이어 씁니다.
+- **파일을 열면 데몬이 꺼진 동안 바뀐 코드로 그리고**, 다시 띄운 데몬은 바뀐 것이 없으면 앞 데몬의 컴파일을 이어 씁니다.
 
 #### 고친 것
 
