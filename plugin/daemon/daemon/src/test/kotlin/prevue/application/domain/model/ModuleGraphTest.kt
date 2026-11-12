@@ -46,15 +46,17 @@ class ModuleGraphTest {
         val tmp = Files.createTempDirectory("prevue-graph").toFile()
         try {
             val real = File(tmp, "real/lib/src/main/kotlin").apply { mkdirs() }
+            val res = File(tmp, "real/lib/src/main/res").apply { mkdirs() }
             val link = Files.createSymbolicLink(File(tmp, "link").toPath(), File(tmp, "real").toPath()).toFile()
             val g = ModuleGraph(":app", listOf(
-                ModuleNode(":lib", listOf(File(link, "lib/src/main/kotlin")), emptyList()),
+                ModuleNode(":lib", listOf(File(link, "lib/src/main/kotlin")), emptyList(), resRoots = listOf(File(link, "lib/src/main/res"))),
                 ModuleNode(":app", emptyList(), emptyList()),
             ))
             val f = File(real, "a/Screen.kt").canonicalFile
             assertTrue(g.contains(f))
             assertEquals(":lib", g.ownerOf(f))
             assertEquals(listOf(real.canonicalFile), g.roots)
+            assertEquals(listOf(res.canonicalFile), g.resRoots)
             assertFalse(g.contains(File(tmp, "other/Screen.kt").canonicalFile))
         } finally { File(tmp, "link").delete(); tmp.deleteRecursively() }
     }
