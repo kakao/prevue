@@ -307,6 +307,7 @@ async function hand(c) {
     await to((r.x + r.w / 2 - s.x) / s.w, (r.y + r.h / 2 - s.y) / s.h, ms);
   };
   return {
+    async rest(ms = 520) { await to(0.62, 0.62, ms); },   // 손이 처음 놓인 자리 — 끝을 첫 장과 같게 해 GIF 반복을 잇는다
     async tapEl(sel, after = 700) { await toEl(sel, 520); await sleep(140); await press(); await sleep(90); await release(); await sleep(pace(after)); },
     async tap(fx, fy, after = 700) { await to(fx, fy); await sleep(140); await press(); await sleep(90); await release(); await sleep(pace(after)); },
     async drag(fx, fy, tx, ty, ms = 480, after = 1000) { await to(fx, fy); await sleep(140); await press(); await to(tx, ty, ms); await sleep(60); await release(); await sleep(pace(after)); },
@@ -456,8 +457,9 @@ async function interactiveGif(c, name, repo, file, fn, act) {
 
 /**
  * 조작 독에서 크기 · 기기를 바꾸는 GIF — 독이 요점이라 자르지 않는다. 틀이 새 크기로 옮겨 가는 모프를 보이려고 이 장면만 움직임 줄이기를 끈다.
+ * setup 은 녹화 전에 첫 장면을 맞춘다 — 끝 장면과 같게 두면 GIF 반복이 끊기지 않는다.
  */
-async function devicesGif(c, name, repo, file, fn, act) {
+async function devicesGif(c, name, repo, file, fn, act, setup) {
   const url = await viewer(repo, [file]);
   const card = (prevue(repo, "board").json?.cards || []).find(x => x.name === fn);
   if (!card) throw new Error(`${file}: ${fn} 카드가 없다`);
@@ -470,6 +472,7 @@ async function devicesGif(c, name, repo, file, fn, act) {
     await enter(c, card.index);
     await c.evaluate(POINTER);
     const title = await c.evaluate("document.title");
+    if (setup) { const h = await hand(c); await setup(h); await h.rest(0); }
     const frames = await record(c, async () => act(await hand(c)), 1800);
     await gif(c, name, title, url, frames, w, h);
   } finally {
@@ -805,19 +808,27 @@ const SCENES = {
       await h.tap(0.88, +(opt.sweet || 0.81), 1600);                         // 100% — 짙어진다
     });
   },
-  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 조작 독에서 기기 · 접기만 바꿔 다시 그리고, 끝에 인셋 영역 보기를 켠다. 고를 때마다 그림이 서기를 기다린다.
-  // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다
+  // 크기 · 기기 — 인셋 영역 보기를 켠 채 기기만 바꿔, 기기마다 SafeArea 가 달라지고 화면이 그 안에 다시 서는 것을 보인다.
+  // 인셋 보기는 크기 · 자세를 바꿔도 켜진 채다(session.ts insetScope). 녹화 전에 S26 · 인셋 켬을 맞추고 S26 으로 끝내 반복이 이어진다.
+  // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다. 메뉴의 iPhone Duo 는 펼친 채로 열려
+  // 커버로 바로 고를 길이 없다 — 그림이 서자마자 접어 펼친 화면을 짧게 지난다. 고를 때마다 그림이 서기를 기다린다.
   async devices(c) {
+    const pick = async (h, sel, after = 2000) => { await h.tapEl("#pnSum", 450); await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
+    const fold = async (h, after = 2400) => { await h.tapEl("#dcFold", 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
+    // 고른 직후에는 옛 그림이 아직 서 있어 FOCUS 가 바로 참이다 — 접기 버튼이 보이고 풀릴 때(준비가 끝났을 때)까지 기다린다
+    const foldReady = `(() => { const b = document.getElementById("dcFold"); return ${FOCUS} && !!b && b.offsetWidth > 0 && !b.disabled; })()`;
     await devicesGif(c, "devices", opt["pearl-a"], PEARL.showcase, "DevicesPreview", async h => {
-      const pick = async (sel, after = 2000) => { await h.tapEl("#pnSum", 450); await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
-      await pick("s26");                                                     // 폰 — 컵 아래 고르기
-      const fold = async (after = 2400) => { await h.tapEl("#dcFold", 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
-      await pick("ipduo", 2400);                                             // 펼친 iPhone Duo — 왼쪽 컵 · 오른쪽 패널
-      await fold();                                                          // 접으면 커버 — 다시 세로
-      await fold();                                                          // 다시 펴면 컵 · 패널
-      await pick("tablet", 2600);                                            // 태블릿 가로 — 컵 · 패널
-      await pick("ipduo", 2400);                                             // 인셋 영역 보기는 펼친 Duo에서 — 오른쪽 84 · 아래 34 띠가 Tablet(24 · 32)보다 잘 보인다
-      await h.tapEl("#insetBtn", 3200);                                      // 끝 장면 — 띠 · SAFE AREA
+      await pick(h, "ip17", 2400);                                           // iPhone 17 — 다이내믹 아일랜드 · 아래 띠
+      await pick(h, "ipduo", 0);                                             // 펼친 Duo — 곧바로 접는다
+      await c.until(foldReady, 20_000);
+      await fold(h);                                                         // 커버 화면
+      await fold(h, 2600);                                                   // 펼치면 오른쪽 · 아래 띠
+      await pick(h, "s26", 500);                                             // 첫 장면으로
+      await h.rest();
+    }, async h => {
+      await pick(h, "s26", 0);
+      await h.tapEl("#insetBtn", 600);
+      await sleep(1500);
     });
   },
   // 맡기기의 루프 그림 · 벤치마크(두 판 × 영어 · 한국어) — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
