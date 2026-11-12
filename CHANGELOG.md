@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- Android device frames now use the measured screen corner radius of each device and posture (Pixel 9, Pixel 9 Pro Fold, Galaxy S26, Galaxy Z Fold8).
+
 ## [0.22.0] — 2026-11-12
 
 ![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
