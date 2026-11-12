@@ -23,7 +23,7 @@ Only changes users can see go here.
 
 ### See where it fits
 
-![Changing devices from the dock with Show inset areas left on: S26, iPhone 17, iPhone Duo folded to its cover and unfolded, then S26 again, each redrawing inside its own SAFE AREA](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/devices.gif)
+![Changing devices from the dock under the picture: S26, then iPhone Duo unfolded, folded to its cover and unfolded again, then Pixel Tablet; back on the unfolded iPhone Duo, Show inset areas tints the 84 dp status band and the 34 dp bottom band and labels the SAFE AREA between them](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/devices.gif)
 
 - **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
 - **Show inset areas** draws each inset band and the safe area.
