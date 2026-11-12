@@ -215,6 +215,35 @@ try {
       }
     }
   }
+  // 돌리기 — 카메라는 몸체에 붙어 돈다. 마지막 회전 프레임 · 회전 끝 · 정지 장면의 카메라가 한 자리이고,
+  // Duo 커버는 safearea.info occlusion 중심(가로 왼쪽 = 위가 왼쪽, 사이트 이름으로는 Landscape Right)에 선다.
+  const SITE_CAM = { 'portrait': [418.17,47.83], 'landscape-left': [47.83,47.83], 'landscape-right': [630.17,418.17] };
+  const spins = [['ipduo',true,[951,669,466,678]], ['s26',false,[360,780]], ['ip17',false,[402,874]]];
+  for (const [device, folded, size] of spins) {
+    const poses = ['portrait','landscape-left','landscape-right'].map(o => ({o, st: pose(device, folded, o, size)}));
+    for (const a of poses) for (const b of poses) if (a !== b) {
+      const name = `${device} 돌리기 ${a.o} → ${b.o}`;
+      await evaluate(`states=${JSON.stringify({[a.st.sel]:a.st,[b.st.sel]:b.st})}`);
+      const rest = await evaluate(`reset(${JSON.stringify(b.st)});snapshot()`);
+      await evaluate(`reset(${JSON.stringify(a.st)});scene.image(${JSON.stringify(b.st.sel)},spec(${b.st.w},${b.st.h}))`);
+      const spun = await evaluate(`(()=>{const start=time;scene.update(${JSON.stringify(b.st)});step(start);const first=document.querySelector('#ua').style.transform;
+        step(start+599);const last=snapshot();step(start+600);const end=snapshot();step(start+2600);step(start+4600);
+        return {first,turned:document.querySelector('#ua').style.transform!==first,last,end,final:snapshot(),moving:scene.moving()}})()`);
+      assert(rest.cameraOn, `${name}: 카메라 표시`);
+      assert(spun.turned, `${name}: 몸체가 돌았다`);
+      const c = centre(rest.cam);
+      for (const [label, cam] of [['마지막 회전 프레임', spun.last.cam], ['회전 끝', spun.end.cam], ['정착', spun.final.cam]]) {
+        const k = centre(cam);
+        assert(Math.hypot(k.x-c.x, k.y-c.y) <= .5, `${name}: ${label} 카메라 ${JSON.stringify(k)} / 정지 ${JSON.stringify(c)}`);
+      }
+      assert.equal(spun.moving, false, `${name}: 정착`);
+      if (device === 'ipduo') {
+        const s = rest.body.w / b.st.w, [x, y] = SITE_CAM[b.o];
+        assert(Math.abs((c.x-rest.body.x)/s-x) <= .5 && Math.abs((c.y-rest.body.y)/s-y) <= .5, `${name}: 사이트 occlusion 중심 ${[(c.x-rest.body.x)/s,(c.y-rest.body.y)/s]} / ${[x,y]}`);
+      }
+      console.log(`통과 ${++checked}: ${name}`);
+    }
+  }
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   for(const [device,...size] of devices){
     const natural=size[0]>size[1]?'landscape-left':'portrait';

@@ -49,12 +49,20 @@ class DeviceInsetsTest {
             assertNull(p.measured)
         }
         expect(true, PORTRAIT, 1398 to 2034, InsetEdges(right = 84.0, bottom = 34.0))
-        expect(true, LANDSCAPE_LEFT, 2034 to 1398, InsetEdges(right = 84.0, bottom = 34.0))
-        expect(true, LANDSCAPE_RIGHT, 2034 to 1398, InsetEdges(left = 84.0, bottom = 34.0))
+        expect(true, LANDSCAPE_LEFT, 2034 to 1398, InsetEdges(left = 84.0, bottom = 34.0))
+        expect(true, LANDSCAPE_RIGHT, 2034 to 1398, InsetEdges(right = 84.0, bottom = 34.0))
         expect(false, PORTRAIT, 2007 to 2853, InsetEdges(top = 82.0, bottom = 34.0))
         expect(false, LANDSCAPE_LEFT, 2853 to 2007, InsetEdges(right = 84.0, bottom = 34.0))
         expect(false, LANDSCAPE_RIGHT, 2853 to 2007, InsetEdges(right = 84.0, bottom = 34.0))
         assertEquals(475.5, ScreenSize.Device(DeviceModel.IPHONE_DUO).hingeDp)
+    }
+
+    @Test fun `iOS 가로는 Apple 방향 이름의 반대로 든 자세다 — 가로 왼쪽은 위가 왼쪽`() {
+        all.filter { it.model.look == BarLook.IOS }.forEach { d ->
+            val apple = d.insetProfile.evidence!!.conditions["orientation"]
+            val expected = when (d.orientation) { PORTRAIT -> "portrait"; LANDSCAPE_LEFT -> "landscape-right"; LANDSCAPE_RIGHT -> "landscape-left" }
+            assertEquals(expected, apple, d.key)
+        }
     }
 
     @Test fun `S26 각 가로 방향의 컷아웃은 자체 캡처를 쓴다`() {

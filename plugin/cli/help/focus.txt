@@ -18,6 +18,8 @@ Given to a card already on, they redraw at that size without turning interactive
     A phone rotated is landscape; a screen that is naturally landscape (tablet · unfolded fold8) rotated is portrait. status's widthDp · heightDp give the actual orientation
 --orientation selects an absolute direction on any device, including both foldable screens. The viewer uses the same three-direction menu.
   --landscape keeps its legacy meaning above; do not combine it with --orientation.
+  landscape-left means the top of the device points left (the camera goes left) on every device, as windowinsets.info names it.
+  safearea.info uses Apple's names, which are the other way round: its Landscape Left is landscape-right here. evidence.conditions.orientation keeps the site's name.
 A device always shows its system UI and always delivers its system bar and cutout insets to the Composable; there is no switch to turn them off.
   Whether content draws under the bars or stays inside them is decided by the Composable (its Modifiers), as on a real device.
   Inset values come from windowinsets.info (Android) and safearea.info (iOS). systemOverlays is zero because neither site lists it.

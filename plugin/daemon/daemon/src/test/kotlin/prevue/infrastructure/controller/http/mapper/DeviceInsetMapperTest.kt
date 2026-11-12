@@ -22,7 +22,7 @@ class DeviceInsetMapperTest {
     }
 
     @Test fun `Duo 원자료의 측면 값은 safeArea에만 있고 Android 종류별 값이 아니다`() {
-        val cover = DeviceModel.IPHONE_DUO.postures.single { it.folded && it.orientation == DeviceOrientation.LANDSCAPE_RIGHT }
+        val cover = DeviceModel.IPHONE_DUO.postures.single { it.folded && it.orientation == DeviceOrientation.LANDSCAPE_LEFT }
         val p = cover.toJson()!!["insetProfile"] as Map<*, *>
         assertEquals(mapOf("left" to 84.0, "top" to 0.0, "right" to 0.0, "bottom" to 34.0), p["safeArea"])
         assertNull(p["measured"])

@@ -194,7 +194,7 @@ try {
       assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
     }
     if (device==='duo') {
-      const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-right' ? 'left' : 'right';
+      const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-left' ? 'left' : 'right';
       assert.equal(overlay.edge, expected, name);
       const cam = await evaluate(`(()=>{const c=document.querySelector('#ua .cam');return {opacity:Number(c.style.opacity),left:parseFloat(c.style.left),width:parseFloat(c.style.width),screen:document.querySelector('#ua .stage').getBoundingClientRect().width}})()`);
       assert.equal(cam.opacity>0, folded, name);

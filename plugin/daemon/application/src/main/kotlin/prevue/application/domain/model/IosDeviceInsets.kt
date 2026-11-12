@@ -9,7 +9,7 @@ import prevue.application.domain.model.DeviceModel.IPHONE_17_PRO_MAX
 import prevue.application.domain.model.DeviceModel.IPHONE_DUO
 
 internal object IosDeviceInsets {
-    val profiles: Map<ScreenSize.Device, DeviceInsetProfile> = mapOf(
+    private val byAppleOrientation: Map<ScreenSize.Device, DeviceInsetProfile> = mapOf(
         ScreenSize.Device(IPHONE_17, false, PORTRAIT) to DeviceInsetProfile(
             safeArea = InsetEdges(top = 62.0, bottom = 34.0),
             evidence = InsetEvidence(
@@ -263,4 +263,13 @@ internal object IosDeviceInsets {
             ),
         ),
     )
+
+    val profiles: Map<ScreenSize.Device, DeviceInsetProfile> =
+        byAppleOrientation.mapKeys { (device, _) -> device.copy(orientation = heldFromAppleName(device.orientation)) }
+
+    private fun heldFromAppleName(apple: DeviceOrientation): DeviceOrientation = when (apple) {
+        PORTRAIT -> PORTRAIT
+        LANDSCAPE_LEFT -> LANDSCAPE_RIGHT
+        LANDSCAPE_RIGHT -> LANDSCAPE_LEFT
+    }
 }

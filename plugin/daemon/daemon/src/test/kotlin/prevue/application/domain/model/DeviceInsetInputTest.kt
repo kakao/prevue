@@ -26,8 +26,8 @@ class DeviceInsetInputTest {
             input(DeviceModel.GALAXY_S26, false, LANDSCAPE_LEFT),
         )
         assertEquals(InsetEdges(right = 37.0), input(DeviceModel.GALAXY_S26, false, LANDSCAPE_RIGHT).displayCutout)
-        assertEquals(InsetEdges(right = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_LEFT).displayCutout)
-        assertEquals(InsetEdges(left = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_RIGHT).displayCutout)
+        assertEquals(InsetEdges(left = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_LEFT).displayCutout)
+        assertEquals(InsetEdges(right = 84.0), input(DeviceModel.IPHONE_DUO, true, LANDSCAPE_RIGHT).displayCutout)
         val mirrored = DeviceInsetInputs.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, false, LANDSCAPE_RIGHT))
         val basis = DeviceInsetInputs.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, false, LANDSCAPE_LEFT))
         assertEquals("fold8", mirrored.basisPosture)
