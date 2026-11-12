@@ -100,42 +100,24 @@ class BoardAsideFillTest {
     }
 
     /** [gate]에 선 옆 태스크부터 하나씩 들여보내다 보드 카드가 들어오면 그 자리에 세운다. 돌려준 빗장을 풀면 이어 간다. */
-    private fun holdAtFirstCard(gate: CountDownLatch, why: () -> String): CountDownLatch {
+    private fun holdAtFirstCard(gate: CountDownLatch): CountDownLatch {
         var held = gate
         while ('@' in fx.renderer.asides.last().previewId) {
             val next = CountDownLatch(1)
             fx.renderer.asideGate = next
             held.countDown()
             held = next
-            assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS)) {
-                "옆 태스크가 시작하지 않았다 — ${fx.renderer.asides.map { it.previewId }}\n${why()}"
-            }
+            assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "옆 태스크가 시작하지 않았다 — ${fx.renderer.asides.map { it.previewId }}")
         }
         return held
     }
 
-    private fun TestGraph.state(err: java.io.ByteArrayOutputStream): String = workspace.now.let { s ->
-        "interactive=${s.interactive} reloadPending=${workspace.reloadPending} board=${s.board?.let { "${it.epoch}/${it.gen}/${it.focus}" }} " +
-            "postures=${s.postures?.let { "${it.round}/${it.from.key}/${it.shots.keys.map(ScreenSize::key)}" }} live=${s.livePostures()?.round} " +
-            "shown=${s.shownTarget()?.second?.key}\nstderr:\n$err"
-    }
-
     @Test fun `같은 회차 안 크기 바꾸기로 새로 빠진 자세 칸은 카드 단계 뒤에도 그린다`() {
-        val err = java.io.ByteArrayOutputStream()
-        val stderr = System.err
-        val tee = object : java.io.OutputStream() {
-            override fun write(b: Int) { stderr.write(b); synchronized(err) { err.write(b) } }
-        }
-        System.setErr(java.io.PrintStream(tee, true))
-        try { resizedPostureAfterCard(err) } finally { System.setErr(stderr) }
-    }
-
-    private fun resizedPostureAfterCard(err: java.io.ByteArrayOutputStream) {
         val uc = opened()
         val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
         uc.focus()
-        awaitUntil("원래 크기 회차의 막대 칸") { fx.renderer.asides.size >= 12 }
-        fx.renderer.asideEntered.drainPermits()
+        assertTrue(fx.renderer.asideEntered.tryAcquire(12, 5, TimeUnit.SECONDS), "원래 크기 회차의 막대 칸 — ${fx.renderer.asides.size}")
+        awaitUntil("원래 크기 회차를 다 적었다") { uc.workspace.now.postures!!.shots.size == 13 }
 
         val gate = CountDownLatch(1)
         fx.renderer.asideGate = gate
@@ -143,7 +125,7 @@ class BoardAsideFillTest {
         assertTrue(fx.renderer.asideEntered.tryAcquire(5, TimeUnit.SECONDS), "저장 뒤 옆 태스크가 시작하지 않았다")
         fx.renderer.exceptions += "렌더 예외"
         val failed = fx.scope.async(start = CoroutineStart.UNDISPATCHED) { uc.live.resize(fold8, "viewer") }
-        val card = holdAtFirstCard(gate) { uc.state(err) }
+        val card = holdAtFirstCard(gate)
         runBlocking { failed.await() }
         val round = uc.workspace.now.postures!!.round
         assertTrue(fold8 !in uc.workspace.now.postures!!.shots, "라이브 첫 장이 실패했는데 fold8 칸이 있다")
