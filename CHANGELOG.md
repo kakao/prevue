@@ -51,42 +51,6 @@ Only changes users can see go here.
 
 @citytexi ([#129](https://github.com/kakao/prevue/issues/129), [#130](https://github.com/kakao/prevue/pull/130))
 
----
-
-### 한국어
-
-**요소를 가리키면 무엇인지 보입니다 — 실제 기기 위에서.** 기기가 실제 인셋을 넘기고 자기 시스템 UI를 그리며, 한 장 보기의 조작은 그림 아래 독 하나로 모였습니다.
-
-#### 가리키기
-
-- **요소 클릭 → 그림 옆 카드**가 컴포저블, `file:line`, 크기, Modifier를 보여 주고, 트리로 옮겨 다니며 그 `@Preview`로 건너갑니다.
-- **`prevue previews --of <composable>`** 로 이름만으로 프리뷰를 찾습니다.
-
-#### 기기
-
-- **실제 기기 인셋이 Composable에 전달됩니다** — [windowinsets.info](https://windowinsets.info/) · [safearea.info](https://safearea.info/) 기준.
-- **Show inset areas**가 인셋 띠와 safe area를 그립니다.
-- **기기마다 자기 시스템 UI** — Android · iOS · iPhone Duo 상태 표시줄, 브라우저에만 그립니다.
-- **`showSystemUi = true`에 바가 보입니다** — 기기가 아닐 때는 독이나 `focus --system-ui`로 켜고 끕니다.
-- **모든 기기에 Portrait · Landscape left · Landscape right**(`focus --orientation`, Android 이름 기준).
-- **접어도 손에 든 방향이 그대로입니다.**
-
-#### 한 장 보기와 보드
-
-- **그림 아래 독 하나**가 옆 패널을 대신합니다.
-- **`prevue show <FQN>`이 그 파일 보드 위에 열려** 뒤로 · Esc가 됩니다.
-- **조작하는 동안에도 보드의 다른 카드가 최신으로** 유지됩니다.
-- **더 평평한 보드** — 1 px 테두리, 이름은 그림 위, `@PreviewParameter` 카드는 값 이름으로.
-
-#### 시작과 업데이트
-
-- **업데이트 뒤 첫 시작에 약 11 MB를 한 번 받습니다** — `health`가 물으면 `prevue setup`.
-- **파일을 열면 데몬이 꺼진 동안 바뀐 코드로 그리고**, 다시 띄운 데몬은 바뀐 것이 없으면 앞 데몬의 컴파일을 이어 씁니다.
-
-#### 고친 것
-
-- **KMP 라이브러리 모듈**의 의존이 `implementation`이어도 저장 때 "Unresolved reference"로 실패하지 않습니다([#129](https://github.com/kakao/prevue/issues/129)) — warmup을 한 번 더 하세요. 제보하고 고쳐 준 @citytexi님께 감사드립니다([#130](https://github.com/kakao/prevue/pull/130)).
-- 그 밖에 `next` · `then`이 답한 `prevue`를 쓰고, Original 크기가 비율을 지킵니다.
 
 ## [0.21.0] — 2026-11-02
 
