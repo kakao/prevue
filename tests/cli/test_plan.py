@@ -18,6 +18,17 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 GJ = "/jdk\t테스트"
 
 
+def search_path(*first):
+    """PATH 를 고정한다 — 응답의 next 머리가 PATH 의 prevue 에 따라 달라진다(test_caller). 원래 PATH 의 prevue 는 뺀다."""
+    rest = [d for d in os.environ.get("PATH", "").split(os.pathsep) if d and not os.path.exists(os.path.join(d, "prevue"))]
+    return os.pathsep.join([*first, *rest])
+
+
+def installed_path():
+    """이 체크아웃의 bin/prevue 가 PATH 의 prevue 다 — 설치본을 PATH 로 부르는 사용자와 같다."""
+    return search_path(os.path.dirname(P.SELF))
+
+
 def fixture(name):
     with open(os.path.join(FIXTURES, name), encoding="utf-8") as f:
         return f.read()
