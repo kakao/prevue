@@ -163,7 +163,7 @@ class RenderIntegrationTest {
         assertTrue(differs > withBars.width, "상태바 줄이 바 없는 그림과 같다 — 렌더러가 데코를 다시 껐다(${differs}px)")
     }
 
-    @Test @Order(34) fun `기기를 고르면 바 뷰는 숨고 statusBarsPadding 머리가 그 기기의 출처 값만큼 밀린다`() = runBlocking {
+    @Test @Order(34) fun `기기를 고르면 바 뷰는 숨고 위쪽 안전 영역 머리가 그 기기의 출처 값만큼 밀린다`() = runBlocking {
         val phone = ws.now.board!!.cards.first { it.spec.previewId == "PearlPhonePreview" }.spec
         for (device in listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17))) {
             val spec = device.applyTo(phone).copy(previewId = "PearlPhonePreview@${device.key}")
@@ -1045,7 +1045,7 @@ class RenderIntegrationTest {
 
     companion object {
         @JvmStatic fun available(): Boolean = PearlFixture.available()
-        private const val HEADER_ROW = "Row(Modifier.width(w - 48.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {"
+        private const val HEADER_ROW = "Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {"
         private const val HEADER_PADDING_DP = 20
         private const val SETTLE_MS = 1_000L
     }
