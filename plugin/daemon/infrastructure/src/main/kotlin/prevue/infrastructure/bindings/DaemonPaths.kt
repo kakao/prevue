@@ -10,9 +10,6 @@ internal class DaemonPaths(val cache: File, val mine: File, val out: File, val o
     fun dumpOf(module: String, variant: String) = File(cache, "${dirName(module)}-$variant.json")
 
     fun reset() {
-        overlay.deleteRecursively()
-        overlay.mkdirs()
-        overlayModules.deleteRecursively()
         out.deleteRecursively()
         out.mkdirs()
     }

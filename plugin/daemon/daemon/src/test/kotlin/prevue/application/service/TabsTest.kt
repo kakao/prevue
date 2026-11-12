@@ -286,6 +286,19 @@ class TabsTest {
         assertEquals(1, fx.renderer.codeChanges)
     }
 
+    @Test fun `앞 데몬의 오버레이에 그 내용이 있으면 빌드보다 새 파일도 컴파일 없이 연다`() {
+        val card = fx.previewFile("NewsCard").apply { setLastModified(3_000_000) }
+        fx.compiler.built = mapOf(":app" to 2_000_000L)
+        fx.compiler.kept = mapOf(card.canonicalPath to 3_000_000L)
+        show(card)
+        assertTrue(fx.compiler.compiled.isEmpty())
+
+        val other = fx.previewFile("Other").apply { setLastModified(4_000_000) }
+        fx.compiler.kept = mapOf(other.canonicalPath to 3_500_000L)
+        show(other)
+        assertEquals(listOf(listOf(other.canonicalFile)), fx.compiler.compiled.toList(), "이어 쓴 뒤에 또 바뀐 파일은 컴파일한다")
+    }
+
     @Test fun `Gradle이 따라잡은 새 파일만 남았으면 최신 파일은 컴파일 없이 연다`() {
         val screen = fx.file.apply { setLastModified(1_000_000) }
         val built = java.io.File(fx.srcRoot, "demo/Built.kt").apply { writeText("package demo\n"); setLastModified(1_500_000) }

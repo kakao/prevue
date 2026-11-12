@@ -2,6 +2,7 @@ package prevue.infrastructure.compile
 
 import java.io.File
 import java.net.URLClassLoader
+import java.security.MessageDigest
 import java.util.zip.ZipFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
@@ -52,6 +53,8 @@ internal class HotCompiler(
 
     private class Module(val project: String, var spec: ClasspathSpec, val dir: File) {
         val members = HashMap<String, Set<String>>()
+        val sources = HashMap<String, Long>()
+        var at = 0L
         /** 자기 덤프가 아니라 다른 덤프에서 끌어낸 인자다. `project`로는 못 가른다 — 끌어낸 인자도 그 모듈의 이름을 단다. */
         val derived get() = spec.derivedFrom != null
         /** D-67. 이 모듈의 인자에 live literal 런타임이 있는가. 처음 컴파일할 때 한 번 본다. */
@@ -63,8 +66,10 @@ internal class HotCompiler(
     private val units = LinkedHashMap<String, Module>()
 
     private fun unit(module: String): Module = units.getOrPut(module) {
-        Module(module, specOf(module), File(stagingDir, module.trim(':').replace(':', '_').ifEmpty { "root" }).apply { mkdirs() })
+        Module(module, specOf(module), File(stagingDir, dirName(module)).apply { mkdirs() })
     }
+
+    private fun dirName(module: String) = module.trim(':').replace(':', '_').ifEmpty { "root" }
 
     // 자기 모듈 디렉터리가 맨 앞이고 다른 모듈의 것이 뒤따른다 — 앞서 오버레이에 놓인 클래스(자기 것이든 의존 모듈의 새 시그니처든)를 이 파일이 봐야 한다.
     private fun classpath(u: Module): String =
@@ -98,7 +103,9 @@ internal class HotCompiler(
         // 끌어낸 인자로 실패한 뒤 그 모듈의 덤프를 떴으면 다음 저장부터 그것을 쓴다 — 데몬을 다시 띄우지 않고
         if (u.derived) u.spec = specOf(module).also { if (it.derivedFrom != u.spec.derivedFrom) u.liveLiterals = null }
         // 파일 mtime은 파일 시스템에 따라 초 단위로 잘린다 — 넉넉히 앞에서 끊고, 맞는 표는 소스 경로로 고른다.
-        val since = System.currentTimeMillis() - 2_000
+        val startedAt = System.currentTimeMillis()
+        val since = startedAt - 2_000
+        val seen = files.associate { it.canonicalPath to it.lastModified() }
         val first = compile(u, files, u.dir)
         if (!first.ok) return@withContext first
         val r = recompileIfShadowed(u, files, since, first)
@@ -106,6 +113,9 @@ internal class HotCompiler(
         val literals = if (liveLiterals(u)) runCatching { LiveLiteralTables.read(u.dir, files, since) }
             .onFailure { System.err.println("[prevue] live literal 표를 읽지 못했다 — 이 저장들은 컴파일로 간다: $it") }.getOrDefault(emptyList()) else emptyList()
         publish(u)
+        u.sources += seen
+        u.at = startedAt
+        saveKept()
         r.copy(literals = literals)
     }
 
@@ -283,7 +293,68 @@ internal class HotCompiler(
         u.dir.deleteRecursively()
         u.indexes.clear()
         u.members.clear()
+        u.sources.clear()
+        saveKept()
     }
+
+    override suspend fun overlaid(path: String): Long? = withContext(confined) {
+        units.values.firstNotNullOfOrNull { it.sources[path] }
+    }
+
+    private val keptFile = File(stagingDir, "kept.json")
+
+    private val toolchain: String = digest((compilerJars + bridgeClasses + composePlugin + androidJar)
+        .joinToString("\n") { "${it.absolutePath} ${it.length()} ${it.lastModified()}" })
+
+    private fun argsKey(s: ClasspathSpec): String = digest(listOf(
+        s.jvmTarget, s.kotlinModuleName, s.ownClassPath, s.compileClassPath, s.compileFill, s.composeStabilityConfig?.absolutePath,
+        System.getenv("PREVUE_LIVE_LITERALS"),
+    ).joinToString("\n"))
+
+    private fun digest(text: String): String =
+        MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
+
+    private fun saveKept() {
+        val modules = units.filterValues { it.sources.isNotEmpty() }.mapValues { (_, u) ->
+            KeptModule(u.sources.toMap(), u.at, u.nextIndex, u.indexes.entries.associate { (f, srcs) -> f.name to srcs.toList() }, argsKey(u.spec))
+        }
+        runCatching { KeptOverlay(toolchain, modules).save(keptFile) }
+            .onFailure { System.err.println("[prevue] 오버레이 기록을 남기지 못했다 — 다음 시작은 오버레이를 버리고 시작한다: $it"); keptFile.delete() }
+    }
+
+    private fun now(module: String): KeptOverlay.Now? = runCatching {
+        val s = specOf(module)
+        KeptOverlay.Now(s.kotlinBuildMarkers().filter { it.exists() }.maxOfOrNull { it.lastModified() }, argsKey(s), s.sourceRoots)
+    }.getOrNull()
+
+    private fun keepFromLastRun() {
+        val verdict = KeptOverlay.read(keptFile)?.judge(toolchain, ::now) { p -> File(p).takeIf { it.isFile }?.lastModified() }
+        if (verdict !is KeptOverlay.Verdict.Keep) {
+            overlayDir.deleteRecursively()
+            stagingDir.deleteRecursively()
+            overlayDir.mkdirs()
+            if (verdict is KeptOverlay.Verdict.Wipe) System.err.println("[prevue] 앞 데몬의 오버레이를 버린다 — ${verdict.why}")
+            return
+        }
+        overlayDir.deleteRecursively()
+        overlayDir.mkdirs()
+        val dirs = verdict.modules.keys.map(::dirName).toSet()
+        stagingDir.listFiles { f -> f.isDirectory && f.name !in dirs }?.forEach { it.deleteRecursively() }
+        verdict.modules.forEach { (module, kept) ->
+            val u = unit(module)
+            u.sources += kept.sources
+            u.at = kept.at
+            u.nextIndex = kept.next
+            kept.indexes.forEach { (name, srcs) -> u.indexes[File(u.dir, "META-INF/$name")] = srcs.toSet() }
+            publish(u)
+        }
+        saveKept()
+        val rebuilt = if (verdict.rebuilt.isEmpty()) "" else " · Gradle이 다시 빌드한 ${verdict.rebuilt.joinToString()}는 버림"
+        if (verdict.modules.isNotEmpty() || verdict.rebuilt.isNotEmpty())
+            System.err.println("[prevue] 앞 데몬의 오버레이를 이어 쓴다 — 모듈 ${verdict.modules.size}개 · 소스 ${verdict.modules.values.sumOf { it.sources.size }}개$rebuilt")
+    }
+
+    init { keepFromLastRun() }
 }
 
 //이름으로 넓게 잡으므로 상한이 없으면 흔한 이름 하나가 모듈 전체를 컴파일하게 만든다. 넘치면 사람에게 Gradle을 권한다.

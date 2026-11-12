@@ -8,8 +8,8 @@ object FreshnessPolicy {
      * @param compiled 이 데몬의 컴파일이 그 파일을 마지막으로 읽은 (mtime, 시각). 없으면 이 데몬은 그 파일을 컴파일한 적이 없다.
      * @param builtAt 그 모듈의 Gradle Kotlin 산출물이 마지막으로 쓰인 시각. 모르면 null.
      */
-    inline fun compileOnOpen(mtime: Long, compiled: Pair<Long, Long>?, builtAt: Long?, classesBuilt: () -> Boolean = { true }): Boolean {
-        if (compiled?.first == mtime) return false
+    inline fun compileOnOpen(mtime: Long, compiled: Long?, builtAt: Long?, classesBuilt: () -> Boolean = { true }): Boolean {
+        if (compiled == mtime) return false
         return (builtAt != null && mtime > builtAt) || !classesBuilt()
     }
 

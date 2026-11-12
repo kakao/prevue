@@ -112,7 +112,7 @@ class StaleCallers(
     suspend fun behindBuild(): List<File> =
         sources.sourceFiles().map { it.canonicalFile }.groupBy { ws.graph.ownerOf(it) }.flatMap { (module, files) ->
             val built = compiler.builtAt(module) ?: return@flatMap emptyList()
-            files.filter { f -> mtime(f).let { it > built && ws.now.compiledMtime[f.path]?.first != it } }
+            files.filter { f -> mtime(f).let { it > built && compiledFrom(f) != it } }
         }
 
     fun seen(files: List<File>): Map<String, Long> = files.associate { it.canonicalPath to mtime(it) }
@@ -122,6 +122,8 @@ class StaleCallers(
     fun text(f: File): String? = sources.read(f)
 
     private fun mtime(f: File): Long = sources.modifiedAt(f) ?: 0L
+
+    private suspend fun compiledFrom(f: File): Long? = ws.now.compiledMtime[f.path]?.first ?: compiler.overlaid(f.path)
 
     private suspend fun done(ed: WorkspaceEditor, batch: List<File>, seen: Map<String, Long>, c: CompileResult): Batch {
         ed.forgetNew(batch)
@@ -139,7 +141,7 @@ class StaleCallers(
         val c = f.canonicalFile
         val module = ws.graph.ownerOf(c)
         return c.path in ws.now.newFiles ||
-            FreshnessPolicy.compileOnOpen(mtime(c), ws.now.compiledMtime[c.path], compiler.builtAt(module)) {
+            FreshnessPolicy.compileOnOpen(mtime(c), compiledFrom(c), compiler.builtAt(module)) {
                 previewClasses().all { compiler.hasClass(module, it) }
             }
     }
