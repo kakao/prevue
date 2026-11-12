@@ -82,11 +82,11 @@ Tighten the padding on this
 
 The agent reads "this" as a file and line. `@path#Lline` is also copied to your clipboard, so you can paste it into a terminal.
 
-The click pins a box and a file:line tag right where you pointed.
+A card opens beside the picture with what you pointed at: its name, its file:line, its size and its modifiers, plus a small tree of the elements around it. Click a row to point at a parent or a sibling, or jump to a Preview that calls it.
 
 <p align="center">
-  <img src="assets/point.png" width="760"
-       alt="Pointing at the title of a news card in the workspace. A blue box surrounds the title, and the tag above the box reads NewsResourceCard.kt:230 with a copied check">
+  <img src="assets/pointing.gif" width="1000"
+       alt="A board of four Pearl app previews. Clicking beside the price on the Taro Milk Tea card in the home preview opens a card next to the picture: Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize, and a tree of the elements around it. Clicking the DrinkCard row above it points at the whole drink card, the next DrinkCard row moves to Thai Milk Tea, and the Preview button in the card's header lists the three previews that call DrinkCard; choosing MenuCardsPreview opens the board of ComponentPreviews.kt at that preview">
 </p>
 
 ### Three agents, still light

@@ -80,11 +80,11 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 
 에이전트는 "이거"가 어느 파일의 몇 번째 줄인지 알아냅니다. 클립보드에도 `@경로#L줄`이 복사되어 터미널에 바로 붙여 넣을 수 있습니다.
 
-클릭한 자리에는 박스와 함께 파일:줄 표시가 붙습니다.
+그림 옆에 가리킨 것의 카드가 섭니다. 이름 · 파일:줄 · 크기 · Modifier와 함께 둘레의 요소를 작은 트리로 보여 줍니다. 줄을 눌러 부모나 형제를 다시 가리키고, 그 컴포저블을 부르는 Preview로 건너갈 수 있습니다.
 
 <p align="center">
-  <img src="assets/point.png" width="760"
-       alt="작업 공간에서 뉴스 카드의 제목을 가리킨 화면. 제목에 파란 박스가 쳐지고, 박스 위 꼬리표에 NewsResourceCard.kt:230 · ✓ copied가 붙는다">
+  <img src="assets/pointing.gif" width="1000"
+       alt="Pearl 앱 Preview 넷이 놓인 보드. 홈 Preview의 Taro Milk Tea 카드에서 가격 오른쪽을 누르면 그림 옆에 카드가 선다 — Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize와 둘레 요소의 트리. 트리에서 위쪽 DrinkCard 줄을 누르면 음료 카드 전체를 가리키고, 다음 DrinkCard 줄을 누르면 Thai Milk Tea로 옮겨 간다. 카드 머리의 Preview 버튼을 누르면 DrinkCard를 부르는 Preview 셋이 펼쳐지고, MenuCardsPreview를 고르면 ComponentPreviews.kt의 보드가 그 Preview에서 열린다">
 </p>
 
 ### 에이전트가 셋이어도 가볍게
