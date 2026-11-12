@@ -8,6 +8,7 @@
 # 원본에서 한 에이전트에만 줄 구간은 제 줄에 놓인 표시로 감싼다.
 #   <!-- only:claude -->  …  <!-- /only -->
 #   <!-- only:codex -->   …  <!-- /only -->
+# AGENTS.md 에는 두지 않는다 — Codex 는 AGENTS.md 를 원본째 읽어 표시가 그대로 보인다.
 # 원본은 plugin/ 밖에 둔다 — Claude Code 는 매니페스트와 무관하게 플러그인 루트의 skills/<이름>/SKILL.md 를 스캔해 표시째 읽는다.
 # 두 벌은 skills/claude/ · skills/codex/ 한 단계 아래에 두고 매니페스트의 skills 경로로 가리킨다(D-138) — 기본 스캔에 안 잡힌다.
 #

@@ -125,7 +125,7 @@ function Sheet({ theme }: { theme: 'light' | 'dark' }) {
         <span className="di-chip">{btn(INSET[k].art, '인셋 영역 보기 — 끔', false)}{btn(INSET[k].art, '인셋 영역 보기 — 켬', true)}</span>
         <p>{INSET[k].why}</p>
       </div>)}</div>
-      <p className="di-note">이 토글은 다음 작업(인셋 오버레이 토글)가 붙입니다. 여기서는 그림만 고릅니다.</p>
+      <p className="di-note">이 토글은 다음 작업(인셋 오버레이 토글)이 붙입니다. 여기서는 그림만 고릅니다.</p>
     </div>
 
     <div>

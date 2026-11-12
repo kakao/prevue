@@ -73,15 +73,16 @@ python3 tools/lint/viewer.py --deps 2>/dev/null || npm ci --prefix viewer-src   
 
 짠 쪽의 가정을 모르는 눈이 본다 — 리뷰어(`reviewer-<등급>`)가 `review` 스킬과 이 저장소의 리뷰 규약(`dev-skills-src/review.md`, `AGENTS.md` "리뷰")으로 판정한다. 등급은 분류기가 고른다. 워크트리 루트에서 돌린다 — 규약 경로가 상대 경로다.
 
-**`review` 스킬이 설치되지 않은 환경이면**(아래 분류기 `review_tier.py`가 없다) 이 단계를 건너뛰고 PR 본문과 7단계 보고에 "독립 리뷰 없음"을 적는다. 설치돼 있는데 리뷰어를 띄울 수 없으면 아래대로 멈춘다.
+**분류기를 돌리기 전에 파일이 있는지 본다**(아래 첫 줄). 없으면 `review` 스킬이 설치되지 않은 환경이다 — 이 단계를 건너뛰고 PR 본문과 7단계 보고에 "독립 리뷰 없음"을 적는다. 설치돼 있는데 리뷰어를 띄울 수 없으면 멈추고 독립 리뷰를 못 했다고 보고한다 — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
 
 ```sh
+test -f ~/.claude/skills/review/scripts/review_tier.py    # 실패하면 review 스킬이 없다 — 이 단계를 건너뛴다
 python3 ~/.claude/skills/review/scripts/review_tier.py --range origin/develop..HEAD --config dev-skills-src/review.md
 git merge-base origin/develop HEAD   # 기준 ref — 0단계의 fetch로 origin/develop이 앞서 나가도 이 작업분만 보게 SHA로 넘긴다
 git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 범위가 흔들리지 않게 SHA로 고정한다
 ```
 
-첫 줄이 등급, 둘째 줄부터 근거다.
+분류기 출력의 첫 줄이 등급, 둘째 줄부터 근거다.
 
 - **`skip`** — 바뀐 파일이 전부 규약의 건너뛰기 패턴에 맞는다. 리뷰어를 띄우지 않고 5단계로 간다.
 - **`medium` · `high` · `xhigh`** — 그 등급의 리뷰어에 위임한다. **종료 코드 2**(판정 못 함)면 `high`로 띄우고 stderr를 위임 프롬프트에 함께 넘긴다.
@@ -93,7 +94,7 @@ git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 �
 결과를 이렇게 처리한다.
 
 - **고칠 것** — 고치거나, 고치지 않으면 이유를 PR 본문에 적는다. 고쳤으면 그 고침이 닿는 3단계 증거를 다시 본다.
-- **물을 것** — 계획 · 범위나 기존 공개 계약(CLI 출력 · 매니페스트)을 바꿔야 하거나, 결정(`D-<n>` · 되돌리지 말 것)을 뒤집는 것이면 멈추고 묻는다. 나머지(API 모양 · 읽기 쉬움처럼 취향이 갈리는 것)는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
+- **물을 것** — 계획 · 범위나 기존 공개 계약(CLI 출력 · 매니페스트)을 바꿔야 하거나, 결정(`D-<n>`)을 뒤집는 것이면 멈추고 묻는다. 나머지(API 모양 · 읽기 쉬움처럼 취향이 갈리는 것)는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
 - **머지 위험 줄**은 PR 본문에 옮긴다.
 
 ## 5. 로컬 검증 → PR → 머지

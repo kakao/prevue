@@ -317,7 +317,7 @@ def new_comments(srcs, changed, old_text=lambda path: ""):
             if EXTERNAL.match(said) and not (line + 1 in src.comment_lines and line + 1 in lines):
                 continue
             found.append(Finding(path, line, "comment/new",
-                                 "새 주석 — 이유는 이름 · 테스트 · 결정 기록으로 옮긴다. 코드 밖 사실(라이브러리 · 플랫폼)이면 `// 외부:` 한 줄"))
+                                 "새 주석 — 이유는 이름 · 테스트로 옮긴다. 코드 밖 사실(라이브러리 · 플랫폼)이면 `// 외부:` 한 줄"))
     return found
 
 
