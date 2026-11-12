@@ -3,14 +3,14 @@
 name: 빌드 검증
 
 on:
-  # 릴리즈 PR(→ main)과 작업 PR(→ develop)에서 돈다. 작업 PR 의 머지 관문은 로컬 검증(implement 스킬)이고,
-  # 여기는 그 검증을 거치지 않는 외부 기여 PR 을 받는 그물이다.
+  # 릴리즈 PR(→ main)과 작업 PR(→ develop)에서 돈다. 작업 PR 은 로컬 검증 뒤 이 결과까지 기다려 머지하고(implement 스킬),
+  # 로컬 검증을 거치지 않는 외부 기여 PR 에는 이것이 유일한 검증이다. develop 에는 필수 체크로 걸지 않는다.
   # push 는 걸지 않는다 — 머지할 때마다 같은 트리를 또 빌드한다(릴리즈 PR 하나에 빌드 셋이 돌았다).
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
 
-# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/build/prevue-env)를 bash 가 아니라 sh 로 본다.
+# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/daemon/daemon/build/prevue-env)를 bash 가 아니라 sh 로 본다.
 defaults:
   run:
     shell: sh
@@ -25,7 +25,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Python 3.9 배포본이 없는 Ubuntu 26.04로 넘어가지 않도록 고정한다.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -34,13 +35,34 @@ jobs:
         with:
           fetch-depth: 0    # 린트가 origin/main 과의 diff 로 새 주석 · 건드린 함수를 본다
 
-      # 스킬 두 벌(plugin/skills/ · plugin/codex/skills/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
-      - name: 스킬 두 벌이 원본에서 만들어졌는지 본다
-        run: sh tools/gen-skills.sh --check
+      # 스킬 두 벌(plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/)과 CLAUDE.md 는 원본의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
+      - name: 스킬 두 벌과 CLAUDE.md가 원본에서 만들어졌는지 본다
+        run: sh tools/gen-agents.sh --check
 
       # 설치본은 plugin/ 만 받는다(D-123) — 그 안의 LICENSE · NOTICE.md 는 루트 원본의 사본이다.
       - name: 플러그인의 고지 사본이 원본과 맞는지 본다
         run: sh tools/plugin-copies.sh --check
+
+      - name: 뷰어 개발용 Node를 맞춘다
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: viewer-src/.node-version
+          cache: npm
+          cache-dependency-path: viewer-src/package-lock.json
+
+      - name: 뷰어 개발 의존성을 설치한다
+        working-directory: viewer-src
+        run: npm ci --no-audit --no-fund
+
+      - name: 뷰어 생성물과 계약 타입을 확인한다
+        run: sh tools/gen-viewer.sh --check
+
+      - name: 뷰어 타입과 Storybook 조립을 확인한다
+        working-directory: viewer-src
+        run: |
+          set -eu
+          npm run typecheck
+          npm run build-storybook
 
       # CLI 는 macOS 기본 python3(3.9)에서 돈다 — 러너의 새 python 으로 보면 3.10+ 문법이 그대로 지나간다.
       - name: python3를 3.9로 맞춘다
@@ -56,18 +78,18 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build.gradle.kts 가 고정한다
+          java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build-logic 의 convention plugin(prevue.jvm)이 고정한다
 
-      # 제품 빌드는 플러그인 폴더(plugin/)가 하나의 Gradle 프로젝트다 — 설치본이 그 자리에서 굽는다.
+      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:daemon 조립 · 테스트 + 안쪽 :application · 바깥 :infrastructure, D-148 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
-        working-directory: plugin
+        working-directory: plugin/daemon
         run: |
           set -eu
           ./gradlew installPrevue --no-daemon
 
       # 가짜 포트 위의 Session·Server 테스트. 조용히 되돌아가도 화면은 멀쩡한 규칙들이라 눈으로는 못 잡는다.
       - name: 데몬 단위 테스트
-        working-directory: plugin
+        working-directory: plugin/daemon
         run: ./gradlew test --no-daemon
 
       # 슬롭 규칙 · detekt 지표 · 새 주석(D-70). 작업 PR 마다 로컬에서 돌렸으면 깨끗하다 — 여기는 건너뛴 것을 잡는 그물이다.
@@ -83,20 +105,20 @@ jobs:
         working-directory: plugin
         run: |
           set -eu
-          test -s build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
+          test -s daemon/daemon/build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
 
       - name: 빌드 결과를 확인한다
         working-directory: plugin
         run: |
           set -eu
-          test -s build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
+          test -s daemon/daemon/build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
 
           # prevue-env 는 절대 경로를 적지 않는다 — 빌드한 머신에서만 맞는 값이 되기 때문이다.
           # 값은 ROOT(플러그인 디렉터리)와 HOME 기준이라 읽는 쪽이 ROOT 를 준다. bin/prevue 가 하는 것과 같다.
-          grep -qE '=\"/|:/[A-Za-z]' build/prevue-env \
-            && { echo "::error file=build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' build/prevue-env; exit 1; } || true
+          grep -qE '=\"/|:/[A-Za-z]' daemon/daemon/build/prevue-env \
+            && { echo "::error file=daemon/daemon/build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' daemon/daemon/build/prevue-env; exit 1; } || true
           ROOT="$PWD"
-          . build/prevue-env
+          . daemon/daemon/build/prevue-env
           # 이름으로 값을 읽는다. 이름은 아래 목록으로 한정된다.
           for NAME in PREVUE_CP PREVUE_BRIDGE PREVUE_LAYOUTLIB PREVUE_COMPILER PREVUE_VIEWER; do
             eval "VAL=\${$NAME:-}"

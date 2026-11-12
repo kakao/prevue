@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlsplit
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugin/bin"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugin/cli"))
 import prevue_plan as plan
 import prevue_prepare as preparation
 
@@ -52,12 +52,13 @@ class PreparationProcess(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name) / "checkout with spaces"
         (self.root / "bin").mkdir(parents=True)
+        (self.root / "cli").mkdir()
         (self.root / "viewer/js").mkdir(parents=True)
         (self.root / "viewer/prepare.html").write_text("<h1>준비</h1>")
         (self.root / "viewer/strings").mkdir()
         for dictionary in ("en.json", "ko.json"):
             shutil.copyfile(Path(preparation.__file__).parent.parent / "viewer/strings" / dictionary, self.root / "viewer/strings" / dictionary)
-        self.script = self.root / "bin/prevue_prepare.py"
+        self.script = self.root / "cli/prevue_prepare.py"
         shutil.copyfile(preparation.__file__, self.script)
         self.home = Path(self.tmp.name) / "prevue"
         self.env = dict(os.environ, PREVUE_HOME=str(self.home), NO_OPEN="1")
@@ -74,7 +75,7 @@ if sys.argv[1] == 'warmup':
         print(json.dumps({'ok':False, 'error':'Gradle compile failed'}));sys.exit(1)
     print(json.dumps({'ok':True, 'classpath':'/dump with space.json', 'resourcesClasspath':'/app dump.json', 'module':':ui', 'variant':'debug'}))
 else:
-    subprocess.check_call([sys.executable, str(pathlib.Path(__file__).with_name('prevue_prepare.py')), 'stage', os.environ['PREVUE_PREPARATION'], 'http://127.0.0.1:1/'])
+    subprocess.check_call([sys.executable, str(pathlib.Path(__file__).parent.parent / 'cli' / 'prevue_prepare.py'), 'stage', os.environ['PREVUE_PREPARATION'], 'http://127.0.0.1:1/'])
     result={'viewer':'http://127.0.0.1:1/', 'opened':False}
     if not os.environ.get('PREPARATION_TEST_STATUS_ONLY'): result['ok']=True
     print(json.dumps(result))
@@ -155,11 +156,32 @@ else:
         process = self.launch("--module", ":ui", "--show")
         state, url = self.wait_state()
         base = url.split("/preparation/")[0]
-        for path in ("/state.json", "/js/preparation/../../bin/prevue_prepare.py", "/preparation/wrong-request"):
+        for path in ("/state.json", "/js/preparation/../../cli/prevue_prepare.py", "/preparation/wrong-request"):
             with self.assertRaises(HTTPError) as error:
                 urlopen(base + path, timeout=2)
             self.assertEqual(error.exception.code, 404)
             error.exception.close()
+        process.communicate(timeout=5)
+
+    def test_preparation_serves_the_shared_message_formatter(self):
+        for name in ("strings.js", "messages.js"):
+            shutil.copyfile(Path(preparation.__file__).parent.parent / "viewer/js" / name, self.root / "viewer/js" / name)
+        process = self.launch("--module", ":ui", "--show")
+        _, url = self.wait_state()
+        base = url.split("/preparation/")[0]
+        for path in ("/js/strings.js", "/js/messages.js"):
+            with urlopen(base + path, timeout=2) as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn("createMessages", response.read().decode())
+        process.communicate(timeout=5)
+
+    def test_preparation_serves_the_shared_react_chunk(self):
+        # 준비 장면은 뷰어와 같은 React 한 벌(js/react.js)을 import 한다 — 못 받으면 준비 화면이 뜨지 않는다.
+        (self.root / "viewer/js/react.js").write_text("export const react = 1;\n")
+        process = self.launch("--module", ":ui", "--show")
+        _, url = self.wait_state()
+        with urlopen(url.split("/preparation/")[0] + "/js/react.js", timeout=2) as response:
+            self.assertEqual(response.status, 200)
         process.communicate(timeout=5)
 
     def test_fileless_start_accepts_the_existing_status_response_and_limits_cors(self):

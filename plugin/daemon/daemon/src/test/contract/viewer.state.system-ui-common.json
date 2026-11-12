@@ -1,0 +1,342 @@
+{
+  "status": 200,
+  "schema": {
+    "board": {
+      "file": "string",
+      "focus": "number",
+      "gen": "number",
+      "groups": [
+        {
+          "cards": [
+            {
+              "args": "string",
+              "dpGuess": "boolean",
+              "failure": "null",
+              "heightDp": "number",
+              "imageUrl": "string",
+              "index": "number",
+              "isFocus": "boolean",
+              "label": "string",
+              "ok": "boolean",
+              "previewId": "string",
+              "rendered": "boolean",
+              "specs": [
+                {
+                  "kind": "string",
+                  "text": "string"
+                }
+              ],
+              "stale": "boolean",
+              "title": "string",
+              "treeUrl": "string",
+              "widthDp": "number"
+            }
+          ],
+          "failed": "number",
+          "name": "string"
+        }
+      ]
+    },
+    "boardNote": {
+      "a": {
+        "file": "string",
+        "n": "number"
+      },
+      "t": "string"
+    },
+    "buildPending": "boolean",
+    "busy": "boolean",
+    "choice": "null",
+    "error": "null",
+    "focus": {
+      "deviceInsets": "null",
+      "fn": "string",
+      "imageUrl": "string",
+      "interactive": "boolean",
+      "name": "null",
+      "postures": [
+        "empty"
+      ],
+      "previewId": "string",
+      "pxPerDp": "number",
+      "size": "null",
+      "streamUrl": "string",
+      "systemUi": {
+        "annotated": "boolean",
+        "bars": {
+          "insets": "null",
+          "look": "string"
+        },
+        "choice": "string",
+        "shown": "boolean"
+      },
+      "treeUrl": "string"
+    },
+    "header": {
+      "branch": "null",
+      "module": "string",
+      "repo": "string",
+      "repoLeaf": "string",
+      "repoPrefix": "string",
+      "sourceSet": "null",
+      "tabTitle": "string",
+      "title": "string",
+      "variant": "string"
+    },
+    "screen": "string",
+    "selection": {
+      "at": "string",
+      "bounds": "null",
+      "by": "string",
+      "chain": [
+        "empty"
+      ],
+      "file": "string",
+      "image": "string",
+      "interactive": "boolean",
+      "line": "number",
+      "node": "null",
+      "ok": "boolean",
+      "preview": {
+        "file": "string",
+        "fqn": "string",
+        "index": "number",
+        "methodParams": [
+          "empty"
+        ],
+        "params": {},
+        "previewId": "string"
+      },
+      "ref": "string",
+      "tree": "string",
+      "userChain": [
+        "empty"
+      ]
+    },
+    "settle": "null",
+    "stale": [
+      "empty"
+    ],
+    "tabs": [
+      {
+        "active": "boolean",
+        "dim": "string",
+        "key": "string",
+        "module": "null",
+        "name": "string",
+        "sourceSet": "null",
+        "stale": "boolean",
+        "title": "string"
+      }
+    ],
+    "timing": [
+      {
+        "head": "boolean",
+        "label": {
+          "t": "string"
+        },
+        "ms": "number",
+        "over": "boolean",
+        "text": "string"
+      }
+    ],
+    "vacant": "null",
+    "version": "number",
+    "who": {
+      "a": {
+        "by": "string",
+        "time": "string",
+        "what": "string"
+      },
+      "t": "string"
+    }
+  },
+  "example": {
+    "version": 0,
+    "header": {
+      "title": "Cards.kt",
+      "tabTitle": "<repo-name> · Cards.kt",
+      "repoPrefix": "<tmp>/",
+      "repoLeaf": "<repo-name>",
+      "module": "app",
+      "variant": "debug",
+      "repo": "<repo>",
+      "branch": null,
+      "sourceSet": null
+    },
+    "screen": "focus",
+    "board": {
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "gen": 0,
+      "focus": 0,
+      "groups": [
+        {
+          "name": "Card0",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 0,
+              "previewId": "Card0",
+              "label": "",
+              "title": "demo.CardsKt.Card0\nCard0",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": true,
+              "imageUrl": "/Card0-0.png?t=<t>",
+              "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        },
+        {
+          "name": "Card1",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 1,
+              "previewId": "Card1",
+              "label": "",
+              "title": "demo.CardsKt.Card1\nCard1",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": false,
+              "imageUrl": "/Card1-0.png?t=<t>",
+              "treeUrl": "/Card1-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        }
+      ]
+    },
+    "focus": {
+      "previewId": "Card0",
+      "interactive": true,
+      "imageUrl": "/Card0-0.png?t=<t>",
+      "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+      "streamUrl": "/stream?t=<t>",
+      "pxPerDp": 2.625,
+      "name": null,
+      "fn": "Card0",
+      "size": null,
+      "systemUi": {
+        "choice": "on",
+        "annotated": false,
+        "shown": true,
+        "bars": {
+          "look": "aosp",
+          "insets": null
+        }
+      },
+      "deviceInsets": null,
+      "postures": []
+    },
+    "stale": [],
+    "busy": false,
+    "buildPending": false,
+    "boardNote": {
+      "t": "status.board",
+      "a": {
+        "n": 2,
+        "file": "Cards.kt"
+      }
+    },
+    "who": {
+      "t": "status.who",
+      "a": {
+        "by": "viewer",
+        "time": "<hh:mm:ss>",
+        "what": "Card0-0"
+      }
+    },
+    "timing": [
+      {
+        "label": {
+          "t": "timing.task"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.render"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.first"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": true
+      }
+    ],
+    "error": null,
+    "selection": {
+      "ok": true,
+      "ref": "@<repo>/app/src/main/kotlin/a/Dup.kt#L1",
+      "file": "<repo>/app/src/main/kotlin/a/Dup.kt",
+      "line": 1,
+      "node": null,
+      "chain": [],
+      "userChain": [],
+      "bounds": null,
+      "preview": {
+        "fqn": "demo.CardsKt.Card0",
+        "previewId": "Card0",
+        "params": {},
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "index": 0,
+        "methodParams": []
+      },
+      "image": "<repo>/out/Card0-0.png",
+      "tree": "<repo>/out/Card0-0.viewinfo.json",
+      "interactive": false,
+      "by": "viewer",
+      "at": "<at>"
+    },
+    "choice": null,
+    "tabs": [
+      {
+        "key": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "name": "Cards",
+        "dim": "",
+        "module": null,
+        "title": "app/src/main/kotlin/demo/Cards.kt",
+        "active": true,
+        "stale": false,
+        "sourceSet": null
+      }
+    ],
+    "settle": null,
+    "vacant": null
+  }
+}

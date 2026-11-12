@@ -3,10 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { requireDaemon } from "./daemon.mjs";
 
 // 실제 픽스처의 첫 프레임을 지연시켜 준비 전후 배치와 입력을 검사한다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/workspace.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-workspace-check-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
@@ -97,7 +99,7 @@ try {
   await evaluate(`document.querySelector(".card .go").scrollIntoView({block:"nearest"});window.__boardScroll=scrollY;window.__frames=[];window.__morphs=[];window.__record=true;
     const R=r=>[r.x,r.y,r.width,r.height];
     function sample(){if(!__record)return;const stage=document.querySelector('#stage'),bar=document.querySelector('#panel'),m=document.querySelector('.morph');
-      if(m){const i=m.querySelector('img');__morphs.push({r:R(m.getBoundingClientRect()),fit:getComputedStyle(i).objectFit,ratio:i.naturalWidth/i.naturalHeight,src:i.getAttribute('src'),stage:R(stage.getBoundingClientRect()),deco:getComputedStyle(bar).opacity});}
+      if(m){const i=m.querySelector('img');__morphs.push({r:R(m.getBoundingClientRect()),fit:getComputedStyle(i).objectFit,ratio:i.naturalWidth/i.naturalHeight,src:i.getAttribute('src'),stage:R(stage.getBoundingClientRect()),deco:getComputedStyle(bar).opacity,head:getComputedStyle(document.querySelector('#back')).opacity,title:getComputedStyle(document.querySelector('#wsTitle')).opacity});}
       if(!document.querySelector('#focusView').hidden&&stage.offsetWidth&&getComputedStyle(bar).opacity==='1'&&getComputedStyle(bar).translate==='none')__frames.push([...R(stage.getBoundingClientRect()),...R(bar.getBoundingClientRect()).slice(0,2)]);
       requestAnimationFrame(sample)}requestAnimationFrame(sample)`);
   const cardRect = await evaluate(`(()=>{const c=document.querySelector('.card[data-i="0"] .cstage'),r=c.getBoundingClientRect(),i=c.querySelector('img');return {r:[r.x,r.y,r.width,r.height],src:i.src,ratio:i.naturalWidth/i.naturalHeight}})()`);
@@ -119,9 +121,15 @@ try {
   assert(entry.every(f => f.fit === "cover" && Math.abs(f.r[2] / f.r[3] / cardRect.ratio - 1) < .01), "모프 중 그림 비율 유지");
   console.log(`통과 ${++checked}: 카드 틀이 캔버스 틀로 이어져 모프(${entry.length}프레임, 그림 늘림 없음)`);
   assert(entry.filter(f => f.deco === "0").length > 3, "모프 초반에는 장식이 없다"); console.log(`통과 ${++checked}: 장식은 모프 뒤에 들어옴`);
+  // 헤더도 패널과 한 묶음이다(D-153 ⑧) — push 가 도는 동안 비치지 않고, 한 번 들어오면 다시 사라지지 않는다
+  const heads = entry.map(f => [Number(f.head), Number(f.title)]);
+  const rises = heads.every(([b, t], i) => !i || (b >= heads[i - 1][0] - .001 && t >= heads[i - 1][1] - .001));
+  assert(entry.filter(f => f.deco === "0").every(f => f.head === "0" && f.title === "0") && heads.at(-1).every(v => v === 1) && rises,
+    `헤더가 패널과 함께 모프 뒤에 들어옴 ${JSON.stringify(heads.map(h => h.map(v => v.toFixed(2)).join("/")))}`);
+  console.log(`통과 ${++checked}: 헤더(뒤로 · 이름)는 패널과 함께 모프 뒤에 들어옴`);
   await check(`(()=>{const m=document.querySelector('.morph');return m&&m.querySelector('img').src===${JSON.stringify(cardRect.src)}&&getComputedStyle(document.querySelector('#stage')).visibility==='hidden'})()`, "첫 프레임 전에는 카드 그림이 캔버스 자리의 자리 표시");
   await check(`[...document.querySelectorAll('#resizeScene input,#panel button')].every(b=>b.disabled) && !document.querySelector('#back').disabled`, "준비 중 조작 도구만 비활성화하고 출구 유지");
-  await click("#stage"); await click('#pnPick [data-sel="narrow"]'); await key("+");
+  await click("#stage"); await click("#pnSum"); await evaluate(`document.querySelector('#pnPick [data-sel="narrow"]').click()`); await key("+");
   await check(`__requests.length===0`, "준비 중 터치와 크기 변경 전송 차단");
   const loadingShot = await send("Page.captureScreenshot", { format: "png" });
   await writeFile(join(tmpdir(), "prevue-workspace-loading.png"), Buffer.from(loadingShot.data, "base64"));
@@ -131,7 +139,7 @@ try {
   await check(`__frames.length>10 && __frames.every(r=>r.every((v,i)=>Math.abs(v-__frames[0][i])<.5))`, "모프가 닿은 뒤 캔버스와 피커의 위치·크기 고정");
   await check(`document.querySelector('#workspaceLoading').hidden && !document.querySelector('#rlW').disabled && __arrivals.length===0`, "준비 완료 시 자리 표시 틀만 흐려지고 조작 활성화");
   await check(`__transitions.length>0 && __transitions.every(t=>!t.hero && t.workspace && t.duration==='0.15s')`, "이미지 Hero 없이 바탕은 150ms 페이드");
-  const point = await evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const ns=[];const walk=xs=>xs.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51)ns.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=ns.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds,img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
+  const point = await evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const ns=[];const walk=xs=>xs.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)ns.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=ns.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds,img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...point, button: "left", clickCount: 1 });
   await pause(650);
   const caught = await post("/viewer/catchup");
@@ -143,13 +151,13 @@ try {
   await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`); await pause(300);
   await until(`__vp===Math.round(document.querySelector('#shot').offsetWidth*devicePixelRatio)`, 3000);
   await check(`__vp===Math.round(document.querySelector('#shot').offsetWidth*devicePixelRatio)`, "크기를 바꾼 뒤 스트림 폭은 멈춘 캔버스 폭으로 알린다");
-  await evaluate(`window.__out=[];window.__outRec=true;window.__stageAt=(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect());requestAnimationFrame(function f(){if(!__outRec)return;const m=document.querySelector('.morph'),b=document.querySelector('#panel');__out.push({m:m&&(r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()),st:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),deco:getComputedStyle(b).opacity,ws:!document.querySelector('#focusView').hidden});requestAnimationFrame(f)})`);
+  await evaluate(`window.__out=[];window.__outRec=true;window.__stageAt=(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect());requestAnimationFrame(function f(){if(!__outRec)return;const m=document.querySelector('.morph'),b=document.querySelector('#panel');__out.push({m:m&&(r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()),st:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),deco:getComputedStyle(b).opacity,head:getComputedStyle(document.querySelector('#back')).opacity,ws:!document.querySelector('#focusView').hidden});requestAnimationFrame(f)})`);
   await exit(); await pause(1000);
   await evaluate(`__outRec=false`);
   const out = await evaluate(`({out:__out,stage:__stageAt,card:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect())})`);
   const flying = out.out.filter(f => f.m);
   const firstFly = out.out.findIndex(f => f.m);
-  assert(out.out.slice(0, firstFly).some(f => f.ws && Number(f.deco) < .2), "장식이 틀보다 먼저 물러남");
+  assert(out.out.slice(0, firstFly).some(f => f.ws && Number(f.deco) < .2 && Number(f.head) < .2), "장식 · 헤더가 틀보다 먼저 물러남");
   assert(flying.length > 5 && near(flying[0].m, out.out[firstFly - 1].st, 1.5) && near(flying.at(-1).m, out.card), `캔버스 틀이 카드 틀로 줄어듦 ${flying.length} ${flying[0]?.m} ${out.out[firstFly - 1]?.st} ${flying.at(-1)?.m} ${out.card}`);
   console.log(`통과 ${++checked}: 장식이 먼저 물러나고 틀이 카드로 줄어듦`);
   await check(`!document.querySelector('.card[data-i="0"].returned') && !document.querySelector('.morph') && getComputedStyle(document.querySelector('.card[data-i="0"] .cstage')).visibility==='visible' && Math.abs(scrollY-__boardScroll)<2 && __store.st.focus===null`, "화면 안 카드로는 링 없이 모프만 하고 보드·스크롤 유지");
@@ -162,6 +170,42 @@ try {
   await exit(); await pause(300);
   await check(`!!document.querySelector('.card[data-i="${far}"].returned') && !document.querySelector('.morph') && Math.abs(scrollY-__farScroll)<2`, "화면 밖 카드는 페이드와 링, 보드 스크롤 그대로");
   await evaluate(`document.querySelector('#__spacer')?.remove();scrollTo(0,__boardScroll)`);
+  // 카드 윗부분이 붙은 묶음 머리 밑에 든 채 돌아오면 줄어드는 틀도 머리 밑으로 들어간다 — 머리 바탕이 흐려지는 띠에서만 비친다
+  const tuckRun = async () => {
+    await evaluate(`window.__tuck=[];window.__ring=false;window.__tuckRec=true;requestAnimationFrame(function f(){if(!__tuckRec)return;__ring||=!!document.querySelector('.card[data-i="0"].returned');const m=document.querySelector('.morph'),g=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead'),h=g.getBoundingClientRect();
+      if(m){const r=m.getBoundingClientRect(),k=/transparent (-?[\\d.]+)px, rgb\\(0, 0, 0\\) (-?[\\d.]+)px/.exec(m.style.maskImage);__tuck.push({hide:r.y+(k?Number(k[1]):0),clear:r.y+(k?Number(k[2]):0),masked:!!m.style.maskImage,fade:h.top+h.height*parseFloat(getComputedStyle(g).getPropertyValue('--fade'))/100,head:h.bottom,
+        stuck:h.top<=parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))+.5,r:[r.x,r.y,r.width,r.height]})}requestAnimationFrame(f)})`);
+    await exit(); await pause(1000);
+    await evaluate(`__tuckRec=false`);
+    return evaluate(`({f:__tuck,card:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect()),ring:__ring})`);
+  };
+  const enter0 = async () => { await post("/focus", { index: 0, interactive: true }); await ready(); await pause(600); };
+  const barH = await evaluate(`parseFloat(getComputedStyle(document.body).getPropertyValue('--bar-h'))`);
+  await evaluate(`scrollBy(0,document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect().top-${barH}+120)`); await pause(200);
+  await enter0();
+  const tuck = await tuckRun();
+  assert(tuck.f.length > 5 && tuck.f.every(f => f.stuck) && !tuck.f[0].masked && tuck.f.some(f => f.masked) && tuck.f.every(f => f.hide >= f.fade - .5 && f.clear >= f.head - .5) && near(tuck.f.at(-1).r, tuck.card),
+    `머리 밑 카드로 돌아오는 틀이 머리 밑으로 들어감 ${JSON.stringify(tuck.f.map(f => [Math.round(f.hide), Math.round(f.clear), Math.round(f.fade), Math.round(f.head)]))}`);
+  console.log(`통과 ${++checked}: 머리 밑 카드로 돌아오는 틀은 묶음 머리 밑으로 들어감(${tuck.f.length}프레임)`);
+  // 머리가 붙지 않았으면 틀을 가리지 않는다
+  await evaluate(`scrollTo(0,0)`); await pause(200);
+  assert(!(await evaluate(`document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect().top<=${barH}+.5`)), "맨 위에서는 묶음 머리가 붙지 않는다");
+  await enter0();
+  const free = await tuckRun();
+  assert(free.f.length > 5 && free.f.every(f => !f.masked) && !free.ring, `머리가 붙지 않은 복귀는 가리지 않음 ${free.f.length}`);
+  console.log(`통과 ${++checked}: 묶음 머리가 붙지 않은 복귀는 틀을 가리지 않음`);
+  // 붙은 머리 밑에만 걸친 카드는 화면 밖과 같다 — 틀이 머리 밑으로 다 사라지지 않게 페이드와 링
+  // 여백은 묶음 안에 둔다 — 이름표가 그림 위라(D-151) 한 장짜리 묶음은 그림 아래끝에서 끝나 머리도 함께 밀려 올라간다
+  await evaluate(`(()=>{const sp=document.createElement('div');sp.id='__spacer';sp.style.height='2000px';document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.gbody').append(sp);
+    const s=document.querySelector('.card[data-i="0"] .cstage');scrollBy(0,s.getBoundingClientRect().bottom-${barH}-20)})()`); await pause(200);
+  await check(`(()=>{const r=document.querySelector('.card[data-i="0"] .cstage').getBoundingClientRect(),h=document.querySelector('.card[data-i="0"]').closest('.group').querySelector('.ghead').getBoundingClientRect();return r.bottom>${barH}&&r.bottom<h.bottom})()`, "카드가 붙은 머리 밑에만 걸침");
+  await evaluate(`window.__under=scrollY`);
+  await enter0();
+  const under = await tuckRun();
+  assert(under.f.length === 0 && under.ring && Math.abs(await evaluate(`scrollY-__under`)) < 2, `머리 밑에만 걸친 카드는 페이드와 링 ${JSON.stringify(under)}`);
+  console.log(`통과 ${++checked}: 붙은 머리 밑에만 걸친 카드로는 페이드와 링`);
+  await evaluate(`document.querySelector('#__spacer')?.remove()`);
+  await evaluate(`scrollTo(0,__boardScroll)`);
   hold = true;
   await click(".card .go"); await pending();
   await until(`!document.querySelector('#workspaceLoading').hidden`);
@@ -179,14 +223,30 @@ try {
   hold = false;
   await Promise.all(held.splice(0).map(requestId => send("Fetch.failRequest", { requestId, errorReason: "Failed" })));
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
-  await check(`document.querySelector('#workspaceLoadingText').textContent.includes('준비하지 못했') && !document.querySelector('#back').disabled`, "첫 프레임 실패를 표시하고 복귀 가능");
+  // 기본 언어는 영어이고 ?lang= 으로 바뀐다(D-110) — 문장을 박지 않고 페이지의 phrase 로 읽는다.
+  const failed = await evaluate(`import('/js/strings.js').then(m=>m.phrase('workspace.loading.failed'))`);
+  assert(failed && failed !== "workspace.loading.failed", `${await evaluate("document.documentElement.lang")} 사전에 workspace.loading.failed 가 없다`);
+  await check(`document.querySelector('#workspaceLoadingText').textContent.includes(${JSON.stringify(failed)}) && !document.querySelector('#back').disabled`, "첫 프레임 실패를 표시하고 복귀 가능");
   await exit();
+  // 헤더가 아직 들어오지 않은 동안(모프 70% 전)에도 esc · 브라우저 뒤로 가기는 바로 나간다.
+  // 창이 385ms 라 CDP 왕복으로 겨누지 않고 페이지 안에서 기다렸다 바로 누르며, 누른 순간 헤더가 숨어 있었는지 적는다.
+  for (const [name, leave] of [["esc", `dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}))`], ["브라우저 뒤로 가기", `history.back()`]]) {
+    const before = await evaluate(`__exits`);
+    const hidden = await evaluate(`new Promise(done=>{document.querySelector('.card .go').click();const t0=performance.now();
+      requestAnimationFrame(function f(){const b=document.querySelector('#back');
+        if(!document.querySelector('#focusView').hidden&&b.classList.contains('deco-off')&&history.state?.prevueWs){${leave};done(b.classList.contains('deco-off'))}
+        else if(performance.now()-t0>3000)done(false);else requestAnimationFrame(f)})})`);
+    assert(hidden, `헤더가 숨은 동안 ${name}를 눌렀다`);
+    await until(`!document.querySelector('#boardView').hidden && __exits>${before} && __store.st.screen==='board'`);
+    checked++; console.log(`통과 ${checked}: 헤더가 들어오기 전에도 ${name}로 나감`);
+    await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`); await pause(300);
+  }
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-  await evaluate(`window.__arrivalCount=__arrivals.length;document.startViewTransition=undefined;__frames=[];__record=true;requestAnimationFrame(function sample(){if(!__record)return;if(!document.querySelector('#focusView').hidden){const r=document.querySelector('#stage').getBoundingClientRect();__frames.push([r.x,r.y,r.width,r.height])}requestAnimationFrame(sample)})`);
+  await evaluate(`window.__arrivalCount=__arrivals.length;document.startViewTransition=undefined;__frames=[];__record=true;requestAnimationFrame(function sample(){if(!__record)return;if(!document.querySelector('#focusView').hidden){const r=document.querySelector('#stage').getBoundingClientRect();__frames.push([r.x,r.y,r.width,r.height]);if(document.querySelector('#back').classList.contains('deco-off'))window.__lateHead=true}requestAnimationFrame(sample)})`);
   hold = true;
   await click(".card .go"); await pending(); await pause(200); await resume(); await ready(); await pause(200);
   await evaluate(`__record=false`);
-  await check(`__arrivals.length===__arrivalCount && __frames.length>5 && __frames.every(r=>r.every((v,i)=>Math.abs(v-__frames[0][i])<.5)) && !document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`, "움직임 줄이기·View Transitions 미지원에서는 모프 없이 배치 고정");
+  await check(`__arrivals.length===__arrivalCount && __frames.length>5 && __frames.every(r=>r.every((v,i)=>Math.abs(v-__frames[0][i])<.5)) && !document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph') && !window.__lateHead`, "움직임 줄이기·View Transitions 미지원에서는 모프 없이 배치 고정, 헤더도 늦추지 않음");
   await exit();
   await post("/focus", { index: 0, interactive: true, size: "narrow" });
   await send("Page.reload");
@@ -197,25 +257,47 @@ try {
   await until(`__store.st.focus && !__store.st.focus.size`); await ready();
   await check(`(()=>{const shot=document.querySelector('#shot'),r=shot.getBoundingClientRect();return !__store.st.focus.size && Math.abs(r.width/r.height-shot.naturalWidth/shot.naturalHeight)<.002})()`, "크기를 바꾼 상태로 새로 열어도 원래 프리뷰의 비율 복원");
   await exit();
-  // 단건(FQN)의 보기 ↔ 조작도 같은 틀 모프다. 끝나면 원래 파일 보드로 돌린다.
+  // D-155 — FQN 딥링크도 그 파일 보드 위의 한 장이다. 늘 조작이고 뒤로 버튼이 있으며, esc 가 그 파일 보드의 그 카드 자리로 돌아간다.
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   const boardFile = await evaluate(`__store.st.board.file`);
   await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
-  await until(`__store.st.screen==='focus' && !__store.st.focus.fromBoard && !__store.st.focus.interactive && document.querySelector('#shot').naturalWidth>0`);
-  await pause(300);
-  const morphs = async on => {
-    await evaluate(`window.__fq=[];window.__fqRec=true;requestAnimationFrame(function f(){if(!__fqRec)return;const m=document.querySelector('.morph');if(m)__fq.push((r=>[r.x,r.y,r.width,r.height])(m.getBoundingClientRect()));requestAnimationFrame(f)})`);
-    await post("/viewer/interactive", { on });
-    await until(`__store.st.focus.interactive===${on}`);
-    if (on) await ready();
-    await pause(1200);
-    await evaluate(`__fqRec=false`);
-    return evaluate(`({n:__fq.length,last:__fq.at(-1),stage:(r=>[r.x,r.y,r.width,r.height])(document.querySelector('#stage').getBoundingClientRect()),morph:!!document.querySelector('.morph')})`);
-  };
-  const on = await morphs(true);
-  assert(on.n > 5 && near(on.last, on.stage) && !on.morph, `단건 보기 → 조작 틀 모프 ${JSON.stringify(on)}`); console.log(`통과 ${++checked}: 단건 보기 → 조작 틀 모프`);
-  const off = await morphs(false);
-  assert(off.n > 5 && near(off.last, off.stage) && !off.morph, `단건 조작 → 보기 틀 모프 ${JSON.stringify(off)}`); console.log(`통과 ${++checked}: 단건 조작 → 보기 틀 모프`);
+  await until(`__store.st.screen==='focus' && __store.st.focus.interactive && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await ready();
+  const linked = await evaluate(`__store.st.board.focus`);
+  await check(`!document.querySelector('#back').hidden && !document.querySelector('#seg') && __store.st.board.groups.flatMap(g=>g.cards).find(c=>c.index===${linked}).previewId===__store.st.focus.previewId`, "FQN 딥링크 — 그 파일 보드 위 그 카드의 조작 한 장, 뒤로 버튼");
+  const beforeEsc = await evaluate(`__exits`);
+  await key("Escape");
+  await until(`!document.querySelector('#boardView').hidden && __exits>${beforeEsc} && __store.st.screen==='board' && __store.st.board.file.endsWith('/FilterScreen.kt')`);
+  await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+  await check(`__store.st.board.focus===${linked} && !!document.querySelector('.card[data-i="${linked}"]')`, "FQN 딥링크에서 esc — 그 파일 보드의 그 카드 자리로");
+  // I 는 보드에서 카드를 열고 한 장에서 닫는다 — 보기 · 조작을 바꾸는 뜻은 없다(D-155 ②).
+  await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
+  await until(`__store.st.screen==='focus' && __store.st.focus.interactive`);
+  await ready();
+  const beforeI = await evaluate(`__exits`);
+  await key("i");
+  await until(`!document.querySelector('#boardView').hidden && __exits>${beforeI} && __store.st.screen==='board'`);
+  await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+  await check(`__store.st.board.focus===${linked}`, "한 장에서 I — 보드의 그 카드 자리로");
+  for (const name of ["뒤로 버튼", "브라우저 뒤로", "빠른 열기"]) {
+    await post("/show", { target: "com.example.pearl.feature.pearl.FilterScreenKt.DrinkFilterPreview", index: null, params: {}, by: "test" });
+    await until(`__store.st.screen==='focus' && __store.st.focus.interactive`);
+    await ready();
+    await until(`history.state?.prevueWs`);
+    const before = await evaluate(`__exits`);
+    if (name === "뒤로 버튼") await click("#back");
+    else if (name === "브라우저 뒤로") await evaluate(`history.back()`);
+    else {
+      await key("/");
+      await until(`document.querySelector('#q')?.checkVisibility()`);
+      await evaluate(`(()=>{const q=document.querySelector('#q');q.value='DrinkFilterPreview';q.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+      await until(`!!document.querySelector('#qoIn .qo-row')`);
+      await key("Enter");
+    }
+    await until(`__store.st.screen==='board' && __exits>${before} && !document.querySelector('#boardView').hidden`);
+    await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`);
+    await check(`__store.st.board.file.endsWith('/FilterScreen.kt') && __store.st.board.focus===${linked} && !!document.querySelector('.card[data-i="${linked}"]') && !document.querySelector('#q')?.checkVisibility()`, `FQN 딥링크에서 ${name} — 같은 파일 보드의 그 카드로`);
+  }
   await post("/show", { target: boardFile, index: null, params: {}, by: "test" });
   await until(`__store.st.screen==='board'`);
   await check(`__errors.length===0`, "브라우저 오류 0");
@@ -223,5 +305,5 @@ try {
 } finally {
   ws?.close(); chrome.kill();
   await new Promise(r => chrome.exitCode !== null ? r() : chrome.once("exit", r));
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
 }

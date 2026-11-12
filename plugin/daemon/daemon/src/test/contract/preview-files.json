@@ -1,0 +1,89 @@
+{
+  "status": 200,
+  "schema": {
+    "composables": [
+      {
+        "module": "string",
+        "name": "string",
+        "path": "string",
+        "rel": "string"
+      }
+    ],
+    "files": [
+      {
+        "functions": [
+          "string"
+        ],
+        "module": "string",
+        "mtime": "number",
+        "path": "string",
+        "previews": [
+          {
+            "calls": [
+              "empty|string"
+            ],
+            "fn": "string"
+          }
+        ],
+        "rel": "string"
+      }
+    ],
+    "ready": "boolean"
+  },
+  "example": {
+    "ready": true,
+    "files": [
+      {
+        "path": "<repo>/app/src/main/kotlin/demo/Badges.kt",
+        "rel": "app/src/main/kotlin/demo/Badges.kt",
+        "module": ":app",
+        "mtime": 0,
+        "functions": [
+          "BadgePreview"
+        ],
+        "previews": [
+          {
+            "fn": "BadgePreview",
+            "calls": [
+              "Badge"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "rel": "app/src/main/kotlin/demo/Cards.kt",
+        "module": ":app",
+        "mtime": 0,
+        "functions": [
+          "Card0",
+          "Card1"
+        ],
+        "previews": [
+          {
+            "fn": "Card0",
+            "calls": []
+          },
+          {
+            "fn": "Card1",
+            "calls": []
+          }
+        ]
+      }
+    ],
+    "composables": [
+      {
+        "name": "BadgePreview",
+        "path": "<repo>/app/src/main/kotlin/demo/Badges.kt",
+        "rel": "app/src/main/kotlin/demo/Badges.kt",
+        "module": ":app"
+      },
+      {
+        "name": "Badge",
+        "path": "<repo>/lib/src/main/kotlin/lib/Badge.kt",
+        "rel": "lib/src/main/kotlin/lib/Badge.kt",
+        "module": ":lib"
+      }
+    ]
+  }
+}

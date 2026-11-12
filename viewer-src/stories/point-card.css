@@ -1,0 +1,8 @@
+/* 가리키기 카드 스토리의 배치 — 상태를 고정폭으로 나란히, 보드는 그림과 그 밖에 뜬 카드. */
+.story-cards { display: grid; grid-template-columns: repeat(auto-fill, var(--point-card-w)); gap: var(--space-24); align-items: start; }
+.story-case { display: grid; gap: var(--space-8); align-content: start; }
+.story-height { font-variant-numeric: tabular-nums; }
+.story-board { position: relative; max-width: 100%; border-radius: var(--corner-large); background: var(--surface); overflow: hidden; }
+.story-shot { position: absolute; cursor: crosshair; }
+.story-shot img { display: block; width: 100%; height: 100%; box-shadow: 0 0 0 1px var(--outline-variant); user-select: none; }
+.story-boards { grid-template-columns: 1fr; }   /* 무대(그림 + 그 밖 카드)가 한 칸에 다 들어가야 카드가 그림 오른쪽에 선다 */

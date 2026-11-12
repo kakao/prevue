@@ -1,0 +1,45 @@
+{
+  "status": 200,
+  "schema": {
+    "files": {
+      "Badge.kt": [
+        "string"
+      ],
+      "Badges.kt": [
+        "string"
+      ],
+      "Cards.kt": [
+        "string"
+      ],
+      "Dup.kt": [
+        "string"
+      ]
+    },
+    "root": "string",
+    "roots": [
+      "string"
+    ]
+  },
+  "example": {
+    "root": "<repo>",
+    "roots": [
+      "lib/src/main/kotlin",
+      "app/src/main/kotlin"
+    ],
+    "files": {
+      "Badge.kt": [
+        "lib/src/main/kotlin/lib/Badge.kt"
+      ],
+      "Badges.kt": [
+        "app/src/main/kotlin/demo/Badges.kt"
+      ],
+      "Cards.kt": [
+        "app/src/main/kotlin/demo/Cards.kt"
+      ],
+      "Dup.kt": [
+        "app/src/main/kotlin/a/Dup.kt",
+        "app/src/main/kotlin/b/Dup.kt"
+      ]
+    }
+  }
+}

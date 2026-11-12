@@ -1,0 +1,195 @@
+{
+  "ready": true,
+  "files": [
+    {
+      "path": "<repo>/fixtures/pearl/feature/search/src/main/kotlin/com/example/pearl/feature/search/SearchScreen.kt",
+      "rel": "feature/search/src/main/kotlin/com/example/pearl/feature/search/SearchScreen.kt",
+      "module": ":feature:search",
+      "mtime": 1793760472708,
+      "functions": [
+        "SearchScreenPreview",
+        "SearchScreenQueryPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/showcase/ComponentPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/showcase/ComponentPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "ControlsPreview",
+        "DetailScreenPreview",
+        "MenuCardsPreview",
+        "FlavorPanelsPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/ScrollPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/ScrollPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "ScrollColumnPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/ScrollUntilPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/ScrollUntilPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "UntilLazyColumnPreview",
+        "UntilLazyRowPreview",
+        "UntilColumnPreview",
+        "UntilRowPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/SharedTransitionPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/SharedTransitionPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "SharedTransitionPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/showcase/ShowcasePreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/showcase/ShowcasePreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "NavTourPreview",
+        "HomeTourPreview",
+        "SipPreview",
+        "DevicesPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/TabScreens.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/TabScreens.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472707,
+      "functions": [
+        "OrdersScreenPreview",
+        "SavedScreenPreview",
+        "ProfileScreenPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/AdaptivePreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/AdaptivePreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "AdaptivePearlPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/AnimationPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/AnimationPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "AnimatableBarPreview",
+        "TransitionBarPreview",
+        "AnimateAsStateBarPreview",
+        "DelayedBarPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/BlankStub.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/BlankStub.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "BlankStub"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/FilterScreen.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/FilterScreen.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "DrinkFilterPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/PearlApp.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/PearlApp.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "PearlAppPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/PearlPreviews.kt",
+      "rel": "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/PearlPreviews.kt",
+      "module": ":feature:pearl",
+      "mtime": 1793760472706,
+      "functions": [
+        "PearlListPreview",
+        "PearlEmptyPreview",
+        "PearlLoadingPreview",
+        "PearlErrorPreview",
+        "DrinkDetailPreview",
+        "DrinkByKindPreview",
+        "PearlListThemesPreview",
+        "PearlErrorThemesPreview",
+        "DrinkDetailThemesPreview",
+        "PearlAccessibilityPreview",
+        "PearlPhonePreview",
+        "PearlTabletPreview",
+        "PearlFoldablePreview",
+        "PearlLandscapePreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/Cup.kt",
+      "rel": "core/ui/src/main/kotlin/com/example/pearl/core/ui/Cup.kt",
+      "module": ":core:ui",
+      "mtime": 1793760472705,
+      "functions": [
+        "CupPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/DrinkCard.kt",
+      "rel": "core/ui/src/main/kotlin/com/example/pearl/core/ui/DrinkCard.kt",
+      "module": ":core:ui",
+      "mtime": 1793760472705,
+      "functions": [
+        "DrinkCardPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/PillNavBar.kt",
+      "rel": "core/ui/src/main/kotlin/com/example/pearl/core/ui/PillNavBar.kt",
+      "module": ":core:ui",
+      "mtime": 1793760472705,
+      "functions": [
+        "PillNavBarPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/core/designsystem/src/main/kotlin/com/example/pearl/core/designsystem/PearlButton.kt",
+      "rel": "core/designsystem/src/main/kotlin/com/example/pearl/core/designsystem/PearlButton.kt",
+      "module": ":core:designsystem",
+      "mtime": 1793760472702,
+      "functions": [
+        "PearlButtonPreview"
+      ]
+    },
+    {
+      "path": "<repo>/fixtures/pearl/app/src/main/kotlin/com/example/pearl/MainActivity.kt",
+      "rel": "app/src/main/kotlin/com/example/pearl/MainActivity.kt",
+      "module": ":app",
+      "mtime": 1793760472701,
+      "functions": [
+        "MainActivityPreview"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+[versions]
+# 렌더러는 alpha이고 릴리스마다 내부가 바뀐다. 자신이 빌드된 layoutlib과만 동작하므로 넷을 함께 올린다.
+renderer = "0.0.1-alpha16"
+layoutlib = "17.0.0"
+layoutlib-data = "17.0.1"
+# 대상 저장소와 같은 버전이어야 산출물이 호환된다. 렌더러 jar도 이 버전의 메타데이터다.
+kotlin = "2.4.10"
+coroutines = "1.8.0"
+# 데몬 본체는 코루틴을 따로 싣지 않는다 — 렌더러 jar 가 이 판(1.10.2-intellij-1)을 품고 있어 둘을 실으면 같은 클래스가 두 벌이 된다.
+# 컴파일만 이 판에 대고 한다. 렌더러를 올리면 품은 판도 바뀌므로 함께 본다.
+coroutines-renderer = "1.10.2"
+annotations = "13.0"
+# 테스트만. 오프라인 캐시에 있는 판이다 — kotlin-test 는 2.4 판이 없어 쓰지 않는다.
+junit = "6.0.3"
+# 테스트만. 오프라인 캐시에 있는 판이다(1.2.1 은 메타데이터가 없다). 끌고 오는 코루틴은 끊는다 — build.gradle.kts
+turbine = "1.2.0"
+# 컴파일 시점 DI(D-144). Kotlin 컴파일러 플러그인이라 Kotlin 을 올릴 때 호환표(docs/compatibility.md)를 먼저 본다 — 2.4.10 은 1.0.0-RC3 이상.
+metro = "1.5.2"
+
+[libraries]
+renderer = { module = "com.android.tools.compose:compose-preview-renderer", version.ref = "renderer" }
+layoutlib = { module = "com.android.tools.layoutlib:layoutlib", version.ref = "layoutlib" }
+layoutlib-runtime = { module = "com.android.tools.layoutlib:layoutlib-runtime", version.ref = "layoutlib-data" }
+layoutlib-resources = { module = "com.android.tools.layoutlib:layoutlib-resources", version.ref = "layoutlib-data" }
+
+# 상주 컴파일러가 격리 로더에서 쓰는 것들. 배포판 kotlinc가 아니라 embeddable이다.
+kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-compose-plugin-embeddable = { module = "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlin-script-runtime = { module = "org.jetbrains.kotlin:kotlin-script-runtime", version.ref = "kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+# build-logic 의 convention plugin 이 컴파일 때만 본다 — 실행 때는 데몬 빌드가 plugins {} 로 올린 것을 쓴다.
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-daemon-embeddable = { module = "org.jetbrains.kotlin:kotlin-daemon-embeddable", version.ref = "kotlin" }
+kotlinx-coroutines-core-jvm = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
+kotlinx-coroutines-renderer = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines-renderer" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm", version.ref = "coroutines-renderer" }
+# 코드 생성 단계가 @NotNull을 찾는다. embeddable의 POM 의존성에 없어 따로 둔다.
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "annotations" }
+
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }

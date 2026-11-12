@@ -8,6 +8,9 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
+.resize-scene.preparing :is(#sysBars, #insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
+/* 몸체 밖 인셋 표지는 #stage 밖이라 무대의 숨김을 따로 따른다 — 준비 중 · 크기 전환 중(resize-hidden) · 진입 모프 동안 */
+.resize-scene.preparing #insetMarks, #resizeGeometry:has(> #stage.resize-hidden) #insetMarks, #focusView.morph-hold #insetMarks { visibility: hidden; }
 .resize-scene.preparing .ruler { opacity: .45; }
 .resize-scene input:disabled { cursor: default; }
 .workspace-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-8);
@@ -22,7 +25,7 @@ body.resizing-ui main { padding-bottom: 0; }
 @keyframes workspace-wait { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .workspace-spinner { animation: none; } }
 .resize-scene .stage { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: 0;
-         box-shadow: 0 0 0 2px var(--live), var(--elevation-2); }
+         box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 .resize-scene .ly { position: absolute; left: 0; top: 0; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 /* 그림 시작 — 기기 몸체(틀 · 버튼 · 카메라 · 접는 선). 실제 기기의 모양이라 날값 린트가 색만 본다(D-97) */
 .resize-scene .veil { position: absolute; inset: 0; background: var(--device-veil); pointer-events: none; }
@@ -55,8 +58,12 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .duo-edge .rimhi { stroke: var(--device-rim); }
 .resize-scene .duo-band { background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
             background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
-.resize-scene .duo-edge path { fill: none; stroke-linejoin: round; }
+.resize-scene .duo-edge :is(path, use) { fill: none; stroke-linejoin: round; }
 .resize-scene .duo-edge .ring { stroke: var(--live); stroke-width: 4px; }
+/* 테 · 경첩의 150° 빛 — 몸체 띠(.duo-band)의 그러데이션과 같은 세 색이다. */
+.resize-scene #duoSheen stop:nth-child(1) { stop-color: var(--device-gloss); }
+.resize-scene #duoSheen stop:nth-child(2) { stop-color: var(--device-gloss-clear); }
+.resize-scene #duoSheen stop:nth-child(3) { stop-color: var(--device-gloss-shade); }
 /* 그림 끝 */
 /* 그림 시작 — 접기 전환의 리그(면 · 그늘 · 빛) */
 .resize-scene .rig { position: absolute; inset: 0; pointer-events: none; }
@@ -110,11 +117,66 @@ body.resizing-ui main { padding-bottom: 0; }
 
 .resize-scene.at-rest.await-live .unit .stage > img { visibility: visible; }
 
-/* 작업 공간 여닫기의 틀 모프(focus.js) — 나는 동안 실제 캔버스와 장면의 틀은 숨는다. 장식은 틀이 거의 닿은 뒤 들어오고(short4), 나갈 때는 먼저 물러난다(short2). */
+/* 작업 공간 여닫기의 틀 모프(workspace/focus.ts) — 나는 동안 실제 캔버스와 장면의 틀은 숨는다. 장식은 틀이 거의 닿은 뒤 들어오고(short4), 나갈 때는 먼저 물러난다(short2). */
 #focusView.morph-hold #stage, #focusView.morph-hold .unit .stage, .morph-target { visibility: hidden !important; }
 .resize-scene { --deco-dur: var(--duration-short4); }
 .resize-scene .unit :is(.outline, .tick, .cam), .resize-scene .ruler { transition: filter var(--deco-dur) var(--easing-standard); }
 .resize-scene .shell, .resize-scene .btn { transition: background-color var(--duration-medium2) var(--easing-standard), filter var(--deco-dur) var(--easing-standard); }
 .resize-scene.deco-off .unit :is(.shell, .btn, .outline, .tick, .cam), .resize-scene.deco-off .ruler { filter: opacity(0); }
-.morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container); }
+.morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container);
+         mask-size: calc(100% + 200vmax) calc(100% + 100vmax); mask-position: -100vmax 0; mask-repeat: no-repeat; mask-clip: no-clip; }
 .morph img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 0 0; }
+/* 그림 시작 — 기기별 바(D-169). 그림 위에 dp 좌표 SVG 로 덧그리고, 글자색은 아래 그림의 밝기로 고른다 */
+.stage .sys-bars { position: absolute; inset: 0; pointer-events: none; }
+.stage .sys-bars svg { display: block; width: 100%; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
+.sys-bars .sb-ink-dark { color: var(--device-shade); }
+.sys-bars .sb-ink-light { color: var(--device-veil); }
+/* 인셋 영역 보기 — 바와 같은 dp 좌표 SVG. 띠는 옅게 채우고 안쪽 경계에 선을 둬서 겹쳐도 각 종류의 끝이 보인다. 선 굵기는 확대해도 화면 px 이다(non-scaling-stroke). */
+.stage .inset-overlay { position: absolute; inset: 0; pointer-events: none; }
+.stage .inset-overlay svg { display: block; width: 100%; height: 100%; }
+.io-band[data-kind="statusBars"] { color: var(--inset-status); }
+.io-band[data-kind="navigationBars"] { color: var(--inset-nav); }
+.io-band[data-kind="captionBar"] { color: var(--inset-caption); }
+.io-band[data-kind="displayCutout"] { color: var(--inset-cutout); }
+.io-band[data-kind="systemOverlays"] { color: var(--inset-overlays); }
+.io-fill { fill: currentColor; fill-opacity: var(--inset-band); }
+.io-line { stroke: currentColor; stroke-width: 2; }
+.io-safe { fill: var(--inset-safe); fill-opacity: var(--inset-safe-band); }
+/* 인셋 표지 — 화면과 같은 상자(workspace/focus.ts layout)에서 몸체 두께(--im-bezel, 장면 px라 확대를 따른다) 밖으로 나간다.
+   선은 제 칸의 가운데에 서고, 간격 · 칸 · 선 굵기 · 배지는 --z 로 되돌려 확대해도 화면에서 같은 크기다. */
+.resize-scene .inset-marks { position: absolute; z-index: 5; pointer-events: none; --im-gap: var(--space-16); --im-lane-w: var(--space-64); --im-lane-h: var(--space-24);
+  --im-cap: calc(var(--space-8) / var(--z, 1)); --im-hair: calc(1px / var(--z, 1)); }
+.inset-marks[hidden] { display: none; }
+.im-dim { position: absolute; color: var(--on-surface-variant); }
+.im-dim[data-side="right"] { left: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); width: 0; border-left: var(--im-hair) solid currentColor; }
+.im-dim[data-side="bottom"] { top: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); height: 0; border-top: var(--im-hair) solid currentColor; }
+.im-dim::before, .im-dim::after { content: ""; position: absolute; background: currentColor; }
+.im-dim[data-side="right"]::before, .im-dim[data-side="right"]::after { left: calc(var(--im-cap) / -2); width: var(--im-cap); height: var(--im-hair); }
+.im-dim[data-side="right"]::before { top: 0; }
+.im-dim[data-side="right"]::after { bottom: 0; }
+.im-dim[data-side="bottom"]::before, .im-dim[data-side="bottom"]::after { top: calc(var(--im-cap) / -2); height: var(--im-cap); width: var(--im-hair); }
+.im-dim[data-side="bottom"]::before { left: 0; }
+.im-dim[data-side="bottom"]::after { right: 0; }
+/* 끝에서 화면 가장자리까지의 점선 — 치수가 띠의 어디서 어디까지인지 잇는다 */
+.im-ext { position: absolute; color: var(--outline-variant); }
+.im-dim[data-side="right"] .im-ext { right: 0; width: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); border-top: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="right"] .im-from { top: 0; }
+.im-dim[data-side="right"] .im-to { bottom: 0; }
+.im-dim[data-side="bottom"] .im-ext { bottom: 0; height: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); border-left: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="bottom"] .im-from { left: 0; }
+.im-dim[data-side="bottom"] .im-to { right: 0; }
+.im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; line-height: 1; }
+.im-badge { z-index: 1; left: 50%; top: 50%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-radius: var(--corner-small);
+  background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant); color: var(--on-surface); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+/* 종류 색은 점 하나로만 잇는다 — 배지는 옆 치수 눈금(#ruler)과 같은 무채색 크롬이다. */
+.im-badge::before { content: ""; width: var(--space-8); height: var(--space-8); border-radius: var(--corner-full); background: var(--im-color); }
+.im-dim[data-kind="statusBars"] { --im-color: var(--inset-status); }
+.im-dim[data-kind="navigationBars"] { --im-color: var(--inset-nav); }
+.im-dim[data-kind="captionBar"] { --im-color: var(--inset-caption); }
+.im-dim[data-kind="displayCutout"] { --im-color: var(--inset-cutout); }
+.im-dim[data-kind="systemOverlays"] { --im-color: var(--inset-overlays); }
+/* SAFE AREA — 앱 그림 위에 서므로 떠 있는 층의 칩으로 그림에서 떼어 읽히게 한다. 초록은 이름 글자에만 남긴다 */
+.im-safe { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-8); border-radius: var(--corner-small);
+  background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elevation-2); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.im-safe b { font-weight: var(--weight-medium); color: var(--success); }
+/* 그림 끝 */

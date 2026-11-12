@@ -11,7 +11,7 @@
 <div align="center">
 
 [![build check](https://img.shields.io/badge/build-check-555?labelColor=0E1B2A)](https://github.com/kakao/prevue/actions/workflows/build.yml)
-[![version](https://img.shields.io/badge/version-0.21.0-555?labelColor=0E1B2A)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.22.0-555?labelColor=0E1B2A)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-555?labelColor=0E1B2A)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code%20plugin-D97757?logo=claude&logoColor=white)](#시작하기)
 [![Codex](https://img.shields.io/badge/Codex%20plugin-000000?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D)](#시작하기)
@@ -80,11 +80,11 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 
 에이전트는 "이거"가 어느 파일의 몇 번째 줄인지 알아냅니다. 클립보드에도 `@경로#L줄`이 복사되어 터미널에 바로 붙여 넣을 수 있습니다.
 
-클릭한 자리에는 박스와 함께 파일:줄 표시가 붙습니다.
+그림 옆에 가리킨 것의 카드가 섭니다. 이름 · 파일:줄 · 크기 · Modifier와 함께 둘레의 요소를 작은 트리로 보여 줍니다. 줄을 눌러 부모나 형제를 다시 가리키고, 그 컴포저블을 부르는 Preview로 건너갈 수 있습니다.
 
 <p align="center">
-  <img src="assets/point.png" width="760"
-       alt="작업 공간에서 뉴스 카드의 제목을 가리킨 화면. 제목에 파란 박스가 쳐지고, 박스 위 꼬리표에 NewsResourceCard.kt:230 · ✓ copied가 붙는다">
+  <img src="assets/pointing.gif" width="1000"
+       alt="Pearl 앱 Preview가 놓인 보드. 홈 Preview의 Taro Milk Tea 카드에서 가격 오른쪽을 누르면 그림 옆에 카드가 선다 — Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize와 둘레 요소의 트리. 트리에서 위쪽 DrinkCard 줄을 누르면 음료 카드 전체를 가리키고, 다음 DrinkCard 줄을 누르면 Thai Milk Tea로 옮겨 간다. 카드 머리의 Preview 버튼을 누르면 DrinkCard를 부르는 Preview 셋이 펼쳐지고, MenuCardsPreview를 고르면 ComponentPreviews.kt의 보드가 그 Preview에서 열린다">
 </p>
 
 ### 에이전트가 셋이어도 가볍게
@@ -168,7 +168,7 @@ Android Studio의 Interactive Mode처럼 클릭 · 드래그로 모션과 애니
 </p>
 
 <p align="center">
-  <img src="assets/interactive-cup.gif" width="33.3%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다"><img src="assets/devices.gif" width="66.6%" alt="작업 공간의 오른쪽 패널에서 기기를 바꾸는 장면. S26에서는 컵 아래에 고르기가 있고, iPhone Duo를 펼치면 왼쪽에 컵, 오른쪽에 고르기 패널로 갈린다. 접기를 누르면 커버 화면에서 다시 세로로, 펴면 다시 둘로 갈리고, Pixel Tablet에서도 컵과 패널이 나란히 선다">
+  <img src="assets/interactive-cup.gif" width="33.3%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다"><img src="assets/devices.gif" width="66.6%" alt="작업 공간 무대 아래의 조작 독에서 기기를 바꾸는 장면. 독의 메뉴를 열어 S26을 고르면 컵 아래에 고르기가 있고, iPhone Duo를 고르면 펼친 채로 왼쪽에 컵, 오른쪽에 고르기 패널로 갈린다. 접기 버튼을 누르면 커버 화면에서 다시 세로로, 펴면 다시 둘로 갈리고, 메뉴에서 Pixel Tablet을 고르면 컵과 패널이 나란히 선다. 다시 펼친 iPhone Duo에서 인셋 영역 보기를 켜면 오른쪽 상태 표시 84dp와 아래 34dp 띠가 칠해지고, 그 사이의 SAFE AREA 867 × 635가 적힌다">
 </p>
 
 ### 빠른 열기

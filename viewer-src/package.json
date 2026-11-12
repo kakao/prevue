@@ -1,0 +1,26 @@
+{
+  "name": "prevue-viewer",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "25.9.0" },
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check",
+    "typecheck": "node generate-state.mjs --check && tsc --noEmit",
+    "storybook": "storybook dev -p 6006 --no-open --disable-telemetry",
+    "build-storybook": "storybook build --disable-telemetry --output-dir storybook-static"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@storybook/react-vite": "10.6.5",
+    "@types/node": "25.9.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "storybook": "10.6.5",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

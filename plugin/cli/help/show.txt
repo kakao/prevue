@@ -1,0 +1,28 @@
+prevue show <file|FQN> [--index N] [--param k=v]... [--lang <code>]
+
+Opens every @Preview in the file as a board in a viewer tab — a new tab the first time (tab:"opened"), that tab if already open (tab:"switched").
+Showing another file keeps the previous screen as a tab. Up to 10 tabs; beyond that the least recently viewed tab closes (closedTab).
+For a file it answers after the whole board is drawn, in the same shape as wait.
+For an FQN it opens that function's file as a board too and enters that card interactive (as focus --on) — it answers with that one card,
+and the other cards are drawn on a separate task once input is quiet (prevue focus --help). focus --off goes back to the board.
+--index picks which of that function's cards (0 first) when it makes several. An FQN whose source file isn't found is refused — show the file path.
+--lang is the viewer language — pass the conversation's language (ko, en, …). It goes on viewer, and on next · then if it isn't ready.
+
+Response
+  cards[]   index · name · ok · label (device name) · image (absolute PNG path) · tree (ViewInfo tree path)
+            failure · message when not ok. paramIndex · paramCount when one function makes several cards,
+            paramLabel when that value has a short name (an enum · number · short string)
+  viewer    the viewer address — show doesn't open the browser. Give the person this address as a link
+  complete  false means a card is interactive and some other cards are still old images (prevue wait --help)
+  started   true means there was no daemon and this show started it — the viewer opened in the browser
+  The verdict (ok · complete · message) comes first and cards last — reading just the start shows the verdict
+
+There can be more cards than functions — an annotation carrying @Preview on its declaration (@DevicePreviews etc.) makes that many,
+and @PreviewParameter one card per value. E.g. @DevicePreviews(5) × 5 functions = 25 cards.
+
+If preparation (toolchain · dump) is done, it starts the daemon itself and draws even without one (started:true, a few seconds to the first PNG). For a module of the same app,
+the running daemon draws it (about 1 second).
+
+Exit codes: 0 everything rendered · 1 there are ok:false cards · 3 this file can't be drawn now — the response has health's shape (missing · next · ask · options · tell,
+prevue health --help). If something needing approval is missing, put the ask, and if approved run next (· then) and follow up to the last response's next. A 3 with only ["daemon"]
+is when the sandbox needs escalation to start it (startNeedsEscalation) — run next's prevue start … as is.

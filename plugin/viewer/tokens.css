@@ -87,6 +87,13 @@
   --pick: light-dark(var(--blue-light), var(--blue-dark));
   --pick-container: light-dark(var(--blue-light-muted), var(--blue-dark-muted));
   --on-pick: var(--gray-light-0);
+  /* 그림 위 표시(D-162) — 구조 테두리 · 손 아래 바탕과 선 · 고른 바탕(그림 위에 손이 있을 때 · 떠났을 때). --pick 하나를 섞는다.
+     그림 색은 앱이 정해 대비 쌍에 넣지 않는다 — 짙은 그림 위에서는 3:1 아래다(고른 2px --pick 박스도 같다, 가리키기 카드 연결 2026-11-09). */
+  --pick-outline: color-mix(in srgb, var(--pick) 35%, transparent);
+  --pick-hover: color-mix(in srgb, var(--pick) 16%, transparent);
+  --pick-hover-line: color-mix(in srgb, var(--pick) 70%, transparent);
+  --pick-chosen: color-mix(in srgb, var(--pick) 30%, transparent);
+  --pick-rest: color-mix(in srgb, var(--pick) 22%, transparent);
   --live: var(--pick);
   --error: light-dark(var(--red-light), var(--red-dark));
   --error-container: light-dark(var(--red-light-muted), var(--red-dark-muted));
@@ -141,13 +148,15 @@
   --easing-standard: cubic-bezier(.6, 0, .2, 1);
   --easing-decelerate: cubic-bezier(.3, .8, .6, 1);
   --easing-accelerate: cubic-bezier(.7, .1, .75, .9);
+  /* 넘침 없는 임계 감쇠 스프링(ζ=1) — 떠 있는 카드가 자리와 높이를 한 덩어리로 옮긴다. cubic-bezier 로는 꼬리가 길게 끌리는 모양이 안 나와 linear() 로 적는다. */
+  --easing-spring: linear(0, 0.056, 0.177, 0.316, 0.450, 0.567, 0.666, 0.745, 0.808, 0.856, 0.893, 0.921, 0.942, 0.958, 0.969, 0.978, 0.984, 0.988, 0.992, 0.994, 0.996, 0.997, 0.998, 0.998, 0.999, 0.999, 0.999, 1);
   --motion-enter-scale: .96;
   --motion-enter-shift: 8px;
   /* 줄이 차례로 떠오를 때의 한 칸. n번째는 n칸 늦게 온다. */
   --motion-stagger: 20ms;
 
   /* 그림용 — 크롬이 아니라 그림이라 색을 갖는다. 화면 CSS가 크롬에 쓰지 않는다. */
-  /* 앱 아이콘이 없을 때의 이니셜 타일. 이름에서 하나를 고른다(header.js). */
+  /* 앱 아이콘이 없을 때의 이니셜 타일. 이름에서 하나를 고른다(ProjectHeader). */
   --avatar-1: #5b8def;
   --avatar-2: #7a6ff0;
   --avatar-3: #e4699a;
@@ -185,6 +194,16 @@
   --device-sheen: rgb(255 255 255 / .85);
   --device-veil: #ffffff;
   --device-shade: #000000;
+  /* 인셋 영역 보기 — 화면 안에 덧그리는 종류별 띠와 SAFE AREA 면. 앱 그림 위에 서므로 라이트 · 다크가 같고, 가리키기의 파랑 · 상태의 빨강 · 노랑을 피한다.
+     초록은 SAFE AREA(safeDrawing) 면 하나에만 쓴다 — 사용자가 더한 예외. 몸체 밖 배지 · 치수선은 크롬이라 무채색 역할을 쓰고, 종류 색은 배지의 점으로만 잇는다. */
+  --inset-status: #f0883e;
+  --inset-nav: #8957e5;
+  --inset-caption: #1b9aaa;
+  --inset-cutout: #db61a2;
+  --inset-overlays: #8a8f2a;
+  --inset-band: .22;
+  --inset-safe: var(--green-dark);
+  --inset-safe-band: .16;
 }
 
 /* 그림용 — 준비 화면 일러스트. 조각이 모이는 움직임만 두고 색은 크롬과 같은 무채색 역할에 잇는다(D-102). */
@@ -207,7 +226,7 @@
   --art-tag-surface: var(--surface-container-high);
 }
 
-/* 시스템 설정을 따른다. 뷰어 · 견본이 한 영역만 고정할 때 data-theme를 단다. */
+/* 시스템 설정을 따른다. 뷰어 · Storybook이 한 영역만 고정할 때 data-theme를 단다. */
 [data-theme="light"] { color-scheme: light; }
 [data-theme="dark"] { color-scheme: dark; }
 

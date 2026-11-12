@@ -1,0 +1,801 @@
+{
+  "status": 200,
+  "schema": {
+    "board": {
+      "file": "string",
+      "focus": "number",
+      "gen": "number",
+      "groups": [
+        {
+          "cards": [
+            {
+              "args": "string",
+              "dpGuess": "boolean",
+              "failure": "null",
+              "heightDp": "number",
+              "imageUrl": "string",
+              "index": "number",
+              "isFocus": "boolean",
+              "label": "string",
+              "ok": "boolean",
+              "previewId": "string",
+              "rendered": "boolean",
+              "specs": [
+                {
+                  "kind": "string",
+                  "text": "string"
+                }
+              ],
+              "stale": "boolean",
+              "title": "string",
+              "treeUrl": "string",
+              "widthDp": "number"
+            }
+          ],
+          "failed": "number",
+          "name": "string"
+        }
+      ]
+    },
+    "boardNote": {
+      "a": {
+        "file": "string",
+        "n": "number"
+      },
+      "t": "string"
+    },
+    "buildPending": "boolean",
+    "busy": "boolean",
+    "choice": "null",
+    "error": "null",
+    "focus": {
+      "deviceInsets": {
+        "basisPosture": "string",
+        "evidence": {
+          "kind": "string",
+          "source": "string",
+          "sourceUrl": "string"
+        },
+        "posture": "string",
+        "values": {
+          "captionBar": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "displayCutout": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "navigationBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "statusBars": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          },
+          "systemOverlays": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          }
+        }
+      },
+      "fn": "string",
+      "imageUrl": "string",
+      "interactive": "boolean",
+      "name": "null",
+      "postures": [
+        {
+          "imageUrl": "string",
+          "size": {
+            "device": "string",
+            "dpi": "number",
+            "folded": "boolean",
+            "heightDp": "number",
+            "heightPx": "number",
+            "hingeDp": "null|number",
+            "insetProfile": {
+              "evidence": {
+                "capturedAt": "null|string",
+                "conditions": {
+                  "android": "string",
+                  "buildId": "string",
+                  "checkedAt": "string",
+                  "densityDpi": "string",
+                  "displayZoom": "string",
+                  "fontScale": "string",
+                  "horizontalToolbar": "string",
+                  "innerCamera": "string",
+                  "ios": "string",
+                  "multiWindow": "string",
+                  "navigation": "string",
+                  "oneUi": "string",
+                  "orientation": "string",
+                  "pose": "string",
+                  "resolutionPx": "string",
+                  "rotation": "string",
+                  "scale": "string",
+                  "sdk": "string",
+                  "sourceSha256": "string",
+                  "splitView": "string",
+                  "unit": "string"
+                },
+                "kind": "string",
+                "source": "string",
+                "sourceUrl": "string"
+              },
+              "measured": {
+                "captionBar": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "displayCutout": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "navigationBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "statusBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "|": "null"
+              },
+              "safeArea": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              }
+            },
+            "kind": "string",
+            "landscape": "boolean",
+            "name": "string",
+            "orientation": "string",
+            "preset": "string",
+            "widthDp": "number",
+            "widthPx": "number"
+          }
+        }
+      ],
+      "previewId": "string",
+      "pxPerDp": "number",
+      "size": {
+        "device": "string",
+        "dpi": "number",
+        "folded": "boolean",
+        "heightDp": "number",
+        "heightPx": "number",
+        "hingeDp": "null",
+        "insetProfile": {
+          "evidence": {
+            "capturedAt": "string",
+            "conditions": {
+              "android": "string",
+              "buildId": "string",
+              "densityDpi": "string",
+              "fontScale": "string",
+              "multiWindow": "string",
+              "navigation": "string",
+              "oneUi": "string",
+              "resolutionPx": "string",
+              "rotation": "string"
+            },
+            "kind": "string",
+            "source": "string",
+            "sourceUrl": "string"
+          },
+          "measured": {
+            "captionBar": {
+              "bottom": "number",
+              "left": "number",
+              "right": "number",
+              "top": "number"
+            },
+            "displayCutout": {
+              "bottom": "number",
+              "left": "number",
+              "right": "number",
+              "top": "number"
+            },
+            "navigationBars": {
+              "bottom": "number",
+              "left": "number",
+              "right": "number",
+              "top": "number"
+            },
+            "statusBars": {
+              "bottom": "number",
+              "left": "number",
+              "right": "number",
+              "top": "number"
+            }
+          },
+          "safeArea": {
+            "bottom": "number",
+            "left": "number",
+            "right": "number",
+            "top": "number"
+          }
+        },
+        "kind": "string",
+        "landscape": "boolean",
+        "name": "string",
+        "orientation": "string",
+        "widthDp": "number",
+        "widthPx": "number"
+      },
+      "streamUrl": "string",
+      "systemUi": {
+        "annotated": "boolean",
+        "bars": {
+          "insets": {
+            "kind": "string",
+            "navDp": "number",
+            "source": "string",
+            "sourceUrl": "string",
+            "statusDp": "number"
+          },
+          "look": "string"
+        },
+        "choice": "string",
+        "shown": "boolean"
+      },
+      "treeUrl": "string"
+    },
+    "header": {
+      "branch": "null",
+      "module": "string",
+      "repo": "string",
+      "repoLeaf": "string",
+      "repoPrefix": "string",
+      "sourceSet": "null",
+      "tabTitle": "string",
+      "title": "string",
+      "variant": "string"
+    },
+    "screen": "string",
+    "selection": {
+      "at": "string",
+      "bounds": "null",
+      "by": "string",
+      "chain": [
+        "empty"
+      ],
+      "file": "string",
+      "image": "string",
+      "interactive": "boolean",
+      "line": "number",
+      "node": "null",
+      "ok": "boolean",
+      "preview": {
+        "file": "string",
+        "fqn": "string",
+        "index": "number",
+        "methodParams": [
+          "empty"
+        ],
+        "params": {},
+        "previewId": "string"
+      },
+      "ref": "string",
+      "tree": "string",
+      "userChain": [
+        "empty"
+      ]
+    },
+    "settle": {
+      "a": {
+        "frames": "number",
+        "tick": "number"
+      },
+      "t": "string"
+    },
+    "stale": [
+      "empty"
+    ],
+    "tabs": [
+      {
+        "active": "boolean",
+        "dim": "string",
+        "key": "string",
+        "module": "null",
+        "name": "string",
+        "sourceSet": "null",
+        "stale": "boolean",
+        "title": "string"
+      }
+    ],
+    "timing": [
+      {
+        "head": "boolean",
+        "label": {
+          "t": "string"
+        },
+        "ms": "number",
+        "over": "boolean",
+        "text": "string"
+      }
+    ],
+    "vacant": "null",
+    "version": "number",
+    "who": {
+      "a": {
+        "by": "string",
+        "time": "string",
+        "what": "string"
+      },
+      "t": "string"
+    }
+  },
+  "example": {
+    "version": 0,
+    "header": {
+      "title": "Cards.kt",
+      "tabTitle": "<repo-name> · Cards.kt",
+      "repoPrefix": "<tmp>/",
+      "repoLeaf": "<repo-name>",
+      "module": "app",
+      "variant": "debug",
+      "repo": "<repo>",
+      "branch": null,
+      "sourceSet": null
+    },
+    "screen": "focus",
+    "board": {
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "gen": 0,
+      "focus": 0,
+      "groups": [
+        {
+          "name": "Card0",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 0,
+              "previewId": "Card0",
+              "label": "",
+              "title": "demo.CardsKt.Card0\nCard0",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": true,
+              "imageUrl": "/Card0-0.png?t=<t>",
+              "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        },
+        {
+          "name": "Card1",
+          "failed": 0,
+          "cards": [
+            {
+              "index": 1,
+              "previewId": "Card1",
+              "label": "",
+              "title": "demo.CardsKt.Card1\nCard1",
+              "args": "",
+              "specs": [
+                {
+                  "kind": "size",
+                  "text": "38×38"
+                }
+              ],
+              "ok": true,
+              "rendered": true,
+              "stale": false,
+              "isFocus": false,
+              "imageUrl": "/Card1-0.png?t=<t>",
+              "treeUrl": "/Card1-0.viewinfo.json?t=<t>",
+              "failure": null,
+              "widthDp": 38.1,
+              "heightDp": 38.1,
+              "dpGuess": false
+            }
+          ]
+        }
+      ]
+    },
+    "focus": {
+      "previewId": "Card0",
+      "interactive": true,
+      "imageUrl": "/Card0-0.png?t=<t>",
+      "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+      "streamUrl": "/stream?t=<t>",
+      "pxPerDp": 3,
+      "name": null,
+      "fn": "Card0",
+      "size": {
+        "kind": "device",
+        "device": "s26",
+        "name": "Galaxy S26",
+        "folded": false,
+        "landscape": true,
+        "widthDp": 780,
+        "heightDp": 360,
+        "hingeDp": null,
+        "dpi": 480,
+        "orientation": "landscape-left",
+        "widthPx": 2340,
+        "heightPx": 1080,
+        "insetProfile": {
+          "safeArea": {
+            "left": 37,
+            "top": 30,
+            "right": 0,
+            "bottom": 15
+          },
+          "measured": {
+            "statusBars": {
+              "left": 0,
+              "top": 30,
+              "right": 0,
+              "bottom": 0
+            },
+            "navigationBars": {
+              "left": 0,
+              "top": 0,
+              "right": 0,
+              "bottom": 15
+            },
+            "captionBar": {
+              "left": 0,
+              "top": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "displayCutout": {
+              "left": 37,
+              "top": 0,
+              "right": 0,
+              "bottom": 0
+            }
+          },
+          "evidence": {
+            "source": "windowinsets.info",
+            "kind": "samsung-rtl",
+            "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-landscape-1-gesture.json",
+            "capturedAt": "<at>",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP4A.251205.006.S942NKSS4AZHA",
+              "densityDpi": "480",
+              "resolutionPx": "2340x1080",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.5"
+            }
+          }
+        }
+      },
+      "systemUi": {
+        "choice": "annotated",
+        "annotated": false,
+        "shown": true,
+        "bars": {
+          "look": "oneui",
+          "insets": {
+            "statusDp": 30,
+            "navDp": 15,
+            "source": "windowinsets.info",
+            "kind": "samsung-rtl",
+            "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-landscape-1-gesture.json"
+          }
+        }
+      },
+      "deviceInsets": {
+        "posture": "s26-land",
+        "basisPosture": "s26-land",
+        "values": {
+          "statusBars": {
+            "left": 0,
+            "top": 30,
+            "right": 0,
+            "bottom": 0
+          },
+          "navigationBars": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 15
+          },
+          "captionBar": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "displayCutout": {
+            "left": 37,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "systemOverlays": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0
+          }
+        },
+        "evidence": {
+          "source": "windowinsets.info",
+          "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-landscape-1-gesture.json",
+          "kind": "samsung-rtl"
+        }
+      },
+      "postures": [
+        {
+          "size": {
+            "kind": "device",
+            "device": "s26",
+            "name": "Galaxy S26",
+            "folded": false,
+            "landscape": false,
+            "widthDp": 360,
+            "heightDp": 780,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "portrait",
+            "widthPx": 1080,
+            "heightPx": 2340,
+            "insetProfile": {
+              "safeArea": {
+                "left": 0,
+                "top": 37,
+                "right": 0,
+                "bottom": 15
+              },
+              "measured": {
+                "statusBars": {
+                  "left": 0,
+                  "top": 37,
+                  "right": 0,
+                  "bottom": 0
+                },
+                "navigationBars": {
+                  "left": 0,
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 15
+                },
+                "captionBar": {
+                  "left": 0,
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0
+                },
+                "displayCutout": {
+                  "left": 0,
+                  "top": 37,
+                  "right": 0,
+                  "bottom": 0
+                }
+              },
+              "evidence": {
+                "source": "windowinsets.info",
+                "kind": "samsung-rtl",
+                "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-gesture.json",
+                "capturedAt": "<at>",
+                "conditions": {
+                  "android": "16",
+                  "buildId": "BP4A.251205.006.S942NKSS4AZHA",
+                  "densityDpi": "480",
+                  "resolutionPx": "1080x2340",
+                  "rotation": "0",
+                  "navigation": "gesture",
+                  "multiWindow": "false",
+                  "fontScale": "1",
+                  "oneUi": "8.5"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@s26-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "device",
+            "device": "s26",
+            "name": "Galaxy S26",
+            "folded": false,
+            "landscape": true,
+            "widthDp": 780,
+            "heightDp": 360,
+            "hingeDp": null,
+            "dpi": 480,
+            "orientation": "landscape-right",
+            "widthPx": 2340,
+            "heightPx": 1080,
+            "insetProfile": {
+              "safeArea": {
+                "left": 0,
+                "top": 30,
+                "right": 37,
+                "bottom": 15
+              },
+              "measured": {
+                "statusBars": {
+                  "left": 0,
+                  "top": 30,
+                  "right": 0,
+                  "bottom": 0
+                },
+                "navigationBars": {
+                  "left": 0,
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 15
+                },
+                "captionBar": {
+                  "left": 0,
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0
+                },
+                "displayCutout": {
+                  "left": 0,
+                  "top": 0,
+                  "right": 37,
+                  "bottom": 0
+                }
+              },
+              "evidence": {
+                "source": "windowinsets.info",
+                "kind": "samsung-rtl",
+                "sourceUrl": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-s/galaxy-s26/recapture-2026-09-28-rotation/main-landscape-3-gesture.json",
+                "capturedAt": "<at>",
+                "conditions": {
+                  "android": "16",
+                  "buildId": "BP4A.251205.006.S942NKSS4AZHA",
+                  "densityDpi": "480",
+                  "resolutionPx": "2340x1080",
+                  "rotation": "3",
+                  "navigation": "gesture",
+                  "multiWindow": "false",
+                  "fontScale": "1",
+                  "oneUi": "8.5"
+                }
+              }
+            }
+          },
+          "imageUrl": "/Card0@s26-land-right-0.png?t=<t>"
+        },
+        {
+          "size": {
+            "kind": "original",
+            "preset": "original",
+            "widthDp": 38.1,
+            "heightDp": 38.1
+          },
+          "imageUrl": "/Card0@original-0.png?t=<t>"
+        }
+      ]
+    },
+    "stale": [],
+    "busy": false,
+    "buildPending": false,
+    "boardNote": {
+      "t": "status.board",
+      "a": {
+        "n": 2,
+        "file": "Cards.kt"
+      }
+    },
+    "who": {
+      "t": "status.who",
+      "a": {
+        "by": "viewer",
+        "time": "<hh:mm:ss>",
+        "what": "Card0-0"
+      }
+    },
+    "timing": [
+      {
+        "label": {
+          "t": "timing.task"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.render"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": false
+      },
+      {
+        "label": {
+          "t": "timing.first"
+        },
+        "ms": 0,
+        "over": false,
+        "text": "<took>",
+        "head": true
+      }
+    ],
+    "error": null,
+    "selection": {
+      "ok": true,
+      "ref": "@<repo>/app/src/main/kotlin/a/Dup.kt#L1",
+      "file": "<repo>/app/src/main/kotlin/a/Dup.kt",
+      "line": 1,
+      "node": null,
+      "chain": [],
+      "userChain": [],
+      "bounds": null,
+      "preview": {
+        "fqn": "demo.CardsKt.Card0",
+        "previewId": "Card0",
+        "params": {},
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "index": 0,
+        "methodParams": []
+      },
+      "image": "<repo>/out/Card0-0.png",
+      "tree": "<repo>/out/Card0-0.viewinfo.json",
+      "interactive": false,
+      "by": "viewer",
+      "at": "<at>"
+    },
+    "choice": null,
+    "tabs": [
+      {
+        "key": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "name": "Cards",
+        "dim": "",
+        "module": null,
+        "title": "app/src/main/kotlin/demo/Cards.kt",
+        "active": true,
+        "stale": false,
+        "sourceSet": null
+      }
+    ],
+    "settle": {
+      "t": "status.settle",
+      "a": {
+        "frames": 7,
+        "tick": 0
+      }
+    },
+    "vacant": null
+  }
+}

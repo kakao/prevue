@@ -1,6 +1,6 @@
 {
   "name": "prevue",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Opens Jetpack Compose @Previews in the browser without Android Studio, and lets your agent read the spot you point at on screen as a file and line.",
   "author": {
     "name": "Origogi"
@@ -13,7 +13,7 @@
     "hot-reload",
     "layoutlib"
   ],
-  "skills": "./codex/skills/",
+  "skills": "./skills/codex/",
   "interface": {
     "displayName": "Prevue",
     "shortDescription": "See Compose Previews without Android Studio and point at the screen",

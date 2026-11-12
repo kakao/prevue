@@ -1,3 +1,0 @@
-prevue close <file|FQN>
-
-Closes a viewer tab. If it is the tab being viewed, moves to the tab viewed just before.

@@ -1,0 +1,43 @@
+{
+  "status": 200,
+  "schema": {
+    "definitions": [
+      {
+        "module": "string",
+        "path": "string",
+        "rel": "string"
+      }
+    ],
+    "of": "string",
+    "previews": [
+      {
+        "file": "string",
+        "fn": "string",
+        "fqn": "string",
+        "module": "string",
+        "rel": "string"
+      }
+    ],
+    "ready": "boolean"
+  },
+  "example": {
+    "ready": true,
+    "of": "Badge",
+    "definitions": [
+      {
+        "path": "<repo>/lib/src/main/kotlin/lib/Badge.kt",
+        "rel": "lib/src/main/kotlin/lib/Badge.kt",
+        "module": ":lib"
+      }
+    ],
+    "previews": [
+      {
+        "fqn": "demo.BadgesKt.BadgePreview",
+        "fn": "BadgePreview",
+        "file": "<repo>/app/src/main/kotlin/demo/Badges.kt",
+        "rel": "app/src/main/kotlin/demo/Badges.kt",
+        "module": ":app"
+      }
+    ]
+  }
+}

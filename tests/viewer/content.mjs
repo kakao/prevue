@@ -3,11 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { toBoard } from "./daemon.mjs";
+import { requireDaemon, toBoard } from "./daemon.mjs";
 
 // 크기 전환 동안 틀 안 내용을 프레임마다 잰다. 전용 워크트리로 fixtures/pearl의 AdaptivePreviews.kt를 먼저 연다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/content.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-content-check-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
@@ -111,6 +112,9 @@ try {
 
   // 작아지기(@Preview → 320×640) — 캐시가 있다.
   await cached(`p.size.preset==='narrow'`);
+  // 크기 · 기기 목록은 조작 독의 메뉴 안에 있다(D-167) — 열고 고른다. 고르면 메뉴는 닫힌다.
+  const openMenu = async () => { await click("#pnSum"); await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible'`); await pause(250); };
+  await openMenu();
   await record();
   await click(`#pnPick [data-sel="narrow"]`);
   await until(`__store.st.focus.size?.preset==='narrow' && ${settled}`);
@@ -124,6 +128,7 @@ try {
 
   // 커지기(320×640 → Fold8 펼침) — 캐시가 있다.
   await cached(`p.size.device==='fold8' && !p.size.folded && !p.size.landscape`);
+  await openMenu();
   await record();
   await click(`#pnPick [data-sel="fold8"]`);
   await until(`__store.st.focus.size?.device==='fold8' && ${settled}`);
@@ -138,7 +143,8 @@ try {
   // 돌리기 — 몸체만 돌고 내용은 화면 기준 0°.
   await cached(`p.size.device==='fold8' && !p.size.folded && p.size.landscape`);
   await record();
-  await click("#dcRot");
+  await click("#dcRot"); await pause(250);
+  await click('#dcOrientMenu [data-orientation="portrait"]');
   await until(`__store.st.focus.size?.landscape && ${settled}`);
   frames = await stop();
   const turning = frames.filter(f => /rotate\((-?[\d.]+)deg\)/.test(f.uaTf) && Math.abs(Number(/rotate\((-?[\d.]+)deg\)/.exec(f.uaTf)[1])) > 5);
@@ -151,12 +157,12 @@ try {
   h = handoff(frames);
   check(h && h.stage <= .5 && h.shot <= .5, "돌린 뒤 장면 → 스트림 0.5px 안", h);
 
-  // iPhone Duo 접기 — 장 윤곽의 모서리가 눌린 내용과 같은 비율의 타원으로 남는다.
+  // 기존 CLI의 자연 방향 접기 — UI 접기 버튼의 손에 든 회전과 별도로 접는 장의 기하를 검사한다.
   await post("/viewer/resize", { device: "duo", folded: false, landscape: false });
   await until(`__store.st.focus.size?.device==='duo' && !__store.st.focus.size.folded && ${settled}`);
   await cached(`p.size.device==='duo' && p.size.folded && !p.size.landscape`);
   await record();
-  await click("#dcFold");
+  await post("/viewer/resize", { device: "duo", folded: true, landscape: false });
   await until(`__store.st.focus.size?.folded && ${settled}`);
   frames = await stop();
   // 모서리마다 a C p1 p2 b(3차, K=0.5523) — 꼭짓점은 a + (p1 - a) / K로 되짚는다.

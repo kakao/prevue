@@ -1,6 +1,6 @@
 # Pearl KMP 픽스처
 
-[Pearl](../pearl/README.md)을 Kotlin Multiplatform · Compose Multiplatform으로 옮긴 복제본이다. Prevue 통합 테스트(`plugin/`에서 `./gradlew integrationTest`의 `KmpRenderIntegrationTest`)가 commonMain 프리뷰를 앱 덤프로 그리는 길의 회귀를 본다.
+[Pearl](../pearl/README.md)을 Kotlin Multiplatform · Compose Multiplatform으로 옮긴 복제본이다. Prevue 통합 테스트(`plugin/daemon/`에서 `./gradlew integrationTest`의 `KmpRenderIntegrationTest`)가 commonMain 프리뷰를 앱 덤프로 그리는 길의 회귀를 본다.
 
 - **pearl의 규칙을 그대로 따른다** — 독립 Gradle 프로젝트, 공개 Maven만, 버전 고정, 그림 · 글꼴 파일 없음. 그래서 CMP 글꼴은 여기서 못 보고 공개 검증장(kotlinconf-app)에서만 본다.
 - **빌드 모양은 AGP 9의 새 모양**(`com.android.kotlin.multiplatform.library`)이다. Kotlin · AGP · CMP는 kotlinconf-app과 같은 조합이다(`gradle/libs.versions.toml`).

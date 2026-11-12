@@ -1,6 +1,6 @@
 /* 값은 tokens.css 한 곳에 있고 여기는 역할 이름만 쓴다. 크롬은 무채색이고 색은 사건(pick · live)과 문제(error · warning · success)에만 둔다(D-93).
    프리뷰 그림이 주인공이라 크롬은 블러 · 유리 없이 불투명한 면 · 선 · 그림자 단계로 가른다. */
-/* 캡슐 자리는 토큰의 합이다 — 등록해 두면 계산된 값이 px 로 풀려 focus.js 가 읽는다. */
+/* 캡슐 자리는 토큰의 합이다 — 등록해 두면 계산된 값이 px 로 풀려 workspace/focus.ts 가 읽는다. */
 @property --cap-room { syntax: '<length>'; inherits: true; initial-value: 0px; }
 :root {
   /* 아래 구분선 1px 를 더해 52 — 헤더 시안(layout/header.html 안 C)과 같은 높이다. */
@@ -8,14 +8,18 @@
   --qo-w: 640px;   /* 팔레트 · 시작 화면 상자 폭(D-100) */
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
-  /* 작업 공간의 검사 패널(D-99). 펴지면 본문 · 캡슐이 그만큼 비킨다. 보드에서는 0 이다. */
-  --panel-w: 0px;
   --stage-min-h: 260px;
   /* 떠 있는 캡슐 자리 = 캡슐 바닥 여백 + 한 줄 캡슐 높이 + 간격. 그림이 캡슐 밑으로 들어가지 않게 늘 비워 둔다 — 캡슐이 뜰 때마다 그림이 줄면 출렁인다. */
   --cap-room: calc(var(--space-20) + var(--control-xlarge) + var(--space-16));
-  --tag-h: 20px;        /* 가리킨 박스 꼬리표 높이 — point.js tagRoom 은 이 높이 + 간격이다 */
-  --tag-max-w: 360px;   /* 꼬리표가 그림을 가리는 폭의 상한 — 넘치면 파일명이 말줄임된다 */
+  --point-card-w: 320px;  /* 가리킨 결과 카드 폭 — 이름 · 출처 칩 · 버튼 둘과 modifier 한 줄이 들어가는 폭 */
+  --point-glyph: 56px;    /* 카드의 크기 그림 칸 — 비율이 읽히는 가장 작은 정사각형 */
   --chooser-w: 420px;   /* 후보 고르기 팝오버 폭(구조 시안 layers.html 안 3) */
+  /* 조작 독(D-167)의 치수 — 메뉴 폭은 기기 이름 · dp 두 열이 한 줄에 드는 폭, 버튼은 긴 기기 이름(17 Pro Max)까지, 슬라이더는 눈금 숫자 둘이 겹치지 않는 폭 */
+  --dock-menu-w: 280px;
+  --dock-pick-max: 240px;
+  --dock-slider-w: 200px;
+  --dock-slider-min: 120px;
+  --dock-icon: 20px;
 }
 /* 움직임을 줄여 달라면 페이드만 남긴다 — 이동 · 확대는 tokens.css 가 없애고, 도는 표시와 탭 바탕의 미끄러짐은 여기서 멈춘다. */
 @media (prefers-reduced-motion: reduce) {
@@ -92,13 +96,14 @@ body.ws .app-t, body.ws .brand-name { display: none; }
 body.ws .app { flex-shrink: 0; }
 .back { flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: var(--space-2); height: 30px; padding: 0 var(--space-12) 0 var(--space-6); border: 0; border-radius: var(--corner-medium);
         background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); cursor: pointer;
-        transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard); }
+        transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard),
+                    opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
 .back:hover { color: var(--on-surface); background: var(--state-hover); }
 .back svg { flex: 0 0 auto; width: 16px; height: 16px; }
 .back span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 /* 이 장의 이름 두 줄(D-63) — 위 프리뷰 이름 14 굵게, 아래 함수 이름 12 회색(창 제목 + 부제). 이름이 없으면 함수 이름 한 줄.
    줄마다 따로 줄인다 — 한 줄로 이으면 34% 칸에서 긴 함수 이름이 이름을 밀어냈다. 바 높이(44)는 그대로다.
-   자리와 폭은 focus.js fitTitle 이 양옆을 재서 준다(--ws-left · --ws-max) — 뒤로 버튼 · 알약을 덮지 않는다.
+   자리와 폭은 WorkspaceHeader 의 fitTitle 이 양옆을 재서 준다(--ws-left · --ws-max) — 뒤로 버튼 · 알약을 덮지 않는다.
    .bar-l(z 1) 위에 둔다 — 아래에 깔리면 바의 빈 칸이 호버를 먹어 툴팁(FQN)이 뜨지 않았다. */
 .ws-title { position: absolute; left: var(--ws-left, 50%); top: 0; z-index: 1; height: var(--bar-h); max-width: var(--ws-max, 34%); transform: translateX(-50%);
             display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0;
@@ -109,13 +114,17 @@ body.ws .app { flex-shrink: 0; }
 .ws-title, body.ws .back { animation: push var(--duration-medium2) var(--easing-standard); }
 @keyframes push { from { opacity: 0; translate: var(--motion-enter-shift) 0; } }
 @media (prefers-reduced-motion: reduce) { .ws-title, body.ws .back { animation-name: fade; } }
+/* 틀 모프로 여닫을 때는 패널과 한 묶음이다(workspace/focus.ts decorations, D-153 ⑧) — 들어갈 때 그림 먼저 도구 뒤, 나갈 때 도구 먼저.
+   !important 라야 도는 push 가 투명을 덮지 못한다. push(medium2)가 모프 70%(MORPH_LEAD)보다 길어지면 남은 미끄러짐이 페이드와 함께 보일 뿐 튀지는 않는다.
+   누름은 막지 않는다 — 헤더 칸은 자리가 바뀌지 않아, 보이기 전에 그 자리를 누르면 그 칸을 누른 것이다(패널은 칸이 들어오며 바뀐다). */
+.ws-title { transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+:is(.back, .ws-title).deco-off { opacity: 0 !important; }
 @keyframes fade { from { opacity: 0; } }
 
 /* 상태 — 모양이 뜻이다. ✓ 끝(회색) · 도는 표시 그리는 중(회색) · ! 실패(레드) · 기준을 넘은 시간은 주황 ✓.
-   시간 내역 · 누가 · 언제는 호버해야 보인다. */
+   시간 내역 · 누가 · 언제는 호버해야 보인다. 바탕을 깔면 주황 글자가 4.5:1 아래로 내려가 테두리만 둔다. */
 .status { position: relative; display: inline-flex; align-items: center; gap: var(--space-6); height: var(--control-medium); padding: 0 var(--space-12); border-radius: var(--corner-full);
-          border: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-medium); font-variant-numeric: tabular-nums; cursor: default; max-width: 340px;
-          transition: background var(--duration-short4) var(--easing-standard); }
+          border: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-medium); font-variant-numeric: tabular-nums; cursor: default; max-width: 340px; }
 .status[data-state="none"] { display: none; }
 .st-ic { flex: 0 0 auto; display: grid; width: 16px; height: 16px; }
 .st-ic svg { grid-area: 1 / 1; width: 16px; height: 16px; display: none; }
@@ -146,41 +155,79 @@ body.ws .app { flex-shrink: 0; }
 .pop .timing .over { color: var(--warning); }
 .pop .where { margin-top: var(--space-8); padding-top: var(--space-8); border-top: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: var(--type-body-small); overflow-wrap: anywhere; }
 
-/* 보기 | 조작 — 보드 없이 한 장만 띄웠을 때. 보드에서 들어왔으면 조작이 곧 이 화면이라 "‹ 보드"가 출구다. */
-.seg { display: inline-flex; padding: var(--space-4); border-radius: var(--corner-medium); }
-.seg button { height: 24px; padding: 0 var(--space-12); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant);
-              font: var(--type-label-medium); cursor: pointer; transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard), box-shadow var(--duration-short4) var(--easing-standard); }
-.seg button[aria-pressed="true"] { background: var(--primary-container); color: var(--on-surface); }
-.seg button:disabled { cursor: default; }
-
-/* ---------- 작업 공간의 검사 패널(D-99) ---------- */
-/* 레일이 접힌 작업 공간의 오른쪽에 선다 — 크기 · 기기 · 자세 · 확대가 위에서 아래로. 고른 칸은 옅은 바탕(--primary-container)이다:
-   --primary 위 흰 글자는 다크에서 옅었다. 크기를 고를 수 없는 한 장(보기 | 조작)에서는 확대 줄만 남는다. */
-body.ws { --panel-w: 264px; }
-.panel { position: fixed; top: calc(var(--bar-h) + 1px); right: 0; bottom: 0; z-index: 16; width: var(--panel-w); display: flex; flex-direction: column; gap: var(--space-16);
-         padding: var(--space-16) var(--space-12); overflow-y: auto; border-left: 1px solid var(--outline-variant); background: var(--surface);
-         transition: opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
-/* 작업 공간을 여닫는 모프 동안은 패널이 물러났다 들어온다(focus.js decorations) */
+/* ---------- 작업 공간의 조작 독(D-167) ---------- */
+/* 무대 아래 가운데에 늘 떠 있는 한 줄 — 왼쪽 크기 · 기기 메뉴, 가운데 고른 것의 조작(기기면 자세, 커스텀이면 슬라이더), 오른쪽 끝 확대.
+   헤더는 한 줄로 두고 무대는 창을 다 쓴다. 늘 같은 자리(장면이 비워 둔 아래 캡슐 자리)이고, 캡슐이 뜨면 그 위로 비킨다.
+   재질은 캡슐 · 팝오버와 한 벌인 떠 있는 층(--surface-container · --corner-large · --elevation-3, D-153 ⑦)이고, 늘 떠 있는 조작이라
+   경계가 보여야 하는 테두리(--outline, 3:1)를 더한다. 반경은 겹쳐 맞춘다 — 바깥 --corner-large = 안쪽 버튼 --corner-medium + 여백 --space-6.
+   칸은 모두 --control-xlarge 높이 한 줄이다. */
+.panel { --dock-bottom: var(--space-12); position: fixed; left: 0; right: 0; bottom: var(--dock-bottom); z-index: 17; display: flex; align-items: center; gap: var(--space-4); width: fit-content; max-width: calc(100% - var(--space-32)); margin-inline: auto;
+         padding: var(--space-6); border: 1px solid var(--outline); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3);
+         transition: bottom var(--duration-medium1) var(--easing-standard), opacity var(--deco-dur, var(--duration-short4)) var(--easing-standard); }
+body:has(#strip.on) .panel { --dock-bottom: calc(var(--cap-room) + var(--space-4)); }
+/* 작업 공간을 여닫는 모프 동안은 독이 물러났다 들어온다(workspace/focus.ts decorations) */
 .panel.deco-off { opacity: 0; pointer-events: none; }
-body:not(.resizing-ui) .pn-pick { display: none; }
+body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resizing-ui) #pnSl, body:not(.resizing-ui) #sysUiCtl { display: none; }
+/* 칸 사이 구분선(--outline-variant, 장식) — 메뉴 · 가운데 조작 · 확대. 칸 높이의 가운데 --control-small 만 긋는다. 가운데가 없으면 메뉴와 확대만 남는다. */
+.panel > .dock-seg, .panel > .pn-sl, .panel > .sys-ui, .panel > .zoom { position: relative; margin-left: var(--space-4); padding-left: var(--space-8); }
+.panel > .dock-seg::before, .panel > .pn-sl::before, .panel > .sys-ui::before, .panel > .zoom::before { content: ""; position: absolute; left: 0; top: 50%; width: 1px; height: var(--control-small); translate: 0 -50%; background: var(--outline-variant); }
+/* 가운데 칸은 바뀔 때(자세 ↔ 슬라이더) 제자리에서 페이드로 들어온다 — 움직임 줄이기에서도 페이드는 남는다. */
+.panel > .dock-seg, .panel > .pn-sl { transition: opacity var(--duration-short4) var(--easing-decelerate); }
+@starting-style { .panel > .dock-seg, .panel > .pn-sl { opacity: 0; } }
+/* 독의 버튼 — 쉬는 화면에는 바탕이 없고 호버 때 --state-hover, 눌린 상태(힌지 선)는 고름 바탕 --primary-container. 못 누르면 글자만 --on-surface-disabled. */
+.tb-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-6); height: var(--control-xlarge); min-width: var(--control-xlarge); padding: 0 var(--space-8);
+          border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface); font: var(--type-label-large); white-space: nowrap; cursor: pointer;
+          transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.tb-btn:hover { background: var(--state-hover); }
+.tb-btn[aria-pressed="true"] { background: var(--primary-container); }
+.tb-ic { flex: 0 0 auto; width: var(--dock-icon); height: var(--dock-icon); }
+.panel button:disabled { color: var(--on-surface-disabled); background: transparent; cursor: default; pointer-events: none; }
+.dock-seg { display: flex; align-items: center; gap: var(--space-2); }
+/* 자세 버튼은 아이콘만이다 — 그림이 상태를 보인다. 돌리기는 폰 하나를 지금 방향으로 눕히고(가로 왼쪽은 위가 왼쪽, resize-scene.js 의 각도와 같다),
+   접기는 접힘에 따라 모으기 · 벌리기 화살표를 바꾼다. ▾ 는 메뉴가 열린다는 표시라 남는다. */
+.dock-seg .tb-btn { padding: 0 var(--space-8); }
+.orientation-pick .tb-btn { gap: var(--space-2); padding: 0 var(--space-6) 0 var(--space-8); }
+#dcRot .turn { transform-box: view-box; transform-origin: center; transition: rotate var(--duration-short4) var(--easing-standard); }
+#dcRot[data-orientation="landscape-left"] .turn { rotate: -90deg; }
+#dcRot[data-orientation="landscape-right"] .turn { rotate: 90deg; }
+#dcFold[data-folded="true"] .tb-ic:has(> .fold-ic), #dcFold:not([data-folded="true"]) .tb-ic:has(> .unfold-ic) { display: none; }
+.panel > .pn-sl { display: flex; gap: var(--space-24); padding-top: var(--space-6); padding-right: var(--space-8); }
+.panel .sl { width: clamp(var(--dock-slider-min), 14vw, var(--dock-slider-w)); }
+
+/* 크기 · 기기 메뉴 — 버튼은 지금 고른 것의 윤곽 · 이름, 메뉴는 그 위로 열리는 팝오버(--elevation-3). 고른 칸은 옅은 바탕(--primary-container)이다:
+   --primary 위 흰 글자는 다크에서 옅었다. 접힌 동안 몸통은 inert(resize-scene.js)다. */
+.pn-fold { position: relative; }
+/* 누르면 열리는 것이 보이게 — 고르는 상자처럼 경계 테두리(--outline)와 진한 ▾ 를 갖는다. 연 동안은 호버 바탕이 남는다. */
+.pn-sum { max-width: var(--dock-pick-max); padding: 0 var(--space-8) 0 var(--space-12); box-shadow: inset 0 0 0 1px var(--outline); }
+.pn-fold.open .pn-sum { background: var(--state-hover); }
+.pn-sum .tb-chev { color: var(--on-surface); }
+.pn-sum .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pn-sum.mono .nm { font: var(--type-code); }
+.pn-sum-sil { display: inline-flex; }
+.pn-sum-sil:empty { display: none; }
+.tb-chev { flex: 0 0 auto; width: var(--space-16); height: var(--space-16); color: var(--on-surface-variant); transition: rotate var(--duration-short4) var(--easing-standard); }
+.pn-fold.open .tb-chev { rotate: 180deg; }
+.pn-body { position: absolute; bottom: calc(100% + var(--space-12)); left: calc(var(--space-6) * -1); z-index: 2; width: var(--dock-menu-w); max-height: calc(100vh - var(--bar-h) - var(--dock-bottom) - var(--control-xlarge) - var(--space-40) - var(--space-4)); overflow-y: auto;
+           padding: var(--space-8); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3);
+           opacity: 0; visibility: hidden; transform: scale(var(--motion-enter-scale)); transform-origin: bottom left;
+           transition: opacity var(--duration-short4) var(--easing-standard), transform var(--duration-short4) var(--easing-standard), visibility 0s linear var(--duration-short4); }
+.pn-fold.open .pn-body { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .pn-pick { display: flex; flex-direction: column; gap: var(--space-16); }
 .pn-h { margin: 0 var(--space-4) var(--space-6); color: var(--on-surface-variant); font: var(--type-label-medium); }
 .pn-g { margin: var(--space-8) var(--space-8) var(--space-2); color: var(--on-surface-disabled); font: var(--type-label-small); }
 .pn-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.pn-seg { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .pn-it { display: flex; align-items: center; gap: var(--space-8); width: 100%; height: var(--control-large); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium);
          background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); white-space: nowrap; text-align: left; cursor: pointer;
          transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
-.pn-seg .pn-it { width: auto; }
 .pn-it:hover { background: var(--state-hover); color: var(--on-surface); }
-.pn-it[aria-checked="true"], .pn-it[aria-pressed="true"] { background: var(--primary-container); color: var(--on-surface); }
+.pn-it[aria-checked="true"] { background: var(--primary-container); color: var(--on-surface); }
 .pn-it .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pn-it.mono .nm { font: var(--type-code); }
 .pn-it .d { flex: 0 0 auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
 /* 기기의 몸체 윤곽 — 그림이 아니라 크롬이라 무채색이다. 모양은 resize-scene.js 의 silOf 가 몸체 값에서 그린다 */
 .pn-sil { flex: 0 0 auto; width: 20px; height: 20px; }
-.panel button:disabled, .pn-sl.off .sl { opacity: .45; cursor: default; pointer-events: none; }
-/* 커스텀 폭 · 높이 슬라이더(D-99) — 커스텀 행 아래. 손잡이가 초점을 받고 막대 전체가 끌 자리다. 끝은 240 · 1600, 눈금은 창 크기 구간 경계 */
+.pn-sl.off .sl { opacity: .45; cursor: default; pointer-events: none; }
+/* 커스텀 폭 · 높이 슬라이더(D-99) — 조작 독 가운데. 손잡이가 초점을 받고 막대 전체가 끌 자리다. 끝은 240 · 1600, 눈금은 창 크기 구간 경계 */
 .pn-sl { padding: var(--space-8) var(--space-4) 0; }
 .sl { display: grid; gap: var(--space-8); }
 .pn-sl[hidden] { display: none; }
@@ -200,25 +247,41 @@ body:not(.resizing-ui) .pn-pick { display: none; }
 .sl-track .tick em { margin-top: var(--space-2); color: var(--on-surface-variant); font: var(--type-code-small); font-style: normal; }
 .pn-sl.off .thumb { border-color: var(--on-surface-variant); }
 
-/* 확대 — 늘 보이는 `− 배율 +` 줄(W4), 패널 맨 아래. 배율을 누르면 맞춤 · 실제 크기 · 200% 가 위로 열린다. 맞춤 단추는 맞춤이 아닐 때만 살아난다. */
-.zoom { position: relative; display: flex; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-12); border-top: 1px solid var(--outline-variant); }
-.zoom > button { display: inline-grid; place-items: center; height: var(--control-large); min-width: var(--control-large); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium);
+/* 확대 — 늘 보이는 `− 배율 +`(W4), 독 오른쪽 끝. 배율을 누르면 맞춤 · 실제 크기 · 200% 가 위로 열린다. 맞춤 단추는 맞춤이 아닐 때만 폭이 자라며 살아난다. */
+.zoom { position: relative; display: flex; align-items: center; gap: var(--space-2); }
+.zoom > button { display: inline-grid; place-items: center; height: var(--control-xlarge); min-width: var(--control-xlarge); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium);
                  background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); font-variant-numeric: tabular-nums; white-space: nowrap;
-                 cursor: pointer; transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard), opacity var(--duration-short4) var(--easing-standard); }
+                 cursor: pointer; transition: color var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard), opacity var(--duration-short4) var(--easing-standard),
+                 max-width var(--duration-short4) var(--easing-standard), padding var(--duration-short4) var(--easing-standard); }
 .zoom > button:hover { color: var(--on-surface); background: var(--state-hover); }
 .zoom > button svg { width: 16px; height: 16px; }
-.zoom .z-pct { min-width: 56px; color: var(--on-surface); }
-.zoom .z-grow { flex: 1 1 auto; }
-.zoom.at-fit .z-fit { opacity: 0; pointer-events: none; }
-.zoom-menu { position: absolute; bottom: calc(100% + var(--space-8)); left: 0; min-width: 150px; padding: var(--space-4); border-radius: var(--corner-large);
+.zoom .z-pct { min-width: calc(var(--control-xlarge) + var(--space-16)); color: var(--on-surface); }
+.zoom .z-fit { max-width: 96px; overflow: hidden; }
+.zoom.at-fit .z-fit { max-width: 0; min-width: 0; margin-left: calc(var(--space-2) * -1); padding: 0; opacity: 0; pointer-events: none; }
+.zoom-menu { position: absolute; bottom: calc(100% + var(--space-12)); right: calc(var(--space-6) * -1); z-index: 2; min-width: 150px; padding: var(--space-4); border-radius: var(--corner-large);
              background: var(--surface-container); box-shadow: var(--elevation-3);
-             opacity: 0; visibility: hidden; transform: scale(var(--motion-enter-scale)); transform-origin: bottom left;
+             opacity: 0; visibility: hidden; transform: scale(var(--motion-enter-scale)); transform-origin: bottom right;
              transition: opacity var(--duration-short4) var(--easing-standard), transform var(--duration-short4) var(--easing-standard), visibility 0s linear var(--duration-short4); }
 .zoom-menu.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .zoom-menu button { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; height: var(--control-medium); padding: 0 var(--space-8);
                     border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface); font: var(--type-body-medium); text-align: left; cursor: pointer; }
 .zoom-menu button:hover { background: var(--state-hover); }
 .zoom-menu kbd { min-width: 18px; height: 18px; font: var(--type-code-small); background: transparent; box-shadow: none; color: inherit; opacity: .7; }
+/* 시스템 UI(D-159 ①) — 독의 가운데 조작과 확대 사이의 아이콘 토글 하나. 켜짐은 힌지 선처럼 고름 바탕(--primary-container), 이름과 값은 툴팁 · aria-label 이 갖는다. */
+.sys-ui { display: flex; align-items: center; }
+
+/* 조작 독이 좁은 창에 한 줄로 들게(D-167) — 독의 조작 버튼은 아이콘만이다(폭 상한은 tests/viewer/resize.mjs 의 DOCK_MAX).
+   독은 창 − 32px 까지라 560 아래는 기기면 메뉴 버튼이 윤곽만, 확대는 배율만 남는다(− · + 는 키 · 배율 메뉴 · 핀치에 있다). */
+@media (max-width: 560px) {
+  .pn-sum:has(.pn-sum-sil:not(:empty)) .nm { display: none; }
+  .pn-sum { padding: 0 var(--space-6) 0 var(--space-8); }
+  #zoomOutBtn, #zoomInBtn { display: none; }
+  .panel > .dock-seg, .panel > .pn-sl, .panel > .sys-ui, .panel > .zoom { margin-left: var(--space-2); padding-left: var(--space-4); }
+}
+@media (max-width: 400px) {
+  .panel { gap: var(--space-2); max-width: calc(100% - var(--space-16)); }
+  .panel > .dock-seg, .panel > .sys-ui, .panel > .zoom { margin-left: 0; padding-left: var(--space-2); }
+}
 
 /* 좁은 창(폭 640 아래) — 파일명이 밀려 사라지지 않게 오른쪽을 줄인다. 상태는 점만 남는다(시간은 호버 팝오버에 있다). */
 @media (max-width: 640px) {
@@ -267,14 +330,14 @@ body.rail-on { --rail-w: 200px; }
       transition: height var(--duration-medium2) var(--easing-standard), opacity var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
 .rt:hover { background: var(--state-hover); }
 .rt:hover, .rt.active { color: var(--on-surface); }
-/* 18px — 문서 모서리의 소스 세트 표식(platform.js)이 16px 에서는 덩어리로 읽혔다. */
+/* 18px — 문서 모서리의 소스 세트 표식(FileIcon)이 16px 에서는 덩어리로 읽혔다. */
 .rt-ic { flex: 0 0 auto; width: 18px; height: 18px; color: var(--on-surface-variant); }
 /* 표식은 문서 선보다 한 단계 진하다. */
 .rt-ic .mk-android { color: var(--on-surface); }
 /* 그림 시작 — KMP 표식. 공식 단색판의 색 그대로라 크롬 역할 색으로 칠하지 않는다(D-134) */
 .rt-ic .mk-kmp { color: var(--art-kmp); }
 /* 그림 끝 */
-/* 이름은 남은 칸을 다 갖고(바탕 폭 0 에서 시작) 그 칸에서 tabs.js 가 꼬리를 남기고 가운데를 줄인다. 모듈 폭은 tabs.js 가 이름이 남긴 만큼 준다. */
+/* 이름은 남은 칸을 다 갖고(바탕 폭 0 에서 시작) 그 칸에서 FileRail 이 꼬리를 남기고 가운데를 줄인다. 모듈 폭은 FileRail 이 이름이 남긴 만큼 준다. */
 .rt-name { flex: 1 1 0; min-width: 0; overflow: hidden; }
 .rt-mod { flex: 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--on-surface-variant); font: var(--type-label-small); }
 .rt-mod:empty { display: none; }
@@ -320,7 +383,7 @@ body.rail-on { --rail-w: 200px; }
 /* 그림이 소스보다 옛것일 때. 띠는 이유를 말하고, 그림 자체가 달라져야 문구를 안 읽는 사람도 속지 않는다.
    헤더 바로 아래에 붙는 평평한 띠다 — 보드 위에 뜬 카드가 아니다(구조 시안 보드 안 A). 글자는 보드 여백과 같은 선에서 시작한다.
    이유는 시안처럼 한 줄로 자르지 않고 줄을 바꾼다 — 컴파일 오류의 줄 · 이유가 뒤에 와서 잘리면 손쓸 곳이 안 보인다. */
-.stalebar { position: sticky; top: var(--bar-h); z-index: 15; width: calc(100% - var(--rail-w) - var(--panel-w)); margin-left: auto; translate: calc(var(--panel-w) * -1) 0; display: grid; grid-template-rows: 0fr;
+.stalebar { position: sticky; top: var(--bar-h); z-index: 15; width: calc(100% - var(--rail-w)); margin-left: auto; display: grid; grid-template-rows: 0fr;
             transition: grid-template-rows var(--duration-medium2) var(--easing-standard); }
 .stalebar.on { grid-template-rows: 1fr; }
 .stalebar > .in { overflow: hidden; }
@@ -334,13 +397,13 @@ body.rail-on { --rail-w: 200px; }
 body.stale .stage img, body.stale .card .cstage img { opacity: .4; filter: grayscale(.6); }
 
 /* ---------- 보드 ---------- */
-/* 패널 몫은 오른쪽에서 비킨다 — 오른쪽 끝에 붙인 뒤 패널 폭만큼 왼쪽으로 옮긴다(fixed 자손이 있어 translate 는 쓰지 않는다) */
-main { position: relative; right: var(--panel-w); width: calc(100% - var(--rail-w) - var(--panel-w)); margin-left: auto; padding: var(--space-20) var(--space-24) calc(var(--cap-room) + var(--space-16)); }
+/* 레일 몫만 왼쪽에서 비킨다 — 오른쪽 끝에 붙인다. 한 장의 조작은 무대 위에 뜨는 독이라 본문 폭을 빼지 않는다(D-167) */
+main { position: relative; width: calc(100% - var(--rail-w)); margin-left: auto; padding: var(--space-20) var(--space-24) calc(var(--cap-room) + var(--space-16)); }
 /* 묶음 배율은 보드 폭에서 나온다(board.js) — 일반 스크롤바가 생겼다 사라지며 폭이 15px 흔들리면 배율이 따라 출렁인다(배율이 줄어
    보드가 짧아지면 스크롤바가 사라지고, 그러면 다시 넓어진다). 뿌리의 scrollbar-gutter 는 브라우저마다 잡히지 않아 스크롤 막대를 늘 둔다. */
 html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 묶음(함수)이 가로로 흐른다(D-62). 묶음마다 배율이 하나이고 폭은 그 배율로 놓은 한 줄의 폭이다 — 한 장뿐인 함수가 여럿인 파일도
-   오른쪽이 비지 않는다. 한 장짜리도 묶음이라 나란히 놓인 묶음끼리 머리 줄과 카드 윗선이 맞는다. */
+   오른쪽이 비지 않는다. 한 장짜리도 묶음이라 나란히 놓인 묶음끼리 머리 줄이 맞는다 — 이름표가 한 줄인 묶음은 카드 윗선이 그만큼 위에 온다. */
 #cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-32) var(--space-40); }
 .group { flex: 0 0 auto; min-width: 0; max-width: 100%; }
 /* 묶음 안은 한 줄 — 같은 축척으로 나란히 놓여야 비교가 된다. 하한(0.25)에서도 넘치는 묶음만 줄을 바꾼다. */
@@ -349,7 +412,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 /* 묶음 머리는 상자가 아니라 섹션 제목이다. 툴바 아래에 붙어 있어 아래로 내려가도 어느 함수인지 잃지 않는다. */
 .ghead { position: sticky; top: var(--bar-h); z-index: 5; display: flex; align-items: baseline; gap: var(--space-8);
          margin: 0 calc(var(--space-8) * -1) var(--space-8); padding: var(--space-8); border-radius: var(--corner-medium);
-         background: linear-gradient(var(--surface) 70%, transparent); }
+         --fade: 70%; background: linear-gradient(var(--surface) var(--fade), transparent); }
 .ghead .gn { flex: 0 1 auto; font: var(--type-title-small); min-width: 0;
              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 이름 바로 옆 — 장 수 · 배율(줄였을 때만) · 실패 수. 오른쪽 끝으로 떨어지면 넓은 묶음에서 이름과 멀어져 어느 묶음의 숫자인지 안 읽혔다.
@@ -365,12 +428,14 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 
 /* 칸 폭 = 그림 폭(dp × 묶음 배율)이되 이름표가 놓일 최소 폭(100px) 아래로는 줄지 않는다 — 폭은 board.js 가 준다. */
 .card { flex: 0 0 auto; min-width: 0; max-width: 100%; display: flex; flex-direction: column; gap: var(--space-6); }
-/* 그림만 떠 있다 — 테두리 없이 모서리와 그림자. 그림 폭에 맞춰 줄어 납작하거나 좁은 프리뷰에 흰 여백이 붙지 않는다. */
-.cstage { position: relative; width: fit-content; max-width: 100%; border-radius: var(--corner-medium); overflow: hidden; line-height: 0;
-          background: var(--surface-container); box-shadow: var(--elevation-1);
+/* 카드는 바닥이라 반경 · 그림자 없이 그림 바깥 헤어라인만 둔다(D-153) — 흰 · 검은 앱 그림이 면에 녹지 않게.
+   선은 고리 그림자라 자리를 차지하지 않아 칸 폭 · 가리키기 배율이 그대로다. outline 은 키보드 커서 테가 쓴다.
+   그림 폭에 맞춰 줄어 납작하거나 좁은 프리뷰에 흰 여백이 붙지 않는다. */
+.cstage { position: relative; width: fit-content; max-width: 100%; overflow: hidden; line-height: 0;
+          background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant);
           transition: box-shadow var(--duration-medium2) var(--easing-standard), outline-color var(--duration-short4) var(--easing-standard);
           outline: 2px solid transparent; outline-offset: 2px; }
-.card:hover .cstage { box-shadow: var(--elevation-2); }
+.card:hover .cstage { box-shadow: 0 0 0 1px var(--outline); }
 /* 위 여백 = 헤더 + 붙어 있는 묶음 머리(머리 윗선에서 첫 카드까지 48px) — 키로 고른 카드가 머리 밑에 숨지 않는다. 모든 함수가 머리를 가진다(D-62). */
 .card { scroll-margin: calc(var(--bar-h) + var(--space-48) + var(--space-8)) 0 calc(var(--cap-room) + var(--space-16)); }
 /* 고른 장(키보드 커서 · 다음에 열 카드) — 그림 둘레에 포커스 테와 같은 무채색 선(D-93). 커서는 데몬 focus(라이브 태스크가 걸린 장)에서
@@ -383,7 +448,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
   background: var(--live); vertical-align: 2px; }
 /* 칸 사이(10px)에서 덜어 이름 앞 점과 같은 6px. 칸이 없으면 덜지 않는다 — 덜면 칸 줄이 점보다 좁아져 점이 반쯤 잘린다. */
 .card.noname.focus:not(.cursor) .specs:not(:empty)::before { margin-right: calc(var(--space-4) * -1); }
-/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기가 표시 폭 하나로 배율을 낸다(point.js scaleOf). */
+/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기가 표시 폭 하나로 배율을 낸다(workspace/point.ts scaleOf). */
 .cstage img { display: block; max-width: 100%; height: auto; cursor: crosshair; }
 .cstage img.ghost, .stage img.ghost { position: absolute; pointer-events: none; transition: opacity var(--duration-medium2) var(--easing-standard); }
 .card.stale .cstage img { opacity: .4; }
@@ -397,15 +462,25 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .ph.bad::before { content: "렌더 실패"; color: var(--error); font: var(--type-label-medium); }
 .ph.bad .why { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 4); overflow: hidden; overflow-wrap: anywhere; }
 
-/* 이름표 두 줄 — 위 줄 name= · 인터랙티브 버튼, 아래 줄 크기 · 다크 · 글자 배율 칸. 이름 > 칸 > 시간.
-   이름은 name= 뿐이고(함수 이름은 묶음 머리가 갖는다, D-62) 없으면 칸이 위 줄에 서서 한 줄이 된다.
-   시간은 호버해야 보인다(전체 시간은 툴바가 갖는다). */
-.label { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); min-width: 0; padding: 0 var(--space-2); }
+/* 이름표 두 줄은 그림 위에 온다(D-151) — 위 줄 name= · 인터랙티브 버튼, 아래 줄 크기 · 다크 · 글자 배율 칸. 이름 > 칸.
+   이름은 name= 뿐이고(함수 이름은 묶음 머리가 갖는다, D-62) 칸이 비어도 줄 자리를 지킨다 — 이름표 높이가 장마다 다르면
+   이름 있는 장 · 없는 장이 섞인 묶음에서 그림 윗선이 어긋나고, 그림이 와서 크기 칸이 생길 때 그림이 밀려 내려간다.
+   렌더 픽셀 크기 · 시간은 싣지 않는다 — 픽셀 크기는 dp 칸과 겹치고, 시간은 툴바가 갖는다. */
+.label { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: var(--control-small) auto; align-items: center; column-gap: var(--space-4); min-width: 0; padding: 0 var(--space-2); }
 .label .fn { grid-area: 1 / 1; min-width: 0; font: var(--type-label-large); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label .go { grid-area: 1 / 2; }
 .label .sub { grid-area: 2 / 1 / 3 / 3; }
 .card.noname .label .fn { display: none; }
-.card.noname .label .sub { grid-area: 1 / 1; margin-top: 0; }
+/* 이름이 없는 장은 ▶가 크기 칸 줄에 선다 — 첫 줄에 혼자 뜨지 않게. 버튼이 두 줄에 걸쳐 둘째 줄을 키우지 않고, 아래로 4px 내려 칸 줄 가운데에 온다. */
+.card.noname .label .sub { grid-area: 2 / 1 / 3 / 2; }
+.card.noname .label .go { grid-area: 1 / 2 / 3 / 3; align-self: end; margin-bottom: calc(var(--space-4) * -1); }
+/* 묶음 전체가 이름이 없으면 빈 첫 줄은 맞출 상대가 없어 이름표가 한 줄이다. */
+.group.nameless .label { grid-template-rows: auto; }
+.group.nameless .label .sub { grid-area: 1 / 1; margin-top: 0; }
+.group.nameless .label .go { grid-area: 1 / 2; align-self: center; margin-bottom: 0; }
+/* ▶와 한 줄이라 호버에 칸이 좁아진다 — 긴 기기 이름도 첫 칸은 둘째 줄로 못 넘어가니 글자 중간에서 잘리지 않게 말줄임한다. */
+.card.noname .spec:first-child { flex-shrink: 1; min-width: 0; }
+.card.noname .spec:first-child > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 들어가기(인터랙티브). 아이콘은 늘 보이고, 카드에 호버하면 글자가 펼쳐진다 —
    25장에 글자가 늘 있으면 프리뷰와 시선을 다투고, 아이콘만이면 처음 온 사람이 뜻을 못 읽는다.
    진한 표시는 고른 것 · 가리킨 것에만 둔다 — 카드마다 진한 버튼이면 커서 테두리 · 가리킨 박스와 섞여 지금 고른 장이 안 읽힌다. */
@@ -420,93 +495,197 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .go:hover { background: var(--state-hover); color: var(--on-surface); }
 .go:active { transform: scale(var(--motion-enter-scale)); }
 /* 좁은 칸(작은 컴포넌트 · 줄인 폰 · 폴더블)에서는 호버해도 글자를 펼치지 않는다 — 펼친 버튼이 이름 · 크기 칸을 몇 px 로 눌렀다
-   (이름 > 칸 > 시간). 180px 부터는 흔한 이름(`Light theme` 14px 로 79px)이 펼친 버튼(85px) 옆에 다 든다 — 셈으로는 172px 에 들고, 남은 8px 는 더 긴 이름의 여유다. 뜻은 버튼의 툴팁이 갖는다. */
+   (이름 > 칸). 180px 부터는 흔한 이름(`Light theme` 14px 로 79px)이 펼친 버튼(85px) 옆에 다 든다 — 셈으로는 172px 에 들고, 남은 8px 는 더 긴 이름의 여유다. 뜻은 버튼의 툴팁이 갖는다. */
 @container (max-width: 179px) {
   .card:hover .go, .go:focus-visible { padding: 0 var(--space-4); }
   .card:hover .go-t, .go:focus-visible .go-t { max-width: 0; margin-left: 0; opacity: 0; }
 }
-/* 인자 칸 — 소스 표기(`device=spec:…`) 대신 뜻 하나에 아이콘 하나와 짧은 값. 원래 인자는 툴팁에 있다.
-   시간은 호버해야 보이고 오른쪽에 붙는다 — 자리가 모자라면 시간이 먼저 준다(이름 > 칸 > 시간). 칸 폭이 100px 까지 좁아진다. */
+/* 이름 없는 장은 ▶가 크기 칸과 한 줄이라 펼친 버튼(영어 95px)이 첫 칸을 민다 — 첫 칸은 둘째 줄로 못 넘어가 글자 중간에서 잘린다. 200px 부터는 `1280×800dp`까지 다 들고, 더 긴 첫 칸은 말줄임한다. */
+@container (max-width: 199px) {
+  .card.noname:hover .go, .card.noname .go:focus-visible { padding: 0 var(--space-4); }
+  .card.noname:hover .go-t, .card.noname .go:focus-visible .go-t { max-width: 0; margin-left: 0; opacity: 0; }
+}
+/* 인자 칸 — 소스 표기(`device=spec:…`) 대신 뜻 하나에 아이콘 하나와 짧은 값. 원래 인자는 툴팁에 있다. 칸 폭이 100px 까지 좁아진다. */
 .sub { display: flex; align-items: center; gap: var(--space-8); min-width: 0; margin-top: calc(var(--space-4) * -1); }
 /* 다 안 드는 칸은 보이지 않는 둘째 줄로 넘어간다 — 반쯤 잘린 아이콘이 남지 않게, 칸은 통째로 들거나 빠진다. */
 .specs { flex: 0 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-8); height: 1.45em; overflow: hidden; white-space: nowrap;
          color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; }
 .spec { display: inline-flex; align-items: center; gap: var(--space-4); flex: 0 0 auto; }
-/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 시간과 칸 아이콘을 먼저 뺀다. 이름 없는 장은 크기가 인터랙티브 버튼과 한 줄에 들어야 한다.
-   첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘렸다(이름 없는 장의 65px 칸에 `120×120dp`) —
-   이름 없는 장은 단위를 빼고, 그래도 길면 말줄임한다. 말줄임은 시간이 빠진 이 폭에서만 건다 — 쉬는 동안 안 보이는 시간도 자리를 조금 눌러,
-   넓은 칸에 걸면 다 드는 칸에도 말줄임이 붙었다. */
+/* 좁은 칸(작은 컴포넌트 · 하한 배율의 폰, 100px 부터) — 칸 아이콘을 먼저 뺀다.
+   첫 칸만은 둘째 줄로 못 넘어가(flex 줄은 첫 항목을 늘 담는다) 줄보다 길면 글자 중간에서 잘린다 — 말줄임한다. */
 .card { container-type: inline-size; }
 @container (max-width: 139px) {
-  .spec svg, .sub .meta, .card.noname .spec .unit { display: none; }
+  .spec svg { display: none; }
   .spec:first-child { flex-shrink: 1; min-width: 0; }
   .spec:first-child > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 }
 .spec svg { width: 12px; height: 12px; color: var(--on-surface-variant); }
 .spec .aa { color: var(--on-surface-variant); font: var(--type-label-medium); }
 .spec .unit { margin-left: var(--space-2); color: var(--on-surface-variant); font: var(--type-label-small); }
-.sub .meta { flex: 0 100 auto; min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-             color: var(--on-surface-variant); font: var(--type-label-small); font-variant-numeric: tabular-nums; opacity: 0; transition: opacity var(--duration-short4) var(--easing-standard); }
-.card:hover .sub .meta { opacity: 1; }
-/* 빈 칸 줄은 접는다. 이름 없는 장은 그 줄이 곧 첫 줄(인터랙티브 버튼 옆)이라 접어도 줄지 않고, focus 점이 거기 붙는다 —
-   접으면 그리기 전 · 실패한 장이 focus 일 때 점이 사라졌다. */
-.card:not(.noname) .sub:has(.specs:empty):has(.meta:empty) { display: none; }
 
-/* ---------- 가리키기 박스 ---------- */
-.box { position: absolute; pointer-events: none; border: 1px solid var(--pick); background: var(--pick-container); border-radius: var(--corner-small); }
-/* 가리킨 것 — 사건이라 색(pick)을 쓴다. 빨강은 오류 전용이다. 굵기 · 이름 태그 · 한 번의 펄스로 호버와 가른다. */
-.box.pick { border: 2px solid var(--pick); background: var(--pick-container); z-index: 2; animation: pick var(--duration-medium2) var(--easing-standard); }
-/* 꼬리표가 가리킨 결과를 말한다(D-101) — `파일명:라인 · ✓ 복사됨`, 막히면 끝에 "눌러서 복사". 단추가 있어 누름을 받는다(point.js 가 아래로 새지 않게 막는다). */
-.box.pick .tag { position: absolute; left: -2px; bottom: calc(100% + var(--space-4)); display: inline-flex; align-items: center; gap: var(--space-6);
-                 max-width: var(--tag-max-w); height: var(--tag-h); padding: 0 var(--space-6); border-radius: var(--corner-small);
-                 background: var(--pick); color: var(--on-pick); font: var(--type-code-small); white-space: nowrap; pointer-events: auto; cursor: default; }
-.box.pick .tag:empty { display: none; }
-.box.pick.below .tag { bottom: auto; top: calc(100% + var(--space-4)); }
-.box.pick.inside .tag { bottom: auto; top: var(--space-4); left: var(--space-4); }
-.tag-ref { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tag-ok { flex: 0 0 auto; animation: okmark var(--duration-medium2) var(--easing-standard); }
-.tag-ok.wait { opacity: .8; }
-.tag-again, .tag-open { flex: 0 0 auto; display: inline-flex; align-items: center; height: calc(var(--tag-h) - var(--space-4)); border: 0; border-radius: var(--corner-small); cursor: pointer;
-                        font: var(--type-code-small); transition: opacity var(--duration-short4) var(--easing-standard), background var(--duration-short4) var(--easing-standard); }
-.tag-again { padding: 0 var(--space-6); background: var(--on-pick); color: var(--pick); }
-.tag-again:hover { opacity: .88; }
-.tag-open { padding: 0 var(--space-2); margin-right: calc(var(--space-4) * -1); background: transparent; color: var(--on-pick); }
-.tag-open:hover { background: var(--state-hover); }
-.tag-open svg { width: 14px; height: 14px; }
-.box.pick .tag :focus-visible { outline-color: var(--on-pick); }
-@keyframes pick { from { transform: scale(calc(2 - var(--motion-enter-scale))); opacity: .4; } }
+/* ---------- 그림 위 표시 — 구조 테두리 · 손 아래 · 고른 노드(D-162) ---------- */
+/* 마우스가 그림 위에 있으면 고를 수 있는 노드마다 옅은 선이 페이드로 나타난다. 카드 트리 줄에 올려도(peek) 보인다. */
+.marks { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--duration-short4) var(--easing-standard); }
+.marks.over, .marks.peek { opacity: 1; }
+.marks .ol { position: absolute; border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--pick-outline); }
+/* 손 아래 노드 — 옅은 바탕 하나가 자리와 크기를 미끄러지듯 옮기며 따라온다. 붙였다 떼면 깜빡여서 늘 그려 두고 투명도(on)만 바꾼다. */
+.box { position: absolute; pointer-events: none; border: 1px solid var(--pick-hover-line); background: var(--pick-hover); border-radius: var(--corner-small); opacity: 0;
+       transition: opacity var(--duration-short3) var(--easing-standard), left var(--duration-short3) var(--easing-decelerate), top var(--duration-short3) var(--easing-decelerate),
+                   width var(--duration-short3) var(--easing-decelerate), height var(--duration-short3) var(--easing-decelerate); }
+.box.on { opacity: 1; }
+/* 고른 노드 — 사건이라 색(pick)을 쓴다. 빨강은 오류 전용이다. 더 진한 바탕 + 2px 선, 그림에서 손이 떠나면 바탕이 한 단 옅어진다. 카드는 그림 밖에 뜬다. */
+.box.pick { z-index: 2; opacity: 1; border: 2px solid var(--pick); background: var(--pick-rest); transition: background var(--duration-short3) var(--easing-standard);
+            animation: pick-press var(--duration-short4) var(--easing-decelerate); }
+.cstage:hover .box.pick, .stage:hover .box.pick { background: var(--pick-chosen); }
+@keyframes pick-press { from { background: var(--pick-hover); } }
+
+/* ---------- 가리킨 결과 카드(D-162) ---------- */
+/* 보드 · 한 장 위에 뜨는 층이라 반경과 그림자를 갖는다. 트리와 설명은 한 단 낮은 패널(--surface)에 담고, 파랑은 그림 위의 박스 · 가리킨 줄 · 크기 그림에만 둔다. */
+#boardView { position: relative; }
+.pc-float { position: absolute; z-index: 6; width: var(--point-card-w); transform-origin: top left;
+            transition: opacity var(--duration-short4) var(--easing-decelerate), transform var(--duration-short4) var(--easing-decelerate); }
+/* 나타남 · 걷힘 — 그림 쪽 위 모서리에서 커지며 짙어지고, 걷힐 때는 더 짧게 그쪽으로 줄며 흐려진다. 걷히는 카드는 누름을 받지 않는다(이웃 그림 위에 서 있을 수 있다). */
+.pc-float[data-side="left"] { transform-origin: top right; }
+.pc-float:not([data-placed]), .pc-float[data-leaving] { opacity: 0; transform: scale(var(--motion-enter-scale)); }
+.pc-float[data-leaving] { pointer-events: none; transition-duration: var(--duration-short3); transition-timing-function: var(--easing-accelerate); }
+.point-card { display: block; width: min(var(--point-card-w), calc(100vw - var(--space-32))); padding: var(--space-8); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface); cursor: default; }
+/* 내용이 바뀌면 높이만 감쇠 곡선으로 옮긴다. 처음 뜰 때는 바로 선다(data-placed 전에는 전환 없음). */
+.pc-float .point-card { height: calc(var(--h, auto) + var(--space-8) * 2); overflow: hidden; }
+.pc-float[data-placed] .point-card { transition: height var(--duration-long4) var(--easing-spring); }
+.pc-body { display: grid; gap: var(--space-8); }
+
+/* 머리 — 두 줄(이름 + 출처 칩 / 흐린 파일:라인)과 오른쪽 버튼. 버튼은 첫 줄에 맞춘다. */
+.pc-head { display: flex; align-items: flex-start; gap: var(--space-8); min-width: 0; padding: var(--space-6) var(--space-4) var(--space-4) var(--space-8); margin-bottom: var(--space-4); }
+.pc-head > button { margin-top: calc(var(--space-2) * -1); }
+.pc-id { display: grid; flex: 1; gap: var(--space-4); min-width: 0; }
+.pc-nameline { display: flex; align-items: center; gap: var(--space-6); min-width: 0; }
+.pc-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-small); }
+/* 출처 칩 — 프로젝트 컴포저블은 정의 모듈(채움), Compose 기본은 테두리만 둔 `Compose`. */
+.pc-chip { flex: 0 0 auto; height: var(--space-20); padding: 0 var(--space-8); border-radius: var(--corner-small); font: var(--type-code-small); line-height: var(--space-20); white-space: nowrap; }
+.pc-chip.module { background: var(--primary-container); color: var(--on-surface); }
+.pc-chip.compose { box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); }
+.pc-refline { display: flex; align-items: baseline; gap: var(--space-8); min-width: 0; }
+.pc-ref { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-code-small); }
+/* 복사 막힘 — 자동 복사가 실패할 때만 파일 줄 끝에 글자 버튼 */
+.pc-rescue { flex: 0 0 auto; padding: 0; border: 0; background: none; color: var(--on-surface); font: var(--type-label-small); text-decoration: underline; text-underline-offset: var(--space-2); cursor: pointer; }
+.pc-rescue:hover { color: var(--primary); }
+.pc-rescue.off { color: var(--on-surface-variant); text-decoration: none; cursor: default; }
+.pc-msg { margin: 0; padding: var(--space-8); border-radius: var(--corner-medium); background: var(--surface); color: var(--on-surface-variant); font: var(--type-body-small); }
+
+/* 머리 버튼 — Preview(가리킨 노드에 있을 때만, 여럿이면 개수) · 닫기 */
+.pc-close, .pc-jump { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--control-small); min-width: var(--control-small); border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); cursor: pointer;
+                      transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.pc-jump { padding: 0 var(--space-4); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.pc-close svg, .pc-jump svg, .pc-preview svg { flex: 0 0 auto; width: 14px; height: 14px; }
+.pc-close:hover, .pc-jump:hover, .pc-jump[aria-expanded="true"] { background: var(--state-hover); color: var(--on-surface); }
+/* Preview 여럿 — 머리 아래 목록. 높이를 모르는 목록을 펼치려고 줄 높이를 0fr → 1fr 로 옮긴다. */
+.pc-fold { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: calc(var(--space-8) * -1); transition: grid-template-rows var(--duration-short4) var(--easing-accelerate), opacity var(--duration-short3) var(--easing-accelerate); }
+.pc-fold[data-open] { grid-template-rows: 1fr; opacity: 1; margin-top: 0; transition: grid-template-rows var(--duration-medium1) var(--easing-decelerate), opacity var(--duration-short4) var(--easing-decelerate); }
+.pc-previews { min-height: 0; margin: 0; padding: 0; list-style: none; overflow: hidden; }
+.pc-fold[data-open] .pc-previews { padding: var(--space-2); border-radius: var(--corner-medium); background: var(--surface); }
+.pc-preview { display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-small); padding: 0 var(--space-6); border: 0; border-radius: var(--corner-small); background: transparent; color: var(--on-surface-variant); font: var(--type-label-small); cursor: pointer; text-align: left;
+              transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-preview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-preview:hover { background: var(--state-hover); color: var(--on-surface); }
+
+/* 패널 — 카드보다 한 단 낮은 면 */
+.pc-panel { margin: 0; padding: var(--space-4); border-radius: var(--corner-medium); background: var(--surface); }
+/* 트리 — 6줄 × 24px 고정. 노드를 옮겨도 트리 칸과 그 아래 설명 패널이 제자리에 있고, 넘치면 안에서 스크롤한다. */
+.pc-tree-panel { height: calc(var(--control-small) * 6 + var(--space-8)); }
+.pc-tree-panel > .pc-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.pc-tree { margin: 0; padding: 0; list-style: none; }
+/* 파일 트리의 모양 — 자식 묶음의 왼쪽 실과 한 칸 들여쓰기 */
+.pc-group { margin: 0 0 0 var(--space-12); padding: 0 0 0 var(--space-8); border-left: 1px solid var(--outline-variant); list-style: none; }
+.pc-row { display: flex; align-items: center; height: var(--control-small); border-radius: var(--corner-medium); color: var(--on-surface-variant);
+          transition: background var(--duration-short3) var(--easing-standard), color var(--duration-short3) var(--easing-standard); }
+.pc-row:hover { background: var(--state-hover); color: var(--on-surface); }
+/* 가리킨 노드는 그림 위 박스와 같은 파랑 바탕이라 "지금 고른 그것"으로 이어 읽힌다. */
+.pc-node.here > .pc-row { background: var(--pick-container); color: var(--on-surface); }
+.pc-pick { flex: 1; min-width: 0; height: var(--control-small); padding: 0 var(--space-8); border: 0; border-radius: var(--corner-medium); background: transparent; color: inherit; font: var(--type-label-small); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-node.here > .pc-row .pc-pick { font: var(--type-label-medium); }
+/* 트리 전환 — 새로 가리킨 노드의 자식 묶음이 접힌 데서 펼쳐지고, 떠나는 옛 자식 묶음은 같은 시간에 접혀 걷힌다. */
+.pc-unfold, .pc-foldout { display: grid; }
+.pc-unfold > ul, .pc-foldout > ul { min-height: 0; overflow: hidden; }
+.pc-unfold { animation: pc-unfold var(--duration-medium2) var(--easing-decelerate); }
+.pc-foldout { grid-template-rows: 0fr; opacity: 0; animation: pc-foldout var(--duration-medium2) var(--easing-accelerate); }
+@keyframes pc-unfold { from { grid-template-rows: 0fr; opacity: 0; } to { grid-template-rows: 1fr; opacity: 1; } }
+@keyframes pc-foldout { from { grid-template-rows: 1fr; opacity: 1; } to { grid-template-rows: 0fr; opacity: 0; } }
+
+/* 설명 패널 — 크기 한 줄과 modifier 체인. 둘 다 "이 노드" 이야기라 한 패널에 담고 가는 선 하나로만 나눈다. */
+.pc-detail-in { display: grid; gap: var(--space-4); }
+.pc-size { display: flex; align-items: center; gap: var(--space-12); padding: var(--space-4); }
+.pc-glyph { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: var(--point-glyph); height: var(--point-glyph); }
+.pc-shape { position: relative; width: min(var(--point-glyph), calc(var(--point-glyph) * var(--ratio))); height: min(var(--point-glyph), calc(var(--point-glyph) / var(--ratio))); border: 1px solid var(--pick); border-radius: var(--corner-small); background: var(--pick-container); }
+.pc-shape.padded i { position: absolute; inset: 22%; border: 1px dashed var(--pick); border-radius: var(--corner-small); background: var(--surface-container); }
+.pc-dims { color: var(--on-surface); font: var(--type-code); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-dims i { margin: 0 var(--space-4); color: var(--on-surface-variant); font-style: normal; font-weight: var(--weight-regular); }
+.pc-unit { margin-left: var(--space-4); color: var(--on-surface-variant); font: var(--type-code-small); }
+/* modifier 는 위에서 아래로 적용되는 순서다 — 하는 일(아이콘) · 이름은 왼쪽, 값은 오른쪽 끝. 상한 4줄, 넘치면 안에서 스크롤한다. 크기를 정한 줄도 강조하지 않는다.
+   가는 선은 바깥 묶음이 갖고, 흐린 끝(마스크)은 안쪽 목록만 받는다 — 선과 패널 바탕이 흐려지지 않게. */
+.pc-mods { padding-top: var(--space-4); border-top: 1px solid var(--outline-variant); }
+.pc-mods > ol { max-height: calc(var(--control-medium) * 4); margin: 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.pc-mods li { display: flex; align-items: center; gap: var(--space-8); min-height: var(--control-medium); padding: 0 var(--space-8) 0 var(--space-4); border-radius: var(--corner-small);
+              transition: background var(--duration-short3) var(--easing-standard); }
+.pc-mods li:hover { background: var(--state-hover); }
+.pc-kind { flex: 0 0 var(--space-16); display: inline-flex; align-items: center; justify-content: center; height: var(--space-16); color: var(--on-surface-variant); }
+.pc-kind svg { width: 14px; height: 14px; }
+.pc-mod-name { flex: 0 0 auto; color: var(--on-surface); font: var(--type-code-small); }
+.pc-mod-value { display: inline-flex; align-items: center; gap: var(--space-6); min-width: 0; margin-left: auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.pc-mod-value span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-swatch { flex: 0 0 auto; width: var(--space-12); height: var(--space-12); border-radius: var(--corner-small); box-shadow: 0 0 0 1px var(--outline-variant); }
+
+/* 스크롤바 — 평소엔 숨기고, 올리거나 포커스가 오면 얇은 무채색 막대. 위아래 끝 8px 는 옅어져 더 있다는 것을 알린다.
+   마스크는 바탕 · 테두리를 그리지 않는 안쪽 스크롤러에만 단다. 마스크는 알파만 보므로 색 자리의 --on-surface 는 색이 아니라 "불투명"이다. */
+.pc-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--on-surface) var(--space-8), var(--on-surface) calc(100% - var(--space-8)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, var(--on-surface) var(--space-8), var(--on-surface) calc(100% - var(--space-8)), transparent 100%); }
+.pc-scroll:hover, .pc-scroll:focus-within, .pc-scroll:focus-visible { scrollbar-color: var(--outline-variant) transparent; }
+.pc-scroll:focus-visible { outline: none; }
+
+/* 내용 전환 — 바뀐 머리 글자와 설명은 이동 없이 옅게만 갈아든다. */
+.pc-swap { animation: pc-fade var(--duration-medium1) var(--easing-decelerate); }
+@keyframes pc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pc-fadeout { from { opacity: 1; } to { opacity: 0; } }
+/* 움직임 줄이기 — 높이 · 미끄러짐은 즉시, 나타남 · 걷힘과 펼침 · 접힘은 크기 없이 페이드만 남긴다. 페이드 시간은 tokens.css 규칙대로 그대로다. */
+@media (prefers-reduced-motion: reduce) {
+  .pc-float { transition-property: opacity; }
+  .pc-float[data-placed] .point-card { transition: none; }
+  .pc-fold, .pc-fold[data-open] { transition-property: opacity; }
+  .pc-unfold { animation: pc-fade var(--duration-short4) linear; }
+  .pc-foldout { grid-template-rows: 0fr; animation: pc-fadeout var(--duration-short4) linear; }
+  .box { transition: opacity var(--duration-short3) linear; }
+}
 
 /* ---------- 한 장 ---------- */
 #focusView { position: relative; }
-/* 한 장의 틀. 확대된 그림은 이 안에서만 움직인다 — 안쪽 여백은 맞춤일 때 그림자 · 글로우가 잘리지 않을 자리다. */
+/* 한 장의 틀. 확대된 그림은 이 안에서만 움직인다 — 안쪽 여백은 맞춤일 때 헤어라인 · 조작 링이 잘리지 않을 자리다. */
 .wrap { position: relative; display: flex; flex-direction: column; align-items: center; height: var(--view-h, auto);
         padding: var(--space-16); margin: calc(var(--space-16) * -1); overflow: hidden; }
-.stage { position: relative; line-height: 0; border-radius: var(--corner-medium); background: var(--surface-container);
-         box-shadow: var(--elevation-2); max-width: 100%; min-width: 120px; min-height: 60px;
-         transition: box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+/* 무대도 바닥이다 — 반경 · 그림자 없이 카드와 같은 헤어라인(D-153). 확대해도 가늘게 --z 로 되돌린다. */
+.stage { position: relative; line-height: 0; background: var(--surface-container);
+         box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant); max-width: 100%; min-width: 120px; min-height: 60px;
+         transition: background-color var(--duration-medium2) var(--easing-standard); }
 /* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 너비/naturalWidth 로 배율을 내므로 축소해도 그대로 맞는다.
    min-height 를 이미지에 걸면 945x184 같은 납작한 프리뷰가 세로로 늘어난다. 하한은 --stage-max-h 를 계산할 때 둔다. */
-.stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px);
-             border-radius: var(--corner-medium); }
-/* stage 는 넘침을 자르지 않는다 — 고른 박스의 이름 태그가 그림 가장자리 밖으로 나가야 한다. 모서리는 그림이 스스로 깎는다. */
+.stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px); }
 /* 조작 중 — 말 대신 표면으로 알린다. */
 .stage { transform-origin: 0 0; }
-.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), box-shadow var(--duration-medium2) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
+/* 선 · 링은 --z 를 따라 바로 바뀐다 — 전이를 걸면 확대보다 늦게 굵어졌다 가늘어진다. */
+.stage.zoom-anim { transition: transform var(--duration-medium1) var(--easing-standard), background-color var(--duration-medium2) var(--easing-standard); }
 .stage.grab { cursor: grab !important; }
 .stage.panning { cursor: grabbing !important; }
 .stage.grab img, .stage.panning img { pointer-events: none; }
-/* 확대해도 박스 선 · 이름 태그는 그대로의 굵기 · 크기로 — --z 로 되돌린다. */
+/* 확대해도 그림 위 표시의 선은 그대로의 굵기로 — --z 로 되돌린다. */
 .stage .box { border-width: calc(1px / var(--z, 1)); }
 .stage .box.pick { border-width: calc(2px / var(--z, 1)); }
-.stage .box.pick .tag { transform: scale(calc(1 / var(--z, 1))); transform-origin: left bottom; }
-.stage .box.pick.below .tag, .stage .box.pick.inside .tag { transform-origin: left top; }
+.stage .marks .ol { box-shadow: inset 0 0 0 calc(1px / var(--z, 1)) var(--pick-outline); }
 .stage { z-index: 1; }
-/* 조작 중 — 얇은 링 하나. 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
-.stage.live { box-shadow: 0 0 0 2px var(--live), var(--elevation-2); }
+/* 조작 중 — 얇은 링 하나(헤어라인을 갈음한다). 작업 공간 자체가 조작하는 곳이라 툴바의 `조작 중` 알약은 뺐다. */
+.stage.live { box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--live); }
 
 /* ---------- 떠 있는 층 — 캡슐 · 후보 고르기 ---------- */
-/* 오류 · 잠깐의 알림이 뜨는 곳. 비어 있으면 안 보인다 — 가리킨 결과는 박스 꼬리표가 말한다(D-101). */
-.capsule { position: fixed; left: calc(50% + (var(--rail-w) - var(--panel-w)) / 2); bottom: var(--space-20); z-index: 18; max-width: min(760px, calc(100vw - var(--rail-w) - var(--panel-w) - 32px));
+/* 오류 · 잠깐의 알림이 뜨는 곳. 비어 있으면 안 보인다 — 가리킨 결과는 그림 밖 카드가 말한다(D-162). */
+.capsule { position: fixed; left: calc(50% + var(--rail-w) / 2); bottom: var(--space-20); z-index: 18; max-width: min(760px, calc(100vw - var(--rail-w) - 32px));
            padding: var(--space-8) var(--space-16); border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3);
            font: var(--type-body-small);
            opacity: 0; visibility: hidden; transform: translate(-50%, var(--motion-enter-shift)) scale(var(--motion-enter-scale));
@@ -517,9 +696,8 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .cap-main { display: flex; align-items: baseline; gap: var(--space-12); min-width: 0; }
 .cap-main > :empty { display: none; }
 #sel { min-width: 0; overflow-wrap: anywhere; }
-@keyframes okmark { from { opacity: 0; transform: translateY(calc(var(--motion-enter-shift) / 2)); } }
 .log { color: var(--on-surface-variant); white-space: pre-wrap; }
-/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce). 앞 문장이 요점이라 진하다.
+/* 처음 한 번 안내 — 닫을 때까지 남는다(capsule.js showOnce · NotificationCapsule). 앞 문장이 요점이라 진하다.
    오류 줄(.cap-main)과 한 줄에 서지 않고 그 위에 따로 선다 — 오류가 안내에 밀려 좁아지지 않게. */
 .cap-once { display: flex; align-items: center; gap: var(--space-8); color: var(--on-surface); }
 .cap-once:not([hidden]) + .cap-main:has(> :not(:empty)) { margin-top: var(--space-6); }
@@ -531,7 +709,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .error { color: var(--error); white-space: pre-wrap; font: var(--type-code-small); font-weight: var(--weight-medium); }
 .error::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: var(--space-6); border-radius: var(--corner-full); background: currentColor; vertical-align: 1px; }
 
-/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 꼬리표에서 내려오는 팝오버(D-101). 조용히 하나 찍지 않는다. 자리(left · top)는 point.js 가 잰다. */
+/* 베이스네임이 여러 곳에 있을 때의 후보 고르기 — 가리킨 결과 카드의 머리에서 내려오는 팝오버. 조용히 하나 찍지 않는다. 자리(left · top)는 workspace/point.ts 가 잰다. */
 .chooser { position: fixed; left: 0; top: 0; z-index: 22; width: min(var(--chooser-w), calc(100vw - 32px)); padding: var(--space-16);
            border-radius: var(--corner-large); background: var(--surface-container); box-shadow: var(--elevation-3); color: var(--on-surface);
            opacity: 0; visibility: hidden; transform: translateY(calc(var(--motion-enter-shift) * -1)) scale(var(--motion-enter-scale)); transform-origin: top left;
@@ -561,7 +739,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 :root.vt-workspace::view-transition-new(rail) { animation: fade var(--duration-short3) var(--easing-standard) both; }
 @keyframes fade-out { to { opacity: 0; } }
 .card.returned .cstage { animation: return-card var(--duration-extra-long2) var(--easing-decelerate); }
-@keyframes return-card { from { box-shadow: 0 0 0 4px var(--outline), var(--elevation-2); } }
+@keyframes return-card { from { box-shadow: 0 0 0 4px var(--outline); } }
 @media (prefers-reduced-motion: reduce) {
   .card.returned .cstage { animation: none; }
 }
@@ -663,4 +841,9 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
   .qo-mod { display: none; }
 }
 
-.build-notice { position: sticky; z-index: 9; top: var(--bar-h); translate: calc((var(--rail-w) - var(--panel-w)) / 2) 0; margin: var(--space-12) auto; width: fit-content; max-width: calc(100% - var(--rail-w) - var(--panel-w) - 32px); padding: var(--space-8) var(--space-16); border: 1px solid var(--outline-variant); border-radius: var(--corner-large); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
+.build-notice { position: sticky; z-index: 9; top: var(--bar-h); translate: calc(var(--rail-w) / 2) 0; margin: var(--space-12) auto; width: fit-content; max-width: calc(100% - var(--rail-w) - 32px); padding: var(--space-8) var(--space-16); border: 1px solid var(--outline-variant); border-radius: var(--corner-large); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
+
+.orientation-pick { position: relative; }
+.orientation-pick .zoom-menu { min-width: var(--dock-slider-w); }
+.orientation-pick [aria-checked="true"] { background: var(--primary-container); }
+

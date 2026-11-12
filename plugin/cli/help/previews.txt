@@ -1,0 +1,27 @@
+prevue previews <file>
+prevue previews --of <composable> [<file>]
+
+<file>  The file's @Preview list (FQN · name · parameters). Use it to show by FQN.
+
+--of    Finds the @Preview functions whose body calls that composable directly, so you can show one without the person picking it.
+        The name is matched exactly (case-sensitive). For a qualified name (com.x.ui.Badge) only the last part counts.
+        <file> only tells which repository to ask — any file of it. Without one, run it from inside the repository.
+
+Response (--of)
+  ok · message   the verdict, first
+  of             the name that was looked up
+  definitions[]  where a composable of that name is defined in this project — path · rel · module
+  previews[]     one line per @Preview function — fqn · fn · file · rel · module. Run prevue show <fqn> (or show <file>)
+
+Only direct calls from the @Preview body count — a preview that reaches it through a shared wrapper or screen isn't found.
+The index knows names, not packages: when definitions has more than one entry, it can't tell which one each preview calls —
+show the person the definition paths and let them choose.
+
+Exit codes (--of)
+  0  found. message is set when definitions has more than one entry
+  1  none found — definitions tells which: defined but no @Preview calls it directly (show its definition file or a screen that calls it),
+     or no definition in this project (a library composable, or the name differs)
+     or the running daemon couldn't answer (error) — find the file and run prevue show <file>
+  2  several daemons and no way to tell the repository — run it from inside the repository or give a file of it
+  3  no daemon (find the file that defines or previews it and run prevue show <file>, which starts one),
+     or the index was still being built after 10 seconds of waiting (ready:false — run it once more, then fall back the same way)

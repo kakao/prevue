@@ -58,7 +58,10 @@ class SlowDaemon(BaseHTTPRequestHandler):
         pass
 
 
-class Seat(Case):
+class DaemonSeat(Case):
+    """임시 저장소 하나와, 그 저장소 자리(port_of)에 handler 로 답하는 가짜 데몬. 기록도 산 것으로 둔다."""
+    handler = None
+
     def setUp(self):
         super().setUp()
         self.r = self.repo(":app")
@@ -68,11 +71,10 @@ class Seat(Case):
         self.home = os.path.join(self.tmp.name, "home")
         key = P.repo_key(os.path.abspath(self.r.root))
         self.port = PORT_BASE + int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % PORT_SPAN   # bin/prevue port_of
-        SlowDaemon.statuses, SlowDaemon.waited = 0, []
-        SlowDaemon.status = {"overlay": f"{self.home}/.prevue/projects/{key}/daemon/{self.port}/overlay/app", "root": str(ROOT),
+        self.handler.status = {"overlay": f"{self.home}/.prevue/projects/{key}/daemon/{self.port}/overlay/app", "root": str(ROOT),
                              "module": ":app", "modules": [":app"], "variant": "debug"}
         try:
-            self.server = ThreadingHTTPServer(("127.0.0.1", self.port), SlowDaemon)
+            self.server = ThreadingHTTPServer(("127.0.0.1", self.port), self.handler)
         except OSError:
             self.skipTest(f"{self.port} 를 다른 프로세스가 쓰고 있다")
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -80,14 +82,68 @@ class Seat(Case):
         self.addCleanup(self.server.shutdown)
         daemons = os.path.join(self.home, ".prevue", "daemons")
         os.makedirs(daemons)
-        # 기록은 명령줄이 그 포트의 데몬일 때만 산 것으로 읽힌다(bin/daemon_records.py ours)
+        # 기록은 명령줄이 그 포트의 데몬일 때만 산 것으로 읽힌다(cli/daemon_records.py ours)
         stand_in = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "prevue.daemon.MainKt", "--port", str(self.port)])
         self.addCleanup(stand_in.wait)
         self.addCleanup(stand_in.kill)
         Path(daemons, f"daemon-{self.port}.pid").write_text(str(stand_in.pid))
+
+
+
+class Seat(DaemonSeat):
+    handler = SlowDaemon
+
+    def setUp(self):
+        SlowDaemon.statuses, SlowDaemon.waited = 0, []
+        super().setUp()
 
     def test_첫_status_가_늦어도_같은_저장소의_데몬에게_말한다(self):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"))
         p = subprocess.run([str(ROOT / "bin/prevue"), "wait", self.file], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         self.assertEqual(SlowDaemon.waited, ["/wait"], p.stdout + p.stderr)
         self.assertGreaterEqual(SlowDaemon.statuses, 2, "첫 물음이 시간을 넘겨야 이 경우다")
+
+
+class FocusDaemon(SlowDaemon):
+    def do_GET(self):
+        self.reply(type(self).status)
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+        type(self).waited.append((self.path, body))
+        self.reply({"ok": True})
+
+
+class FocusOptions(DaemonSeat):
+    handler = FocusDaemon
+
+    def test_절대_방향은_가로_인자와_시스템_UI와_구별되고_인셋_필드는_보내지_않는다(self):
+        FocusDaemon.waited = []
+        env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        cases = [
+            (["--device", "duo", "--folded", "--orientation", "landscape-right"],
+             {"device": "duo", "folded": True, "orientation": "landscape-right", "systemUi": None, "landscape": False}),
+            (["--device", "tablet", "--landscape"], {"landscape": True, "orientation": None}),
+            (["--system-ui", "off"], {"systemUi": "off"}),
+        ]
+        for args, expected in cases:
+            with self.subTest(args=args):
+                result = subprocess.run([str(ROOT / "bin/prevue"), "focus", "0", *args], cwd=self.r.root, env=env, capture_output=True, text=True)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                path, body = FocusDaemon.waited[-1]
+                self.assertEqual("/focus", path)
+                self.assertTrue(body["interactive"])
+                for key, value in expected.items():
+                    self.assertEqual(value, body[key], body)
+                self.assertNotIn("deviceInsets", body)
+
+    def test_기기_인셋_켬끔_옵션은_없어_사용법_오류다(self):
+        FocusDaemon.waited = []
+        env = dict(os.environ, PREVUE_HOME=os.path.join(self.home, ".prevue"))
+        for value in ("on", "off"):
+            with self.subTest(value=value):
+                result = subprocess.run([str(ROOT / "bin/prevue"), "focus", "0", "--device", "s26", "--device-insets", value],
+                                        cwd=self.r.root, env=env, capture_output=True, text=True)
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("--device-insets", result.stderr)
+        self.assertEqual([], FocusDaemon.waited)

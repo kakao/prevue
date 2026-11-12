@@ -1,11 +1,11 @@
-"""bin/jdk_find.py — PREVUE_JDK 가 없을 때 데몬 JDK 를 고른다. 실행: python3 -m unittest discover -s tests/cli"""
+"""cli/jdk_find.py — PREVUE_JDK 가 없을 때 데몬 JDK 를 고른다. 실행: python3 -m unittest discover -s tests/cli"""
 
 import os
 import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import jdk_find  # noqa: E402
 
 from test_plan import fake_jdk  # noqa: E402

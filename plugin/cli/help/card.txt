@@ -1,0 +1,4 @@
+prevue card <index> [--force]
+
+Draws one card of the board. If it already has an image of the current generation, it returns that — --force redraws it.
+While a card is interactive, other cards are drawn on a separate task, so the interaction isn't reset.

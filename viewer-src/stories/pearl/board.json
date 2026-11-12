@@ -1,0 +1,847 @@
+{
+  "file": "<repo>/fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/PearlPreviews.kt",
+  "gen": 0,
+  "focus": 0,
+  "groups": [
+    {
+      "name": "PearlListPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 0,
+          "previewId": "PearlListPreview",
+          "label": "",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListPreview\nPearlListPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": true,
+          "imageUrl": "/PearlListPreview-0.png?t=1793761705377",
+          "treeUrl": "/PearlListPreview-0.viewinfo.json?t=1793761705377",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlEmptyPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 1,
+          "previewId": "PearlEmptyPreview",
+          "label": "",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlEmptyPreview\nPearlEmptyPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlEmptyPreview-0.png?t=1793761705456",
+          "treeUrl": "/PearlEmptyPreview-0.viewinfo.json?t=1793761705456",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlLoadingPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 2,
+          "previewId": "PearlLoadingPreview",
+          "label": "",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlLoadingPreview\nPearlLoadingPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlLoadingPreview-0.png?t=1793761705471",
+          "treeUrl": "/PearlLoadingPreview-0.viewinfo.json?t=1793761705471",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlErrorPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 3,
+          "previewId": "PearlErrorPreview",
+          "label": "",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlErrorPreview\nPearlErrorPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlErrorPreview-0.png?t=1793761705528",
+          "treeUrl": "/PearlErrorPreview-0.viewinfo.json?t=1793761705528",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "DrinkDetailPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 4,
+          "previewId": "DrinkDetailPreview",
+          "label": "",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailPreview\nDrinkDetailPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkDetailPreview-0.png?t=1793761705581",
+          "treeUrl": "/DrinkDetailPreview-0.viewinfo.json?t=1793761705581",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "DrinkByKindPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 5,
+          "previewId": "DrinkByKindPreview_p0",
+          "label": "#0",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p0",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p0-0.png?t=1793761705565",
+          "treeUrl": "/DrinkByKindPreview_p0-0.viewinfo.json?t=1793761705565",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        },
+        {
+          "index": 6,
+          "previewId": "DrinkByKindPreview_p1",
+          "label": "#1",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p1",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p1-0.png?t=1793761705592",
+          "treeUrl": "/DrinkByKindPreview_p1-0.viewinfo.json?t=1793761705592",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        },
+        {
+          "index": 7,
+          "previewId": "DrinkByKindPreview_p2",
+          "label": "#2",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p2",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p2-0.png?t=1793761705580",
+          "treeUrl": "/DrinkByKindPreview_p2-0.viewinfo.json?t=1793761705580",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        },
+        {
+          "index": 8,
+          "previewId": "DrinkByKindPreview_p3",
+          "label": "#3",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p3",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p3-0.png?t=1793761705588",
+          "treeUrl": "/DrinkByKindPreview_p3-0.viewinfo.json?t=1793761705588",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        },
+        {
+          "index": 9,
+          "previewId": "DrinkByKindPreview_p4",
+          "label": "#4",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p4",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p4-0.png?t=1793761705603",
+          "treeUrl": "/DrinkByKindPreview_p4-0.viewinfo.json?t=1793761705603",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        },
+        {
+          "index": 10,
+          "previewId": "DrinkByKindPreview_p5",
+          "label": "#5",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkByKindPreview\nDrinkByKindPreview_p5",
+          "args": "widthDp=200 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "200×230"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkByKindPreview_p5-0.png?t=1793761705604",
+          "treeUrl": "/DrinkByKindPreview_p5-0.viewinfo.json?t=1793761705604",
+          "failure": null,
+          "widthDp": 200,
+          "heightDp": 230.1,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlListThemesPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 11,
+          "previewId": "PearlListThemesPreview",
+          "label": "라이트",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListThemesPreview\nPearlListThemesPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlListThemesPreview-0.png?t=1793761705691",
+          "treeUrl": "/PearlListThemesPreview-0.viewinfo.json?t=1793761705691",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 12,
+          "previewId": "PearlListThemesPreview_1",
+          "label": "다크",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListThemesPreview\nPearlListThemesPreview_1",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true · uiMode=32",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "dark",
+              "text": {
+                "t": "spec.dark"
+              }
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlListThemesPreview_1-0.png?t=1793761705724",
+          "treeUrl": "/PearlListThemesPreview_1-0.viewinfo.json?t=1793761705724",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 13,
+          "previewId": "PearlListThemesPreview_2",
+          "label": "큰 글자",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListThemesPreview\nPearlListThemesPreview_2",
+          "args": "widthDp=360 · heightDp=780 · fontScale=1.5 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "font",
+              "text": "1.5×"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlListThemesPreview_2-0.png?t=1793761705757",
+          "treeUrl": "/PearlListThemesPreview_2-0.viewinfo.json?t=1793761705757",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 14,
+          "previewId": "PearlListThemesPreview_3",
+          "label": "한국어",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListThemesPreview\nPearlListThemesPreview_3",
+          "args": "widthDp=360 · heightDp=780 · locale=ko · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "locale",
+              "text": "ko"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlListThemesPreview_3-0.png?t=1793761705830",
+          "treeUrl": "/PearlListThemesPreview_3-0.viewinfo.json?t=1793761705830",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlErrorThemesPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 15,
+          "previewId": "PearlErrorThemesPreview",
+          "label": "라이트",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlErrorThemesPreview\nPearlErrorThemesPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlErrorThemesPreview-0.png?t=1793761705852",
+          "treeUrl": "/PearlErrorThemesPreview-0.viewinfo.json?t=1793761705852",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 16,
+          "previewId": "PearlErrorThemesPreview_1",
+          "label": "다크",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlErrorThemesPreview\nPearlErrorThemesPreview_1",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true · uiMode=32",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "dark",
+              "text": {
+                "t": "spec.dark"
+              }
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlErrorThemesPreview_1-0.png?t=1793761705873",
+          "treeUrl": "/PearlErrorThemesPreview_1-0.viewinfo.json?t=1793761705873",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 17,
+          "previewId": "PearlErrorThemesPreview_2",
+          "label": "큰 글자",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlErrorThemesPreview\nPearlErrorThemesPreview_2",
+          "args": "widthDp=360 · heightDp=780 · fontScale=1.5 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "font",
+              "text": "1.5×"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlErrorThemesPreview_2-0.png?t=1793761705910",
+          "treeUrl": "/PearlErrorThemesPreview_2-0.viewinfo.json?t=1793761705910",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 18,
+          "previewId": "PearlErrorThemesPreview_3",
+          "label": "한국어",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlErrorThemesPreview\nPearlErrorThemesPreview_3",
+          "args": "widthDp=360 · heightDp=780 · locale=ko · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "locale",
+              "text": "ko"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlErrorThemesPreview_3-0.png?t=1793761705918",
+          "treeUrl": "/PearlErrorThemesPreview_3-0.viewinfo.json?t=1793761705918",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "DrinkDetailThemesPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 19,
+          "previewId": "DrinkDetailThemesPreview",
+          "label": "라이트",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailThemesPreview\nDrinkDetailThemesPreview",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkDetailThemesPreview-0.png?t=1793761705999",
+          "treeUrl": "/DrinkDetailThemesPreview-0.viewinfo.json?t=1793761705999",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 20,
+          "previewId": "DrinkDetailThemesPreview_1",
+          "label": "다크",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailThemesPreview\nDrinkDetailThemesPreview_1",
+          "args": "widthDp=360 · heightDp=780 · showBackground=true · uiMode=32",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "dark",
+              "text": {
+                "t": "spec.dark"
+              }
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkDetailThemesPreview_1-0.png?t=1793761706079",
+          "treeUrl": "/DrinkDetailThemesPreview_1-0.viewinfo.json?t=1793761706079",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 21,
+          "previewId": "DrinkDetailThemesPreview_2",
+          "label": "큰 글자",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailThemesPreview\nDrinkDetailThemesPreview_2",
+          "args": "widthDp=360 · heightDp=780 · fontScale=1.5 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "font",
+              "text": "1.5×"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkDetailThemesPreview_2-0.png?t=1793761706158",
+          "treeUrl": "/DrinkDetailThemesPreview_2-0.viewinfo.json?t=1793761706158",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 22,
+          "previewId": "DrinkDetailThemesPreview_3",
+          "label": "한국어",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.DrinkDetailThemesPreview\nDrinkDetailThemesPreview_3",
+          "args": "widthDp=360 · heightDp=780 · locale=ko · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "locale",
+              "text": "ko"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/DrinkDetailThemesPreview_3-0.png?t=1793761706242",
+          "treeUrl": "/DrinkDetailThemesPreview_3-0.viewinfo.json?t=1793761706242",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlAccessibilityPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 23,
+          "previewId": "PearlAccessibilityPreview",
+          "label": "작은 글자",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlAccessibilityPreview\nPearlAccessibilityPreview",
+          "args": "widthDp=360 · heightDp=780 · fontScale=0.85 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "font",
+              "text": "0.85×"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlAccessibilityPreview-0.png?t=1793761706305",
+          "treeUrl": "/PearlAccessibilityPreview-0.viewinfo.json?t=1793761706305",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 24,
+          "previewId": "PearlAccessibilityPreview_1",
+          "label": "아주 큰 글자",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlAccessibilityPreview\nPearlAccessibilityPreview_1",
+          "args": "widthDp=360 · heightDp=780 · fontScale=2.0 · showBackground=true",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "font",
+              "text": "2×"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlAccessibilityPreview_1-0.png?t=1793761706300",
+          "treeUrl": "/PearlAccessibilityPreview_1-0.viewinfo.json?t=1793761706300",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        },
+        {
+          "index": 25,
+          "previewId": "PearlAccessibilityPreview_2",
+          "label": "다크 · 한국어",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlAccessibilityPreview\nPearlAccessibilityPreview_2",
+          "args": "widthDp=360 · heightDp=780 · locale=ko · showBackground=true · uiMode=32",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "360×780"
+            },
+            {
+              "kind": "dark",
+              "text": {
+                "t": "spec.dark"
+              }
+            },
+            {
+              "kind": "locale",
+              "text": "ko"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlAccessibilityPreview_2-0.png?t=1793761706372",
+          "treeUrl": "/PearlAccessibilityPreview_2-0.viewinfo.json?t=1793761706372",
+          "failure": null,
+          "widthDp": 360,
+          "heightDp": 780.19,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlPhonePreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 26,
+          "previewId": "PearlPhonePreview",
+          "label": "폰",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlPhonePreview\nPearlPhonePreview",
+          "args": "showSystemUi=true · device=id:pixel_7",
+          "specs": [
+            {
+              "kind": "device",
+              "text": "pixel_7"
+            },
+            {
+              "kind": "systemUi",
+              "text": {
+                "t": "spec.systemUi"
+              }
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlPhonePreview-0.png?t=1793761706454",
+          "treeUrl": "/PearlPhonePreview-0.viewinfo.json?t=1793761706454",
+          "failure": null,
+          "widthDp": 411.43,
+          "heightDp": 914.29,
+          "dpGuess": true
+        }
+      ]
+    },
+    {
+      "name": "PearlTabletPreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 27,
+          "previewId": "PearlTabletPreview",
+          "label": "태블릿",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlTabletPreview\nPearlTabletPreview",
+          "args": "showBackground=true · device=spec:width=1280dp,height=800dp,dpi=240",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "1280×800"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlTabletPreview-0.png?t=1793761706527",
+          "treeUrl": "/PearlTabletPreview-0.viewinfo.json?t=1793761706527",
+          "failure": null,
+          "widthDp": 1280,
+          "heightDp": 800,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlFoldablePreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 28,
+          "previewId": "PearlFoldablePreview",
+          "label": "폴더블",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlFoldablePreview\nPearlFoldablePreview",
+          "args": "showBackground=true · device=spec:width=673dp,height=841dp,dpi=420",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "673×841"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlFoldablePreview-0.png?t=1793761706493",
+          "treeUrl": "/PearlFoldablePreview-0.viewinfo.json?t=1793761706493",
+          "failure": null,
+          "widthDp": 673.14,
+          "heightDp": 841.14,
+          "dpGuess": false
+        }
+      ]
+    },
+    {
+      "name": "PearlLandscapePreview",
+      "failed": 0,
+      "cards": [
+        {
+          "index": 29,
+          "previewId": "PearlLandscapePreview",
+          "label": "가로",
+          "title": "com.example.pearl.feature.pearl.PearlPreviewsKt.PearlLandscapePreview\nPearlLandscapePreview",
+          "args": "showBackground=true · device=spec:width=891dp,height=411dp,dpi=420,orientation=landscape",
+          "specs": [
+            {
+              "kind": "size",
+              "text": "891×411"
+            }
+          ],
+          "ok": true,
+          "rendered": true,
+          "stale": false,
+          "isFocus": false,
+          "imageUrl": "/PearlLandscapePreview-0.png?t=1793761706601",
+          "treeUrl": "/PearlLandscapePreview-0.viewinfo.json?t=1793761706601",
+          "failure": null,
+          "widthDp": 891.05,
+          "heightDp": 411.05,
+          "dpGuess": false
+        }
+      ]
+    }
+  ]
+}

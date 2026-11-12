@@ -1,11 +1,11 @@
 #!/bin/bash
 # 스킬 평가용 가짜 prevue(NFR-15). 렌더러 · 데몬 없이 상황(EVAL_PREVUE_SCENARIO)마다 정해진 JSON 과 종료 코드를 낸다.
-# 도움말은 진짜 bin/help 를 그대로 보인다 — 평가하는 것이 "도움말만 보고 맞는 명령을 고르는가"라서(D-55).
+# 도움말은 진짜 cli/help 를 그대로 보인다 — 평가하는 것이 "도움말만 보고 맞는 명령을 고르는가"라서(D-55).
 # 부른 명령은 EVAL_PREVUE_LOG 가 있으면 한 줄씩 적는다 — Codex 채점기가 target: prevue_log 로 읽으므로(권한 상승 · 실행 여부)
 # 줄 모양("<명령> <인자>" + 샌드박스 안이면 " [sandbox]")을 바꾸지 않는다. 도움말을 읽은 것은 실행이 아니라 적지 않는다.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-HELP="$HERE/help"
+HELP="$(dirname "$HERE")/cli/help"
 PNG="$HERE/../fixtures/card.png"
 SCENARIO="${EVAL_PREVUE_SCENARIO:-ready}"
 cmd="${1:-}"; shift 2>/dev/null
@@ -32,7 +32,7 @@ case "$cmd" in setup|warmup)
 esac
 
 file_of() { for a in "$@"; do case "$a" in -*) ;; *) printf '%s' "$a"; return ;; esac; done; printf '/work/app/src/main/kotlin/Screen.kt'; }
-# 사람에게 할 말은 진짜 CLI 와 같은 파일(bin/help/ask)에서 읽는다 — 평가가 실제로 나갈 문장으로 돈다(D-86).
+# 사람에게 할 말은 진짜 CLI 와 같은 파일(cli/help/ask)에서 읽는다 — 평가가 실제로 나갈 문장으로 돈다(D-86).
 # say <이름>... 은 문장들을 한 칸 띄워 잇고 JSON 문자열로 낸다. {config} · {root} 자리만 채운다.
 say() {
   local t="" n
@@ -107,6 +107,17 @@ d["stale"] = {"resources": {"files": [sys.argv[1]], "what": "리소스가 바뀌
 print(json.dumps(d, ensure_ascii=False))' "$(pwd)/app/src/main/res/values/strings.xml" "$(res_screen)"
 }
 
+# previews --of — 진짜 CLI 의 판정 모양(prevue_plan previews_of)을 그대로 낸다. 정의 · Preview 는 케이스의 scaffold 와 맞춘다.
+previews_of() {  # <단순 이름>
+  local root; root="$(pwd)"
+  case "$1" in
+    Greeting) printf '{"ok":true,"of":"Greeting","definitions":[{"path":"%s/app/src/main/kotlin/Screen.kt","rel":"app/src/main/kotlin/Screen.kt","module":":app"}],"previews":[{"fqn":"demo.ScreenKt.GreetingPreview","fn":"GreetingPreview","file":"%s/app/src/main/kotlin/Screen.kt","rel":"app/src/main/kotlin/Screen.kt","module":":app"},{"fqn":"demo.ScreenKt.GreetingDarkPreview","fn":"GreetingDarkPreview","file":"%s/app/src/main/kotlin/Screen.kt","rel":"app/src/main/kotlin/Screen.kt","module":":app"}]}\n' "$root" "$root" "$root"; return 0 ;;
+    Badge) printf '{"ok":true,"of":"Badge","definitions":[{"path":"%s/app/src/main/kotlin/ui/Badge.kt","rel":"app/src/main/kotlin/ui/Badge.kt","module":":app"}],"previews":[{"fqn":"demo.home.HomePreviewsKt.BadgeRowPreview","fn":"BadgeRowPreview","file":"%s/app/src/main/kotlin/home/HomePreviews.kt","rel":"app/src/main/kotlin/home/HomePreviews.kt","module":":app"}]}\n' "$root" "$root"; return 0 ;;
+  esac
+  printf '{"ok":false,"message":"No @Composable named %s is defined in this project — it may be a library composable, or the name differs (matched exactly, case-sensitive)","of":"%s","definitions":[],"previews":[]}\n' "$1" "$1"
+  return 1
+}
+
 F="$(file_of "$@")"
 # warmup 이 돌면 그 파일은 준비가 끝난다 — 다음 show · health · wait 는 준비된 응답이다. 여태는 warmup 뒤에도 "준비 안 됨"이라
 # 에이전트가 덤프 파일을 찾아 헤매는 명령을 더 쳤다(Codex 평가 기준선 3/3). 파일 경로가 실행마다 달라 상태가 섞이지 않는다.
@@ -152,7 +163,14 @@ case "$SCENARIO:$cmd" in
   *:card) printf '{"ok":true,"index":%s,"image":"%s","rendered":true}\n' "${1:-0}" "$PNG"; exit 0 ;;
   *:board|*:status) board "$F"; exit 0 ;;
   *:focus|*:touch|*:render|*:reload|*:open|*:close|*:stop) printf '{"ok":true}\n'; exit 0 ;;
-  *:previews) printf '{"ok":true,"previews":[{"fqn":"GreetingPreview"},{"fqn":"GreetingDarkPreview"}]}\n'; exit 0 ;;
+  *:previews)
+    OF=""; PF=""
+    while [ $# -gt 0 ]; do case "$1" in --of) OF="${2:-}"; shift; [ $# -gt 0 ] && shift;; *) PF="$1"; shift;; esac; done
+    [ -n "$OF" ] && { previews_of "${OF##*.}"; exit $?; }
+    printf '{"file":"%s","previews":[' "$PF"
+    printf '{"fqn":"demo.ScreenKt.GreetingPreview","previewId":"GreetingPreview","params":{},"file":"%s","index":0,"methodParams":[]},' "$PF"
+    printf '{"fqn":"demo.ScreenKt.GreetingDarkPreview","previewId":"GreetingDarkPreview","params":{},"file":"%s","index":1,"methodParams":[]}]}\n' "$PF"
+    exit 0 ;;
   *:setup) printf '{"ok":true}\n'; exit 0 ;;
   *) printf '{"ok":true}\n'; exit 0 ;;
 esac

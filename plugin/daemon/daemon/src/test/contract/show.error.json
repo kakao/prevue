@@ -1,0 +1,11 @@
+{
+  "status": 500,
+  "schema": {
+    "error": "string",
+    "ok": "boolean"
+  },
+  "example": {
+    "ok": false,
+    "error": "No such file: /없는/파일"
+  }
+}

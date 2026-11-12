@@ -3,10 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { requireDaemon } from "./daemon.mjs";
 
 // 전용 서버로 연 AdaptivePreviews.kt에서 같은 브라우저의 여러 탭과 실제 터치를 검사한다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/tabs.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-tabs-check-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
@@ -67,7 +69,7 @@ try {
   }
   await check(first, `!document.hidden && document.querySelector('#shot').getAttribute('src').startsWith('/stream')`, "4개 탭 중 보이는 탭만 스트림 유지");
   await first.evaluate(`window.__touches=[];const base=window.fetch;window.fetch=async(u,...a)=>{const entry=String(u).endsWith('/touch')?{done:false,body:JSON.parse(a[0].body)}:null;if(entry)__touches.push(entry);const r=await base(u,...a);if(entry)entry.done=r.ok;return r};`);
-  const point = await first.evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const nodes=[];const walk=ns=>ns.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===51)nodes.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=nodes.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds;const img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
+  const point = await first.evaluate(`fetch('/viewer/catchup',{method:'POST'}).then(r=>r.json()).then(d=>fetch(d.treeUrl)).then(r=>r.json()).then(d=>{const nodes=[];const walk=ns=>ns.forEach(n=>{if(n.name==='Text'&&n.fileName==='FilterScreen.kt'&&n.lineNumber===52)nodes.push(n);walk(n.children||[])});walk(d.composeViewInfo);const n=nodes.sort((a,b)=>a.bounds[0]-b.bounds[0])[1].bounds;const img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})`);
   for (const type of ["mousePressed", "mouseReleased"]) await first.send("Input.dispatchMouseEvent", { type, ...point, button: "left", clickCount: 1 });
   await first.until(`__touches.length===2 && __touches.every(t=>t.done)`, 2500);
   await check(first, `__touches[0].body.type==='press' && __touches[1].body.type==='release'`, "여러 탭에서도 실제 누름과 뗌의 응답 완료");

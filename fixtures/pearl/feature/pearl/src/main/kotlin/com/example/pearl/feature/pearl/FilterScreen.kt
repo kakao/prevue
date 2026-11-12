@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -42,7 +43,7 @@ import com.example.pearl.core.model.Kind
 import com.example.pearl.core.model.menu
 import com.example.pearl.core.ui.DrinkCard
 
-// 넓은 화면의 메뉴 쪽. 뷰어 테스트가 칩 글자 줄(아래 FilterChip의 Text)을 51번 줄로 찾아 누른다 — 줄을 옮기면 tests/viewer 도 고친다.
+// 뷰어 테스트는 아래 Text 줄로 칩을 가리키므로 줄을 옮기면 tests/viewer 도 맞춘다.
 @Composable
 private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val bg by animateColorAsState(if (selected) PearlColors.orange else PearlColors.muted, tween(220), label = "chip")
@@ -67,7 +68,7 @@ fun DrinkFilterScreen(
 ) {
     var kind by remember { mutableStateOf<Kind?>(null) }
     val shown = if (kind == null) drinks else drinks.filter { it.kind == kind }
-    Column(Modifier.fillMaxSize().background(PearlColors.canvas)) {
+    Column(Modifier.fillMaxSize().background(PearlColors.canvas).safeDrawingPadding()) {
         Text(stringResource(R.string.pearl_title), style = PearlType.title, color = PearlColors.ink, modifier = Modifier.padding(start = 24.dp, top = 24.dp))
         Text(stringResource(R.string.pearl_count, shown.size), style = PearlType.body, color = PearlColors.subtle, modifier = Modifier.padding(start = 24.dp, top = 2.dp))
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prevue</title>
+<link rel="icon" href="prevue.svg" type="image/svg+xml">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="resize.css">
+<link rel="stylesheet" href="preparation.css">
+</head>
+<body>
+<script>if (new URL(location.href).searchParams.has('prepare')) document.body.classList.add('preparing');</script>
+<!-- 헤더는 프로젝트 한 줄이다(D-98) — 어느 앱 · 무슨 일이. 어느 파일인지는 왼쪽 레일의 지금 줄이 말한다 — 파일명을 두 번 쓰지 않는다.
+     React 가 그리는 영역(#app · #status · #helpBtn · #back · #wsTitle)은 바깥 요소만 둔다 — 형제 사이의 자리를 마크업이 정한다. -->
+<header class="bar" id="bar">
+  <div class="bar-row">
+    <div class="bar-l">
+      <!-- 워드마크(D-60) — 메뉴 막대의 앱 이름 자리. 브라우저에는 메뉴 막대가 없어 Prevue 가 말할 곳이 여기다.
+           단색 · 앱 이름보다 작고 옅게 — 주인공은 여전히 대상 앱이고 색은 그 아이콘에만 둔다. 누르는 것이 아니다. -->
+      <span class="brand" id="brand" title="Prevue">
+        <svg viewBox="0 0 240 240" aria-hidden="true"><polygon points="120,40 189.3,80 120,120 50.7,80" fill="currentColor"/><polygon points="189.3,80 189.3,160 120,200 120,120" fill="currentColor" opacity=".62"/><polygon points="50.7,80 120,120 120,200 50.7,160" fill="currentColor" opacity=".34"/><path d="M14 44V14H44M14 196V226H44M226 44V14H196M226 196V226H196" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-name">Prevue</span>
+      </span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <!-- 주인공은 대상 앱(B1) — 폰에서 보이는 런처 아이콘 · 이름이 제목, 폴더 · 브랜치 · 모듈 · 변형이 부제다(macOS 창 제목 + 부제).
+           안은 React 의 ProjectHeader 가 그린다. -->
+      <div class="app" id="app"></div>
+      <!-- 작업 공간(D-57)의 내비게이션 바 — 돌아갈 곳(파일 탭 이름)과 이 장의 이름. 안은 React 의 WorkspaceHeader 가 그린다. -->
+      <button class="back" id="back" type="button" hidden></button>
+    </div>
+    <!-- 이 장의 이름 두 줄(D-63). 안은 React 의 WorkspaceHeader 가 그린다. -->
+    <div class="ws-title" id="wsTitle" hidden></div>
+    <div class="bar-r" id="barR">
+      <!-- 상태 알약의 안은 React 의 StatusPill 이 그린다. -->
+      <div class="status" id="status" tabindex="0" data-state="none"></div>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-expanded="false"></button>
+    </div>
+  </div>
+  <div class="progress"></div>
+</header>
+
+<!-- 열린 파일 레일(D-54 · D-98). 지금 파일은 떠 있는 바탕이 가리킨다. 작업 공간에서는 접힌다(D-99). 빠른 열기의 입구는 맨 아래 "파일 열기"와 / · ⌘K 다. -->
+<nav class="rail" id="rail" data-t-aria-label="rail.title" hidden>
+  <h4 class="rail-h" data-t="rail.title"></h4>
+  <!-- 줄들과 파일 열기의 안은 React 의 FileRail 이 그린다. 머리 · 빈 안내는 마크업이다. -->
+  <div class="rail-list" id="railList" role="tablist" aria-orientation="vertical"></div>
+  <p class="rail-empty" id="railEmpty" data-t="rail.empty" hidden></p>
+  <button class="rail-open" id="railOpen" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet"></button>
+</nav>
+
+<!-- 그림이 소스보다 옛것이다. 보드와 한 장 모두에 걸리므로 두 섹션 밖에 둔다. 안은 React 의 StaleBanner 가 그린다. -->
+<div class="stalebar" id="staleBar"></div>
+<!-- 외부 빌드 대기 안내. 안은 React 의 BuildNotice 가 그린다. -->
+<aside class="build-notice" id="buildNotice" role="status" hidden></aside>
+
+<main>
+  <!-- 시작 화면(D-63 · D-100) — 열린 탭이 없을 때. 빠른 열기의 상자(입력 · 최근 바뀐 · 최근 연 파일)를 막 없이 본문 가운데에 둔다 —
+       오류가 아니라 할 수 있는 일 위에 선다. 안은 React 의 StartScreen 이 그리고, 상자는 팔레트와 한 벌이라 둘 중 한 곳에만 선다. -->
+  <section id="startView" class="start" hidden></section>
+
+  <!-- 빈 탭 — 탭의 파일이 지워졌거나 @Preview 를 잃었다. 안은 React 의 VacantTab 이 그린다. -->
+  <section id="vacantView" class="vacant" hidden></section>
+
+  <!-- 보드(FR-17). 묶음 · 카드와 이 섹션의 hidden 은 React 의 PreviewBoard 가 그린다. -->
+  <section id="boardView" hidden>
+    <div class="board" id="cards"></div>
+  </section>
+
+  <!-- 한 장(FR-18 진입 · FQN 지정) — 기기를 손에 쥔 작업 공간(D-57). 무대(장면 · 캔버스)는 빌드가 WorkspaceShell 의 JSX 로 미리 그려 넣는다. -->
+  <section id="focusView" hidden><!-- prerender:stage --></section>
+</main>
+
+<!-- 오류 · 잠깐의 알림. 보드와 한 장이 함께 쓴다 — 비어 있으면 안 보인다. 가리킨 결과는 그림 밖 카드가 말한다(D-162). 안은 React 의 NotificationCapsule 이 그린다. -->
+<div class="capsule" id="strip" role="status"></div>
+
+<!-- 작업 공간의 조작 독(D-167) — 무대 아래 가운데 한 줄에 크기 · 기기 메뉴 · 고른 것의 조작 · 확대가 선다. 칸은 빌드가 미리 그려 넣고, 확대의 안은 React 의 ZoomControls 가 그린다. -->
+<div class="panel" id="panel" role="toolbar" data-t-aria-label="panel.label" hidden><!-- prerender:panel --></div>
+
+<!-- 후보 고르기 — 가리킨 결과 카드의 머리에서 내려오는 팝오버. 안은 React 의 ChoicePopover 가, 자리는 workspace/point.ts 가 카드 머리에서 잰다. -->
+<div class="chooser" id="chooser" role="dialog" data-t-aria-label="choose.label" aria-hidden="true"></div>
+
+<!-- 빠른 열기의 팔레트와 막(D-100) — 팔레트는 창 위 가운데에 뜨고, 막은 레일 오른쪽 본문을 가린다. 팔레트의 안(검색 상자)은 React 의 QuickOpen 이 그린다. -->
+<div class="qo-curtain" id="qoCurtain" hidden></div>
+<div class="qo-sheet" id="qoSheet" hidden></div>
+
+<!-- 단축키 도움말. 안은 React 의 ShortcutHelp 가 단축키 표에서 그린다 — 디스패치와 같은 표라 둘이 어긋나지 않는다. -->
+<div class="scrim" id="help" hidden></div>
+
+<script type="module" src="js/viewer.js"></script>
+</body>
+</html>

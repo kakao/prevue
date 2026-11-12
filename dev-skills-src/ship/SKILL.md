@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가가 나란히 통과하면 머지(=배포)하고, 태그·GitHub Release를 남기고, 볼트에 릴리즈 캡처를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
+description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가가 나란히 통과하면 머지(=배포)하고, 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
 ---
 
 # ship — Prevue 릴리즈
@@ -29,8 +29,6 @@ ver() { { git show "$1:plugin/VERSION" 2>/dev/null || git show "$1:VERSION"; } |
 D=$(ver origin/develop); M=$(ver origin/main)
 git rev-parse -q --verify "refs/tags/v$M"                       # main 버전의 태그
 gh pr list --base main --head develop --state open --json number,url
-gh pr list --base main --head develop --state merged --limit 1 --json number -q '.[0].number'   # 마지막 릴리즈 PR
-gh pr view <그 번호> --json comments -q '.comments[].body'                                       # 6단계의 볼트 릴리즈 캡처 코멘트가 있나
 ```
 
 위에서부터 처음 맞는 줄로 간다.
@@ -40,7 +38,6 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 | `v$M` 태그가 없다 | 5. 기록 |
 | `D` > `M`, 열린 `develop → main` PR이 있다 | 4. 기다리고 머지 — 스킬 평가를 실은 판인데 PR head에 `스킬 평가` 상태가 없으면 3단계의 "상태가 없는 head"부터 |
 | `D` > `M`, PR이 없다 | 3단계의 PR 열기부터 |
-| 마지막 릴리즈 PR에 `볼트 릴리즈 캡처` 코멘트가 없다 | 6. 볼트 — 끝나면 이 표로 돌아온다 |
 | `D` = `M` | 2. 새 릴리즈 |
 
 이어 가는 경우(`D` > `M`)는 2단계에서 이미 승인받은 버전이라 다시 묻지 않는다. 단, 그 사이 `[Unreleased]`에 새 항목이 들어왔으면 이 버전의 절로 옮길지 **한 번** 묻는다 — 옮기면 그 항목도 `release-notes.md`의 멘션 점검과 "이어 가는 릴리즈에 늦게 들어온 줄"(어느 절에 넣고 요약 · Thanks를 고치나)을 거치고, 그 커밋을 develop에 밀고(3단계와 같은 방식) 이어 간다.
@@ -54,9 +51,9 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 **CHANGELOG 정리.** `dev-skills-src/release-notes.md`의 "릴리즈 정리"대로 한다 — **외부 기여자 · 제보자 멘션 점검**과 **판의 모양**(히어로 그림 · 요약 문단 · 주제별 절 · Thanks)까지. 이 절이 그대로 GitHub Release 본문이 되므로 여기서 빠지면 끝이다. 아직 파일에 쓰지 않는다.
 히어로 그림은 `git cat-file -e origin/develop:assets/release-<버전>.png`로 있는지만 본다 — 없으면 그림 없이 가고, 확인 화면에 그렇다고 한 줄 적는다.
 
-**실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. PR마다 본문 맨 위의 Sub-Task 키(`<!-- subtask: … -->`, 없으면 `없음`)를 읽는다 — 6단계 릴리즈 캡처의 재료다.
+**실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. 확인 화면의 "실리는 PR"이 된다.
 
-**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
+**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
 
 이것을 한 화면으로 보이고 승인을 받는다.
 
@@ -70,9 +67,8 @@ gh pr view <그 번호> --json comments -q '.comments[].body'                   
 ### Thanks — @… | 없음
 ── 외부 기여 ──  @Dwite #29 수정 · @sergei-lapin #30 제보 · #31 수정 (정리본에 멘션함) | 없음
 ── 실리는 PR ──  #44 … · #45 … · #47 …
-── 볼트 릴리즈 캡처 ──  #44 인터랙티브 성능 측정 · #45 헤더 워드마크 · #47 없음
-── 스킬 평가 ──  스킬 · 도움말이 바뀌었다(skills-src 3 · bin/help 1) → PR을 연 뒤 CI와 나란히 Claude · Codex 평가를 돌린다(Claude 약 $4 · 5~10분, 빼려면 말씀)
-진행할까요? 버전 커밋 → develop에 밀고 PR → CI ∥ 스킬 평가 → 모두 초록이면 main 머지(배포) → 태그 · Release → 볼트 캡처 순서로 끝까지 갑니다.
+── 스킬 평가 ──  스킬 · 도움말이 바뀌었다(skills-src 3 · cli/help 1) → PR을 연 뒤 CI와 나란히 Claude · Codex 평가를 돌린다(Claude 약 $4 · 5~10분, 빼려면 말씀)
+진행할까요? 버전 커밋 → develop에 밀고 PR → CI ∥ 스킬 평가 → 모두 초록이면 main 머지(배포) → 태그 · Release 순서로 끝까지 갑니다.
 ```
 
 고쳐 달라면 고쳐 다시 보인다. 거절하면 아무것도 쓰지 않고 멈춘다.
@@ -117,13 +113,13 @@ gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 
 두 평가 모두 모델을 부르고 `~/.codex` · 네트워크를 쓴다 — 처음부터 샌드박스 밖 실행(권한 상승)으로 친다.
 <!-- /only -->
 - 실패한 케이스는 그 케이스만 한 번 다시 돌린다(`--case <이름>`) — 모델 행동이라 회차마다 흔들린다. 다시 돌려도 실패하면 `failure`로 올리고 **멈춰** 실패한 채점기 · 트레이스 요지를 보고한다. 사람이 그 결과를 보고 진행하라고 하면 그 말을 코멘트에 남기고 `success`(설명 "사람 승인 — …")로 올려 4단계로 간다.
-- `claude` · `codex`가 없거나 로그인이 안 됐으면 그 평가를 건너뛰고 `success`로 올리되 설명을 "건너뜀(…)"으로 **시작한다** — 평가 때문에 릴리즈를 멈추지 않는 대신 체크 목록에서 보이게 한다. 7단계 보고에도 싣는다.
+- `claude` · `codex`가 없거나 로그인이 안 됐으면 그 평가를 건너뛰고 `success`로 올리되 설명을 "건너뜀(…)"으로 **시작한다** — 평가 때문에 릴리즈를 멈추지 않는 대신 체크 목록에서 보이게 한다. 6단계 보고에도 싣는다.
 - 사용자가 2단계에서 평가를 뺐으면 돌리지 않고 `success`(설명 "뺐다(사용자)")를 바로 올린다 — 다시 불렸을 때 1단계가 빠진 평가로 읽지 않게.
 
 **상태가 없는 head.** 평가 도중이나 실패 뒤 고침으로 PR head가 바뀌면(develop이 움직였다) 새 head에는 상태가 없다. 1단계 · 4단계 모두 같은 규칙이다:
 
 ```sh
-git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
+git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py
 ```
 
 비었으면 앞 결과를 새 head에 그대로 올리고(설명 끝에 "· 앞 커밋 <짧은 sha> 결과"), 아니면 새 head에서 평가를 다시 돌린다. 앞 head는 PR 코멘트의 평가 결과나 `gh api $GHE repos/$R/commits/<sha>/status`로 찾는다.
@@ -158,16 +154,8 @@ gh run watch <id> --exit-status
 gh release view v0.11.0 --json tagName,url
 ```
 
-태그가 이미 있으면 워크플로가 아무것도 하지 않는다 — 다시 돌려도 안전하다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계로 간다 — 설치하는 사람에게 영향이 없다.
+태그가 이미 있으면 워크플로가 아무것도 하지 않는다 — 다시 돌려도 안전하다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계(보고)로 간다 — 설치하는 사람에게 영향이 없다.
 
-## 6. 볼트 — 릴리즈 캡처
+## 6. 보고
 
-볼트에 노트를 직접 쓰지 않는다 — 어느 작업 노트의 `release`를 어떻게 고칠지는 볼트 쪽 편입이 정한다. 이 판에 Sub-Task 키가 있는 PR이 하나라도 있으면 `wiki-ingest` 스킬을 보류 캡처 갈래로 로드해 릴리즈 캡처를 남긴다. 넘길 재료는 origin `prevue` · `v<버전>`, 버전, 배포일, 실린 PR마다 번호 · 제목 · Sub-Task 키(없으면 `없음`)다. 이어 가는 중이라 2단계의 목록이 없으면 `v<이전 태그>..v<버전>`의 PR로 다시 뽑는다.
-
-끝나면 릴리즈 PR에 `볼트 릴리즈 캡처 — <캡처 경로>` 코멘트를 단다. 남기지 않았으면(Sub-Task 키가 있는 PR이 없다 · 볼트나 `wiki-ingest` 스킬이 없다) `볼트 릴리즈 캡처 — 남기지 않음(<이유>)`으로 단다 — 1단계가 이 코멘트 하나로 이 단계를 마쳤는지 가리므로, 어느 쪽이든 코멘트는 꼭 남긴다. 이 체계 전의 릴리즈 PR은 코멘트가 없어 한 번 이 단계로 오고, 그 판에는 키가 있는 PR이 없으니 `남기지 않음` 코멘트만 남는다.
-
-- 릴리즈 단락은 볼트에 쓰지 않는다 — CHANGELOG와 GitHub Release가 원 기록이다.
-
-## 7. 보고
-
-버전 · PR 링크 · 머지 커밋 · Release 링크 · 스킬 평가 결과(돌렸으면) · 남긴 볼트 캡처를 한 덩어리로 말한다. 건너뛰거나 실패한 단계가 있으면 그대로 말한다.
+버전 · PR 링크 · 머지 커밋 · Release 링크 · 스킬 평가 결과(돌렸으면)를 한 덩어리로 말한다. 건너뛰거나 실패한 단계가 있으면 그대로 말한다.

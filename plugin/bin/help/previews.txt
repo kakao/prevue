@@ -1,3 +1,0 @@
-prevue previews <file>
-
-The file's @Preview list (FQN · name · parameters). Use it to show by FQN.

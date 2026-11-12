@@ -21,6 +21,79 @@ def js(text):
     return [rule for _, rule, _ in viewer.js_findings(text)]
 
 
+class NodeDeps(unittest.TestCase):
+    def problem(self, files, which=lambda _: "/bin/node"):
+        with tempfile.TemporaryDirectory() as root:
+            for path, text in files.items():
+                full = os.path.join(root, path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w") as f:
+                    f.write(text)
+            return viewer.node_deps_problem(root, which=which)
+
+    PACKAGE = {viewer.TYPESCRIPT: '{"main": "./lib/typescript.js"}', "viewer-src/node_modules/typescript/lib/typescript.js": ""}
+
+    def test_typescript_가_없으면_npm_ci_를_안내한다(self):
+        self.assertIn("npm ci --prefix viewer-src", self.problem({}))
+
+    def test_받다_멈춰_진입_파일이_없으면_없는_것이다(self):
+        self.assertIsNotNone(self.problem({viewer.TYPESCRIPT: '{"main": "./lib/typescript.js"}'}))
+        self.assertIsNotNone(self.problem({viewer.TYPESCRIPT: '{"main": "./lib/'}))
+
+    def test_node_가_없으면_그것을_말한다(self):
+        self.assertIn("node 가 PATH 에 없다", self.problem(self.PACKAGE, which=lambda _: None))
+
+    def test_둘_다_있으면_문제가_없다(self):
+        self.assertIsNone(self.problem(self.PACKAGE))
+
+    def test_이_저장소의_의존을_판정한다(self):
+        self.assertIsNone(viewer.node_deps_problem())
+
+    def test_JSX_검사는_node_를_띄우기_전에_그_판정으로_멈춘다(self):
+        with self.assertRaises(RuntimeError) as caught:
+            viewer.jsx_findings({"a.tsx": "const C = () => <div />;"}, deps_problem=lambda: "의존 없음")
+        self.assertEqual(str(caught.exception), "의존 없음")
+
+
+class ReactStyles(unittest.TestCase):
+    def test_jsx_style의_날값을_모두_잡는다(self):
+        cases = {
+            'color: "red"': "viewer/raw-color",
+            'fontSize: 13': "viewer/raw-type",
+            'borderRadius: 5': "viewer/raw-corner",
+            'boxShadow: "0 2px 4px var(--outline)"': "viewer/raw-shadow",
+            'transition: "opacity 200ms ease"': "viewer/raw-motion",
+            'padding: 9': "viewer/raw-space",
+            'color: "var(--gray-light-5)"': "viewer/primitive",
+            'color: "var(--art-bg)"': "viewer/art-token",
+        }
+        source = "\n".join("const C%d = () => <div style={{ %s }} />;" % (i, body) for i, body in enumerate(cases))
+        found = viewer.jsx_findings({"seed.tsx": source})
+        for line, rule in enumerate(cases.values(), 1):
+            self.assertIn(("seed.tsx", line, rule), [(p, n, r) for p, n, r, _ in found])
+
+    def test_style_변수와_펼침과_조건도_검사한다(self):
+        text = 'const raw = "red"; const base = {color: raw}; const style = {...base, padding: 9}; const C = () => <div style={true ? style : {fontSize: 13}} />;'
+        found = [r for _, _, r, _ in viewer.jsx_findings({"seed.tsx": text})]
+        for rule in ("viewer/raw-color", "viewer/raw-space", "viewer/raw-type"):
+            self.assertIn(rule, found)
+
+    def test_역할_토큰과_계산_치수는_둔다(self):
+        source = 'const C = ({width}: {width: number}) => <div style={{color: "var(--on-surface)", font: "var(--type-body-medium)", padding: "var(--space-8)", borderRadius: "var(--corner-medium)", boxShadow: "var(--elevation-1)", transition: "opacity var(--duration-short4) var(--easing-standard)", width}} />;'
+        self.assertEqual(viewer.jsx_findings({"good.tsx": source}), [])
+
+    def test_원본만_훑고_번들과_개발_출력은_뺀다(self):
+        with tempfile.TemporaryDirectory() as root:
+            paths = ("viewer-src/a.css", "viewer-src/a.ts", "viewer-src/a.tsx", "viewer-src/legacy/js/a.js",
+                     "viewer-src/node_modules/a.ts", "viewer-src/storybook-static/a.js", "plugin/viewer/js/viewer.js", "plugin/viewer/js/resize-scene.js", "plugin/viewer/tokens.css")
+            for path in paths:
+                full = os.path.join(root, path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w") as f:
+                    f.write("")
+            self.assertEqual(set(viewer.files(root)), set(paths[:4]) | {"plugin/viewer/js/resize-scene.js"})
+
+
 class Color(unittest.TestCase):
     def test_날색(self):
         for bad in ("color: #fff", "background: #1f232880", "border: 1px solid red", "color: rgb(0 0 0 / .5)",
@@ -66,13 +139,16 @@ class Corner(unittest.TestCase):
 class Shadow(unittest.TestCase):
     def test_그림자_날값(self):
         for bad in ("box-shadow: 0 2px 4px var(--outline)", "box-shadow: var(--elevation-1), 0 8px 24px -4px var(--scrim)",
-                    "text-shadow: 0 1px 0 var(--surface)", "filter: drop-shadow(0 1px 2px var(--scrim))"):
+                    "text-shadow: 0 1px 0 var(--surface)", "filter: drop-shadow(0 1px 2px var(--scrim))",
+                    "box-shadow: 0 0 0 calc(1px + 2px) var(--outline)", "box-shadow: 0 0 0 calc(4px / 2) var(--outline)",
+                    "box-shadow: 0 0 0 calc(1px / var(--k)) var(--outline)"):
             self.assertEqual(decl(bad), ["viewer/raw-shadow"], bad)
 
     def test_단계와_고리는_둔다(self):
         for ok in ("box-shadow: var(--elevation-2)", "box-shadow: 0 0 0 2px var(--live), var(--elevation-2)",
                    "box-shadow: inset 0 0 0 .5px var(--outline-variant)", "box-shadow: none", "filter: var(--elevation-2-filter)",
-                   "filter: grayscale(.6)", "box-shadow: var(--board-shadow, none)"):
+                   "filter: grayscale(.6)", "box-shadow: var(--board-shadow, none)",
+                   "box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant)"):
             self.assertEqual(decl(ok), [], ok)
 
 
@@ -249,10 +325,10 @@ class Data(unittest.TestCase):
         viewer.DATA = self.data
 
     def test_데이터_예외는_그_자리만_놓아주고_가리키는_곳이_없으면_실패다(self):
-        viewer.DATA = (("plugin/viewer/js/m.js", 'stop-color="white"', "마스크 휘도"),)
-        root = self.tree({"plugin/viewer/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
+        viewer.DATA = (("viewer-src/legacy/js/m.js", 'stop-color="white"', "마스크 휘도"),)
+        root = self.tree({"viewer-src/legacy/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/raw-color"])
-        root = self.tree({"plugin/viewer/js/m.js": "const a = 1;\n"})
+        root = self.tree({"viewer-src/legacy/js/m.js": "const a = 1;\n"})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/data-stale"])
 
 

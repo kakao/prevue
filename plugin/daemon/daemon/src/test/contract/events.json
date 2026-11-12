@@ -1,0 +1,877 @@
+{
+  "status": 200,
+  "schema": {
+    "state": {
+      "state": {
+        "board": {
+          "file": "string",
+          "focus": "string",
+          "gen": "string",
+          "groups": [
+            {
+              "cards": [
+                {
+                  "args": "string",
+                  "dpGuess": "string",
+                  "failure": "string",
+                  "heightDp": "string",
+                  "imageUrl": "string",
+                  "index": "string",
+                  "isFocus": "string",
+                  "label": "string",
+                  "ok": "string",
+                  "previewId": "string",
+                  "rendered": "string",
+                  "specs": [
+                    {
+                      "kind": "string",
+                      "text": "string",
+                      "|": "string"
+                    }
+                  ],
+                  "stale": "string",
+                  "title": "string",
+                  "treeUrl": "string",
+                  "widthDp": "string"
+                }
+              ],
+              "failed": "string",
+              "name": "string"
+            }
+          ],
+          "|": "string"
+        },
+        "boardNote": {
+          "a": {
+            "drawn": "string",
+            "file": "string",
+            "files": "string",
+            "kind": {
+              "t": "string"
+            },
+            "message": "string",
+            "n": "string",
+            "total": "string"
+          },
+          "t": "string",
+          "|": "string"
+        },
+        "boot": "string",
+        "buildPending": "string",
+        "busy": "string",
+        "choice": {
+          "candidates": [
+            "string"
+          ],
+          "fileName": "string",
+          "line": "string",
+          "repoRoot": "string",
+          "|": "string"
+        },
+        "error": "string",
+        "focus": {
+          "deviceInsets": {
+            "basisPosture": "string",
+            "evidence": {
+              "kind": "string",
+              "source": "string",
+              "sourceUrl": "string"
+            },
+            "posture": "string",
+            "values": {
+              "captionBar": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "displayCutout": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "navigationBars": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "statusBars": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              },
+              "systemOverlays": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              }
+            },
+            "|": "string"
+          },
+          "fn": "string",
+          "imageUrl": "string",
+          "interactive": "string",
+          "name": "string",
+          "postures": [
+            {
+              "imageUrl": "string",
+              "size": {
+                "device": "string",
+                "dpi": "string",
+                "folded": "string",
+                "heightDp": "string",
+                "heightPx": "string",
+                "hingeDp": "string",
+                "insetProfile": {
+                  "evidence": {
+                    "capturedAt": "string",
+                    "conditions": {
+                      "android": "string",
+                      "buildId": "string",
+                      "checkedAt": "string",
+                      "densityDpi": "string",
+                      "displayZoom": "string",
+                      "fontScale": "string",
+                      "horizontalToolbar": "string",
+                      "innerCamera": "string",
+                      "ios": "string",
+                      "multiWindow": "string",
+                      "navigation": "string",
+                      "oneUi": "string",
+                      "orientation": "string",
+                      "pose": "string",
+                      "resolutionPx": "string",
+                      "rotation": "string",
+                      "scale": "string",
+                      "sdk": "string",
+                      "sourceSha256": "string",
+                      "splitView": "string",
+                      "unit": "string"
+                    },
+                    "kind": "string",
+                    "source": "string",
+                    "sourceUrl": "string"
+                  },
+                  "measured": {
+                    "captionBar": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "displayCutout": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "navigationBars": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "statusBars": {
+                      "bottom": "string",
+                      "left": "string",
+                      "right": "string",
+                      "top": "string"
+                    },
+                    "|": "string"
+                  },
+                  "safeArea": {
+                    "bottom": "string",
+                    "left": "string",
+                    "right": "string",
+                    "top": "string"
+                  }
+                },
+                "kind": "string",
+                "landscape": "string",
+                "name": "string",
+                "orientation": "string",
+                "preset": "string",
+                "widthDp": "string",
+                "widthPx": "string"
+              },
+              "|": "string"
+            }
+          ],
+          "previewId": "string",
+          "pxPerDp": "string",
+          "size": {
+            "device": "string",
+            "dpi": "string",
+            "folded": "string",
+            "heightDp": "string",
+            "heightPx": "string",
+            "hingeDp": "string",
+            "insetProfile": {
+              "evidence": {
+                "capturedAt": "string",
+                "conditions": {
+                  "android": "string",
+                  "buildId": "string",
+                  "checkedAt": "string",
+                  "densityDpi": "string",
+                  "fontScale": "string",
+                  "horizontalToolbar": "string",
+                  "innerCamera": "string",
+                  "multiWindow": "string",
+                  "navigation": "string",
+                  "oneUi": "string",
+                  "orientation": "string",
+                  "pose": "string",
+                  "resolutionPx": "string",
+                  "rotation": "string",
+                  "scale": "string",
+                  "sdk": "string",
+                  "sourceSha256": "string",
+                  "splitView": "string",
+                  "unit": "string"
+                },
+                "kind": "string",
+                "source": "string",
+                "sourceUrl": "string"
+              },
+              "measured": {
+                "captionBar": {
+                  "bottom": "string",
+                  "left": "string",
+                  "right": "string",
+                  "top": "string"
+                },
+                "displayCutout": {
+                  "bottom": "string",
+                  "left": "string",
+                  "right": "string",
+                  "top": "string"
+                },
+                "navigationBars": {
+                  "bottom": "string",
+                  "left": "string",
+                  "right": "string",
+                  "top": "string"
+                },
+                "statusBars": {
+                  "bottom": "string",
+                  "left": "string",
+                  "right": "string",
+                  "top": "string"
+                },
+                "|": "string"
+              },
+              "safeArea": {
+                "bottom": "string",
+                "left": "string",
+                "right": "string",
+                "top": "string"
+              }
+            },
+            "kind": "string",
+            "landscape": "string",
+            "name": "string",
+            "orientation": "string",
+            "widthDp": "string",
+            "widthPx": "string",
+            "|": "string"
+          },
+          "streamUrl": "string",
+          "systemUi": {
+            "annotated": "string",
+            "bars": {
+              "insets": {
+                "kind": "string",
+                "navDp": "string",
+                "source": "string",
+                "sourceUrl": "string",
+                "statusDp": "string",
+                "|": "string"
+              },
+              "look": "string",
+              "|": "string"
+            },
+            "choice": "string",
+            "shown": "string"
+          },
+          "treeUrl": "string",
+          "|": "string"
+        },
+        "header": {
+          "branch": "string",
+          "module": "string",
+          "repo": "string",
+          "repoLeaf": "string",
+          "repoPrefix": "string",
+          "sourceSet": "string",
+          "tabTitle": "string",
+          "title": "string",
+          "variant": "string"
+        },
+        "screen": "string",
+        "selection": {
+          "at": "string",
+          "bounds": {
+            "h": "string",
+            "w": "string",
+            "x": "string",
+            "y": "string",
+            "|": "string"
+          },
+          "by": "string",
+          "chain": [
+            "string"
+          ],
+          "file": "string",
+          "image": "string",
+          "interactive": "string",
+          "line": "string",
+          "node": "string",
+          "ok": "string",
+          "preview": {
+            "file": "string",
+            "fqn": "string",
+            "index": "string",
+            "methodParams": [
+              "string"
+            ],
+            "params": {},
+            "previewId": "string"
+          },
+          "ref": "string",
+          "tree": "string",
+          "userChain": [
+            "string"
+          ],
+          "|": "string"
+        },
+        "settle": {
+          "a": {
+            "frames": "string",
+            "tick": "string"
+          },
+          "t": "string",
+          "|": "string"
+        },
+        "stale": [
+          {
+            "head": {
+              "a": {
+                "what": {
+                  "t": "string"
+                }
+              },
+              "t": "string"
+            },
+            "why": [
+              {
+                "t": "string",
+                "|": "string"
+              }
+            ],
+            "|": "string"
+          }
+        ],
+        "tabs": [
+          {
+            "active": "string",
+            "dim": "string",
+            "key": "string",
+            "module": "string",
+            "name": "string",
+            "sourceSet": "string",
+            "stale": "string",
+            "title": "string",
+            "|": "string"
+          }
+        ],
+        "timing": [
+          {
+            "head": "string",
+            "label": {
+              "a": {
+                "n": "string"
+              },
+              "t": "string"
+            },
+            "ms": "string",
+            "over": "string",
+            "text": "string",
+            "|": "string"
+          }
+        ],
+        "vacant": "string",
+        "version": "string",
+        "who": {
+          "a": {
+            "by": "string",
+            "time": "string",
+            "what": {
+              "a": {
+                "n": "string"
+              },
+              "t": "string",
+              "|": "string"
+            }
+          },
+          "t": "string",
+          "|": "string"
+        }
+      },
+      "type": "string"
+    },
+    "ui": {
+      "event": {
+        "kind": "string",
+        "text": {
+          "a": {
+            "why": "string"
+          },
+          "t": "string"
+        }
+      },
+      "type": "string"
+    }
+  },
+  "example": {
+    "state": {
+      "state": {
+        "board": {
+          "file": "string",
+          "focus": "number",
+          "gen": "number",
+          "groups": [
+            {
+              "cards": [
+                {
+                  "args": "string",
+                  "dpGuess": "boolean",
+                  "failure": "null",
+                  "heightDp": "null|number",
+                  "imageUrl": "null|string",
+                  "index": "number",
+                  "isFocus": "boolean",
+                  "label": "string",
+                  "ok": "boolean|null",
+                  "previewId": "string",
+                  "rendered": "boolean",
+                  "specs": [
+                    {
+                      "kind": "string",
+                      "text": "string",
+                      "|": "empty"
+                    }
+                  ],
+                  "stale": "boolean",
+                  "title": "string",
+                  "treeUrl": "null|string",
+                  "widthDp": "null|number"
+                }
+              ],
+              "failed": "number",
+              "name": "string"
+            }
+          ],
+          "|": "null"
+        },
+        "boardNote": {
+          "a": {
+            "drawn": "number",
+            "file": "string",
+            "files": "string",
+            "kind": {
+              "t": "string"
+            },
+            "message": "string",
+            "n": "number",
+            "total": "number"
+          },
+          "t": "string",
+          "|": "null"
+        },
+        "boot": "string",
+        "buildPending": "boolean",
+        "busy": "boolean",
+        "choice": {
+          "candidates": [
+            "string"
+          ],
+          "fileName": "string",
+          "line": "number",
+          "repoRoot": "string",
+          "|": "null"
+        },
+        "error": "null",
+        "focus": {
+          "deviceInsets": {
+            "basisPosture": "string",
+            "evidence": {
+              "kind": "string",
+              "source": "string",
+              "sourceUrl": "string"
+            },
+            "posture": "string",
+            "values": {
+              "captionBar": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "displayCutout": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "navigationBars": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "statusBars": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              },
+              "systemOverlays": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              }
+            },
+            "|": "null"
+          },
+          "fn": "string",
+          "imageUrl": "string",
+          "interactive": "boolean",
+          "name": "null",
+          "postures": [
+            {
+              "imageUrl": "string",
+              "size": {
+                "device": "string",
+                "dpi": "number",
+                "folded": "boolean",
+                "heightDp": "number",
+                "heightPx": "number",
+                "hingeDp": "null|number",
+                "insetProfile": {
+                  "evidence": {
+                    "capturedAt": "null|string",
+                    "conditions": {
+                      "android": "string",
+                      "buildId": "string",
+                      "checkedAt": "string",
+                      "densityDpi": "string",
+                      "displayZoom": "string",
+                      "fontScale": "string",
+                      "horizontalToolbar": "string",
+                      "innerCamera": "string",
+                      "ios": "string",
+                      "multiWindow": "string",
+                      "navigation": "string",
+                      "oneUi": "string",
+                      "orientation": "string",
+                      "pose": "string",
+                      "resolutionPx": "string",
+                      "rotation": "string",
+                      "scale": "string",
+                      "sdk": "string",
+                      "sourceSha256": "string",
+                      "splitView": "string",
+                      "unit": "string"
+                    },
+                    "kind": "string",
+                    "source": "string",
+                    "sourceUrl": "string"
+                  },
+                  "measured": {
+                    "captionBar": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "displayCutout": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "navigationBars": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "statusBars": {
+                      "bottom": "number",
+                      "left": "number",
+                      "right": "number",
+                      "top": "number"
+                    },
+                    "|": "null"
+                  },
+                  "safeArea": {
+                    "bottom": "number",
+                    "left": "number",
+                    "right": "number",
+                    "top": "number"
+                  }
+                },
+                "kind": "string",
+                "landscape": "boolean",
+                "name": "string",
+                "orientation": "string",
+                "preset": "string",
+                "widthDp": "number",
+                "widthPx": "number"
+              },
+              "|": "empty"
+            }
+          ],
+          "previewId": "string",
+          "pxPerDp": "number",
+          "size": {
+            "device": "string",
+            "dpi": "number",
+            "folded": "boolean",
+            "heightDp": "number",
+            "heightPx": "number",
+            "hingeDp": "null",
+            "insetProfile": {
+              "evidence": {
+                "capturedAt": "null|string",
+                "conditions": {
+                  "android": "string",
+                  "buildId": "string",
+                  "checkedAt": "string",
+                  "densityDpi": "string",
+                  "fontScale": "string",
+                  "horizontalToolbar": "string",
+                  "innerCamera": "string",
+                  "multiWindow": "string",
+                  "navigation": "string",
+                  "oneUi": "string",
+                  "orientation": "string",
+                  "pose": "string",
+                  "resolutionPx": "string",
+                  "rotation": "string",
+                  "scale": "string",
+                  "sdk": "string",
+                  "sourceSha256": "string",
+                  "splitView": "string",
+                  "unit": "string"
+                },
+                "kind": "string",
+                "source": "string",
+                "sourceUrl": "string"
+              },
+              "measured": {
+                "captionBar": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "displayCutout": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "navigationBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "statusBars": {
+                  "bottom": "number",
+                  "left": "number",
+                  "right": "number",
+                  "top": "number"
+                },
+                "|": "null"
+              },
+              "safeArea": {
+                "bottom": "number",
+                "left": "number",
+                "right": "number",
+                "top": "number"
+              }
+            },
+            "kind": "string",
+            "landscape": "boolean",
+            "name": "string",
+            "orientation": "string",
+            "widthDp": "number",
+            "widthPx": "number",
+            "|": "null"
+          },
+          "streamUrl": "null|string",
+          "systemUi": {
+            "annotated": "boolean",
+            "bars": {
+              "insets": {
+                "kind": "string",
+                "navDp": "number",
+                "source": "string",
+                "sourceUrl": "string",
+                "statusDp": "number",
+                "|": "null"
+              },
+              "look": "string",
+              "|": "null"
+            },
+            "choice": "string",
+            "shown": "boolean"
+          },
+          "treeUrl": "string",
+          "|": "null"
+        },
+        "header": {
+          "branch": "null",
+          "module": "string",
+          "repo": "string",
+          "repoLeaf": "string",
+          "repoPrefix": "string",
+          "sourceSet": "null",
+          "tabTitle": "string",
+          "title": "string",
+          "variant": "string"
+        },
+        "screen": "string",
+        "selection": {
+          "at": "string",
+          "bounds": {
+            "h": "number",
+            "w": "number",
+            "x": "number",
+            "y": "number",
+            "|": "null"
+          },
+          "by": "string",
+          "chain": [
+            "empty|string"
+          ],
+          "file": "string",
+          "image": "string",
+          "interactive": "boolean",
+          "line": "number",
+          "node": "null|string",
+          "ok": "boolean",
+          "preview": {
+            "file": "string",
+            "fqn": "string",
+            "index": "number",
+            "methodParams": [
+              "empty"
+            ],
+            "params": {},
+            "previewId": "string"
+          },
+          "ref": "string",
+          "tree": "string",
+          "userChain": [
+            "empty|string"
+          ],
+          "|": "null"
+        },
+        "settle": {
+          "a": {
+            "frames": "number",
+            "tick": "number"
+          },
+          "t": "string",
+          "|": "null"
+        },
+        "stale": [
+          {
+            "head": {
+              "a": {
+                "what": {
+                  "t": "string"
+                }
+              },
+              "t": "string"
+            },
+            "why": [
+              {
+                "t": "string",
+                "|": "string"
+              }
+            ],
+            "|": "empty"
+          }
+        ],
+        "tabs": [
+          {
+            "active": "boolean",
+            "dim": "string",
+            "key": "string",
+            "module": "null",
+            "name": "string",
+            "sourceSet": "null",
+            "stale": "boolean",
+            "title": "string",
+            "|": "empty"
+          }
+        ],
+        "timing": [
+          {
+            "head": "boolean",
+            "label": {
+              "a": {
+                "n": "number"
+              },
+              "t": "string"
+            },
+            "ms": "number",
+            "over": "boolean",
+            "text": "string",
+            "|": "empty"
+          }
+        ],
+        "vacant": "null",
+        "version": "number",
+        "who": {
+          "a": {
+            "by": "string",
+            "time": "string",
+            "what": {
+              "a": {
+                "n": "number"
+              },
+              "t": "string",
+              "|": "string"
+            }
+          },
+          "t": "string",
+          "|": "null"
+        }
+      },
+      "type": "string"
+    },
+    "ui": {
+      "event": {
+        "kind": "string",
+        "text": {
+          "a": {
+            "why": "string"
+          },
+          "t": "string"
+        }
+      },
+      "type": "string"
+    }
+  }
+}

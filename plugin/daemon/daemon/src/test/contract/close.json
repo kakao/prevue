@@ -1,0 +1,31 @@
+{
+  "status": 200,
+  "schema": {
+    "active": "string",
+    "closed": "string",
+    "ok": "boolean",
+    "tabs": [
+      {
+        "active": "boolean",
+        "file": "string",
+        "module": "string",
+        "stale": "boolean",
+        "vacant": "null"
+      }
+    ]
+  },
+  "example": {
+    "ok": true,
+    "closed": "<repo>/app/src/main/kotlin/demo/Other.kt",
+    "active": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+    "tabs": [
+      {
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "module": ":app",
+        "active": true,
+        "stale": false,
+        "vacant": null
+      }
+    ]
+  }
+}

@@ -4,13 +4,14 @@ import os
 import sys
 import unittest
 
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools", "lint"))
 import kotlin_source  # noqa: E402
 import lint  # noqa: E402
 import slop  # noqa: E402
 
-DOMAIN = "plugin/src/main/kotlin/prevue/daemon/domain/A.kt"
-ADAPTER = "plugin/src/main/kotlin/prevue/daemon/adapter/render/A.kt"
+DOMAIN = "plugin/daemon/application/src/main/kotlin/prevue/application/service/A.kt"
+ADAPTER = "plugin/daemon/infrastructure/src/main/kotlin/prevue/infrastructure/render/A.kt"
 
 
 def rules(text, path=ADAPTER):
@@ -81,6 +82,48 @@ class Slop(unittest.TestCase):
             self.assertEqual(rules(bad.replace("else -> { press(); release() }", ok)), [], ok)
         self.assertEqual(rules("fun f(n: Int) = when (n) {\n    1 -> a()\n    else -> b()\n}"), [])
 
+    def test_한정자_없는_주입_기본_인자(self):
+        for bad in ("@Inject\nclass A(\n    private val b: B,\n    private val quietMs: Long = 300,\n)",
+                    "@SingleIn(AppScope::class)\n@Inject\nclass A(private val b: B,\n    val n: Int = 1)",
+                    "class A @Inject internal constructor(\n    b: B,\n    n: Int = 1,\n)",
+                    "@Inject class A<T : Any>(val m: Map<String, Int> = emptyMap())",
+                    "object G {\n    @Provides @SingleIn(AppScope::class)\n    fun f(b: B,\n        n: Int = 1): C = C(b, n)\n}",
+                    "class A {\n    @Inject fun inject(n: Int = 1) {}\n}",
+                    "@Inject\nclass A(@Suppress(\"x\") val n: Int = 1)",
+                    "@Inject\nclass A(@param:Suppress(\"x\") val n: Int = 1)",
+                    "@Inject class A(@IntRange(from = 0) val n: Long = 300)",
+                    "@Inject class A(val f: @Composable () -> Unit = {})",
+                    "@Inject class A(val m: Map<String, Int>= emptyMap())",
+                    "@Inject\n@ContributesBinding(AppScope::class, binding = binding<Foo>())\nclass A(val n: Int = 1)",
+                    "@Inject class A<T : (Int) -> Unit>(val n: Int = 1)",
+                    "@Provides fun <T : Comparable<T>> f(n: Int = 1): T = TODO()"):
+            self.assertEqual(rules(bad), ["slop/inject-default"], bad)
+        self.assertEqual(slop.check("@Inject\nclass A(\n    private val b: B,\n    private val quietMs: Long = 300,\n)", ADAPTER)[0][0], 4)
+
+    def test_기본값_안의_비교와_람다_뒤_인자도_본다(self):
+        self.assertEqual(rules("@Inject class A(val b: B, val p: (Int) -> Boolean = { it > 0 })"), ["slop/inject-default"])
+        self.assertEqual(rules("@Inject class A(\n    @Named(Q) val n: Int = if (a > b) 1 else 2,\n    val m: Int = 3,\n)"), ["slop/inject-default"])
+        self.assertEqual(rules("@Inject class A(@Named(Q) val b: Boolean = x < y, val m: Int = 3)"), ["slop/inject-default"])
+
+    def test_한정자가_붙었거나_주입이_아닌_기본_인자는_놓아준다(self):
+        for ok in ("@SingleIn(AppScope::class)\n@Inject\nclass Live(\n    private val ws: Workspace,\n    @Named(QUIET) private val quietMs: Long = QUIET_MS,\n)",
+                   "class Boards @Inject constructor(\n    @Named(Live.QUIET) private val quietMs: Long = Live.QUIET_MS,\n)",
+                   "@Inject\nclass A(@param:Named(Q) val n: Int = 1)",
+                   "@Inject\nclass A(@Assisted val n: Int = 1)",
+                   "@Inject\nclass A(val f: (Int) -> Boolean, val g: B)",
+                   "class A(val n: Int = 1)\n@Inject\nclass B(val a: A)",
+                   "@Inject\nclass A\n\nclass B (val n: Int = 1)",
+                   "class A @Inject constructor(val b: B) {\n    fun f(n: Int = 1) = n\n}",
+                   "@Provides\nfun f(b: B): C = C(b, 1)"):
+            self.assertEqual(rules(ok), [], ok)
+
+    def test_한정자는_소스가_Qualifier_로_선언한_것이다(self):
+        uses = "@Inject\nclass A(@ValueFiles val files: List<File> = emptyList())"
+        self.assertEqual(rules(uses), ["slop/inject-default"])
+        self.assertEqual([r for _, r, _ in slop.check(uses, ADAPTER, {"ValueFiles"})], [])
+        self.assertEqual(rules("@Qualifier\nannotation class ValueFiles\n\n" + uses), [])
+        self.assertEqual(slop.qualifiers("@Qualifier\npublic annotation class WatchRoots\n@Qualifier @Retention(BINARY) annotation class B\n"), {"WatchRoots", "B"})
+
     def test_파일_길이(self):
         self.assertEqual(rules("val x = 1\n" * 401), ["slop/file-length"])
         self.assertEqual(rules("val x = 1\n" * 400), [])
@@ -107,18 +150,75 @@ class Comments(unittest.TestCase):
         self.assertEqual(self.comments(text, {4}), [])
 
     def test_옮긴_파일은_옛_경로와_대조한다(self):
-        out = "R097\tplugin/src/main/kotlin/a/Old.kt\tplugin/src/main/kotlin/b/New.kt\nM\tplugin/src/main/kotlin/c/C.kt\nA\tplugin/src/main/kotlin/d/D.kt\n"
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/b/New.kt": "plugin/src/main/kotlin/a/Old.kt"})
+        out = "R097\tplugin/daemon/src/main/kotlin/a/Old.kt\tplugin/daemon/src/main/kotlin/b/New.kt\nM\tplugin/daemon/src/main/kotlin/c/C.kt\nA\tplugin/daemon/src/main/kotlin/d/D.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/src/main/kotlin/b/New.kt": "plugin/daemon/src/main/kotlin/a/Old.kt"})
 
     def test_rename_으로_안_잡힌_이동은_파일_이름으로_짝짓는다(self):
-        out = ("D\tplugin/src/main/kotlin/usecase/Shot.kt\nA\tplugin/src/main/kotlin/domain/runtime/Shot.kt\n"
-               "D\tplugin/src/main/kotlin/usecase/Gone.kt\nA\tplugin/src/main/kotlin/c/Fresh.kt\n"
-               "D\tplugin/src/main/kotlin/a/Twin.kt\nD\tplugin/src/main/kotlin/b/Twin.kt\nA\tplugin/src/main/kotlin/c/Twin.kt\n")
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/domain/runtime/Shot.kt": "plugin/src/main/kotlin/usecase/Shot.kt"})
+        out = ("D\tplugin/daemon/app/src/main/kotlin/usecase/Shot.kt\nA\tplugin/daemon/daemon/src/main/kotlin/domain/runtime/Shot.kt\n"
+               "D\tplugin/daemon/app/src/main/kotlin/usecase/Gone.kt\nA\tplugin/daemon/daemon/src/main/kotlin/c/Fresh.kt\n"
+               "D\tplugin/daemon/app/src/main/kotlin/a/Twin.kt\nD\tplugin/daemon/app/src/main/kotlin/b/Twin.kt\nA\tplugin/daemon/daemon/src/main/kotlin/c/Twin.kt\n")
+        self.assertEqual(lint.renames(out), {"plugin/daemon/daemon/src/main/kotlin/domain/runtime/Shot.kt": "plugin/daemon/app/src/main/kotlin/usecase/Shot.kt"})
 
     def test_plugin_으로_옮기며_고친_파일은_옛_자리와_짝짓는다(self):
-        out = "D\tsrc/main/kotlin/a/Moved.kt\nA\tplugin/src/main/kotlin/a/Moved.kt\nD\tfixtures/x/Moved2.kt\nA\tplugin/src/main/kotlin/b/Moved2.kt\n"
-        self.assertEqual(lint.renames(out), {"plugin/src/main/kotlin/a/Moved.kt": "src/main/kotlin/a/Moved.kt"})
+        out = "D\tsrc/main/kotlin/a/Moved.kt\nA\tplugin/daemon/daemon/src/main/kotlin/a/Moved.kt\nD\tfixtures/x/Moved2.kt\nA\tplugin/daemon/daemon/src/main/kotlin/b/Moved2.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/daemon/src/main/kotlin/a/Moved.kt": "src/main/kotlin/a/Moved.kt"})
+
+    def test_daemon_으로_옮기며_고친_파일은_옛_자리와_짝짓는다(self):
+        out = "D\tplugin/src/main/kotlin/a/Moved.kt\nA\tplugin/daemon/daemon/src/main/kotlin/a/Moved.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/daemon/src/main/kotlin/a/Moved.kt": "plugin/src/main/kotlin/a/Moved.kt"})
+
+    def test_조립으로_옮긴_본체와_브리지는_옛_자리와_짝짓는다(self):
+        out = ("D\tplugin/daemon/src/main/kotlin/prevue/daemon/Main.kt\nA\tplugin/daemon/daemon/src/main/kotlin/prevue/daemon/Main.kt\n"
+               "D\tplugin/daemon/src/bridge/kotlin/prevue/compiler/B.kt\nA\tplugin/daemon/daemon/src/bridge/kotlin/prevue/compiler/B.kt\n")
+        self.assertEqual(lint.renames(out), {
+            "plugin/daemon/daemon/src/main/kotlin/prevue/daemon/Main.kt": "plugin/daemon/src/main/kotlin/prevue/daemon/Main.kt",
+            "plugin/daemon/daemon/src/bridge/kotlin/prevue/compiler/B.kt": "plugin/daemon/src/bridge/kotlin/prevue/compiler/B.kt"})
+        self.assertTrue(lint.in_scope("plugin/daemon/daemon/src/main/kotlin/prevue/daemon/Main.kt"))
+        self.assertFalse(lint.in_scope("plugin/daemon/daemon/src/test/kotlin/prevue/daemon/A.kt"))
+        self.assertFalse(lint.in_scope("plugin/daemon/app/src/main/kotlin/prevue/daemon/Main.kt"))
+
+    def test_층_모듈의_본체도_범위다(self):
+        for m, pkg in (("application", "application/service"), ("infrastructure", "infrastructure/controller/http")):
+            self.assertTrue(lint.in_scope("plugin/daemon/%s/src/main/kotlin/prevue/%s/A.kt" % (m, pkg)), m)
+        self.assertFalse(lint.in_scope("plugin/daemon/application/src/test/kotlin/A.kt"))
+        self.assertFalse(lint.in_scope("plugin/daemon/domain/src/main/kotlin/prevue/domain/A.kt"))
+
+    def test_층_목록은_gradle_properties_한_줄에서_읽는다(self):
+        self.assertEqual(lint.read_layers("# 주석\nprevue.layers=application, adapter/infra\nother=1\n"), ("application", "adapter/infra"))
+        # settings 는 java.util.Properties 로 읽는다 — 같은 줄을 같은 값으로 읽어야 넷이 갈리지 않는다
+        self.assertEqual(lint.read_layers("  prevue.layers = a,b,\n"), ("a", "b"))
+        self.assertEqual(lint.read_layers("prevue.layers:a\nprevue.layers=b\n"), ("b",))
+        self.assertEqual(lint.read_layers("prevue.layers a\n"), ("a",))
+        for text in ("other=1\n", "# prevue.layers=a\n", "prevue.layers=,\n", "prevue.layersx=a\n"):
+            with self.assertRaises(ValueError, msg=text):
+                lint.read_layers(text)
+        for m in lint.MODULES:
+            self.assertTrue(os.path.isdir(os.path.join(ROOT, "plugin/daemon", m, "src/main/kotlin")), m)
+
+    def test_detekt_보고서는_프로젝트_경로로_가른다(self):
+        reports = lint.detekt_reports(("a/infra", "b/infra"))
+        self.assertIn("plugin/daemon/build/lint/a/infra/reports/detekt/main.xml", reports)
+        self.assertIn("plugin/daemon/build/lint/b/infra/reports/detekt/main.xml", reports)
+        self.assertEqual(len(reports), len(set(reports)))
+
+    def test_헥사고날로_옮긴_파일은_옛_자리와_짝짓는다(self):
+        for old, new in (("entity/src/main/kotlin/prevue/entity/Bitmap.kt", "application/src/main/kotlin/prevue/application/domain/model/Bitmap.kt"),
+                         ("adapter/entry/src/main/kotlin/prevue/adapter/http/Server.kt", "infrastructure/src/main/kotlin/prevue/infrastructure/controller/http/Server.kt"),
+                         ("app/src/bridge/kotlin/prevue/compiler/B.kt", "daemon/src/bridge/kotlin/prevue/compiler/B.kt")):
+            old, new = "plugin/daemon/" + old, "plugin/daemon/" + new
+            self.assertEqual(lint.renames("R098\t%s\t%s\n" % (old, new)), {new: old})
+            self.assertEqual(lint.renames("D\t%s\nA\t%s\n" % (old, new)), {new: old})
+            self.assertTrue(old.startswith(lint.OLD_ROOTS))
+
+    def test_adapter_를_둘로_가르며_옮긴_파일은_옛_자리와_짝짓는다(self):
+        old = "plugin/daemon/adapter/src/main/kotlin/prevue/adapter/render/A.kt"
+        new = "plugin/daemon/infrastructure/src/main/kotlin/prevue/infrastructure/render/A.kt"
+        self.assertEqual(lint.renames("R100\t%s\t%s\n" % (old, new)), {new: old})
+        self.assertTrue(old.startswith(lint.OLD_ROOTS))
+
+    def test_층_모듈로_옮긴_파일은_옛_자리와_짝짓는다(self):
+        out = "R100\tplugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt\tplugin/daemon/application/src/main/kotlin/prevue/daemon/domain/A.kt\n"
+        self.assertEqual(lint.renames(out), {"plugin/daemon/application/src/main/kotlin/prevue/daemon/domain/A.kt": "plugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt"})
 
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])

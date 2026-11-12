@@ -8,6 +8,51 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-11-12
+
+![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
+
+**See what it's made of. See where it fits.** Point at an element and a card shows its composable, size and modifiers. Pick a device and your Composable gets its real insets, and Show inset areas draws the unsafe bands over the picture. The single view also gets one dock under the picture.
+
+### See what it's made of
+
+![Clicking beside the price on a drink card in a board of Pearl previews opens a card next to the picture with DrinkCard.kt:106, its size in dp, its modifiers and a tree of the elements around it; rows in the tree point at the whole drink card and the next one, and the Preview button jumps to MenuCardsPreview](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0-pointing.webp)
+
+- **Click an element → a card beside the picture** shows its composable, `file:line`, size and modifiers, with a tree to move around and a jump to its `@Preview`.
+- **`prevue previews --of <composable>`** finds a composable's previews by name.
+
+### See where it fits
+
+![Changing devices from the dock under the picture: S26, then iPhone Duo unfolded, folded to its cover and unfolded again, then Pixel Tablet; back on the unfolded iPhone Duo, Show inset areas tints the 84 dp status band and the 34 dp bottom band and labels the SAFE AREA between them](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/devices.gif)
+
+- **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
+- **Show inset areas** draws each inset band and the safe area.
+- **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars, in the browser only.
+- **`showSystemUi = true` draws the bars**; off a device, turn them on or off from the dock or `focus --system-ui`.
+- **Portrait, Landscape left and Landscape right on every device** (`focus --orientation`, Android naming).
+- **Folding keeps the device the way you hold it.**
+
+### Single view and board
+
+- **One dock under the picture** replaces the side panel.
+- **`prevue show <FQN>` opens on its file's board**, so Back and Esc work.
+- **Board cards stay current** while you interact with one.
+- **Flatter board** — 1 px borders, names above pictures, `@PreviewParameter` cards named by value.
+
+### Starting and updating
+
+- **The first start after updating downloads about 11 MB once** — run `prevue setup` when `health` asks.
+- **Opening a file draws code changed while the daemon was off**, and a restarted daemon reuses the last one's compiles when nothing changed.
+
+### Fixes
+
+- **KMP library modules** with `implementation` dependencies no longer fail on save with "Unresolved reference" ([#129](https://github.com/kakao/prevue/issues/129)) — warm up once more. Thanks to @citytexi for the report and the fix ([#130](https://github.com/kakao/prevue/pull/130)).
+- Also: `next` and `then` use the `prevue` that answered, and Original size keeps its aspect ratio.
+
+### Thanks
+
+@citytexi ([#129](https://github.com/kakao/prevue/issues/129), [#130](https://github.com/kakao/prevue/pull/130))
+
 ## [0.21.0] — 2026-11-02
 
 ![Prevue 0.21 — Kotlin Multiplatform, in your browser](https://raw.githubusercontent.com/kakao/prevue/v0.21.0/assets/release-0.21.0.png)

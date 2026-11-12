@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "schema": {
+    "composables": [
+      "empty"
+    ],
+    "files": [
+      "empty"
+    ],
+    "ready": "boolean"
+  },
+  "example": {
+    "ready": false,
+    "files": [],
+    "composables": []
+  }
+}

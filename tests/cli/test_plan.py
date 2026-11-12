@@ -1,4 +1,4 @@
-"""bin/prevue_plan.py — CLI 의 판정. 가짜 저장소 트리를 임시 디렉터리에 짓고 본다. 실행: python3 -m unittest discover -s tests/cli
+"""cli/prevue_plan.py — CLI 의 판정. 가짜 저장소 트리를 임시 디렉터리에 짓고 본다. 실행: python3 -m unittest discover -s tests/cli
 
 트리를 커밋하지 않고 짓는 이유: build/ 는 gitignore 이고, 판정이 보는 것은 대개 빈 디렉터리라 git 이 담지 못한다.
 """
@@ -11,11 +11,22 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import prevue_plan as P  # noqa: E402
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 GJ = "/jdk\t테스트"
+
+
+def search_path(*first):
+    """PATH 를 고정한다 — 응답의 next 머리가 PATH 의 prevue 에 따라 달라진다(test_caller). 원래 PATH 의 prevue 는 뺀다."""
+    rest = [d for d in os.environ.get("PATH", "").split(os.pathsep) if d and not os.path.exists(os.path.join(d, "prevue"))]
+    return os.pathsep.join([*first, *rest])
+
+
+def installed_path():
+    """이 체크아웃의 bin/prevue 가 PATH 의 prevue 다 — 설치본을 PATH 로 부르는 사용자와 같다."""
+    return search_path(os.path.dirname(P.SELF))
 
 
 def fixture(name):
@@ -942,7 +953,7 @@ class Health(Case):
     def test_문장_파일은_모두_쓰인다(self):
         with open(P.__file__, encoding="utf-8") as fh:
             src = fh.read()
-        with open(os.path.join(os.path.dirname(P.__file__), "prevue"), encoding="utf-8") as fh:
+        with open(os.path.join(os.path.dirname(os.path.dirname(P.__file__)), "bin", "prevue"), encoding="utf-8") as fh:
             src += fh.read()             # python3 문장은 bin/prevue 가 python 없이 읽는다
         for name in sorted(n[:-4] for n in os.listdir(P.ASK_DIR)):
             with self.subTest(name=name):

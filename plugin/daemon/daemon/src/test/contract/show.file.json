@@ -1,0 +1,190 @@
+{
+  "status": 200,
+  "schema": {
+    "board": {
+      "cards": [
+        {
+          "failure": "null",
+          "fqn": "string",
+          "gen": "number",
+          "height": "null|number",
+          "image": "null|string",
+          "imageUrl": "null|string",
+          "index": "number",
+          "message": "null",
+          "name": "string",
+          "ok": "boolean|null",
+          "paramCount": "number",
+          "paramIndex": "number",
+          "paramLabel": "null",
+          "params": {},
+          "phases": {
+            "|": "null"
+          },
+          "previewId": "string",
+          "renderMs": "null|number",
+          "rendered": "boolean",
+          "stale": "boolean",
+          "taskMs": "null|number",
+          "tree": "null|string",
+          "treeUrl": "null|string",
+          "width": "null|number"
+        }
+      ],
+      "file": "string",
+      "focus": "number",
+      "gen": "number"
+    },
+    "by": "string",
+    "coldMs": "number",
+    "compile": "null",
+    "failure": "null",
+    "freshLoader": "boolean",
+    "height": "number",
+    "image": "string",
+    "imageUrl": "string",
+    "message": "null",
+    "ok": "boolean",
+    "phases": {},
+    "preview": {
+      "file": "string",
+      "fqn": "string",
+      "index": "number",
+      "methodParams": [
+        "empty"
+      ],
+      "params": {},
+      "previewId": "string"
+    },
+    "previews": [
+      {
+        "file": "string",
+        "fqn": "string",
+        "index": "number",
+        "methodParams": [
+          "empty"
+        ],
+        "params": {},
+        "previewId": "string"
+      }
+    ],
+    "renderMs": "number",
+    "stale": {},
+    "status": "string",
+    "tab": "string",
+    "taskMs": "number",
+    "totalMs": "number",
+    "tree": "string",
+    "treeUrl": "string",
+    "warnings": [
+      "empty"
+    ],
+    "width": "number"
+  },
+  "example": {
+    "ok": true,
+    "warnings": [],
+    "preview": {
+      "fqn": "demo.CardsKt.Card0",
+      "previewId": "Card0",
+      "params": {},
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "index": 0,
+      "methodParams": []
+    },
+    "image": "<repo>/out/Card0-0.png",
+    "tree": "<repo>/out/Card0-0.viewinfo.json",
+    "width": 100,
+    "height": 100,
+    "taskMs": 0,
+    "renderMs": 0,
+    "status": "SUCCESS",
+    "failure": null,
+    "message": null,
+    "freshLoader": false,
+    "phases": {},
+    "compile": null,
+    "totalMs": 0,
+    "by": "cli",
+    "imageUrl": "/Card0-0.png?t=<t>",
+    "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+    "tab": "opened",
+    "coldMs": 0,
+    "stale": {},
+    "board": {
+      "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+      "focus": 0,
+      "gen": 0,
+      "cards": [
+        {
+          "index": 0,
+          "previewId": "Card0",
+          "fqn": "demo.CardsKt.Card0",
+          "name": "Card0",
+          "params": {},
+          "gen": 0,
+          "stale": false,
+          "rendered": true,
+          "paramIndex": 0,
+          "paramCount": 1,
+          "paramLabel": null,
+          "ok": true,
+          "failure": null,
+          "message": null,
+          "width": 100,
+          "height": 100,
+          "imageUrl": "/Card0-0.png?t=<t>",
+          "treeUrl": "/Card0-0.viewinfo.json?t=<t>",
+          "image": "<repo>/out/Card0-0.png",
+          "tree": "<repo>/out/Card0-0.viewinfo.json",
+          "taskMs": 0,
+          "renderMs": 0,
+          "phases": {}
+        },
+        {
+          "index": 1,
+          "previewId": "Card1",
+          "fqn": "demo.CardsKt.Card1",
+          "name": "Card1",
+          "params": {},
+          "gen": -1,
+          "stale": true,
+          "rendered": false,
+          "paramIndex": 0,
+          "paramCount": 1,
+          "paramLabel": null,
+          "ok": null,
+          "failure": null,
+          "message": null,
+          "width": null,
+          "height": null,
+          "imageUrl": null,
+          "treeUrl": null,
+          "image": null,
+          "tree": null,
+          "taskMs": null,
+          "renderMs": null,
+          "phases": null
+        }
+      ]
+    },
+    "previews": [
+      {
+        "fqn": "demo.CardsKt.Card0",
+        "previewId": "Card0",
+        "params": {},
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "index": 0,
+        "methodParams": []
+      },
+      {
+        "fqn": "demo.CardsKt.Card1",
+        "previewId": "Card1",
+        "params": {},
+        "file": "<repo>/app/src/main/kotlin/demo/Cards.kt",
+        "index": 1,
+        "methodParams": []
+      }
+    ]
+  }
+}

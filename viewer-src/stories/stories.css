@@ -1,0 +1,51 @@
+body { margin: 0; background: var(--surface); color: var(--on-surface); font: var(--type-body-medium); }
+.story-surface { box-sizing: border-box; min-height: 100vh; background: var(--surface); color: var(--on-surface); font: var(--type-body-medium); padding: var(--space-24); }
+.story-surface h1 { font: var(--type-title-medium); }
+.story-surface h2 { font: var(--type-title-small); }
+.story-surface pre, .story-surface code { font: var(--type-code-small); white-space: pre-wrap; overflow-wrap: anywhere; }
+.story-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-16); }
+.story-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+.story-stack { display: grid; gap: var(--space-12); }
+.story-swatch { display: grid; gap: var(--space-8); padding: var(--space-12); border: 1px solid var(--outline-variant); border-radius: var(--corner-medium); background: var(--surface-container); }
+.story-color { height: 48px; border: 1px solid var(--outline-variant); }
+.story-surface table { width: 100%; border-collapse: collapse; }
+.story-surface th, .story-surface td { padding: var(--space-8); border-bottom: 1px solid var(--outline-variant); text-align: left; vertical-align: top; }
+.story-shell { position: relative; --rail-w: 200px; }
+.story-shell .rail { position: absolute; top: 0; bottom: auto; }
+.story-search { width: min(var(--qo-w), 100%); }
+.story-sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); margin: calc(var(--space-24) * -1); }
+.story-sheet { background: var(--surface); color: var(--on-surface); padding: var(--space-24); min-width: 0; box-shadow: 0 0 0 1px var(--outline-variant); }
+.story-sheet > h2 { margin: 0 0 var(--space-16); }
+.story-meta { color: var(--on-surface-variant); font: var(--type-code-small); }
+.story-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-8); }
+.story-swatches > div { display: grid; grid-template-rows: 40px auto; border: 1px solid var(--outline-variant); border-radius: var(--corner-medium); overflow: hidden; background: var(--surface-container); }
+.story-swatches i { display: block; border-bottom: 1px solid var(--outline-variant); }
+.story-swatches div div { display: grid; gap: var(--space-2); padding: var(--space-6) var(--space-8); font: var(--type-label-medium); }
+.story-contrast td.story-ratio { font: var(--type-code-small); text-align: right; }
+.story-contrast .ok { color: var(--success); }
+.story-contrast .no { color: var(--error); }
+.story-contrast .na { color: var(--on-surface-variant); }
+.story-scale { display: grid; grid-template-columns: 140px 1fr; gap: var(--space-12); align-items: center; }
+.story-bar { display: block; height: var(--space-12); background: var(--primary-container); border-radius: var(--corner-small); }
+.story-motion { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-12); align-items: center; }
+.story-track { position: relative; height: var(--control-small); background: var(--surface-container-high); border-radius: var(--corner-full); }
+.story-dot { position: absolute; top: var(--space-4); left: var(--space-4); width: 16px; height: 16px; border-radius: var(--corner-full); background: var(--on-surface); }
+.story-play .story-dot { left: calc(100% - 20px); }
+/* 움직임 줄이기 — 토큰 규칙대로 이동을 빼고 같은 시간의 페이드만 보인다. */
+@media (prefers-reduced-motion: reduce) {
+  .story-dot { transition-property: opacity !important; }
+  .story-play .story-dot { left: var(--space-4); opacity: .3; }
+}
+/* 한 장 — 조작 독은 뷰어에서 무대 아래 가운데에 떠 있다(fixed). 메뉴 버튼 · 자세 · 슬라이더는 조작 중(body.resizing-ui)에만 보이던 것을 스토리에서는 늘 보인다. */
+.story-surface .story-panel .pn-fold { display: block; }
+.story-surface .story-panel #devCtl:not([hidden]), .story-surface .story-panel #pnSl:not([hidden]) { display: flex; }
+/* 독 하나만 그리는 스토리는 제자리에 세운다. */
+.story-surface .panel.story-dock { position: static; margin-inline: 0; }
+/* 무대의 높이는 뷰어에서 focus.ts 가 창 높이로 잰다(--view-h) — 스토리는 화면 높이를 준다. */
+.story-stage { --view-h: 100vh; display: flex; }
+.story-stage > .story-panel { display: contents; }
+.story-stage #focusView { flex: 1; min-width: 0; }
+/* 확대는 독 오른쪽 끝에 있고 배율 메뉴가 위로 열린다 — 스토리는 그 자리를 비워 둔다. */
+.story-zoom { position: relative; display: flex; align-items: flex-end; height: calc(var(--space-64) * 3); }
+/* 크기 · 기기 메뉴의 몸통만 — 뷰어에서는 버튼 아래 떠 있는 층이라 스토리에서는 제자리에 펴 보인다. */
+.story-surface .pn-body.story-menu { position: static; opacity: 1; visibility: visible; transform: none; }

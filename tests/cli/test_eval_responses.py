@@ -16,7 +16,7 @@ class EvalResponses(Case):
         (self.plugin / "bin").mkdir(parents=True)
         self.cli = self.plugin / "bin/prevue"
         shutil.copy(ROOT / "tests/evals/prevue", self.cli)
-        shutil.copytree(ROOT / "plugin/bin/help", self.plugin / "bin/help")
+        shutil.copytree(ROOT / "plugin/cli/help", self.plugin / "cli/help")
 
     def invoke(self, scenario, command, file, *args):
         result = subprocess.run(
@@ -25,6 +25,11 @@ class EvalResponses(Case):
             env=dict(os.environ, EVAL_PREVUE_SCENARIO=scenario, EVAL_PREVUE_PERMITTED="1", TMPDIR=self.tmp.name),
         )
         return json.loads(result.stdout), result.returncode
+
+    def test_previews_of_matches_the_real_judgement(self):
+        actual, code = self.invoke("ready", "previews", "--of", "Nope")
+        expected, expected_code = P.previews_of({"ready": True, "of": "Nope", "definitions": [], "previews": []}, "Nope", 0)
+        self.assertEqual((actual, code), (expected, expected_code))
 
     def test_preparation_commands_and_questions_match_the_real_cli(self):
         for scenario in ("unready", "first-install", "choose-app"):

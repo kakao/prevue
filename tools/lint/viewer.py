@@ -2,7 +2,7 @@
 
 화면을 고치는 쪽이 대부분 에이전트라, 고칠 때마다 새 값을 정하지 못하게 기계적인 모양만 본다. 규칙마다 tests/lint/test_viewer.py 에 심은 위반이 있다.
 - 두는 것: 배치 치수(폭 · 높이 · 위치 · 테두리 두께 · 스크롤 여백), 0 · auto · inherit · transparent · currentColor · linear,
-  테두리처럼 두르는 고리 그림자(0 0 0 <두께> <색 토큰>), 계산한 색(템플릿의 rgb(${…}))
+  테두리처럼 두르는 고리 그림자(0 0 0 <두께> <색 토큰> — 확대를 되돌리는 calc(<두께> / var(--z)) 도), 계산한 색(템플릿의 rgb(${…}))
 - 지역 변수(tokens.css 밖의 --x)는 쓰이는 자리의 규칙으로 본다 — 날값을 변수에 옮겨 담아 피하지 못하게
 - 계산식의 단위 없는 배수도 날값이다(토큰에 곱해 새 값을 만든다). 둘 것은 부호 바꾸기(* -1)와 --motion-stagger 의 칸 수뿐이다
 - 그림 블록(/* 그림 시작 … */ ~ /* 그림 끝 */)은 그림 안무라 색 · 원시값만 본다(D-97)
@@ -11,14 +11,22 @@
 
 import os
 import re
+import json
+import shutil
+import subprocess
+import sys
 
 VIEWER = "plugin/viewer"
+SOURCES = "viewer-src"
 TOKENS = "plugin/viewer/tokens.css"
+# 린트는 사용자의 cwd 에서 불린다 — 의존은 이 파일이 든 저장소에서 찾는다
+REPO = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+TYPESCRIPT = SOURCES + "/node_modules/typescript/package.json"
 
 # 데이터라 날값이 아닌 것 — (경로, 그 줄에 있는 조각, 이유). 가리키는 곳이 사라지면 실패한다.
 DATA = ()
 
-NEW_VALUE = "새 값이 필요하면 tokens.css 와 견본(prototypes/design-system)을 같은 PR 에서 고친다"
+NEW_VALUE = "새 값이 필요하면 tokens.css 와 Storybook 재료/Tokens(viewer-src/stories/Tokens.stories.tsx)를 같은 PR 에서 고친다. 색 역할이면 tests/viewer/contrast-pairs.json 도"
 ADVICE = {
     "viewer/raw-color": ("날색", "역할 이름(--surface · --on-surface · --outline · --pick …)을 쓴다"),
     "viewer/raw-type": ("글자 날값", "font: var(--type-*) 한 줄로 쓴다. 굵기만 바꿀 때는 --weight-*"),
@@ -59,6 +67,9 @@ _EASE = re.compile(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|step-start|s
                    r"|(?<![\w-])(?:cubic-bezier|steps|linear)\(", re.I)
 _MATH = re.compile(r"(?<![\w-])(?:calc|min|max|clamp)\(", re.I)
 _RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+(?:\d+\.?\d*|\.\d+)[a-z]*\s*(?:inset\s*)?")
+# 확대를 되돌리는 고리 — 두께를 확대 배율 --z 로만 나눈다(calc(1px / var(--z, 1))). 변수를 걷기 전의 원문에서 본다
+_ZOOM_RING = re.compile(r"\s*(?:inset\s+)?0\s+0\s+0\s+calc\(\s*(?:\d+\.?\d*|\.\d+)[a-z]+\s*/\s*var\(--z(?:\s*,\s*1)?\s*\)\s*\)"
+                        r"\s+var\(--[\w-]+\)\s*(?:inset\s*)?")
 _DECL = re.compile(r"\s*(--[\w-]+|-?[A-Za-z][\w-]*)\s*:(.*)", re.S)
 _GROUP = ("@media", "@supports", "@container", "@layer", "@scope")
 _SPACE = re.compile(r"(?:padding|margin)(?:-[a-z-]+)?|(?:row-|column-|grid-)?gap")
@@ -201,7 +212,7 @@ def raw_in(cat, prop, value, rest):
             layer_rest, _ = split_vars(layer)
             if not any(v for _, v, _ in _numbers(layer_rest)):
                 continue
-            if prop != "text-shadow" and _RING.fullmatch(layer_rest):
+            if prop != "text-shadow" and (_RING.fullmatch(layer_rest) or _ZOOM_RING.fullmatch(layer)):
                 continue
             found.append(" ".join(layer.split()))
         return found
@@ -479,12 +490,55 @@ def js_findings(text):
 
 def files(root):
     out = []
-    for d, _, names in os.walk(os.path.join(root, VIEWER)):
+    for d, dirs, names in os.walk(os.path.join(root, SOURCES)):
+        dirs[:] = [name for name in dirs if name not in ("node_modules", "storybook-static", ".git")]
         for f in names:
             path = os.path.relpath(os.path.join(d, f), root)
-            if path != TOKENS and f.endswith((".css", ".js", ".html")):
+            if f.endswith((".css", ".js", ".html", ".ts", ".tsx")) and not f.endswith(".d.ts"):
                 out.append(path)
+    # 번들 밖에 남긴 장면은 여전히 손으로 고치는 원본이다.
+    scene = VIEWER + "/js/resize-scene.js"
+    if os.path.isfile(os.path.join(root, scene)):
+        out.append(scene)
     return sorted(out)
+
+
+def node_deps_problem(root=REPO, which=shutil.which):
+    """JSX 날값 검사(lint-styles.mjs)와 그 자기 검사가 쓰는 node · typescript 가 없으면 그 까닭, 있으면 None.
+    node_modules 는 git 밖이라 새 워크트리에 없고, 받다 멈추면 폴더나 package.json 만 남는다 — 진입 파일까지 보고,
+    모듈을 못 찾았다는 꼬리 대신 원인을 말한다. 받는 것은 부르는 쪽 몫이다(린트는 기본 오프라인)"""
+    if not which("node"):
+        return "node 가 PATH 에 없다 — viewer-src/.node-version 의 판을 깐다"
+    try:
+        with open(os.path.join(root, TYPESCRIPT), encoding="utf-8") as f:
+            main = json.load(f).get("main", "index.js")
+        entry = os.path.isfile(os.path.join(root, os.path.dirname(TYPESCRIPT), main))
+    except (OSError, ValueError, AttributeError, TypeError):
+        entry = False
+    if not entry:
+        return "viewer-src/node_modules 에 typescript 가 없거나 덜 받혔다 — npm ci --prefix viewer-src 를 먼저 돌린다"
+    return None
+
+
+def jsx_findings(texts, deps_problem=node_deps_problem):
+    sources = {p: t for p, t in texts.items() if p.endswith((".ts", ".tsx"))}
+    if not sources:
+        return []
+    problem = deps_problem()
+    if problem:
+        raise RuntimeError(problem)
+    parser = os.path.join(REPO, SOURCES, "lint-styles.mjs")
+    result = subprocess.run(["node", parser], input=json.dumps(sources), text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError("JSX style 을 검사하지 못했다 — lint-styles.mjs 가 실패했다. node 판이 viewer-src/.node-version 과 다르거나 "
+                           "의존이 깨졌으면 npm ci --prefix viewer-src 로 다시 받는다\n" + result.stderr)
+    out = []
+    for path, groups in json.loads(result.stdout).items():
+        for group in groups:
+            css = ".jsx {\n" + "\n".join(item["css"] for item in group) + "\n}"
+            for line, rule, evidence in css_findings(css):
+                out.append((path, group[max(0, min(line - 2, len(group) - 1))]["line"], rule, evidence))
+    return out
 
 
 def scan(root="."):
@@ -502,6 +556,7 @@ def scan(root="."):
             found += [(path, line, r, e) for line, r, e in html_findings(t, uses)]
         else:
             found += [(path, line, r, e) for line, r, e in js_findings(t)]
+    found += jsx_findings(texts)
     return found, texts
 
 
@@ -527,3 +582,14 @@ def check(root="."):
     out += [(os.path.relpath(os.path.abspath(__file__), root), 1, "viewer/data-stale", "DATA 의 %s %s 이 가리키는 곳이 없다 — 지운다" % d[:2])
             for d in DATA if d not in used]
     return out
+
+
+if __name__ == "__main__":
+    # tools/lint.sh 가 자기 검사 전에 부른다 — 자기 검사도 JSX 검사를 돌려 같은 의존을 쓴다
+    if sys.argv[1:] != ["--deps"]:
+        print("검사를 못 했다: 쓰는 법은 python3 tools/lint/viewer.py --deps", file=sys.stderr)
+        sys.exit(2)
+    why = node_deps_problem()
+    if why:
+        print("검사를 못 했다: %s" % why, file=sys.stderr)
+        sys.exit(2)

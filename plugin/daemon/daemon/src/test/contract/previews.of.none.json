@@ -1,0 +1,19 @@
+{
+  "status": 200,
+  "schema": {
+    "definitions": [
+      "empty"
+    ],
+    "of": "string",
+    "previews": [
+      "empty"
+    ],
+    "ready": "boolean"
+  },
+  "example": {
+    "ready": true,
+    "of": "Nope",
+    "definitions": [],
+    "previews": []
+  }
+}

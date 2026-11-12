@@ -2,9 +2,11 @@
 .gradle/
 build/
 **/build/
-!plugin/gradle/wrapper/gradle-wrapper.jar
+!plugin/daemon/gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 local.properties
+*.hprof
+hs_err_pid*.log
 
 # 데몬이 남기는 것 — 클래스패스 덤프, 오버레이, 렌더 산출물, 로그
 .cache/
@@ -19,12 +21,14 @@ out/
 
 # 작업 메모다. plugin/(skills/ · .claude-plugin/ 포함)은 제품이므로 추적한다.
 # .claude/skills/ 는 dev-skills-src/ 의 생성물(이 저장소를 개발할 때 쓰는 스킬)이라 추적한다.
-# 세션 규칙(AGENTS.md · CLAUDE.md)은 워크트리로 따라가야 해 추적하고, 개인 경로만 CLAUDE.local.md 에 둔다(.worktreeinclude 가 복사한다).
+# 세션 규칙(AGENTS.md · 그 생성물 CLAUDE.md)은 워크트리로 따라가야 해 추적한다. CLAUDE.local.md 는 개인 메모라 추적하지 않는다.
 .worktrees/
 .claude/*
 !.claude/skills/
 CLAUDE.local.md
 .handoff.md
+# 회고 노트와 장부(dev-skills-src/retro.md) — 베이스 체크아웃에만 쌓이고 에이전트가 함께 쓴다
+agentdocs/
 
 # IDE
 .idea/
@@ -35,3 +39,8 @@ CLAUDE.local.md
 .DS_Store
 **/.DS_Store
 __pycache__/
+
+# 뷰어 개발 도구와 Storybook 정적 출력은 설치본에 싣지 않는다.
+node_modules/
+viewer-src/storybook-static/
+*.hprof
