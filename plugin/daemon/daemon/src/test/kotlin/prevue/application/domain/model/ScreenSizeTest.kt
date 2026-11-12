@@ -38,7 +38,7 @@ class ScreenSizeTest {
         assertEquals(s26.applyTo(spec()), s26.applyTo(s26.applyTo(spec())))
     }
 
-    @Test fun `기기의 dp 크기와 힌지는 볼트 실측값과 같다`() {
+    @Test fun `기기의 dp 크기와 힌지는 실측값과 같다`() {
         val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
         assertEquals(listOf(932.57, 704.0, 466.29), listOf(fold8.widthDp, fold8.heightDp, fold8.hingeDp))
         val cover = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8, folded = true)

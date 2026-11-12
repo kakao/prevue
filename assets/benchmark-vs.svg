@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- README 벤치마크 한 판. agent-loop 그림과 같은 톤 — 흰 카드 · 시스템 글꼴, Android Studio 는 회색, Prevue 는 뷰어 파랑. 바탕은 투명이다.
      -vs 는 Android Studio 대 Prevue, -redraw 는 Prevue 혼자의 다시 그리기 시간. 한국어판(.ko)은 용어(Hot Swap · Memory …)를 영어로 둔다.
-     숫자는 README 벤치마크 절과 볼트 성능 실측이 원 기록이다. tools/readme-shots.mjs bench 가 PNG 로 뽑는다. -->
+     숫자는 README 벤치마크 절이 원 기록이다. tools/readme-shots.mjs bench 가 PNG 로 뽑는다. -->
 <svg viewBox="0 0 1200 468" width="1200" height="468" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d" xml:lang="en">
   <title id="t">Android Studio vs Prevue</title>
   <desc id="d">Android Studio vs Prevue on nowinandroid ForYouScreen.kt — Hot Swap 4.3 s vs 2.1 s (−51%), First Preview 12.1 s vs 8.0 s (−34%), Memory 8.1 GB vs 1.4 GB (−83%), Disk 3.2 GB vs 446 MB (−86%).</desc>

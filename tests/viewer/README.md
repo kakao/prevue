@@ -4,7 +4,7 @@
 
 ## 실행
 
-도구를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드한다. 픽스처가 처음이면 다음 명령으로 준비한다. Gradle 홈의 `init.d`에 스크립트가 있으면 사내 Maven 설정을 주입할 수 있으므로 먼저 확인한다.
+도구를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드한다. 픽스처가 처음이면 다음 명령으로 준비한다. Gradle 홈의 `init.d`에 스크립트가 있으면 저장소 설정을 바꿀 수 있으므로 먼저 확인한다.
 
 ```sh
 plugin/bin/prevue warmup fixtures/pearl/feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/AdaptivePreviews.kt --resources-from :app

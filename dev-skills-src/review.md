@@ -1,13 +1,13 @@
 # Prevue 리뷰 규약
 
-사용자 레벨 `review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement` 4단계가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
+`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement` 4단계가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
 
 ## 코딩 표준
 
-`AGENTS.md`를 끝까지 읽고 diff의 신규 · 수정 줄에 댄다 — "규칙" · "코멘트 컨벤션" · "저장소" 절이 코딩 표준이다. 구현 결정의 이유와 **되돌리지 말 것**은 볼트의 `Prevue 개발 문서`가 갖는다 — `AGENTS.md` 문서 표에서 찾아 읽는다.
+`AGENTS.md`를 끝까지 읽고 diff의 신규 · 수정 줄에 댄다 — "규칙" · "코멘트 컨벤션" · "저장소" 절이 코딩 표준이다.
 
 - **생성물만 바뀌고 원본이 그대로면 고칠 것이다** — 무엇이 생성물이고 원본인지는 `AGENTS.md` "저장소" 절이 갖는다.
-- **되돌리지 말 것을 되돌리거나 결정 기록의 결정을 뒤집으면 물을 것이다** — 결정을 뒤집는 일은 사람이 정한다.
+- **결정(`D-<n>`)을 뒤집으면 물을 것이다** — 결정을 뒤집는 일은 사람이 정한다.
 
 ## 린트
 
@@ -46,7 +46,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 | `plugin/cli/` · `plugin/bin/` | `python3 -m unittest discover -s tests/cli` |
 | `tools/lint/` | `sh tools/lint.sh`(자기 검사 `tests/lint`를 먼저 돈다) |
 | `viewer-src/` · `plugin/viewer/` | `sh tools/gen-viewer.sh --check` · `python3 -m unittest discover -s tests/cli`(마크업 · 사전) · 헤드리스 Chrome(`tests/viewer/`) |
-| `skills-src/` · `dev-skills-src/` | `sh tools/gen-skills.sh --check` · `python3 -m unittest discover -s tests/cli`(스킬의 JSON 예시) — 배포 스킬은 릴리즈 때 `/ship`의 스킬 평가(`tests/evals`)가 잰다 |
+| `skills-src/` · `dev-skills-src/` | `sh tools/gen-agents.sh --check` · `python3 -m unittest discover -s tests/cli`(스킬의 JSON 예시) — 배포 스킬은 릴리즈 때 `/ship`의 스킬 평가(`tests/evals`)가 잰다 |
 
 ## 한쪽 문 신호
 

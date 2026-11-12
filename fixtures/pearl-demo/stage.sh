@@ -13,10 +13,10 @@ PREVUE=${PREVUE:-$REPO/plugin/bin/prevue}
 export PREVUE_LANG=en
 [ -x "$PREVUE" ] || { echo "$PREVUE 가 없다 — 저장소에서 (cd plugin/daemon && ./gradlew --offline installPrevue) 를 먼저 돌린다" >&2; exit 2; }
 
-# init 스크립트는 저장소를 사내 Maven으로 돌릴 수 있다 — 공개 Maven만 쓴다는 전제로 승인 없이 도는 것이라 그때는 멈춘다
+# init 스크립트는 저장소를 공개 Maven 밖으로 돌릴 수 있다 — 공개 Maven만 쓴다는 전제로 승인 없이 도는 것이라 그때는 멈춘다
 INIT_D=${GRADLE_USER_HOME:-$HOME/.gradle}/init.d
 if [ -d "$INIT_D" ] && [ -n "$(find "$INIT_D" -maxdepth 1 -type f)" ]; then
-  echo "$INIT_D 에 init 스크립트가 있다 — 픽스처 Gradle이 사내 Maven으로 갈 수 있어 멈춘다" >&2; exit 2
+  echo "$INIT_D 에 init 스크립트가 있다 — 픽스처 Gradle이 공개 Maven 밖으로 갈 수 있어 멈춘다" >&2; exit 2
 fi
 
 if [ -e "$DEST" ]; then
