@@ -16,6 +16,7 @@ interface Compiler {
     fun callersOf(member: String, exclude: List<File>, roots: List<File>): List<File>
     /** 밖의 Gradle이 [module]을 다시 빌드했다 — 그 모듈의 오버레이만 낡았다(Q6). */
     suspend fun clearOverlay(module: String)
+    suspend fun overlaid(path: String): Long?
     /** Gradle이 [module]의 Kotlin을 마지막으로 컴파일한 시각. 모르면 null — 이보다 새로운 소스는 오버레이에 없으면 옛 클래스로 그려진다. */
     suspend fun builtAt(module: String): Long?
     suspend fun hasClass(module: String, fqcn: String): Boolean

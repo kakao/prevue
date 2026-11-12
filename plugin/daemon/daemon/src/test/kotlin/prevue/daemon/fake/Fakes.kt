@@ -274,6 +274,8 @@ class FakeCompiler(override val overlayDir: File) : Compiler {
     override fun inOverlay(fqcn: String) = fqcn in overlay
     override fun callersOf(member: String, exclude: List<File>, roots: List<File>): List<File> { callerRoots = roots; return callers }
     override suspend fun clearOverlay(module: String) { cleared += module }
+    @Volatile var kept: Map<String, Long> = emptyMap()
+    override suspend fun overlaid(path: String) = kept[path]
     /** 모듈마다 Gradle이 Kotlin을 마지막으로 컴파일한 시각. 없으면 모른다. */
     @Volatile var built: Map<String, Long> = emptyMap()
     override suspend fun builtAt(module: String) = built[module]

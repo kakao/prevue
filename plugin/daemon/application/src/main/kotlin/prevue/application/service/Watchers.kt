@@ -5,10 +5,12 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import java.io.File
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import prevue.application.domain.model.WorkspaceEvent
 import prevue.application.port.BuildNotice
 import prevue.application.port.BuildWatcher
@@ -28,7 +30,7 @@ class Watchers @Inject internal constructor(
     private val catalog: PreviewCatalog,
 ) {
     fun observeSourceChanges(): Flow<SourceChange> = sources?.let { repo ->
-        repo.changes { listOfNotNull(ws.now.board?.file ?: ws.now.current?.file) }.onStart { noteBehindBuild() }.onEach {
+        repo.changes { listOfNotNull(ws.now.board?.file ?: ws.now.current?.file) }.onEach {
             try {
                 note(it.created, it.deleted)
                 if (sourceFiles.update(it.created, it.deleted)) ws.emit(WorkspaceEvent.ProjectFilesChanged)
@@ -39,6 +41,8 @@ class Watchers @Inject internal constructor(
             }
         }
     } ?: emptyFlow()
+
+    fun noteBehindBuildIn(scope: CoroutineScope): Job? = sources?.let { scope.launch { noteBehindBuild() }.also(ws::seededBy) }
 
     suspend fun noteBehindBuild() {
         try {

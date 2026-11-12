@@ -10,6 +10,7 @@ import java.util.zip.ZipEntry
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -81,6 +82,48 @@ class HotCompilerJarIntegrationTest {
         assertTrue(io.view("prevue-compiler").dispatched >= 3, "컴파일 · 클래스 확인 · 표지가 청한 뷰에서 돌지 않았다")
         assertEquals(emptyList<LaneSpy.View>(), default.views)
         assertEquals(0 to 0, io.dispatched to default.dispatched, "뷰를 거치지 않고 디스패처에 바로 올렸다")
+    }
+
+    // 데몬을 다시 띄울 때마다 빌드 뒤에 바뀐 소스를 처음부터 다시 컴파일해 콜드 첫 PNG가 시드 수만큼 늦었다(2026-11-12, Pearl 25개 9.7초)
+    @Test fun `다시 띄운 컴파일러는 앞 회차의 오버레이를 이어 쓰고 컴파일한 뒤 바뀐 소스가 있으면 버린다`() = runBlocking {
+        val overlay = File(out, "kept")
+        val src = File(PearlFixture.dir, "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/BlankStub.kt").canonicalFile
+        val stub = "com.example.pearl.feature.pearl.BlankStubKt"
+        val stamp = src.lastModified()
+        PearlFixture.hotCompiler(pearl, overlay).use { first -> assertTrue(first.compile(pearl.project, listOf(src)).ok) }
+
+        PearlFixture.hotCompiler(pearl, overlay).use { again ->
+            assertEquals(stamp, again.overlaid(src.path))
+            assertTrue(again.inOverlay(stub), "이어 쓴 클래스가 렌더 오버레이에 없다")
+        }
+        try {
+            src.setLastModified(stamp + 2_000)
+            PearlFixture.hotCompiler(pearl, overlay).use { changed ->
+                assertEquals(null, changed.overlaid(src.path))
+                assertFalse(changed.inOverlay(stub), "컴파일한 뒤 바뀐 소스의 옛 클래스가 남았다")
+            }
+        } finally { src.setLastModified(stamp) }
+    }
+
+    // 이어 쓴 클래스의 멤버를 되살리지 않으면 가림 검사가 Gradle 산출물과 견줘, 앞 데몬이 더한 멤버를 지운 저장을 놓친다
+    @Test fun `이어 쓴 뒤 앞 데몬이 더한 멤버를 지우는 저장은 가림을 보고 한 번 더 컴파일한다`() = runBlocking {
+        val overlay = File(out, "keptmembers")
+        val src = File(PearlFixture.dir, "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/BlankStub.kt").canonicalFile
+        val original = src.readText()
+        val stamp = src.lastModified()
+        try {
+            src.writeText(original + "\nfun keptExtra(n: Int): Int = n\n")
+            PearlFixture.hotCompiler(pearl, overlay).use { first -> assertTrue(first.compile(pearl.project, listOf(src)).ok) }
+            PearlFixture.hotCompiler(pearl, overlay).use { again ->
+                assertTrue(again.inOverlay("com.example.pearl.feature.pearl.BlankStubKt"))
+                src.writeText(original)
+                assertTrue(again.compile(pearl.project, listOf(src)).ok)
+                assertEquals(1, again.recompiled, "이어 쓴 클래스에만 있던 멤버를 보지 못했다")
+            }
+        } finally {
+            src.writeText(original)
+            src.setLastModified(stamp)
+        }
     }
 
     private suspend fun compileUse(body: String) = compiler.compile(home.project,

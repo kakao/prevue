@@ -129,6 +129,16 @@ class UseCaseTest {
         assertTrue(before.canonicalPath !in uc.workspace.now.newFiles)
     }
 
+    @Test fun `앞 데몬의 오버레이에 이어 쓴 소스는 빌드 뒤에 바뀌었어도 새 파일로 올리지 않는다`() {
+        val kept = java.io.File(fx.srcRoot, "demo/Shape.kt").apply { writeText("package demo\nval blob = 1\n") }
+        val edited = java.io.File(fx.srcRoot, "demo/Edited.kt").apply { writeText("package demo\nval edited = 1\n") }
+        fx.compiler.built = mapOf(":app" to kept.lastModified() - 60_000)
+        fx.compiler.kept = mapOf(kept.canonicalPath to kept.lastModified(), edited.canonicalPath to edited.lastModified() - 1_000)
+        val uc = watched()
+        assertTrue(kept.canonicalPath !in uc.workspace.now.newFiles)
+        assertTrue(edited.canonicalPath in uc.workspace.now.newFiles, "이어 쓴 뒤에 또 바뀐 소스는 시드다")
+    }
+
     @Test fun `빌드 시각을 모르면 소스를 새 파일로 올리지 않는다`() {
         val before = java.io.File(fx.srcRoot, "demo/Shape.kt").apply { writeText("package demo\nval blob = 1\n") }
         val uc = watched()

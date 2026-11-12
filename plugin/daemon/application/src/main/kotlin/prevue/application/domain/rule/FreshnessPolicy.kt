@@ -5,11 +5,10 @@ object FreshnessPolicy {
     /**
      * 열 파일을 그리기 전에 컴파일해야 하는가. 감시는 생성을 저장으로 보지 않고(D-56) 데몬이 뜨기 전의 변경은 보지 못한다 —
      * 새 파일과 시작 전에 고친 파일은 아무도 컴파일하지 않은 채 열린다.
-     * @param compiled 이 데몬의 컴파일이 그 파일을 마지막으로 읽은 (mtime, 시각). 없으면 이 데몬은 그 파일을 컴파일한 적이 없다.
      * @param builtAt 그 모듈의 Gradle Kotlin 산출물이 마지막으로 쓰인 시각. 모르면 null.
      */
-    inline fun compileOnOpen(mtime: Long, compiled: Pair<Long, Long>?, builtAt: Long?, classesBuilt: () -> Boolean = { true }): Boolean {
-        if (compiled?.first == mtime) return false
+    inline fun compileOnOpen(mtime: Long, compiled: Long?, builtAt: Long?, classesBuilt: () -> Boolean = { true }): Boolean {
+        if (compiled == mtime) return false
         return (builtAt != null && mtime > builtAt) || !classesBuilt()
     }
 

@@ -26,7 +26,9 @@ internal class HotSwapRunner(
     val logs: SharedFlow<String> = _logs
 
     fun start(scope: CoroutineScope) {
+        val noted = watchers.noteBehindBuildIn(scope)
         scope.launch {
+            noted?.join()
             watchers.observeSourceChanges().collect { change ->
                 if (change.files.isNotEmpty()) guarded("watch") { line(change, hotReload.applySave(change.files, "watch", change)) }
                 guarded("preview-files") { watchers.indexPreviewFiles(change); null }

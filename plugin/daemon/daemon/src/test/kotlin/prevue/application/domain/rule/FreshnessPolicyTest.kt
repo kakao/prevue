@@ -10,14 +10,14 @@ class FreshnessPolicyTest {
     @Test fun `Gradle 산출물보다 새롭고 이 데몬이 그 내용을 안 읽었을 때만 컴파일한다`() {
         assertTrue(FreshnessPolicy.compileOnOpen(mtime = 300, compiled = null, builtAt = 200))            // 새 파일 · 시작 전에 고친 파일
         assertFalse(FreshnessPolicy.compileOnOpen(mtime = 100, compiled = null, builtAt = 200))           // Gradle이 이 내용을 구웠다
-        assertFalse(FreshnessPolicy.compileOnOpen(mtime = 300, compiled = 300L to 310L, builtAt = 200))   // 이미 읽었다
-        assertTrue(FreshnessPolicy.compileOnOpen(mtime = 400, compiled = 300L to 310L, builtAt = 200))    // 읽은 뒤 또 바뀌었다
+        assertFalse(FreshnessPolicy.compileOnOpen(mtime = 300, compiled = 300L, builtAt = 200))   // 이미 읽었다
+        assertTrue(FreshnessPolicy.compileOnOpen(mtime = 400, compiled = 300L, builtAt = 200))    // 읽은 뒤 또 바뀌었다
     }
 
     @Test fun `산출물이 더 새로워도 그 파일의 클래스가 거기 없으면 컴파일한다`() {
         assertTrue(FreshnessPolicy.compileOnOpen(mtime = 100, compiled = null, builtAt = 200) { false })
         assertFalse(FreshnessPolicy.compileOnOpen(mtime = 100, compiled = null, builtAt = 200) { true })
-        assertFalse(FreshnessPolicy.compileOnOpen(mtime = 100, compiled = 100L to 310L, builtAt = 200) { false })   // 이미 읽었다 — 실패면 stale이 말한다
+        assertFalse(FreshnessPolicy.compileOnOpen(mtime = 100, compiled = 100L, builtAt = 200) { false })   // 이미 읽었다 — 실패면 stale이 말한다
     }
 
     @Test fun `산출물 시각을 모르면 예전처럼 산출물을 믿는다`() {
