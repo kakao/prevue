@@ -15,17 +15,27 @@
 
 ## 항목 모양
 
-영어로, `- ` 한 줄(한 문단)에 쓴다.
+영어로, `- ` 한 줄에 **한 문장**으로 쓴다(새로 생긴 것을 이름 붙이는 명사구여도 된다) — 멘션만 그 뒤에 따로 한 문장이다(아래 절). 작업 PR이 처음부터 이 모양으로 적는다 — `/ship`은 문장을 다시 쓰지 않고 묶고 늘어놓기만 한다(아래 "판의 모양").
 
-1. **굵은 머리 줄 — 이제 어떻게 되나.** 사용자 쪽 주어로, 현재형 한 문장. 고친 것도 "고쳤다"가 아니라 이제 되는 것을 쓴다.
-   `**Saving redraws projects built for Java 21.**` (O) · `**Fixed jvm-target bug.**` (X)
-2. **예전엔 어땠나.** `used to …`로, 사용자가 실제로 본 것. 에러는 **글자 그대로** 따옴표에 넣는다 — 같은 문구로 검색해 오는 사람이 찾게.
-3. **이제 어떻게.** `Now …`로 동작을 쓴다. 내부 구조는 사용자가 무엇을 하게 되는지 설명할 때만 쓴다.
-4. **숫자와 조건은 정확히.** 범위가 좁으면 좁은 대로 쓴다("on devices whose screen does not divide evenly into dp (Pixel 9, …)"). 줄여서 넓히지 않는다.
-5. **사용자가 할 일.** 다시 warm up · 환경 변수 · 설치 명령처럼 해야 할 것이 있으면 끝에 쓴다(`warm up once more to pick it up`).
-6. **링크와 멘션.** 이슈 · PR은 증상 뒤에 `([#30](https://github.com/kakao/prevue/issues/30))`처럼 건다. 멘션은 맨 끝(아래 절).
+1. **굵은 머리 — 이제 무엇이 되나.** 항목의 본체다. 굵은 부분은 그 문장의 머리다 — 문장 전체여도 되고, 주어 · 기능 이름 · 명령만 굵고 서술어가 뒤에 이어져도 된다. 사용자 쪽에서 본 현재형 문장이나, 새로 생긴 것을 이름 붙인 명사구(`**Flatter board** — 1 px borders, …`)로 쓰고, 고친 것도 "고쳤다"가 아니라 이제 되는 것을 쓴다.
+2. **꼬리는 필요할 때만, 같은 문장 안에서 짧게.** 조건 · 범위, 어디서 하나(명령 · 플래그 · 출처 링크), 그래서 되는 것, 사용자가 할 일, 이슈 링크 같은 짧은 구절이다 — 쉼표 · `;` · `—` · 괄호로 잇는다. **쓰지 않는 것**은 예전 동작의 설명 · 원인 · 내부 구조, 그리고 둘째 문장 · 문단이다 — PR 본문에 둔다. `used to …` · `Now …`로 문단을 쓰지 않는다. 한 변화의 두 면(파일을 열 때와 데몬을 다시 띄울 때처럼)은 `, and`로 한 문장에 둘 수 있다.
+3. **숫자와 조건은 정확히.** 범위가 좁으면 좁은 대로 쓴다(`with implementation dependencies` · `in the browser only` · `about 11 MB once`). 짧게 쓰려고 조건을 빼서 넓히지 않는다 — 다른 사실이 된다.
+4. **사용자가 본 에러는 글자 그대로 따옴표에 넣는다** — 같은 문구로 검색해 오는 사람이 찾게. 그래서 에러를 고친 항목은 `no longer … "<에러 문구>"`로 쓴다. 예전 것이 문장에 들어가는 것은 이때와, 새것이 옛 UI를 대신할 때 그 이름을 대는 것(`**One dock under the picture** replaces the side panel.` — 옛 이름으로 찾아오게)뿐이다.
+5. **사용자가 할 일**(다시 warm up · 환경 변수 · 설치 명령)이 있으면 꼬리 끝에 쓴다(`— warm up once more`).
+6. **링크와 멘션.** 이슈 · PR은 증상 뒤에 `([#129](https://github.com/kakao/prevue/issues/129))`처럼 건다. 멘션은 맨 끝(아래 절).
 
-길이는 이 다섯이 들어가는 만큼이다. 작은 고침은 머리 줄 없이 한 문장이어도 된다.
+```md
+O  - **Folding keeps the device the way you hold it.**
+O  - **Show inset areas** draws each inset band and the safe area.
+O  - **The first start after updating downloads about 11 MB once** — run `prevue setup` when `health` asks.
+O  - **KMP library modules** with `implementation` dependencies no longer fail on save with "Unresolved reference" ([#129](https://github.com/kakao/prevue/issues/129)) — warm up once more. Thanks to @citytexi for the report and the fix ([#130](https://github.com/kakao/prevue/pull/130)).
+X  - **Fixed the fold posture bug.**
+X  - **Folding keeps the device the way you hold it.** Folding used to reset the device to portrait. Now the posture change keeps the orientation you picked, because …
+```
+
+위 O 넷은 0.22.0 항목 그대로다 — 문장 전체가 굵은 것, 이름만 굵은 것, 할 일이 꼬리인 것, 에러를 고친 것. X의 첫 줄은 이제 되는 것이 없고, 둘째 줄은 굵은 머리로 끝난 항목에 문단을 붙였다.
+
+**작은 고침**은 굵은 머리 없이 한 문장으로 적는다 — 이슈 링크 · 멘션 · 사용자가 할 일 · 검색될 에러 문구가 없고 한 구절로 끝나는 것이다. `/ship`이 `### Fixes` 끝의 `Also:` 한 줄로 묶는다(아래 "판의 모양").
 
 ## 기여자 · 제보자 멘션
 
@@ -68,15 +78,19 @@ squash 커밋 제목 끝의 `(#N)`과 `[Unreleased]`에 걸린 링크만 본다 
 
 ## 판의 모양 — `/ship`이 짠다
 
-릴리즈 정리 끝에 그 판의 절을 이 순서로 짠다. 항목 문장은 위 "항목 모양" 그대로다.
+릴리즈 정리 끝에 그 판의 절을 이 순서로 짠다. 항목 문장은 작업 PR이 "항목 모양"대로 적은 그대로 둔다 — 여기서는 묶고 늘어놓기만 하고, 작은 고침만 `Also:` 한 줄로 접는다(3번).
 
 1. **히어로 그림 — 있을 때만.** develop에 `assets/release-<버전>.png`가 있으면 맨 위에 한 줄로 건다. 없으면 이 줄 없이 간다 — `/ship`은 그림 때문에 멈추지 않는다.
    `![Prevue 0.21 — Kotlin Multiplatform, in your browser](https://raw.githubusercontent.com/kakao/prevue/v0.21.0/assets/release-0.21.0.png)`
    주소는 **그 판의 태그**에 고정한다 — Release 본문은 저장소 상대 경로를 풀지 못하고, `main`에 걸면 나중에 그림이 바뀔 때 지난 노트도 바뀐다. 태그는 5단계에서 생기니 그 전까지는 CHANGELOG에서 그림이 깨져 보인다. 그림은 릴리즈 전에 PR로 넣는다(버전 커밋 여섯 파일 밖이다) — 만드는 법은 `tools/release-hero/README.md`.
-2. **요약 문단** — 두세 문장. 이 판에서 사용자가 새로 할 수 있게 된 것 하나를 먼저, 나머지 무게를 한 문장으로.
-3. **주제별 `###` 절** — 무엇을 할 수 있게 됐나로 묶는다. 절 이름은 판마다 정하고(`### Kotlin Multiplatform` · `### Setup without Android Studio`), 고친 것은 주제 절들 뒤 `### Fixes`로 모은다. 절 순서는 주제 절들 → `### Fixes` → `### Thanks`(맨 끝)다. 큰 기능 하나가 제 절을 가지면 절 머리에 한 문단(무엇이 되나 · 조건 · 사용자가 할 일)을 두고 그 아래 항목을 둔다 — 항목에도 숫자 · 에러 문구 · 할 일은 그대로 둔다. 한 판 안에서만 있던 "예전엔"(같은 판의 앞 PR이 만든 상태)은 사용자가 본 적이 없으니 뺀다.
+2. **요약 문단** — 두세 문장. 이 판에서 사용자가 새로 할 수 있게 된 것을 먼저(축이 둘이면 한 문장씩), 나머지 무게를 한 문장으로. 히어로 그림이 있으면 그 제목을 문단 맨 앞에 굵게 둘 수 있다(`**See what it's made of. See where it fits.** Point at an element and …`).
+3. **주제별 `###` 절** — 무엇을 할 수 있게 됐나로 묶는다. 절 이름은 판마다 정하고(`### See where it fits` · `### Kotlin Multiplatform`), 고친 것은 주제 절들 뒤 `### Fixes`로 모은다. 절 순서는 주제 절들 → `### Fixes` → `### Thanks`(맨 끝)다.
+   - **절 머리는 그림 한 장 — 있을 때만.** 절 머리에 문단을 두지 않는다 — 무엇이 되나 · 조건 · 사용자가 할 일은 항목이 갖는다. 그림은 그 절의 기능이 움직이는 장면(webp · gif)이고, 주소는 히어로처럼 그 판의 태그에 고정한다. 그림이 없는 절은 절 이름 아래 바로 항목이 온다.
+   - **`### Fixes` 끝의 `Also:` 한 줄.** 작은 고침("항목 모양"의 끝 문단)은 줄을 따로 주지 않고 `- Also: …, and ….` 한 줄에 구절로 묶는다 — "한 변화는 한 항목"의 예외다. 작은 고침이 아닌 고침은 접지 않고 제 줄을 둔다 — 멘션 점검이 항목의 `[#N]` 링크와 끝의 멘션에 기댄다.
+     ``- Also: `next` and `then` use the `prevue` that answered, and Original size keeps its aspect ratio.``
+   - **한 판 안에서만 있던 상태는 쓰지 않는다.** 같은 판의 앞 PR이 만든 문제를 뒤 PR이 고쳤으면 사용자가 본 적이 없다 — `no longer …` 줄도 `Also:` 구절도 두지 않는다.
 4. **`### Thanks`** — 외부 기여자 · 제보자가 있을 때만, 한 줄로 이름과 번호를 모은다(`@Dwite ([#29](…)) · @sergei-lapin ([#30](…), [#31](…))`). 항목 끝의 멘션은 그대로 둔다 — 무엇을 했는지는 그 변화 옆에서 보인다.
 
-판이 작아 절이 하나뿐이면 `###` 없이 요약 문단 아래 항목만 둔다.
+판이 작아 절이 하나뿐이면 `###` 없이 요약 문단 아래 항목만 둔다 — `Also:` 줄은 항목 맨 끝이다.
 
-**이어 가는 릴리즈에 늦게 들어온 줄** — 버전 커밋 뒤 `[Unreleased]`에 새 `- ` 줄이 들어와 그 판으로 옮기면(`/ship` 1단계), 맞는 주제 절에 넣고 없으면 `### Fixes`에 넣는다. 그 줄이 요약 문단의 무게를 바꾸거나 새 외부 멘션을 달고 오면 요약 · Thanks도 고친다.
+**이어 가는 릴리즈에 늦게 들어온 줄** — 버전 커밋 뒤 `[Unreleased]`에 새 `- ` 줄이 들어와 그 판으로 옮기면(`/ship` 1단계), 맞는 주제 절에 넣고 없으면 `### Fixes`에 넣는다 — 작은 고침이면 `Also:` 줄에 구절로 합치고(그 줄이 없으면 만든다), 제 줄을 갖는 고침은 `Also:` 앞에 둔다. 그 줄이 요약 문단의 무게를 바꾸거나 새 외부 멘션을 달고 오면 요약 · Thanks도 고친다.
