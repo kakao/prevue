@@ -8,6 +8,13 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-11-13
+
+The README now leads with what Prevue does for you — five features, with pictures retaken in the 0.22 UI. Android device frames also get each device's measured screen corners.
+
+- **The README is reorganized around five features** — your agent checking its own work, hot swap, pointing, interactive mode and light worktrees — under the new headline "Close Android Studio. Your Previews still show."
+- Android device frames now use the measured screen corner radius of each device and posture (Pixel 9, Pixel 9 Pro Fold, Galaxy S26, Galaxy Z Fold8).
+
 ## [0.22.0] — 2026-11-12
 
 ![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
@@ -23,7 +30,7 @@ Only changes users can see go here.
 
 ### See where it fits
 
-![Changing devices from the dock under the picture: S26, then iPhone Duo unfolded, folded to its cover and unfolded again, then Pixel Tablet; back on the unfolded iPhone Duo, Show inset areas tints the 84 dp status band and the 34 dp bottom band and labels the SAFE AREA between them](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/devices.gif)
+![Changing devices from the dock with Show inset areas left on: S26, iPhone 17, iPhone Duo folded to its cover and unfolded, then S26 again, each redrawing inside its own SAFE AREA](https://raw.githubusercontent.com/kakao/prevue/913a690402a561dcacaef436316cf4fdf0be276f/assets/devices.gif)
 
 - **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
 - **Show inset areas** draws each inset band and the safe area.

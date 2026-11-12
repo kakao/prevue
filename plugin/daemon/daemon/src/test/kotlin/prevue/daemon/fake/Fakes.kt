@@ -81,10 +81,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val asideEntered = Semaphore(0)
     val treeAsides = CopyOnWriteArrayList<PreviewSpec>()
     override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput {
+        val gate = asideGate                                 // 들어온 순간의 빗장 — 테스트가 갈아 끼워도 이 태스크는 이것에 선다
         asides += p
         if (tree) treeAsides += p
         asideEntered.release()
-        asideGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
+        gate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
         asideThrows?.let { check(!it(p)) { "옆 태스크 예외 — ${p.previewId}" } }
         return asideFails?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
     }

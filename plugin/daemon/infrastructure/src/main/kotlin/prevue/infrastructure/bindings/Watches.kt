@@ -27,7 +27,7 @@ internal class Watches(
             val watching = config.watching
             val roots = if (!watching) emptyList() else
                 (graph.roots + config.extraWatch.filter { it.isDirectory }).map { it.canonicalFile }.distinct()
-            val valueDirs = if (!watching) emptyList() else ValueDirs.of(graph.resRoots).map { it.canonicalFile }
+            val valueDirs = if (!watching) emptyList() else ValueDirs.of(graph.resRoots)
             val rJars = spec.rClassJars.map { File(it) }
             val ownOut = graph.nodes.flatMap { it.outputs }.filter { it !in rJars && it.exists() }
             val depOut = spec.projectClassPath.map { File(it) }.filter { it !in ownOut && it !in rJars && it.exists() }

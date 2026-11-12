@@ -2,14 +2,15 @@ import { reduced } from "./motion.js";
 import { phrase } from "./strings.js";
 
 // 안드로이드 카메라(cam)는 windowinsets.info 의 displayCutout 이다 — Pixel 은 path 원의 가운데 · 지름, Samsung 은 path 가 위 가장자리에 붙은 상자라 그 가운데만 따르고 지름은 눈대중이다.
+// 안드로이드 화면 모서리(radius)는 windowinsets.info 의 roundedCorners 다 — 자세 · 네 모서리가 같은 값이라 look 마다 하나다. Pixel Tablet 은 원자료가 비어 눈대중이다.
 // Duo 커버 카메라는 safearea.info 세로 자세의 37pt occlusion 이다. 가로는 몸체와 함께 돌려 얻는다 — 사이트의 가로 두 자세 occlusion 과 같은 자리다.
 const DEVICES = {
   s26: { name: "Galaxy S26", short: "S26", fold: false,
     open: { w: 360, h: 780 },
-    look: { open: { tone: "var(--device-tone-s26)", bezel: 5, radius: 26, cam: { w: 9, h: 9, y: 14 }, btn: [[1, 175, 95], [1, 300, 50]] } } },
+    look: { open: { tone: "var(--device-tone-s26)", bezel: 5, radius: 28, cam: { w: 9, h: 9, y: 14 }, btn: [[1, 175, 95], [1, 300, 50]] } } },
   pixel9: { name: "Pixel 9", short: "Pixel 9", fold: false,
     open: { w: 411.43, h: 923.43 },
-    look: { open: { tone: "var(--device-tone-pixel9)", bezel: 6, radius: 34, cam: { w: 32, h: 32, y: 16.95 }, btn: [[1, 190, 50], [1, 270, 95]] } } },
+    look: { open: { tone: "var(--device-tone-pixel9)", bezel: 6, radius: 50.29, cam: { w: 32, h: 32, y: 16.95 }, btn: [[1, 190, 50], [1, 270, 95]] } } },
   ip17: { name: "iPhone 17", short: "iPhone 17", fold: false,
     open: { w: 402, h: 874 },
     look: { open: { tone: "var(--device-tone-ip17)", bezel: 5, radius: 55, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]] } } },
@@ -21,8 +22,8 @@ const DEVICES = {
     look: { open: { tone: "var(--device-tone-ip17pm)", bezel: 5, radius: 60, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 160, 34], [-1, 225, 66], [-1, 305, 66], [1, 255, 110]] } } },
   pixelfold: { name: "Pixel 9 Pro Fold", short: "9 Pro Fold", fold: true,
     cover: { w: 443.08, h: 994.46 }, open: { w: 851.69, h: 882.87, hinge: 425.85 },
-    look: { cover: { tone: "var(--device-tone-pixelfold)", bezel: 6, radius: 30, cam: { w: 34.05, h: 34.05, y: 18.26 }, btn: [[1, 200, 50], [1, 280, 95]] },
-            open:  { tone: "var(--device-tone-pixelfold)", bezel: 7, radius: 24, cam: { w: 32.41, h: 32.41, y: 16.62, x: .9574 }, btn: [[1, 200, 50], [1, 280, 95]] } } },
+    look: { cover: { tone: "var(--device-tone-pixelfold)", bezel: 6, radius: 47.18, cam: { w: 34.05, h: 34.05, y: 18.26 }, btn: [[1, 200, 50], [1, 280, 95]] },
+            open:  { tone: "var(--device-tone-pixelfold)", bezel: 7, radius: 34.87, cam: { w: 32.41, h: 32.41, y: 16.62, x: .9574 }, btn: [[1, 200, 50], [1, 280, 95]] } } },
   tablet: { name: "Pixel Tablet", short: "Pixel Tablet", fold: false,
     open: { w: 1280, h: 800 },
     look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
@@ -32,8 +33,8 @@ const DEVICES = {
             open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 0, h: 0, y: 11 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
   fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
     cover: { w: 475.43, h: 751.24 }, open: { w: 932.57, h: 704, hinge: 466.29 },
-    look: { cover: { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 9, h: 9, y: 15.31 }, btn: [[1, 170, 80], [1, 270, 55]] },
-            open:  { tone: "var(--device-tone-fold8)", bezel: 6, radius: 10, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] } } },
+    look: { cover: { tone: "var(--device-tone-fold8)", bezel: 6, radius: 9.9, cam: { w: 9, h: 9, y: 15.31 }, btn: [[1, 170, 80], [1, 270, 55]] },
+            open:  { tone: "var(--device-tone-fold8)", bezel: 6, radius: 6.86, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] } } },
   ultra: { name: "Galaxy Z Fold8 Ultra", short: "Fold8 Ultra", fold: true,
     cover: { w: 360, h: 840 }, open: { w: 752, h: 834.67, hinge: 376 },
     look: { cover: { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 8, h: 8, y: 14 }, btn: [[1, 190, 85], [1, 300, 55]] },

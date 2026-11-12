@@ -16,10 +16,10 @@
 //
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
-// 장면: hero · board · party · pointing · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
-// GIF 장면(pointing · files · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
-// 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
+// 장면: hero · board · party · pointing · worktrees · match · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --mw · --mh(match 가운데 창) · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
+// GIF 장면(pointing · worktrees · match · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을,
+// match 는 크롬을 하나 더 띄우고 --pearl-a 의 PearlScreen.kt · Theme.kt 를 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
 
 import { spawn, spawnSync } from "node:child_process";
@@ -48,6 +48,9 @@ const NIA = {
 const PD = "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl";
 const PEARL = {
   previews: `${PD}/PearlPreviews.kt`,
+  screen: `${PD}/PearlScreen.kt`,
+  theme: "core/designsystem/src/main/kotlin/com/example/pearl/core/designsystem/Theme.kt",
+  strings: "feature/pearl/src/main/res/values/strings.xml",
   showcase: `${PD}/showcase/ShowcasePreviews.kt`,
   components: `${PD}/showcase/ComponentPreviews.kt`,
 };
@@ -164,13 +167,12 @@ async function chrome() {
     await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, text });
     await send("Input.dispatchKeyEvent", { type: "keyUp", key, code });
   };
-  const type = text => send("Input.insertText", { text });
   await send("Page.enable");
   await send("Runtime.enable");
   // 움직임 줄이기 — 모션이 도는 중간을 찍지 않는다. 멈춘 모양은 같다.
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
   return {
-    send, on, evaluate, until, rect, move, click, key, type,
+    send, on, evaluate, until, rect, move, click, key,
     async close() {
       ws.close();
       ch.kill();
@@ -307,6 +309,7 @@ async function hand(c) {
     await to((r.x + r.w / 2 - s.x) / s.w, (r.y + r.h / 2 - s.y) / s.h, ms);
   };
   return {
+    async rest(ms = 520) { await to(0.62, 0.62, ms); },   // 손이 처음 놓인 자리 — 끝을 첫 장과 같게 해 GIF 반복을 잇는다
     async tapEl(sel, after = 700) { await toEl(sel, 520); await sleep(140); await press(); await sleep(90); await release(); await sleep(pace(after)); },
     async tap(fx, fy, after = 700) { await to(fx, fy); await sleep(140); await press(); await sleep(90); await release(); await sleep(pace(after)); },
     async drag(fx, fy, tx, ty, ms = 480, after = 1000) { await to(fx, fy); await sleep(140); await press(); await to(tx, ty, ms); await sleep(60); await release(); await sleep(pace(after)); },
@@ -434,8 +437,8 @@ function gifSink() {
 }
 
 /**
- * 작업 공간에 들어가 손이 하는 일을 GIF 로 — 1x, 세로로 긴 프리뷰에 맞춘 좁은 창(README 세 칸 폭).
- * 손이 하는 일이 요점이라 무대 아래 조작 독(D-167)은 숨긴다 — 좁은 창에서 독이 그림 아래를 덮는다.
+ * 작업 공간에 들어가 손이 하는 일을 GIF 로 — 1x, 세로로 긴 프리뷰에 맞춘 좁은 창(README 네 칸 폭).
+ * 무대 아래 조작 독(D-167)은 그대로 둔다 — 단일 뷰가 지금 어떻게 생겼는지도 그림이 보인다.
  */
 async function interactiveGif(c, name, repo, file, fn, act) {
   const url = await viewer(repo, [file]);
@@ -445,7 +448,6 @@ async function interactiveGif(c, name, repo, file, fn, act) {
   await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
   await c.send("Page.navigate", { url });
   await c.until(BOARD);
-  await c.evaluate(`(() => { const st = document.createElement("style"); st.textContent = "#panel{display:none!important}"; document.head.append(st); return true; })()`);
   await enter(c, card.index);
   await c.evaluate(POINTER);
   const title = await c.evaluate("document.title");
@@ -456,8 +458,9 @@ async function interactiveGif(c, name, repo, file, fn, act) {
 
 /**
  * 조작 독에서 크기 · 기기를 바꾸는 GIF — 독이 요점이라 자르지 않는다. 틀이 새 크기로 옮겨 가는 모프를 보이려고 이 장면만 움직임 줄이기를 끈다.
+ * setup 은 녹화 전에 첫 장면을 맞춘다 — 끝 장면과 같게 두면 GIF 반복이 끊기지 않는다.
  */
-async function devicesGif(c, name, repo, file, fn, act) {
+async function devicesGif(c, name, repo, file, fn, act, setup) {
   const url = await viewer(repo, [file]);
   const card = (prevue(repo, "board").json?.cards || []).find(x => x.name === fn);
   if (!card) throw new Error(`${file}: ${fn} 카드가 없다`);
@@ -470,6 +473,7 @@ async function devicesGif(c, name, repo, file, fn, act) {
     await enter(c, card.index);
     await c.evaluate(POINTER);
     const title = await c.evaluate("document.title");
+    if (setup) { const hd = await hand(c); await setup(hd); await hd.rest(0); }
     const frames = await record(c, async () => act(await hand(c)), 1800);
     await gif(c, name, title, url, frames, w, h);
   } finally {
@@ -496,6 +500,113 @@ async function svgPng(c, name) {
   await c.send("Emulation.setDefaultBackgroundColorOverride", {});
   writeFileSync(join(OUT, `${name}.png`), Buffer.from(data, "base64"));
   console.log(`${name}.png  ${W * SCALE}×${H * SCALE}`);
+}
+
+/**
+ * 루프 그림 두 장(이전 · 이후)을 위아래로 한 장에 — 두 SVG 의 바탕이 같은 #f5f5f7 이라 한 판으로 이어지고, 판마다 머리 제목을 단다.
+ * 나란히 두면 README 폭의 반씩이라 글자가 읽히지 않고 둥근 바탕 둘 사이에 이음매가 진다. SVG 는 data: 그림으로 담아 서로의 스타일이 섞이지 않게 한다.
+ */
+async function loopPair(c, name, before, after, titles) {
+  const svg = n => `data:image/svg+xml;base64,${readFileSync(join(OUT, `${n}.svg`)).toString("base64")}`;
+  const W = 960, SH = 404, HEAD = 44, H = (HEAD + SH) * 2;
+  const html = `<!doctype html><meta charset="utf-8"><style>
+    html, body { margin: 0; background: transparent; }
+    .pair { width: ${W}px; height: ${H}px; border-radius: 16px; background: #f5f5f7; overflow: hidden; }
+    h2 { margin: 0; height: ${HEAD}px; padding-top: 18px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px;
+      font: 600 19px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; color: #1d1d1f; letter-spacing: -.01em; }
+    h2 i { width: 10px; height: 10px; border-radius: 50%; } img { display: block; }
+  </style><div class="pair">
+    <h2><i style="background:#ff6b2c"></i>${esc(titles[0])}</h2><img src="${svg(before)}" width="${W}" height="${SH}">
+    <h2><i style="background:#007aff"></i>${esc(titles[1])}</h2><img src="${svg(after)}" width="${W}" height="${SH}">
+  </div>`;
+  await c.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: SCALE, mobile: false });
+  await c.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
+  await c.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
+  const { frameTree } = await c.send("Page.getFrameTree");
+  await c.send("Page.setDocumentContent", { frameId: frameTree.frame.id, html });
+  await c.until(`[...document.images].every(i => i.complete && i.naturalWidth > 0)`);
+  await c.evaluate(`document.fonts.ready.then(() => true)`);
+  await sleep(500);
+  const { data } = await c.send("Page.captureScreenshot", { format: "png" });
+  await c.send("Emulation.setDefaultBackgroundColorOverride", {});
+  writeFileSync(join(OUT, `${name}.png`), Buffer.from(data, "base64"));
+  console.log(`${name}.png  ${W * SCALE}×${H * SCALE}`);
+}
+
+// ── 저장 장면(worktrees · match) — 사본에 실제로 저장하고 prevue wait 결과를 창 아래 터미널 띠에 찍는다 ──
+
+/** 고칠 자리가 사본에 그대로 있을 때만 바꾼다 — 픽스처가 바뀌어 맞는 자리가 없으면 그 자리에서 멈춘다. */
+function edit(scene, text, from, to) {
+  if (!text.includes(from)) throw new Error(`${scene}: 사본에 ${from} 이 없다 — 장면의 고칠 자리를 다시 맞춘다`);
+  return text.replace(from, to);
+}
+
+function waited(scene, r) {
+  if (r.code !== 0 || !r.json?.cards) throw new Error(`${scene}: prevue wait 종료 ${r.code} — ${r.text.slice(0, 400)}`);
+  return `✓ ${r.json.cards.length} previews redrawn · ${(r.ms / 1000).toFixed(1)} s`;
+}
+
+/** 따로 띄운 크롬에서 뷰어를 녹화한다 — 시각은 화면 시계(초), 없으면 받은 때 */
+async function screencast(cc, url, w, h) {
+  await cc.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+  await cc.send("Page.navigate", { url });
+  await cc.until(BOARD);
+  const title = await cc.evaluate("document.title");
+  const frames = [];
+  cc.on("Page.screencastFrame", p => {
+    frames.push({ data: p.data, t: p.metadata?.timestamp ?? Date.now() / 1000 });
+    cc.send("Page.screencastFrameAck", { sessionId: p.sessionId }).catch(() => {});
+  });
+  await cc.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
+  return { title, stop: async () => { await cc.send("Page.stopScreencast"); cc.on("Page.screencastFrame", null); return frames; } };
+}
+
+/** 시각 t 에 보이던 프레임 — 시각이 늘기만 하는 차례로 부른다 */
+const cursor = fs => { let k = 0; return t => { while (k + 1 < fs.length && fs[k + 1].t <= t) k++; return fs[k].data; }; };
+
+/** 에이전트 터미널 띠. 줄은 찍힌 시각과 함께 쌓고, 합칠 때 그 시각까지의 줄 중 끝의 rows 줄만 그린다(띠가 넘치면 위가 밀려 올라간다) */
+function terminal(rows = Infinity) {
+  const lines = [];
+  return {
+    say: (text, cls = "") => lines.push([Date.now() / 1000, text, cls]),
+    html: (id, who, t) => `<div class="term" id="${id}"><div class="who">${esc(who)}</div>${
+      lines.filter(l => l[0] <= t).slice(-rows).map(([, text, cls]) => `<div class="${cls}">${esc(text)}</div>`).join("")}</div>`,
+  };
+}
+const TERM_CSS = th => ` .term { height: ${th}px; box-sizing: border-box; padding: 10px 14px; background: #1d1d1f; color: #e5e5ea;
+  font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; } .who { color: #8e8e93; margin-bottom: 4px; } .ok { color: #30d158; } .ed { color: #64d2ff; } .you { color: #ffd60a; } .dim { color: #8e8e93; }`;
+
+/**
+ * 녹화를 합친다 — t0..t1 을 GIF 간격으로 나눠(인코더가 어차피 그 간격으로 뽑는다) 시각마다 paint(t) 로 문서를 바꾸고 한 장씩 찍는다.
+ * paint 는 함수 몸통 글이다. show(id, png) 로 창 그림을 바꾸고, 기다릴 decode 들을 배열로 돌려준다.
+ */
+async function composeGif(c, name, page, W, H, t0, t1, paint) {
+  await c.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+  await c.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
+  const { frameTree } = await c.send("Page.getFrameTree");
+  await c.send("Page.setDocumentContent", { frameId: frameTree.frame.id, html: page });
+  const step = 1 / +(opt.fps || 15), sink = gifSink();
+  for (let t = t0; t <= t1; t += step) {
+    await c.evaluate(`(() => { const show = (id, d) => { const i = document.getElementById(id); i.src = "data:image/png;base64," + d; return i.decode(); };
+      return Promise.all((() => { ${paint(t)} })()).then(() => true); })()`);
+    sink.add((await c.send("Page.captureScreenshot", { format: "png" })).data, step);
+  }
+  sink.finish(name, W, H);
+}
+
+/** base64 PNG 둘의 다른 픽셀 수 — 크기가 다르면 -1 */
+function differ(c, a, b) {
+  return c.evaluate(`(async () => {
+    const load = d => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = "data:image/png;base64," + d; });
+    const [x, y] = await Promise.all([load(${JSON.stringify(a)}), load(${JSON.stringify(b)})]);
+    if (x.width !== y.width || x.height !== y.height) return -1;
+    const px = i => { const cv = document.createElement("canvas"); cv.width = i.width; cv.height = i.height;
+      const g = cv.getContext("2d"); g.drawImage(i, 0, 0); return new Uint32Array(g.getImageData(0, 0, i.width, i.height).data.buffer); };
+    const p = px(x), q = px(y); let n = 0;
+    for (let k = 0; k < p.length; k++) if (p[k] !== q[k]) n++;
+    return n; })()`);
 }
 
 // ── 장면 ─────────────────────────────────────────────────────────────────
@@ -650,145 +761,145 @@ const SCENES = {
       await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
     }
   },
-  // 파일 오가기 — 빠른 열기(/)로 파일 이름 · 머리글자를 쳐서 열면 왼쪽 열린 파일 목록에 쌓이고, 숫자 키로 그 사이를 오간다
-  async files(c) {
-    const url = await viewer(opt.nia, [NIA.foryou]);
-    const w = +(opt.fw || 1280), h = +(opt.fh || 760);
-    await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
-    await c.send("Page.navigate", { url });
-    await c.until(BOARD);
-    await sleep(800);
-    const title = await c.evaluate("document.title");
-    const typeSlow = async text => { for (const ch of text) { await c.type(ch); await sleep(pace(110)); } };
-    const open = async (query, file, settle = 1800) => {                   // 제목이 새 파일로 바뀐 뒤 보드가 찰 때까지 — 앞 보드로 넘어가지 않게
-      await c.key("/", "Slash", "/"); await sleep(pace(600));
-      await typeSlow(query); await sleep(pace(1500));
-      await c.key("Enter", "Enter", "\r");
-      await c.until(`document.title.startsWith(${JSON.stringify(file)})`, 60_000);
-      await sleep(300); await c.until(BOARD, 60_000); await sleep(pace(settle));
-    };
-    const frames = await record(c, async () => {
-      await open("topic", "TopicScreen");                                    // 파일 이름 — 함수 이름이 맞은 줄도 함께 뜬다
-      await open("nrc", "NewsResourceCard");                                 // 머리글자 — NewsResourceCard.kt
-      await c.key("1", "Digit1", "1"); await sleep(pace(1600));              // 열린 파일 사이를 숫자 키로
-      await c.key("2", "Digit2", "2"); await sleep(pace(1600));
-    }, 700);
-    await gif(c, "files", title, url, frames, w, h);
-  },
   // 워크트리 나란히 — 워크트리 둘에 데몬 둘. 두 쪽이 같은 때 저장하면 각자 다시 그리고(①), 한쪽만 저장하면 다른 쪽은 그대로다(②).
-  // 사본 저장소에 실제로 저장하고 prevue wait 를 돌려 그 값을 창 아래 터미널 띠에 찍는다. 끝나면 파일을 되돌리고 다시 그려질 때까지 기다린다.
   // 뷰어는 iframe 에 담기지 않아 크롬을 둘 더 띄워 각자 녹화하고, 같은 시계(초)로 두 창과 터미널을 한 장씩 합친다.
   async worktrees(c) {
     const A = opt["pearl-a"], B = opt["pearl-b"];
     const ua = await viewer(A, [PEARL.previews]), ub = await viewer(B, [PEARL.previews]);
-    const theme = "core/designsystem/src/main/kotlin/com/example/pearl/core/designsystem/Theme.kt";
-    const strings = "feature/pearl/src/main/res/values/strings.xml";
-    const keep = [[join(A, theme), readFileSync(join(A, theme), "utf8")], [join(B, strings), readFileSync(join(B, strings), "utf8")]];
-    const edit = (text, from, to) => {                                      // 픽스처가 바뀌어 맞는 자리가 없으면 그 자리에서 멈춘다
-      if (!text.includes(from)) throw new Error(`worktrees: 사본에 ${from} 이 없다 — 장면의 고칠 자리를 다시 맞춘다`);
-      return text.replace(from, to);
-    };
-    const forest = (hex, light) => edit(edit(keep[0][1], "Color(0xFF00664F)", `Color(0xFF${hex})`), "Color(0xFF0B7A5F)", `Color(0xFF${light})`);
+    const keep = [[join(A, PEARL.theme), readFileSync(join(A, PEARL.theme), "utf8")], [join(B, PEARL.strings), readFileSync(join(B, PEARL.strings), "utf8")]];
+    const forest = (hex, light) => edit("worktrees", edit("worktrees", keep[0][1], "Color(0xFF00664F)", `Color(0xFF${hex})`), "Color(0xFF0B7A5F)", `Color(0xFF${light})`);
     const ww = 720, vh = 540, th = 172;
     const label = (dir, n) => `agent ${n} · ${basename(dir)} (${spawnSync("git", ["-C", dir, "branch", "--show-current"], { encoding: "utf8" }).stdout.trim()})`;
-    const who = { a: label(A, 1), b: label(B, 2) }, titles = {};
-    const lines = { a: [], b: [] };                                          // [시각(초), 글, 종류]
-    const say = (k, text, cls = "") => lines[k].push([Date.now() / 1000, text, cls]);
-    const waited = r => {
-      if (r.code !== 0 || !r.json?.cards) throw new Error(`worktrees: prevue wait 종료 ${r.code} — ${r.text.slice(0, 400)}`);
-      return `✓ ${r.json.cards.length} previews redrawn · ${(r.ms / 1000).toFixed(1)} s`;
-    };
-    const rec = async (cc, url) => {
-      await cc.send("Emulation.setDeviceMetricsOverride", { width: ww, height: vh, deviceScaleFactor: 1, mobile: false });
-      await cc.send("Page.navigate", { url });
-      await cc.until(BOARD);
-      titles[cc === browsers[0] ? "a" : "b"] = await cc.evaluate("document.title");
-      const frames = [];
-      cc.on("Page.screencastFrame", p => {                                // 시각은 화면 시계 — 없으면 받은 때
-        frames.push({ data: p.data, t: p.metadata?.timestamp ?? Date.now() / 1000 });
-        cc.send("Page.screencastFrameAck", { sessionId: p.sessionId }).catch(() => {});
-      });
-      await cc.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
-      return async () => { await cc.send("Page.stopScreencast"); cc.on("Page.screencastFrame", null); return frames; };
-    };
+    const who = { a: label(A, 1), b: label(B, 2) };
+    const ta = terminal(), tb = terminal();
     const browsers = [];
-    let fa, fb, t0, t1;
+    let ra, rb, fa, fb, t0, t1;
     try {
       const ca = await chrome(); browsers.push(ca);
       const cb = await chrome(); browsers.push(cb);
-      const [stopA, stopB] = await Promise.all([rec(ca, ua), rec(cb, ub)]);
+      [ra, rb] = await Promise.all([screencast(ca, ua, ww, vh), screencast(cb, ub, ww, vh)]);
       await sleep(1500);
       t0 = Date.now() / 1000;
       await sleep(900);
-      say("a", "✎ Theme.kt  forest → purple", "ed"); say("b", "✎ strings.xml  headline → \"Big cards, big sips\"", "ed");
+      ta.say("✎ Theme.kt  forest → purple", "ed"); tb.say("✎ strings.xml  headline → \"Big cards, big sips\"", "ed");
       writeFileSync(keep[0][0], forest("5458C4", "6F74DD"));                  // ① 두 쪽이 같은 때 저장한다
-      writeFileSync(keep[1][0], edit(keep[1][1], "What\\'s your sip today?", "Big cards, big sips"));
-      say("a", "$ prevue wait"); say("b", "$ prevue wait");
-      const both = await Promise.allSettled([prevueAsync(A, "wait", join(A, theme)).then(r => say("a", waited(r), "ok")),
-                                             prevueAsync(B, "wait", join(B, strings)).then(r => say("b", waited(r), "ok"))]);
+      writeFileSync(keep[1][0], edit("worktrees", keep[1][1], "What\\'s your sip today?", "Big cards, big sips"));
+      ta.say("$ prevue wait"); tb.say("$ prevue wait");
+      const both = await Promise.allSettled([prevueAsync(A, "wait", join(A, PEARL.theme)).then(r => ta.say(waited("worktrees", r), "ok")),
+                                             prevueAsync(B, "wait", join(B, PEARL.strings)).then(r => tb.say(waited("worktrees", r), "ok"))]);
       const bad = both.filter(x => x.status === "rejected").map(x => x.reason.message);   // 한쪽이 실패해도 다른 쪽 wait 를 끝까지 기다린 뒤 둘 다 알린다
       if (bad.length) throw new Error(bad.join(" / "));
       await sleep(pace(2600));
-      say("a", "✎ Theme.kt  forest → orange", "ed");                         // ② 왼쪽만 — 오른쪽은 그대로다
+      ta.say("✎ Theme.kt  forest → orange", "ed");                           // ② 왼쪽만 — 오른쪽은 그대로다
       writeFileSync(keep[0][0], forest("E8622C", "F07A45"));
-      say("a", "$ prevue wait");
-      say("a", waited(await prevueAsync(A, "wait", join(A, theme))), "ok");
+      ta.say("$ prevue wait");
+      ta.say(waited("worktrees", await prevueAsync(A, "wait", join(A, PEARL.theme))), "ok");
       await sleep(pace(2600));
       t1 = Date.now() / 1000;
-      [fa, fb] = await Promise.all([stopA(), stopB()]);
+      [fa, fb] = await Promise.all([ra.stop(), rb.stop()]);
     } finally {
       for (const [f, t] of keep) writeFileSync(f, t);
-      for (const r of await Promise.all([prevueAsync(A, "wait", join(A, theme)), prevueAsync(B, "wait", join(B, strings))]))   // 다음 장면이 되돌리는 중의 그림을 찍지 않게
+      for (const r of await Promise.all([prevueAsync(A, "wait", join(A, PEARL.theme)), prevueAsync(B, "wait", join(B, PEARL.strings))]))   // 다음 장면이 되돌리는 중의 그림을 찍지 않게
         if (r.code !== 0) console.warn(`  worktrees: 되돌린 뒤 wait 종료 ${r.code} — 다음 장면 전에 데몬을 본다: ${r.text.slice(0, 200)}`);
       await Promise.all(browsers.map(b => b.close()));
     }
     if (!fa.length || !fb.length) throw new Error(`worktrees: 녹화된 프레임이 없다(왼쪽 ${fa.length} · 오른쪽 ${fb.length})`);
-    // 합치기 — 바뀐 시각마다 두 창의 마지막 프레임과 그때까지의 터미널 줄로 한 장
-    const step = 1 / +(opt.fps || 15), ts = [];                            // 인코더가 어차피 이 간격으로 뽑는다 — 그보다 잘게 합치지 않는다
-    for (let t = t0; t <= t1; t += step) ts.push(t);
-    const cursor = fs => { let k = 0; return t => { while (k + 1 < fs.length && fs[k + 1].t <= t) k++; return fs[k].data; }; };
     const atA = cursor(fa), atB = cursor(fb);
-    const W = ww * 2 + GAP + 32, H = BAR + vh + th + 32;
-    const term = (k, t) => `<div class="term" id="t${k}"><div class="who">${esc(who[k])}</div>${
-      lines[k].filter(l => l[0] <= t).map(([, text, cls]) => `<div class="${cls}">${esc(text)}</div>`).join("")}</div>`;
-    const css = ` .row { padding: 16px; } .term { height: ${th}px; box-sizing: border-box; padding: 10px 14px; background: #1d1d1f; color: #e5e5ea;
-      font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; } .who { color: #8e8e93; margin-bottom: 4px; } .ok { color: #30d158; } .ed { color: #64d2ff; }`;
     const page = windowsHtml([
-      { w: ww, h: BAR + vh, title: titles.a, url: ua, data: "", id: "ia", after: '<div id="ta"></div>' },
-      { w: ww, h: BAR + vh, title: titles.b, url: ub, data: "", id: "ib", after: '<div id="tb"></div>' },
-    ], 10, { bg: "#fff", css });
-    await c.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
-    await c.send("Page.navigate", { url: "about:blank" });
-    await sleep(200);
-    const { frameTree } = await c.send("Page.getFrameTree");
-    await c.send("Page.setDocumentContent", { frameId: frameTree.frame.id, html: page });
-    const sink = gifSink();
-    for (const t of ts) {
-      const ta = term("a", t), tb = term("b", t);
-      await c.evaluate(`(() => { document.getElementById("ta").outerHTML = ${JSON.stringify(ta)};
-        document.getElementById("tb").outerHTML = ${JSON.stringify(tb)};
-        const a = document.getElementById("ia"), b = document.getElementById("ib");
-        a.src = "data:image/png;base64,${atA(t)}"; b.src = "data:image/png;base64,${atB(t)}";
-        return Promise.all([a.decode(), b.decode()]).then(() => true); })()`);
-      sink.add((await c.send("Page.captureScreenshot", { format: "png" })).data, step);
+      { w: ww, h: BAR + vh, title: ra.title, url: ua, data: "", id: "ia", after: '<div id="ta"></div>' },
+      { w: ww, h: BAR + vh, title: rb.title, url: ub, data: "", id: "ib", after: '<div id="tb"></div>' },
+    ], 10, { bg: "#fff", css: ` .row { padding: 16px; }${TERM_CSS(th)}` });
+    await composeGif(c, "worktrees", page, ww * 2 + GAP + 32, BAR + vh + th + 32, t0, t1, t => `
+      document.getElementById("ta").outerHTML = ${JSON.stringify(ta.html("ta", who.a, t))};
+      document.getElementById("tb").outerHTML = ${JSON.stringify(tb.html("tb", who.b, t))};
+      return [show("ia", ${JSON.stringify(atA(t))}), show("ib", ${JSON.stringify(atB(t))})];`);
+  },
+  // 시안 맞추기 — 에이전트가 시안(mockup.png)을 보고 저장할 때마다 Preview 가 바뀌어(여백 → 색 → 글자 크기) 세 번 만에 시안과 같아진다.
+  // 시안은 손대지 않은 사본의 PearlListPreview 그림이다. 녹화 전에 세 값을 틀어 두고, 한 값씩 되돌려 저장하며 prevue wait 를 돌린다.
+  // 일치 줄은 마지막 그림이 시안과 픽셀까지 같을 때만 찍는다 — 다르면 멈춘다(Prevue 에 비교 명령은 없다. 비교는 에이전트의 일이라 에이전트의 말로 찍는다).
+  // 가운데 창은 그 파일의 보드다 — 단일 뷰는 카드가 인터랙티브가 돼 wait 가 다른 카드를 기다리지 않는다. 사람 손(포인터)은 나오지 않는다. --mw · --mh(가운데 창)
+  async match(c) {
+    const repo = opt["pearl-a"], fn = "PearlListPreview";
+    const url = await viewer(repo, [PEARL.previews]);
+    const cardOf = cards => (cards || []).find(x => x.name === fn);
+    const first = cardOf(prevue(repo, "board").json?.cards);
+    if (!first) throw new Error(`PearlPreviews 의 ${fn} 카드가 없다`);
+    const mockup = readFileSync(first.image).toString("base64");
+    const screen = join(repo, PEARL.screen), theme = join(repo, PEARL.theme);
+    const keep = [[screen, readFileSync(screen, "utf8")], [theme, readFileSync(theme, "utf8")]];
+    const PAD = ["contentPadding = PaddingValues(start = 24.dp, end = 24.dp,", "contentPadding = PaddingValues(start = 8.dp, end = 8.dp,"];
+    const SIZE = ["fontSize = 28.sp,", "fontSize = 22.sp,"];
+    const screenWith = (pad, size) => [[PAD, pad], [SIZE, size]].reduce((t, [[a, b], off]) => (off ? edit("match", t, a, b) : t), keep[0][1]);
+    const forestOff = edit("match", edit("match", keep[1][1], "Color(0xFF00664F)", "Color(0xFF2E6C8E)"), "Color(0xFF0B7A5F)", "Color(0xFF3C82A6)");
+    const ww = +(opt.mw || 580), vh = +(opt.mh || 940) - BAR, th = 192, mw = 250;
+    const tm = terminal(7);
+    const { say } = tm;
+    const save = async (file, text) => {
+      writeFileSync(file, text);
+      say("$ prevue wait");
+      const r = await prevueAsync(repo, "wait", file);
+      say(waited("match", r), "ok");
+      return r;
+    };
+    let rec, cc, frames, t0, t1, tMatch;
+    try {
+      writeFileSync(screen, screenWith(true, true));                         // 녹화 전 — 시안과 세 군데가 다른 화면
+      writeFileSync(theme, forestOff);
+      waited("match", await prevueAsync(repo, "wait", screen, theme));
+      cc = await chrome();
+      rec = await screencast(cc, url, ww, vh);
+      await sleep(1200);
+      t0 = Date.now() / 1000;
+      await sleep(pace(900));
+      say("> make PearlListPreview match mockup.png", "you");
+      await sleep(pace(1600));
+      say("≠ grid padding · header color · headline size", "dim");
+      await sleep(pace(1200));
+      say("✎ PearlScreen.kt  grid padding 8 → 24 dp", "ed");
+      await save(screen, screenWith(false, true));
+      await sleep(pace(1400));
+      say("≠ header color · headline size", "dim");
+      await sleep(pace(1000));
+      say("✎ Theme.kt  forest #2E6C8E → #00664F", "ed");
+      await save(theme, keep[1][1]);
+      await sleep(pace(1400));
+      say("≠ headline size", "dim");
+      await sleep(pace(1000));
+      say("✎ PearlScreen.kt  headline 22 → 28 sp", "ed");
+      const last = await save(screen, keep[0][1]);
+      const done = cardOf(last.json.cards);
+      const off = done && await differ(c, mockup, readFileSync(done.image).toString("base64"));
+      if (off !== 0) throw new Error(`match: 마지막 그림이 시안과 다르다(다른 픽셀 ${off}) — 틀어 둔 값과 되돌린 값을 맞춘다`);
+      await sleep(pace(700));
+      say("✓ matches mockup.png", "ok");
+      tMatch = Date.now() / 1000;
+      await sleep(pace(3000));
+      t1 = Date.now() / 1000;
+      frames = await rec.stop();
+    } finally {
+      for (const [f, t] of keep) writeFileSync(f, t);
+      const r = await prevueAsync(repo, "wait", screen, theme);
+      if (r.code !== 0) console.warn(`  match: 되돌린 뒤 wait 종료 ${r.code} — 다음 장면 전에 데몬을 본다: ${r.text.slice(0, 200)}`);
+      await cc?.close();
     }
-    sink.finish("worktrees", W, H);
+    if (!frames.length) throw new Error("match: 녹화된 프레임이 없다");
+    const at = cursor(frames);
+    const mh = Math.round(mw * first.height / first.width);
+    const css = ` .row { padding: 16px; align-items: flex-start; }${TERM_CSS(th)}
+      .mock { width: ${mw}px; margin-top: ${BAR}px; font: 12px -apple-system, BlinkMacSystemFont, sans-serif; color: #5f6368; }
+      .mock .mh { display: flex; justify-content: space-between; margin-bottom: 8px; } .mock .mh b { color: #202124; font-weight: 600; }
+      .mock img { display: block; width: ${mw}px; height: ${mh}px; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 6px 18px rgba(0,0,0,.08); }
+      .mock .eq { color: #1f9d55; font-weight: 600; visibility: hidden; } .mock .eq.on { visibility: visible; }`;
+    const page = edit("match", windowsHtml([{ w: ww, h: BAR + vh, title: rec.title, url, data: "", id: "iv", after: '<div id="tm"></div>' }], 10, { bg: "#fff", css }),
+      '<div class="row">', `<div class="row"><div class="mock"><div class="mh"><b>mockup.png</b><span class="eq" id="eq">✓ match</span></div><img src="data:image/png;base64,${mockup}" alt=""></div>`);
+    await composeGif(c, "match", page, mw + GAP + ww + 32, BAR + vh + th + 32, t0, t1, t => `
+      document.getElementById("tm").outerHTML = ${JSON.stringify(tm.html("tm", `agent · ${basename(repo)}`, t))};
+      document.getElementById("eq").classList.toggle("on", ${t >= tMatch});
+      return [show("iv", ${JSON.stringify(at(t))})];`);
   },
   // 인터랙티브 — 작업 공간에 들어가 누르고 끄는 창 전체. 좌표는 360×780dp 그림 안의 비율(그림을 다시 그리면 다시 잰다)
   async interactive(c) {
     const repo = opt["pearl-a"];
-    await interactiveGif(c, "interactive-nav", repo, PEARL.showcase, "NavTourPreview", async h => {
-      await h.tap(0.52, 0.94, 1300);                                         // Orders — 알약이 미끄러지고 글자가 펼쳐진다
-      await h.tap(0.70, 0.94, 1300);                                         // Saved
-      await h.tap(0.83, 0.94, 1300);                                         // Profile
-      await h.tap(0.20, 0.94, 1500);                                         // Home
-    });
-    await interactiveGif(c, "interactive-header", repo, PEARL.showcase, "HomeTourPreview", async h => {
-      await h.tap(0.33, 0.326, 1600);                                        // Fruit tea — 머리 색이 번지고 컵이 바뀌고 제목이 바뀐다
-      await h.tap(0.585, 0.326, 1600);                                       // Milk tea
-      await h.tap(0.83, 0.326, 1600);                                        // Matcha
-      await h.tap(0.13, 0.326, 1800);                                        // All
-    });
     await interactiveGif(c, "interactive-detail", repo, PEARL.showcase, "HomeTourPreview", async h => {
       await h.tap(0.275, 0.48, 2000);                                        // Taro 카드 — 판이 커지고 컵이 상세 컵 자리로 날아간다
       await h.tap(0.5, 0.943, 2000);                                         // Add to bag — 컵이 가방으로, 배지가 튄다
@@ -805,23 +916,34 @@ const SCENES = {
       await h.tap(0.88, +(opt.sweet || 0.81), 1600);                         // 100% — 짙어진다
     });
   },
-  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 조작 독에서 기기 · 접기만 바꿔 다시 그리고, 끝에 인셋 영역 보기를 켠다. 고를 때마다 그림이 서기를 기다린다.
-  // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다
+  // 크기 · 기기 — 인셋 영역 보기를 켠 채 기기만 바꿔, 기기마다 SafeArea 가 달라지고 화면이 그 안에 다시 서는 것을 보인다.
+  // 인셋 보기는 크기 · 자세를 바꿔도 켜진 채다(session.ts insetScope). 녹화 전에 S26 · 인셋 켬을 맞추고 S26 으로 끝내 반복이 이어진다.
+  // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다. 메뉴의 iPhone Duo 는 펼친 채로 열려
+  // 커버로 바로 고를 길이 없다 — 그림이 서자마자 접어 펼친 화면을 짧게 지난다. 고를 때마다 그림이 서기를 기다린다.
   async devices(c) {
+    const pick = async (h, sel, after = 2000) => { await h.tapEl("#pnSum", 450); await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
+    const fold = async (h, after = 2400) => { await h.tapEl("#dcFold", 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
+    // 고른 직후에는 옛 그림이 아직 서 있어 FOCUS 가 바로 참이다 — 접기 버튼이 보이고 풀릴 때(준비가 끝났을 때)까지 기다린다
+    const foldReady = `(() => { const b = document.getElementById("dcFold"); return ${FOCUS} && !!b && b.offsetWidth > 0 && !b.disabled; })()`;
     await devicesGif(c, "devices", opt["pearl-a"], PEARL.showcase, "DevicesPreview", async h => {
-      const pick = async (sel, after = 2000) => { await h.tapEl("#pnSum", 450); await h.tapEl(`#pnPick [data-sel="${sel}"]`, 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
-      await pick("s26");                                                     // 폰 — 컵 아래 고르기
-      const fold = async (after = 2400) => { await h.tapEl("#dcFold", 300); await c.until(FOCUS, 20_000); await sleep(pace(after)); };
-      await pick("ipduo", 2400);                                             // 펼친 iPhone Duo — 왼쪽 컵 · 오른쪽 패널
-      await fold();                                                          // 접으면 커버 — 다시 세로
-      await fold();                                                          // 다시 펴면 컵 · 패널
-      await pick("tablet", 2600);                                            // 태블릿 가로 — 컵 · 패널
-      await pick("ipduo", 2400);                                             // 인셋 영역 보기는 펼친 Duo에서 — 오른쪽 84 · 아래 34 띠가 Tablet(24 · 32)보다 잘 보인다
-      await h.tapEl("#insetBtn", 3200);                                      // 끝 장면 — 띠 · SAFE AREA
+      await pick(h, "ip17", 2400);                                           // iPhone 17 — 다이내믹 아일랜드 · 아래 띠
+      await pick(h, "ipduo", 0);                                             // 펼친 Duo — 곧바로 접는다
+      await c.until(foldReady, 20_000);
+      await fold(h);                                                         // 커버 화면
+      await fold(h, 2600);                                                   // 펼치면 오른쪽 · 아래 띠
+      await pick(h, "s26", 500);                                             // 첫 장면으로
+      await h.rest();
+    }, async h => {
+      await pick(h, "s26", 0);
+      await h.tapEl("#insetBtn", 600);
+      await sleep(1500);
     });
   },
-  // 맡기기의 루프 그림 · 벤치마크(두 판 × 영어 · 한국어) — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
-  async loop(c) { for (const n of ["agent-loop", "agent-loop.ko", "agent-loop-before", "agent-loop-before.ko"]) await svgPng(c, n); },
+  // 도입부의 루프 그림(이전 · 이후를 한 장에) · 벤치마크(두 판), 영어 · 한국어 — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
+  async loop(c) {
+    await loopPair(c, "agent-loop", "agent-loop-before", "agent-loop", ["Before Prevue — you're in every loop", "With Prevue — the agent loops on its own"]);
+    await loopPair(c, "agent-loop.ko", "agent-loop-before.ko", "agent-loop.ko", ["Prevue 이전 — 루프마다 사람이 끼어든다", "Prevue에서 — 에이전트가 혼자 돈다"]);
+  },
   async bench(c) { for (const n of ["benchmark-vs", "benchmark-redraw", "benchmark-vs.ko", "benchmark-redraw.ko"]) await svgPng(c, n); },
 };
 

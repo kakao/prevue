@@ -167,6 +167,15 @@ class ClasspathSpecTest {
         assertEquals(0, n.borrowedCount)
     }
 
+    @Test fun `저장소 루트와 이름 앞부분만 같은 옆 디렉터리의 산출물은 저장소 모듈로 치지 않는다`() {
+        val sibling = "${root.path}-other/lib/build/classes"
+        val other = spec(":app", listOf(appR, appClasses, sibling), listOf(appR, appClasses, sibling), emptyList(), listOf(appR), apk = "app.ap_")
+        val r = home.withResourcesFrom(other)
+        assertEquals(listOf(libClasses, uiClasses, dsClasses, appR, appClasses), r.projectClassPath)
+        assertEquals(listOf(":core:ui", ":core:designsystem", ":app"), r.projectModules)
+        assertEquals(emptyList<String>(), other.projectModules)
+    }
+
     @Test fun `그릴 덤프의 빌린 수는 앱 클래스패스면 모듈에 없는 앱 항목 전부다`() {
         val (onApp, _) = ClasspathSpec.forRender(home, app, overlay)
         assertEquals((app.classPath.toSet() - home.classPath.toSet()).size, onApp.borrowedCount)
@@ -232,6 +241,25 @@ class ClasspathSpecTest {
         assertEquals(listOf(android, common), g.node(":shared")!!.sourceRoots)   // 없는 디렉터리 · iosMain은 보지 않는다
         val (r, _) = ClasspathSpec.forRender(kmpApp.dependency(":shared"), kmpApp, overlay)
         assertEquals(kmpApp.kmpSourceRoots, r.kmpSourceRoots)
+    }
+
+    @Test fun `링크 경로로 적힌 소스 루트의 감시 그래프도 실제 경로의 파일을 품고 그 모듈이 갖는다`() {
+        val shared = out("shared", "classes.jar")
+        val real = File(root, "shared/src/commonMain/kotlin").apply { mkdirs() }
+        val links = Files.createTempDirectory("prevue-spec-link").toFile()
+        val link = Files.createSymbolicLink(File(links, "shared").toPath(), File(root, "shared").toPath()).toFile()
+        try {
+            val json = File(root, "app-link.json").apply {
+                writeText("""{"project":":app","variant":"debug","resourceApkPath":"app.ap_",
+                    "classPath":["$appR","$appClasses","$shared"],"projectClassPath":["$appR","$appClasses","$shared"],
+                    "compileClassPath":["/m2/c.jar"],"rClassJars":["$appR"],"resourceDirs":[],
+                    "kmpSourceRoots":{":shared":["${File(link, "src/commonMain/kotlin")}"]}}""")
+            }
+            val g = WatchGraph.ofApp(ClasspathSpec.load(json), ClasspathSpec.load(json))
+            val f = File(real, "a/Screen.kt")
+            assertTrue(g.contains(f))
+            assertEquals(":shared", g.ownerOf(f))
+        } finally { link.delete(); links.deleteRecursively() }
     }
 
     @Test fun `덤프 JSON 의 moduleCompileClassPaths 를 읽어 KMP 모듈 컴파일에 쓴다`() {
