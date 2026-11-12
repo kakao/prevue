@@ -17,7 +17,9 @@ data class ModuleNode(
  * 의존 관계는 덤프에 없어 클래스패스 순서(소비자 먼저)를 뒤집어 근사한다 — 틀리면 컴파일이 한 번 더 돈다(`CompileOrder`).
  */
 class ModuleGraph(val home: String, nodes: List<ModuleNode>) {
-    val nodes: List<ModuleNode> = nodes.map { it.copy(sourceRoots = it.sourceRoots.map(File::getCanonicalFile), resRoots = it.resRoots.map(File::getCanonicalFile)) }
+    val nodes: List<ModuleNode> = nodes.map {
+        it.copy(sourceRoots = it.sourceRoots.map(File::getCanonicalFile), resRoots = it.resRoots.map(File::getCanonicalFile))
+    }
 
     init { require(nodes.any { it.path == home }) { "$home 이 모듈 목록에 없다" } }
 
