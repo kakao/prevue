@@ -2,7 +2,7 @@
 name: prevue
 description: Renders Jetpack Compose @Preview in the browser, lets you edit it and check the result yourself, and reads what a person points at on screen as a file and line. Use it when changing Compose UI or matching it to a mockup or screenshot, when asked "how does it look", and when the user points at something on screen with words like "this" or "here". Also use it when asked whether the preview is ready ("is the preview ready?") or told to prepare the preview (read the build settings).
 ---
-<!-- 생성물이다. skills-src/prevue/SKILL.md 를 고치고 tools/gen-skills.sh 로 만든다 -->
+<!-- 생성물이다. skills-src/prevue/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
 
 # Prevue
 

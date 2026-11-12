@@ -13,7 +13,7 @@ FILES="LICENSE NOTICE.md"
 if [ "${1:-}" = "--check" ]; then
   DIFF=0
   for F in $FILES; do
-    # cmp(diffutils)는 CI 이미지에 없을 수 있다 — gen-skills.sh 처럼 cksum 으로 견준다.
+    # cmp(diffutils)는 CI 이미지에 없을 수 있다 — gen-agents.sh 처럼 cksum 으로 견준다.
     [ -f "plugin/$F" ] && [ "$(cksum < "$F")" = "$(cksum < "plugin/$F")" ] || { echo "plugin/$F 가 루트 $F 와 다르다"; DIFF=1; }
   done
   [ "$DIFF" = 0 ] && { echo "plugin/ 의 LICENSE · NOTICE.md 가 루트와 맞다"; exit 0; }

@@ -46,7 +46,7 @@ const FOLD: Record<string, { name: string; why: string; fold: ReactNode; unfold:
     unfold: icon(<><rect x="6" y="3" width="8" height="14" rx="1.6" /><path d="M8.2 3v14" /></>) },
 };
 
-// 인셋 영역 보기(다음 Sub-Task 의 토글) — 그림만 여기서 고른다.
+// 인셋 영역 보기(다음 작업의 토글) — 그림만 여기서 고른다.
 const INSET: Record<string, { name: string; why: string; art: ReactNode }> = {
   A: { name: 'A 채운 띠', why: '위 · 아래 위험 영역을 채워 보입니다. 오버레이의 색 띠와 닮았습니다.',
     art: icon(<><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.8V4.3a1.8 1.8 0 0 1 1.8-1.8h5.4a1.8 1.8 0 0 1 1.8 1.8v1.5zM5.5 14.2v1.5a1.8 1.8 0 0 0 1.8 1.8h5.4a1.8 1.8 0 0 0 1.8-1.8v-1.5z" fill="currentColor" /></>) },
@@ -125,7 +125,7 @@ function Sheet({ theme }: { theme: 'light' | 'dark' }) {
         <span className="di-chip">{btn(INSET[k].art, '인셋 영역 보기 — 끔', false)}{btn(INSET[k].art, '인셋 영역 보기 — 켬', true)}</span>
         <p>{INSET[k].why}</p>
       </div>)}</div>
-      <p className="di-note">이 토글은 다음 Sub-Task(인셋 오버레이 토글)가 붙입니다. 여기서는 그림만 고릅니다.</p>
+      <p className="di-note">이 토글은 다음 작업(인셋 오버레이 토글)가 붙입니다. 여기서는 그림만 고릅니다.</p>
     </div>
 
     <div>

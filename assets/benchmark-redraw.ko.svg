@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- README 벤치마크 한 판. agent-loop 그림과 같은 톤 — 흰 카드 · 시스템 글꼴, Android Studio 는 회색, Prevue 는 뷰어 파랑. 바탕은 투명이다.
      -vs 는 Android Studio 대 Prevue, -redraw 는 Prevue 혼자의 다시 그리기 시간. 한국어판(.ko)은 용어(Hot Swap · Memory …)를 영어로 둔다.
-     숫자는 README 벤치마크 절과 볼트 성능 실측이 원 기록이다. tools/readme-shots.mjs bench 가 PNG 로 뽑는다. -->
+     숫자는 README 벤치마크 절이 원 기록이다. tools/readme-shots.mjs bench 가 PNG 로 뽑는다. -->
 <svg viewBox="0 0 1200 598" width="1200" height="598" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d" xml:lang="ko">
   <title id="t">Prevue가 다시 그리는 속도</title>
   <desc id="d">Prevue가 다시 그리는 속도 — 리터럴 0.23초, 리소스 값 0.22초, 코드 0.90초, 보드 전부 2.07초, 모듈 전환 0.33초, 기기 바꾸기 0.92초, 끄는 동안 약 54fps.</desc>

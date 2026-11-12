@@ -35,9 +35,9 @@ jobs:
         with:
           fetch-depth: 0    # 린트가 origin/main 과의 diff 로 새 주석 · 건드린 함수를 본다
 
-      # 스킬 두 벌(plugin/skills/claude/ · plugin/skills/codex/)은 skills-src/ 의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
-      - name: 스킬 두 벌이 원본에서 만들어졌는지 본다
-        run: sh tools/gen-skills.sh --check
+      # 스킬 두 벌(plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/)과 CLAUDE.md 는 원본의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
+      - name: 스킬 두 벌과 CLAUDE.md가 원본에서 만들어졌는지 본다
+        run: sh tools/gen-agents.sh --check
 
       # 설치본은 plugin/ 만 받는다(D-123) — 그 안의 LICENSE · NOTICE.md 는 루트 원본의 사본이다.
       - name: 플러그인의 고지 사본이 원본과 맞는지 본다

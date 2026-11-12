@@ -21,7 +21,7 @@ out/
 
 # 작업 메모다. plugin/(skills/ · .claude-plugin/ 포함)은 제품이므로 추적한다.
 # .claude/skills/ 는 dev-skills-src/ 의 생성물(이 저장소를 개발할 때 쓰는 스킬)이라 추적한다.
-# 세션 규칙(AGENTS.md · CLAUDE.md)은 워크트리로 따라가야 해 추적한다. CLAUDE.local.md 는 베이스 체크아웃의 개인 문서라 워크트리로 복사하지 않는다.
+# 세션 규칙(AGENTS.md · 그 생성물 CLAUDE.md)은 워크트리로 따라가야 해 추적한다. CLAUDE.local.md 는 개인 메모라 추적하지 않는다.
 .worktrees/
 .claude/*
 !.claude/skills/
