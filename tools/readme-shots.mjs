@@ -472,7 +472,7 @@ async function devicesGif(c, name, repo, file, fn, act, setup) {
     await enter(c, card.index);
     await c.evaluate(POINTER);
     const title = await c.evaluate("document.title");
-    if (setup) { const h = await hand(c); await setup(h); await h.rest(0); }
+    if (setup) { const hd = await hand(c); await setup(hd); await hd.rest(0); }
     const frames = await record(c, async () => act(await hand(c)), 1800);
     await gif(c, name, title, url, frames, w, h);
   } finally {
