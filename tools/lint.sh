@@ -10,9 +10,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 python3 "$ROOT/tools/lint/viewer.py" --deps || exit 2
 
 # CI 는 python 3.9 로 도므로 자기 검사도 3.9 가 있으면 그것으로 돈다 — 새 python 으로만 보면 3.10+ 문법이 로컬을 지나 CI 에서 깨진다
-if PY="$(command -v python3.9)"; then :; else
-  PY=python3
-  echo "경고: python3.9 가 없어 $(python3 --version 2>&1) 로 자기 검사를 돈다 — CI(3.9)에서만 깨지는 문법은 못 잡는다" >&2
+PY="$(command -v python3.9 || command -v python3)"
+# macOS 기본은 /usr/bin/python3 가 3.9 라 이름이 아니라 버전으로 본다
+if ! "$PY" -c 'import sys; sys.exit(sys.version_info[:2] != (3, 9))'; then
+  echo "경고: python 3.9 가 없어 $("$PY" --version 2>&1) 로 자기 검사를 돈다 — CI(3.9)에서만 깨지는 문법은 못 잡는다" >&2
 fi
 
 # 규칙이 심은 위반을 잡는지부터 본다. 못 잡으면 통과가 아무것도 말하지 않는다.
