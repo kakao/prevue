@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The README is reorganized around five features** — your agent checking its own work, hot swap, pointing, interactive mode and light worktrees — under the new headline "Close Android Studio. Your Previews still show."
+
 ## [0.22.0] — 2026-11-12
 
 ![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)

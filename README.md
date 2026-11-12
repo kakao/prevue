@@ -4,7 +4,7 @@
 
 <p align="center"><b>Close Android Studio. Your Previews still show.</b></p>
 
-<p align="center">Redrawn in your browser a second after you save.<br>Your agent sees the same screen.</p>
+<p align="center">Your Compose Previews, redrawn in the browser a second after you save.<br>Your agent sees the same screen.</p>
 
 <p align="center"><b>English</b> | <a href="README.ko.md">한국어</a></p>
 

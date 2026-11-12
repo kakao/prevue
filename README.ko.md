@@ -4,7 +4,7 @@
 
 <p align="center"><b>Android Studio를 꺼도 Preview는 뜹니다.</b></p>
 
-<p align="center">저장하고 1초면 브라우저에 다시 그려집니다.<br>에이전트도 같은 화면을 봅니다.</p>
+<p align="center">저장하고 1초면 브라우저의 Compose Preview가 다시 그려집니다.<br>에이전트도 같은 화면을 봅니다.</p>
 
 <p align="center"><a href="README.md">English</a> | <b>한국어</b></p>
 
