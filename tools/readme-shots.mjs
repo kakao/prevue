@@ -709,7 +709,7 @@ const SCENES = {
       await h.tap(0.88, +(opt.sweet || 0.81), 1600);                         // 100% — 짙어진다
     });
   },
-  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 조작 독에서 기기 · 접기만 바꿔 다시 그린다. 고를 때마다 그림이 서기를 기다린다.
+  // 크기 · 기기 — 600dp 부터 상세가 왼쪽 컵 · 오른쪽 패널로 갈리는 Preview 를 조작 독에서 기기 · 접기만 바꿔 다시 그리고, 끝에 인셋 영역 보기를 켠다. 고를 때마다 그림이 서기를 기다린다.
   // 기기 목록은 독의 메뉴 안이라(D-167) 메뉴 버튼을 먼저 누른다 — 고르면 메뉴는 닫힌다
   async devices(c) {
     await devicesGif(c, "devices", opt["pearl-a"], PEARL.showcase, "DevicesPreview", async h => {
@@ -720,6 +720,8 @@ const SCENES = {
       await fold();                                                          // 접으면 커버 — 다시 세로
       await fold();                                                          // 다시 펴면 컵 · 패널
       await pick("tablet", 2600);                                            // 태블릿 가로 — 컵 · 패널
+      await pick("ipduo", 2400);                                             // 인셋 영역 보기는 펼친 Duo에서 — 오른쪽 84 · 아래 34 띠가 Tablet(24 · 32)보다 잘 보인다
+      await h.tapEl("#insetBtn", 3200);                                      // 끝 장면 — 띠 · SAFE AREA
     });
   },
   // 맡기기의 루프 그림 · 벤치마크(두 판 × 영어 · 한국어) — 원본 SVG 를 2x PNG 로. 데몬이 필요 없다
