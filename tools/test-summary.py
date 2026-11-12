@@ -8,8 +8,9 @@
 
 폴더를 빼면 integrationTest 결과를 본다. 단위 테스트는
 plugin/daemon/daemon/build/test-results/test 를 넘긴다.
-종료 0 = 전부 통과 · 1 = 실패나 오류가 있다 · 2 = XML이 없다(컴파일 실패 · 맞는 테스트 없음).
---tests 로 일부만 돌리면 그 밖의 클래스는 지난 실행의 XML이 남는다 — 시각 열로 가린다.
+종료 0 = 전부 통과 · 1 = 실패나 오류가 있다 · 2 = XML이 없다.
+판정은 Gradle의 종료 코드다 — 요약은 읽기용이다. 테스트 태스크는 돌 때마다 이 폴더를 비우지만,
+컴파일이 실패해 태스크가 돌지 않으면 지난 실행의 XML이 그대로 남아 여기서 0이 나온다. 시각 열로 가린다.
 """
 import sys
 import xml.etree.ElementTree as ET

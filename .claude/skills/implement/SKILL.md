@@ -63,7 +63,7 @@ python3 tools/lint/viewer.py --deps 2>/dev/null || npm ci --prefix viewer-src   
 
 - **성공 기준마다 증거를 남긴다** — 무엇을 쳐서 무엇을 봤는지. 5단계의 검증 기록이 된다.
   - 단위 테스트 `(cd plugin/daemon && ./gradlew --offline test)` · CLI 판정 `python3 -m unittest discover -s tests/cli` · 스킬 두 벌 · `CLAUDE.md` `sh tools/gen-agents.sh --check`
-  - 통합 테스트 `(cd plugin/daemon && ./gradlew --offline -q :daemon:integrationTest --tests …); python3 tools/test-summary.py` — `-q`면 결과가 출력에 없어 요약이 클래스별 tests · failures와 첫 실패 메시지를 찍는다. `;`로 잇는다(Gradle이 실패로 끝나야 요약이 필요하다). 단위 테스트 결과는 `plugin/daemon/daemon/build/test-results/test`를 인자로 준다
+  - 통합 테스트 `(cd plugin/daemon && ./gradlew --offline -q :daemon:integrationTest --tests …); echo "gradle=$?"; python3 tools/test-summary.py` — `-q`면 결과가 출력에 없어 요약이 클래스별 tests · failures와 첫 실패 메시지를 찍는다. 판정은 `gradle=`이다 — 컴파일이 실패하면 태스크가 돌지 않아 요약은 지난 실행의 XML을 읽는다(시각 열로 보인다). 단위 테스트 결과는 `plugin/daemon/daemon/build/test-results/test`를 인자로 준다
   - 렌더는 **이 워크트리의** `plugin/bin/prevue`로 본다(`AGENTS.md` "브랜치와 워크트리").
   - 뷰어는 헤드리스 Chrome으로 본다. 모션 느낌 · Safari처럼 사람 눈이 필요한 것은 "사람 확인 전"으로 적어 두고 막지 않는다.
 - 사용자에게 보이는 변화는 `CHANGELOG.md` `[Unreleased]`에 적는다 — 무엇을 어떤 모양으로 쓰나, 외부 제보 · 기여를 어떻게 멘션하나는 `dev-skills-src/release-notes.md`가 갖는다. 그 항목이 곧 GitHub Release 본문이다.
