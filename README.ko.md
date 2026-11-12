@@ -94,7 +94,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 - **기기마다 자기 시스템 UI를 그립니다** — Android · iOS · iPhone Duo의 상태 표시줄을 브라우저에서만 그립니다.
 
 <p align="center">
-  <img src="assets/devices.gif" width="50%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25%" alt="무대 아래 조작 독이 놓인 작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25%" alt="무대 아래 조작 독이 놓인 작업 공간의 상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
+  <img src="assets/devices.gif" width="49.2%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 칠해지고 그 사이 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 서고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면에서 카메라 쪽 84dp 띠 안 382 × 644로, 펴면 컵과 고르기 패널이 867 × 635 안에서 둘로 갈린다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간에서 Taro Milk Tea 카드를 누르면 카드 판이 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간의 상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
 </p>
 
 ## 에이전트가 셋이어도 가볍게
