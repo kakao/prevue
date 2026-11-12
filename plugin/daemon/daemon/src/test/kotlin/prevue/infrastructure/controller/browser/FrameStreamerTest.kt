@@ -48,9 +48,9 @@ class FrameStreamerTest {
 
     private fun emit(rgb: Int, rest: Boolean = false) { screen.value = LiveFrame(++seq, image(rgb), rest) }
 
-    private fun TestScope.streamer(write: CoroutineDispatcher? = null): FrameStreamer {
+    private fun TestScope.streamer(io: CoroutineDispatcher? = null): FrameStreamer {
         val d = StandardTestDispatcher(testScheduler)
-        return FrameStreamer(screen, watching, backgroundScope, {}, dispatchersOn(d, io = write ?: d))
+        return FrameStreamer(screen, watching, backgroundScope, {}, dispatchersOn(d, io = io ?: d))
     }
 
     private class Socket : OutputStream() {
@@ -210,8 +210,11 @@ class FrameStreamerTest {
         assertTrue(socket.closed)
     }
 
+    // 기대는 것은 하나 — 구독자 쓰기(io)가 진짜 스레드라 막힌 쓰기가 테스트 스레드를 잡지 않는다.
+    // 상태 · 인코딩이 어느 디스패처에서 돌든 기다리는 동안 테스트 스케줄러를 함께 돌려 결과가 그에 기대지 않는다.
     @Test fun `느린 구독자가 다른 구독자를 막지 않는다`() = runTest {
-        val stream = streamer(write = Dispatchers.IO)
+        val subscriberWritesOnRealThreads = Dispatchers.IO
+        val stream = streamer(io = subscriberWritesOnRealThreads)
         watching.value = true
         val gate = CountDownLatch(1)
         val stuck = object : OutputStream() {
@@ -226,7 +229,7 @@ class FrameStreamerTest {
             repeat(30) { emit(0x101010 + it) }
             emit(0x00ff00, rest = true)
             runCurrent()
-            awaitUntil("막힌 구독자가 있어도 다른 구독자의 마지막 그림", pollMs = 10) { lastPicture(fast.bytes())?.getRGB(0, 0)?.and(0xffffff) == 0x00ff00 }
+            awaitUntil("막힌 구독자가 있어도 다른 구독자의 마지막 그림", pollMs = 10) { runCurrent(); lastPicture(fast.bytes())?.getRGB(0, 0)?.and(0xffffff) == 0x00ff00 }
         } finally { gate.countDown() }
     }
 

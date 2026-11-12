@@ -2,6 +2,7 @@ package prevue.infrastructure.dump
 
 import java.io.File
 import java.util.zip.ZipFile
+import prevue.application.domain.model.isUnder
 import prevue.infrastructure.json.Json
 import prevue.infrastructure.json.map
 import prevue.infrastructure.json.string
@@ -206,7 +207,7 @@ internal class ClasspathSpec(
         val mine = classPath.filter { it !in own }
         val seen = (mine + app.rClassJars).toSet()
         val borrowed = app.classPath.filter { it !in seen && it !in own }
-        val inRepo = borrowed.filter { it.startsWith(repoRoot.path + "/") }
+        val inRepo = borrowed.filter { File(it).isUnder(repoRoot) }
         val paths = DumpPaths(
             classPath = mine + app.rClassJars + borrowed,
             projectClassPath = projectClassPath.filter { it !in own } + app.rClassJars + inRepo,
@@ -237,7 +238,7 @@ internal class ClasspathSpec(
         get() {
             val byDir = moduleDirs.entries.associate { (path, dir) -> dir to path }
             return projectClassPath.asSequence()
-                .filter { it.startsWith(repoRoot.path + "/") && "/build/" in it }
+                .filter { File(it).isUnder(repoRoot) && "/build/" in it }
                 .map { it.substringBefore("/build/") }
                 .map { dir -> byDir[dir] ?: (":" + dir.removePrefix(repoRoot.path + "/").replace('/', ':')) }
                 .filter { it != ":" && it != project }

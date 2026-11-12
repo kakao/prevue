@@ -53,6 +53,14 @@ class GradleOriginalsTest {
         ZipFile(fill.single()).use { z -> assertTrue(z.entries().asSequence().any { it.name.endsWith(".kotlin_module") }) }
     }
 
+    @Test fun `저장소 루트와 이름 앞부분만 같은 옆 디렉터리의 산출물은 저장소 밖으로 보고 메운다`() {
+        aar("io.coil-kt", "coil-base", "2.7.0")
+        val g = GradleOriginals(files2, outDir)
+        assertEquals(emptyList<String>(), g.forRuntimeOnly(listOf("${repo.path}/libs/transformed/coil-base-2.7.0-runtime.jar"), emptyList(), repo))
+        assertEquals(listOf(File(outDir, "io.coil-kt-coil-base-2.7.0.jar").path),
+            g.forRuntimeOnly(listOf("${repo.path}-other/libs/transformed/coil-base-2.7.0-runtime.jar"), emptyList(), repo))
+    }
+
     @Test fun `원본이 jar면 그대로 쓴다`() {
         val j = jar("org.jetbrains.kotlinx", "kotlinx-datetime-jvm", "0.6.1")
         assertEquals(listOf(j.path), GradleOriginals(files2, outDir).forRuntimeOnly(listOf("/m2/kotlinx-datetime-jvm-0.6.1.jar"), emptyList(), repo))

@@ -30,7 +30,7 @@ internal object WatchGraph {
     }
 
     private fun node(s: ClasspathSpec, skip: Collection<String>) = ModuleNode(
-        s.project, s.sourceRoots.map { it.canonicalFile },
+        s.project, s.sourceRoots,
         s.ownClassPath.filter { it !in skip }.map { File(it) },
         runCatching { s.kotlinModuleName }.getOrNull(),
         s.resourceRoots.map { it.canonicalFile },

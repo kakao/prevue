@@ -2,6 +2,7 @@ package prevue.infrastructure.dump
 
 import java.io.File
 import java.util.zip.ZipFile
+import prevue.application.domain.model.isUnder
 
 /**
  * 앱 런타임에만 있는 외부 라이브러리의 컴파일용 원본. 덤프 없는 의존 모듈을 앱 덤프의 `compileClassPath`로 컴파일하면
@@ -25,7 +26,7 @@ internal class GradleOriginals(private val files2: File, private val outDir: Fil
     fun forRuntimeOnly(classPath: List<String>, compileClassPath: List<String>, repoRoot: File): List<String> {
         val compiled = compileClassPath.mapNotNull(::coordinate).toSet()
         return classPath.asSequence()
-            .filterNot { it.startsWith(repoRoot.path + "/") }
+            .filterNot { File(it).isUnder(repoRoot) }
             .mapNotNull(::coordinate).distinct()
             .filter { it !in compiled }
             .mapNotNull { (artifact, version) -> original(artifact, version) }
