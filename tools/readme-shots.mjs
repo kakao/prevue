@@ -515,12 +515,11 @@ function waited(scene, r) {
   return `✓ ${r.json.cards.length} previews redrawn · ${(r.ms / 1000).toFixed(1)} s`;
 }
 
-/** 따로 띄운 크롬에서 뷰어를 녹화한다 — 시각은 화면 시계(초), 없으면 받은 때. act 는 보드가 다 찬 뒤 녹화 전의 조작 */
-async function screencast(cc, url, w, h, act) {
+/** 따로 띄운 크롬에서 뷰어를 녹화한다 — 시각은 화면 시계(초), 없으면 받은 때 */
+async function screencast(cc, url, w, h) {
   await cc.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
   await cc.send("Page.navigate", { url });
   await cc.until(BOARD);
-  if (act) await act(cc);
   const title = await cc.evaluate("document.title");
   const frames = [];
   cc.on("Page.screencastFrame", p => {
@@ -802,7 +801,7 @@ const SCENES = {
     const forestOff = edit("match", edit("match", keep[1][1], "Color(0xFF00664F)", "Color(0xFF2E6C8E)"), "Color(0xFF0B7A5F)", "Color(0xFF3C82A6)");
     const ww = +(opt.mw || 580), vh = +(opt.mh || 940) - BAR, th = 192, mw = 250;
     const tm = terminal(7);
-    const say = (text, cls) => tm.say(text, cls);
+    const { say } = tm;
     const save = async (file, text) => {
       writeFileSync(file, text);
       say("$ prevue wait");
@@ -859,8 +858,8 @@ const SCENES = {
       .mock .mh { display: flex; justify-content: space-between; margin-bottom: 8px; } .mock .mh b { color: #202124; font-weight: 600; }
       .mock img { display: block; width: ${mw}px; height: ${mh}px; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 6px 18px rgba(0,0,0,.08); }
       .mock .eq { color: #1f9d55; font-weight: 600; visibility: hidden; } .mock .eq.on { visibility: visible; }`;
-    const page = windowsHtml([{ w: ww, h: BAR + vh, title: rec.title, url, data: "", id: "iv", after: '<div id="tm"></div>' }], 10, { bg: "#fff", css })
-      .replace('<div class="row">', `<div class="row"><div class="mock"><div class="mh"><b>mockup.png</b><span class="eq" id="eq">✓ match</span></div><img src="data:image/png;base64,${mockup}" alt=""></div>`);
+    const page = edit("match", windowsHtml([{ w: ww, h: BAR + vh, title: rec.title, url, data: "", id: "iv", after: '<div id="tm"></div>' }], 10, { bg: "#fff", css }),
+      '<div class="row">', `<div class="row"><div class="mock"><div class="mh"><b>mockup.png</b><span class="eq" id="eq">✓ match</span></div><img src="data:image/png;base64,${mockup}" alt=""></div>`);
     await composeGif(c, "match", page, mw + GAP + ww + 32, BAR + vh + th + 32, t0, t1, t => `
       document.getElementById("tm").outerHTML = ${JSON.stringify(tm.html("tm", `agent · ${basename(repo)}`, t))};
       document.getElementById("eq").classList.toggle("on", ${t >= tMatch});
