@@ -147,7 +147,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .inset-marks { position: absolute; z-index: 5; pointer-events: none; --im-gap: var(--space-16); --im-lane-w: var(--space-64); --im-lane-h: var(--space-24);
   --im-cap: calc(var(--space-8) / var(--z, 1)); --im-hair: calc(1px / var(--z, 1)); }
 .inset-marks[hidden] { display: none; }
-.im-dim { position: absolute; color: var(--im-color); }
+.im-dim { position: absolute; color: var(--on-surface-variant); }
 .im-dim[data-side="right"] { left: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); width: 0; border-left: var(--im-hair) solid currentColor; }
 .im-dim[data-side="bottom"] { top: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); height: 0; border-top: var(--im-hair) solid currentColor; }
 .im-dim::before, .im-dim::after { content: ""; position: absolute; background: currentColor; }
@@ -158,7 +158,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-dim[data-side="bottom"]::before { left: 0; }
 .im-dim[data-side="bottom"]::after { right: 0; }
 /* 끝에서 화면 가장자리까지의 점선 — 치수가 띠의 어디서 어디까지인지 잇는다 */
-.im-ext { position: absolute; opacity: .6; }
+.im-ext { position: absolute; color: var(--outline-variant); }
 .im-dim[data-side="right"] .im-ext { right: 0; width: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); border-top: var(--im-hair) dashed currentColor; }
 .im-dim[data-side="right"] .im-from { top: 0; }
 .im-dim[data-side="right"] .im-to { bottom: 0; }
@@ -166,14 +166,17 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-dim[data-side="bottom"] .im-from { left: 0; }
 .im-dim[data-side="bottom"] .im-to { right: 0; }
 .im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; line-height: 1; }
-.im-badge { left: 50%; top: 50%; padding: var(--space-4) var(--space-6); border-radius: var(--corner-small); background: var(--im-color); color: var(--im-ink); font: var(--type-code-small); }
-.im-dim[data-kind="statusBars"] { --im-color: var(--inset-status); --im-ink: var(--inset-ink); }
-.im-dim[data-kind="navigationBars"] { --im-color: var(--inset-nav); --im-ink: var(--inset-ink-inverse); }
-.im-dim[data-kind="captionBar"] { --im-color: var(--inset-caption); --im-ink: var(--inset-ink); }
-.im-dim[data-kind="displayCutout"] { --im-color: var(--inset-cutout); --im-ink: var(--inset-ink); }
-.im-dim[data-kind="systemOverlays"] { --im-color: var(--inset-overlays); --im-ink: var(--inset-ink); }
-/* SAFE AREA — 앱 그림 위에 서므로 진한 초록 칩에 흰 글자로 읽히게 한다 */
+.im-badge { z-index: 1; left: 50%; top: 50%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-radius: var(--corner-small);
+  background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant); color: var(--on-surface); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+/* 종류 색은 점 하나로만 잇는다 — 배지는 옆 치수 눈금(#ruler)과 같은 무채색 크롬이다. */
+.im-badge::before { content: ""; width: var(--space-8); height: var(--space-8); border-radius: var(--corner-full); background: var(--im-color); }
+.im-dim[data-kind="statusBars"] { --im-color: var(--inset-status); }
+.im-dim[data-kind="navigationBars"] { --im-color: var(--inset-nav); }
+.im-dim[data-kind="captionBar"] { --im-color: var(--inset-caption); }
+.im-dim[data-kind="displayCutout"] { --im-color: var(--inset-cutout); }
+.im-dim[data-kind="systemOverlays"] { --im-color: var(--inset-overlays); }
+/* SAFE AREA — 앱 그림 위에 서므로 떠 있는 층의 칩으로 그림에서 떼어 읽히게 한다. 초록은 이름 글자에만 남긴다 */
 .im-safe { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-8); border-radius: var(--corner-small);
-  background: var(--inset-safe-chip); color: var(--inset-ink-inverse); font: var(--type-code-small); }
-.im-safe b { font-weight: var(--weight-medium); letter-spacing: .04em; }
+  background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elevation-2); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
+.im-safe b { font-weight: var(--weight-medium); color: var(--success); }
 /* 그림 끝 */
