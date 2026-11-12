@@ -4,11 +4,12 @@ import { mkdir, mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { toBoard } from "./daemon.mjs";
+import { requireDaemon, toBoard } from "./daemon.mjs";
 
 // 전용 워크트리로 fixtures/pearl의 AdaptivePreviews.kt를 먼저 연다. 첫 카드를 조작한다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/system-bars.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-system-bars-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [

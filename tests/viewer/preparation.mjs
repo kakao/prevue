@@ -3,11 +3,12 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { toBoard } from './daemon.mjs';
+import { requireDaemon, toBoard } from './daemon.mjs';
 
 const viewer = process.argv[2];
 let bootstrap = process.argv[3];
 assert(viewer, 'node tests/viewer/preparation.mjs <전용 픽스처 뷰어 URL> [준비 화면 URL]');
+await requireDaemon(viewer);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const profile = await mkdtemp(join(tmpdir(), 'prevue-preparation-chrome-'));
 const chrome = spawn(process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [

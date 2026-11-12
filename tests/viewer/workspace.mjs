@@ -3,10 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { requireDaemon } from "./daemon.mjs";
 
 // 실제 픽스처의 첫 프레임을 지연시켜 준비 전후 배치와 입력을 검사한다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/workspace.mjs <전용 프리뷰 서버 URL>");
+await requireDaemon(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-workspace-check-"));
 const chrome = spawn(process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [

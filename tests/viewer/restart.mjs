@@ -8,9 +8,11 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireDaemon } from './daemon.mjs';
 
 const [viewer, file, ...extra] = process.argv.slice(2);
 assert(viewer && file, 'node tests/viewer/restart.mjs <뷰어 URL> <프리뷰 파일> [warmup 추가 인자…]');
+await requireDaemon(viewer);
 const prevue = join(dirname(fileURLToPath(import.meta.url)), '../../plugin/bin/prevue');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const lastJson = out => JSON.parse(out.trim().split('\n').at(-1));
