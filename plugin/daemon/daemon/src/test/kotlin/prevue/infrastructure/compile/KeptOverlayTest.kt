@@ -43,6 +43,8 @@ class KeptOverlayTest {
 
     // 리터럴만 바꾼 저장(D-67)은 컴파일하지 않아 오버레이 클래스가 옛 값이다 — 기록은 컴파일할 때만 남아 mtime이 어긋난다
     @Test fun `컴파일 없이 바뀐 소스 · 지운 소스 · 소스 루트 밖의 복사본은 전부 버린다`() {
+        mtimes[card] = 150
+        assertTrue(judge() is KeptOverlay.Verdict.Wipe)
         mtimes.remove(card)
         assertTrue(judge() is KeptOverlay.Verdict.Wipe)
         mtimes[card] = 100

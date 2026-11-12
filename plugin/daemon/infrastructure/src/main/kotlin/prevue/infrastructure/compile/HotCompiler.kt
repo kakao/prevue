@@ -324,7 +324,7 @@ internal class HotCompiler(
 
     private fun now(module: String): KeptOverlay.Now? = runCatching {
         val s = specOf(module)
-        KeptOverlay.Now(s.kotlinBuildMarkers().filter { it.exists() }.maxOfOrNull { it.lastModified() }, argsKey(s), s.sourceRoots)
+        KeptOverlay.Now(s.kotlinBuildMarkers().filter { it.exists() }.maxOfOrNull { it.lastModified() }, argsKey(s), s.sourceRoots.map(File::getCanonicalFile))
     }.getOrNull()
 
     private fun keepFromLastRun() {
@@ -346,6 +346,7 @@ internal class HotCompiler(
             u.at = kept.at
             u.nextIndex = kept.next
             kept.indexes.forEach { (name, srcs) -> u.indexes[File(u.dir, "META-INF/$name")] = srcs.toSet() }
+            writtenSince(u.dir, 0).forEach { e -> membersOf(File(u.dir, e))?.let { u.members[e] = it } }
             publish(u)
         }
         saveKept()

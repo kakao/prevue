@@ -105,6 +105,27 @@ class HotCompilerJarIntegrationTest {
         } finally { src.setLastModified(stamp) }
     }
 
+    // 이어 쓴 클래스의 멤버를 되살리지 않으면 가림 검사가 Gradle 산출물과 견줘, 앞 데몬이 더한 멤버를 지운 저장을 놓친다
+    @Test fun `이어 쓴 뒤 앞 데몬이 더한 멤버를 지우는 저장은 가림을 보고 한 번 더 컴파일한다`() = runBlocking {
+        val overlay = File(out, "keptmembers")
+        val src = File(PearlFixture.dir, "feature/pearl/src/main/kotlin/com/example/pearl/feature/pearl/BlankStub.kt").canonicalFile
+        val original = src.readText()
+        val stamp = src.lastModified()
+        try {
+            src.writeText(original + "\nfun keptExtra(n: Int): Int = n\n")
+            PearlFixture.hotCompiler(pearl, overlay).use { first -> assertTrue(first.compile(pearl.project, listOf(src)).ok) }
+            PearlFixture.hotCompiler(pearl, overlay).use { again ->
+                assertTrue(again.inOverlay("com.example.pearl.feature.pearl.BlankStubKt"))
+                src.writeText(original)
+                assertTrue(again.compile(pearl.project, listOf(src)).ok)
+                assertEquals(1, again.recompiled, "이어 쓴 클래스에만 있던 멤버를 보지 못했다")
+            }
+        } finally {
+            src.writeText(original)
+            src.setLastModified(stamp)
+        }
+    }
+
     private suspend fun compileUse(body: String) = compiler.compile(home.project,
         listOf(use.apply { parentFile.mkdirs(); writeText("package com.example.pearl.keepalive\n\n$body\n") }))
 
