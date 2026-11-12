@@ -170,7 +170,7 @@ Like Android Studio's Interactive Mode, click and drag to check motion and anima
 </p>
 
 <p align="center">
-  <img src="assets/interactive-cup.gif" width="33.3%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper"><img src="assets/devices.gif" width="66.6%" alt="Changing devices from the panel on the right of the workspace. On S26 the options sit under the cup. Unfolding iPhone Duo splits it into the cup on the left and the options panel on the right. Fold goes back to a single column on the cover screen, unfolding splits it again, and on Pixel Tablet the cup and panel also sit side by side">
+  <img src="assets/interactive-cup.gif" width="33.3%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper"><img src="assets/devices.gif" width="66.6%" alt="Changing devices from the control dock under the workspace stage. Opening the dock menu and picking S26 puts the options under the cup. Picking iPhone Duo opens it unfolded, with the cup on the left and the options panel on the right. The fold button goes back to a single column on the cover screen, unfolding splits it again, and picking Pixel Tablet from the menu sets the cup and panel side by side too">
 </p>
 
 ### Quick open
