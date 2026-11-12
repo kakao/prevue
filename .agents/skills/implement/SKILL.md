@@ -110,7 +110,7 @@ git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 �
 ```sh
 sh tools/gen-agents.sh --check     # 스킬 두 벌 · CLAUDE.md 가 원본과 같다
 sh tools/plugin-copies.sh --check   # plugin/ 의 LICENSE · NOTICE.md 가 루트 원본과 같다(D-123)
-python3 -m unittest discover -s tests/cli
+"$(command -v python3.9 || command -v python3)" -m unittest discover -s tests/cli   # CI 는 python 3.9 — 있으면 그것으로 돌려 3.9에서만 깨지는 것을 밀기 전에 잡는다
 (cd plugin/daemon && ./gradlew --offline test)   # 소스 · 빌드 파일을 안 건드렸으면(문서 · 스킬만) 건너뛴다
 sh tools/lint.sh                     # Kotlin · 뷰어 날값 린트(D-70 · D-96) — 판단하지 말고 결과대로 고친다
 ```
