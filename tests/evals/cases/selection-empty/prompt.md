@@ -10,4 +10,4 @@ env:
   EVAL_PREVUE_SCENARIO: selection-empty
 ---
 
-app/src/main/kotlin/Screen.kt 프리뷰를 보고 있는데, 이거 여백 좀 줄여 줘.
+I'm looking at the preview for app/src/main/kotlin/Screen.kt — tighten up the padding on this a bit.

@@ -8,4 +8,4 @@ env:
   EVAL_PREVUE_SCENARIO: not-opened
 ---
 
-app/src/main/kotlin/Screen.kt 프리뷰 띄워 줘.
+Show me the preview for app/src/main/kotlin/Screen.kt.

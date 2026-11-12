@@ -8,4 +8,4 @@ env:
   EVAL_PREVUE_SCENARIO: sandbox-merge
 ---
 
-app/src/main/kotlin/Screen.kt 프리뷰 띄워 줘. Codex 샌드박스 설정이 필요하면 내가 동의하니까 다시 묻지 말고 바로 넣어 줘.
+Show me the preview for app/src/main/kotlin/Screen.kt. If Codex needs sandbox settings, you have my consent — don't ask again, just add them.
