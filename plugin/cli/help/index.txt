@@ -22,6 +22,7 @@ The same screen as the person
 
 Preparation and the daemon
   health <file>              what is missing among toolchain, dump and daemon (missing) and the next command (next)
+                             next · then begin with the prevue that answered — plain prevue when it is the one on PATH, otherwise its full path
   start --classpath <json>   starts the daemon — run the next of a health or show response as is
   setup | warmup             downloads the toolchain · takes the target repository's classpath dump (Gradle once). Needs the user's approval
   resolve <file>             health's verdict without checking whether the daemon is alive

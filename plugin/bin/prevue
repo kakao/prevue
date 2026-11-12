@@ -673,7 +673,7 @@ case "$cmd" in
     OFFLINE=0; [ "${1:-}" = --offline ] && { OFFLINE=1; shift; }
     if [ $# -gt 0 ]; then
       python3 -c 'import json,sys; print(json.dumps({"ok":False,"error":"setup only downloads the toolchain — the dump is warmup","next":"prevue warmup " + " ".join(sys.argv[1:])},ensure_ascii=False))' "$@" \
-        | python3 "$PLAN_PY" with-lang
+        | python3 "$PLAN_PY" runnable
       exit 2
     fi
     HAD=false; [ -s "$ENV_FILE" ] && HAD=true
@@ -682,7 +682,7 @@ case "$cmd" in
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
       if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
-        echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" with-lang; exit 1
+        echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
       fi
     elif ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q) >&2; then
       echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
@@ -883,7 +883,7 @@ case "$cmd" in
       have_java && export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
-    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" with-lang; exit 3; }
+    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
     . "$ENV_FILE"
 
     # 자리는 전역에서 정했다(--classpath 의 덤프 경로에 저장소 키가, 덤프에 모듈이 들어 있다).

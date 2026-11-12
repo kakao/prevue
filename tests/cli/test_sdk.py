@@ -9,7 +9,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from test_plan import Case, fake_jdk, fake_sdk
+from test_plan import Case, fake_jdk, fake_sdk, installed_path
 
 ROOT = Path(__file__).resolve().parents[2] / "plugin"
 
@@ -30,7 +30,7 @@ class AndroidSdk(Case):
 
     def run_prevue(self, *args, **sdk_env):
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=self.jdk,
-                   NO_OPEN="1")
+                   NO_OPEN="1", PATH=installed_path())
         # Codex 샌드박스 안에서 돌면 sandbox 가 missing 첫 자리를 차지한다 — 이 테스트가 보는 것은 sdk 다
         for k in ("PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED", "ANDROID_HOME", "ANDROID_SDK_ROOT"):
             env.pop(k, None)

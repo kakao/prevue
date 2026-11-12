@@ -168,7 +168,7 @@ Android Studio의 Interactive Mode처럼 클릭 · 드래그로 모션과 애니
 </p>
 
 <p align="center">
-  <img src="assets/interactive-cup.gif" width="33.3%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다"><img src="assets/devices.gif" width="66.6%" alt="작업 공간의 오른쪽 패널에서 기기를 바꾸는 장면. S26에서는 컵 아래에 고르기가 있고, iPhone Duo를 펼치면 왼쪽에 컵, 오른쪽에 고르기 패널로 갈린다. 접기를 누르면 커버 화면에서 다시 세로로, 펴면 다시 둘로 갈리고, Pixel Tablet에서도 컵과 패널이 나란히 선다">
+  <img src="assets/interactive-cup.gif" width="33.3%" alt="상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra면 펄이 곡선으로 쏟아지고 None이면 휘어 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다"><img src="assets/devices.gif" width="66.6%" alt="작업 공간 무대 아래의 조작 독에서 기기를 바꾸는 장면. 독의 메뉴를 열어 S26을 고르면 컵 아래에 고르기가 있고, iPhone Duo를 고르면 펼친 채로 왼쪽에 컵, 오른쪽에 고르기 패널로 갈린다. 접기 버튼을 누르면 커버 화면에서 다시 세로로, 펴면 다시 둘로 갈리고, 메뉴에서 Pixel Tablet을 고르면 컵과 패널이 나란히 선다. 다시 펼친 iPhone Duo에서 인셋 영역 보기를 켜면 오른쪽 상태 표시 84dp와 아래 34dp 띠가 칠해지고, 그 사이의 SAFE AREA 867 × 635가 적힌다">
 </p>
 
 ### 빠른 열기

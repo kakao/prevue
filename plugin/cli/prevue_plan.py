@@ -8,6 +8,8 @@ macOS 기본 python3(3.9)에서 돈다.
 import json
 import os
 import re
+import shlex
+import shutil
 import sys
 import time
 
@@ -1227,19 +1229,44 @@ def viewer_at(port):
     return "http://127.0.0.1:%s/" % port + ("?lang=" + lang() if lang() else "")
 
 
-def with_lang(resp):
-    if not lang() or not isinstance(resp, dict):
+# 다음 명령은 이 응답을 낸 체크아웃의 bin/prevue 로 친다. PATH 의 prevue 가 그 파일이 아니면(워크트리 · 다른 판 · PATH 에 없는
+# Codex 설치본) 경로로 적는다 — "prevue start" 를 그대로 치면 남의 체크아웃이 이 대상의 데몬을 띄운다.
+SELF = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin", "prevue"))
+
+
+def caller():
+    found = shutil.which("prevue")
+    return "prevue" if found and os.path.realpath(found) == SELF else shlex.quote(SELF)
+
+
+# 셸과 다른 하위 명령이 이미 낸 응답을 다시 읽을 때 — 판정은 "prevue …" 모양으로 한다.
+def bare_commands(resp):
+    head = shlex.quote(SELF) + " "
+    if isinstance(resp, dict):
+        for key in ("next", "then"):
+            command = resp.get(key)
+            if isinstance(command, str) and command.startswith(head):
+                resp[key] = "prevue " + command[len(head):]
+    return resp
+
+
+def runnable(resp):
+    if not isinstance(resp, dict):
         return resp
+    head = caller()
     for key in ("next", "then"):
         command = resp.get(key)
-        if isinstance(command, str) and command.startswith("prevue ") and " --lang " not in command:
-            head, mark, note = command.partition("   #")
-            resp[key] = head + " --lang " + lang() + mark + note
+        if not isinstance(command, str) or not command.startswith("prevue "):
+            continue
+        if lang() and " --lang " not in command:
+            body, mark, note = command.partition("   #")
+            command = body + " --lang " + lang() + mark + note
+        resp[key] = head + command[len("prevue"):]
     return resp
 
 
 def _emit(resp, code=0):
-    print(json.dumps(with_lang(resp), ensure_ascii=False))
+    print(json.dumps(runnable(resp), ensure_ascii=False))
     sys.exit(code)
 
 
@@ -1254,7 +1281,7 @@ def main(argv):
         _emit(*plan(a[0], a[1], a[2], a[3], a[4] == "true", a[5], a[6]))
     elif cmd == "health":                    # <plan 응답> <plan 종료 코드> <alive> <viewer> <파일> <데몬 status> <blocked> <막힘 문구> <unbaked> <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처]
         try:
-            out = json.loads(a[0])
+            out = bare_commands(json.loads(a[0]))
         except ValueError:
             out = {"ok": False, "error": a[0].strip()}
         dmod, dmods, _ = daemon_status(a[5])
@@ -1280,7 +1307,7 @@ def main(argv):
             retry, host, resp = dump_failure(f.read(), a[1], a[2], a[3] == "1", *a[4:7])
         print(retry)
         print(host)
-        print(json.dumps(resp, ensure_ascii=False))
+        print(json.dumps(runnable(resp), ensure_ascii=False))
         if resp.get("need") == "choose":
             sys.exit(2)
     elif cmd == "warmup-resources":          # <repo> <module> <variant> <덤프> <--resources-from 로 받은 것> [파일]
@@ -1313,10 +1340,10 @@ def main(argv):
         out, code = previews_of(d, a[0], int(a[1]))
         print(json.dumps(out, ensure_ascii=False))
         sys.exit(code)
-    elif cmd == "with-lang":                 # stdin: 셸이 지은 응답 — next · then 에 --lang
+    elif cmd == "runnable":                  # stdin: 셸이 지은 응답 — next · then 을 이 체크아웃의 prevue 로 · --lang
         _emit(json.load(sys.stdin))
     elif cmd == "prepare-request":
-        _emit(prepare_request(json.load(sys.stdin)))
+        _emit(prepare_request(bare_commands(json.load(sys.stdin))))
     elif cmd == "autostart":                 # stdin: health 응답 — start 인자를 한 줄에 하나, 띄우지 않을 것이면 종료 1
         try:
             args = autostart(json.loads(sys.stdin.read()))
