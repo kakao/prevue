@@ -164,13 +164,12 @@ async function chrome() {
     await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, text });
     await send("Input.dispatchKeyEvent", { type: "keyUp", key, code });
   };
-  const type = text => send("Input.insertText", { text });
   await send("Page.enable");
   await send("Runtime.enable");
   // 움직임 줄이기 — 모션이 도는 중간을 찍지 않는다. 멈춘 모양은 같다.
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
   return {
-    send, on, evaluate, until, rect, move, click, key, type,
+    send, on, evaluate, until, rect, move, click, key,
     async close() {
       ws.close();
       ch.kill();
