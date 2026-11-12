@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-11-12
+
 ![Prevue 0.22 — See what it's made of. See where it fits. A card beside an unfolded iPhone Duo names AddBar at DrinkDetailScreen.kt:291 with its size and modifiers, while the inset bands on the right and bottom show where the screen isn't safe](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
 
 **See what it's made of. See where it fits.** Point at an element and a card shows its composable, size and modifiers. Pick a device and your Composable gets its real insets, and Show inset areas draws the unsafe bands over the picture. The single view also gets one dock under the picture.
