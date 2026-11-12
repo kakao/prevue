@@ -8,9 +8,9 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-![Prevue 0.22 — Point at a composable, on the device it ships to](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
+![Prevue 0.22 — See what it's made of. See where it fits.](https://raw.githubusercontent.com/kakao/prevue/v0.22.0/assets/release-0.22.0.png)
 
-**Point at an element and see what it is — on the device it ships to.** Devices now deliver their real insets and draw their own system UI, and the single view gets one dock under the picture.
+**See what it's made of. See where it fits.** Point at an element and a card shows its composable, size and modifiers, on a device that now delivers its real insets and draws its own system UI. The single view also gets one dock under the picture.
 
 ### Pointing
 
