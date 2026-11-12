@@ -2,9 +2,9 @@
   <img src="assets/icon.png" width="40" height="40" alt="" align="absmiddle">&nbsp;Prevue
 </h1>
 
-<p align="center"><b>Your agent finally sees the Compose UI it builds.</b></p>
+<p align="center"><b>Close Android Studio. Your Previews still show.</b></p>
 
-<p align="center">Jetpack Compose and Compose Multiplatform Previews in your browser, redrawn a second after every save.<br>No Android Studio, no build.</p>
+<p align="center">Redrawn in your browser a second after you save.<br>Your agent sees the same screen.</p>
 
 <p align="center"><b>English</b> | <a href="README.ko.md">한국어</a></p>
 
@@ -21,58 +21,50 @@
 
 </div>
 
+<p align="center"><a href="#get-started"><b>Get started →</b></a></p>
+
 <p align="center">
   <img src="assets/intro.webp" width="1000"
        alt="Prevue in 20 seconds, on the Pearl sample app. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes seven colors in Theme.kt to a dark theme, and all 30 Previews redraw each time. Interactive: the live Preview scrolls, a drink opens, and choosing size L, a topping and extra pearls changes the cup. Every screen: that drink screen steps through 320×640, 673×841 and a custom width dragged to 900, splitting into two panes from 673 wide, then iPhone Duo unfolds and folds shut to its cover screen">
 </p>
 <p align="center"><sub>Hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
 
-## The agent codes, you still check
-
-Your agent says the screen is done. So you open Android Studio, wait for Gradle, and find the padding is off.
-You take a screenshot, explain what's wrong, and wait for the next try. **The agent writes the code, but you're still its eyes — every loop.**
-
-And every look costs an IDE. One Preview keeps Android Studio, a Gradle daemon, and a Kotlin daemon running, about 8GB.
-Give each of three agents its own worktree and you're running three Android Studios.
-
-Here's that loop. Notice who sits in the middle of it.
+Your agent says the screen is done, so you open Android Studio and wait for the build to check it.
+You take a screenshot of what's wrong, explain it, and wait again. **The agent writes the code, but you're still its eyes — every loop.**
+Prevue redraws the Preview about a second after each save so the agent sees it for itself, and you step outside the loop and check only the finished screen.
 
 <p align="center">
-  <img src="assets/agent-loop-before.png" width="880"
-       alt="The UI fix loop before Prevue. The developer sits inside the loop, highlighted in orange: the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again — every loop">
+  <img src="assets/agent-loop-before.png" width="50%"
+       alt="The UI fix loop before Prevue. The developer sits inside the loop, highlighted in orange: the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again — every loop"><img src="assets/agent-loop.png" width="50%"
+       alt="The UI fix loop with Prevue. The developer stays outside the loop: they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
 </p>
+<p align="center"><sub>Left: before Prevue · Right: with Prevue</sub></p>
 
-We hit this every day. With three agents on a 36GB Mac, the Android Studios started swapping and every task slowed to a crawl.
-Paparazzi and Roborazzi also turn composables into images, but they rebuild for every picture, so they can't keep up with an agent's edits.
+## Your agent checks its own work
 
-**Prevue takes you out of that loop.**
-
-## With Prevue
-
-### Your agent checks its own work
-
-Prevue redraws the Preview about a second after each save and hands that picture to the agent.
-Give it a design — a Figma frame, a screenshot, a mockup — and it edits, looks, compares, and edits again on its own. You come back to a finished screen and confirm it in your browser.
+Give it a design — a Figma frame, a screenshot, a mockup — and the agent edits, looks at the redrawn Preview, compares it with the design, and edits again on its own. You confirm the finished screen in your browser.
 
 ```
 Make the ForYouScreen header match this screenshot
 ```
 
-Same loop, but now you're outside it.
+Screens that only change when you tap or drag work the same way. The agent switches the Preview into interactive mode, sends touches, and gets the new picture back.
+
+## Hot swap
+
+Save, and the Preview redraws in about a second without Gradle. Change only a value — padding, a color, a string — and it takes about 0.2 seconds ([Benchmark](#benchmark)).
+Every `@Preview` in a file is laid out on a board grouped by function and redrawn on every save. The agent and you look at the same board, so "it's done" and "I see it" happen at the same moment.
 
 <p align="center">
-  <img src="assets/agent-loop.png" width="880"
-       alt="The UI fix loop with Prevue. The developer stays outside the loop: they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
+  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time">
 </p>
+<p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf app</a>, Compose Multiplatform (Apache-2.0)</sub></p>
 
-Screens that only change when you tap or drag are covered too. The agent switches the Preview into interactive mode, sends touches, and gets the new picture back.
+Kotlin Multiplatform and Compose Multiplatform modules work the same way. Prevue draws their commonMain Previews from the module's Android compilation, as Android Studio does, so modules that also target iOS or the web are fine. Compose Multiplatform resources (`Res`) draw as they do in the app.
 
-### When you look, it's already there
+Switch between a screen file and its component files while you edit, and the open files stay in the list on the left. `/` or `⌘K` finds a file by name, initials (`fys` → `ForYouScreen.kt`), or Preview function name. Press `?` in the viewer for every shortcut.
 
-Save, and the Preview redraws in about a second without Gradle. Change only a value — padding, a color, a string — and it takes about 0.2 seconds.
-The agent and you look at the same Preview, so "it's done" and "I see it" happen at the same moment ([Benchmark](#benchmark)).
-
-### Point instead of explaining
+## Point instead of explaining
 
 Click anything in the Preview and tell your agent what to do with it. No screenshots, no "the second card from the top."
 
@@ -89,11 +81,24 @@ A card opens beside the picture with what you pointed at: its name, its file:lin
        alt="A board of Pearl app previews. Clicking beside the price on the Taro Milk Tea card in the home preview opens a card next to the picture: Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize, and a tree of the elements around it. Clicking the DrinkCard row above it points at the whole drink card, the next DrinkCard row moves to Thai Milk Tea, and the Preview button in the card's header lists the three previews that call DrinkCard; choosing MenuCardsPreview opens the board of ComponentPreviews.kt at that preview">
 </p>
 
-### Three agents, still light
+## Interactive mode
 
-Every worktree gets its own lightweight Prevue daemon. One daemon uses about 1.4GB, 83% less memory than Android Studio.
+Press a card's `▶` to open it large. Like Android Studio's Interactive Mode, click and drag to check motion and animations.
+Without touching the source, change the screen size or the device (six Android, four iPhone), turn it to Portrait, Landscape left or Landscape right, and fold or unfold foldables.
 
-Even when two agents save at the same time, each window redraws on its own, and when only one saves again, the other stays put.
+- **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
+- **Show inset areas** draws each inset band and the safe area over the picture.
+- **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars, in the browser only.
+
+<p align="center">
+  <img src="assets/devices.gif" width="50%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25%" alt="In the workspace, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
+</p>
+
+## Three agents, still light
+
+One Preview in Android Studio keeps a Gradle daemon and a Kotlin daemon running too, about 8GB. We gave three agents a worktree each on a 36GB Mac, and the three Android Studios started swapping until every task slowed to a crawl.
+
+With Prevue, every worktree gets its own lightweight daemon, each using 83% less memory than Android Studio ([Benchmark](#benchmark)). Even when two agents save at the same time, each window redraws on its own, and when only one saves again, the other stays put.
 
 <p align="center">
   <img src="assets/worktrees.gif" width="1000"
@@ -102,9 +107,16 @@ Even when two agents save at the same time, each window redraws on its own, and 
 
 ## Get started
 
-Installing takes two commands.
+### Requirements
 
-If Android Studio Ladybug (2024.2) or newer is installed, there's no Java to set up, even if your project uses JDK 17. Older Android Studio releases bring Java 17, which the preview server can't run on. Without Android Studio, install JDK 21 or later — `brew install openjdk@25` needs no sudo, and Prevue finds it there (or under `Library/Java/JavaVirtualMachines` or SDKMAN) by itself; 25 or later starts about a second faster. Set `PREVUE_JDK` only to pick a different one. Also install the Android SDK with at least one platform (set `ANDROID_HOME` if it isn't at `~/Library/Android/sdk`). You also need the macOS Command Line Tools (`python3`); if they're missing, the agent opens the installer for you.
+- **macOS** with the Command Line Tools (`python3`) — if they're missing, the agent opens the installer for you.
+- **Java** — with Android Studio Ladybug (2024.2) or newer installed, there's nothing to set up, even if your project uses JDK 17.
+  - Older Android Studio releases bring Java 17, which the preview server can't run on.
+  - Without Android Studio, install JDK 21 or later. `brew install openjdk@25` needs no sudo, and Prevue finds it there (or under `Library/Java/JavaVirtualMachines` or SDKMAN) by itself. 25 or later starts about a second faster.
+  - Set `PREVUE_JDK` only to pick a different one.
+- **Android SDK** — with at least one platform. Set `ANDROID_HOME` if it isn't at `~/Library/Android/sdk`.
+
+### Install
 
 ```sh
 # Claude Code
@@ -144,43 +156,16 @@ codex plugin add prevue@prevue
 Changes are in [CHANGELOG.md](CHANGELOG.md).
 If you get stuck, ask your agent to read `prevue log`. If that doesn't help, [let us know in an issue](https://github.com/kakao/prevue/issues/new?template=not-working.yml).
 
-## A closer look
+## Supported
 
-Press `?` in the viewer for every shortcut.
-
-### Every Preview on one board
-
-Every `@Preview` in a file is laid out on the board, grouped by function. Save, and they all redraw, with the time it took shown in the header.
-
-<p align="center">
-  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time">
-</p>
-<p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf app</a>, Compose Multiplatform (Apache-2.0)</sub></p>
-
-Kotlin Multiplatform and Compose Multiplatform modules work the same way. Prevue draws their commonMain Previews from the module's Android compilation, as Android Studio does, so modules that also target iOS or the web are fine.
-Saving redraws without Gradle, and Compose Multiplatform resources (`Res`) draw as they do in the app.
-
-### Interactive mode
-
-Press a card's `▶` to open it large. You can change the screen size or the device (six Android, four iPhone, foldables that fold) without touching the source.
-Like Android Studio's Interactive Mode, click and drag to check motion and animations.
-
-<p align="center">
-  <img src="assets/interactive-nav.gif" width="33.3%" alt="In the workspace, tapping the bubble tea app's bottom nav in the order Home, Orders, Saved, Profile, Home slides the orange pill over and expands the label of the chosen tab as the screen changes"><img src="assets/interactive-header.gif" width="33.3%" alt="In the workspace, tapping the Fruit tea, Milk tea, Matcha, and All chips in turn spreads that category's color across the header, drops the cup out and bounces a new one in, changes the headline, and filters the grid below"><img src="assets/interactive-detail.gif" width="33.3%" alt="In the workspace, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card">
-</p>
-
-<p align="center">
-  <img src="assets/interactive-cup.gif" width="33.3%" alt="On the detail screen, Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper"><img src="assets/devices.gif" width="66.6%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame">
-</p>
-
-### Quick open
-
-Switch between a screen file and its component files while you edit, and the open files stay in the list on the left. `/` or `⌘K` finds a file by name, initials (`fys` → `ForYouScreen.kt`), or Preview function name.
-
-<p align="center">
-  <img src="assets/files.gif" width="1000"
-       alt="In the viewer showing ForYouScreen, pressing / opens quick open. Typing topic lists TopicScreen.kt along with rows where a Preview function name matched, and Enter opens it. Then / again and the initials nrc find NewsResourceCard.kt. Each opened file stacks up in the open files list on the left, and the 1 and 2 keys jump back to ForYouScreen and TopicScreen">
-</p>
+| Works | Doesn't work |
+|---|---|
+| Android modules (app · library) | Pure JVM modules |
+| Kotlin Multiplatform · Compose Multiplatform modules with an Android target — AGP 9's `com.android.kotlin.multiplatform.library`, or `kotlin.multiplatform` with `com.android.library` | KMP modules without an Android target, and builds other than Gradle, such as Amper |
+| Saving a commonMain file redraws it without Gradle | Files with `expect` · `actual` declarations — after a save, the old picture stays until a Gradle build |
+| Debug-type variants. Picked by Android Studio's default Build Variants rules; ask your agent for another | Release variants |
+| Top-level `@Preview` functions. Multipreview and `@PreviewParameter` are expanded too | Member Previews declared inside a class |
+| Composables that draw without a real device | Previews that need a DI container or `AndroidView` — shown with the failure kinds `DI` · `ANDROID_VIEW` |
 
 ## Benchmark
 
@@ -214,18 +199,6 @@ See every command and exit code with `prevue --help`, and each command with `pre
 | `prevue stop` | Stops the daemon started in that repository (`--all` stops every running one) |
 | `prevue log` | The daemon log — ask your agent to read it when you're stuck |
 | `prevue paths` | Where the toolchain, dumps, and outputs live and how much space they take — for finding what to delete |
-
-## Supported
-
-| Works | Doesn't work |
-|---|---|
-| Android modules (app · library) | Pure JVM modules |
-| Kotlin Multiplatform · Compose Multiplatform modules with an Android target — AGP 9's `com.android.kotlin.multiplatform.library`, or `kotlin.multiplatform` with `com.android.library` | KMP modules without an Android target, and builds other than Gradle, such as Amper |
-| Saving a commonMain file redraws it without Gradle | Files with `expect` · `actual` declarations — after a save, the old picture stays until a Gradle build |
-| Debug-type variants. Picked by Android Studio's default Build Variants rules; ask your agent for another | Release variants |
-| Top-level `@Preview` functions. Multipreview and `@PreviewParameter` are expanded too | Member Previews declared inside a class |
-| Composables that draw without a real device | Previews that need a DI container or `AndroidView` — shown with the failure kinds `DI` · `ANDROID_VIEW` |
-
 
 ## License
 
