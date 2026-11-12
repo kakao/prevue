@@ -25,7 +25,7 @@
 
 <p align="center">
   <img src="assets/intro.webp" width="1000"
-       alt="Pearl 예제 앱으로 보는 20초 Prevue. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색 일곱 개를 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 인터랙티브: 라이브 Preview를 스크롤하고 음료를 열어 사이즈 L, 토핑, 펄 추가를 고르면 컵이 바뀐다. 모든 화면: 그 음료 화면이 320×640, 673×841, 커스텀 너비 900을 거치며 673부터 두 칸으로 나뉘고, 이어 iPhone Duo가 펼쳐졌다가 커버 화면으로 접힌다">
+       alt="Pearl 예제 앱으로 보는 30초 안쪽의 Prevue. 가리키기: Thai Milk Tea 카드를 누르면 그림 옆에 카드가 서고 DrinkCard, PearlScreen.kt:135, 크기, Modifier, 둘레의 트리가 보인다. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색을 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 레이아웃은 1.2초, 색은 0.6초, Gradle 빌드 없이. 인터랙티브: 라이브 Preview를 스크롤하고 Mango Smoothie를 열어 사이즈 L, 얼음, 펄, 토핑을 고르면 누를 때마다 컵이 다시 그려진다. 모든 화면: 그 음료 화면이 673×841에서 커스텀 너비 897로 늘어나고, 이어 iPhone Duo가 펼쳐졌다가 접힌다">
 </p>
 <p align="center"><sub>핫스왑, 인터랙티브, 모든 화면 — 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)을 실제로 그린 화면입니다.</sub></p>
 
