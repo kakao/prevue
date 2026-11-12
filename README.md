@@ -86,7 +86,7 @@ A card opens beside the picture with what you pointed at: its name, its file:lin
 
 <p align="center">
   <img src="assets/pointing.gif" width="1000"
-       alt="A board of four Pearl app previews. Clicking beside the price on the Taro Milk Tea card in the home preview opens a card next to the picture: Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize, and a tree of the elements around it. Clicking the DrinkCard row above it points at the whole drink card, the next DrinkCard row moves to Thai Milk Tea, and the Preview button in the card's header lists the three previews that call DrinkCard; choosing MenuCardsPreview opens the board of ComponentPreviews.kt at that preview">
+       alt="A board of Pearl app previews. Clicking beside the price on the Taro Milk Tea card in the home preview opens a card next to the picture: Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize, and a tree of the elements around it. Clicking the DrinkCard row above it points at the whole drink card, the next DrinkCard row moves to Thai Milk Tea, and the Preview button in the card's header lists the three previews that call DrinkCard; choosing MenuCardsPreview opens the board of ComponentPreviews.kt at that preview">
 </p>
 
 ### Three agents, still light

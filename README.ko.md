@@ -84,7 +84,7 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 말하면 됩니�
 
 <p align="center">
   <img src="assets/pointing.gif" width="1000"
-       alt="Pearl 앱 Preview 넷이 놓인 보드. 홈 Preview의 Taro Milk Tea 카드에서 가격 오른쪽을 누르면 그림 옆에 카드가 선다 — Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize와 둘레 요소의 트리. 트리에서 위쪽 DrinkCard 줄을 누르면 음료 카드 전체를 가리키고, 다음 DrinkCard 줄을 누르면 Thai Milk Tea로 옮겨 간다. 카드 머리의 Preview 버튼을 누르면 DrinkCard를 부르는 Preview 셋이 펼쳐지고, MenuCardsPreview를 고르면 ComponentPreviews.kt의 보드가 그 Preview에서 열린다">
+       alt="Pearl 앱 Preview가 놓인 보드. 홈 Preview의 Taro Milk Tea 카드에서 가격 오른쪽을 누르면 그림 옆에 카드가 선다 — Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize와 둘레 요소의 트리. 트리에서 위쪽 DrinkCard 줄을 누르면 음료 카드 전체를 가리키고, 다음 DrinkCard 줄을 누르면 Thai Milk Tea로 옮겨 간다. 카드 머리의 Preview 버튼을 누르면 DrinkCard를 부르는 Preview 셋이 펼쳐지고, MenuCardsPreview를 고르면 ComponentPreviews.kt의 보드가 그 Preview에서 열린다">
 </p>
 
 ### 에이전트가 셋이어도 가볍게
