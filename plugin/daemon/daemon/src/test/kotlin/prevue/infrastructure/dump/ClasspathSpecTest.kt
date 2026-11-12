@@ -167,6 +167,15 @@ class ClasspathSpecTest {
         assertEquals(0, n.borrowedCount)
     }
 
+    @Test fun `저장소 루트와 이름 앞부분만 같은 옆 디렉터리의 산출물은 저장소 모듈로 치지 않는다`() {
+        val sibling = "${root.path}-other/lib/build/classes"
+        val other = spec(":app", listOf(appR, appClasses, sibling), listOf(appR, appClasses, sibling), emptyList(), listOf(appR), apk = "app.ap_")
+        val r = home.withResourcesFrom(other)
+        assertEquals(listOf(libClasses, uiClasses, dsClasses, appR, appClasses), r.projectClassPath)
+        assertEquals(listOf(":core:ui", ":core:designsystem", ":app"), r.projectModules)
+        assertEquals(emptyList<String>(), other.projectModules)
+    }
+
     @Test fun `그릴 덤프의 빌린 수는 앱 클래스패스면 모듈에 없는 앱 항목 전부다`() {
         val (onApp, _) = ClasspathSpec.forRender(home, app, overlay)
         assertEquals((app.classPath.toSet() - home.classPath.toSet()).size, onApp.borrowedCount)
