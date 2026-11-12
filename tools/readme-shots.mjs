@@ -16,9 +16,9 @@
 //
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
-// 장면: hero · board · party · pointing · files · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --fw · --fh(files 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
-// GIF 장면(pointing · files · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
+// 장면: hero · board · party · pointing · worktrees · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
+// GIF 장면(pointing · worktrees · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을
 // 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
 
@@ -164,13 +164,12 @@ async function chrome() {
     await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, text });
     await send("Input.dispatchKeyEvent", { type: "keyUp", key, code });
   };
-  const type = text => send("Input.insertText", { text });
   await send("Page.enable");
   await send("Runtime.enable");
   // 움직임 줄이기 — 모션이 도는 중간을 찍지 않는다. 멈춘 모양은 같다.
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
   return {
-    send, on, evaluate, until, rect, move, click, key, type,
+    send, on, evaluate, until, rect, move, click, key,
     async close() {
       ws.close();
       ch.kill();
@@ -653,31 +652,6 @@ const SCENES = {
       await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
     }
   },
-  // 파일 오가기 — 빠른 열기(/)로 파일 이름 · 머리글자를 쳐서 열면 왼쪽 열린 파일 목록에 쌓이고, 숫자 키로 그 사이를 오간다
-  async files(c) {
-    const url = await viewer(opt.nia, [NIA.foryou]);
-    const w = +(opt.fw || 1280), h = +(opt.fh || 760);
-    await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
-    await c.send("Page.navigate", { url });
-    await c.until(BOARD);
-    await sleep(800);
-    const title = await c.evaluate("document.title");
-    const typeSlow = async text => { for (const ch of text) { await c.type(ch); await sleep(pace(110)); } };
-    const open = async (query, file, settle = 1800) => {                   // 제목이 새 파일로 바뀐 뒤 보드가 찰 때까지 — 앞 보드로 넘어가지 않게
-      await c.key("/", "Slash", "/"); await sleep(pace(600));
-      await typeSlow(query); await sleep(pace(1500));
-      await c.key("Enter", "Enter", "\r");
-      await c.until(`document.title.startsWith(${JSON.stringify(file)})`, 60_000);
-      await sleep(300); await c.until(BOARD, 60_000); await sleep(pace(settle));
-    };
-    const frames = await record(c, async () => {
-      await open("topic", "TopicScreen");                                    // 파일 이름 — 함수 이름이 맞은 줄도 함께 뜬다
-      await open("nrc", "NewsResourceCard");                                 // 머리글자 — NewsResourceCard.kt
-      await c.key("1", "Digit1", "1"); await sleep(pace(1600));              // 열린 파일 사이를 숫자 키로
-      await c.key("2", "Digit2", "2"); await sleep(pace(1600));
-    }, 700);
-    await gif(c, "files", title, url, frames, w, h);
-  },
   // 워크트리 나란히 — 워크트리 둘에 데몬 둘. 두 쪽이 같은 때 저장하면 각자 다시 그리고(①), 한쪽만 저장하면 다른 쪽은 그대로다(②).
   // 사본 저장소에 실제로 저장하고 prevue wait 를 돌려 그 값을 창 아래 터미널 띠에 찍는다. 끝나면 파일을 되돌리고 다시 그려질 때까지 기다린다.
   // 뷰어는 iframe 에 담기지 않아 크롬을 둘 더 띄워 각자 녹화하고, 같은 시계(초)로 두 창과 터미널을 한 장씩 합친다.
@@ -780,18 +754,6 @@ const SCENES = {
   // 인터랙티브 — 작업 공간에 들어가 누르고 끄는 창 전체. 좌표는 360×780dp 그림 안의 비율(그림을 다시 그리면 다시 잰다)
   async interactive(c) {
     const repo = opt["pearl-a"];
-    await interactiveGif(c, "interactive-nav", repo, PEARL.showcase, "NavTourPreview", async h => {
-      await h.tap(0.52, 0.94, 1300);                                         // Orders — 알약이 미끄러지고 글자가 펼쳐진다
-      await h.tap(0.70, 0.94, 1300);                                         // Saved
-      await h.tap(0.83, 0.94, 1300);                                         // Profile
-      await h.tap(0.20, 0.94, 1500);                                         // Home
-    });
-    await interactiveGif(c, "interactive-header", repo, PEARL.showcase, "HomeTourPreview", async h => {
-      await h.tap(0.33, 0.326, 1600);                                        // Fruit tea — 머리 색이 번지고 컵이 바뀌고 제목이 바뀐다
-      await h.tap(0.585, 0.326, 1600);                                       // Milk tea
-      await h.tap(0.83, 0.326, 1600);                                        // Matcha
-      await h.tap(0.13, 0.326, 1800);                                        // All
-    });
     await interactiveGif(c, "interactive-detail", repo, PEARL.showcase, "HomeTourPreview", async h => {
       await h.tap(0.275, 0.48, 2000);                                        // Taro 카드 — 판이 커지고 컵이 상세 컵 자리로 날아간다
       await h.tap(0.5, 0.943, 2000);                                         // Add to bag — 컵이 가방으로, 배지가 튄다
