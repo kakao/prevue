@@ -27,7 +27,7 @@
   <img src="assets/intro.webp" width="1000"
        alt="Prevue in under 30 seconds, on the Pearl sample app. Point at it: clicking the Thai Milk Tea card opens a card beside the picture with DrinkCard, PearlScreen.kt:135, its size, its modifiers and the tree around it. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes the colors in Theme.kt to a dark theme, and all 30 Previews redraw each time — layout in 1.2 s, colors in 0.6 s, no Gradle build. Interactive: the live Preview scrolls, Mango Smoothie opens, and picking size L, ice, pearls and a topping redraws the cup with every tap. Every screen: the drink screen goes from 673×841 to a custom width dragged to 897, then iPhone Duo unfolds and folds shut">
 </p>
-<p align="center"><sub>Hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
+<p align="center"><sub>Point at it, hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
 
 Your agent says the screen is done, so you open Android Studio and wait for the build to check it.
 You take a screenshot of what's wrong, explain it, and wait again. **The agent writes the code, but you're still its eyes — every loop.**
