@@ -396,6 +396,7 @@ export function createResizeScene(root, hooks) {
         ? { inner: { role: "crisp", du: 0 }, base: { role: "crisp", du: H }, outer: { role: "hold", du: 0, neu: true, frame } }
         : { outer: { role: "crisp", du: 0 }, inner: { role: "hold", du: 0, neu: true, frame }, base: { role: "hold", du: H, neu: true, frame } },
     });
+    rig.dip = rigDip();
     if (!cached) hold(now);
     creaseOp.snap(0);
     roll.w.snap(from.w); roll.h.snap(from.h);
@@ -403,23 +404,37 @@ export function createResizeScene(root, hooks) {
     tr = { kind: dir, from, to, t0: now, arriveAt: Infinity, arrived: false };
   }
 
-  function rigAt(now) {
-    const t = (now - rig.t0) / 1000, T = Math.max(.05, rig.dur);
-    const e = foldEase()(clamp(t / T, 0, 1));
+  // 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
+  function rigPose(e, bezel) {
     const th = (rig.dir === "fold" ? e : 1 - e) * 180;
     const baseS = lerp(rig.s0, rig.s1, e), cy = lerp(rig.f0.y + rig.f0.h / 2, rig.f1.y + rig.f1.h / 2, e);
     const angle = rig.from.angle + rig.turn * e, rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
     const u = lerp(rig.half.u, rig.cover.u, k), v = lerp(rig.half.v, rig.cover.v, k);
     const hx = lerp(rig.hx0, rig.hx1, e), r = room(), offset = (hx - r.cx) / baseS;
     const perspective = P.perspective / (P.perspective - (u + rig.d.plate.thickness) * Math.sin(rad) * baseS);
-    const tip = -u * Math.cos(rad) * perspective, bezel = lookAt(now).bezel * P.shellK;
-    // 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 양끝 배율은 원래 fit과 같다.
+    const tip = -u * Math.cos(rad) * perspective;
     const baseU = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(P.shrinkFrom, 180, th));
     const xs = [offset + Math.min(0, tip) - bezel, offset + Math.max(baseU, tip) + bezel];
     const ys = [-v * perspective / 2 - bezel, v * perspective / 2 + bezel];
     const corners = xs.flatMap(x => ys.map(y => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)]));
     const extent = axis => Math.max(...corners.map(p => Math.abs(p[axis])));
-    const s = Math.min(baseS, r.maxW / (2 * extent(0)), r.maxH / (2 * extent(1)));
+    const need = Math.min(1, r.maxW / (2 * extent(0) * baseS), r.maxH / (2 * extent(1) * baseS));
+    return { th, baseS, cy, angle, v, hx, r, need };
+  }
+  // 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 프레임마다 모자란 만큼 줄이면 경계에 닿는 순간 배율이 꺾여
+  // 기기 전체가 덜컥였다 — 시작할 때 전 구간의 모자람을 재고, 양끝 0에서 그 자리까지 부드럽게 오르내리는 곡선의 최댓값으로 준다.
+  // 양끝은 정지 자세의 fit 이라 재지 않는다.
+  function rigDip() {
+    const bezel = Math.max(rig.d.look.open.bezel, rig.d.look.cover.bezel) * P.shellK, n = 48, need = [];
+    for (let i = 1; i < n; i++) { const e = i / n, lack = 1 - rigPose(e, bezel).need; if (lack > 0) need.push([e, lack + .004]); }
+    const hump = (e, c) => e <= c ? smooth(0, c, e) : 1 - smooth(c, 1, e);
+    return e => need.reduce((m, [c, lack]) => Math.max(m, lack * hump(e, c)), 0);
+  }
+  function rigAt(now) {
+    const t = (now - rig.t0) / 1000, T = Math.max(.05, rig.dur);
+    const e = foldEase()(clamp(t / T, 0, 1));
+    const { th, baseS, cy, angle, v, hx, r } = rigPose(e, lookAt(now).bezel * P.shellK);
+    const s = baseS * (1 - rig.dip(e));
     return { t, th, p: e, s, hx: r.cx + (hx - r.cx) * s / baseS, cy,
       angle, top: cy - v * s / 2, settled: t >= T };
   }
