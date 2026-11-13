@@ -26,6 +26,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 38.86, "bottom": 14.86},
+            "cornerRadius": {"px": 18, "dp": 6.86},
             "insets": {
               "statusBars": {"dp": {"top": 38.86}, "px": {"top": 102}},
               "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
@@ -49,6 +50,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 40, "bottom": 14.86},
+            "cornerRadius": {"px": 18, "dp": 6.86},
             "insets": {
               "statusBars": {"dp": {"top": 40}, "px": {"top": 105}},
               "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
@@ -78,6 +80,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 41.9, "bottom": 14.86},
+            "cornerRadius": {"px": 26, "dp": 9.9},
             "insets": {
               "statusBars": {"dp": {"top": 41.9}, "px": {"top": 110}},
               "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
@@ -101,6 +104,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"left": 39.62, "top": 30.1, "bottom": 14.86},
+            "cornerRadius": {"px": 26, "dp": 9.9},
             "insets": {
               "statusBars": {"dp": {"top": 30.1}, "px": {"top": 79}},
               "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
@@ -124,6 +128,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 30.1, "right": 39.62, "bottom": 14.86},
+            "cornerRadius": {"px": 26, "dp": 9.9},
             "insets": {
               "statusBars": {"dp": {"top": 30.1}, "px": {"top": 79}},
               "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
@@ -139,7 +144,7 @@
     "bar": "oneui",
     "short": "Fold8",
     "tone": "#2b2d32",
-    "cover": {"bezel": 6, "radius": 9.9, "cam": {"w": 9, "h": 9, "y": 15.31}, "btn": [[1, 170, 80], [1, 270, 55]]},
-    "open": {"bezel": 6, "radius": 6.86, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 170, 80], [1, 270, 55]]}
+    "cover": {"bezel": 6, "cam": {"w": 9, "h": 9, "y": 15.31}, "btn": [[1, 170, 80], [1, 270, 55]]},
+    "open": {"bezel": 6, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 170, 80], [1, 270, 55]]}
   }
 }

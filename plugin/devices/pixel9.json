@@ -24,6 +24,7 @@
               "fontScale": "1"
             },
             "safeArea": {"top": 65.9, "bottom": 24},
+            "cornerRadius": {"px": 132, "dp": 50.29},
             "insets": {
               "statusBars": {"dp": {"top": 65.9}, "px": {"top": 173}},
               "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
@@ -46,6 +47,7 @@
               "fontScale": "1"
             },
             "safeArea": {"left": 54.1, "top": 52.19, "bottom": 24},
+            "cornerRadius": {"px": 132, "dp": 50.29},
             "insets": {
               "statusBars": {"dp": {"top": 52.19}, "px": {"top": 137}},
               "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
@@ -68,6 +70,7 @@
               "fontScale": "1"
             },
             "safeArea": {"top": 52.19, "right": 54.1, "bottom": 24},
+            "cornerRadius": {"px": 132, "dp": 50.29},
             "insets": {
               "statusBars": {"dp": {"top": 52.19}, "px": {"top": 137}},
               "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
@@ -83,6 +86,6 @@
     "bar": "pixel",
     "short": "Pixel 9",
     "tone": "#27292d",
-    "open": {"bezel": 6, "radius": 50.29, "cam": {"w": 32, "h": 32, "y": 16.95}, "btn": [[1, 190, 50], [1, 270, 95]]}
+    "open": {"bezel": 6, "cam": {"w": 32, "h": 32, "y": 16.95}, "btn": [[1, 190, 50], [1, 270, 95]]}
   }
 }
