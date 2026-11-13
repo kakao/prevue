@@ -3624,6 +3624,7 @@ var ra = ({ id: e, hidden: t }) => /* @__PURE__ */ (0, R.jsxs)("div", {
 		/* @__PURE__ */ (0, R.jsx)("div", { className: "btn" }),
 		/* @__PURE__ */ (0, R.jsx)("div", { className: "btn" }),
 		/* @__PURE__ */ (0, R.jsx)("div", { className: "shell" }),
+		/* @__PURE__ */ (0, R.jsx)("div", { className: "home" }),
 		/* @__PURE__ */ (0, R.jsx)("div", { className: "outline" }),
 		/* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "stage",
@@ -4618,18 +4619,20 @@ function to({ bars: e }) {
 function no({ bars: e }) {
 	if (e.duo) return /* @__PURE__ */ (0, R.jsx)(to, { bars: e });
 	let t = Se[e.device]?.status;
-	return t ? /* @__PURE__ */ (0, R.jsxs)("g", {
+	if (!t) return null;
+	let n = /* @__PURE__ */ (0, R.jsx)("text", {
+		className: "sb-time",
+		x: t.time.cx,
+		y: t.time.base,
+		textAnchor: "middle",
+		fontSize: t.time.size,
+		fontWeight: 600,
+		children: "9:41"
+	});
+	if (t.left === void 0) return /* @__PURE__ */ (0, R.jsxs)("g", {
 		className: "sb-status",
 		"data-edge": "top",
-		children: [/* @__PURE__ */ (0, R.jsx)("text", {
-			className: "sb-time",
-			x: t.time.cx,
-			y: t.time.base,
-			textAnchor: "middle",
-			fontSize: t.time.size,
-			fontWeight: 600,
-			children: "9:41"
-		}), /* @__PURE__ */ (0, R.jsxs)("g", {
+		children: [n, /* @__PURE__ */ (0, R.jsxs)("g", {
 			className: "sb-icons",
 			transform: `translate(${t.right - Wa * t.s} ${t.top}) scale(${t.s})`,
 			children: [
@@ -4638,7 +4641,25 @@ function no({ bars: e }) {
 				$a
 			]
 		})]
-	}) : null;
+	});
+	let r = (e) => `translate(${e} ${t.top}) scale(${t.s})`;
+	return /* @__PURE__ */ (0, R.jsxs)("g", {
+		className: "sb-status",
+		"data-edge": "top",
+		children: [
+			n,
+			/* @__PURE__ */ (0, R.jsxs)("g", {
+				className: "sb-icons sb-icons-left",
+				transform: r(t.left),
+				children: [Ga, Qa]
+			}),
+			/* @__PURE__ */ (0, R.jsx)("g", {
+				className: "sb-icons sb-icons-right",
+				transform: r(t.right - Wa * t.s),
+				children: $a
+			})
+		]
+	});
 }
 var ro = 20, io = 8, ao = 46, oo = 13, so = 14, co = 24, lo = .3, uo = /* @__PURE__ */ (0, R.jsxs)("g", {
 	stroke: "currentColor",

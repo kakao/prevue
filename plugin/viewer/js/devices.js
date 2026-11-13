@@ -329,6 +329,67 @@ export const DEVICES = {
       }
     }
   },
+  "ipse3": {
+    "name": "iPhone SE (3rd generation)",
+    "short": "SE",
+    "fold": false,
+    "open": {
+      "w": 375,
+      "h": 667
+    },
+    "look": {
+      "open": {
+        "tone": "#3a3a3d",
+        "bezel": 5,
+        "ends": 18,
+        "home": true,
+        "radius": 0,
+        "cam": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "btn": [
+          {
+            "side": -1,
+            "at": 110,
+            "len": 24
+          },
+          {
+            "side": -1,
+            "at": 150,
+            "len": 36
+          },
+          {
+            "side": -1,
+            "at": 200,
+            "len": 36
+          },
+          {
+            "side": 1,
+            "at": 150,
+            "len": 60
+          },
+          {
+            "side": 1,
+            "at": 210,
+            "len": 0
+          }
+        ]
+      }
+    },
+    "status": {
+      "top": 4.8,
+      "right": 368,
+      "left": 7,
+      "s": 0.85,
+      "time": {
+        "cx": 187.5,
+        "base": 14.5,
+        "size": 12
+      }
+    }
+  },
   "duo": {
     "name": "iPhone Duo",
     "short": "Duo",
@@ -760,6 +821,7 @@ export const DEVICE_MENU = [
       "ipair",
       "ip17pm",
       "ip18pro",
+      "ipse3",
       "duo"
     ]
   }

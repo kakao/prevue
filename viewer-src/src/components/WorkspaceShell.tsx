@@ -18,7 +18,7 @@ function useT() {
 /** 기기 한 대의 층 — 몸체 · 윤곽 · 화면(두 그림 사이의 베일) · 치수 눈금. 크기를 바꿀 때 #ua · #ub 가 엇갈린다. */
 const Unit = ({ id, hidden }: { id: string; hidden?: boolean }) => <div className="unit" id={id} hidden={hidden}>
   <div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" />
-  <div className="shell" /><div className="outline" />
+  <div className="shell" /><div className="home" /><div className="outline" />
   <div className="stage"><img className="ly l0" alt="" /><div className="veil" /><img className="ly l1" alt="" /><div className="crease" /><div className="cam" /></div>
   <div className="tick t-top" /><div className="tick t-bot" />
 </div>;

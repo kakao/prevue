@@ -1,0 +1,148 @@
+{
+  "id": "ipse3",
+  "label": "iPhone SE (3rd generation)",
+  "order": 56,
+  "measured": {
+    "dpi": 320,
+    "screens": {
+      "open": {
+        "widthPx": 750,
+        "heightPx": 1334,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-se-3rd-generation.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "2",
+              "unit": "pt",
+              "resolutionPx": "750x1334",
+              "orientation": "portrait",
+              "sourceSha256": "2a99a6139f36dd5f7fa95881d2a60b2af083f36d9bec416092b36d9f8619690f",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "top": 20,
+              "bottom": 0
+            },
+            "cornerRadius": {
+              "pt": 0
+            },
+            "safeAreaSize": {
+              "width": 375,
+              "height": 647
+            }
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-se-3rd-generation.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "2",
+              "unit": "pt",
+              "resolutionPx": "1334x750",
+              "orientation": "landscape-right",
+              "sourceSha256": "2a99a6139f36dd5f7fa95881d2a60b2af083f36d9bec416092b36d9f8619690f",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "left": 0,
+              "top": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "cornerRadius": {
+              "pt": 0
+            },
+            "safeAreaSize": {
+              "width": 667,
+              "height": 375
+            }
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-se-3rd-generation.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "2",
+              "unit": "pt",
+              "resolutionPx": "1334x750",
+              "orientation": "landscape-left",
+              "sourceSha256": "2a99a6139f36dd5f7fa95881d2a60b2af083f36d9bec416092b36d9f8619690f",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "left": 0,
+              "top": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "cornerRadius": {
+              "pt": 0
+            },
+            "safeAreaSize": {
+              "width": 667,
+              "height": 375
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios",
+    "short": "SE",
+    "tone": "#3a3a3d",
+    "open": {
+      "bezel": {
+        "side": 5,
+        "ends": 18
+      },
+      "home": true,
+      "cam": {
+        "w": 0,
+        "h": 0,
+        "y": 0
+      },
+      "btn": [
+        [
+          -1,
+          110,
+          24
+        ],
+        [
+          -1,
+          150,
+          36
+        ],
+        [
+          -1,
+          200,
+          36
+        ],
+        [
+          1,
+          150,
+          60
+        ]
+      ]
+    },
+    "status": {
+      "top": 4.8,
+      "right": 368,
+      "left": 7,
+      "scale": 0.85,
+      "time": {
+        "cx": 187.5,
+        "base": 14.5,
+        "size": 12
+      }
+    }
+  }
+}

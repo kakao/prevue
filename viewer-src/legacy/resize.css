@@ -38,6 +38,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .btn { position: absolute; left: 0; top: 0; border-radius: 2px; pointer-events: none; background-color: var(--device-body);
        box-shadow: inset 0 0 0 .5px var(--device-gloss); transition: background-color var(--duration-medium2) var(--easing-standard); }
 .resize-scene .cam { position: absolute; left: 0; top: 0; z-index: 2; background: var(--device-camera); pointer-events: none; }
+.resize-scene .home { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; opacity: 0; box-shadow: inset 0 0 0 1px var(--device-gloss); }
 .resize-scene .crease { position: absolute; top: 0; width: 14px; margin-left: -7px; pointer-events: none;
           background: linear-gradient(90deg, var(--device-gloss-clear), var(--device-crease-light) 36%, var(--device-crease-dark) 50%, var(--device-crease-light) 64%, var(--device-gloss-clear)); }
 .resize-scene .crease.h { width: auto; height: 14px; margin-left: 0; margin-top: -7px;

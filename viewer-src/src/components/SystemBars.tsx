@@ -113,9 +113,17 @@ export function IosStatus({ bars }: { bars: Bars }) {
   if (bars.duo) return <DuoStatus bars={bars} />;
   const layout = DEVICES[bars.device]?.status;
   if (!layout) return null;
-  return <g className="sb-status" data-edge="top">
-    <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>
+  const time = <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>;
+  if (layout.left === undefined) return <g className="sb-status" data-edge="top">
+    {time}
     <g className="sb-icons" transform={`translate(${layout.right - GROUP_W * layout.s} ${layout.top}) scale(${layout.s})`}>{SIGNAL}{WIFI}{BATTERY}</g>
+  </g>;
+  // 갈린 상태바(홈 버튼 기기) — 신호 · Wi-Fi 는 왼쪽 끝(left)에, 배터리는 오른쪽 끝(right)에 따로 놓는다. 좌표는 같은 묶음 안이다(배터리 x 51.5~78.33).
+  const place = (x: number) => `translate(${x} ${layout.top}) scale(${layout.s})`;
+  return <g className="sb-status" data-edge="top">
+    {time}
+    <g className="sb-icons sb-icons-left" transform={place(layout.left)}>{SIGNAL}{WIFI}</g>
+    <g className="sb-icons sb-icons-right" transform={place(layout.right - GROUP_W * layout.s)}>{BATTERY}</g>
   </g>;
 }
 

@@ -35,7 +35,10 @@ function measuredRadius(screen, dpi, ios, where) {
 }
 
 function body(raw, where, measured) {
-  keys(raw, ['bezel', 'radius', 'cam', 'btn'], where, ['bezel', 'cam', 'btn']);
+  keys(raw, ['bezel', 'radius', 'cam', 'btn', 'home'], where, ['bezel', 'cam', 'btn']);
+  const bezel = typeof raw.bezel === 'object' ? keys(raw.bezel, ['side', 'ends'], `${where}.bezel`) : { side: raw.bezel };
+  if (bezel.ends !== undefined && number(bezel.ends, `${where}.bezel.ends`) < number(bezel.side, `${where}.bezel.side`)) throw Error(`${where}.bezel: ends 가 side 보다 얇다`);
+  if (raw.home !== undefined && (raw.home !== true || bezel.ends === undefined)) throw Error(`${where}.home: true 만 받고, 홈 버튼 자리인 bezel.ends 가 있어야 한다`);
   if (measured !== undefined && 'radius' in raw) throw Error(`${where}: radius 가 measured 에도 look 에도 있다`);
   if (measured === undefined && !('radius' in raw)) throw Error(`${where}: radius 가 없다`);
   const cam = keys(raw.cam, ['w', 'h', 'y', 'x'], `${where}.cam`, ['w', 'h', 'y']);
@@ -48,14 +51,14 @@ function body(raw, where, measured) {
     return { side, at, len };
   });
   while (btn.length < 5) { const last = btn[btn.length - 1]; btn.push({ side: last.side, at: last.at + last.len, len: 0 }); }
-  return { bezel: number(raw.bezel, `${where}.bezel`), radius: measured ?? number(raw.radius, `${where}.radius`), cam, btn };
+  return { bezel: number(bezel.side, `${where}.bezel`), ...bezel.ends === undefined ? {} : { ends: bezel.ends }, ...raw.home ? { home: true } : {}, radius: measured ?? number(raw.radius, `${where}.radius`), cam, btn };
 }
 
 function status(raw, where) {
-  keys(raw, ['top', 'right', 'scale', 'time'], where);
+  keys(raw, ['top', 'right', 'left', 'scale', 'time'], where, ['top', 'right', 'scale', 'time']);
   const time = keys(raw.time, ['cx', 'base', 'size'], `${where}.time`);
   for (const [name, value] of Object.entries(time)) number(value, `${where}.time.${name}`);
-  return { top: number(raw.top, `${where}.top`), right: number(raw.right, `${where}.right`), s: number(raw.scale, `${where}.scale`), time };
+  return { top: number(raw.top, `${where}.top`), right: number(raw.right, `${where}.right`), ...raw.left === undefined ? {} : { left: number(raw.left, `${where}.left`) }, s: number(raw.scale, `${where}.scale`), time };
 }
 
 export function deviceTable(specList) {

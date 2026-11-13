@@ -36,6 +36,7 @@ export function createResizeScene(root, hooks) {
   const easeOut = k => 1 - Math.pow(1 - k, 3);
   // 몸체가 드리우는 그림자 — 짙기는 매 프레임 바뀌고 색은 tokens.css 의 --device-shade 다.
   const shade = a => `color-mix(in srgb, var(--device-shade) ${(a * 100).toFixed(1)}%, transparent)`;
+  const HOME_K = .62;   // 홈 버튼 지름 / 위·아래 베젤 두께
   const P = { rotDur: .6, rotLift: .42, rotLand: .18, rotDip: .12, shellK: 1.6,
     frameDur: .45, frameBounce: 0, outlineBounce: 0, outlineLead: 0, veil: .06,
     foldDur: .6, foldLift: .42, foldLand: .18, perspective: 3200, shade: .22, sheen: .1, lift: 0,
@@ -73,7 +74,14 @@ export function createResizeScene(root, hooks) {
   };
   const isOpen = st => st.kind === "device" && DEVICES[st.dev].fold && !st.folded;
   const lookOf = st => DEVICES[st.dev].look[st.folded ? "cover" : "open"];
-  const bezelOf = st => lookOf(st).bezel * P.shellK;
+  // 몸체 두께 — bezel 은 네 변 공통(옆 변), ends 는 짧은 두 변(홈 버튼 기기의 위 · 아래)이 더 두꺼울 때의 값이다. 자리 · 눈금은 가장 두꺼운 변을 비켜 선다.
+  const endsOf = lk => lk.ends ?? lk.bezel;
+  const edgeOf = lk => Math.max(lk.bezel, endsOf(lk)) * P.shellK;
+  const padsOf = st => {
+    if (!shelled(st)) return [0, 0];
+    const lk = lookOf(st), b = lk.bezel * P.shellK, e = endsOf(lk) * P.shellK;
+    return st.rot ? [2 * e, 2 * b] : [2 * b, 2 * e];
+  };
   const dims = st => `${Math.round(st.w)}×${Math.round(st.h)}`;
   const springOf = (duration, bounce) => ({ w0: 2 * Math.PI / Math.max(.05, duration), z: 1 - clamp(bounce, 0, .95) });
   function osc({ w0, z }, x0, v0, t) {
@@ -144,9 +152,9 @@ export function createResizeScene(root, hooks) {
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
   function fit(st) {
-    const r = room(), pad = x => shelled(x) ? 2 * bezelOf(x) : 0, each = x => Math.min(r.maxW / (x.w + pad(x)), r.maxH / (x.h + pad(x)), 2);
-    const s = Math.min(each(ORIGINAL), each(st)), h = st.h * s;
-    return { s, w: st.w * s, h, cx: r.cx, y: r.top + pad(st) * s / 2 + Math.max(0, (r.maxH - h - pad(st) * s) / 2) };
+    const r = room(), each = x => { const [pw, ph] = padsOf(x); return Math.min(r.maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
+    const s = Math.min(each(ORIGINAL), each(st)), h = st.h * s, ph = padsOf(st)[1] * s;
+    return { s, w: st.w * s, h, cx: r.cx, y: r.top + ph / 2 + Math.max(0, (r.maxH - h - ph) / 2) };
   }
   let cur = null;
   let tr = null;
@@ -179,7 +187,7 @@ export function createResizeScene(root, hooks) {
     const A = look.a, B = look.b;
     if (!B) return DEVICES.s26.look.open;
     const k = easeOut(clamp((now - look.t0) / look.dur, 0, 1)), m = (x, y) => lerp(x, y, k);
-    return { tone: B.tone, bezel: m(A.bezel, B.bezel), radius: m(A.radius, B.radius),
+    return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(A.home ? 1 : 0, B.home ? 1 : 0), radius: m(A.radius, B.radius),
       cam: { w: m(A.cam.w, B.cam.w), h: m(A.cam.h, B.cam.h), y: m(A.cam.y, B.cam.y), x: m(A.cam.x ?? .5, B.cam.x ?? .5) },
       btn: B.btn.map((b, i) => { const a = A.btn[i];
         return a.side === b.side ? { side: b.side, at: m(a.at, b.at), len: m(a.len, b.len) }
@@ -646,7 +654,7 @@ export function createResizeScene(root, hooks) {
     DU.dark.style.background = `linear-gradient(${dir}, ${stops.join(", ")})`;
   }
 
-  const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
+  const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
   const UA = unitOf($("ua")), UB = unitOf($("ub"));
 
   function drawContent(U, rect, s, layers, now) {
@@ -702,8 +710,8 @@ export function createResizeScene(root, hooks) {
     U.stage.style.borderRadius = sr.toFixed(2) + "px";
     Object.assign(U.outline.style, { left: cx - ol.w / 2 + "px", top: y - g + "px", width: ol.w + "px", height: ol.h + "px",
       borderRadius: sr > 0 ? sr + g + "px" : "0px", opacity: ol.op });
-    const t = lk.bezel * P.shellK * s, L = cx - rect.w / 2;
-    Object.assign(U.shell.style, { left: L - t + "px", top: y - t + "px", width: rect.w + 2 * t + "px", height: rect.h + 2 * t + "px", borderRadius: sr + t + "px",
+    const t = lk.bezel * P.shellK * s, te = endsOf(lk) * P.shellK * s, L = cx - rect.w / 2, tx = ol.rot ? te : t, ty = ol.rot ? t : te;
+    Object.assign(U.shell.style, { left: L - tx + "px", top: y - ty + "px", width: rect.w + 2 * tx + "px", height: rect.h + 2 * ty + "px", borderRadius: sr + t + "px",
       backgroundColor: lk.tone, opacity: ol.shell });
     const H0 = (ol.rot ? rect.w : rect.h) / s, bw = 3;
     lk.btn.forEach((b, i) => {
@@ -719,6 +727,9 @@ export function createResizeScene(root, hooks) {
     });
     const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s, ol.mirrored);
     putCam(U.cam, camera, 0, 0, ol.shell);
+    const hd = endsOf(lk) * P.shellK * HOME_K, homeAt = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, { w: hd, h: hd, y: H0 + (endsOf(lk) * P.shellK - hd) / 2 }, s, ol.mirrored);
+    const hk = Number(lk.home) || 0;
+    putCam(U.home, { ...homeAt, on: hk > .01 && hd * s > .5 }, L, y, ol.shell * hk);
     const c = ol.crease, hz = ol.rot;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
@@ -788,7 +799,7 @@ export function createResizeScene(root, hooks) {
     draw(now);
     root.classList.toggle("at-rest", !tr && !queued && !draft);
     drawRuler(now);
-    hooks.layout({ w: V.w.at(now), h: V.h.at(now), s: V.s.at(now), y: V.y.at(now), cx: room().cx, radius: lookAt(now).radius * V.s.at(now) * shellOp.at(now), bezel: lookAt(now).bezel * P.shellK * V.s.at(now) * shellOp.at(now) }, !!tr || !!queued || rig.on || spin.on || !!draft);
+    hooks.layout({ w: V.w.at(now), h: V.h.at(now), s: V.s.at(now), y: V.y.at(now), cx: room().cx, radius: lookAt(now).radius * V.s.at(now) * shellOp.at(now), bezel: edgeOf(lookAt(now)) * V.s.at(now) * shellOp.at(now) }, !!tr || !!queued || rig.on || spin.on || !!draft);
   }
   const roll = { w: new Tw(411), h: new Tw(891) };
   const byId = id => document.getElementById(id);   // 조작 독은 장면 밖(무대 아래 가운데에 뜬다)에 선다 — $ 는 장면 안만 찾는다
@@ -1074,7 +1085,7 @@ export function createResizeScene(root, hooks) {
     RL.el.hidden = op < .01 && !editing;
     if (RL.el.hidden) return;
     RL.el.style.opacity = op;
-    const { cx } = room(), g = Math.max(P.gap, (lookAt(now).bezel * P.shellK * V.s.at(now) + 6) * shellOp.at(now)), w = V.w.at(now), h = V.h.at(now), T = V.y.at(now);
+    const { cx } = room(), g = Math.max(P.gap, (edgeOf(lookAt(now)) * V.s.at(now) + 6) * shellOp.at(now)), w = V.w.at(now), h = V.h.at(now), T = V.y.at(now);
     const L = cx - w / 2, R = cx + w / 2, B = T + h, M = (T + B) / 2, yr = T - g - 15, xr = L - g - 22, a = 4.5;
     for (const [axis, el] of [["w", RL.w], ["h", RL.h]]) {
       if (document.activeElement === el) continue;
