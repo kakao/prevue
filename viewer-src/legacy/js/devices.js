@@ -602,7 +602,7 @@ export const DEVICES = {
   },
   "pixelfold": {
     "name": "Pixel 9 Pro Fold",
-    "short": "Pixel 9 Pro Fold",
+    "short": "9 Pro Fold",
     "fold": true,
     "cover": {
       "w": 443.08,

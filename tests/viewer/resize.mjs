@@ -97,7 +97,7 @@ try {
   await post("/viewer/resize", { size: "original" });
   await until(`!__store.st.focus.size && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#resizeScene').classList.contains('at-rest')`);
   // 조작 독(D-167) — 헤더는 한 줄이고, 무대 아래 가운데 독에 크기 · 기기 메뉴와 확대가 있다. @Preview 는 가운데 칸이 없다.
-  // 기기 독의 폭 상한 — 독의 조작 버튼이 아이콘만이라 가장 넓은 독(펼친 Duo, 영어)이 인셋 영역 보기 칸까지 522px 다(1000 창 실측). 버튼에 글자가 돌아오면 넘는다.
+  // 기기 독의 폭 상한 — 독의 조작 버튼이 아이콘만이라 가장 넓은 독(펼친 접는 기기, 영어)이 인셋 영역 보기 칸까지 522px 안팎이다(1000 창 실측). 버튼에 글자가 돌아오면 넘는다.
   const DOCK_MAX = 536;
   const dockAt = `(()=>{const p=document.querySelector('#panel'),d=p.getBoundingClientRect();const w=document.documentElement.clientWidth;return Math.abs(d.left+d.width/2-w/2)<=1 && innerHeight-d.bottom>=8 && innerHeight-d.bottom<=24 && d.left>=0 && d.right<=w && d.height<64 && [...p.children].every(c=>{const r=c.getBoundingClientRect();return !r.width||(r.left>=d.left&&r.right<=d.right)})})()`;
   const dockClear = `(()=>{const d=document.querySelector('#panel').getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return s.bottom+8<=d.top})()`;
@@ -288,6 +288,10 @@ try {
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && __store.st.screen==='focus' && document.querySelector('#pnSum .nm').textContent==='673×841'`, "Esc 는 메뉴만 닫고 작업 공간에 남는다");
   await openMenu(); await click("#wsTitle"); await pause(250);
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false'`, "메뉴 밖을 누르면 닫힌다");
+  // 칸 이름이 가장 긴 접는 기기(펼친 Pixel 9 Pro Fold — 자세 버튼 셋)의 독도 폭 상한 안이다 — 칸 이름을 "Pixel 9 Pro Fold"로 늘리면 548px 로 넘는다(1000 창 실측)
+  await pick("pixelfold", "device==='pixelfold'");
+  await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
+  await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Pixel 9 Pro Fold 의 독 폭이 ${DOCK_MAX}px 이하(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
   await pick("duo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);

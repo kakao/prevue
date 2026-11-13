@@ -25,7 +25,7 @@ class DrawPosturesTest {
     @AfterEach fun tearDown() = fx.close()
 
     private val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
-    private val bar = ScreenSize.BAR.map { it.key }
+    private val bar = listOf("original", "narrow", "foldable") + DeviceModel.entries.map { it.id }
     private val cells = bar.size - 1
     private val phone = cells + 2
     private val fold = cells + 5
