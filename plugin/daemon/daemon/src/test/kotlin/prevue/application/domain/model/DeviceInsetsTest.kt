@@ -7,9 +7,9 @@ import prevue.application.domain.model.DeviceOrientation.*
 class DeviceInsetsTest {
     private val all = DeviceModel.entries.flatMap { it.postures }
 
-    @Test fun `열 개 기기의 열네 화면이 세 방향을 갖고 이름표가 모두 다르다`() {
-        assertEquals(42, all.size)
-        assertEquals(42, all.map { it.key }.toSet().size)
+    @Test fun `기기의 화면마다 세 방향을 갖고 이름표가 모두 다르다`() {
+        assertEquals(DeviceModel.entries.sumOf { if (it.cover == null) 1 else 2 } * DeviceOrientation.entries.size, all.size)
+        assertEquals(all.size, all.map { it.key }.toSet().size)
         all.groupBy { it.model to it.folded }.values.forEach { devices ->
             assertEquals(DeviceOrientation.entries.toSet(), devices.map { it.orientation }.toSet())
         }
@@ -78,7 +78,7 @@ class DeviceInsetsTest {
     }
 
     @Test fun `모든 프로필의 출처 해상도와 밀도는 해당 자세와 일치한다`() {
-        assertEquals(41, all.count { it.insetProfile.evidence != null })
+        assertEquals(all.size - 1, all.count { it.insetProfile.evidence != null })
         all.forEach { d ->
             val p = d.insetProfile
             p.evidence?.let { evidence ->

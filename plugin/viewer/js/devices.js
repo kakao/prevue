@@ -99,7 +99,7 @@ export const DEVICES = {
   },
   "ip17": {
     "name": "iPhone 17",
-    "short": "iPhone 17",
+    "short": "17",
     "fold": false,
     "open": {
       "w": 402,
@@ -157,7 +157,7 @@ export const DEVICES = {
   },
   "ipair": {
     "name": "iPhone Air",
-    "short": "iPhone Air",
+    "short": "Air",
     "fold": false,
     "open": {
       "w": 420,
@@ -271,9 +271,67 @@ export const DEVICES = {
       }
     }
   },
+  "ip18pro": {
+    "name": "iPhone 18 Pro",
+    "short": "18 Pro",
+    "fold": false,
+    "open": {
+      "w": 402,
+      "h": 874
+    },
+    "look": {
+      "open": {
+        "tone": "#3a3734",
+        "bezel": 5,
+        "radius": 62,
+        "cam": {
+          "w": 94.67,
+          "h": 36.67,
+          "y": 14
+        },
+        "btn": [
+          {
+            "side": -1,
+            "at": 150,
+            "len": 32
+          },
+          {
+            "side": -1,
+            "at": 205,
+            "len": 60
+          },
+          {
+            "side": -1,
+            "at": 280,
+            "len": 60
+          },
+          {
+            "side": 1,
+            "at": 235,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 335,
+            "len": 0
+          }
+        ]
+      }
+    },
+    "status": {
+      "top": 26.33,
+      "right": 366.67,
+      "s": 1,
+      "time": {
+        "cx": 72.67,
+        "base": 39,
+        "size": 17
+      }
+    }
+  },
   "duo": {
     "name": "iPhone Duo",
-    "short": "iPhone Duo",
+    "short": "Duo",
     "fold": true,
     "cover": {
       "w": 466,
@@ -701,6 +759,7 @@ export const DEVICE_MENU = [
       "ip17",
       "ipair",
       "ip17pm",
+      "ip18pro",
       "duo"
     ]
   }

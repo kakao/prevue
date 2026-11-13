@@ -13,7 +13,7 @@ Given to a card already on, they redraw at that size without turning interactive
   --device changes size and density together. The foldable devices are duo · fold8 · ultra · pixelfold
     Android  s26(Galaxy S26) · pixel9(Pixel 9) · fold8(Galaxy Z Fold8) · ultra(Galaxy Z Fold8 Ultra)
              · pixelfold(Pixel 9 Pro Fold) · tablet(Pixel Tablet)
-    iPhone   ip17(iPhone 17) · ipair(iPhone Air) · ip17pm(iPhone 17 Pro Max) · duo(iPhone Duo)
+    iPhone   ip17(iPhone 17) · ipair(iPhone Air) · ip17pm(iPhone 17 Pro Max) · ip18pro(iPhone 18 Pro) · duo(iPhone Duo)
   --folded the folded screen (cover) · --landscape the device rotated from its natural orientation — devices only. Without them it is unfolded in its natural orientation
     A phone rotated is landscape; a screen that is naturally landscape (tablet · unfolded fold8) rotated is portrait. status's widthDp · heightDp give the actual orientation
 --orientation selects an absolute direction on any device, including both foldable screens. The viewer uses the same three-direction menu.

@@ -23,6 +23,8 @@ import prevue.daemon.fake.awaitUntil
 /** 조작 중 잠잠할 때 보드의 다른 카드를 라이브 옆 태스크로 그린다(D-155 ③) — 돌아가면 보드가 이미 새것이다. */
 class BoardAsideFillTest {
     private val fx = Fixture()
+    private val cells = ScreenSize.BAR.size - 1
+    private val fold = cells + 5
 
     @AfterEach fun tearDown() = fx.close()
 
@@ -77,14 +79,14 @@ class BoardAsideFillTest {
     @Test fun `지금 기기의 자세 · 크기 칸을 다 그린 뒤에 보드 카드를 그린다`() {
         val uc = opened()
         uc.focus(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
-        awaitUntil("자세 칸 열다섯") { fx.renderer.asides.size >= 17 }
+        awaitUntil("자세 칸 한 바퀴") { fx.renderer.asides.size >= fold }
         val before = fx.renderer.asides.size
         uc.save()
         uc.workspace.awaitBoardFilled()
-        awaitUntil("자세 칸 서른") { fx.renderer.asides.count { '@' in it.previewId } == 34 }
+        awaitUntil("자세 칸 두 바퀴") { fx.renderer.asides.count { '@' in it.previewId } == fold * 2 }
         val after = fx.renderer.asides.drop(before)
         val firstCard = after.indexOfFirst { '@' !in it.previewId }
-        assertEquals(17, firstCard, "보드 카드가 자세 칸보다 먼저 그려졌다 — $after")
+        assertEquals(fold, firstCard, "보드 카드가 자세 칸보다 먼저 그려졌다 — $after")
         assertEquals(uc.cardSpecs().drop(1), after.drop(firstCard))
     }
 
@@ -116,8 +118,8 @@ class BoardAsideFillTest {
         val uc = opened()
         val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
         uc.focus()
-        assertTrue(fx.renderer.asideEntered.tryAcquire(12, 5, TimeUnit.SECONDS), "원래 크기 회차의 막대 칸 — ${fx.renderer.asides.size}")
-        awaitUntil("원래 크기 회차를 다 적었다") { uc.workspace.now.postures!!.shots.size == 13 }
+        assertTrue(fx.renderer.asideEntered.tryAcquire(cells, 5, TimeUnit.SECONDS), "원래 크기 회차의 막대 칸 — ${fx.renderer.asides.size}")
+        awaitUntil("원래 크기 회차를 다 적었다") { uc.workspace.now.postures!!.shots.size == cells + 1 }
 
         val gate = CountDownLatch(1)
         fx.renderer.asideGate = gate
