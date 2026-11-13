@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>접기 장면 두께 판 시제품</title>
+<style>
+  :root { color-scheme: dark; --bg: #16181c; --panel: #1f2228; --line: #343943; --text: #d8dce4; --dim: #8b93a1; --accent: #6ea8ff; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 -apple-system, "Pretendard", system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: 1fr 280px; }
+  #stage { position: relative; overflow: hidden; }
+  /* 원근은 장면 바깥 한 겹에만 둔다 — 그 아래는 전부 preserve-3d 라 overflow · filter · mask 를 두면 납작해진다 */
+  #lift { position: absolute; inset: 0; }
+  #rig, .panel { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+  .face, .strip, .spine, .ground { position: absolute; left: 0; top: 0; backface-visibility: hidden; }
+  .face { overflow: hidden; }
+  .scr { position: absolute; overflow: hidden; background: #000; }
+  .img { position: absolute; transform-origin: 0 0; background-repeat: no-repeat; background-position: center; }
+  .cam { position: absolute; background: #000; border-radius: 50%; }
+  .lit, .cast { position: absolute; inset: 0; pointer-events: none; }
+  /* 띠 길이 방향 양끝을 살짝 밝히고 어둡게 해 모서리가 깎인 금속처럼 보이게 한다 */
+  .strip, .spine { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 82%, white) 0, var(--c) 10%, var(--c) 90%, color-mix(in srgb, var(--c) 80%, black) 100%); }
+  .ground { backface-visibility: visible; background: rgba(0, 0, 0, .38); filter: blur(26px); }
+  body.wire .strip, body.wire .spine { outline: 1px solid rgba(255, 80, 80, .9); outline-offset: -1px; }
+  #hud { position: absolute; left: 14px; top: 12px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: pre; }
+  #hud b { color: var(--text); font-weight: 600; }
+  aside { background: var(--panel); border-left: 1px solid var(--line); padding: 14px; overflow: auto; }
+  aside h2 { font-size: 11px; letter-spacing: .06em; color: var(--dim); margin: 16px 0 8px; font-weight: 600; }
+  aside h2:first-child { margin-top: 0; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { font: inherit; color: var(--text); background: #2a2e36; border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+  button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  label.s { display: grid; grid-template-columns: 86px 1fr 44px; align-items: center; gap: 8px; margin: 6px 0; color: var(--dim); }
+  label.s output { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  p.note { color: var(--dim); margin: 10px 0 0; font-size: 12px; }
+  kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="lift"><div id="rig"></div></div>
+  <div id="hud"></div>
+</div>
+<aside>
+  <h2>기기</h2>
+  <div class="row" id="devs"></div>
+  <h2>접기</h2>
+  <div class="row">
+    <button id="fold">접기 · 펼치기 <kbd>F</kbd></button>
+    <button id="axis" aria-pressed="false">축 뒤집기 <kbd>A</kbd></button>
+  </div>
+  <div class="row" id="speeds" style="margin-top:6px"></div>
+  <label class="s">각도<input type="range" id="th" min="0" max="180" step="0.5" value="0"><output></output></label>
+  <h2>판</h2>
+  <label class="s">두께 dp<input type="range" id="thick" min="0" max="60" step="1"><output></output></label>
+  <label class="s">닫힌 틈 dp<input type="range" id="gap" min="0" max="20" step="0.5"><output></output></label>
+  <label class="s">모서리 띠<input type="range" id="seg" min="1" max="16" step="1" value="8"><output></output></label>
+  <div class="row"><button id="wire" aria-pressed="false">띠 경계 보기</button></div>
+  <h2>빛 · 보기</h2>
+  <label class="s">빛 방향<input type="range" id="az" min="0" max="360" step="1" value="125"><output></output></label>
+  <label class="s">빛 높이<input type="range" id="el" min="10" max="85" step="1" value="55"><output></output></label>
+  <label class="s">기울임 X<input type="range" id="tx" min="-60" max="60" step="1" value="0"><output></output></label>
+  <label class="s">기울임 Y<input type="range" id="ty" min="-60" max="60" step="1" value="0"><output></output></label>
+  <p class="note">제품 장면은 기울임 0 · 원근 3200px 이다. 기울임은 두께와 옆면 명암을 돌려 보려는 조절기다. <kbd>Space</kbd> 다시 재생 · <kbd>S</kbd> 속도.</p>
+</aside>
+<script type="module">
+import { DEVICES } from "../../plugin/viewer/js/devices.js";
+
+// 기기 스펙(look)에 더할 후보 필드를 시제품 안에서만 덧붙인다 — plugin/devices 에 넣으면 뷰어 생성이 모르는 필드로 실패한다.
+// thickness · hinge.gap 은 사이트에 없어 손으로 적은 값이다(펼친 판 하나의 두께, dp).
+// dur · shrinkFrom · img 는 스펙 후보가 아니라 이 페이지의 재료다. shrinkFrom 은 제품 장면에서 바닥 반쪽이 커버 폭으로
+// 줄기 시작하는 각도(drawRig 90 · drawDuo 150) 그대로다. dur 은 두 기기 모두 1초 — 제품의 책형 길이(foldDur .6)는
+// 두께가 보이는 판에 너무 빨라 Duo 길이(duoDur 1)에 맞췄다(사용자 2026-11-13).
+const OVERLAY = {
+  fold8: { thickness: 26, hinge: { axis: "width", gap: 2 }, dur: 1, shrinkFrom: 90, img: { open: "../resize/img/fold8-open.png", cover: "../resize/img/fold8-cover.png" } },
+  duo: { thickness: 28, hinge: { axis: "width", gap: 2 }, dur: 1, shrinkFrom: 150, img: { open: "../resize/img/ipduo-open.png", cover: "../resize/img/ipduo-cover.png" } },
+};
+// 제품 장면(plugin/viewer/js/resize-scene.js 의 P)과 같은 값 — 비교가 공정하려면 원근 · 이징 · 몸체 배율이 같아야 한다.
+const P = { perspective: 3200, foldLift: .42, foldLand: .18, shellK: 1.6, shade: .22 };
+// 제품에 없는 시제품 값 — 계산 명암의 바닥 밝기와 화면이 어두워지는 정도.
+Object.assign(P, { ambient: .35, screenDim: .6 });
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (a, b, v) => { const k = clamp((v - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+const rad = d => d * Math.PI / 180;
+function bezier(x1, y1, x2, y2) {
+  const f = (a, b, t) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return x => { let lo = 0, hi = 1; for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (f(x1, x2, m) < x) lo = m; else hi = m; } return f(y1, y2, (lo + hi) / 2); };
+}
+const ease = bezier(P.foldLift, 0, P.foldLand, 1);
+
+// CSS 의 회전 부호(y 아래 · z 보는 쪽)와 같은 행렬 — 면 법선을 화면 좌표로 옮겨 빛과 내적한다.
+const rotX = a => { const c = Math.cos(a), s = Math.sin(a); return [[1, 0, 0], [0, c, -s], [0, s, c]]; };
+const rotY = a => { const c = Math.cos(a), s = Math.sin(a); return [[c, 0, s], [0, 1, 0], [-s, 0, c]]; };
+const rotZ = a => { const c = Math.cos(a), s = Math.sin(a); return [[c, -s, 0], [s, c, 0], [0, 0, 1]]; };
+const mul = (A, B) => A.map(r => [0, 1, 2].map(j => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j]));
+const apply = (M, v) => M.map(r => r[0] * v[0] + r[1] * v[1] + r[2] * v[2]);
+
+const q = new URLSearchParams(location.search);
+const num = (k, d) => q.has(k) ? Number(q.get(k)) : d;
+const ids = Object.keys(OVERLAY).filter(id => DEVICES[id]?.fold);
+const S = {
+  dev: ids.includes(q.get("dev")) ? q.get("dev") : ids[0],
+  flip: q.get("axis") === "flip", th: num("th", 0), speed: 1, anim: null,
+};
+const rig = $("rig"), lift = $("lift"), stage = $("stage");
+
+function mk(cls, parent) { const el = document.createElement("div"); el.className = cls; parent.append(el); return el; }
+function mkFace(parent) {
+  const el = mk("face", parent), scr = mk("scr", el), img = mk("img", scr), cam = mk("cam", img), cast = mk("cast", el), lit = mk("lit", el);
+  return { el, scr, img, cam, cast, lit };
+}
+function mkPanel() {
+  const el = mk("panel", rig);
+  return { el, front: mkFace(el), back: mkFace(el), strips: [] };
+}
+const ground = mk("ground", rig), base = mkPanel(), leaf = mkPanel(), spine = mk("spine", rig);
+
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function toned(rgb, b) {
+  const k = b <= 1 ? 0 : (b - 1) * .5;
+  return `rgb(${rgb.map(c => Math.round(b <= 1 ? c * b : c + (255 - c) * k)).join(" ")})`;
+}
+// 화면은 스스로 빛나서 몸체보다 덜 어두워진다
+function litOverlay(el, b) {
+  el.style.background = b <= 1 ? `rgba(0,0,0,${(P.screenDim * (1 - b)).toFixed(3)})` : `rgba(255,255,255,${((b - 1) * .25).toFixed(3)})`;
+}
+
+// 몸체 윤곽(둥근 사각형)의 옆면 띠 — 직선 변은 한 장, 모서리는 호에 외접하는 n장.
+// 외접이라 이웃 띠의 끝이 정확히 만난다. 각 띠는 { 중심, 바깥 법선 각도, 길이 }.
+function perimeter([x0, y0, x1, y1], [tl, tr, br, bl], n) {
+  const out = [], d = 90 / n, w = r => 2 * r * Math.tan(rad(d) / 2);
+  const arc = (cx, cy, r, a0) => { for (let i = 0; i < n; i++) { const a = a0 + (i + .5) * d; out.push({ x: cx + r * Math.cos(rad(a)), y: cy + r * Math.sin(rad(a)), a, len: w(r) }); } };
+  out.push({ x: (x0 + tl + x1 - tr) / 2, y: y0, a: 270, len: x1 - tr - x0 - tl });
+  arc(x1 - tr, y0 + tr, tr, 270);
+  out.push({ x: x1, y: (y0 + tr + y1 - br) / 2, a: 0, len: y1 - br - y0 - tr });
+  arc(x1 - br, y1 - br, br, 0);
+  out.push({ x: (x0 + bl + x1 - br) / 2, y: y1, a: 90, len: x1 - br - x0 - bl });
+  arc(x0 + bl, y1 - bl, bl, 90);
+  out.push({ x: x0, y: (y0 + tl + y1 - bl) / 2, a: 180, len: y1 - bl - y0 - tl });
+  arc(x0 + tl, y0 + tl, tl, 180);
+  return out;
+}
+const px = v => v.toFixed(2) + "px";
+const radii = r => r.map(px).join(" ");
+
+// 화면 그림과 카메라 구멍 — 높이를 가르면 장면 전체가 90° 돌아가므로 그림만 반대로 돌려 바로 세운다.
+// 카메라는 그림 상자 안에 둬서 같은 회전을 탄다. 자리는 제품 장면의 camBox 와 같다(가로는 화면 폭의 비율, 세로는 dp).
+function putImg(f, src, x0, w, h, fill, turned, cam, s) {
+  const iw = turned ? h : w, cw = cam.w * s;
+  Object.assign(f.img.style, { backgroundImage: `url(${src})`, backgroundSize: fill ? "cover" : "100% 100%" },
+    turned ? { left: px(x0), top: px(h), width: px(h), height: px(w), transform: "rotate(-90deg)" }
+      : { left: px(x0), top: "0px", width: px(w), height: px(h), transform: "none" });
+  Object.assign(f.cam.style, { display: cw > .5 ? "" : "none", left: px((cam.x ?? .5) * iw - cw / 2), top: px(cam.y * s), width: px(cw), height: px(cam.h * s) });
+}
+
+function drawPanel(p, o) {
+  const { body, bodyR, scr, scrR, T, M, tone, n } = o, [x0, y0, x1, y1] = body, W = x1 - x0, H = y1 - y0;
+  const cap = r => r.map(v => clamp(v, 0, Math.min(W, H) / 2));
+  const R = cap(bodyR), mirror = r => [r[1], r[0], r[3], r[2]];
+  for (const [f, back] of [[p.front, false], [p.back, true]]) {
+    const sx = back ? x1 - scr[2] : scr[0] - x0;
+    Object.assign(f.el.style, { left: px(x0), top: px(y0), width: px(W), height: px(H), background: toned(tone, 1),
+      borderRadius: radii(back ? mirror(R) : R), transform: back ? `translateZ(${px(-T)}) rotateY(180deg)` : "none" });
+    Object.assign(f.scr.style, { left: px(sx), top: px(scr[1] - y0), width: px(scr[2] - scr[0]), height: px(scr[3] - scr[1]),
+      borderRadius: radii(back ? mirror(scrR) : scrR) });
+    litOverlay(f.lit, light(apply(M, [0, 0, back ? -1 : 1])));
+  }
+  const segs = perimeter(body, R, n);
+  while (p.strips.length < segs.length) p.strips.push(mk("strip", p.el));
+  p.strips.forEach((el, i) => {
+    const g = segs[i];
+    if (!g || g.len < .05 || T < .05) { el.style.display = "none"; return; }
+    // 이웃 띠와 .6px 겹쳐 안티에일리어싱이 남기는 틈을 덮는다
+    const len = g.len + .6;
+    Object.assign(el.style, { display: "", width: px(T), height: px(len), marginLeft: px(-T / 2), marginTop: px(-len / 2),
+      transform: `translate3d(${px(g.x)},${px(g.y)},${px(-T / 2)}) rotateZ(${g.a.toFixed(3)}deg) rotateY(90deg)` });
+    el.style.setProperty("--c", toned(tone, light(apply(M, [Math.cos(rad(g.a)), Math.sin(rad(g.a)), 0]))));
+  });
+}
+
+let L = [0, 0, 1];
+// 정면을 보는 면이 1이 되게 맞춘 확산광 — 화면 밝기는 멈춘 장면과 같고 돌아간 면만 어두워지거나 밝아진다.
+const light = n => clamp(P.ambient + (1 - P.ambient) * Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / L[2], 0, 1.5);
+
+function draw() {
+  const d = DEVICES[S.dev], ov = OVERLAY[S.dev], th = S.th, k = th / 180, a = rad(th), sn = Math.sin(a), cs = Math.cos(a);
+  const T_dp = Number($("thick").value), gap_dp = Number($("gap").value), n = Number($("seg").value);
+  const az = rad(Number($("az").value)), el = rad(Number($("el").value)), tx = Number($("tx").value), ty = Number($("ty").value);
+  L = [Math.cos(el) * Math.cos(az), -Math.cos(el) * Math.sin(az), Math.sin(el)];
+  // 힌지가 가르는 쪽이 u, 힌지와 나란한 쪽이 v. 축을 뒤집으면 같은 기기를 높이로 가른다 — 그때 커버는 반쪽과 같은 크기로 둔다(검증용).
+  const natural = ov.hinge.axis === "width", across = natural !== S.flip;
+  const half = across ? { u: d.open.hinge, v: d.open.h } : { u: d.open.h / 2, v: d.open.w };
+  const cover = S.flip ? half : across ? { u: d.cover.w, v: d.cover.h } : { u: d.cover.h, v: d.cover.w };
+  const room = stage.getBoundingClientRect(), cx = room.width / 2, cy = room.height / 2;
+  const fitU = 2 * half.u, fitV = Math.max(half.v, cover.v);
+  const s = Math.min(room.width * .7 / (across ? fitU : fitV), room.height * .7 / (across ? fitV : fitU));
+  // 펼친 반쪽과 커버의 dp 크기가 달라 판 크기를 접는 동안 보간한다(제품 장면과 같다). 두께는 고정이다.
+  const Lu = lerp(half.u, cover.u, k) * s, Lv = lerp(half.v, cover.v, k) * s;
+  const Bu = lerp(half.u, Math.min(half.u, cover.u), smooth(ov.shrinkFrom, 180, th)) * s, Bv = Lv;
+  const lo = d.look.open, lc = d.look.cover, t = lerp(lo.bezel, lc.bezel, k) * P.shellK * s;
+  const hk = smooth(20, 160, th), e = t * hk, T = T_dp * s, za = gap_dp * s / 2;
+  const rIn = lo.radius * s, rOut = lc.radius * s, rB = lerp(rIn, rOut, smooth(60, 120, th)) + t, rH = rB * hk;
+  const hu = lerp(cx, cx - cover.u * s / 2, k), T0 = cy - Lv / 2;
+  const pivot = `${px(hu)} ${px(T0 + Bv / 2)}`;
+  Object.assign(lift.style, { perspective: P.perspective + "px", perspectiveOrigin: pivot });
+  const turned = !across, rz = turned ? 90 : 0;
+  // 높이를 가를 때 회전 중심이 화면 가운데로 오게 힌지 자리를 가운데 기준으로 돌린다
+  Object.assign(rig.style, { transformOrigin: `${px(cx)} ${px(cy)}`, transform: `rotateX(${tx}deg) rotateY(${ty}deg) rotateZ(${rz}deg)` });
+  const view = mul(mul(rotX(rad(tx)), rotY(rad(ty))), rotZ(rad(rz))), Mleaf = mul(view, rotY(a));
+  const tone = hex(d.look.open.tone);
+
+  for (const p of [base, leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
+  // 회전축은 화면 면에서 틈의 절반만큼 위 — 다 접히면 두 화면 사이에 틈이 남는다.
+  leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
+  drawPanel(base, { body: [-e, -t, Bu + t, Bv + t], bodyR: [rH, rB, rB, rH], scr: [0, 0, Bu, Bv], scrR: [rIn * hk, rIn, rIn, rIn * hk], T, M: view, tone, n });
+  drawPanel(leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: [rB, rH, rH, rB], scr: [-Lu, 0, 0, Lv], scrR: [rIn, rIn * hk, rIn * hk, rIn], T, M: Mleaf, tone, n });
+  putImg(leaf.front, ov.img.open, 0, 2 * Lu, Lv, false, turned, lo.cam, s);
+  putImg(base.front, ov.img.open, -Lu, 2 * Lu, Lv, false, turned, lo.cam, s);
+  putImg(leaf.back, ov.img.cover, 0, Lu, Lv, true, turned, lc.cam, s);
+  leaf.back.scr.style.borderRadius = radii([rOut * hk, rOut, rOut, rOut * hk]);
+  base.back.scr.style.display = "none";
+  const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
+  base.front.cast.style.background = `linear-gradient(90deg, rgba(0,0,0,${cast.toFixed(3)}), rgba(0,0,0,${(cast * .35).toFixed(3)}) 45%, transparent 90%)`;
+
+  // 책등 — 두 판의 뒤쪽 힌지 모서리를 잇는 띠 한 장. 펼치면 폭 0, 다 접히면 두께 둘 + 틈.
+  const bx = -e, bz = -T, dx = e, dz = -T - za, lx = dx * cs + dz * sn, lz = za - dx * sn + dz * cs;
+  const sl = Math.hypot(lx - bx, lz - bz), phi = Math.atan2(-(lz - bz), lx - bx), sv = Bv + 2 * t - 2 * Math.min(rH, (Bv + 2 * t) / 2);
+  Object.assign(spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t + (Bv + 2 * t - sv) / 2), width: px(sl + .6), height: px(sv), marginLeft: px(-(sl + .6) / 2),
+    transform: `translate3d(${px((bx + lx) / 2)},0,${px((bz + lz) / 2)}) rotateY(${(phi * 180 / Math.PI).toFixed(3)}deg)` });
+  spine.style.setProperty("--c", toned(tone, light(apply(view, [Math.sin(phi), 0, Math.cos(phi)]))));
+
+  const tip = -Lu * cs, g0 = Math.min(-e, tip - t), g1 = Math.max(Bu + t, tip);
+  Object.assign(ground.style, { left: px(hu + g0), top: px(T0 - t), width: px(g1 - g0), height: px(Bv + 2 * t), borderRadius: px(rB),
+    transform: `translate3d(0,${px(10 + 14 * sn)},${px(-T - 2)})`, opacity: (.7 + .3 * sn).toFixed(3) });
+
+  $("th").value = th;
+  for (const inp of document.querySelectorAll("label.s input")) inp.nextElementSibling.value = Number(inp.value).toFixed(inp.step < 1 ? 1 : 0);
+}
+
+// 프레임 시간 — 접는 동안의 rAF 간격만 잰다. 60fps 는 16.7ms 이고, 떨림을 봐줘 17.5ms 를 넘으면 놓친 프레임으로 센다.
+const stats = { n: 0, sum: 0, worst: 0, over: 0, last: 0 };
+function hud() {
+  const d = DEVICES[S.dev], f = stats.n ? `평균 <b>${(stats.sum / stats.n).toFixed(1)}ms</b> · 최악 <b>${stats.worst.toFixed(1)}ms</b> · 17.5ms 넘음 <b>${stats.over}/${stats.n}</b>` : "아직 접지 않았다";
+  $("hud").innerHTML = `${d.name} · 띠 ${base.strips.filter(e => e.style.display !== "none").length + leaf.strips.filter(e => e.style.display !== "none").length}장\n최근 접기 — ${f}`;
+}
+function tick(now) {
+  const A = S.anim;
+  if (!A) return;
+  if (stats.last) { const dt = now - stats.last; stats.n++; stats.sum += dt; stats.worst = Math.max(stats.worst, dt); if (dt > 17.5) stats.over++; }
+  stats.last = now;
+  const p = clamp((now - A.t0) / (A.dur * 1000), 0, 1), e = ease(p);
+  S.th = lerp(A.from, A.fold ? 180 : 0, e);
+  draw();
+  if (p < 1) raf = requestAnimationFrame(tick); else { S.anim = null; hud(); window.__stats = { ...stats }; }
+}
+let raf = 0;
+// 접는 도중 다시 부르면 지금 각도에서 반대쪽으로 간다 — 처음부터 다시 재면 각도가 튄다
+function fold(to = S.anim ? !S.anim.fold : S.th < 90) {
+  cancelAnimationFrame(raf);
+  Object.assign(stats, { n: 0, sum: 0, worst: 0, over: 0, last: 0 });
+  S.anim = { fold: to, from: S.th, t0: performance.now(), dur: OVERLAY[S.dev].dur / S.speed };
+  raf = requestAnimationFrame(tick);
+}
+function replay() { const to = S.anim ? S.anim.fold : S.th >= 90; S.anim = null; S.th = to ? 0 : 180; fold(to); }
+
+function pickDev(id) {
+  S.dev = id; S.anim = null;
+  $("thick").value = num("T", OVERLAY[id].thickness); $("gap").value = num("gap", OVERLAY[id].hinge.gap);
+  for (const b of $("devs").children) b.setAttribute("aria-pressed", b.dataset.id === id);
+  draw(); hud();
+}
+for (const id of ids) { const b = document.createElement("button"); b.dataset.id = id; b.textContent = DEVICES[id].short; $("devs").append(b); }
+$("devs").addEventListener("click", e => e.target.dataset.id && pickDev(e.target.dataset.id));
+const SPEEDS = [[1, "1×"], [.5, "½"], [.25, "¼"], [.1, "⅒"]];
+function paintSpeed() { [...$("speeds").children].forEach((b, i) => b.setAttribute("aria-pressed", SPEEDS[i][0] === S.speed)); }
+SPEEDS.forEach(([v, name]) => { const b = document.createElement("button"); b.textContent = name; b.onclick = () => { S.speed = v; paintSpeed(); }; $("speeds").append(b); });
+function toggleAxis() { S.flip = !S.flip; $("axis").setAttribute("aria-pressed", S.flip); draw(); }
+$("fold").onclick = () => fold();
+$("axis").onclick = toggleAxis;
+$("wire").onclick = () => $("wire").setAttribute("aria-pressed", document.body.classList.toggle("wire"));
+$("th").addEventListener("input", () => { S.anim = null; S.th = Number($("th").value); draw(); });
+for (const id of ["thick", "gap", "seg", "az", "el", "tx", "ty"]) { if (q.has(id)) $(id).value = q.get(id); $(id).addEventListener("input", () => { draw(); hud(); }); }
+addEventListener("resize", draw);
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.metaKey || e.ctrlKey) return;
+  const key = e.key.toLowerCase();
+  if (key === "f") fold(); else if (key === "a") toggleAxis(); else if (key === " ") { e.preventDefault(); replay(); }
+  else if (key === "s") { S.speed = SPEEDS[(SPEEDS.findIndex(v => v[0] === S.speed) + 1) % SPEEDS.length][0]; paintSpeed(); }
+});
+if (q.has("wire")) document.body.classList.add("wire");
+$("axis").setAttribute("aria-pressed", S.flip);
+paintSpeed(); pickDev(S.dev);
+if (q.has("play")) fold();
+</script>
+</body>
+</html>
