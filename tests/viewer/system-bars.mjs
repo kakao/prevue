@@ -183,7 +183,8 @@ try {
       assert(Math.min(...ends) > Math.max(...sides) + 1, `${name} 짧은 두 변의 베젤이 긴 변보다 두껍다: ${JSON.stringify(gap)}`);
       assert(home && home.r - home.l > 4 && Math.abs((home.r - home.l) - (home.b - home.t)) < 1, `${name} 홈 버튼은 원이다: ${JSON.stringify(home)}`);
       const homeAt = orientation === 'portrait' ? Math.abs((home.l + home.r) / 2 - cx) < 1 && home.t >= shot.b && home.b <= shell.b + 1
-        : Math.abs((home.t + home.b) / 2 - cy) < 1 && (home.l >= shot.r && home.r <= shell.r + 1 || home.r <= shot.l && home.l >= shell.l - 1);
+        : Math.abs((home.t + home.b) / 2 - cy) < 1 && (orientation === 'landscape-left' ? home.l >= shot.r && home.r <= shell.r + 1 : home.r <= shot.l && home.l >= shell.l - 1);
+      assert(await evaluate(`+getComputedStyle(document.querySelector('#ua .home')).opacity`) > .9, `${name} 홈 버튼이 실제로 보인다(opacity)`);
       assert(homeAt, `${name} 홈 버튼이 짧은 변 베젤 가운데에 있다: ${JSON.stringify(s)}`);
       if (orientation === 'portrait') {
         assert(time && left && right, `${name} 시각 · 왼쪽 · 오른쪽 묶음: ${JSON.stringify(s)}`);

@@ -187,7 +187,7 @@ export function createResizeScene(root, hooks) {
     const A = look.a, B = look.b;
     if (!B) return DEVICES.s26.look.open;
     const k = easeOut(clamp((now - look.t0) / look.dur, 0, 1)), m = (x, y) => lerp(x, y, k);
-    return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(A.home ? 1 : 0, B.home ? 1 : 0), radius: m(A.radius, B.radius),
+    return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(Number(A.home) || 0, Number(B.home) || 0), radius: m(A.radius, B.radius),
       cam: { w: m(A.cam.w, B.cam.w), h: m(A.cam.h, B.cam.h), y: m(A.cam.y, B.cam.y), x: m(A.cam.x ?? .5, B.cam.x ?? .5) },
       btn: B.btn.map((b, i) => { const a = A.btn[i];
         return a.side === b.side ? { side: b.side, at: m(a.at, b.at), len: m(a.len, b.len) }
@@ -729,7 +729,7 @@ export function createResizeScene(root, hooks) {
     putCam(U.cam, camera, 0, 0, ol.shell);
     const hd = endsOf(lk) * P.shellK * HOME_K, homeAt = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, { w: hd, h: hd, y: H0 + (endsOf(lk) * P.shellK - hd) / 2 }, s, ol.mirrored);
     const hk = Number(lk.home) || 0;
-    putCam(U.home, { ...homeAt, on: hk > .01 && hd * s > .5 }, L, y, ol.shell * hk);
+    putCam(U.home, { ...homeAt, on: homeAt.on && hk > .01 }, L, y, ol.shell * hk);
     const c = ol.crease, hz = ol.rot;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
