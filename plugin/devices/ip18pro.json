@@ -1,0 +1,77 @@
+{
+  "id": "ip18pro",
+  "label": "iPhone 18 Pro",
+  "order": 55,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 1206,
+        "heightPx": 2622,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-18-pro.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1206x2622",
+              "orientation": "portrait",
+              "sourceSha256": "afc05a006123b36a807ad23f95409b97526edf7ef0461fe38e28c2a8deeae378",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"top": 62, "bottom": 34},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 402, "height": 778}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-18-pro.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2622x1206",
+              "orientation": "landscape-right",
+              "sourceSha256": "afc05a006123b36a807ad23f95409b97526edf7ef0461fe38e28c2a8deeae378",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 750, "height": 382}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-18-pro.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2622x1206",
+              "orientation": "landscape-left",
+              "sourceSha256": "afc05a006123b36a807ad23f95409b97526edf7ef0461fe38e28c2a8deeae378",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 750, "height": 382}
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios",
+    "short": "18 Pro",
+    "tone": "#3a3734",
+    "open": {"bezel": 5, "cam": {"w": 94.67, "h": 36.67, "y": 14}, "btn": [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]]},
+    "status": {"top": 26.33, "right": 366.67, "scale": 1, "time": {"cx": 72.67, "base": 39, "size": 17}}
+  }
+}

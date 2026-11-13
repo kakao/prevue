@@ -109,9 +109,9 @@ try {
   await ready();
   const smoke = process.argv.includes('--smoke');
   const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
-  const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','duo','fold8','ultra','pixelfold','tablet']);
+  const devices = selected ?? (smoke ? ['duo'] : ['s26','s26ultra','pixel9','pixel10xl','ip17','ipair','ip17pm','ip18pro','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
-  const ios = new Set(['ip17','ipair','ip17pm','duo']), pixel = new Set(['pixel9','pixelfold','tablet']);
+  const ios = new Set(['ip17','ipair','ip17pm','ip18pro','duo']), pixel = new Set(['pixel9','pixel10xl','pixelfold','tablet']);
   // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
   // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
   const RAW_CAM = {
@@ -121,11 +121,13 @@ try {
     's26-open-portrait': [180, 18.5], 's26-open-landscape-left': [18.5, 180], 's26-open-landscape-right': [761.5, 180],
     'fold8-cover-portrait': [237.71, 19.81], 'fold8-cover-landscape-left': [19.81, 237.71], 'fold8-cover-landscape-right': [731.43, 237.71],
     'ultra-cover-portrait': [180, 18], 'ultra-cover-landscape-left': [18, 180], 'ultra-cover-landscape-right': [822, 180],
+    's26ultra-open-portrait': [192, 18.49], 's26ultra-open-landscape-left': [18.49, 192], 's26ultra-open-landscape-right': [813.51, 192],
+    'pixel10xl-open-portrait': [221.35, 32.96], 'pixel10xl-open-landscape-left': [32.96, 221.73], 'pixel10xl-open-landscape-right': [953.29, 221.35],
   };
   // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
-  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5,
+  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46,
     // safearea.info 의 그 자세 조건 그대로의 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
-    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'duo-cover': 59, 'duo-open': 59 };
+    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'duo-cover': 59, 'duo-open': 59 };
   // 화면 모서리 반경(둥근 스테이지의 border-radius)과, 상자 네 꼭짓점이 그 둥근 화면 안에 있는지 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
   const cornerOf = () => evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
     return {k,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);

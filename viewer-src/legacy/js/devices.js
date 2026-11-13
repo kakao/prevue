@@ -49,6 +49,54 @@ export const DEVICES = {
       }
     }
   },
+  "s26ultra": {
+    "name": "Galaxy S26 Ultra",
+    "short": "S26 Ultra",
+    "fold": false,
+    "open": {
+      "w": 384,
+      "h": 832
+    },
+    "look": {
+      "open": {
+        "tone": "#34363a",
+        "bezel": 5,
+        "radius": 28.09,
+        "cam": {
+          "w": 9,
+          "h": 9,
+          "y": 13.99
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 185,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 318,
+            "len": 52
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          }
+        ]
+      }
+    }
+  },
   "pixel9": {
     "name": "Pixel 9",
     "short": "Pixel 9",
@@ -97,9 +145,57 @@ export const DEVICES = {
       }
     }
   },
+  "pixel10xl": {
+    "name": "Pixel 10 Pro XL",
+    "short": "Pixel 10 Pro XL",
+    "fold": false,
+    "open": {
+      "w": 443.08,
+      "h": 986.26
+    },
+    "look": {
+      "open": {
+        "tone": "#2d2f33",
+        "bezel": 6,
+        "radius": 50.46,
+        "cam": {
+          "w": 31.64,
+          "h": 31.64,
+          "y": 17.14
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 205,
+            "len": 52
+          },
+          {
+            "side": 1,
+            "at": 290,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 390,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 390,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 390,
+            "len": 0
+          }
+        ]
+      }
+    }
+  },
   "ip17": {
     "name": "iPhone 17",
-    "short": "iPhone 17",
+    "short": "17",
     "fold": false,
     "open": {
       "w": 402,
@@ -157,7 +253,7 @@ export const DEVICES = {
   },
   "ipair": {
     "name": "iPhone Air",
-    "short": "iPhone Air",
+    "short": "Air",
     "fold": false,
     "open": {
       "w": 420,
@@ -271,9 +367,67 @@ export const DEVICES = {
       }
     }
   },
+  "ip18pro": {
+    "name": "iPhone 18 Pro",
+    "short": "18 Pro",
+    "fold": false,
+    "open": {
+      "w": 402,
+      "h": 874
+    },
+    "look": {
+      "open": {
+        "tone": "#3a3734",
+        "bezel": 5,
+        "radius": 62,
+        "cam": {
+          "w": 94.67,
+          "h": 36.67,
+          "y": 14
+        },
+        "btn": [
+          {
+            "side": -1,
+            "at": 150,
+            "len": 32
+          },
+          {
+            "side": -1,
+            "at": 205,
+            "len": 60
+          },
+          {
+            "side": -1,
+            "at": 280,
+            "len": 60
+          },
+          {
+            "side": 1,
+            "at": 235,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 335,
+            "len": 0
+          }
+        ]
+      }
+    },
+    "status": {
+      "top": 26.33,
+      "right": 366.67,
+      "s": 1,
+      "time": {
+        "cx": 72.67,
+        "base": 39,
+        "size": 17
+      }
+    }
+  },
   "duo": {
     "name": "iPhone Duo",
-    "short": "iPhone Duo",
+    "short": "Duo",
     "fold": true,
     "cover": {
       "w": 466,
@@ -544,7 +698,7 @@ export const DEVICES = {
   },
   "pixelfold": {
     "name": "Pixel 9 Pro Fold",
-    "short": "9 Pro Fold",
+    "short": "Pixel 9 Pro Fold",
     "fold": true,
     "cover": {
       "w": 443.08,
@@ -688,7 +842,9 @@ export const DEVICE_MENU = [
     "group": "Android",
     "ids": [
       "s26",
+      "s26ultra",
       "pixel9",
+      "pixel10xl",
       "fold8",
       "ultra",
       "pixelfold",
@@ -701,6 +857,7 @@ export const DEVICE_MENU = [
       "ip17",
       "ipair",
       "ip17pm",
+      "ip18pro",
       "duo"
     ]
   }
