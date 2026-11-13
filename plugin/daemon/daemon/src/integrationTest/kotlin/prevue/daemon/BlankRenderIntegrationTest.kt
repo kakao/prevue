@@ -135,6 +135,21 @@ class BlankRenderIntegrationTest {
         assertEquals(before + 1, compiler.recompiled)
     }
 
+    // 렌더 중 던진 NoSuchMethodError는 공유 로더로도 새 로더로도 EXCEPTION이다 — 옛 오버로드로 풀린 호출(HotCompiler의 재컴파일 보정을 끈 경우)은 덮지 않는다
+    @Test @Order(5) fun `렌더 중 NoSuchMethodError는 공유 로더에서도 새 로더에서도 EXCEPTION이다`() {
+        stub.writeText(THROWING)
+        val w = runBlocking { uc.status.awaitRender(listOf(stub), 60_000) }
+        runBlocking { engine.awaitWrites() }
+        val spec = ws.now.board!!.focusCard.spec.copy(fqn = "com.example.pearl.feature.pearl.BlankStubKt.BlankStubPreview", previewId = "BlankStubPreview", file = stub)
+        val shared = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
+        val own = runBlocking { engine.written(engine.show(spec, ownLoader = true)) }
+        val seen = { o: prevue.application.port.RenderOutput -> "ok=${o.ok} failure=${o.failure} warnings=${o.warnings} message=${o.message?.text}" }
+        assertTrue(!shared.freshLoader, "공유 로더가 이미 쓰인 것이어야 한다 · ${seen(shared)}")
+        assertEquals(FailureKind.EXCEPTION, own.failure, "새 로더 · ${seen(own)} · wait=$w")
+        assertEquals(FailureKind.EXCEPTION, shared.failure, "공유 로더 · ${seen(shared)} · wait=$w")
+        assertTrue("NoSuchMethodError" in shared.message!!.text, seen(shared))
+    }
+
     companion object {
         @JvmStatic fun available() = PearlFixture.available()
 
@@ -165,5 +180,7 @@ class BlankRenderIntegrationTest {
                 BlankStub()
             }
         """.trimIndent()
+
+        private val THROWING = FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
     }
 }
