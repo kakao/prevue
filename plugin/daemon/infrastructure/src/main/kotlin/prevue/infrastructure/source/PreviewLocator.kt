@@ -103,12 +103,25 @@ internal object PreviewLocator {
             val open = m.range.last
             val args = parseArgsRaw(one.substring(open + 1, matchParen(one, open)))
             val provider = (args["provider"] ?: args["name"])?.removeSuffix("::class")?.trim() ?: continue
-            val fqn = if (provider.contains('.')) provider else imports[provider] ?: "$pkg.$provider"
+            val fqn = binaryName(providerFqn(provider, imports, pkg))
             val e = linkedMapOf("provider" to fqn)
             args["limit"]?.let { e["limit"] = it }
             out += e
         }
         return out
+    }
+
+    private fun providerFqn(provider: String, imports: Map<String, String>, pkg: String): String {
+        val head = provider.substringBefore('.')
+        if (!head[0].isUpperCase()) return provider
+        val rest = if (provider.contains('.')) "." + provider.substringAfter('.') else ""
+        return (imports[head] ?: if (pkg.isEmpty()) head else "$pkg.$head") + rest
+    }
+
+    private fun binaryName(fqn: String): String {
+        val parts = fqn.split('.')
+        val at = parts.indexOfFirst { it.firstOrNull()?.isUpperCase() == true }
+        return if (at < 0) fqn else parts.take(at).plus(parts.drop(at).joinToString("$")).joinToString(".")
     }
 
     private fun matchParen(s: String, open: Int): Int {
