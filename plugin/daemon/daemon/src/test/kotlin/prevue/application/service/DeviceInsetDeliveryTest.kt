@@ -26,7 +26,8 @@ class DeviceInsetDeliveryTest {
             assertEquals(d, state.size)
             assertEquals(d, state.deviceInsets!!.device)
             assertEquals(DeviceInsetInputs.of(d).values, fx.renderer.opened.last().appInsets, d.key)
-            assertNotEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets, d.key)
+            val bare = d.model == DeviceModel.IPHONE_SE_3RD_GENERATION && d.orientation != DeviceOrientation.PORTRAIT
+            if (!bare) assertNotEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets, d.key)
             assertTrue(state.systemUi!!.shown)
         }
         for (s in listOf(ScreenSize.Original, ScreenSize.Dp(500, 600))) {

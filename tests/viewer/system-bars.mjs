@@ -109,9 +109,9 @@ try {
   await ready();
   const smoke = process.argv.includes('--smoke');
   const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
-  const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','ip18pro','duo','fold8','ultra','pixelfold','tablet']);
+  const devices = selected ?? (smoke ? ['duo'] : ['s26','pixel9','ip17','ipair','ip17pm','ip18pro','ipse3','duo','fold8','ultra','pixelfold','tablet']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
-  const ios = new Set(['ip17','ipair','ip17pm','ip18pro','duo']), pixel = new Set(['pixel9','pixelfold','tablet']);
+  const ios = new Set(['ip17','ipair','ip17pm','ip18pro','ipse3','duo']), pixel = new Set(['pixel9','pixelfold','tablet']);
   // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
   // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
   const RAW_CAM = {
@@ -125,7 +125,7 @@ try {
   // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
   const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5,
     // safearea.info 의 그 자세 조건 그대로의 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
-    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'duo-cover': 59, 'duo-open': 59 };
+    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'ipse3-open': 0, 'duo-cover': 59, 'duo-open': 59 };
   // 화면 모서리 반경(둥근 스테이지의 border-radius)과, 상자 네 꼭짓점이 그 둥근 화면 안에 있는지 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
   const cornerOf = () => evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
     return {k,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);
@@ -151,7 +151,7 @@ try {
     for (const k of ['approximate','note','issue']) assert(!(k in state.deviceInsets), `${name} ${k}`);
     for (const k of ['verified','issue']) assert(!(k in state.size.insetProfile), `${name} ${k}`);
     assert(state.deviceInsets.basisPosture && state.deviceInsets.evidence?.sourceUrl, name);
-    assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)), `${name} 기기 인셋은 늘 전달`);
+    assert(Object.values(state.deviceInsets.values).some(e=>Object.values(e).some(v=>v>0)) || (device==='ipse3' && orientation!=='portrait'), `${name} 기기 인셋은 늘 전달(인셋이 실제로 0인 SE 가로만 비어 있다)`);
     const dock = await evaluate(`({button:!!document.querySelector('#sysUiBtn'),hidden:document.querySelector('#sysUiCtl').hidden,inset:document.querySelector('#insetBtn')?.getAttribute('aria-pressed'),title:document.querySelector('#insetBtn')?.title})`);
     assert(!dock.button && !dock.hidden, `${name} 독에 시스템 UI 켬끔 대신 인셋 영역 보기: ${JSON.stringify(dock)}`);
     if (!results.length) {
@@ -166,13 +166,32 @@ try {
     assert.deepEqual(insetMiss, [], `${name} 인셋 띠 · safeDrawing 선이 전달한 인셋과 화면 좌표로 맞는다: ${JSON.stringify(insetMiss)}`);
     const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
     assert.equal(overlay.hidden, false, `${name} 기기는 늘 뷰어가 바를 덧그린다`);
-    assert.equal(overlay.handle, device!=='duo', name);
+    assert.equal(overlay.handle, device!=='duo' && device!=='ipse3', `${name} 홈 인디케이터 — 홈 버튼 기기(SE)에는 없다`);
     assert.equal(overlay.duo, device==='duo', name);
     assert(await evaluate(`document.querySelectorAll('#sysBars .sb-status').length`) <= 1, `${name} 상태 표시는 많아야 한 벌`);
     const corner = await cornerOf();
     const rawR = RAW_RADIUS[`${device}-${folded?'cover':'open'}`];
     if (rawR != null) assert(Math.abs(corner.radius / corner.k - rawR) <= .5, `${name} 화면 모서리 반경이 원자료 ±0.5dp: ${JSON.stringify({ got: corner.radius / corner.k, raw: rawR })}`);
-    if (ios.has(device) && device!=='duo') {
+    if (device==='ipse3') {
+      // 홈 버튼 기기 — 상태바는 신호 · Wi-Fi(왼쪽) · 시각(가운데) · 배터리(오른쪽)로 갈리고, 위 · 아래 베젤이 옆 베젤보다 두꺼우며 아래 베젤 가운데에 홈 버튼이 있다. 가로에는 상태바가 없다.
+      const s = await evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
+        const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
+        return {k,top:st.deviceInsets.values.statusBars.top*k,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},shell:box('#ua .shell'),home:box('#ua .home'),time:box('#sysBars .sb-time'),left:box('#sysBars .sb-icons-left'),right:box('#sysBars .sb-icons-right')}})()`);
+      const { shot, shell, home, time, left, right } = s, cx = (shot.l + shot.r) / 2, cy = (shot.t + shot.b) / 2;
+      const gap = { l: shot.l - shell.l, r: shell.r - shot.r, t: shot.t - shell.t, b: shell.b - shot.b };
+      const ends = orientation === 'portrait' ? [gap.t, gap.b] : [gap.l, gap.r], sides = orientation === 'portrait' ? [gap.l, gap.r] : [gap.t, gap.b];
+      assert(Math.min(...ends) > Math.max(...sides) + 1, `${name} 짧은 두 변의 베젤이 긴 변보다 두껍다: ${JSON.stringify(gap)}`);
+      assert(home && home.r - home.l > 4 && Math.abs((home.r - home.l) - (home.b - home.t)) < 1, `${name} 홈 버튼은 원이다: ${JSON.stringify(home)}`);
+      const homeAt = orientation === 'portrait' ? Math.abs((home.l + home.r) / 2 - cx) < 1 && home.t >= shot.b && home.b <= shell.b + 1
+        : Math.abs((home.t + home.b) / 2 - cy) < 1 && (orientation === 'landscape-left' ? home.l >= shot.r && home.r <= shell.r + 1 : home.r <= shot.l && home.l >= shell.l - 1);
+      assert(await evaluate(`+getComputedStyle(document.querySelector('#ua .home')).opacity`) > .9, `${name} 홈 버튼이 실제로 보인다(opacity)`);
+      assert(homeAt, `${name} 홈 버튼이 짧은 변 베젤 가운데에 있다: ${JSON.stringify(s)}`);
+      if (orientation === 'portrait') {
+        assert(time && left && right, `${name} 시각 · 왼쪽 · 오른쪽 묶음: ${JSON.stringify(s)}`);
+        for (const b of [time, left, right]) assert(b.t >= shot.t - 1 && b.b <= shot.t + s.top + 1 && b.l >= shot.l && b.r <= shot.r, `${name} 상태바가 위 띠(20pt) 안: ${JSON.stringify(s)}`);
+        assert(left.r < time.l && time.r < right.l && Math.abs((time.l + time.r) / 2 - cx) <= s.k, `${name} 신호 · Wi-Fi | 시각(가운데) | 배터리 순서: ${JSON.stringify(s)}`);
+      } else assert(!time && !left && !right, `${name} 가로에는 상태바가 없다`);
+    } else if (ios.has(device) && device!=='duo') {
       // 오버레이의 dp 뷰박스가 아니라 #shot · 아일랜드(#ua .cam) · 전달 인셋으로 낸 화면 좌표에 견준다.
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};

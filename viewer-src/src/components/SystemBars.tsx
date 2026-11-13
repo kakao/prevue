@@ -64,9 +64,9 @@ function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
   return ink;
 }
 
-// 세로 상태바의 자리 · 크기는 iOS 27.0 시뮬레이터(9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%) 3x 스크린숏을 pt 로 잰 값이다(시안: prototypes/ios-status-bar).
+// 세로 상태바의 자리 · 크기는 iOS 27.0 시뮬레이터(9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%) 3x 스크린숏을 pt 로 잰 값이다(시안: prototypes/ios-status-bar). 단 iPhone SE 3세대는 시뮬레이터가 없어 눈대중한 근사다 — 사람 확인 전.
 // top · right 는 오른쪽 아이콘 묶음(신호 왼쪽 끝 ~ 배터리 꼭지)의 윗변 · 오른쪽 끝, s 는 iPhone 17 대비 배율, time 은 시각의 가운데 · 기준선 · 글자 크기다.
-// 값은 기기 스펙의 look.status 다(devices.js). 묶음 가운데가 아일랜드 가운데(resize-scene.js 의 cam)와 같은 높이에 놓인다.
+// 값은 기기 스펙의 look.status 다(devices.js). 묶음 가운데가 아일랜드 가운데(resize-scene.js 의 cam)와 같은 높이에 놓인다(아일랜드가 없는 SE 는 20pt 띠 가운데). left 가 있으면 신호 · Wi-Fi 와 배터리가 갈린다.
 
 // 아래 그림의 좌표는 배율 1 의 묶음 안이다 — 윗변 y 0, 신호 왼쪽 끝 x 0, 꼭지 오른쪽 끝 x 78.33.
 const GROUP_W = 78.33;
@@ -113,9 +113,17 @@ export function IosStatus({ bars }: { bars: Bars }) {
   if (bars.duo) return <DuoStatus bars={bars} />;
   const layout = DEVICES[bars.device]?.status;
   if (!layout) return null;
-  return <g className="sb-status" data-edge="top">
-    <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>
+  const time = <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>;
+  if (layout.left === undefined) return <g className="sb-status" data-edge="top">
+    {time}
     <g className="sb-icons" transform={`translate(${layout.right - GROUP_W * layout.s} ${layout.top}) scale(${layout.s})`}>{SIGNAL}{WIFI}{BATTERY}</g>
+  </g>;
+  // 갈린 상태바(홈 버튼 기기) — 신호 · Wi-Fi 는 왼쪽 끝(left)에, 배터리는 오른쪽 끝(right)에 따로 놓는다. 좌표는 같은 묶음 안이다(배터리 x 51.5~78.33).
+  const place = (x: number) => `translate(${x} ${layout.top}) scale(${layout.s})`;
+  return <g className="sb-status" data-edge="top">
+    {time}
+    <g className="sb-icons sb-icons-left" transform={place(layout.left)}>{SIGNAL}{WIFI}</g>
+    <g className="sb-icons sb-icons-right" transform={place(layout.right - GROUP_W * layout.s)}>{BATTERY}</g>
   </g>;
 }
 
