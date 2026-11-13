@@ -517,8 +517,7 @@ export function createResizeScene(root, hooks) {
   const LIGHT = (() => { const az = P.lightAz * Math.PI / 180, el = P.lightEl * Math.PI / 180; return [Math.cos(el) * Math.cos(az), -Math.cos(el) * Math.sin(az), Math.sin(el)]; })();
   const lightOf = n => clamp(P.ambient + (1 - P.ambient) * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / LIGHT[2], 0, 1.5);
   const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-  const tonedRgb = (rgb, b) => rgb.map(c => b <= 1 ? c * b : c + (255 - c) * (b - 1) * .5);
-  const css = rgb => `rgb(${rgb.map(Math.round).join(" ")})`, toned = (rgb, b) => css(tonedRgb(rgb, b));
+  const toned = (rgb, b) => `rgb(${rgb.map(c => Math.round(b <= 1 ? c * b : c + (255 - c) * (b - 1) * .5)).join(" ")})`;
   // 옆면 띠 — 가운데는 받은 빛의 색, 두 가장자리는 18% 밝고 20% 어두워 이웃 띠와의 경계가 모서리처럼 읽힌다.
   const stripPaint = (rgb, b) => {
     const mid = toned(rgb, b), hi = `color-mix(in srgb, ${mid}, var(--device-veil) 18%)`, lo = `color-mix(in srgb, ${mid}, var(--device-shade) 20%)`;
