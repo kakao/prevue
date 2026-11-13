@@ -70,10 +70,11 @@ import { DEVICES } from "../../plugin/viewer/js/devices.js";
 
 // 기기 스펙(look)에 더할 후보 필드를 시제품 안에서만 덧붙인다 — plugin/devices 에 넣으면 뷰어 생성이 모르는 필드로 실패한다.
 // thickness · hinge.gap 은 사이트에 없어 손으로 적은 값이다(펼친 판 하나의 두께, dp).
-// dur · shrinkFrom · img 는 스펙 후보가 아니라 이 페이지의 재료다 — 제품 장면이 기기마다 다르게 쓰는 접기 길이와
-// 바닥 반쪽이 커버 폭으로 줄기 시작하는 각도(drawRig 90 · drawDuo 150)를 그대로 옮겼다.
+// dur · shrinkFrom · img 는 스펙 후보가 아니라 이 페이지의 재료다. shrinkFrom 은 제품 장면에서 바닥 반쪽이 커버 폭으로
+// 줄기 시작하는 각도(drawRig 90 · drawDuo 150) 그대로다. dur 은 두 기기 모두 1초 — 제품의 책형 길이(foldDur .6)는
+// 두께가 보이는 판에 너무 빨라 Duo 길이(duoDur 1)에 맞췄다(사용자 2026-11-13).
 const OVERLAY = {
-  fold8: { thickness: 26, hinge: { axis: "width", gap: 2 }, dur: .6, shrinkFrom: 90, img: { open: "../resize/img/fold8-open.png", cover: "../resize/img/fold8-cover.png" } },
+  fold8: { thickness: 26, hinge: { axis: "width", gap: 2 }, dur: 1, shrinkFrom: 90, img: { open: "../resize/img/fold8-open.png", cover: "../resize/img/fold8-cover.png" } },
   duo: { thickness: 28, hinge: { axis: "width", gap: 2 }, dur: 1, shrinkFrom: 150, img: { open: "../resize/img/ipduo-open.png", cover: "../resize/img/ipduo-cover.png" } },
 };
 // 제품 장면(plugin/viewer/js/resize-scene.js 의 P)과 같은 값 — 비교가 공정하려면 원근 · 이징 · 몸체 배율이 같아야 한다.
