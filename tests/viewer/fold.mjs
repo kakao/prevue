@@ -11,7 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const markup = (await readFile(join(root, 'plugin/viewer/index.html'), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 const harness = `<script type="module">
 import { createResizeScene } from '/js/resize-scene.js';
-document.body.classList.add('resizing-ui');
+document.body.classList.add('resizing-ui','ws');
 document.querySelector('main').style.cssText='position:fixed;inset:0;width:100%;height:100%;padding:0;margin:0';
 document.querySelector('.bar').hidden=true;
 document.querySelector('#stage').hidden=true;
@@ -102,37 +102,24 @@ try {
       content:box(document.querySelector('#ua .l0')),layout,src:document.querySelector('#ua .l0').src});
     window.reset=st=>{scene.enable(false);scene.setOriginal(360,740,spec(360,740));scene.enable(true);scene.image(st.sel,spec(st.w,st.h));scene.update(st,true);step(time+2000)};
     window.probe=(el,x,y)=>{const p=document.createElement('i');p.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';el.append(p);return p};
-    window.A=probe(document.querySelector('#rig .leaf'),100,100);window.B=probe(document.querySelector('#rig .base'),0,100);
+    // 이음매 — 책등의 양끝(.3px 겹침 안쪽)이 두 판 뒷면의 힌지 쪽 변 가운데에 붙는다. 앞 화면은 회전축이 틈의 절반만큼 떠 있어 접는 동안 벌어지는 게 맞다.
+    window.A=probe(document.querySelector('#rig .leaf .rear'),0,50);window.B=probe(document.querySelector('#rig .base .rear'),100,50);
+    const spine=document.querySelector('#rig .spine');
+    window.SA=document.createElement('i');SA.style.cssText='position:absolute;width:0;height:0;right:.3px;top:50%';spine.append(SA);
+    window.SB=document.createElement('i');SB.style.cssText='position:absolute;width:0;height:0;left:.3px;top:50%';spine.append(SB);
     window.union=(a,b)=>({x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.max(a.x+a.w,b.x+b.w)-Math.min(a.x,b.x),h:Math.max(a.y+a.h,b.y+b.h)-Math.min(a.y,b.y)});
     window.sample=()=>{
-      const duo=!document.querySelector('#duo').hidden,rig=!document.querySelector('#rig').hidden;
-      if(!duo&&!rig)return null;
-      const el=document.querySelector(duo?'#duo':'#rig');
-      const matrix=new DOMMatrix(getComputedStyle(el).transform),origin=getComputedStyle(el).transformOrigin.split(' ').map(parseFloat);
-      const point=(x,y)=>{const p=new DOMPoint(x-origin[0],y-origin[1]).matrixTransform(matrix);return {x:p.x+origin[0],y:p.y+origin[1]}};
-      let error,body,cam,content,over=0,theta=0;
-      if(duo){
-        const n=document.querySelector('#duo .duo-flap').style.clipPath.match(/-?[\\d.]+/g).map(Number);
-        const x=n[24]+(n[26]-n[24])/.5523,y=n[25]+(n[27]-n[25])/.5523;
-        const base=document.querySelector('#duo .duo-base'),end=point(parseFloat(base.style.left),parseFloat(base.style.top)+parseFloat(base.style.height));
-        const corner=point(x,y);error=Math.hypot(corner.x-end.x,corner.y-end.y);
-        const back=window.phase>.5;
-        const face=document.querySelector('#duo .duo-face');
-        body=union(box(face),box(document.querySelector('#duo .duo-base')));
-        cam=box(document.querySelector(back?'#duo .duo-ly .cam':'#duo .duo-scr .cam'));
-        content=box(document.querySelector(back?'#duo .duo-ly img':'#duo .duo-scr img'));
-      }else{
-        const a=box(A),b=box(B);error=Math.hypot(a.x-b.x,a.y-b.y);
-        const back=window.phase>.5;
-        const base=box(document.querySelector('#rig .base')),outer=box(document.querySelector('#rig .outer'));
-        body=union(box(document.querySelector(back?'#rig .outer':'#rig .inner')),base);
-        theta=Math.abs(Number(document.querySelector('#rig .leaf').style.transform.match(/-?[\\d.]+/)[0]));
-        over=Math.max(0,outer.x-base.x,outer.y-base.y,base.x+base.w-outer.x-outer.w,base.y+base.h-outer.y-outer.h);
-        const face=document.querySelector(back?'#rig .outer':'#rig .base .clip');
-        cam=box(face.querySelector('.cam'));content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
-      }
-      return {duo,rig,error,body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),
-        angle:el.style.transform,leaf:document.querySelector('#rig .leaf').style.transform,path:document.querySelector('#duo .duo-flap').style.clipPath};
+      const el=document.querySelector('#rig');
+      if(el.hidden)return null;
+      const back=window.phase>.5,dist=(p,q)=>{const a=box(p),b=box(q);return Math.hypot(a.x-b.x,a.y-b.y)};
+      const error=spine.style.display==='none'?0:Math.max(dist(A,SA),dist(B,SB));
+      const base=box(document.querySelector('#rig .base .front .clip')),outer=box(document.querySelector('#rig .leaf .rear .clip'));
+      const body=union(box(document.querySelector(back?'#rig .leaf .rear .clip':'#rig .leaf .front .clip')),base);
+      const leaf=document.querySelector('#rig .leaf').style.transform,theta=Math.abs(Number(leaf.match(/rotateY\\((-?[\\d.]+)/)[1]));
+      const over=Math.max(0,outer.x-base.x,outer.y-base.y,base.x+base.w-outer.x-outer.w,base.y+base.h-outer.y-outer.h);
+      const face=document.querySelector(back?'#rig .leaf .rear .clip':'#rig .base .front .clip');
+      const cam=box(face.querySelector('.cam')),content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
+      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
     };`);
   const near = (actual, expected, name, tolerance = .2) => {
     for (const key of ['x','y','w','h']) assert(Math.abs(actual[key]-expected[key])<=tolerance, `${name} ${key}: ${actual[key]} / ${expected[key]}`);
@@ -164,7 +151,7 @@ try {
           // CDP 포인터로 실제 독의 버튼을 눌러 toggleFold → request → update를 통과한다.
           await click('#dcFold');
           assert.deepEqual(await evaluate('requests'),[to.sel],`${name}: 손에 든 회전을 잇는 요청`);
-          const duration=device==='duo'?1000:600;
+          const duration=1000;
           const motion=await evaluate(`(()=>{
             const start=time,frames=[];window.phase=${from===cover?1:0};window.atStart=true;step(start);const first=sample();window.atStart=false;
             for(let t=0;t<${duration};t+=16){if(t===304&&${arrival==='during'})scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));window.phase=${to===cover?'t/'+duration:'1-t/'+duration};step(start+t);frames.push(sample())}
@@ -186,10 +173,11 @@ try {
             const boxes=[frame.body,...frame.buttons];
             assert(boxes.every(b=>b.x>=0&&b.y>=0&&b.x+b.w<=1440&&b.y+b.h<=900),`${name}: 모션 중 몸체와 단추가 창 안`);
           }
-          const changing = new Set(frames.map(f=>device==='duo'?f.path:f.leaf));
+          const changing = new Set(frames.map(f=>f.leaf));
           assert(changing.size>=10,`${name}: 접는 장의 실제 변형`);
+          assert(frames.filter(f=>f.theta>=30&&f.theta<=150).every(f=>f.spine),`${name}: 30~150°에서 책등이 보인다`);
           const worst=Math.max(...frames.map(f=>f.error));assert(worst<.1,`${name}: 이음매 ${worst}px`);
-          if(device!=='duo'&&to===cover){
+          if(to===cover){
             const shut=frames.filter(f=>f.theta>=179);assert(shut.length,'다 접힌 프레임');
             assert(Math.max(...shut.map(f=>f.over))<=.5,`${name}: 바닥 반쪽이 커버 밖으로 나오지 않음`);
           }
@@ -251,7 +239,7 @@ try {
     // 비대칭 표식이 든 실제 그림으로 중간 모션의 육안 확인 자료도 남긴다.
     await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
     await click('#dcFold');
-    await evaluate(`step(time+${device==='duo'?350:210});Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
+    await evaluate(`step(time+350);Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
     const shot=await send('Page.captureScreenshot',{format:'png'});
     await writeFile(join(root,'.cache/fold',device+'-motion.png'),Buffer.from(shot.data,'base64'));
   }
@@ -262,9 +250,9 @@ try {
       for(const cached of [false,true]) {
         await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});${cached?`scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}))`:""}`);
         await click('#dcFold');
-        const reduced=await evaluate(`(()=>{const frames=[];for(let i=0;i<60;i++){if(i===20&&!${cached})scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));step(time+16);frames.push({rig:!document.querySelector('#rig').hidden,duo:!document.querySelector('#duo').hidden})}return frames})()`);
+        const reduced=await evaluate(`(()=>{const frames=[];for(let i=0;i<60;i++){if(i===20&&!${cached})scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));step(time+16);frames.push({rig:!document.querySelector('#rig').hidden})}return frames})()`);
         assert.deepEqual(await evaluate('requests.slice(-1)'),[to.sel],'reduced motion도 손에 든 회전을 잇는 요청');
-        assert(reduced.every(f=>!f.rig&&!f.duo),'reduced motion은 접기 없이 페이드');
+        assert(reduced.every(f=>!f.rig),'reduced motion은 접기 없이 페이드');
         assert.equal(await evaluate('scene.moving()'),false,'reduced motion 정착');
         console.log(`통과 ${++checked}: reduced motion ${cached?'cached':'waiting'} ${to.sel}`);
       }

@@ -33,38 +33,27 @@ export function Ruler() {
   </div>;
 }
 
-/** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig(책처럼) · #duo(조개처럼)가 맡는다. */
+/** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig 가 두께 있는 두 판으로 접는다. */
 export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode }) {
   return <div className="resize-scene" id="resizeScene" hidden><div className="resize-geometry" id="resizeGeometry">
     <Unit id="ua" /><Unit id="ub" hidden />
     <Ruler />
     {marks}
-    <div className="duo" id="duo" hidden>
-      <div className="duo-base"><div className="duo-band" /><div className="duo-scr"><img className="ly" alt="" /><div className="cam" /></div></div>
-      <div className="btn" /><div className="btn" />
-      <svg className="duo-edge" aria-hidden="true">
-        {/* 세 색은 resize.css 의 그림 블록이 준다 — 크롬의 JSX style 에는 그림 토큰을 쓰지 않는다. */}
-        <defs><path id="duoSide" /><path id="duoHinge" /><linearGradient id="duoSheen" gradientUnits="userSpaceOnUse"><stop offset="0" /><stop offset=".4" /><stop offset="1" /></linearGradient></defs>
-        <use className="outl" href="#duoSide" /><use className="houtl" href="#duoHinge" /><use className="rim" href="#duoSide" /><use className="rimhi" href="#duoSide" /><use className="body" href="#duoSide" />
-        <use className="sheen" href="#duoSide" stroke="url(#duoSheen)" /><use className="hinge" href="#duoHinge" /><use className="hsheen" href="#duoHinge" stroke="url(#duoSheen)" /><use className="ring" href="#duoSide" /><use className="ring hr" href="#duoHinge" />
-      </svg>
-      <div className="duo-flap"><div className="duo-face" /><div className="duo-dark" /></div>
-    </div>
     <div className="rig" id="rig" hidden>
-      <div className="lift">
+      <div className="lift"><div className="space">
         <div className="plate" />
-        <div className="base">
-          <div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cast" /><div className="cam" /></div>
-          <div className="edge bez" /><div className="edge ring" />
+        <div className="slab base">
+          <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cast" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
+          <div className="face rear"><div className="lit" /></div>
         </div>
-        <div className="leaf">
-          <div className="clip face inner"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="shade" /><div className="sheen" /><div className="cam" /></div>
-          <div className="clip face outer"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="shade" /><div className="sheen" /><div className="cam" /></div>
-          <div className="edge bez" /><div className="edge ring" />
+        <div className="slab leaf">
+          <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
+          <div className="face rear"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
         </div>
+        <div className="spine" />
         <div className="crease" />
         <div className="tick r-top" /><div className="tick r-bot" />
-      </div>
+      </div></div>
     </div>
   </div></div>;
 }

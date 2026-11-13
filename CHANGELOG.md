@@ -19,6 +19,7 @@ Only changes users can see go here.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
 - **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
 - **Android status bar keeps clear of large rounded screen corners** — where a large rounded corner would cut the time or icons (such as Pixel 10 Pro XL in landscape), they move in from the edge instead.
+- **Foldables fold as two solid slabs** — Galaxy Z Fold8, Z Fold8 Ultra, Pixel 9 Pro Fold and iPhone Duo now show each half's thickness, a spine at the hinge and shading that follows the fold angle, and every fold takes 1 second (Galaxy and Pixel folds took 0.6 s).
 
 ## [0.22.1] — 2026-11-13
 
