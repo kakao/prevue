@@ -138,23 +138,8 @@ data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Double? = nul
     }
 }
 
-enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {
-    GALAXY_S26("s26", "Galaxy S26", 480, Panel(1080, 2340), null, BarLook.ONE_UI),
-    PIXEL_9("pixel9", "Pixel 9", 420, Panel(1080, 2424), null, BarLook.PIXEL),
-    IPHONE_17("ip17", "iPhone 17", 480, Panel(1206, 2622), null, BarLook.IOS),
-    IPHONE_AIR("ipair", "iPhone Air", 480, Panel(1260, 2736), null, BarLook.IOS),
-    IPHONE_17_PRO_MAX("ip17pm", "iPhone 17 Pro Max", 480, Panel(1320, 2868), null, BarLook.IOS),
-    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2853, 2007, 1426.5), Panel(1398, 2034), BarLook.IOS),
-    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224.0), Panel(1248, 1972), BarLook.ONE_UI),
-    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128.0), Panel(1080, 2520), BarLook.ONE_UI),
-    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038.0), Panel(1080, 2424), BarLook.PIXEL),
-    PIXEL_TABLET("tablet", "Pixel Tablet", 320, Panel(2560, 1600), null, BarLook.PIXEL),
-    ;
+internal fun DeviceModel.panelOf(folded: Boolean): Panel = if (folded) requireNotNull(cover) { "${label}은 접히지 않는다" } else open
 
-    fun panel(folded: Boolean): Panel = if (folded) requireNotNull(cover) { "${label}은 접히지 않는다" } else open
-
-    val postures: List<ScreenSize.Device>
-        get() = DeviceOrientation.entries.flatMap { orientation ->
-            listOfNotNull(ScreenSize.Device(this, false, orientation), if (cover != null) ScreenSize.Device(this, true, orientation) else null)
-        }
+internal fun DeviceModel.posturesOf(): List<ScreenSize.Device> = DeviceOrientation.entries.flatMap { orientation ->
+    listOfNotNull(ScreenSize.Device(this, false, orientation), if (cover != null) ScreenSize.Device(this, true, orientation) else null)
 }

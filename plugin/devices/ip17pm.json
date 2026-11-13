@@ -1,0 +1,70 @@
+{
+  "id": "ip17pm",
+  "label": "iPhone 17 Pro Max",
+  "order": 50,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 1320,
+        "heightPx": 2868,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17-pro-max.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1320x2868",
+              "orientation": "portrait",
+              "sourceSha256": "5259eec653e5677806f8d1cac5dee303de912ffb0f99ccecbcf9add6325bc96b",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"top": 62, "bottom": 34},
+            "safeAreaSize": {"width": 440, "height": 860}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17-pro-max.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2868x1320",
+              "orientation": "landscape-right",
+              "sourceSha256": "5259eec653e5677806f8d1cac5dee303de912ffb0f99ccecbcf9add6325bc96b",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "safeAreaSize": {"width": 832, "height": 420}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17-pro-max.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2868x1320",
+              "orientation": "landscape-left",
+              "sourceSha256": "5259eec653e5677806f8d1cac5dee303de912ffb0f99ccecbcf9add6325bc96b",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "safeAreaSize": {"width": 832, "height": 420}
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios"
+  }
+}

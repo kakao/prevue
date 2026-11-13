@@ -1,0 +1,141 @@
+{
+  "id": "fold8",
+  "label": "Galaxy Z Fold8",
+  "order": 70,
+  "measured": {
+    "dpi": 420,
+    "screens": {
+      "open": {
+        "widthPx": 2448,
+        "heightPx": 1848,
+        "hingePx": 1224,
+        "postures": {
+          "portrait": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-fold/galaxy-z-fold8/recapture-2026-09-27-rotation/main-portrait-1-gesture.json",
+            "capturedAt": "2026-09-27T15:36:23.067250Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CP2A.260605.016.F971NKSU1AZGI",
+              "densityDpi": "420",
+              "resolutionPx": "1848x2448",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1.08",
+              "oneUi": "9.0"
+            },
+            "safeArea": {"top": 38.86, "bottom": 14.86},
+            "insets": {
+              "statusBars": {"dp": {"top": 38.86}, "px": {"top": 102}},
+              "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {}, "px": {}}
+            }
+          },
+          "landscape-left": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-fold/galaxy-z-fold8/recapture-2026-09-27-rotation/main-gesture.json",
+            "capturedAt": "2026-09-27T15:35:50.829564Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CP2A.260605.016.F971NKSU1AZGI",
+              "densityDpi": "420",
+              "resolutionPx": "2448x1848",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1.08",
+              "oneUi": "9.0"
+            },
+            "safeArea": {"top": 40, "bottom": 14.86},
+            "insets": {
+              "statusBars": {"dp": {"top": 40}, "px": {"top": 105}},
+              "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {}, "px": {}}
+            }
+          }
+        }
+      },
+      "cover": {
+        "widthPx": 1248,
+        "heightPx": 1972,
+        "postures": {
+          "portrait": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-fold/galaxy-z-fold8/recapture-2026-09-27-rotation/cover-gesture.json",
+            "capturedAt": "2026-09-27T15:40:30.461795Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CP2A.260605.016.F971NKSU1AZGI",
+              "densityDpi": "420",
+              "resolutionPx": "1248x1972",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1.08",
+              "oneUi": "9.0"
+            },
+            "safeArea": {"top": 41.9, "bottom": 14.86},
+            "insets": {
+              "statusBars": {"dp": {"top": 41.9}, "px": {"top": 110}},
+              "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"top": 39.62}, "px": {"top": 104}}
+            }
+          },
+          "landscape-left": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-fold/galaxy-z-fold8/recapture-2026-09-27-rotation/cover-landscape-1-gesture.json",
+            "capturedAt": "2026-09-27T15:40:31.238889Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CP2A.260605.016.F971NKSU1AZGI",
+              "densityDpi": "420",
+              "resolutionPx": "1972x1248",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1.08",
+              "oneUi": "9.0"
+            },
+            "safeArea": {"left": 39.62, "top": 30.1, "bottom": 14.86},
+            "insets": {
+              "statusBars": {"dp": {"top": 30.1}, "px": {"top": 79}},
+              "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"left": 39.62}, "px": {"left": 104}}
+            }
+          },
+          "landscape-right": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-fold/galaxy-z-fold8/recapture-2026-09-27-rotation/cover-landscape-3-gesture.json",
+            "capturedAt": "2026-09-27T15:40:31.992239Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CP2A.260605.016.F971NKSU1AZGI",
+              "densityDpi": "420",
+              "resolutionPx": "1972x1248",
+              "rotation": "3",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1.08",
+              "oneUi": "9.0"
+            },
+            "safeArea": {"top": 30.1, "right": 39.62, "bottom": 14.86},
+            "insets": {
+              "statusBars": {"dp": {"top": 30.1}, "px": {"top": 79}},
+              "navigationBars": {"dp": {"bottom": 14.86}, "px": {"bottom": 39}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"right": 39.62}, "px": {"right": 104}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "oneui"
+  }
+}

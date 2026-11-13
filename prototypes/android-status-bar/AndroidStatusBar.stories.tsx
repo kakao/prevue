@@ -5,7 +5,7 @@ import '../../viewer-src/legacy/resize.css';
 import './android-status-bar.css';
 
 // Android 기기 시스템 바를 뷰어 오버레이로 그릴 때의 후보(D-176) — 기기 실제 크기(1dp = 1px, 넓은 기기는 줄여서)에서 본다.
-// 상태바 · 내비게이션 높이는 windowinsets.info 측정값(PixelDeviceInsets · SamsungDeviceInsets)이고, 측정 26건이 모두 제스처 내비게이션이라 버튼 바는 없다.
+// 상태바 · 내비게이션 높이는 windowinsets.info 측정값(plugin/devices 의 기기 스펙)이고, 측정 26건이 모두 제스처 내비게이션이라 버튼 바는 없다.
 // 아이콘 모양 · 자리는 Material 아이콘과 실기기 인상을 따른 근사다 — iOS 처럼 기기 스크린숏으로 잰 값이 아니다.
 // 모서리 · 카메라는 고를 때(2026-11-11)의 장면(plugin/viewer/js/resize-scene.js) 값이다 — 지금 장면 카메라는 windowinsets.info 컷아웃을 따른다.
 // 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. SystemBars.tsx 의 AndroidStatus · NavHandle 에 옮겼고, 이 스토리는 고른 기록으로 남는다.

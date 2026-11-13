@@ -1,0 +1,85 @@
+{
+  "id": "pixel9",
+  "label": "Pixel 9",
+  "order": 20,
+  "measured": {
+    "dpi": 420,
+    "screens": {
+      "open": {
+        "widthPx": 1080,
+        "heightPx": 2424,
+        "postures": {
+          "portrait": {
+            "source": "firebase-test-lab",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-9/testlab-2026-09-28/main-gesture.json",
+            "capturedAt": "2026-09-27T16:23:34.240378Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "CP1A.260505.005",
+              "densityDpi": "420",
+              "resolutionPx": "1080x2424",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"top": 65.9, "bottom": 24},
+            "insets": {
+              "statusBars": {"dp": {"top": 65.9}, "px": {"top": 173}},
+              "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"top": 65.9}, "px": {"top": 173}}
+            }
+          },
+          "landscape-left": {
+            "source": "emulator",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-9/emulator-2026-09-27/landscape-1-gesture.json",
+            "capturedAt": "2026-09-27T14:05:14.080426Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CE2A.260420.019",
+              "densityDpi": "420",
+              "resolutionPx": "2424x1080",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"left": 54.1, "top": 52.19, "bottom": 24},
+            "insets": {
+              "statusBars": {"dp": {"top": 52.19}, "px": {"top": 137}},
+              "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"left": 54.1}, "px": {"left": 142}}
+            }
+          },
+          "landscape-right": {
+            "source": "emulator",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-9/emulator-2026-09-27/landscape-3-gesture.json",
+            "capturedAt": "2026-09-27T14:05:15.089846Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CE2A.260420.019",
+              "densityDpi": "420",
+              "resolutionPx": "2424x1080",
+              "rotation": "3",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"top": 52.19, "right": 54.1, "bottom": 24},
+            "insets": {
+              "statusBars": {"dp": {"top": 52.19}, "px": {"top": 137}},
+              "navigationBars": {"dp": {"bottom": 24}, "px": {"bottom": 63}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {"right": 54.1}, "px": {"right": 142}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "pixel"
+  }
+}

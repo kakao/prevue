@@ -1,0 +1,70 @@
+{
+  "id": "ipair",
+  "label": "iPhone Air",
+  "order": 40,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 1260,
+        "heightPx": 2736,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1260x2736",
+              "orientation": "portrait",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"top": 68, "bottom": 34},
+            "safeAreaSize": {"width": 420, "height": 810}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2736x1260",
+              "orientation": "landscape-right",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 68, "right": 68, "bottom": 20},
+            "safeAreaSize": {"width": 776, "height": 400}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2736x1260",
+              "orientation": "landscape-left",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 68, "right": 68, "bottom": 20},
+            "safeAreaSize": {"width": 776, "height": 400}
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios"
+  }
+}

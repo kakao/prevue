@@ -1,0 +1,140 @@
+{
+  "id": "duo",
+  "label": "iPhone Duo",
+  "order": 60,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 2853,
+        "heightPx": 2007,
+        "hingePx": 1426.5,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2007x2853",
+              "orientation": "portrait",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "fully-open"
+            },
+            "safeArea": {"top": 82, "bottom": 34},
+            "safeAreaSize": {"width": 669, "height": 835}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2853x2007",
+              "orientation": "landscape-right",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "fully-open"
+            },
+            "safeArea": {"right": 84, "bottom": 34},
+            "safeAreaSize": {"width": 867, "height": 635}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2853x2007",
+              "orientation": "landscape-left",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "fully-open"
+            },
+            "safeArea": {"right": 84, "bottom": 34},
+            "safeAreaSize": {"width": 867, "height": 635}
+          }
+        }
+      },
+      "cover": {
+        "widthPx": 1398,
+        "heightPx": 2034,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1398x2034",
+              "orientation": "portrait",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "closed"
+            },
+            "safeArea": {"right": 84, "bottom": 34},
+            "safeAreaSize": {"width": 382, "height": 644}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2034x1398",
+              "orientation": "landscape-right",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "closed"
+            },
+            "safeArea": {"left": 84, "bottom": 34},
+            "safeAreaSize": {"width": 594, "height": 432}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-duo.md",
+            "conditions": {
+              "sdk": "Xcode 27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2034x1398",
+              "orientation": "landscape-left",
+              "sourceSha256": "c7dcd3399163cc376f9e18212d1c712ca8beda700fc55e7772b82df299ade7a6",
+              "checkedAt": "2026-11-10",
+              "splitView": "off",
+              "innerCamera": "off",
+              "horizontalToolbar": "off",
+              "pose": "closed"
+            },
+            "safeArea": {"right": 84, "bottom": 34},
+            "safeAreaSize": {"width": 594, "height": 432}
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios"
+  }
+}
