@@ -1,4 +1,4 @@
-import { daemonText, phrase } from '../../legacy/js/strings.js';
+import { daemonText, phrase } from '../runtime/strings';
 import type { Card, ViewerState } from '../state';
 import { createScene, handoffMs, sceneEasing, sceneMs } from './entry-scene';
 

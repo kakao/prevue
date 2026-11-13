@@ -5,11 +5,11 @@ import { daemonText as O, phrase as k } from "./strings.js";
 import { connect as A, fetchPreviewFiles as j, fetchProjectFiles as M, get as ee, post as N, reportStreamWidth as te, viewerStream as ne } from "./api.js";
 import { capsuleContent as re, dismissOnce as P, flash as F, hideOnce as ie, renderError as ae, setStatus as oe, setSummary as se, showOnce as ce, subscribeCapsule as le } from "./capsule.js";
 import { MORPH_LEAD as ue, frameMorph as de, freeze as fe, hold as pe, motionMs as me, motionToken as he, reduced as ge, swapImage as _e, transition as ve, transitioning as ye } from "./motion.js";
-import { cardOf as be, store as I } from "./store.js";
-import { cameraOf as xe, createResizeScene as Se } from "./resize-scene.js";
-import { DEVICES as Ce, DEVICE_MENU as we } from "./devices.js";
+import { store as I } from "./store.js";
+import { cameraOf as be, createResizeScene as xe } from "./resize-scene.js";
+import { DEVICES as Se, DEVICE_MENU as Ce } from "./devices.js";
 // src/components/FileIcon.tsx
-var L = e(), R = t(), Te = (e) => e ? e.startsWith("android") ? "android" : "kmp" : "file", z = /* @__PURE__ */ (0, R.jsx)("path", { d: "M7 13H2.5V1.5h5L10 4V7" }), Ee = {
+var L = e(), R = t(), we = (e) => e ? e.startsWith("android") ? "android" : "kmp" : "file", z = /* @__PURE__ */ (0, R.jsx)("path", { d: "M7 13H2.5V1.5h5L10 4V7" }), Te = {
 	file: /* @__PURE__ */ (0, R.jsx)("path", { d: "M4 2h5.5L12 4.5V14H4z" }),
 	android: /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [z, /* @__PURE__ */ (0, R.jsxs)("g", {
 		className: "mk-android",
@@ -31,7 +31,7 @@ var L = e(), R = t(), Te = (e) => e ? e.startsWith("android") ? "android" : "kmp
 		d: "M0 22.5629V0.0835311L22.4794 22.5629H0ZM0 25.4372V48H0.0572568L22.6201 25.4372H0ZM25.9906 22.0094L48 0H3.98128L25.9906 22.0094ZM26.0193 26.1028L4.1221 48H47.9164L26.0193 26.1028Z"
 	})] })
 };
-function De({ kind: e }) {
+function Ee({ kind: e }) {
 	return /* @__PURE__ */ (0, R.jsx)("svg", {
 		className: "rt-ic",
 		viewBox: "0 0 16 16",
@@ -41,17 +41,17 @@ function De({ kind: e }) {
 		strokeLinejoin: "round",
 		strokeLinecap: "round",
 		"aria-hidden": "true",
-		children: Ee[e]
+		children: Te[e]
 	});
 }
 // src/match.ts
-var B = -1e9, Oe = /[/._\-\s]/, ke = (e) => e !== e.toLowerCase();
-function Ae(e, t) {
+var B = -1e9, De = /[/._\-\s]/, Oe = (e) => e !== e.toLowerCase();
+function ke(e, t) {
 	if (t === 0) return !0;
 	let n = e[t - 1], r = e[t];
-	return Oe.test(n) || ke(r) && !ke(n) || /\d/.test(r) && !/\d/.test(n);
+	return De.test(n) || Oe(r) && !Oe(n) || /\d/.test(r) && !/\d/.test(n);
 }
-function je(e, t) {
+function Ae(e, t) {
 	let n = e.length, r = t.length;
 	if (!n) return {
 		score: 0,
@@ -64,12 +64,12 @@ function je(e, t) {
 		a[t] === i[e] && e++;
 	}
 	let o = Array.from({ length: n }, () => new Float64Array(r).fill(B)), s = Array.from({ length: n }, () => new Int32Array(r).fill(-1));
-	for (let e = 0; e < r; e++) a[e] === i[0] && (o[0][e] = 1 + (Ae(t, e) ? 8 : 0) + (e === 0 ? 4 : 0) - e * .02);
+	for (let e = 0; e < r; e++) a[e] === i[0] && (o[0][e] = 1 + (ke(t, e) ? 8 : 0) + (e === 0 ? 4 : 0) - e * .02);
 	for (let e = 1; e < n; e++) {
 		let n = B, c = -1;
 		for (let l = e; l < r; l++) {
 			if (l >= 2 && o[e - 1][l - 2] > n && (n = o[e - 1][l - 2], c = l - 2), a[l] !== i[e]) continue;
-			let r = Ae(t, l) ? 8 : 0, u = o[e - 1][l - 1] > B ? o[e - 1][l - 1] + 1 + 5 + r : B, d = n > B ? n + 1 + r - 3 : B;
+			let r = ke(t, l) ? 8 : 0, u = o[e - 1][l - 1] > B ? o[e - 1][l - 1] + 1 + 5 + r : B, d = n > B ? n + 1 + r - 3 : B;
 			u >= d && u > B ? (o[e][l] = u, s[e][l] = l - 1) : d > B && (o[e][l] = d, s[e][l] = c);
 		}
 	}
@@ -83,7 +83,7 @@ function je(e, t) {
 		idx: u
 	};
 }
-var Me = (e) => e.dir ??= e.rel.slice(0, e.rel.length - e.name.length).toLowerCase(), Ne = {
+var je = (e) => e.dir ??= e.rel.slice(0, e.rel.length - e.name.length).toLowerCase(), Me = {
 	name: 30,
 	fn: 15,
 	path: 0
@@ -91,23 +91,23 @@ var Me = (e) => e.dir ??= e.rel.slice(0, e.rel.length - e.name.length).toLowerCa
 function V(e, t) {
 	let n = 0, r = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Map();
 	for (let a of e) {
-		let e = null, o = je(a, t.name);
+		let e = null, o = Ae(a, t.name);
 		o && (e = {
-			s: o.score + Ne.name,
+			s: o.score + Me.name,
 			kind: "name",
 			idx: o.idx
 		});
 		for (let n of t.functions) {
-			let t = je(a, n);
-			t && (!e || t.score + Ne.fn > e.s) && (e = {
-				s: t.score + Ne.fn,
+			let t = Ae(a, n);
+			t && (!e || t.score + Me.fn > e.s) && (e = {
+				s: t.score + Me.fn,
 				kind: "fn",
 				fn: n,
 				idx: t.idx
 			});
 		}
-		if (!e && Me(t).includes(a.toLowerCase()) && (e = {
-			s: 10 + Ne.path,
+		if (!e && je(t).includes(a.toLowerCase()) && (e = {
+			s: 10 + Me.path,
 			kind: "path"
 		}), !e) return null;
 		if (n += e.s, e.kind === "name") e.idx.forEach((e) => r.add(e));
@@ -123,10 +123,17 @@ function V(e, t) {
 	};
 }
 // src/state.ts
-var Pe = (e) => {
+var Ne = (e) => {
 	let t = (e?.tabs || []).find((e) => e.active);
 	return t ? t.key : e?.board?.file ?? null;
-}, Fe = 8, Ie = 5, Le = [], Re = (e) => e.map((e) => ({
+};
+function Pe(e, t) {
+	if (!e || t == null) return null;
+	for (let n of e.groups) for (let e of n.cards) if (e.index === t) return e;
+	return null;
+}
+// src/components/QuickOpen.tsx
+var Fe = 8, Ie = 5, Le = [], Re = (e) => e.map((e) => ({
 	...e,
 	name: e.rel.split("/").pop()
 }));
@@ -494,7 +501,7 @@ function ft() {
 }
 async function pt(e, { phrase: t, daemonText: n }) {
 	let r = e.f, i = I.st, a = e.fn ? e.fn.fn : null;
-	if (ct(r.path, !0), r.path === Pe(i)) {
+	if (ct(r.path, !0), r.path === Ne(i)) {
 		x(r.path, a), i?.screen === "focus" && i.focus ? (ft(), N("/viewer/exit")) : (q(), f());
 		return;
 	}
@@ -570,7 +577,7 @@ function bt({ state: e, draw: t, connection: n, hosts: r }) {
 		}));
 	}, [o]), (0, L.useLayoutEffect)(() => {
 		if (!e) return;
-		let t = Pe(e);
+		let t = Ne(e);
 		t && t !== it && (it = t, ct(t)), tt && e.screen !== "empty" && q(!0);
 	}, [t]), (0, L.useLayoutEffect)(() => {
 		n === "lost" && q(!0);
@@ -677,7 +684,7 @@ function Ft({ tab: e, leaving: t, enter: n, onGone: r, observe: i }) {
 			n.removeEventListener("transitionend", i), clearTimeout(a);
 		};
 	}, [t]);
-	let d = Te(e.sourceSet), f = () => N("/viewer/close", { key: e.key });
+	let d = we(e.sourceSet), f = () => N("/viewer/close", { key: e.key });
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		ref: o,
 		role: "tab",
@@ -700,7 +707,7 @@ function Ft({ tab: e, leaving: t, enter: n, onGone: r, observe: i }) {
 			e.button === 1 && (e.preventDefault(), f());
 		},
 		children: [
-			/* @__PURE__ */ (0, R.jsx)(De, { kind: d }),
+			/* @__PURE__ */ (0, R.jsx)(Ee, { kind: d }),
 			/* @__PURE__ */ (0, R.jsx)("span", { className: "rt-name" }),
 			/* @__PURE__ */ (0, R.jsx)("span", {
 				className: "rt-mod",
@@ -759,7 +766,7 @@ function It({ tabs: e, screen: t, hosts: n }) {
 		if (!e || !f || !i) return;
 		f.hidden = !g, n && document.body.classList.toggle("rail-on", g), p && (p.hidden = e.length > 0), Pt(f, i), Ct = e;
 		let t = e.find((e) => e.active);
-		t && Te(t.sourceSet) === "kmp" ? ce(xt, () => r("capsule.sharedOnce", { sourceSet: t.sourceSet })) : ie(xt);
+		t && we(t.sourceSet) === "kmp" ? ce(xt, () => r("capsule.sharedOnce", { sourceSet: t.sourceSet })) : ie(xt);
 		let a = t?.key ?? null, o = x.current && g && a !== S.current && S.current !== null;
 		S.current = a, x.current = g, T(o);
 	}, [
@@ -1550,7 +1557,7 @@ function Zn(e) {
 async function Qn(e) {
 	Q();
 	let t = I.st;
-	if (x(e.file, e.fn), e.file === Pe(t)) {
+	if (x(e.file, e.fn), e.file === Ne(t)) {
 		t?.screen === "focus" && t.focus ? N("/viewer/exit") : f();
 		return;
 	}
@@ -1606,7 +1613,7 @@ function sr(e) {
 }
 function cr(e, { stage: t, img: n, box: r, pick: i, marks: a }, o) {
 	let s = null, c = !1, l = async () => {
-		let t = I.st && I.st.board && be(e);
+		let t = Pe(I.st?.board, e);
 		if (!t || !t.ok || !t.treeUrl) return null;
 		let n = D.get(t.treeUrl);
 		if (n) return s = n, s;
@@ -1638,7 +1645,7 @@ function cr(e, { stage: t, img: n, box: r, pick: i, marks: a }, o) {
 			Z?.img === n && Q();
 			return;
 		}
-		let d = be(e), f = Tn(n);
+		let d = Pe(I.st?.board, e), f = Tn(n);
 		Jn({
 			list: c,
 			img: n,
@@ -1683,7 +1690,7 @@ function ur(e, t, n) {
 	}
 }
 function dr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimensions: o, originalSize: s, zoomState: c, preparation: l, firstFrame: u }) {
-	let d = null, f = !1, p = null, m = null, h = null, g = null, _ = null, v = 0, y = null, b = !1, x = !1, S = !1, C = null, w = /* @__PURE__ */ new Map(), T = /* @__PURE__ */ new Map(), E = (e) => (T.has(e.src) || T.set(e.src, ur(e, e.naturalWidth, e.naturalHeight)), T.get(e.src)), D = Se(e, {
+	let d = null, f = !1, p = null, m = null, h = null, g = null, _ = null, v = 0, y = null, b = !1, x = !1, S = !1, C = null, w = /* @__PURE__ */ new Map(), T = /* @__PURE__ */ new Map(), E = (e) => (T.has(e.src) || T.set(e.src, ur(e, e.naturalWidth, e.naturalHeight)), T.get(e.src)), D = xe(e, {
 		request: (e) => {
 			if (S) return Promise.resolve(!1);
 			let [t, n, ...r] = e.split(":"), i = D.devices.has(t) ? {
@@ -1874,7 +1881,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		let n = getComputedStyle(document.documentElement), r = parseInt(n.getPropertyValue("--cap-room")) || 76, i = document.body.classList.contains("resizing-ui"), a = window.innerHeight - t.getBoundingClientRect().top - (i ? 0 : r + 16), o = parseInt(n.getPropertyValue("--stage-min-h")) || 260, s = Math.max(o, Math.round(a));
 		document.documentElement.style.setProperty("--view-h", s + "px");
 		let c = getComputedStyle(t), l = s - parseFloat(c.paddingTop) - parseFloat(c.paddingBottom);
-		document.documentElement.style.setProperty("--stage-max-h", l + "px"), H.relayout(), t.classList.contains("resize-wrap") || x(l - 2), Pe(), T();
+		document.documentElement.style.setProperty("--stage-max-h", l + "px"), H.relayout(), t.classList.contains("resize-wrap") || x(l - 2), Ne(), T();
 	}
 	let _ = 0, v = 0, y = () => (r.getAttribute("src") || "").startsWith("/stream");
 	function b() {
@@ -1916,7 +1923,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 	}
 	function j(e) {
 		let t = !!(e && e.interactive);
-		if (u.hidden = !e, e || He(), n.classList.toggle("live", t), Oe = e && e.pxPerDp || null, e && e.previewId === Ee || (H.disable(), Ee = e ? e.previewId : null, _ = v = 0, delete r.dataset.fullW, r.style.width = "", V(1, 0, 0, !1)), !e) {
+		if (u.hidden = !e, e || He(), n.classList.toggle("live", t), De = e && e.pxPerDp || null, e && e.previewId === Te || (H.disable(), Te = e ? e.previewId : null, _ = v = 0, delete r.dataset.fullW, r.style.width = "", V(1, 0, 0, !1)), !e) {
 			M?.entering && ie(), H.disable(), r.hasAttribute("src") && (r.removeAttribute("src"), r.dataset.url = "");
 			for (let e of n.querySelectorAll("img.ghost")) e.remove();
 			return;
@@ -1924,7 +1931,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		let i = I.st;
 		if (n.style.cursor = t ? "pointer" : "crosshair", e.treeUrl !== E && O(e.treeUrl), H.update(e, i.error)) return;
 		V(z.z, z.x, z.y, !1);
-		let a = t ? e.streamUrl ? ne(e.streamUrl) : i.board && be(i.board.focus)?.imageUrl || "" : e.imageUrl;
+		let a = t ? e.streamUrl ? ne(e.streamUrl) : Pe(i.board, i.board?.focus)?.imageUrl || "" : e.imageUrl;
 		r.dataset.url !== a && (a.startsWith("/stream") && (S = 0), _e(r, a));
 	}
 	let M = null, re = (e, t) => e > 0 && t > 0 && Math.abs(e / t - 1) < .01, P = (e, t) => {
@@ -2038,26 +2045,26 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 			}, i, { workspace: !0 }) : (P(!0, 0), t(), i());
 		});
 	}
-	let xe = !1, Se = () => !!(history.state && history.state.prevueWs);
-	function Ce(e) {
+	let be = !1, xe = () => !!(history.state && history.state.prevueWs);
+	function Se(e) {
 		let t = !!(e && e.screen === "focus" && e.focus);
-		t && !Se() ? (history.scrollRestoration = "manual", history.pushState({ prevueWs: !0 }, "")) : !t && Se() && !xe && (xe = !0, history.back());
+		t && !xe() ? (history.scrollRestoration = "manual", history.pushState({ prevueWs: !0 }, "")) : !t && xe() && !be && (be = !0, history.back());
 	}
 	addEventListener("popstate", () => {
-		xe ? xe = !1 : I.st && I.st.screen === "focus" && I.st.focus && N("/viewer/exit");
+		be ? be = !1 : I.st && I.st.screen === "focus" && I.st.focus && N("/viewer/exit");
 	});
-	let we = (e) => Dn(e, r), L = () => !!(I.st && I.st.focus && I.st.focus.interactive), R = () => {
+	let Ce = (e) => Dn(e, r), L = () => !!(I.st && I.st.focus && I.st.focus.interactive), R = () => {
 		qn() === r && Q();
-	}, Te = (e) => !L() || e.altKey;
+	}, we = (e) => !L() || e.altKey;
 	n.addEventListener("mousemove", (e) => {
-		let t = m && Te(e);
-		o.classList.toggle("over", t), t && Nn(o, p, ke()), An(i, t ? wn(p, ...we(e)) ?? null : null, ke());
+		let t = m && we(e);
+		o.classList.toggle("over", t), t && Nn(o, p, Oe()), An(i, t ? wn(p, ...Ce(e)) ?? null : null, Oe());
 	}), n.addEventListener("mouseleave", () => jn(i, o)), n.addEventListener("mousedown", (e) => {
-		e.button !== 0 || H.moving() || (De || !L() && z.z > 1 && !e.altKey ? Ke(e) : L() && !e.altKey && (e.preventDefault(), R(), tn(...we(e))));
+		e.button !== 0 || H.moving() || (Ee || !L() && z.z > 1 && !e.altKey ? Ke(e) : L() && !e.altKey && (e.preventDefault(), R(), tn(...Ce(e))));
 	}), window.addEventListener("mousemove", (e) => {
-		en() && nn(...we(e));
+		en() && nn(...Ce(e));
 	}), window.addEventListener("mouseup", (e) => {
-		en() && rn(...we(e));
+		en() && rn(...Ce(e));
 	}), n.addEventListener("click", async (t) => {
 		if (H.moving()) return;
 		if (B) {
@@ -2072,7 +2079,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 			return;
 		}
 		await D;
-		let n = wn(p, ...we(t));
+		let n = wn(p, ...Ce(t));
 		if (!n) {
 			qn() === r && Q();
 			return;
@@ -2085,7 +2092,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 			pick: a,
 			marks: o,
 			host: e,
-			scale: ke,
+			scale: Oe,
 			previewId: c.previewId,
 			dpPerPx: c.pxPerDp ? 1 / c.pxPerDp : null,
 			seen: {
@@ -2098,17 +2105,17 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		z: 1,
 		x: 0,
 		y: 0
-	}, Ee = null, De = !1, B = !1, Oe = null;
-	function ke() {
+	}, Te = null, Ee = !1, B = !1, De = null;
+	function Oe() {
 		let e = _ || r.naturalWidth;
 		return e ? r.offsetWidth / e : 1;
 	}
-	function Ae() {
+	function ke() {
 		let e = H.pxPerDp();
-		return e ? 1 / e : Oe && (_ || r.naturalWidth) ? 1 / (ke() * Oe) : null;
+		return e ? 1 / e : De && (_ || r.naturalWidth) ? 1 / (Oe() * De) : null;
 	}
-	let je = () => Math.min(1, Ae() || 1), Me = () => Math.max(8, (Ae() || 1) * 4);
-	function Ne(e, r, i) {
+	let Ae = () => Math.min(1, ke() || 1), je = () => Math.max(8, (ke() || 1) * 4);
+	function Me(e, r, i) {
 		if (e <= 1) return [
 			e,
 			n.offsetWidth * (1 - e) / 2,
@@ -2122,10 +2129,10 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		];
 	}
 	function V(e, r, i, a) {
-		H.preparing() || ([z.z, z.x, z.y] = Ne(Math.min(Me(), Math.max(je(), e)), r, i), n.classList.toggle("zoom-anim", !!a), n.style.transform = H.zoom(a) || z.z === 1 ? "" : `translate(${z.x}px, ${z.y}px) scale(${z.z})`, t.style.setProperty("--z", String(z.z)), n.classList.toggle("zoomed", z.z > 1), Pe(), T());
+		H.preparing() || ([z.z, z.x, z.y] = Me(Math.min(je(), Math.max(Ae(), e)), r, i), n.classList.toggle("zoom-anim", !!a), n.style.transform = H.zoom(a) || z.z === 1 ? "" : `translate(${z.x}px, ${z.y}px) scale(${z.z})`, t.style.setProperty("--z", String(z.z)), n.classList.toggle("zoomed", z.z > 1), Ne(), T());
 	}
-	function Pe() {
-		let e = Ae();
+	function Ne() {
+		let e = ke();
 		X.set({
 			pct: Math.round((e ? z.z / e : z.z) * 100),
 			real: !!e,
@@ -2133,7 +2140,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		});
 	}
 	function Fe(e, t, r, i) {
-		let a = n.getBoundingClientRect(), o = a.left - z.x, s = a.top - z.y, c = (t - a.left) / z.z, l = (r - a.top) / z.z, u = Math.min(Me(), Math.max(je(), e));
+		let a = n.getBoundingClientRect(), o = a.left - z.x, s = a.top - z.y, c = (t - a.left) / z.z, l = (r - a.top) / z.z, u = Math.min(je(), Math.max(Ae(), e));
 		V(u, t - o - c * u, r - s - l * u, i);
 	}
 	function Ie(e) {
@@ -2152,7 +2159,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		t && (Ve = e), X.set({ menu: t });
 	}
 	function We(e) {
-		He(), e === "fit" ? Be() : Ie((Ae() || 1) * Number(e));
+		He(), e === "fit" ? Be() : Ie((ke() || 1) * Number(e));
 	}
 	addEventListener("pointerdown", (e) => {
 		let t = document.getElementById("zoomCtl");
@@ -2165,7 +2172,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		e.hidden || (t.ctrlKey || t.metaKey ? (t.preventDefault(), Fe(z.z * Math.exp(-t.deltaY * .01), t.clientX, t.clientY, !1)) : L() ? (t.preventDefault(), H.moving() || (R(), Ge(t))) : z.z > 1 && (t.preventDefault(), V(z.z, z.x - t.deltaX, z.y - t.deltaY, !1)));
 	}, { passive: !1 });
 	function Ge(e) {
-		let n = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? t.clientHeight : 1, i = ke() * z.z || 1, [a, o] = we(e);
+		let n = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? t.clientHeight : 1, i = Oe() * z.z || 1, [a, o] = Ce(e);
 		cn(Math.max(0, Math.min(_ || r.naturalWidth, a)), Math.max(0, Math.min(v || r.naturalHeight, o)), e.deltaX * n / i, e.deltaY * n / i);
 	}
 	function Ke(e) {
@@ -2182,11 +2189,11 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 	let qe = (e) => !!e && (e.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName));
 	addEventListener("keydown", (t) => {
 		let r = t.target;
-		t.code !== "Space" || e.hidden || qe(r) || r?.closest && r.closest("button, [role=button]") || (t.preventDefault(), De || (De = !0, n.classList.add("grab")));
+		t.code !== "Space" || e.hidden || qe(r) || r?.closest && r.closest("button, [role=button]") || (t.preventDefault(), Ee || (Ee = !0, n.classList.add("grab")));
 	}), addEventListener("keyup", (e) => {
-		e.code === "Space" && (De = !1, n.classList.remove("grab"));
+		e.code === "Space" && (Ee = !1, n.classList.remove("grab"));
 	}), addEventListener("blur", () => {
-		De = !1, n.classList.remove("grab");
+		Ee = !1, n.classList.remove("grab");
 	});
 	let H = dr({
 		root: s,
@@ -2200,7 +2207,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		},
 		firstFrame: he,
 		originalSize() {
-			let e = I.st?.board && be(I.st.board.focus);
+			let e = Pe(I.st?.board, I.st?.board?.focus);
 			return e ? {
 				w: e.widthDp,
 				h: e.heightDp
@@ -2218,7 +2225,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 				top: n.style.top,
 				width: n.style.width,
 				height: n.style.height
-			}), c.style.setProperty("--im-bezel", e.bezel + "px"), Pe(), T();
+			}), c.style.setProperty("--im-bezel", e.bezel + "px"), Ne(), T();
 		}
 	});
 	return document.addEventListener("visibilitychange", () => {
@@ -2231,7 +2238,7 @@ function pr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 		render: j,
 		fitStage: g,
 		renarrow: h,
-		syncHistory: Ce,
+		syncHistory: Se,
 		morphIn: ce,
 		morphOut: ye,
 		image: () => r,
@@ -4025,7 +4032,7 @@ function ha() {
 				...e.text("panel.device")
 			}), /* @__PURE__ */ (0, R.jsx)("div", {
 				className: "pn-list",
-				children: we.map(({ group: e, ids: n }) => /* @__PURE__ */ (0, R.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("h5", {
+				children: Ce.map(({ group: e, ids: n }) => /* @__PURE__ */ (0, R.jsxs)(L.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("h5", {
 					className: "pn-g",
 					children: e
 				}), n.map((e) => t(e))] }, e))
@@ -4420,7 +4427,7 @@ function Ia() {
 function La(e, t, n = null) {
 	let r = e?.shown ? e.bars : null;
 	if (!r?.insets || t?.kind !== "device") return null;
-	let i = n?.values.displayCutout, a = xe(lr(t)), o = a && a.y < r.insets.statusDp ? {
+	let i = n?.values.displayCutout, a = be(lr(t)), o = a && a.y < r.insets.statusDp ? {
 		x0: a.x,
 		x1: a.x + a.w,
 		cy: a.y + a.h / 2
@@ -4610,7 +4617,7 @@ function to({ bars: e }) {
 }
 function no({ bars: e }) {
 	if (e.duo) return /* @__PURE__ */ (0, R.jsx)(to, { bars: e });
-	let t = Ce[e.device]?.status;
+	let t = Se[e.device]?.status;
 	return t ? /* @__PURE__ */ (0, R.jsxs)("g", {
 		className: "sb-status",
 		"data-edge": "top",
@@ -4927,7 +4934,7 @@ var Do = /* @__PURE__ */ (0, R.jsx)("svg", {
 	children: /* @__PURE__ */ (0, R.jsx)("path", { d: "M10 3.5 5.5 8l4.5 4.5" })
 });
 function Oo({ state: e, hosts: t, actions: n = _o }) {
-	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = e?.screen === "focus" ? e.focus : null, l = c ? (e.tabs || []).find((e) => e.active) : void 0, u = c && e?.board ? e.board.groups.flatMap((e) => e.cards).find((t) => t.index === e.board.focus) : void 0;
+	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = e?.screen === "focus" ? e.focus : null, l = c ? (e.tabs || []).find((e) => e.active) : void 0, u = c ? Pe(e?.board, e?.board?.focus) : null;
 	(0, L.useLayoutEffect)(() => {
 		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && Eo(i.element, a.element);
 	}), (0, L.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, L.useLayoutEffect)(() => {

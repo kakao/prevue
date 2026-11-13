@@ -1,10 +1,10 @@
 // 크기 · 기기 · 자세 바꾸기(D-99). 틀 · 그림의 전환은 번들 밖의 resize-scene.js 가 갖고, 여기서는 상태를 장면에 넘기고
 // 스트림 <img>(#shot)를 새 크기의 첫 장에 붙인다. 장면 · 조작 독의 마크업은 React 가 한 번 그린 껍데기다.
-import { post, viewerStream } from '../../legacy/js/api.js';
-import { flash } from '../../legacy/js/capsule.js';
-import { motionMs, motionToken, reduced } from '../../legacy/js/motion.js';
+import { post, viewerStream } from '../runtime/api';
+import { flash } from '../runtime/capsule';
+import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
-import { phrase } from '../../legacy/js/strings.js';
+import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
 import { loadingView } from './view';
 

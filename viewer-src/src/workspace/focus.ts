@@ -1,12 +1,12 @@
 // 한 장 화면 — 기기를 쥔 작업 공간(D-57). 가리키기 · 인터랙티브(FR-18) · 확대 · 뒤로 가기. 터치 · 휠을 보내는 것은 input.ts 다.
 // 마크업은 React 의 Workspace 가 그리고, 여기서는 그 요소를 받아 스트림 · 좌표 · 틀 모프처럼 잰 뒤에만 정해지는 것을 다룬다.
-import { get, post, reportStreamWidth, viewerStream } from '../../legacy/js/api.js';
-import { flash, setStatus, setSummary } from '../../legacy/js/capsule.js';
-import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, reduced, swapImage, transition } from '../../legacy/js/motion.js';
-import { stuckHead } from '../../legacy/js/board.js';
-import { cardOf, store } from '../../legacy/js/store.js';
-import { phrase } from '../../legacy/js/strings.js';
-import type { Focus, ViewerState } from '../state';
+import { get, post, reportStreamWidth, viewerStream } from '../runtime/api';
+import { flash, setStatus, setSummary } from '../runtime/capsule';
+import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, reduced, swapImage, transition } from '../runtime/motion';
+import { stuckHead } from '../runtime/board';
+import { store } from '../runtime/store';
+import { phrase } from '../runtime/strings';
+import { findCard, type Focus, type ViewerState } from '../state';
 import { drag, press, pressing, release, wheel } from './input';
 import { byPick, clearPick, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
 import { createResizeController } from './resize';
@@ -142,7 +142,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (resizeUI.update(f, st.error)) return;
     setZoom(zoom.z, zoom.x, zoom.y, false);
     // 인터랙티브면 MJPEG 스트림, 아니면 마지막 PNG. 스트림 주소는 태스크가 걸린 뒤에만 온다 — 그 전에는 카드의 마지막 그림이다.
-    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : (st.board && cardOf(st.board.focus)?.imageUrl) || '') : f.imageUrl;
+    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : findCard(st.board, st.board?.focus)?.imageUrl || '') : f.imageUrl;
     if (shot.dataset.url !== want) { if (want.startsWith('/stream')) sentW = 0; swapImage(shot, want); }
   }
 
@@ -460,7 +460,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       if (on) closeZoomMenu();
     },
     firstFrame,
-    originalSize() { const c = store.st?.board && cardOf(store.st.board.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
+    originalSize() { const c = findCard(store.st?.board, store.st?.board?.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
     dimensions(w, h) {
       if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); sentW = 0; reportViewport(); }
       return { w: fullW, h: fullH };

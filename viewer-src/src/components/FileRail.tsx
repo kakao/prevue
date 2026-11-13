@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { post } from '../../legacy/js/api.js';
-import { hideOnce, showOnce } from '../../legacy/js/capsule.js';
-import { motionMs, motionToken, reduced } from '../../legacy/js/motion.js';
+import { post } from '../runtime/api';
+import { hideOnce, showOnce } from '../runtime/capsule';
+import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { hideReactKeys, useHost } from '../host';
 import { useMessages } from '../messages';
 import type { ViewerState } from '../state';

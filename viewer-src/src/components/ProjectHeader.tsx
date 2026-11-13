@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
-import { post } from '../../legacy/js/api.js';
-import { flash } from '../../legacy/js/capsule.js';
+import { post } from '../runtime/api';
+import { flash } from '../runtime/capsule';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { ViewerState } from '../state';

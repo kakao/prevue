@@ -10,7 +10,9 @@ const asked = (new URL(location.href).searchParams.get("lang") || "").split("-")
 const language = LANGUAGES.includes(asked) ? asked : "en";
 document.documentElement.lang = language;
 
-const dict = await fetch(new URL(`../strings/${language}.json`, import.meta.url))
+// Vite 가 new URL(템플릿, import.meta.url)을 자산 import 로 바꿔 버리므로 기준 주소를 변수로 건넨다.
+const here = import.meta.url;
+const dict: Record<string, string> = await fetch(new URL(`../strings/${language}.json`, here))
   .then(r => (r.ok ? r.json() : {}))
   .catch(() => ({}));
 
@@ -19,9 +21,9 @@ export const { phrase, daemonText } = createMessages(dict);
 const ATTRS = ["title", "aria-label", "placeholder", "alt"];
 
 // 마크업의 data-t(글) · data-t-<속성>을 사전 문장으로 채운다.
-function applyStrings(root) {
-  for (const el of root.querySelectorAll("[data-t]")) el.textContent = phrase(el.dataset.t);
-  for (const a of ATTRS) for (const el of root.querySelectorAll(`[data-t-${a}]`)) el.setAttribute(a, phrase(el.getAttribute(`data-t-${a}`)));
+function applyStrings(root: ParentNode) {
+  for (const el of root.querySelectorAll<HTMLElement>("[data-t]")) el.textContent = phrase(el.dataset.t!);
+  for (const a of ATTRS) for (const el of root.querySelectorAll(`[data-t-${a}]`)) el.setAttribute(a, phrase(el.getAttribute(`data-t-${a}`)!));
 }
 
 applyStrings(document);

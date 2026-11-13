@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { createMessages } from '../legacy/js/messages.js';
+import { createMessages } from './runtime/messages';
 
 export { createMessages };
 export type Messages = ReturnType<typeof createMessages>;
