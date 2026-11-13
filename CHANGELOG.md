@@ -11,6 +11,7 @@ Only changes users can see go here.
 - **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
 - Device menu names in the iPhone group drop the repeated "iPhone" (17 · Air · 17 Pro Max · 18 Pro · Duo), with the `--device` names unchanged.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
+- **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
 
 ## [0.22.1] — 2026-11-13
 

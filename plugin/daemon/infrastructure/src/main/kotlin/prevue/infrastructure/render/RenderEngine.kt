@@ -187,11 +187,15 @@ internal class RenderEngine(
         if (!s.usePrivate && preloadNext && lostThread == null) loaders.learnFrom(s.session.task)
     }
 
+    private fun requestedDpi(p: PreviewSpec): Int? =
+        Regex("""(?:^|[:,])dpi=(\d+)""").find(p.params["device"].orEmpty())?.groupValues?.get(1)?.toIntOrNull()
+
     private fun layoutFor(p: PreviewSpec, ph: MutableMap<String, Long>): Pair<Configuration, String>? {
         val t = System.nanoTime()
         val element = screenshot(p).toPreviewElement(renderer.module)
         val cfg = baseConfiguration.clone()
         Shim.applyTo(element, cfg)
+        requestedDpi(p)?.let { Shim.keepDensity(cfg, it) }
         val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null

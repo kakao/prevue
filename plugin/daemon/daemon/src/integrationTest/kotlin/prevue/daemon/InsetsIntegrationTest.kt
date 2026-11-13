@@ -173,6 +173,16 @@ internal abstract class InsetsRenderChecks {
         off.close()
     }
 
+    @Test fun `렌더러 단계에 없는 dpi도 요청한 밀도로 그린다`() = runBlocking {
+        for (dpi in listOf(450, 390, 300, 280)) {
+            val spec = preview.copy(params = preview.params + ("device" to "spec:width=1080px,height=2340px,dpi=$dpi"))
+            val handle = engine.open(spec, interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            assertEquals(dpi / 160f, session().viewRoot()!!.context.resources.displayMetrics.density, "dpi=$dpi")
+            handle.close()
+        }
+    }
+
     @Test fun `마흔두 자세는 그 자세의 인셋을 전달하고 렌더러 바를 숨긴다`() = runBlocking {
         for (device in DeviceModel.entries.flatMap { it.postures }) {
             var shownBars: List<String>? = null
@@ -182,6 +192,7 @@ internal abstract class InsetsRenderChecks {
                 assertTrue(handle.opened.ok, "${device.key} $choice: ${handle.opened.message}")
                 val values = reads(handle)
                 val density = session().viewRoot()!!.context.resources.displayMetrics.density
+                assertEquals(device.model.dpi / 160f, density, "${device.key} 렌더 밀도는 스펙 dpi 그대로")
                 fun pixels(edges: InsetEdges) = listOf(edges.left, edges.top, edges.right, edges.bottom)
                     .joinToString(",") { (it * density).roundToInt().toString() }
                 val expected = spec.appInsets!!

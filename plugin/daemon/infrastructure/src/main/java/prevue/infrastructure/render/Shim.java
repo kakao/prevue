@@ -27,6 +27,14 @@ final class Shim {
         }
     }
 
+    /** 렌더러는 spec 의 dpi 를 가까운 밀도 단계(390→420, 450→440)로 맞춰 기기를 만든다. 화면 밀도를 요청한 값으로 되돌린다. */
+    static void keepDensity(Configuration configuration, int dpi) {
+        com.android.sdklib.devices.Device device = configuration.getDevice();
+        if (device == null) return;
+        device.getDefaultHardware().getScreen().setPixelDensity(com.android.resources.Density.create(dpi));
+        configuration.setEffectiveDevice(device, configuration.getDeviceState());
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     static void applyTo(ConfigurablePreviewElement element, Configuration configuration) {
         PreviewConfigurationKt.applyTo(element, configuration, (Function1) DEFAULT_DEVICE_PROVIDER);
