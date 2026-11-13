@@ -68,7 +68,8 @@ try {
     if (await evaluate(`document.querySelector('#pnSum').getAttribute('aria-expanded')!=='true'`)) await click("#pnSum");
     await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible' && !document.querySelector('#pnBody').inert`); await pause(250);
   };
-  const choose = async sel => { await openMenu(); await click(`#pnPick [data-sel="${sel}"]`); };
+  // 기기가 늘어 1000px 창에서는 목록이 메뉴 안에서 스크롤된다 — 칸을 보이는 자리로 가져온 뒤 누른다
+  const choose = async sel => { await openMenu(); await evaluate(`document.querySelector('#pnPick [data-sel="${sel}"]').scrollIntoView({ block: 'nearest' })`); await pause(100); await click(`#pnPick [data-sel="${sel}"]`); };
   const orient = async orientation => {
     await click("#dcRot");
     await until(`document.querySelector('#dcRot').getAttribute('aria-expanded')==='true'`);
