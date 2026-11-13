@@ -297,6 +297,11 @@ try {
   await check(`document.querySelector('#rlW').value==='1056' && document.querySelector('#rlH').value==='1691'`, "Tab S11 Ultra 는 1056×1691dp 로 그려진다");
   await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===1056 && __store.st.focus.size?.heightDp===1600 && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(400);
   await check(`document.querySelector('#rlH').value==='1600' && document.querySelector('#pnPick [data-sel="custom"] .d').textContent==='1056×1600'`, `기기에서 커스텀으로 넘어가면 1691dp 가 한계 1600 으로 잘린다(${await evaluate(`document.querySelector('#rlH').value+' '+document.querySelector('#pnPick [data-sel="custom"] .d').textContent`)})`);
+  // 기기를 고른 채 칸에 Tab 으로 들어가 치면 친 글자가 남는다 — 커스텀 전환이 칸을 덮어쓰지 않는다
+  await pick("s26", "device==='s26'");
+  await evaluate(`document.querySelector('#rlW').focus()`); await send("Input.insertText", { text: "5" });
+  await check(`document.querySelector('#rlW').value==='5'`, `기기에서 숫자를 치면 친 글자가 남는다(${await evaluate(`document.querySelector('#rlW').value`)})`);
+  await key("Escape"); await pause(300);
   await pick("duo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);

@@ -23,6 +23,8 @@ export function cameraOf(sel) {
 // 카메라 상자 — 스펙의 cam 은 위 가장자리 기준이다(w 는 가장자리를 따른 길이, h 는 깊이, x 는 가장자리를 따른 위치 비율).
 // edge:"right" 면 자연 방향의 오른쪽 가장자리에 붙고(긴 변 노치), 자세가 돌면 그만큼 4분의 1바퀴씩 같이 돈다.
 // notch 는 가장자리에 붙은 노치의 안쪽 모서리 반경이다 — 가장자리 쪽 두 모서리는 각진다. rad · flat 은 기기를 바꾸는 보간용이다.
+// 보간 중인 cam 은 rad · flat 을 이미 갖고, 스펙의 cam 은 notch 에서 나온다 — 두 곳이 같은 판단을 쓴다.
+const camRad = c => c.rad ?? c.notch ?? Math.min(c.w, c.h) / 2, camFlat = c => c.flat ?? (c.notch !== undefined ? 1 : 0);
 function camBox(W0, H0, rot, cam, s, mirrored = false) {
   const own = cam.edge === "right" ? 1 : 0, turns = (own + (rot ? 1 : 0) + (mirrored ? 2 : 0)) % 4;
   let fw = (own ? H0 : W0) * s, fh = (own ? W0 : H0) * s;
@@ -31,7 +33,7 @@ function camBox(W0, H0, rot, cam, s, mirrored = false) {
     b = { left: fh - b.top - b.height, top: b.left, width: b.height, height: b.width };
     [fw, fh] = [fh, fw];
   }
-  const rad = (cam.rad ?? cam.notch ?? Math.min(cam.w, cam.h) / 2) * s, flat = cam.flat ?? (cam.notch !== undefined ? 1 : 0);
+  const rad = camRad(cam) * s, flat = camFlat(cam);
   const corners = [rad, rad, rad, rad];
   for (const k of [[0, 1], [1, 2], [2, 3], [3, 0]][turns]) corners[k] = rad * (1 - flat);
   return { ...b, corners: corners.map(v => v + "px").join(" "), on: cam.w * s > .5 };
@@ -164,7 +166,7 @@ export function createResizeScene(root, hooks) {
   // 위 · 아래 가장자리에 카메라가 붙은 자세는 위 띠의 상태 줄과 카메라 인셋 치수선이 오른쪽에 두 칸으로 서 둘째 배지가 한 칸(LANE_W) 더 나간다 — 폭이 모자란 넓은 기기(Tab)는 양옆을 그만큼씩 비워 창 밖으로 안 나가게 한다(틀은 가운데에 둔다).
   const LANE_W = 64;
   const laneRoomOf = st => {
-    if (!shelled(st)) return 0;
+    if (!shelled(st) || st.w <= st.h) return 0;
     const panel = DEVICES[st.dev][st.folded ? "cover" : "open"], b = camBox(panel.w, panel.h, st.rot, lookOf(st).cam, 1, st.mirrored);
     return b.on && (b.top < 1 || b.top + b.height > (st.rot ? panel.w : panel.h) - 1) ? LANE_W : 0;
   };
@@ -172,7 +174,7 @@ export function createResizeScene(root, hooks) {
     const r = room(), each = (x, maxW) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
     let s = Math.min(each(ORIGINAL, r.maxW), each(st, r.maxW));
     const lane = laneRoomOf(st);
-    if (lane && r.maxW - (st.w + padsOf(st)[0]) * s < lane) s = Math.min(each(ORIGINAL, r.maxW - 2 * lane), each(st, r.maxW - 2 * lane));
+    if (lane && (r.maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane) s = Math.min(each(ORIGINAL, r.maxW - 2 * lane), each(st, r.maxW - 2 * lane));
     const h = st.h * s, ph = padsOf(st)[1] * s;
     return { s, w: st.w * s, h, cx: r.cx, y: r.top + ph / 2 + Math.max(0, (r.maxH - h - ph) / 2) };
   }
@@ -206,9 +208,8 @@ export function createResizeScene(root, hooks) {
   // 카메라 보간 — 가장자리가 다르면 끝에서 줄어 사라졌다 다른 가장자리에서 자란다(버튼이 변을 바꿀 때와 같다).
   const camLook = (a, b, k, m) => {
     const swap = a.edge !== b.edge, grow = swap ? (k < .5 ? 1 - 2 * k : 2 * k - 1) : 1, from = swap && k < .5 ? a : b;
-    const rad = c => c.notch ?? Math.min(c.w, c.h) / 2, flat = c => c.notch !== undefined ? 1 : 0;
     return { w: swap ? from.w * grow : m(a.w, b.w), h: m(a.h, b.h), y: m(a.y, b.y), x: swap ? from.x ?? .5 : m(a.x ?? .5, b.x ?? .5),
-      rad: m(rad(a), rad(b)), flat: m(flat(a), flat(b)), edge: from.edge };
+      rad: m(camRad(a), camRad(b)), flat: m(camFlat(a), camFlat(b)), edge: from.edge };
   };
   function lookAt(now) {
     const A = look.a, B = look.b;
@@ -1006,21 +1007,21 @@ export function createResizeScene(root, hooks) {
   }
   const sizeSel = (w, h) => PRESETS.find(x => x.w === w && x.h === h)?.sel || `custom:${w}x${h}`;
   // 숫자를 고치기 시작하면 지금 크기 그대로 커스텀이 된다 — 기기를 고른 동안에도(D-99)
-  function toCustom() {
+  function toCustom(typing = false) {
     if (editing) return;   // 누름(pointerdown)과 초점(focus)이 함께 와도 한 번만 보낸다
     if (cur.kind !== "custom") {
       const w = clamp(Math.round(cur.w), DP_MIN, DP_MAX), h = clamp(Math.round(cur.h), DP_MIN, DP_MAX);
       request(`custom:${w}x${h}`);
-      // 초점을 받은 칸은 틀이 갱신하지 않는다 — 한계를 넘는 기기(1691dp)는 잘린 값을 바로 보인다
-      for (const [axis, el, v] of [["w", RL.w, w], ["h", RL.h, h]]) { el.value = v; RL.shown[axis] = String(v); }
+      // 초점을 받은 칸은 틀이 갱신하지 않는다 — 한계를 넘는 기기(1691dp)는 잘린 값을 바로 보인다(치는 중에는 덮지 않는다)
+      if (!typing) for (const [axis, el, v] of [["w", RL.w, w], ["h", RL.h, h]]) { el.value = v; RL.shown[axis] = String(v); }
     }
     editing = true; paintPick();
   }
   for (const [axis, el] of [["w", RL.w], ["h", RL.h]]) {
     // 프리셋 · @Preview 는 초점만으로 커스텀이 된다. 기기는 누르거나 고칠 때만 — Tab 으로 지나가며 기기 몸체 · 자세를 잃지 않게
     el.addEventListener("focus", () => { el.select(); if (cur.kind !== "device") toCustom(); });
-    el.addEventListener("pointerdown", toCustom);
-    el.addEventListener("input", toCustom);
+    el.addEventListener("pointerdown", () => toCustom());
+    el.addEventListener("input", () => toCustom(true));
     el.addEventListener("keydown", e => {
       if (e.key === "Enter") { e.preventDefault(); el.blur(); }
       else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); el.dataset.cancel = "1"; el.blur(); }
