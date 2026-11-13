@@ -5,7 +5,7 @@ export type DeviceEntry = {
   name: string; short: string; fold: boolean;
   open: DevicePanel; cover?: DevicePanel;
   look: { open: DeviceBody; cover?: DeviceBody };
-  plate?: { thickness: number; gap: number; axis: 'width' };
+  plate?: { thickness: number; gap: number; axis: 'width'; blur?: true };
   status?: { top: number; right: number; left?: number; s: number; time: { cx: number; base: number; size: number } };
 };
 export const DEVICES: Record<string, DeviceEntry>;

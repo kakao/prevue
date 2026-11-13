@@ -687,7 +687,8 @@ export const DEVICES = {
     "plate": {
       "thickness": 28,
       "gap": 2,
-      "axis": "width"
+      "axis": "width",
+      "blur": true
     }
   },
   "fold8": {

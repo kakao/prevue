@@ -55,7 +55,7 @@ export function createResizeScene(root, hooks) {
     swapDur: 320, swapBlur: 8, swapNear: .15, spinSwapA: .35, spinSwapB: .65,
     holdBlur: 24, holdRise: 150, revealFade: 240, revealDur: 280, swapZoom: .03, moveBlur: 6, settleSharp: 220,
     reducedFade: 240, reducedDim: .62, gap: 7, crease: .35,
-    hingeLine: true, shrinkFrom: 90, ambient: .35, screenDim: .6, lightAz: 125, lightEl: 55, arcSegs: 4 };
+    hingeLine: true, foldBlur: 24, foldDark: .85, shrinkFrom: 90, ambient: .35, screenDim: .6, lightAz: 125, lightEl: 55, arcSegs: 4 };
   // 커스텀 크기의 범위와 키 한 번의 걸음 — 치수선 입력과 슬라이더가 같이 쓴다
   const DP_MIN = 240, DP_MAX = 1600, stepOf = e => e.shiftKey ? 10 : 1;
   const ORIGINAL = { sel: "original", kind: "original", name: "@Preview", w: 411, h: 891, img: null };
@@ -374,6 +374,11 @@ export function createResizeScene(root, hooks) {
   RG.base = panelOf(q(rigEl, ".slab.base")); RG.leaf = panelOf(q(rigEl, ".slab.leaf"));
   RG.btns = Array.from({ length: 5 }, () => { const el = document.createElement("div"); el.className = "btn"; RG.space.append(el); return el; });
   RG.F = { inner: faceOf(RG.leaf.front.clip), outer: faceOf(RG.leaf.back.clip), base: faceOf(RG.base.front.clip) };
+  // 겹 흐림(plate.blur) — 접히는 판의 화면에 힌지에서 먼 쪽일수록 더 흐린 그림 네 겹과 그늘을 덮는다. 면 안은 평평한 층이라 filter · mask 를 둬도 장면이 눌리지 않는다.
+  for (const f of [RG.F.inner, RG.F.outer]) {
+    f.blurs = Array.from({ length: 4 }, () => { const el = document.createElement("div"); el.className = "smear"; el.innerHTML = '<img class="ly" alt="">'; f.el.insertBefore(el, f.cam); return { el, img: q(el, "img") }; });
+    f.dark = document.createElement("div"); f.dark.className = "smear"; f.el.insertBefore(f.dark, f.cam);
+  }
 
   function startFold(from, to, now, cached) {
     const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", H = d.open.hinge;
@@ -586,6 +591,22 @@ export function createResizeScene(root, hooks) {
     });
   }
 
+  // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고 힌지에서 먼 쪽(dir)으로 갈수록 세다.
+  function smear(f, lift, dir) {
+    const on = rig.d.plate.blur && lift > .01, top = Number(f.neu.style.opacity) > .5 ? f.neu : f.old;
+    f.blurs.forEach(({ el, img }, i) => {
+      const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35), base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
+      el.style.opacity = on && blur > .2 ? 1 : 0;
+      if (!on || blur <= .2) return;
+      if (img.src !== top.src) img.src = top.src;
+      Object.assign(img.style, { left: top.style.left, top: top.style.top, width: top.style.width, height: top.style.height, transform: top.style.transform,
+        filter: `blur(${Math.max(blur, base).toFixed(2)}px)` });
+      el.style.webkitMaskImage = el.style.maskImage = `linear-gradient(${dir}, transparent ${((i + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((i + 1) / 4 * 100).toFixed(1)}%)`;
+    });
+    f.dark.style.opacity = on ? 1 : 0;
+    if (on) f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * lift * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
+  }
+
   function drawRig(now) {
     const { th, s, hx: hu, top: T0, angle } = rigAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), d = rig.d;
@@ -615,6 +636,8 @@ export function createResizeScene(root, hooks) {
     paintFace(RG.F.base, rig.plan.base, s, now);
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
+    smear(RG.F.inner, th <= 90 ? sn : 0, "to left");
+    smear(RG.F.outer, th > 90 ? sn : 0, "to right");
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);

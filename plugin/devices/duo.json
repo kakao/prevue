@@ -145,7 +145,7 @@
     "short": "Duo",
     "tone": "#4a4744",
     "thickness": 28,
-    "hinge": { "axis": "width", "gap": 2 },
+    "hinge": { "axis": "width", "gap": 2, "blur": true },
     "cover": {"bezel": 6, "cam": {"w": 37, "h": 37, "y": 29.33, "x": 0.8974}, "btn": [[1, 200, 80], [1, 470, 46]]},
     "open": {"bezel": 6, "cam": {"w": 0, "h": 0, "y": 11}, "btn": [[1, 200, 80], [1, 470, 46]]}
   }

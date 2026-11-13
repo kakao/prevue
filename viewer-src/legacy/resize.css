@@ -56,6 +56,7 @@ body.resizing-ui main { padding-bottom: 0; }
              box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline); }
 .resize-scene .rig .clip { position: absolute; overflow: hidden; }
 .resize-scene .rig :is(.lit, .cast) { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+.resize-scene .rig .smear { position: absolute; inset: 0; pointer-events: none; }
 .resize-scene .rig .edge { position: absolute; pointer-events: none; border-style: solid; }
 .resize-scene .rig .ring { border-color: var(--live); }
 .resize-scene .rig .crease { transform: translateZ(.5px); }

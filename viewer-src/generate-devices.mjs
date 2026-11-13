@@ -64,13 +64,14 @@ function status(raw, where) {
 }
 
 // 접기 장면의 판 — 펼친 판 하나의 두께와 다 접혔을 때 두 화면 사이 틈(dp, 실물 mm 에서 옮긴 어림값).
-// 힌지가 높이를 가르는 조개형은 아직 그리지 않아 width 만 받는다.
+// 힌지가 높이를 가르는 조개형은 아직 그리지 않아 width 만 받는다. blur 는 접히는 판의 화면에 겹 흐림을 준다(iPhone Duo 의 접기 모양).
 function plate(look, where) {
-  const hinge = keys(look.hinge, ['axis', 'gap'], `${where}.hinge`);
+  const hinge = keys(look.hinge, ['axis', 'gap', 'blur'], `${where}.hinge`, ['axis', 'gap']);
+  if (hinge.blur !== undefined && hinge.blur !== true) throw Error(`${where}.hinge.blur: true 만 받는다`);
   if (hinge.axis !== 'width') throw Error(`${where}.hinge.axis: width 만 받는다(height 는 아직 그리지 않는다)`);
   const thickness = number(look.thickness, `${where}.thickness`), gap = number(hinge.gap, `${where}.hinge.gap`);
   if (thickness <= 0 || gap < 0) throw Error(`${where}: thickness 는 0보다 크고 hinge.gap 은 0 이상이다`);
-  return { thickness, gap, axis: hinge.axis };
+  return { thickness, gap, axis: hinge.axis, ...hinge.blur ? { blur: true } : {} };
 }
 
 export function deviceTable(specList) {
