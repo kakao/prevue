@@ -49,54 +49,6 @@ export const DEVICES = {
       }
     }
   },
-  "s26ultra": {
-    "name": "Galaxy S26 Ultra",
-    "short": "S26 Ultra",
-    "fold": false,
-    "open": {
-      "w": 384,
-      "h": 832
-    },
-    "look": {
-      "open": {
-        "tone": "#34363a",
-        "bezel": 5,
-        "radius": 28.09,
-        "cam": {
-          "w": 9,
-          "h": 9,
-          "y": 13.99
-        },
-        "btn": [
-          {
-            "side": 1,
-            "at": 185,
-            "len": 100
-          },
-          {
-            "side": 1,
-            "at": 318,
-            "len": 52
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          }
-        ]
-      }
-    }
-  },
   "pixel9": {
     "name": "Pixel 9",
     "short": "Pixel 9",
@@ -139,54 +91,6 @@ export const DEVICES = {
           {
             "side": 1,
             "at": 365,
-            "len": 0
-          }
-        ]
-      }
-    }
-  },
-  "pixel10xl": {
-    "name": "Pixel 10 Pro XL",
-    "short": "Pixel 10 Pro XL",
-    "fold": false,
-    "open": {
-      "w": 443.08,
-      "h": 986.26
-    },
-    "look": {
-      "open": {
-        "tone": "#2d2f33",
-        "bezel": 6,
-        "radius": 50.46,
-        "cam": {
-          "w": 31.64,
-          "h": 31.64,
-          "y": 17.14
-        },
-        "btn": [
-          {
-            "side": 1,
-            "at": 205,
-            "len": 52
-          },
-          {
-            "side": 1,
-            "at": 290,
-            "len": 100
-          },
-          {
-            "side": 1,
-            "at": 390,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 390,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 390,
             "len": 0
           }
         ]
@@ -842,9 +746,7 @@ export const DEVICE_MENU = [
     "group": "Android",
     "ids": [
       "s26",
-      "s26ultra",
       "pixel9",
-      "pixel10xl",
       "fold8",
       "ultra",
       "pixelfold",

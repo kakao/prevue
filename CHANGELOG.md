@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **Three more devices in the device menu** — Galaxy S26 Ultra (`--device s26ultra`), Pixel 10 Pro XL (`pixel10xl`) and iPhone 18 Pro (`ip18pro`), each with its measured insets, cutout and screen corners in portrait and both landscape directions. Android values come from [windowinsets.info](https://windowinsets.info/) (Pixel 10 Pro XL from a real device on Firebase Test Lab, at its default 1080 × 2404 resolution), iPhone values from [safearea.info](https://safearea.info/).
+- **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
 - Device menu names are tidied: the iPhone group drops the repeated "iPhone" (17 · Air · 17 Pro Max · 18 Pro · Duo) and "9 Pro Fold" is now "Pixel 9 Pro Fold". The `--device` names are unchanged.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
 
