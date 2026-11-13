@@ -253,18 +253,19 @@ function tick(now) {
   if (stats.last) { const dt = now - stats.last; stats.n++; stats.sum += dt; stats.worst = Math.max(stats.worst, dt); if (dt > 17.5) stats.over++; }
   stats.last = now;
   const p = clamp((now - A.t0) / (A.dur * 1000), 0, 1), e = ease(p);
-  S.th = (A.fold ? e : 1 - e) * 180;
+  S.th = lerp(A.from, A.fold ? 180 : 0, e);
   draw();
   if (p < 1) raf = requestAnimationFrame(tick); else { S.anim = null; hud(); window.__stats = { ...stats }; }
 }
 let raf = 0;
-function fold(to = S.th < 90) {
+// 접는 도중 다시 부르면 지금 각도에서 반대쪽으로 간다 — 처음부터 다시 재면 각도가 튄다
+function fold(to = S.anim ? !S.anim.fold : S.th < 90) {
   cancelAnimationFrame(raf);
   Object.assign(stats, { n: 0, sum: 0, worst: 0, over: 0, last: 0 });
-  S.anim = { fold: to, t0: performance.now(), dur: OVERLAY[S.dev].dur / S.speed };
+  S.anim = { fold: to, from: S.th, t0: performance.now(), dur: OVERLAY[S.dev].dur / S.speed };
   raf = requestAnimationFrame(tick);
 }
-function replay() { const to = S.th >= 90; S.th = to ? 0 : 180; fold(to); }
+function replay() { const to = S.anim ? S.anim.fold : S.th >= 90; S.anim = null; S.th = to ? 0 : 180; fold(to); }
 
 function pickDev(id) {
   S.dev = id; S.anim = null;

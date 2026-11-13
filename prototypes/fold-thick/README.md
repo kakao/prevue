@@ -12,12 +12,15 @@ python3 -m http.server 8794 --bind 127.0.0.1
 
 http://127.0.0.1:8794/prototypes/fold-thick/ 을 엽니다.
 
-비교 기준은 이 체크아웃의 실제 뷰어입니다(`prototypes/resize`는 옛 갈래라 지금 장면과 다릅니다). 옆 창에 띄워 카드를 인터랙티브로 열고 같은 기기를 접어 봅니다.
+비교 기준은 이 체크아웃의 실제 뷰어입니다(`prototypes/resize`는 옛 갈래라 지금 장면과 다릅니다). 옆 창에 띄워 같은 기기를 접어 봅니다.
 
 ```sh
 (cd plugin/daemon && ./gradlew --offline installPrevue)
-plugin/bin/prevue show fixtures/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/PillNavBar.kt
+plugin/bin/prevue warmup fixtures/pearl/core/ui/src/main/kotlin/com/example/pearl/core/ui/PillNavBar.kt --resources-from :app --show
+plugin/bin/prevue focus 0 --on --device fold8    # 또는 duo
 ```
+
+`warmup`은 픽스처의 빌드 설정을 처음 한 번 읽고(Gradle) 뷰어를 엽니다. `focus`가 카드를 인터랙티브로 바꾸고 기기를 고르면, 틀 오른쪽의 접기 단추로 접습니다. 끝나면 `plugin/bin/prevue stop --mine`.
 
 ## 써 보기
 
