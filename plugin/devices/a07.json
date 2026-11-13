@@ -1,0 +1,206 @@
+{
+  "id": "a07",
+  "label": "Galaxy A07 5G",
+  "order": 15,
+  "measured": {
+    "dpi": 300,
+    "screens": {
+      "open": {
+        "widthPx": 720,
+        "heightPx": 1600,
+        "postures": {
+          "portrait": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-a/galaxy-a07/recapture-2026-09-30-rotation/main-gesture.json",
+            "capturedAt": "2026-09-30T04:44:16.509352Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP2A.250605.031.A3.A076MXXS4AZD2",
+              "densityDpi": "300",
+              "resolutionPx": "720x1600",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.0"
+            },
+            "safeArea": {
+              "top": 34.13,
+              "bottom": 14.93
+            },
+            "cornerRadius": {
+              "px": 68,
+              "dp": 36.27
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 34.13
+                },
+                "px": {
+                  "top": 64
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 14.93
+                },
+                "px": {
+                  "bottom": 28
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "top": 34.13
+                },
+                "px": {
+                  "top": 64
+                }
+              }
+            }
+          },
+          "landscape-left": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-a/galaxy-a07/recapture-2026-09-30-rotation/main-landscape-1-gesture.json",
+            "capturedAt": "2026-09-30T04:44:26.044294Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP2A.250605.031.A3.A076MXXS4AZD2",
+              "densityDpi": "300",
+              "resolutionPx": "1600x720",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.0"
+            },
+            "safeArea": {
+              "left": 34.13,
+              "top": 29.87,
+              "bottom": 14.93
+            },
+            "cornerRadius": {
+              "px": 68,
+              "dp": 36.27
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 29.87
+                },
+                "px": {
+                  "top": 56
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 14.93
+                },
+                "px": {
+                  "bottom": 28
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "left": 34.13
+                },
+                "px": {
+                  "left": 64
+                }
+              }
+            }
+          },
+          "landscape-right": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-a/galaxy-a07/recapture-2026-09-30-rotation/main-landscape-3-gesture.json",
+            "capturedAt": "2026-09-30T04:44:34.952102Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP2A.250605.031.A3.A076MXXS4AZD2",
+              "densityDpi": "300",
+              "resolutionPx": "1600x720",
+              "rotation": "3",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.0"
+            },
+            "safeArea": {
+              "top": 29.87,
+              "right": 34.13,
+              "bottom": 14.93
+            },
+            "cornerRadius": {
+              "px": 68,
+              "dp": 36.27
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 29.87
+                },
+                "px": {
+                  "top": 56
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 14.93
+                },
+                "px": {
+                  "bottom": 28
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "right": 34.13
+                },
+                "px": {
+                  "right": 64
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "oneui",
+    "short": "A07 5G",
+    "tone": "#2a2d33",
+    "open": {
+      "bezel": 7,
+      "cam": {
+        "w": 42.67,
+        "h": 34.13,
+        "y": 0,
+        "notch": 17
+      },
+      "btn": [
+        [
+          1,
+          175,
+          95
+        ],
+        [
+          1,
+          300,
+          50
+        ]
+      ]
+    }
+  }
+}

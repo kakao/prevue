@@ -1,0 +1,207 @@
+{
+  "id": "s11ultra",
+  "label": "Galaxy Tab S11 Ultra",
+  "order": 110,
+  "measured": {
+    "dpi": 280,
+    "screens": {
+      "open": {
+        "widthPx": 1848,
+        "heightPx": 2960,
+        "postures": {
+          "portrait": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-tab/galaxy-tab-s11-ultra/recapture-2026-09-29-rotation/main-gesture.json",
+            "capturedAt": "2026-09-29T03:58:57.570093Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP4A.251205.006.X930XXS7BZG3",
+              "densityDpi": "280",
+              "resolutionPx": "1848x2960",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.5"
+            },
+            "safeArea": {
+              "top": 30.29,
+              "right": 16,
+              "bottom": 14.86
+            },
+            "cornerRadius": {
+              "px": 44,
+              "dp": 25.14
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 30.29
+                },
+                "px": {
+                  "top": 53
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 14.86
+                },
+                "px": {
+                  "bottom": 26
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "right": 16
+                },
+                "px": {
+                  "right": 28
+                }
+              }
+            }
+          },
+          "landscape-left": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-tab/galaxy-tab-s11-ultra/recapture-2026-09-29-rotation/landscape-1-gesture.json",
+            "capturedAt": "2026-09-29T03:59:19.722739Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP4A.251205.006.X930XXS7BZG3",
+              "densityDpi": "280",
+              "resolutionPx": "2960x1848",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.5"
+            },
+            "safeArea": {
+              "top": 34.29,
+              "bottom": 14.86
+            },
+            "cornerRadius": {
+              "px": 44,
+              "dp": 25.14
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 34.29
+                },
+                "px": {
+                  "top": 60
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 14.86
+                },
+                "px": {
+                  "bottom": 26
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "top": 16
+                },
+                "px": {
+                  "top": 28
+                }
+              }
+            }
+          },
+          "landscape-right": {
+            "source": "samsung-rtl",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/galaxy-tab/galaxy-tab-s11-ultra/recapture-2026-09-29-rotation/landscape-3-gesture.json",
+            "capturedAt": "2026-09-29T03:59:55.330067Z",
+            "conditions": {
+              "android": "16",
+              "buildId": "BP4A.251205.006.X930XXS7BZG3",
+              "densityDpi": "280",
+              "resolutionPx": "2960x1848",
+              "rotation": "3",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1",
+              "oneUi": "8.5"
+            },
+            "safeArea": {
+              "top": 34.29,
+              "bottom": 30.86
+            },
+            "cornerRadius": {
+              "px": 44,
+              "dp": 25.14
+            },
+            "insets": {
+              "statusBars": {
+                "dp": {
+                  "top": 34.29
+                },
+                "px": {
+                  "top": 60
+                }
+              },
+              "navigationBars": {
+                "dp": {
+                  "bottom": 30.86
+                },
+                "px": {
+                  "bottom": 54
+                }
+              },
+              "captionBar": {
+                "dp": {},
+                "px": {}
+              },
+              "displayCutout": {
+                "dp": {
+                  "bottom": 16
+                },
+                "px": {
+                  "bottom": 28
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "oneui",
+    "short": "Tab S11 Ultra",
+    "tone": "#2b2d31",
+    "open": {
+      "bezel": 10,
+      "cam": {
+        "w": 57.14,
+        "h": 16,
+        "y": 0,
+        "x": 0.5,
+        "edge": "right",
+        "notch": 4
+      },
+      "btn": [
+        [
+          1,
+          200,
+          70
+        ],
+        [
+          1,
+          300,
+          130
+        ]
+      ]
+    }
+  }
+}

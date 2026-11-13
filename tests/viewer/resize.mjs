@@ -292,6 +292,11 @@ try {
   await pick("pixelfold", "device==='pixelfold'");
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Pixel 9 Pro Fold 의 독 폭이 ${DOCK_MAX}px 이하(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
+  // 커스텀 한계 1600dp 를 넘는 기기 — Tab S11 Ultra 는 1691dp 라 숫자를 눌러 커스텀으로 넘어갈 때 1600 으로 잘린다
+  await pick("s11ultra", "device==='s11ultra'");
+  await check(`document.querySelector('#rlW').value==='1056' && document.querySelector('#rlH').value==='1691'`, "Tab S11 Ultra 는 1056×1691dp 로 그려진다");
+  await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===1056 && __store.st.focus.size?.heightDp===1600 && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(400);
+  await check(`document.querySelector('#rlH').value==='1600' && document.querySelector('#pnPick [data-sel="custom"] .d').textContent==='1056×1600'`, `기기에서 커스텀으로 넘어가면 1691dp 가 한계 1600 으로 잘린다(${await evaluate(`document.querySelector('#rlH').value+' '+document.querySelector('#pnPick [data-sel="custom"] .d').textContent`)})`);
   await pick("duo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
