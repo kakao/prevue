@@ -161,6 +161,13 @@ class PreviewLocatorTest {
         assertEquals("demo.data.Outer\$Mid\$Inner", name("demo.data.Outer.Mid.Inner"))
         assertEquals("demo.data.Other", name("Other"))
         assertEquals("demo.ui.Plain", name("Plain"))
+        assertEquals("demo.ui.lower", name("lower"))
+        assertEquals("demo.data.Other", name("Other"))
+        fun at(pkg: String, p: String, imp: Map<String, String> = emptyMap()) =
+            PreviewLocator.methodParams("@PreviewParameter($p::class) x: X", imp, pkg).single()["provider"]
+        assertEquals("com.Foo.ui.Plain", at("com.Foo.ui", "Plain"))
+        assertEquals("Plain\$Inner", at("", "Plain.Inner"))
+        assertEquals("demo.Fruits", at("demo.ui", "fruits", mapOf("fruits" to "demo.Fruits")))
     }
 
     @Test fun `파일 이름이 파사드가 되고 패키지가 없으면 앞에 붙이지 않는다`() {
