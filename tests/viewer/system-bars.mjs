@@ -235,9 +235,7 @@ try {
       const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
       if (cam) for (const b of [time, icons]) assert(apart(b, cam), `${name} 상태 줄이 카메라와 겹치지 않는다: ${JSON.stringify(bars)}`);
       assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
-      // 알려진 간극: Pixel 10 Pro XL 가로는 상태바 24.21dp 가 모서리 반경 50.46dp 보다 얇아 컷아웃 반대쪽 상자(left 는 아이콘, right 는 시각)가 모서리에 걸린다 — Sub-Task "반경이 큰 기기의 상태 줄 모서리 여백"이 풀 때 이 예외를 지운다.
-      const clipped = device === 'pixel10xl' ? { 'landscape-left': 'icons', 'landscape-right': 'time' }[orientation] : null;
-      assertRound(name, corner, Object.fromEntries(Object.entries({ time, icons, handle }).filter(([k]) => k !== clipped)));
+      assertRound(name, corner, { time, icons, handle });
     }
     if (device==='duo') {
       assertRound(name, corner, { status: await boxOf('#sysBars .sb-duo-status') });

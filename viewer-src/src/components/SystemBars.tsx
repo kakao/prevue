@@ -9,7 +9,7 @@ import { systemBarsHost } from './WorkspaceShell';
 // 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, 기기의 바(iOS · Android)는 이 층이, 기기 없는 크기의 Preview 기본 바는 렌더러가 그린다.
 // cut 은 전달 인셋의 옆 컷아웃(좌 · 우)이다 — Android 상태 줄이 그만큼 안으로 들어간다.
 // topCam 은 위 띠에서 시작하는 장면 카메라(resize-scene.js cameraOf)의 좌우 끝과 세로 가운데다 — 옆 · 아래 가장자리 카메라는 null 이다.
-export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; topCam: TopCam | null };
+export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; radius: number; topCam: TopCam | null };
 export type TopCam = { x0: number; x1: number; cy: number };
 type Ink = 'dark' | 'light';
 type Region = [number, number, number, number];
@@ -22,7 +22,7 @@ export function barsOf(systemUi: SystemUi | null, size: Size | null, deviceInset
   const area = size.insetProfile?.safeArea, duo = size.device === 'duo';
   const side = duo && area ? (area.left > 0 ? 'left' : area.right > 0 ? 'right' : null) : null;
   return { device: size.device, ios: b.look === 'ios', w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
-    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], topCam };
+    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], radius: DEVICES[size.device]?.look?.[size.folded ? 'cover' : 'open']?.radius ?? 0, topCam };
 }
 
 const SAMPLE_W = 24, SAMPLE_H = 4, LIGHT_ABOVE = 0.6, RESAMPLE_MS = 1000;
@@ -140,12 +140,18 @@ const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
 // 제스처 핸들 108×4 — 측정 자료가 모두 제스처 내비게이션이라 버튼 바는 없다. 내비 띠 가운데(24dp 보다 두꺼우면 아래 24dp 의 가운데)에 둔다.
 const A_HANDLE = { w: 108, h: 4, band: 24 };
 
+// 둥근 화면 모서리(반경 r)가 윗변 높이 top 의 상자 꼭짓점을 자르지 않는 가장자리 쪽 최소 여백 — 원 방정식으로 푼다. 윗변이 r 보다 아래면 0.
+const TEXT_BOX = 1.3;
+const cornerInset = (r: number, top: number) => r > 0 && top < r ? r - Math.sqrt(r * r - (r - Math.max(0, top)) ** 2) : 0;
+
 function androidRow(bars: Bars) {
   const k = 1 + ROW_GROW * Math.min(1, Math.max(0, (bars.statusDp - ROW_BASE) / (ROW_TOP - ROW_BASE))), cam = bars.topCam;
   const camLeft = cam && cam.x1 < bars.w / 2, camRight = cam && cam.x0 > bars.w / 2;
-  const left = Math.max(EDGE + bars.cut[0], camLeft ? cam.x1 + CAM_GAP : 0);
-  const right = Math.min(bars.w - EDGE - bars.cut[1], camRight ? cam.x0 - CAM_GAP : Infinity);
-  return { k, y: cam ? cam.cy : bars.statusDp / 2, left, right };
+  const y = cam ? cam.cy : bars.statusDp / 2;
+  const round = cornerInset(bars.radius, y - Math.max(A_TIME * k * TEXT_BOX, A_ICONS_H * k) / 2);
+  const left = Math.max(EDGE + bars.cut[0], round, camLeft ? cam.x1 + CAM_GAP : 0);
+  const right = Math.min(bars.w - EDGE - bars.cut[1], bars.w - round, camRight ? cam.x0 - CAM_GAP : Infinity);
+  return { k, y, left, right };
 }
 
 function AndroidStatus({ bars }: { bars: Bars }) {

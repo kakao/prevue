@@ -17,6 +17,7 @@ Only changes users can see go here.
 - Device menu names in the iPhone group drop the repeated "iPhone" (17 · Air · 17 Pro Max · 18 Pro · Duo), with the `--device` names unchanged.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
 - **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
+- **Android status bar keeps clear of large rounded screen corners** — on devices whose corner radius is bigger than the status bar is tall (such as Pixel 10 Pro XL in landscape), the time and icons move in from the edge instead of being cut by the corner.
 
 ## [0.22.1] — 2026-11-13
 
