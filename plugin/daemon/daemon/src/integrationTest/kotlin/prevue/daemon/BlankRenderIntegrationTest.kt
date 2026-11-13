@@ -135,6 +135,20 @@ class BlankRenderIntegrationTest {
         assertEquals(before + 1, compiler.recompiled)
     }
 
+    // 렌더 중 NoSuchMethodError는 어느 로더로 그려도 EXCEPTION이다 — 공유 로더가 삼켜 빈 성공(EMPTY_TREE 경고)으로 내던 차이가 다시 생기면 잡는다
+    @Test @Order(5) fun `렌더 중 NoSuchMethodError는 공유 로더에서도 새 로더에서도 EXCEPTION이다`() {
+        stub.writeText(THROWING)
+        val w = runBlocking { uc.status.awaitRender(listOf(stub), 60_000) }
+        runBlocking { engine.awaitWrites() }
+        val spec = ws.now.board!!.focusCard.spec.copy(fqn = "com.example.pearl.feature.pearl.BlankStubKt.BlankStubPreview", previewId = "BlankStubPreview", file = stub)
+        val shared = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
+        val own = runBlocking { engine.written(engine.show(spec, ownLoader = true)) }
+        val seen = { o: prevue.application.port.RenderOutput -> "ok=${o.ok} failure=${o.failure} warnings=${o.warnings} message=${o.message?.text}" }
+        assertEquals(FailureKind.EXCEPTION, own.failure, "새 로더 · ${seen(own)} · wait=$w")
+        assertEquals(FailureKind.EXCEPTION, shared.failure, "공유 로더 · ${seen(shared)} · wait=$w")
+        assertTrue("NoSuchMethodError" in shared.message!!.text, seen(shared))
+    }
+
     companion object {
         @JvmStatic fun available() = PearlFixture.available()
 
@@ -165,5 +179,7 @@ class BlankRenderIntegrationTest {
                 BlankStub()
             }
         """.trimIndent()
+
+        private val THROWING = FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
     }
 }
