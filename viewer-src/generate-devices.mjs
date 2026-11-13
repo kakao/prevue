@@ -16,8 +16,28 @@ const number = (value, where) => { if (typeof value !== 'number' || !Number.isFi
 const dp = (px, dpi) => Math.round(number(px, 'px') / dpi * 160 * 100) / 100;
 const BARS = ['aosp', 'oneui', 'pixel', 'ios'];
 
-function body(raw, where) {
-  keys(raw, ['bezel', 'radius', 'cam', 'btn'], where);
+// 화면 모서리는 사이트의 측정값(자세마다 cornerRadius)이 있으면 그것이고, 없을 때만 look.radius(그림 값)다 — 둘 다 있으면 어느 쪽이 맞는지 알 수 없어 실패한다.
+function measuredRadius(screen, dpi, ios, where) {
+  const found = new Set(), postures = Object.entries(screen.postures);
+  for (const [name, posture] of postures) {
+    const c = posture.cornerRadius;
+    if (c === undefined) continue;
+    const at = `${where}.postures.${name}.cornerRadius`;
+    if (ios) { found.add(number(keys(c, ['pt'], at).pt, at)); continue; }
+    keys(c, ['px', 'dp'], at);
+    if (Math.abs(dp(c.px, dpi) - number(c.dp, at)) > .01) throw Error(`${at}: px ÷ 밀도가 dp 와 다르다`);
+    found.add(c.dp);
+  }
+  const have = postures.filter(([, posture]) => posture.cornerRadius !== undefined).length;
+  if (have && have !== postures.length) throw Error(`${where}: 모서리 반경이 일부 자세에만 있다`);
+  if (found.size > 1) throw Error(`${where}: 자세마다 모서리 반경이 다르다 ${[...found]}`);
+  return found.size ? [...found][0] : undefined;
+}
+
+function body(raw, where, measured) {
+  keys(raw, ['bezel', 'radius', 'cam', 'btn'], where, ['bezel', 'cam', 'btn']);
+  if (measured !== undefined && 'radius' in raw) throw Error(`${where}: radius 가 measured 에도 look 에도 있다`);
+  if (measured === undefined && !('radius' in raw)) throw Error(`${where}: radius 가 없다`);
   const cam = keys(raw.cam, ['w', 'h', 'y', 'x'], `${where}.cam`, ['w', 'h', 'y']);
   for (const [name, value] of Object.entries(cam)) number(value, `${where}.cam.${name}`);
   if (!Array.isArray(raw.btn) || raw.btn.length > 5) throw Error(`${where}.btn: 5개 이하의 목록이 아니다`);
@@ -28,7 +48,7 @@ function body(raw, where) {
     return { side, at, len };
   });
   while (btn.length < 5) { const last = btn[btn.length - 1]; btn.push({ side: last.side, at: last.at + last.len, len: 0 }); }
-  return { bezel: number(raw.bezel, `${where}.bezel`), radius: number(raw.radius, `${where}.radius`), cam, btn };
+  return { bezel: number(raw.bezel, `${where}.bezel`), radius: measured ?? number(raw.radius, `${where}.radius`), cam, btn };
 }
 
 function status(raw, where) {
@@ -55,7 +75,7 @@ export function deviceTable(specList) {
     };
     const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
-    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`) }]));
+    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], m.dpi, look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
     return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };
   }).sort((a, b) => a.order - b.order);

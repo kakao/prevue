@@ -25,6 +25,7 @@
               "oneUi": "8.5"
             },
             "safeArea": {"top": 37, "bottom": 15},
+            "cornerRadius": {"px": 84, "dp": 28},
             "insets": {
               "statusBars": {"dp": {"top": 37}, "px": {"top": 111}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -48,6 +49,7 @@
               "oneUi": "8.5"
             },
             "safeArea": {"left": 37, "top": 30, "bottom": 15},
+            "cornerRadius": {"px": 84, "dp": 28},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -71,6 +73,7 @@
               "oneUi": "8.5"
             },
             "safeArea": {"top": 30, "right": 37, "bottom": 15},
+            "cornerRadius": {"px": 84, "dp": 28},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -86,6 +89,6 @@
     "bar": "oneui",
     "short": "S26",
     "tone": "#23262c",
-    "open": {"bezel": 5, "radius": 28, "cam": {"w": 9, "h": 9, "y": 14}, "btn": [[1, 175, 95], [1, 300, 50]]}
+    "open": {"bezel": 5, "cam": {"w": 9, "h": 9, "y": 14}, "btn": [[1, 175, 95], [1, 300, 50]]}
   }
 }

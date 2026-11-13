@@ -26,6 +26,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 37.67, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 37.67}, "px": {"top": 113}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -49,6 +50,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 30, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -72,6 +74,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 30, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -101,6 +104,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 37.67, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 37.67}, "px": {"top": 113}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -124,6 +128,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"left": 36, "top": 30, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -147,6 +152,7 @@
               "oneUi": "9.0"
             },
             "safeArea": {"top": 30, "right": 36, "bottom": 15},
+            "cornerRadius": {"px": 15, "dp": 5},
             "insets": {
               "statusBars": {"dp": {"top": 30}, "px": {"top": 90}},
               "navigationBars": {"dp": {"bottom": 15}, "px": {"bottom": 45}},
@@ -162,7 +168,7 @@
     "bar": "oneui",
     "short": "Fold8 Ultra",
     "tone": "#1f2125",
-    "cover": {"bezel": 5, "radius": 5, "cam": {"w": 8, "h": 8, "y": 14}, "btn": [[1, 190, 85], [1, 300, 55]]},
-    "open": {"bezel": 5, "radius": 5, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 190, 85], [1, 300, 55]]}
+    "cover": {"bezel": 5, "cam": {"w": 8, "h": 8, "y": 14}, "btn": [[1, 190, 85], [1, 300, 55]]},
+    "open": {"bezel": 5, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 190, 85], [1, 300, 55]]}
   }
 }

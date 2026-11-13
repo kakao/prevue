@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
+
 ## [0.22.1] — 2026-11-13
 
 The README now leads with what Prevue does for you — five features, with pictures retaken in the 0.22 UI. Android device frames also get each device's measured screen corners.

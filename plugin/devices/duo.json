@@ -27,6 +27,7 @@
               "pose": "fully-open"
             },
             "safeArea": {"top": 82, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 669, "height": 835}
           },
           "landscape-left": {
@@ -46,6 +47,7 @@
               "pose": "fully-open"
             },
             "safeArea": {"right": 84, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 867, "height": 635}
           },
           "landscape-right": {
@@ -65,6 +67,7 @@
               "pose": "fully-open"
             },
             "safeArea": {"right": 84, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 867, "height": 635}
           }
         }
@@ -90,6 +93,7 @@
               "pose": "closed"
             },
             "safeArea": {"right": 84, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 382, "height": 644}
           },
           "landscape-left": {
@@ -109,6 +113,7 @@
               "pose": "closed"
             },
             "safeArea": {"left": 84, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 594, "height": 432}
           },
           "landscape-right": {
@@ -128,6 +133,7 @@
               "pose": "closed"
             },
             "safeArea": {"right": 84, "bottom": 34},
+            "cornerRadius": {"pt": 59},
             "safeAreaSize": {"width": 594, "height": 432}
           }
         }
@@ -138,7 +144,7 @@
     "bar": "ios",
     "short": "iPhone Duo",
     "tone": "#4a4744",
-    "cover": {"bezel": 6, "radius": 44, "cam": {"w": 37, "h": 37, "y": 29.33, "x": 0.8974}, "btn": [[1, 200, 80], [1, 470, 46]]},
-    "open": {"bezel": 6, "radius": 30, "cam": {"w": 0, "h": 0, "y": 11}, "btn": [[1, 200, 80], [1, 470, 46]]}
+    "cover": {"bezel": 6, "cam": {"w": 37, "h": 37, "y": 29.33, "x": 0.8974}, "btn": [[1, 200, 80], [1, 470, 46]]},
+    "open": {"bezel": 6, "cam": {"w": 0, "h": 0, "y": 11}, "btn": [[1, 200, 80], [1, 470, 46]]}
   }
 }
