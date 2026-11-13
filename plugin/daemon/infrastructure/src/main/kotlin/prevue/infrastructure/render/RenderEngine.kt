@@ -191,7 +191,7 @@ internal class RenderEngine(
         val t = System.nanoTime()
         val element = screenshot(p).toPreviewElement(renderer.module)
         val cfg = baseConfiguration.clone()
-        Shim.applyTo(element, cfg)
+        Shim.applyTo(element, cfg, p.params["device"])
         val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null

@@ -27,8 +27,28 @@ final class Shim {
         }
     }
 
+    /**
+     * 렌더러는 spec 의 dpi 를 가까운 밀도 단계(390→420, 450→440)로 맞춰 기기를 만들고 widthDp 도 그 단계로 px 로 바꾼다.
+     * 화면 밀도를 요청한 값으로 되돌리고 px 크기도 같은 비율로 되돌려 dp 크기를 지킨다.
+     */
+    private static void keepDensity(Configuration configuration, String deviceParam) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:^|[:,])dpi=\\s*(\\d+)").matcher(deviceParam == null ? "" : deviceParam);
+        com.android.sdklib.devices.Device device = configuration.getDevice();
+        // 렌더러가 호출마다 새로 만드는 spec 기기만 고친다 — 그 밖의 기기는 렌더 사이에 공유된다
+        if (!m.find() || device == null || !"Custom".equals(device.getId())) return;
+        com.android.sdklib.devices.Screen screen = device.getDefaultHardware().getScreen();
+        int stepped = screen.getPixelDensity().getDpiValue();
+        int dpi = Integer.parseInt(m.group(1));
+        if (stepped == dpi) return;
+        screen.setPixelDensity(com.android.resources.Density.create(dpi));
+        configuration.updated(CFG_DEVICE);
+    }
+
+    private static final int CFG_DEVICE = 2;
+
     @SuppressWarnings({"rawtypes", "unchecked"})
-    static void applyTo(ConfigurablePreviewElement element, Configuration configuration) {
+    static void applyTo(ConfigurablePreviewElement element, Configuration configuration, String deviceParam) {
         PreviewConfigurationKt.applyTo(element, configuration, (Function1) DEFAULT_DEVICE_PROVIDER);
+        keepDensity(configuration, deviceParam);
     }
 }
