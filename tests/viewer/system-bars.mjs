@@ -193,7 +193,7 @@ try {
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
         const c=document.querySelector('#ua .cam');
-        return {k:s,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
+        return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
           time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:c&&Number(c.style.opacity)>0?box('#ua .cam'):null}})()`);
       const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2, raw = RAW_CAM[name];
       if (raw) {
