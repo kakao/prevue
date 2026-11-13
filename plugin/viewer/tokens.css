@@ -172,7 +172,6 @@
   /* 작업 공간의 기기 몸체. 실제 기기 색이라 라이트 · 다크가 같다. */
   --device-body: #1d1d1f;
   --device-camera: #050505;
-  --device-flap: #0b0b0d;
   --device-gloss: rgb(255 255 255 / .18);
   --device-gloss-clear: rgb(255 255 255 / 0);
   --device-gloss-shade: rgb(0 0 0 / .2);
@@ -181,7 +180,6 @@
   --device-hairline: rgb(0 0 0 / .5);
   --device-crease-light: rgb(255 255 255 / .6);
   --device-crease-dark: rgb(0 0 0 / .18);
-  --device-sheen: rgb(255 255 255 / .85);
   --device-veil: #ffffff;
   --device-shade: #000000;
   /* 인셋 영역 보기 — 화면 안에 덧그리는 종류별 띠와 SAFE AREA 면. 앱 그림 위에 서므로 라이트 · 다크가 같고, 가리키기의 파랑 · 상태의 빨강 · 노랑을 피한다.

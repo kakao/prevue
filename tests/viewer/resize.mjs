@@ -50,9 +50,8 @@ try {
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1, modifiers });
   };
   const beginFoldProbe = () => evaluate(`window.__foldFrames=[];window.__foldProbe=true;(()=>{
-    const tick=()=>{if(!__foldProbe)return;const rig=document.querySelector('#rig'),duo=document.querySelector('#duo');
+    const tick=()=>{if(!__foldProbe)return;const rig=document.querySelector('#rig');
       if(!rig.hidden)__foldFrames.push(rig.querySelector('.leaf').style.transform);
-      if(!duo.hidden)__foldFrames.push(duo.querySelector('.duo-flap').style.clipPath);
       requestAnimationFrame(tick)};requestAnimationFrame(tick)})()`);
   const endFoldProbe = async name => {
     await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`);
@@ -264,7 +263,7 @@ try {
   await click("#zoomPct"); await click('#zoomMenu [data-z="fit"]');
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   await pick("narrow", "preset==='narrow'");
-  await check(`document.querySelector('#rig').hidden && document.querySelector('#duo').hidden && document.querySelector('#ua').style.transform===''`, "움직임 줄이기에서 공간 모션 없음");
+  await check(`document.querySelector('#rig').hidden && document.querySelector('#ua').style.transform===''`, "움직임 줄이기에서 공간 모션 없음");
   // 커서는 장면이 멈춘 다음 프레임에 폭 숫자로 온다 — 그 전에 Esc 를 누르면 작업 공간에서 나간다
   await choose("custom"); await until(`__store.st.focus.size?.kind==='custom' && document.querySelector('#resizeScene').classList.contains('at-rest') && document.activeElement?.id==='rlW'`);
   await key("Escape"); await pause(100);

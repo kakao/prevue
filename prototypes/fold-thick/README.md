@@ -1,6 +1,6 @@
 # 접기 장면 두께 판 시제품
 
-접히는 판에 두께를 주면 접기 장면이 종이처럼 보이지 않는지 눈으로 보는 정적 페이지입니다. 제품 뷰어(`plugin/viewer/`)가 아니고 데몬과 이어지지 않습니다. 이 시제품이 저장소에 있다는 것이 제품 장면에 옮긴다는 결정은 아닙니다.
+접히는 판에 두께를 주면 접기 장면이 종이처럼 보이지 않는지 눈으로 보는 정적 페이지입니다. 제품 뷰어(`plugin/viewer/`)가 아니고 데몬과 이어지지 않습니다. 사용자가 2026-11-13에 보고 채택해 제품 접기 장면(`plugin/viewer/js/resize-scene.js`의 `drawRig`)이 이 방식으로 바뀌었습니다 — 두께 · 축 · 틈은 이제 스펙(`plugin/devices`의 `look.thickness` · `look.hinge`)에 있고, 이 페이지의 `OVERLAY`는 시제품을 처음 띄운 때의 값으로 남습니다.
 
 ## 띄우기
 
@@ -51,7 +51,7 @@ plugin/bin/prevue focus 0 --on --device fold8    # 또는 duo
 
 ## 스펙에 더할 후보
 
-사이트에 없는 값이라 `look`에 손으로 적는 필드입니다. 지금은 `index.html`의 `OVERLAY`에만 있습니다 — `plugin/devices`에 모르는 필드를 넣으면 뷰어 생성이 실패합니다.
+사이트에 없는 값이라 `look`에 손으로 적는 필드입니다. 제품 장면을 옮기며 `plugin/devices` 스펙과 생성기에 들어갔습니다(형식은 `plugin/devices/README.md`). `hinge.axis`는 아직 `width`만 받습니다.
 
 ```json
 "look": {
