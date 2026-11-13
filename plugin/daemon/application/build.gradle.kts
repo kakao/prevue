@@ -30,7 +30,7 @@ val screenText = tasks.register("screenText") {
 }
 sourceSets.main { kotlin.srcDir(screenText) }
 
-// 기기 스펙(plugin/devices/*.json, D-183)을 DeviceModel enum 과 인셋 표로 옮긴다 — 기기 지식은 스펙 한 곳에 두고 데몬과 뷰어가 각자 빌드에서 만든다.
+// 기기 스펙(plugin/devices/*.json, D-183)을 DeviceModel enum 과 인셋 표로 옮긴다 — 기기 지식은 스펙 한 곳에 두고 데몬은 빌드에서 표를 만든다.
 // enum 의 동작(panel · postures)은 ScreenSize.kt 가 갖고 여기서는 값만 쓴다. 자세 이름은 손에 든 방향이고, iOS 의 Apple 방향 이름은 conditions 에 그대로 둔다.
 val deviceTable = tasks.register("deviceTable") {
     val specs = layout.projectDirectory.dir("../../devices")

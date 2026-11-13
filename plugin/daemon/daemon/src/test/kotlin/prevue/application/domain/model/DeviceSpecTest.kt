@@ -25,10 +25,10 @@ class DeviceSpecTest {
         }
     }
 
-    @Test fun `가로 두 방향의 화면 크기가 같다`() {
-        all.filter { it.orientation == LANDSCAPE_LEFT }.forEach { left ->
-            val right = ScreenSize.Device(left.model, left.folded, LANDSCAPE_RIGHT)
-            assertEquals(left.widthPx to left.heightPx, right.widthPx to right.heightPx, left.key)
+    @Test fun `출처의 해상도가 그 자세의 화면 크기다 — 가로 두 방향도 같은 크기`() {
+        all.forEach { d ->
+            val evidence = d.insetProfile.evidence ?: return@forEach
+            assertEquals("${d.widthPx}x${d.heightPx}", evidence.conditions["resolutionPx"], d.key)
         }
     }
 
