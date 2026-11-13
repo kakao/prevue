@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **`@PreviewParameter` providers declared inside another class** (`Outer.Inner`) now draw one card per value instead of collapsing into a single card.
 - **Galaxy S26 Ultra and Pixel 10 Pro XL join the device menu** (`--device s26ultra` · `pixel10xl`) with their measured insets, cutout and screen corners in portrait and both landscape directions, from [windowinsets.info](https://windowinsets.info/) (Pixel 10 Pro XL from a real device on Firebase Test Lab, at 1080 × 2404) — on Pixel 10 Pro XL in landscape the status bar's outer item still touches the rounded screen corner.
 - **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
 - **iPhone SE (3rd generation) joins the device menu** (`--device ipse3`) with its home button, thicker top and bottom bezels and split status bar, and its safe area from [safearea.info](https://safearea.info/).

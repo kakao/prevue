@@ -1019,6 +1019,13 @@ class RenderIntegrationTest {
         assertAlive()
     }
 
+    @Test @Order(36) fun `중첩 클래스 제공자도 값 개수만큼 카드가 된다`() {
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.nestedProvider.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        assertEquals(3, ws.now.board!!.cards.size, "제공자 값(사과 · 배 · 귤)마다 카드 한 장")
+        assertAlive()
+    }
+
     // 내용 크기로 감싸는 컴포넌트도 기기를 고르면 그 기기 화면 크기로 그린다 — 작게 그리면 뷰어가 틀에 맞춰 늘려 글자가 찌그러졌다.
     @Test @Order(31) fun `내용 크기 컴포넌트도 기기를 고르면 기기 화면 크기로 그린다`() {
         assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
