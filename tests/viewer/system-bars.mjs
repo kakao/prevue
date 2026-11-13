@@ -109,9 +109,9 @@ try {
   await ready();
   const smoke = process.argv.includes('--smoke');
   const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
-  const devices = selected ?? (smoke ? ['duo'] : ['s26','s26ultra','pixel9','pixel10xl','ip17','ipair','ip17pm','ip18pro','ipse3','duo','fold8','ultra','pixelfold','tablet']);
+  const devices = selected ?? (smoke ? ['duo'] : ['s26','s26ultra','a07','pixel9','pixel10xl','ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo','fold8','ultra','pixelfold','tablet','s11ultra']);
   const foldable = new Set(['duo','fold8','ultra','pixelfold']);
-  const ios = new Set(['ip17','ipair','ip17pm','ip18pro','ipse3','duo']), pixel = new Set(['pixel9','pixel10xl','pixelfold','tablet']);
+  const ios = new Set(['ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo']), pixel = new Set(['pixel9','pixel10xl','pixelfold','tablet']);
   // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
   // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
   const RAW_CAM = {
@@ -123,11 +123,14 @@ try {
     'ultra-cover-portrait': [180, 18], 'ultra-cover-landscape-left': [18, 180], 'ultra-cover-landscape-right': [822, 180],
     's26ultra-open-portrait': [192, 18.49], 's26ultra-open-landscape-left': [18.49, 192], 's26ultra-open-landscape-right': [813.51, 192],
     'pixel10xl-open-portrait': [221.35, 32.96], 'pixel10xl-open-landscape-left': [32.96, 221.73], 'pixel10xl-open-landscape-right': [953.29, 221.35],
+    // 노치 — 상자 가운데다. A07 은 윗변의 42.67×34.13dp, Tab S11 Ultra 는 세로 자세의 오른쪽 긴 변에 붙은 16×57.14dp 라 가로에서 위(왼쪽 가로) · 아래(오른쪽 가로)로 간다.
+    'a07-open-portrait': [192, 17.07], 'a07-open-landscape-left': [17.07, 192], 'a07-open-landscape-right': [836.27, 192],
+    's11ultra-open-portrait': [1048, 845.71], 's11ultra-open-landscape-left': [845.71, 8], 's11ultra-open-landscape-right': [845.71, 1048],
   };
   // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
-  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46,
+  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46, 'a07-open': 36.27, 's11ultra-open': 25.14,
     // safearea.info 의 그 자세 조건 그대로의 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
-    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'ipse3-open': 0, 'duo-cover': 59, 'duo-open': 59 };
+    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'ip17e-open': 47.33, 'ipse3-open': 0, 'duo-cover': 59, 'duo-open': 59 };
   // 화면 모서리 반경(둥근 스테이지의 border-radius)과, 상자 네 꼭짓점이 그 둥근 화면 안에 있는지 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
   const cornerOf = () => evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
     return {k,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);
@@ -205,7 +208,9 @@ try {
         assert(time && icons && cam, `${name} 시각 · 아이콘 · 아일랜드: ${JSON.stringify(bars)}`);
         for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l && b.r <= shot.r, `${name} 상태바가 위 띠 안: ${JSON.stringify(bars)}`);
         assert(time.r < cam.l && icons.l > cam.r, `${name} 상태바가 아일랜드와 겹치지 않는다: ${JSON.stringify(bars)}`);
-        assert(Math.abs(mid(icons) - mid(cam)) <= bars.k && Math.abs(mid(time) - mid(cam)) <= 1.5 * bars.k, `${name} 아이콘 ±1dp · 시각 ±1.5dp(글꼴 상자)로 아일랜드 가운데 높이: ${JSON.stringify(bars)}`);
+        // 노치(17e)는 상태바 줄이 위 띠 가운데에 놓인다 — 아일랜드 기기만 카메라 가운데 높이다.
+        const rowY = device === 'ip17e' ? shot.t + bars.top / 2 : mid(cam);
+        assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 아이콘 ±1dp · 시각 ±1.5dp(글꼴 상자)로 ${device === 'ip17e' ? '위 띠' : '아일랜드'} 가운데 높이: ${JSON.stringify(bars)}`);
       } else assert(!time && !icons, `${name} 가로에는 상태바가 없다`);
     }
     if (!ios.has(device)) {

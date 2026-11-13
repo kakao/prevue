@@ -81,4 +81,9 @@ class ScreenSizeTest {
         assertThrows<IllegalArgumentException> { ScreenSize.parse(null, "s26", folded = true, landscape = false) }
         assertThrows<IllegalArgumentException> { ScreenSize.parse("narrow", null, folded = true, landscape = false) }
     }
+
+    @Test fun `한계 1600dp는 그대로다 — Tab S11 Ultra의 1691dp는 커스텀으로 못 가고 1600까지만 간다`() {
+        assertThrows<IllegalArgumentException> { ScreenSize.parse("1056x1691", null, folded = false, landscape = false) }
+        assertEquals(ScreenSize.Dp(1056, 1600), ScreenSize.parse("1056x1600", null, folded = false, landscape = false))
+    }
 }

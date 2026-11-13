@@ -1,0 +1,142 @@
+{
+  "id": "ip17e",
+  "label": "iPhone 17e",
+  "order": 35,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 1170,
+        "heightPx": 2532,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17e.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1170x2532",
+              "orientation": "portrait",
+              "sourceSha256": "7f22fed3ecd2ba4d00855f092972e7bbd19f11d4524ff6aa176f0fe015f6d0a5",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "top": 47,
+              "bottom": 34
+            },
+            "cornerRadius": {
+              "pt": 47.33
+            },
+            "safeAreaSize": {
+              "width": 390,
+              "height": 763
+            }
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17e.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2532x1170",
+              "orientation": "landscape-right",
+              "sourceSha256": "7f22fed3ecd2ba4d00855f092972e7bbd19f11d4524ff6aa176f0fe015f6d0a5",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "left": 47,
+              "right": 47,
+              "bottom": 20
+            },
+            "cornerRadius": {
+              "pt": 47.33
+            },
+            "safeAreaSize": {
+              "width": 750,
+              "height": 370
+            }
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-17e.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2532x1170",
+              "orientation": "landscape-left",
+              "sourceSha256": "7f22fed3ecd2ba4d00855f092972e7bbd19f11d4524ff6aa176f0fe015f6d0a5",
+              "checkedAt": "2026-11-13",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {
+              "left": 47,
+              "right": 47,
+              "bottom": 20
+            },
+            "cornerRadius": {
+              "pt": 47.33
+            },
+            "safeAreaSize": {
+              "width": 750,
+              "height": 370
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios",
+    "short": "17e",
+    "tone": "#2c2c2e",
+    "open": {
+      "bezel": 5,
+      "cam": {
+        "w": 161.33,
+        "h": 33.67,
+        "y": 0,
+        "notch": 16
+      },
+      "btn": [
+        [
+          -1,
+          150,
+          32
+        ],
+        [
+          -1,
+          205,
+          60
+        ],
+        [
+          -1,
+          280,
+          60
+        ],
+        [
+          1,
+          235,
+          100
+        ]
+      ]
+    },
+    "status": {
+      "top": 18.67,
+      "right": 372,
+      "scale": 0.89,
+      "time": {
+        "cx": 50.5,
+        "base": 30,
+        "size": 15
+      }
+    }
+  }
+}

@@ -68,7 +68,8 @@ try {
     if (await evaluate(`document.querySelector('#pnSum').getAttribute('aria-expanded')!=='true'`)) await click("#pnSum");
     await until(`getComputedStyle(document.querySelector('#pnBody')).visibility==='visible' && !document.querySelector('#pnBody').inert`); await pause(250);
   };
-  const choose = async sel => { await openMenu(); await click(`#pnPick [data-sel="${sel}"]`); };
+  // 기기가 늘어 1000px 창에서는 목록이 메뉴 안에서 스크롤된다 — 칸을 보이는 자리로 가져온 뒤 누른다
+  const choose = async sel => { await openMenu(); await evaluate(`document.querySelector('#pnPick [data-sel="${sel}"]').scrollIntoView({ block: 'nearest' })`); await pause(100); await click(`#pnPick [data-sel="${sel}"]`); };
   const orient = async orientation => {
     await click("#dcRot");
     await until(`document.querySelector('#dcRot').getAttribute('aria-expanded')==='true'`);
@@ -292,6 +293,16 @@ try {
   await pick("pixelfold", "device==='pixelfold'");
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Pixel 9 Pro Fold 의 독 폭이 ${DOCK_MAX}px 이하(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
+  // 커스텀 한계 1600dp 를 넘는 기기 — Tab S11 Ultra 는 1691dp 라 숫자를 눌러 커스텀으로 넘어갈 때 1600 으로 잘린다
+  await pick("s11ultra", "device==='s11ultra'");
+  await check(`document.querySelector('#rlW').value==='1056' && document.querySelector('#rlH').value==='1691'`, "Tab S11 Ultra 는 1056×1691dp 로 그려진다");
+  await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===1056 && __store.st.focus.size?.heightDp===1600 && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(400);
+  await check(`document.querySelector('#rlH').value==='1600' && document.querySelector('#pnPick [data-sel="custom"] .d').textContent==='1056×1600'`, `기기에서 커스텀으로 넘어가면 1691dp 가 한계 1600 으로 잘린다(${await evaluate(`document.querySelector('#rlH').value+' '+document.querySelector('#pnPick [data-sel="custom"] .d').textContent`)})`);
+  // 기기를 고른 채 칸에 Tab 으로 들어가 치면 친 글자가 남는다 — 커스텀 전환이 칸을 덮어쓰지 않는다
+  await pick("s26", "device==='s26'");
+  await evaluate(`document.querySelector('#rlW').focus()`); await send("Input.insertText", { text: "5" });
+  await check(`document.querySelector('#rlW').value==='5'`, `기기에서 숫자를 치면 친 글자가 남는다(${await evaluate(`document.querySelector('#rlW').value`)})`);
+  await key("Escape"); await pause(300);
   await pick("duo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);

@@ -49,6 +49,55 @@ export const DEVICES = {
       }
     }
   },
+  "a07": {
+    "name": "Galaxy A07 5G",
+    "short": "A07 5G",
+    "fold": false,
+    "open": {
+      "w": 384,
+      "h": 853.33
+    },
+    "look": {
+      "open": {
+        "tone": "#2a2d33",
+        "bezel": 7,
+        "radius": 36.27,
+        "cam": {
+          "w": 42.67,
+          "h": 34.13,
+          "y": 0,
+          "notch": 17
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 175,
+            "len": 95
+          },
+          {
+            "side": 1,
+            "at": 300,
+            "len": 50
+          },
+          {
+            "side": 1,
+            "at": 350,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 350,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 350,
+            "len": 0
+          }
+        ]
+      }
+    }
+  },
   "s26ultra": {
     "name": "Galaxy S26 Ultra",
     "short": "S26 Ultra",
@@ -248,6 +297,65 @@ export const DEVICES = {
         "cx": 72.67,
         "base": 39,
         "size": 17
+      }
+    }
+  },
+  "ip17e": {
+    "name": "iPhone 17e",
+    "short": "17e",
+    "fold": false,
+    "open": {
+      "w": 390,
+      "h": 844
+    },
+    "look": {
+      "open": {
+        "tone": "#2c2c2e",
+        "bezel": 5,
+        "radius": 47.33,
+        "cam": {
+          "w": 161.33,
+          "h": 33.67,
+          "y": 0,
+          "notch": 16
+        },
+        "btn": [
+          {
+            "side": -1,
+            "at": 150,
+            "len": 32
+          },
+          {
+            "side": -1,
+            "at": 205,
+            "len": 60
+          },
+          {
+            "side": -1,
+            "at": 280,
+            "len": 60
+          },
+          {
+            "side": 1,
+            "at": 235,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 335,
+            "len": 0
+          }
+        ]
+      }
+    },
+    "status": {
+      "top": 18.67,
+      "right": 372,
+      "s": 0.89,
+      "time": {
+        "cx": 50.5,
+        "base": 30,
+        "size": 15
       }
     }
   },
@@ -895,6 +1003,57 @@ export const DEVICES = {
         ]
       }
     }
+  },
+  "s11ultra": {
+    "name": "Galaxy Tab S11 Ultra",
+    "short": "Tab S11 Ultra",
+    "fold": false,
+    "open": {
+      "w": 1056,
+      "h": 1691.43
+    },
+    "look": {
+      "open": {
+        "tone": "#2b2d31",
+        "bezel": 10,
+        "radius": 25.14,
+        "cam": {
+          "w": 57.14,
+          "h": 16,
+          "y": 0,
+          "x": 0.5,
+          "edge": "right",
+          "notch": 4
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 200,
+            "len": 70
+          },
+          {
+            "side": 1,
+            "at": 300,
+            "len": 130
+          },
+          {
+            "side": 1,
+            "at": 430,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 430,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 430,
+            "len": 0
+          }
+        ]
+      }
+    }
   }
 };
 
@@ -903,19 +1062,22 @@ export const DEVICE_MENU = [
     "group": "Android",
     "ids": [
       "s26",
+      "a07",
       "s26ultra",
       "pixel9",
       "pixel10xl",
       "fold8",
       "ultra",
       "pixelfold",
-      "tablet"
+      "tablet",
+      "s11ultra"
     ]
   },
   {
     "group": "iPhone",
     "ids": [
       "ip17",
+      "ip17e",
       "ipair",
       "ip17pm",
       "ip18pro",

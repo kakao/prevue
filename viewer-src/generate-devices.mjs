@@ -41,8 +41,10 @@ function body(raw, where, measured) {
   if (raw.home !== undefined && (raw.home !== true || bezel.ends === undefined)) throw Error(`${where}.home: true 만 받고, 홈 버튼 자리인 bezel.ends 가 있어야 한다`);
   if (measured !== undefined && 'radius' in raw) throw Error(`${where}: radius 가 measured 에도 look 에도 있다`);
   if (measured === undefined && !('radius' in raw)) throw Error(`${where}: radius 가 없다`);
-  const cam = keys(raw.cam, ['w', 'h', 'y', 'x'], `${where}.cam`, ['w', 'h', 'y']);
-  for (const [name, value] of Object.entries(cam)) number(value, `${where}.cam.${name}`);
+  const cam = keys(raw.cam, ['w', 'h', 'y', 'x', 'notch', 'edge'], `${where}.cam`, ['w', 'h', 'y']);
+  for (const [name, value] of Object.entries(cam)) if (name !== 'edge') number(value, `${where}.cam.${name}`);
+  if (cam.edge !== undefined && (cam.edge !== 'right' || cam.notch === undefined)) throw Error(`${where}.cam.edge: right 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
+  if (cam.notch !== undefined && (cam.y !== 0 || cam.notch < 0 || cam.notch > Math.min(cam.w, cam.h) / 2)) throw Error(`${where}.cam.notch: 가장자리에 붙으려면 y 가 0 이고, 반경은 짧은 변의 절반 이하다`);
   if (!Array.isArray(raw.btn) || raw.btn.length > 5) throw Error(`${where}.btn: 5개 이하의 목록이 아니다`);
   const btn = raw.btn.map((entry, i) => {
     if (!Array.isArray(entry) || entry.length !== 3) throw Error(`${where}.btn[${i}]: [변, 위치, 길이]가 아니다`);
