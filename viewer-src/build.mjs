@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateState } from './generate-state.mjs';
+import { generateDevices } from './generate-devices.mjs';
 
 const source = dirname(fileURLToPath(import.meta.url));
 const destination = resolve(source, '../plugin/viewer');
@@ -22,6 +23,7 @@ async function files(directory, prefix = '') {
 
 try {
   await generateState(check);
+  await generateDevices(check);
   await build({
     configFile: false,
     root: source,

@@ -1,50 +1,8 @@
 import { reduced } from "./motion.js";
 import { phrase } from "./strings.js";
+import { DEVICES } from "./devices.js";
 
-// 안드로이드 카메라(cam)는 windowinsets.info 의 displayCutout 이다 — Pixel 은 path 원의 가운데 · 지름, Samsung 은 path 가 위 가장자리에 붙은 상자라 그 가운데만 따르고 지름은 눈대중이다.
-// 안드로이드 화면 모서리(radius)는 windowinsets.info 의 roundedCorners 다 — 자세 · 네 모서리가 같은 값이라 look 마다 하나다. Pixel Tablet 은 원자료가 비어 눈대중이다.
-// Duo 커버 카메라는 safearea.info 세로 자세의 37pt occlusion 이다. 가로는 몸체와 함께 돌려 얻는다 — 사이트의 가로 두 자세 occlusion 과 같은 자리다.
-const DEVICES = {
-  s26: { name: "Galaxy S26", short: "S26", fold: false,
-    open: { w: 360, h: 780 },
-    look: { open: { tone: "var(--device-tone-s26)", bezel: 5, radius: 28, cam: { w: 9, h: 9, y: 14 }, btn: [[1, 175, 95], [1, 300, 50]] } } },
-  pixel9: { name: "Pixel 9", short: "Pixel 9", fold: false,
-    open: { w: 411.43, h: 923.43 },
-    look: { open: { tone: "var(--device-tone-pixel9)", bezel: 6, radius: 50.29, cam: { w: 32, h: 32, y: 16.95 }, btn: [[1, 190, 50], [1, 270, 95]] } } },
-  ip17: { name: "iPhone 17", short: "iPhone 17", fold: false,
-    open: { w: 402, h: 874 },
-    look: { open: { tone: "var(--device-tone-ip17)", bezel: 5, radius: 55, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]] } } },
-  ipair: { name: "iPhone Air", short: "iPhone Air", fold: false,
-    open: { w: 420, h: 912 },
-    look: { open: { tone: "var(--device-tone-ipair)", bezel: 4, radius: 57, cam: { w: 125.33, h: 36.67, y: 20 }, btn: [[-1, 155, 32], [-1, 215, 62], [-1, 292, 62], [1, 245, 104]] } } },
-  ip17pm: { name: "iPhone 17 Pro Max", short: "17 Pro Max", fold: false,
-    open: { w: 440, h: 956 },
-    look: { open: { tone: "var(--device-tone-ip17pm)", bezel: 5, radius: 60, cam: { w: 125.33, h: 36.67, y: 14 }, btn: [[-1, 160, 34], [-1, 225, 66], [-1, 305, 66], [1, 255, 110]] } } },
-  pixelfold: { name: "Pixel 9 Pro Fold", short: "9 Pro Fold", fold: true,
-    cover: { w: 443.08, h: 994.46 }, open: { w: 851.69, h: 882.87, hinge: 425.85 },
-    look: { cover: { tone: "var(--device-tone-pixelfold)", bezel: 6, radius: 47.18, cam: { w: 34.05, h: 34.05, y: 18.26 }, btn: [[1, 200, 50], [1, 280, 95]] },
-            open:  { tone: "var(--device-tone-pixelfold)", bezel: 7, radius: 34.87, cam: { w: 32.41, h: 32.41, y: 16.62, x: .9574 }, btn: [[1, 200, 50], [1, 280, 95]] } } },
-  tablet: { name: "Pixel Tablet", short: "Pixel Tablet", fold: false,
-    open: { w: 1280, h: 800 },
-    look: { open: { tone: "var(--device-tone-tablet)", bezel: 34, radius: 34, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 120, 70]] } } },
-  ipduo: { name: "iPhone Duo", short: "iPhone Duo", fold: true,
-    cover: { w: 466, h: 678 }, open: { w: 951, h: 669, hinge: 475.5 },
-    look: { cover: { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 44, cam: { w: 37, h: 37, y: 29.33, x: .8974 }, btn: [[1, 200, 80], [1, 470, 46]] },
-            open:  { tone: "var(--device-tone-ipduo)", bezel: 6, radius: 30, cam: { w: 0, h: 0, y: 11 }, btn: [[1, 200, 80], [1, 470, 46]] } } },
-  fold8: { name: "Galaxy Z Fold8", short: "Fold8", fold: true,
-    cover: { w: 475.43, h: 751.24 }, open: { w: 932.57, h: 704, hinge: 466.29 },
-    look: { cover: { tone: "var(--device-tone-fold8)", bezel: 6, radius: 9.9, cam: { w: 9, h: 9, y: 15.31 }, btn: [[1, 170, 80], [1, 270, 55]] },
-            open:  { tone: "var(--device-tone-fold8)", bezel: 6, radius: 6.86, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 170, 80], [1, 270, 55]] } } },
-  ultra: { name: "Galaxy Z Fold8 Ultra", short: "Fold8 Ultra", fold: true,
-    cover: { w: 360, h: 840 }, open: { w: 752, h: 834.67, hinge: 376 },
-    look: { cover: { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 8, h: 8, y: 14 }, btn: [[1, 190, 85], [1, 300, 55]] },
-            open:  { tone: "var(--device-tone-ultra)", bezel: 5, radius: 5, cam: { w: 0, h: 0, y: 10 }, btn: [[1, 190, 85], [1, 300, 55]] } } },
-};
-for (const d of Object.values(DEVICES)) for (const lk of Object.values(d.look)) {
-  const b = lk.btn.map(([side, at, len]) => ({ side, at, len }));
-  while (b.length < 5) { const l = b[b.length - 1]; b.push({ side: l.side, at: l.at + l.len, len: 0 }); }
-  lk.btn = b;
-}
+// 기기 표(크기 · 베젤 · 반경 · 카메라 · 버튼 · 색)는 plugin/devices 스펙에서 생성한 devices.js 다 — 값의 출처(windowinsets.info · safearea.info)와 눈대중인 값은 스펙이 갖는다.
 
 // 자연 방향 화면(panel)을 sel 의 rot · right 로 돌린 자세 — 세로 / 가로 왼쪽 / 가로 오른쪽과 손에 든 회전 각도.
 function turnOf(panel, rot, right) {
@@ -391,7 +349,7 @@ export function createResizeScene(root, hooks) {
     // 짝 없는 방향(거꾸로 선 세로 대신 바로 선 세로)은 180° 돌지 않고 접기만 보인 뒤 정지 자세로 맞춘다
     const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
-      on: true, turn, t0: now, dur: d === DEVICES.ipduo ? P.duoDur : P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
+      on: true, turn, t0: now, dur: d === DEVICES.duo ? P.duoDur : P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
       s0: f0.s, s1: f1.s,
       half: { u: H, v: d.open.h }, cover: { u: d.cover.w, v: d.cover.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
@@ -418,7 +376,7 @@ export function createResizeScene(root, hooks) {
     const perspective = P.perspective / (P.perspective - u * baseS * Math.sin(rad));
     const tip = -u * Math.cos(rad) * perspective, bezel = lookAt(now).bezel * P.shellK;
     // 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 양끝 배율은 원래 fit과 같다.
-    const baseU = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(rig.d === DEVICES.ipduo ? 150 : 90, 180, th));
+    const baseU = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(rig.d === DEVICES.duo ? 150 : 90, 180, th));
     const xs = [offset + Math.min(0, tip) - bezel, offset + Math.max(baseU, tip) + bezel];
     const ys = [-v * perspective / 2 - bezel, v * perspective / 2 + bezel];
     const corners = xs.flatMap(x => ys.map(y => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)]));
@@ -777,7 +735,7 @@ export function createResizeScene(root, hooks) {
 
   function draw(now) {
     if (rig.on) {
-      const duo = rig.d === DEVICES.ipduo;
+      const duo = rig.d === DEVICES.duo;
       UA.el.hidden = true; UB.el.hidden = true; rigEl.hidden = duo; DU.el.hidden = !duo;
       turnRig(duo ? DU.el : rigEl, now);
       duo ? drawDuo(now) : drawRig(now);

@@ -1,4 +1,5 @@
-import type { ReactNode, Ref } from 'react';
+import { Fragment, type ReactNode, type Ref } from 'react';
+import { DEVICE_MENU } from '../../legacy/js/devices.js';
 import { useMessages } from '../messages';
 
 // 한 장의 정적 껍데기 — 장면 · 무대 · 조작 독의 칸. 번들 밖의 resize-scene.js 와 workspace/focus.ts 가 이 요소들을 쥐고 계속 고친다.
@@ -140,10 +141,10 @@ export function SizePicker() {
     </section>
     <section className="pn-sec"><h4 className="pn-h" {...t.text('panel.device')} />
       <div className="pn-list">
-        <h5 className="pn-g">Android</h5>
-        {['s26', 'pixel9', 'fold8', 'ultra', 'pixelfold', 'tablet'].map(sel => pick(sel))}
-        <h5 className="pn-g">iPhone</h5>
-        {['ip17', 'ipair', 'ip17pm', 'ipduo'].map(sel => pick(sel))}
+        {DEVICE_MENU.map(({ group, ids }) => <Fragment key={group}>
+          <h5 className="pn-g">{group}</h5>
+          {ids.map(sel => pick(sel))}
+        </Fragment>)}
       </div>
     </section>
   </div>;
