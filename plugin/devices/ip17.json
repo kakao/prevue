@@ -24,6 +24,7 @@
               "displayZoom": "off"
             },
             "safeArea": {"top": 62, "bottom": 34},
+            "cornerRadius": {"pt": 62},
             "safeAreaSize": {"width": 402, "height": 778}
           },
           "landscape-left": {
@@ -41,6 +42,7 @@
               "displayZoom": "off"
             },
             "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "cornerRadius": {"pt": 62},
             "safeAreaSize": {"width": 750, "height": 382}
           },
           "landscape-right": {
@@ -58,6 +60,7 @@
               "displayZoom": "off"
             },
             "safeArea": {"left": 62, "right": 62, "bottom": 20},
+            "cornerRadius": {"pt": 62},
             "safeAreaSize": {"width": 750, "height": 382}
           }
         }
@@ -68,7 +71,7 @@
     "bar": "ios",
     "short": "iPhone 17",
     "tone": "#2c2c2e",
-    "open": {"bezel": 5, "radius": 55, "cam": {"w": 125.33, "h": 36.67, "y": 14}, "btn": [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]]},
+    "open": {"bezel": 5, "cam": {"w": 125.33, "h": 36.67, "y": 14}, "btn": [[-1, 150, 32], [-1, 205, 60], [-1, 280, 60], [1, 235, 100]]},
     "status": {"top": 26.33, "right": 366.67, "scale": 1, "time": {"cx": 72.67, "base": 39, "size": 17}}
   }
 }

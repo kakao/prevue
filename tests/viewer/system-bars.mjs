@@ -123,7 +123,9 @@ try {
     'ultra-cover-portrait': [180, 18], 'ultra-cover-landscape-left': [18, 180], 'ultra-cover-landscape-right': [822, 180],
   };
   // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
-  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5 };
+  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5,
+    // safearea.info 의 Display Zoom 끔 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
+    'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'duo-cover': 59, 'duo-open': 59 };
   const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
@@ -159,12 +161,21 @@ try {
     assert.equal(overlay.handle, device!=='duo', name);
     assert.equal(overlay.duo, device==='duo', name);
     assert(await evaluate(`document.querySelectorAll('#sysBars .sb-status').length`) <= 1, `${name} 상태 표시는 많아야 한 벌`);
+    if (ios.has(device)) {
+      const k = await evaluate(`(()=>{const st=__store.st.focus;return document.querySelector('#shot').getBoundingClientRect().width/st.size.widthPx*st.pxPerDp})()`);
+      const radius = await evaluate(`parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius)`);
+      const rawR = RAW_RADIUS[`${device}-${folded?'cover':'open'}`];
+      assert(Math.abs(radius / k - rawR) <= .5, `${name} 화면 모서리 반경이 사이트 값 ±0.5dp: ${JSON.stringify({ got: radius / k, raw: rawR })}`);
+    }
     if (ios.has(device) && device!=='duo') {
       // 오버레이의 dp 뷰박스가 아니라 #shot · 아일랜드(#ua .cam) · 전달 인셋으로 낸 화면 좌표에 견준다.
       const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
         return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:box('#ua .cam')}})()`);
       const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2;
+      const rr = await evaluate(`parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius)`);
+      const inRound = ([x, y]) => { const cx = Math.min(Math.max(x, shot.l + rr), shot.r - rr), cy = Math.min(Math.max(y, shot.t + rr), shot.b - rr); return Math.hypot(x - cx, y - cy) <= rr + 1; };
+      for (const [part, b] of Object.entries({ time, icons, handle })) if (b) for (const p of [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]]) assert(inRound(p), `${name} ${part} 가 둥근 화면 모서리에 잘리지 않는다: ${JSON.stringify({ p, radius: rr, ...bars })}`);
       assert(handle && handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 홈 인디케이터가 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
       if (orientation==='portrait') {
         assert(time && icons && cam, `${name} 시각 · 아이콘 · 아일랜드: ${JSON.stringify(bars)}`);

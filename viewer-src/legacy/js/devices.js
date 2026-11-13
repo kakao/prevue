@@ -109,7 +109,7 @@ export const DEVICES = {
       "open": {
         "tone": "#2c2c2e",
         "bezel": 5,
-        "radius": 55,
+        "radius": 62,
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -167,7 +167,7 @@ export const DEVICES = {
       "open": {
         "tone": "#46484c",
         "bezel": 4,
-        "radius": 57,
+        "radius": 62,
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -225,7 +225,7 @@ export const DEVICES = {
       "open": {
         "tone": "#3b3a38",
         "bezel": 5,
-        "radius": 60,
+        "radius": 62,
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -288,7 +288,7 @@ export const DEVICES = {
       "cover": {
         "tone": "#4a4744",
         "bezel": 6,
-        "radius": 44,
+        "radius": 59,
         "cam": {
           "w": 37,
           "h": 37,
@@ -326,7 +326,7 @@ export const DEVICES = {
       "open": {
         "tone": "#4a4744",
         "bezel": 6,
-        "radius": 30,
+        "radius": 59,
         "cam": {
           "w": 0,
           "h": 0,
