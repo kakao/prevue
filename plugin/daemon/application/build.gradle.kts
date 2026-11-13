@@ -29,3 +29,78 @@ val screenText = tasks.register("screenText") {
     }
 }
 sourceSets.main { kotlin.srcDir(screenText) }
+
+// 기기 스펙(plugin/devices/*.json, D-183)을 DeviceModel enum 과 인셋 표로 옮긴다 — 기기 지식은 스펙 한 곳에 두고 데몬과 뷰어가 각자 빌드에서 만든다.
+// enum 의 동작(panel · postures)은 ScreenSize.kt 가 갖고 여기서는 값만 쓴다. 자세 이름은 손에 든 방향이고, iOS 의 Apple 방향 이름은 conditions 에 그대로 둔다.
+val deviceTable = tasks.register("deviceTable") {
+    val specs = layout.projectDirectory.dir("../../devices")
+    val out = layout.buildDirectory.dir("generated/deviceTable")
+    inputs.files(fileTree(specs) { include("*.json") })
+    outputs.dir(out)
+    doLast {
+        @Suppress("UNCHECKED_CAST")
+        val devices = specs.asFile.listFiles { f -> f.name.endsWith(".json") }!!
+            .map { groovy.json.JsonSlurper().parse(it, "UTF-8") as Map<String, Any?> }
+            .sortedBy { (it["order"] as Number).toInt() }
+        fun str(s: Any?) = "\"" + s.toString().replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$") + "\""
+        // 생성물도 린트(줄 160 · 함수 60줄)를 지난다 — 긴 문자열은 조각을 잇고, 자세 하나가 함수 하나다.
+        fun lit(s: Any?) = s.toString().chunked(100).joinToString("\" +\n                \"", "\"", "\"") {
+            it.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+        }
+        fun num(v: Any?) = (v as Number).toDouble().toString()
+        fun constant(d: Map<String, Any?>) = (d["label"] as String).uppercase().replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+        @Suppress("UNCHECKED_CAST")
+        fun obj(v: Any?) = v as Map<String, Any?>
+        fun edges(e: Any?) = obj(e).entries.joinToString(", ", "InsetEdges(", ")") { (k, v) -> "$k = ${num(v)}" }
+        fun panel(s: Any?) = obj(s).let { p -> "Panel(${p["widthPx"]}, ${p["heightPx"]}" + (p["hingePx"]?.let { ", ${num(it)}" } ?: "") + ")" }
+
+        out.get().asFile.deleteRecursively()
+        val dir = out.get().dir("prevue/application/domain/model").asFile.apply { mkdirs() }
+        dir.resolve("DeviceModel.kt").writeText(buildString {
+            append("package prevue.application.domain.model\n\n")
+            append("enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {\n")
+            devices.forEach { d ->
+                val m = obj(d["measured"]); val screens = obj(m["screens"])
+                append("    ${constant(d)}(\n        ${str(d["id"])},\n        ${str(d["label"])},\n        ${m["dpi"]},\n")
+                append("        ${panel(screens["open"])},\n        ${screens["cover"]?.let { panel(it) } ?: "null"},\n")
+                append("        BarLook.entries.single { it.key == ${str(obj(d["look"])["bar"])} },\n    ),\n")
+            }
+            append("    ;\n\n    fun panel(folded: Boolean): Panel = panelOf(folded)\n\n")
+            append("    val postures: List<ScreenSize.Device> get() = posturesOf()\n}\n")
+        })
+        dir.resolve("DeviceInsetTable.kt").writeText(buildString {
+            append("package prevue.application.domain.model\n\n")
+            append("private fun source(kind: String) = InsetSource.entries.single { it.kind == kind }\n\n")
+            val postures = devices.flatMap { d ->
+                obj(obj(d["measured"])["screens"]).flatMap { (screen, s) ->
+                    obj(obj(s)["postures"]).map { (orientation, posture) ->
+                        Triple(d, screen, orientation) to obj(posture)
+                    }
+                }
+            }
+            fun name(d: Map<String, Any?>, screen: String, orientation: String) = "${constant(d)}_${screen}_$orientation".lowercase().replace('-', '_')
+            append("internal val DEVICE_INSETS: Map<ScreenSize.Device, DeviceInsetProfile> = mapOf(\n")
+            postures.forEach { (at, _) -> append("    ${name(at.first, at.second, at.third)}(),\n") }
+            append(")\n")
+            postures.forEach { (at, p) ->
+                val (d, screen, orientation) = at
+                append("\nprivate fun ${name(d, screen, orientation)}() =\n")
+                append("    ScreenSize.Device(DeviceModel.${constant(d)}, ${screen == "cover"}, DeviceOrientation.parse(${str(orientation)})) to DeviceInsetProfile(\n")
+                append("        safeArea = ${edges(p["safeArea"])},\n")
+                p["insets"]?.let { obj(it) }?.let { i ->
+                    append("        measured = MeasuredInsets(\n")
+                    listOf("statusBars", "navigationBars", "captionBar", "displayCutout").forEach { kind ->
+                        append("            $kind = ${edges(obj(i[kind])["dp"])},\n")
+                    }
+                    append("        ),\n")
+                }
+                append("        evidence = InsetEvidence(\n")
+                append("            source(${str(p["source"])}),\n            ${lit(p["url"])},\n            ${p["capturedAt"]?.let { str(it) } ?: "null"},\n")
+                append("            mapOf(\n")
+                obj(p["conditions"]).forEach { (k, v) -> append("                ${str(k)} to ${lit(v)},\n") }
+                append("            ),\n        ),\n    )\n")
+            }
+        })
+    }
+}
+sourceSets.main { kotlin.srcDir(deviceTable) }

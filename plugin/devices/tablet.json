@@ -1,0 +1,85 @@
+{
+  "id": "tablet",
+  "label": "Pixel Tablet",
+  "order": 100,
+  "measured": {
+    "dpi": 320,
+    "screens": {
+      "open": {
+        "widthPx": 2560,
+        "heightPx": 1600,
+        "postures": {
+          "portrait": {
+            "source": "emulator",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-tablet/emulator-2026-09-27/portrait-1-gesture.json",
+            "capturedAt": "2026-09-27T13:56:49.652796Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CE2A.260420.019",
+              "densityDpi": "320",
+              "resolutionPx": "1600x2560",
+              "rotation": "1",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"top": 24, "bottom": 32},
+            "insets": {
+              "statusBars": {"dp": {"top": 24}, "px": {"top": 48}},
+              "navigationBars": {"dp": {"bottom": 32}, "px": {"bottom": 64}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {}, "px": {}}
+            }
+          },
+          "landscape-left": {
+            "source": "emulator",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-tablet/emulator-2026-09-27/main-gesture.json",
+            "capturedAt": "2026-09-27T13:56:38.795975Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CE2A.260420.019",
+              "densityDpi": "320",
+              "resolutionPx": "2560x1600",
+              "rotation": "0",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"top": 24, "bottom": 32},
+            "insets": {
+              "statusBars": {"dp": {"top": 24}, "px": {"top": 48}},
+              "navigationBars": {"dp": {"bottom": 32}, "px": {"bottom": 64}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {}, "px": {}}
+            }
+          },
+          "landscape-right": {
+            "source": "emulator",
+            "url": "https://github.com/easyhooon/windowinsets.info/blob/3884efc51ee56798d139ae64d730719b1083573c/measurements/pixel/pixel-tablet/emulator-2026-09-27/landscape-2-gesture.json",
+            "capturedAt": "2026-09-27T13:56:59.111874Z",
+            "conditions": {
+              "android": "17",
+              "buildId": "CE2A.260420.019",
+              "densityDpi": "320",
+              "resolutionPx": "2560x1600",
+              "rotation": "2",
+              "navigation": "gesture",
+              "multiWindow": "false",
+              "fontScale": "1"
+            },
+            "safeArea": {"top": 24, "bottom": 32},
+            "insets": {
+              "statusBars": {"dp": {"top": 24}, "px": {"top": 48}},
+              "navigationBars": {"dp": {"bottom": 32}, "px": {"bottom": 64}},
+              "captionBar": {"dp": {}, "px": {}},
+              "displayCutout": {"dp": {}, "px": {}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "pixel"
+  }
+}

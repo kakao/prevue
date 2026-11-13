@@ -102,6 +102,41 @@ tasks.test {
     systemProperty("prevue.contract.update", providers.gradleProperty("contractUpdate").getOrElse("false"))
 }
 
+// 기기 스펙의 원 측정 읽음(Android 의 px 인셋 · iOS 사이트의 safe area 크기)을 테스트 표로 옮긴다 — 데몬 본체는 쓰지 않고 검산(DeviceSpecTest)만 읽는다.
+// 열쇠는 (기기 id, 접힘, 방향)이다. enum 상수 이름은 :application 의 deviceTable 한 곳에서만 만든다.
+val deviceReadings = tasks.register("deviceReadings") {
+    val specs = rootDir.resolve("../devices")
+    val out = layout.buildDirectory.dir("generated/deviceReadings")
+    inputs.files(fileTree(specs) { include("*.json") })
+    outputs.dir(out)
+    doLast {
+        @Suppress("UNCHECKED_CAST")
+        fun obj(v: Any?) = v as Map<String, Any?>
+        fun edges(e: Any?) = obj(e).entries.joinToString(", ", "InsetEdges(", ")") { (k, v) -> "$k = ${(v as Number).toDouble()}" }
+        out.get().asFile.deleteRecursively()
+        val file = out.get().file("prevue/application/domain/model/DeviceReadingTable.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(buildString {
+            append("package prevue.application.domain.model\n\ninternal val DEVICE_READINGS: Map<Triple<String, Boolean, String>, DeviceReading> = mapOf(\n")
+            specs.listFiles { f -> f.name.endsWith(".json") }!!.sortedBy { it.name }.forEach { f ->
+                val d = obj(groovy.json.JsonSlurper().parse(f, "UTF-8"))
+                obj(obj(d["measured"])["screens"]).forEach { (screen, s) ->
+                    obj(obj(s)["postures"]).forEach { (orientation, posture) ->
+                        val p = obj(posture)
+                        append("    Triple(\"${d["id"]}\", ${screen == "cover"}, \"$orientation\") to DeviceReading(\n")
+                        val px = p["insets"]?.let { obj(it).entries.joinToString(", ", "mapOf(", ")") { (k, v) -> "\"$k\" to ${edges(obj(v)["px"])}" } }
+                        append("        insetsPx = ${px ?: "null"},\n")
+                        val size = p["safeAreaSize"]?.let { obj(it) }?.let { "${(it["width"] as Number).toDouble()} to ${(it["height"] as Number).toDouble()}" }
+                        append("        safeAreaSize = ${size ?: "null"},\n    ),\n")
+                    }
+                }
+            }
+            append(")\n")
+        })
+    }
+}
+sourceSets.test { kotlin.srcDir(deviceReadings) }
+
 /**
  * 통합 테스트 — 진짜 layoutlib 으로 저장소 안 픽스처(`fixtures/pearl` · KMP 복제본 `fixtures/pearl-kmp`)를 그린다(`src/integrationTest`). 덤프는 테스트가 `bin/prevue warmup` 으로 뜬다.
  * 로컬에서만 돈다: 툴체인 · Android SDK 가 있어야 하고, 없으면 건너뛴다. CI 는 단위 테스트(`test`)만 돈다. 가짜 포트(`fake/`)는 단위 쪽 것을 같이 쓴다.
