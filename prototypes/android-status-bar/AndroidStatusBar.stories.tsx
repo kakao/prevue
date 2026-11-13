@@ -119,7 +119,7 @@ function Phone({ d, look, ground }: { d: Device; look: Look; ground: Ground }) {
 }
 
 // 비교용 — 이미 고른 iPhone 17 상태바(SystemBars.tsx 의 IosStatus, 시안 A 실측)와 홈 인디케이터.
-const IP17: Bars = { device: 'ip17', ios: true, cut: [0, 0], topCam: null, w: 402, h: 874, statusDp: 62, navDp: 34, side: null, sideDp: 0, duo: false, folded: false };
+const IP17: Bars = { device: 'ip17', ios: true, cut: [0, 0], radius: 62, topCam: null, w: 402, h: 874, statusDp: 62, navDp: 34, side: null, sideDp: 0, duo: false, folded: false };
 function IosStrip({ ground, zoom = 1 }: { ground: Ground; zoom?: number }) {
   const ink = ground === 'bright' ? 'dark' : 'light';
   return <svg className="asb-strip" width={IP17.w * zoom} height={76 * zoom} viewBox={`0 0 ${IP17.w} 76`} fill="currentColor" aria-hidden="true">
