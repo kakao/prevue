@@ -370,7 +370,7 @@ export function createResizeScene(root, hooks) {
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
   const sideOf = el => ({ body: el, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit") });
-  const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".back")), strips: [] });
+  const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
   RG.base = panelOf(q(rigEl, ".slab.base")); RG.leaf = panelOf(q(rigEl, ".slab.leaf"));
   RG.btns = Array.from({ length: 5 }, () => { const el = document.createElement("div"); el.className = "btn"; RG.space.append(el); return el; });
   RG.F = { inner: faceOf(RG.leaf.front.clip), outer: faceOf(RG.leaf.back.clip), base: faceOf(RG.base.front.clip) };
@@ -521,7 +521,7 @@ export function createResizeScene(root, hooks) {
   const css = rgb => `rgb(${rgb.map(Math.round).join(" ")})`, toned = (rgb, b) => css(tonedRgb(rgb, b));
   // 옆면 띠 — 가운데는 받은 빛의 색, 두 가장자리는 18% 밝고 20% 어두워 이웃 띠와의 경계가 모서리처럼 읽힌다.
   const stripPaint = (rgb, b) => {
-    const c = tonedRgb(rgb, b), mid = css(c), hi = css(c.map(v => v + (255 - v) * .18)), lo = css(c.map(v => v * .8));
+    const mid = toned(rgb, b), hi = `color-mix(in srgb, ${mid}, var(--device-veil) 18%)`, lo = `color-mix(in srgb, ${mid}, var(--device-shade) 20%)`;
     return `linear-gradient(90deg, ${hi} 0, ${mid} 10%, ${mid} 90%, ${lo} 100%)`;
   };
   // 화면은 스스로 빛나서 몸체보다 덜 어두워진다.

@@ -3735,7 +3735,7 @@ function oa({ marks: e = ua() }) {
 											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
 										]
 									}), /* @__PURE__ */ (0, R.jsx)("div", {
-										className: "face back",
+										className: "face rear",
 										children: /* @__PURE__ */ (0, R.jsx)("div", { className: "lit" })
 									})]
 								}),
@@ -3763,7 +3763,7 @@ function oa({ marks: e = ua() }) {
 											/* @__PURE__ */ (0, R.jsx)("div", { className: "edge ring" })
 										]
 									}), /* @__PURE__ */ (0, R.jsxs)("div", {
-										className: "face back",
+										className: "face rear",
 										children: [
 											/* @__PURE__ */ (0, R.jsxs)("div", {
 												className: "clip",

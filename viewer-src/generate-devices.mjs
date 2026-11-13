@@ -82,6 +82,7 @@ export function deviceTable(specList) {
     const foldKeys = folds ? ['cover', 'thickness', 'hinge'] : [];
     const look = keys(spec.look, ['bar', 'short', 'tone', 'open', ...foldKeys, 'status'], `${where}.look`, ['bar', 'short', 'tone', 'open', ...foldKeys]);
     if (!BARS.includes(look.bar)) throw Error(`${where}.look.bar: ${look.bar}`);
+    if (!/^#[0-9a-f]{6}$/i.test(look.tone)) throw Error(`${where}.look.tone: #rrggbb 가 아니다 — 접기 장면이 빛에 맞춰 채널을 나눠 계산한다`);
     if (look.bar === 'ios' && !folds && !look.status) throw Error(`${where}: iOS 홑 기기에는 look.status 가 필요하다`);
     if (look.status && (look.bar !== 'ios' || folds)) throw Error(`${where}: look.status 는 iOS 홑 기기만 갖는다`);
     const panel = key => {

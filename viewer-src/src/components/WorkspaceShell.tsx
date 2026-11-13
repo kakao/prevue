@@ -44,11 +44,11 @@ export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode })
         <div className="plate" />
         <div className="slab base">
           <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cast" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
-          <div className="face back"><div className="lit" /></div>
+          <div className="face rear"><div className="lit" /></div>
         </div>
         <div className="slab leaf">
           <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
-          <div className="face back"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
+          <div className="face rear"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
         </div>
         <div className="spine" />
         <div className="crease" />

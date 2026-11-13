@@ -11,7 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const markup = (await readFile(join(root, 'plugin/viewer/index.html'), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 const harness = `<script type="module">
 import { createResizeScene } from '/js/resize-scene.js';
-document.body.classList.add('resizing-ui');
+document.body.classList.add('resizing-ui','ws');
 document.querySelector('main').style.cssText='position:fixed;inset:0;width:100%;height:100%;padding:0;margin:0';
 document.querySelector('.bar').hidden=true;
 document.querySelector('#stage').hidden=true;
@@ -103,7 +103,7 @@ try {
     window.reset=st=>{scene.enable(false);scene.setOriginal(360,740,spec(360,740));scene.enable(true);scene.image(st.sel,spec(st.w,st.h));scene.update(st,true);step(time+2000)};
     window.probe=(el,x,y)=>{const p=document.createElement('i');p.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';el.append(p);return p};
     // 이음매 — 책등의 양끝(.3px 겹침 안쪽)이 두 판 뒷면의 힌지 쪽 변 가운데에 붙는다. 앞 화면은 회전축이 틈의 절반만큼 떠 있어 접는 동안 벌어지는 게 맞다.
-    window.A=probe(document.querySelector('#rig .leaf .back'),0,50);window.B=probe(document.querySelector('#rig .base .back'),100,50);
+    window.A=probe(document.querySelector('#rig .leaf .rear'),0,50);window.B=probe(document.querySelector('#rig .base .rear'),100,50);
     const spine=document.querySelector('#rig .spine');
     window.SA=document.createElement('i');SA.style.cssText='position:absolute;width:0;height:0;right:.3px;top:50%';spine.append(SA);
     window.SB=document.createElement('i');SB.style.cssText='position:absolute;width:0;height:0;left:.3px;top:50%';spine.append(SB);
@@ -113,13 +113,13 @@ try {
       if(el.hidden)return null;
       const back=window.phase>.5,dist=(p,q)=>{const a=box(p),b=box(q);return Math.hypot(a.x-b.x,a.y-b.y)};
       const error=spine.style.display==='none'?0:Math.max(dist(A,SA),dist(B,SB));
-      const base=box(document.querySelector('#rig .base .front .clip')),outer=box(document.querySelector('#rig .leaf .back .clip'));
-      const body=union(box(document.querySelector(back?'#rig .leaf .back .clip':'#rig .leaf .front .clip')),base);
+      const base=box(document.querySelector('#rig .base .front .clip')),outer=box(document.querySelector('#rig .leaf .rear .clip'));
+      const body=union(box(document.querySelector(back?'#rig .leaf .rear .clip':'#rig .leaf .front .clip')),base);
       const leaf=document.querySelector('#rig .leaf').style.transform,theta=Math.abs(Number(leaf.match(/rotateY\\((-?[\\d.]+)/)[1]));
       const over=Math.max(0,outer.x-base.x,outer.y-base.y,base.x+base.w-outer.x-outer.w,base.y+base.h-outer.y-outer.h);
-      const face=document.querySelector(back?'#rig .leaf .back .clip':'#rig .base .front .clip');
+      const face=document.querySelector(back?'#rig .leaf .rear .clip':'#rig .base .front .clip');
       const cam=box(face.querySelector('.cam')),content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
-      return {error,body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
+      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
     };`);
   const near = (actual, expected, name, tolerance = .2) => {
     for (const key of ['x','y','w','h']) assert(Math.abs(actual[key]-expected[key])<=tolerance, `${name} ${key}: ${actual[key]} / ${expected[key]}`);
@@ -175,6 +175,7 @@ try {
           }
           const changing = new Set(frames.map(f=>f.leaf));
           assert(changing.size>=10,`${name}: 접는 장의 실제 변형`);
+          assert(frames.filter(f=>f.theta>=30&&f.theta<=150).every(f=>f.spine),`${name}: 30~150°에서 책등이 보인다`);
           const worst=Math.max(...frames.map(f=>f.error));assert(worst<.1,`${name}: 이음매 ${worst}px`);
           if(to===cover){
             const shut=frames.filter(f=>f.theta>=179);assert(shut.length,'다 접힌 프레임');
