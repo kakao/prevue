@@ -12,6 +12,10 @@ const check = process.argv.includes('--check');
 const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
 const server = await mkdtemp(join(tmpdir(), 'prevue-prerender-'));
 const legacy = join(source, 'legacy/js/');
+const runtimeDir = join(source, 'src/runtime/');
+const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion'];
+const separate = id => id.startsWith(legacy) || id.startsWith(runtimeDir);
+const separatePath = id => './js/' + id.slice((id.startsWith(legacy) ? legacy : runtimeDir).length).replace(/\.ts$/, '.js');
 const handWritten = name => name === 'tokens.css' || name === 'js/resize-scene.js' || name === 'prevue.svg' || name.startsWith('strings/');
 
 async function files(directory, prefix = '') {
@@ -39,21 +43,40 @@ try {
         formats: ['es'],
         fileName: (_, name) => `js/${name}.js`,
       },
-      // 기존 모듈은 같은 URL의 한 벌만 쓴다 — 번들에 사본이 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
-      // 손으로 고치는 resize-scene.js 도 같다 — 타입만 legacy/js 에 두고 본체는 plugin/viewer/js 의 그 주소로 부른다.
+      // 런타임 모듈(src/runtime)은 아래 따로 빌드해 js/<이름>.js 한 벌만 쓴다 — 사본이 번들에 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
+      // 손으로 고치는 resize-scene.js 가 같은 URL(./motion.js · ./strings.js)로 부르므로 이름과 자리를 지킨다.
+      // resize-scene.js 도 번들 밖이다 — 타입만 legacy/js 에 두고 본체는 plugin/viewer/js 의 그 주소로 부른다.
       // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
-        external: id => id.startsWith(legacy),
+        external: separate,
         // 준비 장면은 뷰어와 함께 쓰는 모듈(사전 맥락 등)을 덧붙여 내보낸다 — 진입점 겉면 파일을 따로 두면 준비 서버가 모르는 이름이 생긴다.
         preserveEntrySignatures: 'allow-extension',
         output: {
-          paths: id => id.startsWith(legacy) ? './js/' + id.slice(legacy.length) : id,
+          paths: id => separate(id) ? separatePath(id) : id,
           chunkFileNames: 'js/[name].js',
-          codeSplitting: { groups: [{ name: 'react', test: /node_modules/ }] },
+          codeSplitting: { groups: [{ name: 'react', test: /node_modules/ } ]},
         },
       },
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  });
+  // 런타임 모듈은 하나씩 따로 묶는다 — 서로는 번들에 넣지 않고 같은 URL로 부른다(그래야 모듈 상태가 한 벌이다). 입구 여럿을 한 번에 묶으면 서로를 같은 청크로 합친다.
+  for (const name of runtime) await build({
+    configFile: false,
+    root: source,
+    publicDir: false,
+    logLevel: 'warn',
+    build: {
+      outDir: temporary,
+      emptyOutDir: false,
+      target: 'es2022',
+      minify: true,
+      lib: { entry: join(runtimeDir, `${name}.ts`), formats: ['es'], fileName: () => `js/${name}.js` },
+      rolldownOptions: {
+        external: id => id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`),
+        output: { paths: id => id.startsWith(runtimeDir) ? './js/' + id.slice(runtimeDir.length).replace(/\.ts$/, '.js') : id },
+      },
+    },
   });
   // 한 장의 정적 껍데기(WorkspaceShell)를 index.html 에 미리 그린다 — resize-scene.js 와 접기 하네스가 페이지의 그 마크업을 쥔다.
   await build({

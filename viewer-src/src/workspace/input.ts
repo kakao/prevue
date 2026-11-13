@@ -1,7 +1,7 @@
 // 인터랙티브 입력(FR-14·15) — 사람의 터치 · 휠을 데몬에 보낸다. 좌표는 그림 px 로 받는다 — 화면에서 그림으로 바꾸는 것은 focus.ts 다.
-import { post } from '../../legacy/js/api.js';
-import { flash } from '../../legacy/js/capsule.js';
-import { phrase } from '../../legacy/js/strings.js';
+import { post } from '../runtime/api';
+import { flash } from '../runtime/capsule';
+import { phrase } from '../runtime/strings';
 
 type Point = [number, number];
 

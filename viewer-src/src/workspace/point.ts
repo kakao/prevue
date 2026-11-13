@@ -1,11 +1,11 @@
 // 가리키기(FR-20·21) — 트리 평탄화 · 히트테스트 · 그림 위 표시 · 데몬에 보내기 · 후보 고르기 · 카드. 보드와 한 장이 함께 쓴다.
 // 가리킨 결과는 그림 밖 옆에 뜬 카드가 말한다(D-162) — 캡슐은 오류 · 알림만. 카드 · 팝오버의 안은 React 의 PointOverlay · ChoicePopover 가 그린다.
-import { fetchPreviewFiles, get, post } from '../../legacy/js/api.js';
-import { applyReveal, cancelReveal, reveal, setCursor, trees } from '../../legacy/js/board.js';
-import { flash } from '../../legacy/js/capsule.js';
-import { cardOf, store } from '../../legacy/js/store.js';
-import { daemonText, phrase } from '../../legacy/js/strings.js';
-import { activeKey, type Message } from '../state';
+import { fetchPreviewFiles, get, post } from '../runtime/api';
+import { applyReveal, cancelReveal, reveal, setCursor, trees } from '../runtime/board';
+import { flash } from '../runtime/capsule';
+import { store } from '../runtime/store';
+import { daemonText, phrase } from '../runtime/strings';
+import { activeKey, findCard, type Message } from '../state';
 import { boxOf, indexOf, originOf, previewsOf, treeOf, type PreviewFiles, type PreviewIndex, type TreeHit } from './card';
 import { pointView, type CardModifier, type CardPreview, type CardRow, type PointCardData, type PointNode, type PointSay } from './view';
 
@@ -303,7 +303,7 @@ type TreeReply = { composeViewInfo?: TreeNode[] };
 export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts, signal: AbortSignal) {
   let list: Hit[] | null = null, over = false;
   const load = async () => {
-    const c = store.st && store.st.board && cardOf(i);
+    const c = findCard(store.st?.board, i);
     if (!c || !c.ok || !c.treeUrl) return null;
     const hit = trees.get(c.treeUrl) as Hit[] | undefined;
     if (hit) { list = hit; return list; }
@@ -328,7 +328,7 @@ export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts
     if (!l) return;
     const n = hitIn(l, ...posIn(e, img));
     if (!n) { if (spot?.img === img) clearPick(); return; }   // 그림의 빈 곳 — 한 장의 ⌥+클릭과 같다
-    const c = cardOf(i)!, full = natW(img);
+    const c = findCard(store.st?.board, i)!, full = natW(img);
     pointAt({
       list: l, img, hover: box, pick, marks, host: document.getElementById('boardView')!, scale: () => scaleOf(img), previewId: c.previewId,
       dpPerPx: c.widthDp && full ? c.widthDp / full : null, seen: { file: store.st?.board?.file ?? null, fn: stage.closest<HTMLElement>('.card')?.dataset.fn ?? null },

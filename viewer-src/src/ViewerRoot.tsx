@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { get } from '../legacy/js/api.js';
+import { get } from './runtime/api';
 import { BuildNotice } from './components/BuildNotice';
 import { FileRail, type RailHosts } from './components/FileRail';
 import { ProjectHeader, type AppInfo } from './components/ProjectHeader';

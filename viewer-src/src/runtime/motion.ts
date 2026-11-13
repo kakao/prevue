@@ -1,19 +1,19 @@
 // 작업 공간 여닫기는 화면 전체의 짧은 페이드 위에서 틀만 모프한다(frameMorph). 서로 다른 렌더 상태를 같은 그림으로 늘려 잇지 않는다.
 export const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 // Web Animations · 타이머는 var() 를 못 읽어 tokens.css 의 시간 · 이징을 꺼낸다. 시간 · 이징 토큰에는 light-dark() 가 없어 그대로 읽힌다.
-export const motionToken = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+export const motionToken = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 // 시간 토큰을 ms 숫자로 — 초로 적어도 맞게 읽고, 못 읽으면 0(바로 끝남)이라 animate() 가 던지지 않는다.
-export const motionMs = name => {
+export const motionMs = (name: string) => {
   const m = /^([\d.]+)(ms|s)$/.exec(motionToken(name));
   return m ? parseFloat(m[1]) * (m[2] === "s" ? 1000 : 1) : 0;
 };
-const isStream = u => !!u && u.startsWith("/stream");
+const isStream = (u: string | null | undefined) => !!u && u.startsWith("/stream");
 
 /**
  * 새 그림을 옛 그림 위로 크로스페이드한다. 새 그림이 디코드된 뒤에 시작하므로 표시를 늦추지 않는다 —
  * 그 사이 옛 그림이 그대로 보이고, 바뀌는 순간에만 겹친다. 스트림(MJPEG)은 복제하면 연결이 하나 더 열려 바로 바꾼다.
  */
-export function swapImage(img, url) {
+export function swapImage(img: HTMLImageElement, url: string) {
   const old = img.getAttribute("src");
   img.dataset.url = url;
   if (!old || img.hidden || !img.naturalWidth || isStream(url) || isStream(old)) { img.src = url; return; }
@@ -21,7 +21,7 @@ export function swapImage(img, url) {
   pre.src = url;
   pre.decode().catch(() => {}).then(() => {
     if (img.dataset.url !== url || img.hidden) return;
-    const ghost = img.cloneNode();
+    const ghost = img.cloneNode() as HTMLImageElement;
     ghost.removeAttribute("id"); ghost.classList.add("ghost"); ghost.alt = "";
     Object.assign(ghost.style, { left: img.offsetLeft + "px", top: img.offsetTop + "px", width: img.offsetWidth + "px", height: img.offsetHeight + "px" });
     img.after(ghost);
@@ -34,8 +34,8 @@ export function swapImage(img, url) {
 }
 
 // 전환 중 도착한 상태는 새 화면을 찍은 뒤 반영한다.
-let running = false, active = null;
-export function transition(update, done, { workspace = false, image = null } = {}) {
+let running = false, active: ViewTransition | null = null;
+export function transition(update: () => void, done?: (() => void) | null, { workspace = false, image = null }: { workspace?: boolean; image?: HTMLImageElement | null } = {}) {
   const root = document.documentElement;
   if (workspace) root.classList.remove("vt-tab");
   if (!document.startViewTransition || document.hidden || running) {
@@ -66,11 +66,11 @@ export function transition(update, done, { workspace = false, image = null } = {
 /**
  * 스트림이 닫힐 때 WebKit이 깨진 그림을 전환에 찍지 않도록 마지막 프레임을 보관한다.
  */
-export function freeze(img) {
+export function freeze(img: HTMLImageElement): Promise<unknown> {
   try {
     const c = document.createElement("canvas");
     c.width = img.naturalWidth; c.height = img.naturalHeight;
-    c.getContext("2d").drawImage(img, 0, 0);
+    c.getContext("2d")!.drawImage(img, 0, 0);
     img.src = c.toDataURL("image/jpeg", 0.92);
   } catch { return Promise.resolve(); }
   return Promise.race([img.decode().catch(() => {}), new Promise(r => setTimeout(r, 150))]);
@@ -78,7 +78,7 @@ export function freeze(img) {
 
 export const transitioning = () => running;
 /** 전환을 시작하기 전의 준비(장식 물리기 · 정지 그림) 동안 도착한 상태를 붙잡는다. 돌려준 함수로 놓는다. */
-export function hold() { running = true; return () => { running = false; }; }
+export function hold(): () => void { running = true; return () => { running = false; }; }
 
 // 작업 공간 진입 · 복귀의 틀 모프. 틀(모서리 · 바탕 · 그림자)만 옮기고 그림은 늘리지 않는다 — Hero는 그림을 늘려 뒤틀렸다.
 // 크기 틀(resize-scene setFrame)과 같은 0.55초 스프링이되 튕기지 않는다. 튕김은 크기가 바뀐다는 신호로 아낀다.
@@ -90,7 +90,10 @@ export const MORPH_LEAD = 385;   // 모프 70% — 장식이 들어오는 때. �
  * 그림은 늘리지 않고 틀의 왼쪽 위에 맞춰 덮는다 — 비율이 같으면 틀과 함께 고르게 커지고 줄어든다.
  * ceiling()이 화면 y 두 선을 주면 틀이 top 위로는 보이지 않고 bottom 까지 점점 드러난다 — 바탕이 흐려지는 머리 밑으로 들어가 보이게.
  */
-export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, swapMs = 150, ceiling = null }) {
+type Rect = { x: number; y: number; width: number; height: number };
+export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, swapMs = 150, ceiling = null }: {
+  from: Rect; to(): Rect; radius: [number, number]; shadow: [string, string]; a: string; b?: string | null; swapAt?: number; swapMs?: number; ceiling?: (() => { top: number; bottom: number } | null) | null;
+}) {
   const el = document.createElement("div"), ia = new Image(), ib = new Image();
   el.className = "morph"; ia.alt = ib.alt = ""; ib.style.opacity = "0";
   if (a) ia.src = a; else ia.style.opacity = "0";
@@ -99,15 +102,15 @@ export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, 
   document.body.append(el);
   // 스프링 시간은 한 그림에 최대 한 프레임만큼만 간다 — 전환을 찍는 첫 그림처럼 늦게 온 프레임이 틀을 건너뛰게 하지 않는다
   let t = 0, last = performance.now();
-  let raf = 0, landed = false, land, timer = 0, gone = false;
-  const landedP = new Promise(r => { land = r; });
-  const put = (r, rad) => Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: rad + "px" });
+  let raf = 0, landed = false, land: () => void, timer: ReturnType<typeof setTimeout> | undefined, gone = false;
+  const landedP = new Promise<void>(r => { land = r; });
+  const put = (r: Rect, rad: number) => Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: rad + "px" });
   // 위만 가린다 — 마스크를 옆 · 아래로 넓혀 두어야 그림자가 함께 지워지지 않는다
-  const cut = y => {
+  const cut = (y: number) => {
     const c = ceiling && ceiling(), b = c ? c.bottom - y : 0;
-    el.style.maskImage = b > 0 ? `linear-gradient(transparent ${(c.top - y).toFixed(1)}px, #000 ${b.toFixed(1)}px)` : "";
+    el.style.maskImage = b > 0 ? `linear-gradient(transparent ${(c!.top - y).toFixed(1)}px, #000 ${b.toFixed(1)}px)` : "";
   };
-  function frame(now) {
+  function frame(now: number) {
     raf = 0;
     if (gone) return;
     const T = to();
@@ -126,11 +129,11 @@ export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, 
   requestAnimationFrame(() => { el.style.transition = "box-shadow var(--duration-long3) var(--easing-standard)"; el.style.boxShadow = shadow[1]; });
   if (b !== null) timer = setTimeout(() => {
     if (b) ib.src = b;
-    for (const [img, op] of [[ia, 0], [ib, b ? 1 : 0]]) img.animate([{ opacity: img.style.opacity || 1 }, { opacity: op }], { duration: swapMs, easing: motionToken("--easing-standard"), fill: "forwards" });
+    for (const [img, op] of [[ia, 0], [ib, b ? 1 : 0]] as [HTMLImageElement, number][]) img.animate([{ opacity: img.style.opacity || 1 }, { opacity: op }], { duration: swapMs, easing: motionToken("--easing-standard"), fill: "forwards" });
   }, swapAt);
   // 뒤로 간 탭은 rAF 가 멈춘다 — 착지를 기다리는 쪽이 매달리지 않게 숨은 동안만 시간으로 닿는다. 보이는 탭은 느려도 끝까지 이어 간다
-  let late = 0;
-  const check = () => { late = 0; if (landed || gone) return; if (document.hidden) { landed = true; land(); } else late = setTimeout(check, 1200); };
+  let late: ReturnType<typeof setTimeout> | undefined;
+  const check = () => { late = undefined; if (landed || gone) return; if (document.hidden) { landed = true; land(); } else late = setTimeout(check, 1200); };
   late = setTimeout(check, 1200);
   // 걷어도 착지를 기다리는 쪽을 풀어 준다 — 그쪽은 제 비행이 아직 지금 것인지 보고 아무것도 하지 않는다
   function remove() { gone = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(late); el.remove(); if (!landed) { landed = true; land(); } }
