@@ -142,7 +142,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (resizeUI.update(f, st.error)) return;
     setZoom(zoom.z, zoom.x, zoom.y, false);
     // 인터랙티브면 MJPEG 스트림, 아니면 마지막 PNG. 스트림 주소는 태스크가 걸린 뒤에만 온다 — 그 전에는 카드의 마지막 그림이다.
-    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : findCard(st.board, st.board?.focus ?? null)?.imageUrl || '') : f.imageUrl;
+    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : findCard(st.board, st.board?.focus)?.imageUrl || '') : f.imageUrl;
     if (shot.dataset.url !== want) { if (want.startsWith('/stream')) sentW = 0; swapImage(shot, want); }
   }
 
@@ -460,7 +460,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       if (on) closeZoomMenu();
     },
     firstFrame,
-    originalSize() { const c = findCard(store.st?.board, store.st?.board?.focus ?? null); return c ? { w: c.widthDp, h: c.heightDp } : null; },
+    originalSize() { const c = findCard(store.st?.board, store.st?.board?.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
     dimensions(w, h) {
       if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); sentW = 0; reportViewport(); }
       return { w: fullW, h: fullH };

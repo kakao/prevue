@@ -65,7 +65,7 @@ export type ViewerState = Omit<ContractState, 'screen' | 'header' | 'board' | 'f
 /** 지금 보는 파일 — 활성 탭, 탭이 없으면 보드의 파일. 빠른 열기와 카드의 Preview 점프가 "지금 탭이면 데몬에 묻지 않는다"를 가른다. */
 export const activeKey = (st: ViewerState | null) => { const t = (st?.tabs || []).find(t => t.active); return t ? t.key : st?.board?.file ?? null; };
 
-export function findCard(board: Board | null | undefined, index: number | null): Card | null {
+export function findCard(board: Board | null | undefined, index: number | null | undefined): Card | null {
   if (!board || index == null) return null;
   for (const group of board.groups) for (const card of group.cards) if (card.index === index) return card;
   return null;

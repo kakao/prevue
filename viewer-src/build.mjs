@@ -54,12 +54,15 @@ try {
         output: {
           paths: id => separate(id) ? separatePath(id) : id,
           chunkFileNames: 'js/[name].js',
-          codeSplitting: { groups: [{ name: 'react', test: /node_modules/ } ]},
+          codeSplitting: { groups: [{ name: 'react', test: /node_modules/ }] },
         },
       },
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   });
+  // 메인 빌드의 청크가 런타임 모듈과 같은 이름이면 아래가 그 청크를 덮는다 — 청크 이름에 해시가 없다.
+  const mainChunks = new Set(await files(temporary));
+  for (const name of runtime) if (mainChunks.has(`js/${name}.js`)) throw Error(`번들 청크와 런타임 모듈의 이름이 겹친다: js/${name}.js`);
   // 런타임 모듈은 하나씩 따로 묶는다 — 서로는 번들에 넣지 않고 같은 URL로 부른다(그래야 모듈 상태가 한 벌이다). 입구 여럿을 한 번에 묶으면 서로를 같은 청크로 합친다.
   for (const name of runtime) await build({
     configFile: false,
@@ -74,7 +77,7 @@ try {
       lib: { entry: join(runtimeDir, `${name}.ts`), formats: ['es'], fileName: () => `js/${name}.js` },
       rolldownOptions: {
         external: id => id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`),
-        output: { paths: id => id.startsWith(runtimeDir) ? './js/' + id.slice(runtimeDir.length).replace(/\.ts$/, '.js') : id },
+        output: { paths: id => separate(id) ? separatePath(id) : id },
       },
     },
   });
@@ -94,7 +97,7 @@ try {
   const built = new Set(await files(temporary));
   for (const name of await files(join(source, 'legacy'))) {
     if (name.endsWith('.d.ts')) continue;
-    // 청크 이름에 해시가 없어 기존 모듈과 같은 이름이면 그 청크를 덮는다.
+    // 위와 같다 — 손으로 둔 legacy 파일이 번들 청크와 같은 이름이면 그 청크를 덮는다.
     if (built.has(name)) throw Error(`번들 청크와 기존 모듈의 이름이 겹친다: ${name}`);
     await mkdir(dirname(join(temporary, name)), { recursive: true });
     let body = await readFile(join(source, 'legacy', name));

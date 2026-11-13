@@ -131,7 +131,7 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
   const back = useHost(hosts?.back), title = useHost(hosts?.title);
   const f: Focus | null = state?.screen === 'focus' ? state.focus : null;
   const tab = f ? (state!.tabs || []).find(t => t.active) : undefined;
-  const card = f ? findCard(state?.board, state?.board?.focus ?? null) : null;
+  const card = f ? findCard(state?.board, state?.board?.focus) : null;
 
   useLayoutEffect(() => {
     document.body.classList.toggle('ws', !!f);
