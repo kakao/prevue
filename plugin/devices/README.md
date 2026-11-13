@@ -13,5 +13,6 @@
 - `look` — 사이트에 없는 그림 값이다. 뷰어 빌드(`viewer-src/generate-devices.mjs`)가 이것과 `measured`의 크기로 `viewer-src/legacy/js/devices.js`를 만든다(커밋하는 생성물, `sh tools/gen-viewer.sh --check`가 어긋남을 막는다). 빠진 필드 · 모르는 필드는 생성이 실패한다.
   - `bar`(시스템 바 모양: `aosp` · `oneui` · `pixel` · `ios`) — 데몬도 쓴다. `ios`면 메뉴의 iPhone 묶음이다.
   - `short`(메뉴 칸 이름) · `tone`(몸체 색 hex) · `open` · `cover`(접히는 기기만): `bezel`(숫자 하나, 또는 위·아래 짧은 두 변이 더 두꺼우면 `{"side", "ends"}`) · `home`(`true`면 자연 방향의 아래쪽 `bezel.ends` 가운데에 홈 버튼을 그린다) · `radius`(dp, 측정이 없을 때만) · `cam`(`w` `h` `y`, 가장자리를 따른 위치 비율 `x`; 가장자리에 붙은 노치는 `y` 0에 안쪽 모서리 반경 `notch`(dp, 눈대중)를 더하고, 오른쪽 긴 변에 붙으면 `edge: "right"` — `w`는 변을 따른 길이, `h`는 깊이) · `btn`(`[변, 위치, 길이]` 5개까지).
+  - `thickness` · `hinge`(접히는 기기만) — 접기 장면의 판. `thickness`는 펼친 판 하나의 두께(dp), `hinge`는 `{"axis", "gap"}`이다 — `axis`는 힌지가 가르는 변(지금은 `width`만 받는다), `gap`은 다 접혔을 때 두 화면 사이 틈(dp). 둘 다 실물 mm를 dp로 옮긴 어림값이다.
   - `status`(iOS 홑 기기만) — 상태바 아이콘 묶음 자리: `top` · `right` · `scale` · `time`. `left`가 있으면 홈 버튼 기기의 갈린 상태바다 — 신호 · Wi-Fi는 `left`, 배터리는 `right`, 시각은 가운데.
   - 화면 크기(dp)는 `measured`의 px ÷ `dpi` × 160이다 — 따로 적지 않는다.

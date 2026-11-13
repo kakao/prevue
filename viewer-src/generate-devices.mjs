@@ -63,13 +63,24 @@ function status(raw, where) {
   return { top: number(raw.top, `${where}.top`), right: number(raw.right, `${where}.right`), ...raw.left === undefined ? {} : { left: number(raw.left, `${where}.left`) }, s: number(raw.scale, `${where}.scale`), time };
 }
 
+// 접기 장면의 판 — 펼친 판 하나의 두께와 다 접혔을 때 두 화면 사이 틈(dp, 실물 mm 에서 옮긴 어림값).
+// 힌지가 높이를 가르는 조개형은 아직 그리지 않아 width 만 받는다.
+function plate(look, where) {
+  const hinge = keys(look.hinge, ['axis', 'gap'], `${where}.hinge`);
+  if (hinge.axis !== 'width') throw Error(`${where}.hinge.axis: width 만 받는다(height 는 아직 그리지 않는다)`);
+  const thickness = number(look.thickness, `${where}.thickness`), gap = number(hinge.gap, `${where}.hinge.gap`);
+  if (thickness <= 0 || gap < 0) throw Error(`${where}: thickness 는 0보다 크고 hinge.gap 은 0 이상이다`);
+  return { thickness, gap, axis: hinge.axis };
+}
+
 export function deviceTable(specList) {
   const devices = specList.map(spec => {
     const where = spec.id;
     keys(spec, ['id', 'label', 'order', 'measured', 'look'], where);
     const m = spec.measured, screens = m.screens, folds = 'cover' in screens;
     keys(screens, folds ? ['open', 'cover'] : ['open'], `${where}.measured.screens`);
-    const look = keys(spec.look, ['bar', 'short', 'tone', 'open', ...(folds ? ['cover'] : []), 'status'], `${where}.look`, ['bar', 'short', 'tone', 'open', ...(folds ? ['cover'] : [])]);
+    const foldKeys = folds ? ['cover', 'thickness', 'hinge'] : [];
+    const look = keys(spec.look, ['bar', 'short', 'tone', 'open', ...foldKeys, 'status'], `${where}.look`, ['bar', 'short', 'tone', 'open', ...foldKeys]);
     if (!BARS.includes(look.bar)) throw Error(`${where}.look.bar: ${look.bar}`);
     if (look.bar === 'ios' && !folds && !look.status) throw Error(`${where}: iOS 홑 기기에는 look.status 가 필요하다`);
     if (look.status && (look.bar !== 'ios' || folds)) throw Error(`${where}: look.status 는 iOS 홑 기기만 갖는다`);
@@ -82,6 +93,7 @@ export function deviceTable(specList) {
     for (const key of states) entry[key] = panel(key);
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], m.dpi, look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
+    if (folds) entry.plate = plate(look, `${where}.look`);
     return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };
   }).sort((a, b) => a.order - b.order);
   const ids = devices.map(d => d.id);
