@@ -5,7 +5,6 @@ export const DEVICES = {
     "name": "Galaxy S26",
     "short": "S26",
     "fold": false,
-    "bar": "oneui",
     "open": {
       "w": 360,
       "h": 780
@@ -54,7 +53,6 @@ export const DEVICES = {
     "name": "Pixel 9",
     "short": "Pixel 9",
     "fold": false,
-    "bar": "pixel",
     "open": {
       "w": 411.43,
       "h": 923.43
@@ -103,7 +101,6 @@ export const DEVICES = {
     "name": "iPhone 17",
     "short": "iPhone 17",
     "fold": false,
-    "bar": "ios",
     "open": {
       "w": 402,
       "h": 874
@@ -162,7 +159,6 @@ export const DEVICES = {
     "name": "iPhone Air",
     "short": "iPhone Air",
     "fold": false,
-    "bar": "ios",
     "open": {
       "w": 420,
       "h": 912
@@ -221,7 +217,6 @@ export const DEVICES = {
     "name": "iPhone 17 Pro Max",
     "short": "17 Pro Max",
     "fold": false,
-    "bar": "ios",
     "open": {
       "w": 440,
       "h": 956
@@ -280,7 +275,6 @@ export const DEVICES = {
     "name": "iPhone Duo",
     "short": "iPhone Duo",
     "fold": true,
-    "bar": "ios",
     "cover": {
       "w": 466,
       "h": 678
@@ -372,7 +366,6 @@ export const DEVICES = {
     "name": "Galaxy Z Fold8",
     "short": "Fold8",
     "fold": true,
-    "bar": "oneui",
     "cover": {
       "w": 475.43,
       "h": 751.24
@@ -463,7 +456,6 @@ export const DEVICES = {
     "name": "Galaxy Z Fold8 Ultra",
     "short": "Fold8 Ultra",
     "fold": true,
-    "bar": "oneui",
     "cover": {
       "w": 360,
       "h": 840
@@ -554,7 +546,6 @@ export const DEVICES = {
     "name": "Pixel 9 Pro Fold",
     "short": "9 Pro Fold",
     "fold": true,
-    "bar": "pixel",
     "cover": {
       "w": 443.08,
       "h": 994.46
@@ -646,7 +637,6 @@ export const DEVICES = {
     "name": "Pixel Tablet",
     "short": "Pixel Tablet",
     "fold": false,
-    "bar": "pixel",
     "open": {
       "w": 1280,
       "h": 800

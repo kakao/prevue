@@ -53,16 +53,16 @@ export function deviceTable(specList) {
       if (s.hingePx !== undefined) out.hinge = dp(s.hingePx, m.dpi);
       return out;
     };
-    const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds, bar: look.bar };
+    const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
-    return { order: number(spec.order, `${where}.order`), id: spec.id, entry };
+    return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };
   }).sort((a, b) => a.order - b.order);
   const ids = devices.map(d => d.id);
   if (new Set(ids).size !== ids.length) throw Error('기기 id 가 겹친다');
   const table = Object.fromEntries(devices.map(d => [d.id, d.entry]));
-  const menu = [['Android', devices.filter(d => d.entry.bar !== 'ios')], ['iPhone', devices.filter(d => d.entry.bar === 'ios')]]
+  const menu = [['Android', devices.filter(d => d.bar !== 'ios')], ['iPhone', devices.filter(d => d.bar === 'ios')]]
     .map(([group, list]) => ({ group, ids: list.map(d => d.id) }));
   return { table, menu };
 }

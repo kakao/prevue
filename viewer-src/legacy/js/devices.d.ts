@@ -2,7 +2,7 @@
 export type DeviceBody = { tone: string; bezel: number; radius: number; cam: { w: number; h: number; y: number; x?: number }; btn: { side: 1 | -1; at: number; len: number }[] };
 export type DevicePanel = { w: number; h: number; hinge?: number };
 export type DeviceEntry = {
-  name: string; short: string; fold: boolean; bar: 'aosp' | 'oneui' | 'pixel' | 'ios';
+  name: string; short: string; fold: boolean;
   open: DevicePanel; cover?: DevicePanel;
   look: { open: DeviceBody; cover?: DeviceBody };
   status?: { top: number; right: number; s: number; time: { cx: number; base: number; size: number } };
