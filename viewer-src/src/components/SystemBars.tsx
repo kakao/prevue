@@ -128,7 +128,7 @@ export function IosStatus({ bars }: { bars: Bars }) {
 }
 
 // Android 기기는 제조사와 상관없이 공통 Material(AOSP) 모양 한 벌이다(시안: prototypes/android-status-bar, 2026-11-11 사용자가 골랐다).
-// 아이콘은 Material 아이콘을 따른 근사다. 상태 줄의 세로 가운데는 위 띠의 카메라 가운데(없으면 띠 가운데)이고, 좌우는 EDGE 와 옆 컷아웃만큼 안에서 위 카메라를 비켜 선다.
+// 아이콘은 Material 아이콘을 따른 근사다. 상태 줄의 세로 가운데는 위 띠의 카메라 가운데(없으면 띠 가운데)이고, 좌우는 EDGE · 옆 컷아웃 · 둥근 화면 모서리가 상자를 자르지 않는 여백(cornerInset)만큼 안에서 위 카메라를 비켜 선다.
 // 크기는 상태바 높이에 비례한다 — ROW_BASE(띠 24dp)에서 1배, ROW_TOP(66dp, Pixel 9 세로)부터 ROW_GROW 만큼 큰 상한이다.
 const EDGE = 20, CAM_GAP = 8, A_ICONS_W = 46, A_ICONS_H = 13, A_TIME = 14, ROW_BASE = 24, ROW_TOP = 66, ROW_GROW = .3;
 const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
@@ -141,6 +141,7 @@ const A_ICONS = <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
 const A_HANDLE = { w: 108, h: 4, band: 24 };
 
 // 둥근 화면 모서리(반경 r)가 윗변 높이 top 의 상자 꼭짓점을 자르지 않는 가장자리 쪽 최소 여백 — 원 방정식으로 푼다. 윗변이 r 보다 아래면 0.
+// 시각 글자 상자의 높이 ÷ 글꼴 크기 — 측정한 상자(sb-time)를 덮는 근사다.
 const TEXT_BOX = 1.3;
 const cornerInset = (r: number, top: number) => r > 0 && top < r ? r - Math.sqrt(r * r - (r - Math.max(0, top)) ** 2) : 0;
 
@@ -148,9 +149,9 @@ function androidRow(bars: Bars) {
   const k = 1 + ROW_GROW * Math.min(1, Math.max(0, (bars.statusDp - ROW_BASE) / (ROW_TOP - ROW_BASE))), cam = bars.topCam;
   const camLeft = cam && cam.x1 < bars.w / 2, camRight = cam && cam.x0 > bars.w / 2;
   const y = cam ? cam.cy : bars.statusDp / 2;
-  const round = cornerInset(bars.radius, y - Math.max(A_TIME * k * TEXT_BOX, A_ICONS_H * k) / 2);
-  const left = Math.max(EDGE + bars.cut[0], round, camLeft ? cam.x1 + CAM_GAP : 0);
-  const right = Math.min(bars.w - EDGE - bars.cut[1], bars.w - round, camRight ? cam.x0 - CAM_GAP : Infinity);
+  const roundTime = cornerInset(bars.radius, y - A_TIME * k * TEXT_BOX / 2), roundIcons = cornerInset(bars.radius, y - A_ICONS_H * k / 2);
+  const left = Math.max(EDGE + bars.cut[0], roundTime, camLeft ? cam.x1 + CAM_GAP : 0);
+  const right = Math.min(bars.w - EDGE - bars.cut[1], bars.w - roundIcons, camRight ? cam.x0 - CAM_GAP : Infinity);
   return { k, y, left, right };
 }
 

@@ -4692,12 +4692,12 @@ var io = 20, ao = 8, oo = 46, so = 13, co = 14, lo = 24, uo = .3, fo = /* @__PUR
 	band: 24
 }, mo = 1.3, ho = (e, t) => e > 0 && t < e ? e - Math.sqrt(e * e - (e - Math.max(0, t)) ** 2) : 0;
 function go(e) {
-	let t = 1 + uo * Math.min(1, Math.max(0, (e.statusDp - lo) / 42)), n = e.topCam, r = n && n.x1 < e.w / 2, i = n && n.x0 > e.w / 2, a = n ? n.cy : e.statusDp / 2, o = ho(e.radius, a - Math.max(co * t * mo, so * t) / 2);
+	let t = 1 + uo * Math.min(1, Math.max(0, (e.statusDp - lo) / 42)), n = e.topCam, r = n && n.x1 < e.w / 2, i = n && n.x0 > e.w / 2, a = n ? n.cy : e.statusDp / 2, o = ho(e.radius, a - co * t * mo / 2), s = ho(e.radius, a - so * t / 2);
 	return {
 		k: t,
 		y: a,
 		left: Math.max(io + e.cut[0], o, r ? n.x1 + ao : 0),
-		right: Math.min(e.w - io - e.cut[1], e.w - o, i ? n.x0 - ao : Infinity)
+		right: Math.min(e.w - io - e.cut[1], e.w - s, i ? n.x0 - ao : Infinity)
 	};
 }
 function _o({ bars: e }) {
