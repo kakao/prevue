@@ -203,7 +203,7 @@ try {
   await until(`document.querySelector('#resizeScene').classList.contains('at-rest') && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await check(`document.querySelector('#rlW').value===String(${wNow}) && document.querySelector('#pnSl [data-axis="w"] .v b').textContent===String(${wNow})`, "요청이 실패하면 틀 · 숫자 · 슬라이더가 지금 크기로 돌아온다");
   await evaluate(`window.fetch=__realFetch;document.activeElement.blur()`);
-  await pick("ipduo", "device==='duo'");
+  await pick("duo", "device==='duo'");
   await check(`document.querySelector('#insetBtn')?.getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden`, "비기기 크기를 거쳐 기기로 돌아오면 인셋 영역 보기가 켜진 그대로");
   await check(`document.querySelector('#pnSl').hidden && __store.st.focus.size.widthPx===2853 && __store.st.focus.size.heightPx===2007 && document.querySelector('#rlW').value==='951' && document.querySelector('#rlH').value==='669'`, "Duo 펼침은 공개 해상도와 같은 951×669dp");
   await until(`__store.st.focus.postures.filter(p=>p.size.device==='duo').length===5`);
@@ -288,7 +288,7 @@ try {
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && __store.st.screen==='focus' && document.querySelector('#pnSum .nm').textContent==='673×841'`, "Esc 는 메뉴만 닫고 작업 공간에 남는다");
   await openMenu(); await click("#wsTitle"); await pause(250);
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false'`, "메뉴 밖을 누르면 닫힌다");
-  await pick("ipduo", "device==='duo'");
+  await pick("duo", "device==='duo'");
   // 가장 넓은 독(펼친 Duo — 자세 버튼 셋)도 창 폭마다 한 줄로 든다 — 560 아래 메뉴 버튼은 윤곽만, 확대는 배율만
   await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await check(`document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX}`, `펼친 Duo 의 독 폭이 ${DOCK_MAX}px 이하(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);

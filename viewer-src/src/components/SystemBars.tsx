@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { DEVICES } from '../../legacy/js/devices.js';
 import { cameraOf } from '../../legacy/js/resize-scene.js';
 import { useHost } from '../host';
 import type { DeviceInsets, Size, SystemUi } from '../state';
@@ -65,13 +66,7 @@ function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
 
 // 세로 상태바의 자리 · 크기는 iOS 27.0 시뮬레이터(9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%) 3x 스크린숏을 pt 로 잰 값이다(시안: prototypes/ios-status-bar).
 // top · right 는 오른쪽 아이콘 묶음(신호 왼쪽 끝 ~ 배터리 꼭지)의 윗변 · 오른쪽 끝, s 는 iPhone 17 대비 배율, time 은 시각의 가운데 · 기준선 · 글자 크기다.
-// 묶음 가운데가 아일랜드 가운데(resize-scene.js 의 cam)와 같은 높이에 놓인다.
-type IosLayout = { top: number; right: number; s: number; time: { cx: number; base: number; size: number } };
-const IOS_STATUS: Record<string, IosLayout> = {
-  ip17: { top: 26.33, right: 366.67, s: 1, time: { cx: 72.67, base: 39, size: 17 } },
-  ipair: { top: 31.33, right: 385.33, s: 1.12, time: { cx: 76.33, base: 45.33, size: 17.7 } },
-  ip17pm: { top: 25.33, right: 399.33, s: 1.12, time: { cx: 82.33, base: 39.33, size: 17.7 } },
-};
+// 값은 기기 스펙의 look.status 다(devices.js). 묶음 가운데가 아일랜드 가운데(resize-scene.js 의 cam)와 같은 높이에 놓인다.
 
 // 아래 그림의 좌표는 배율 1 의 묶음 안이다 — 윗변 y 0, 신호 왼쪽 끝 x 0, 꼭지 오른쪽 끝 x 78.33.
 const GROUP_W = 78.33;
@@ -116,7 +111,7 @@ function DuoStatus({ bars }: { bars: Bars }) {
 
 export function IosStatus({ bars }: { bars: Bars }) {
   if (bars.duo) return <DuoStatus bars={bars} />;
-  const layout = IOS_STATUS[bars.device];
+  const layout = DEVICES[bars.device]?.status;
   if (!layout) return null;
   return <g className="sb-status" data-edge="top">
     <text className="sb-time" x={layout.time.cx} y={layout.time.base} textAnchor="middle" fontSize={layout.time.size} fontWeight={600}>9:41</text>

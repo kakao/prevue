@@ -88,7 +88,7 @@ try {
   await check("document.querySelector('#resizeScene').clientHeight>=800",'실제 창 크기의 검사 장면');
   const devices = [
     ['fold8',932.57,704,475.43,751.24], ['ultra',752,834.67,360,840],
-    ['ipduo',951,669,466,678], ['pixelfold',851.69,882.87,443.08,994.46],
+    ['duo',951,669,466,678], ['pixelfold',851.69,882.87,443.08,994.46],
   ];
   const results = [];
   const click = async selector => {
@@ -146,7 +146,7 @@ try {
     'cover:portrait':['landscape-left'], 'cover:landscape-right':['portrait'], 'cover:landscape-left':['portrait',true],
     'open:landscape-left':['portrait'], 'open:portrait':['landscape-right'], 'open:landscape-right':['portrait',true],
   };
-  const handOf = (device, folded, orientation) => ['ipduo','fold8'].includes(device) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
+  const handOf = (device, folded, orientation) => ['duo','fold8'].includes(device) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
   const flip = (b, c) => ({x:2*c.x-b.x-b.w,y:2*c.y-b.y-b.h,w:b.w,h:b.h});
   const centre = b => ({x:b.x+b.w/2,y:b.y+b.h/2});
   for (const [device, ...size] of devices) {
@@ -164,7 +164,7 @@ try {
           // CDP 포인터로 실제 독의 버튼을 눌러 toggleFold → request → update를 통과한다.
           await click('#dcFold');
           assert.deepEqual(await evaluate('requests'),[to.sel],`${name}: 손에 든 회전을 잇는 요청`);
-          const duration=device==='ipduo'?1000:600;
+          const duration=device==='duo'?1000:600;
           const motion=await evaluate(`(()=>{
             const start=time,frames=[];window.phase=${from===cover?1:0};window.atStart=true;step(start);const first=sample();window.atStart=false;
             for(let t=0;t<${duration};t+=16){if(t===304&&${arrival==='during'})scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));window.phase=${to===cover?'t/'+duration:'1-t/'+duration};step(start+t);frames.push(sample())}
@@ -186,10 +186,10 @@ try {
             const boxes=[frame.body,...frame.buttons];
             assert(boxes.every(b=>b.x>=0&&b.y>=0&&b.x+b.w<=1440&&b.y+b.h<=900),`${name}: 모션 중 몸체와 단추가 창 안`);
           }
-          const changing = new Set(frames.map(f=>device==='ipduo'?f.path:f.leaf));
+          const changing = new Set(frames.map(f=>device==='duo'?f.path:f.leaf));
           assert(changing.size>=10,`${name}: 접는 장의 실제 변형`);
           const worst=Math.max(...frames.map(f=>f.error));assert(worst<.1,`${name}: 이음매 ${worst}px`);
-          if(device!=='ipduo'&&to===cover){
+          if(device!=='duo'&&to===cover){
             const shut=frames.filter(f=>f.theta>=179);assert(shut.length,'다 접힌 프레임');
             assert(Math.max(...shut.map(f=>f.over))<=.5,`${name}: 바닥 반쪽이 커버 밖으로 나오지 않음`);
           }
@@ -218,7 +218,7 @@ try {
   // 돌리기 — 카메라는 몸체에 붙어 돈다. 마지막 회전 프레임 · 회전 끝 · 정지 장면의 카메라가 한 자리이고,
   // Duo 커버는 safearea.info occlusion 중심(가로 왼쪽 = 위가 왼쪽, 사이트 이름으로는 Landscape Right)에 선다.
   const SITE_CAM = { 'portrait': [418.17,47.83], 'landscape-left': [47.83,47.83], 'landscape-right': [630.17,418.17] };
-  const spins = [['ipduo',true,[951,669,466,678]], ['ip17',false,[402,874]]];
+  const spins = [['duo',true,[951,669,466,678]], ['ip17',false,[402,874]]];
   for (const [device, folded, size] of spins) {
     const poses = ['portrait','landscape-left','landscape-right'].map(o => ({o, st: pose(device, folded, o, size)}));
     for (const a of poses) for (const b of poses) if (a !== b) {
@@ -237,7 +237,7 @@ try {
         assert(Math.hypot(k.x-c.x, k.y-c.y) <= .5, `${name}: ${label} 카메라 ${JSON.stringify(k)} / 정지 ${JSON.stringify(c)}`);
       }
       assert.equal(spun.moving, false, `${name}: 정착`);
-      if (device === 'ipduo') {
+      if (device === 'duo') {
         const s = rest.body.w / b.st.w, [x, y] = SITE_CAM[b.o];
         assert(Math.abs((c.x-rest.body.x)/s-x) <= .5 && Math.abs((c.y-rest.body.y)/s-y) <= .5, `${name}: 사이트 occlusion 중심 ${[(c.x-rest.body.x)/s,(c.y-rest.body.y)/s]} / ${[x,y]}`);
       }
@@ -251,7 +251,7 @@ try {
     // 비대칭 표식이 든 실제 그림으로 중간 모션의 육안 확인 자료도 남긴다.
     await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
     await click('#dcFold');
-    await evaluate(`step(time+${device==='ipduo'?350:210});Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
+    await evaluate(`step(time+${device==='duo'?350:210});Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
     const shot=await send('Page.captureScreenshot',{format:'png'});
     await writeFile(join(root,'.cache/fold',device+'-motion.png'),Buffer.from(shot.data,'base64'));
   }

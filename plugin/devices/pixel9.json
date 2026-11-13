@@ -80,6 +80,9 @@
     }
   },
   "look": {
-    "bar": "pixel"
+    "bar": "pixel",
+    "short": "Pixel 9",
+    "tone": "#27292d",
+    "open": {"bezel": 6, "radius": 50.29, "cam": {"w": 32, "h": 32, "y": 16.95}, "btn": [[1, 190, 50], [1, 270, 95]]}
   }
 }

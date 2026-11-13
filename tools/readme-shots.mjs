@@ -927,7 +927,7 @@ const SCENES = {
     const foldReady = `(() => { const b = document.getElementById("dcFold"); return ${FOCUS} && !!b && b.offsetWidth > 0 && !b.disabled; })()`;
     await devicesGif(c, "devices", opt["pearl-a"], PEARL.showcase, "DevicesPreview", async h => {
       await pick(h, "ip17", 2400);                                           // iPhone 17 — 다이내믹 아일랜드 · 아래 띠
-      await pick(h, "ipduo", 0);                                             // 펼친 Duo — 곧바로 접는다
+      await pick(h, "duo", 0);                                             // 펼친 Duo — 곧바로 접는다
       await c.until(foldReady, 20_000);
       await fold(h);                                                         // 커버 화면
       await fold(h, 2600);                                                   // 펼치면 오른쪽 · 아래 띠

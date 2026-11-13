@@ -80,6 +80,9 @@
     }
   },
   "look": {
-    "bar": "pixel"
+    "bar": "pixel",
+    "short": "Pixel Tablet",
+    "tone": "#3a3a38",
+    "open": {"bezel": 34, "radius": 34, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 120, 70]]}
   }
 }
