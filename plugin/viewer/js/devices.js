@@ -13,7 +13,12 @@ export const DEVICES = {
       "open": {
         "tone": "#23262c",
         "bezel": 5,
-        "radius": 28,
+        "radius": [
+          28,
+          28,
+          28,
+          28
+        ],
         "cam": {
           "w": 9,
           "h": 9,
@@ -61,7 +66,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2a2d33",
         "bezel": 7,
-        "radius": 36.27,
+        "radius": [
+          36.27,
+          36.27,
+          36.27,
+          36.27
+        ],
         "cam": {
           "w": 42.67,
           "h": 34.13,
@@ -110,7 +120,12 @@ export const DEVICES = {
       "open": {
         "tone": "#34363a",
         "bezel": 5,
-        "radius": 28.09,
+        "radius": [
+          28.09,
+          28.09,
+          28.09,
+          28.09
+        ],
         "cam": {
           "w": 9,
           "h": 9,
@@ -158,7 +173,12 @@ export const DEVICES = {
       "open": {
         "tone": "#27292d",
         "bezel": 6,
-        "radius": 50.29,
+        "radius": [
+          50.29,
+          50.29,
+          50.29,
+          50.29
+        ],
         "cam": {
           "w": 32,
           "h": 32,
@@ -206,7 +226,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2d2f33",
         "bezel": 6,
-        "radius": 50.46,
+        "radius": [
+          50.46,
+          50.46,
+          50.46,
+          50.46
+        ],
         "cam": {
           "w": 31.64,
           "h": 31.64,
@@ -254,7 +279,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2c2c2e",
         "bezel": 5,
-        "radius": 62,
+        "radius": [
+          62,
+          62,
+          62,
+          62
+        ],
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -312,7 +342,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2c2c2e",
         "bezel": 5,
-        "radius": 47.33,
+        "radius": [
+          47.33,
+          47.33,
+          47.33,
+          47.33
+        ],
         "cam": {
           "w": 161.33,
           "h": 33.67,
@@ -371,7 +406,12 @@ export const DEVICES = {
       "open": {
         "tone": "#46484c",
         "bezel": 4,
-        "radius": 62,
+        "radius": [
+          62,
+          62,
+          62,
+          62
+        ],
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -429,7 +469,12 @@ export const DEVICES = {
       "open": {
         "tone": "#3b3a38",
         "bezel": 5,
-        "radius": 62,
+        "radius": [
+          62,
+          62,
+          62,
+          62
+        ],
         "cam": {
           "w": 125.33,
           "h": 36.67,
@@ -487,7 +532,12 @@ export const DEVICES = {
       "open": {
         "tone": "#3a3734",
         "bezel": 5,
-        "radius": 62,
+        "radius": [
+          62,
+          62,
+          62,
+          62
+        ],
         "cam": {
           "w": 94.67,
           "h": 36.67,
@@ -547,7 +597,12 @@ export const DEVICES = {
         "bezel": 5,
         "ends": 18,
         "home": true,
-        "radius": 0,
+        "radius": [
+          0,
+          0,
+          0,
+          0
+        ],
         "cam": {
           "w": 0,
           "h": 0,
@@ -611,7 +666,12 @@ export const DEVICES = {
       "cover": {
         "tone": "#4a4744",
         "bezel": 6,
-        "radius": 59,
+        "radius": [
+          59,
+          59,
+          59,
+          59
+        ],
         "cam": {
           "w": 37,
           "h": 37,
@@ -649,7 +709,12 @@ export const DEVICES = {
       "open": {
         "tone": "#4a4744",
         "bezel": 6,
-        "radius": 59,
+        "radius": [
+          59,
+          59,
+          59,
+          59
+        ],
         "cam": {
           "w": 0,
           "h": 0,
@@ -708,7 +773,12 @@ export const DEVICES = {
       "cover": {
         "tone": "#2b2d32",
         "bezel": 6,
-        "radius": 9.9,
+        "radius": [
+          9.9,
+          9.9,
+          9.9,
+          9.9
+        ],
         "cam": {
           "w": 9,
           "h": 9,
@@ -745,7 +815,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2b2d32",
         "bezel": 6,
-        "radius": 6.86,
+        "radius": [
+          6.86,
+          6.86,
+          6.86,
+          6.86
+        ],
         "cam": {
           "w": 0,
           "h": 0,
@@ -803,7 +878,12 @@ export const DEVICES = {
       "cover": {
         "tone": "#1f2125",
         "bezel": 5,
-        "radius": 5,
+        "radius": [
+          5,
+          5,
+          5,
+          5
+        ],
         "cam": {
           "w": 8,
           "h": 8,
@@ -840,7 +920,12 @@ export const DEVICES = {
       "open": {
         "tone": "#1f2125",
         "bezel": 5,
-        "radius": 5,
+        "radius": [
+          5,
+          5,
+          5,
+          5
+        ],
         "cam": {
           "w": 0,
           "h": 0,
@@ -881,6 +966,115 @@ export const DEVICES = {
       "axis": "width"
     }
   },
+  "flip8": {
+    "name": "Galaxy Z Flip8",
+    "short": "Flip8",
+    "fold": true,
+    "cover": {
+      "w": 399.16,
+      "h": 441.26,
+      "fixed": true
+    },
+    "open": {
+      "w": 360,
+      "h": 840,
+      "hinge": 420
+    },
+    "look": {
+      "cover": {
+        "tone": "#2a2c31",
+        "bezel": 5,
+        "radius": [
+          5.05,
+          5.05,
+          40.84,
+          40.84
+        ],
+        "cam": {
+          "w": 218.95,
+          "h": 88,
+          "y": 0,
+          "x": 0.7257,
+          "notch": 24,
+          "edge": "bottom"
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 120,
+            "len": 70
+          },
+          {
+            "side": 1,
+            "at": 55,
+            "len": 45
+          },
+          {
+            "side": 1,
+            "at": 100,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 100,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 100,
+            "len": 0
+          }
+        ]
+      },
+      "open": {
+        "tone": "#2a2c31",
+        "bezel": 5,
+        "radius": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "cam": {
+          "w": 9,
+          "h": 9,
+          "y": 13.5
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 230,
+            "len": 70
+          },
+          {
+            "side": 1,
+            "at": 320,
+            "len": 45
+          },
+          {
+            "side": 1,
+            "at": 365,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 365,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 365,
+            "len": 0
+          }
+        ]
+      }
+    },
+    "plate": {
+      "thickness": 34,
+      "gap": 3,
+      "axis": "height"
+    }
+  },
   "pixelfold": {
     "name": "Pixel 9 Pro Fold",
     "short": "9 Pro Fold",
@@ -898,7 +1092,12 @@ export const DEVICES = {
       "cover": {
         "tone": "#2f3135",
         "bezel": 6,
-        "radius": 47.18,
+        "radius": [
+          47.18,
+          47.18,
+          47.18,
+          47.18
+        ],
         "cam": {
           "w": 34.05,
           "h": 34.05,
@@ -935,7 +1134,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2f3135",
         "bezel": 7,
-        "radius": 34.87,
+        "radius": [
+          34.87,
+          34.87,
+          34.87,
+          34.87
+        ],
         "cam": {
           "w": 32.41,
           "h": 32.41,
@@ -989,7 +1193,12 @@ export const DEVICES = {
       "open": {
         "tone": "#3a3a38",
         "bezel": 34,
-        "radius": 34,
+        "radius": [
+          34,
+          34,
+          34,
+          34
+        ],
         "cam": {
           "w": 0,
           "h": 0,
@@ -1037,7 +1246,12 @@ export const DEVICES = {
       "open": {
         "tone": "#2b2d31",
         "bezel": 10,
-        "radius": 25.14,
+        "radius": [
+          25.14,
+          25.14,
+          25.14,
+          25.14
+        ],
         "cam": {
           "w": 57.14,
           "h": 16,
@@ -1089,6 +1303,7 @@ export const DEVICE_MENU = [
       "pixel10xl",
       "fold8",
       "ultra",
+      "flip8",
       "pixelfold",
       "tablet",
       "s11ultra"

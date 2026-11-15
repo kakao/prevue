@@ -470,7 +470,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       stage.style.top = r.y + 'px';
       stage.style.width = r.w + 'px';
       stage.style.height = r.h + 'px';
-      stage.style.borderRadius = r.radius + 'px';
+      stage.style.borderRadius = r.radius.map(v => v + 'px').join(' ');
       Object.assign(insetMarks.style, { left: stage.style.left, top: stage.style.top, width: stage.style.width, height: stage.style.height });
       insetMarks.style.setProperty('--im-bezel', r.bezel + 'px');
       showZoom();

@@ -2220,7 +2220,7 @@ function mr({ focusView: e, wrap: t, stage: n, shot: r, box: i, pickBox: a, mark
 			};
 		},
 		layout(e) {
-			n.style.left = e.cx - e.w / 2 + "px", n.style.top = e.y + "px", n.style.width = e.w + "px", n.style.height = e.h + "px", n.style.borderRadius = e.radius + "px", Object.assign(c.style, {
+			n.style.left = e.cx - e.w / 2 + "px", n.style.top = e.y + "px", n.style.width = e.w + "px", n.style.height = e.h + "px", n.style.borderRadius = e.radius.map((e) => e + "px").join(" "), Object.assign(c.style, {
 				left: n.style.left,
 				top: n.style.top,
 				width: n.style.width,
@@ -4363,7 +4363,7 @@ function Ra(e, t, n = null) {
 		x0: a.x,
 		x1: a.x + a.w,
 		cy: a.y + a.h / 2
-	} : null, s = t.insetProfile?.safeArea, c = t.device === "duo", l = c && s ? s.left > 0 ? "left" : s.right > 0 ? "right" : null : null;
+	} : null, s = Se[t.device]?.look?.[t.folded ? "cover" : "open"]?.cam, c = a && s?.edge === "bottom" && a.y + a.h >= t.heightDp - .5 ? [a.x, a.x + a.w] : null, l = t.insetProfile?.safeArea, u = t.device === "duo", d = u && l ? l.left > 0 ? "left" : l.right > 0 ? "right" : null : null;
 	return {
 		device: t.device,
 		ios: r.look === "ios",
@@ -4371,13 +4371,14 @@ function Ra(e, t, n = null) {
 		h: t.heightDp,
 		statusDp: r.insets.statusDp,
 		navDp: r.insets.navDp,
-		side: l,
-		sideDp: l && s ? s[l] : 0,
-		duo: c,
+		side: d,
+		sideDp: d && l ? l[d] : 0,
+		duo: u,
 		folded: t.folded,
 		cut: [i?.left ?? 0, i?.right ?? 0],
-		radius: Se[t.device]?.look?.[t.folded ? "cover" : "open"]?.radius ?? 0,
-		topCam: o
+		radius: Se[t.device]?.look?.[t.folded ? "cover" : "open"]?.radius[0] ?? 0,
+		topCam: o,
+		lowCam: c
 	};
 }
 var za = 24, Ba = 4, Va = .6, Ha = 1e3;
@@ -4660,10 +4661,10 @@ function vo({ bars: e }) {
 		height: "5",
 		rx: "2.5"
 	});
-	let t = e.h - Math.min(e.navDp, po.band) / 2;
+	let t = e.h - Math.min(e.navDp, po.band) / 2, n = e.lowCam, r = n ? n[0] >= e.w - n[1] ? n[0] / 2 : (n[1] + e.w) / 2 : e.w / 2;
 	return /* @__PURE__ */ (0, R.jsx)("rect", {
 		className: "sb-handle",
-		x: (e.w - po.w) / 2,
+		x: r - po.w / 2,
 		y: t - po.h / 2,
 		width: po.w,
 		height: po.h,

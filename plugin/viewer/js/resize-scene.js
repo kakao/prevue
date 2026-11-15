@@ -5,6 +5,12 @@ import { DEVICES } from "./devices.js";
 // 기기 표(크기 · 베젤 · 반경 · 카메라 · 버튼 · 색)는 plugin/devices 스펙에서 생성한 devices.js 다 — 값의 출처(windowinsets.info · safearea.info)와 눈대중인 값은 스펙이 갖는다.
 
 // 자연 방향 화면(panel)을 sel 의 rot · right 로 돌린 자세 — 세로 / 가로 왼쪽 / 가로 오른쪽과 손에 든 회전 각도.
+// 네 모서리 [좌상, 우상, 우하, 좌하] 를 4분의 1바퀴씩 돌린다 — camBox 의 회전과 같은 방향이다.
+const turnR = (r, n) => { let o = r; for (let i = 0; i < ((n % 4) + 4) % 4; i++) o = [o[3], o[0], o[1], o[2]]; return o; };
+// 조개형(hinge.axis height)은 힌지가 높이를 가른다 — 접기 장면은 책형과 같은 판 좌표(u 가 힌지를 가로지른다)에서 그리고 장면 전체를 90° 돌린다.
+const tallOf = d => d.plate?.axis === "height";
+const plateOf = (d, key) => tallOf(d) ? { w: d[key].h, h: d[key].w } : d[key];
+
 function turnOf(panel, rot, right) {
   const wide = panel.w > panel.h;
   const orientation = right ? "landscape-right" : ((rot ? panel.h : panel.w) > (rot ? panel.w : panel.h) ? "landscape-left" : "portrait");
@@ -21,21 +27,24 @@ export function cameraOf(sel) {
 }
 
 // 카메라 상자 — 스펙의 cam 은 위 가장자리 기준이다(w 는 가장자리를 따른 길이, h 는 깊이, x 는 가장자리를 따른 위치 비율).
-// edge:"right" 면 자연 방향의 오른쪽 가장자리에 붙고(긴 변 노치), 자세가 돌면 그만큼 4분의 1바퀴씩 같이 돈다.
-// notch 는 가장자리에 붙은 노치의 안쪽 모서리 반경이다 — 가장자리 쪽 두 모서리는 각진다. rad · flat 은 기기를 바꾸는 보간용이다.
+// edge:"right" 면 자연 방향의 오른쪽 가장자리(x 는 위에서), "bottom" 이면 아래 가장자리(x 는 왼쪽에서)에 붙고, 자세가 돌면 그만큼 4분의 1바퀴씩 같이 돈다.
+// notch 는 가장자리에 붙은 노치의 안쪽 모서리 반경이다 — 가장자리 쪽 두 모서리와, 옆 변에 닿은 모서리(Flip8 커버의 오른쪽 아래 컷아웃)는 각진다.
+// rad · flat 은 기기를 바꾸는 보간용이다.
 // 보간 중인 cam 은 rad · flat 을 이미 갖고, 스펙의 cam 은 notch 에서 나온다 — 두 곳이 같은 판단을 쓴다.
 const camRad = c => c.rad ?? c.notch ?? Math.min(c.w, c.h) / 2, camFlat = c => c.flat ?? (c.notch !== undefined ? 1 : 0);
 function camBox(W0, H0, rot, cam, s, mirrored = false) {
-  const own = cam.edge === "right" ? 1 : 0, turns = (own + (rot ? 1 : 0) + (mirrored ? 2 : 0)) % 4;
-  let fw = (own ? H0 : W0) * s, fh = (own ? W0 : H0) * s;
-  let b = { left: (cam.x ?? .5) * fw - cam.w * s / 2, top: cam.y * s, width: cam.w * s, height: cam.h * s };
+  const own = cam.edge === "right" ? 1 : cam.edge === "bottom" ? 2 : 0, turns = (own + (rot ? 1 : 0) + (mirrored ? 2 : 0)) % 4;
+  let fw = (own % 2 ? H0 : W0) * s, fh = (own % 2 ? W0 : H0) * s;
+  const x = own === 2 ? 1 - (cam.x ?? .5) : cam.x ?? .5;
+  let b = { left: x * fw - cam.w * s / 2, top: cam.y * s, width: cam.w * s, height: cam.h * s };
   for (let i = 0; i < turns; i++) {
     b = { left: fh - b.top - b.height, top: b.left, width: b.height, height: b.width };
     [fw, fh] = [fh, fw];
   }
   const rad = camRad(cam) * s, flat = camFlat(cam);
-  const corners = [rad, rad, rad, rad];
+  const corners = [rad, rad, rad, rad], near = .5 * s, onL = b.left <= near, onT = b.top <= near, onR = b.left + b.width >= fw - near, onB = b.top + b.height >= fh - near;
   for (const k of [[0, 1], [1, 2], [2, 3], [3, 0]][turns]) corners[k] = rad * (1 - flat);
+  [onL || onT, onT || onR, onR || onB, onB || onL].forEach((on, k) => { if (on) corners[k] = rad * (1 - flat); });
   return { ...b, corners: corners.map(v => v + "px").join(" "), on: cam.w * s > .5 };
 }
 
@@ -71,6 +80,7 @@ export function createResizeScene(root, hooks) {
       const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
       if (!d || !d[state]) return null;
       const s = d[state], rot = turns.includes("rot"), right = turns.includes("right");
+      if (s.fixed && (rot || right)) return null;
       st = { sel, kind: "device", dev, folded: state === "cover", rot, right, ...turnOf(s, rot, right), name: d.name, short: d.short,
         w: rot ? s.h : s.w, h: rot ? s.w : s.h, hinge: s.hinge };
     }
@@ -215,7 +225,7 @@ export function createResizeScene(root, hooks) {
     const A = look.a, B = look.b;
     if (!B) return DEVICES.s26.look.open;
     const k = easeOut(clamp((now - look.t0) / look.dur, 0, 1)), m = (x, y) => lerp(x, y, k);
-    return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(Number(A.home) || 0, Number(B.home) || 0), radius: m(A.radius, B.radius),
+    return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(Number(A.home) || 0, Number(B.home) || 0), radius: B.radius.map((r, i) => m(A.radius[i], r)),
       cam: camLook(A.cam, B.cam, k, m),
       btn: B.btn.map((b, i) => { const a = A.btn[i];
         return a.side === b.side ? { side: b.side, at: m(a.at, b.at), len: m(a.len, b.len) }
@@ -360,8 +370,8 @@ export function createResizeScene(root, hooks) {
 
   const rig = { on: false };
   function rigCamera(folded, scale) {
-    const panel = rig.d[folded ? "cover" : "open"];
-    return camBox(panel.w, panel.h, false, rig.d.look[folded ? "cover" : "open"].cam, scale);
+    const panel = rig.d[folded ? "cover" : "open"], tall = tallOf(rig.d);
+    return camBox(panel.w, panel.h, tall, rig.d.look[folded ? "cover" : "open"].cam, scale, tall);
   }
   // 접기 장면의 두 판은 두께 있는 상자다(앞면 · 뒷면 · 옆면 띠). 원근은 .lift 한 겹에만 두고 그 아래는 preserve-3d 라
   // 판의 조상에 overflow · filter · mask · opacity 를 두지 않는다 — 두면 납작해진다. 흐림 · 자르기는 면 안에서만 한다.
@@ -386,15 +396,16 @@ export function createResizeScene(root, hooks) {
     freeze(now);
     if (cached) { const o = layer.old; o.fill = false; o.blur.snap(0); o.veil.snap(0); }
     const restBlur = layer.old.blur.at(now);
-    const openU = f => f.cx - d.open.w * f.s / 2 + H * f.s;
-    const coverU = f => f.cx - d.cover.w * f.s / 2;
+    const O = plateOf(d, "open"), C = plateOf(d, "cover");
+    const openU = f => f.cx - O.w * f.s / 2 + H * f.s;
+    const coverU = f => f.cx - C.w * f.s / 2;
     const frame = { w: to.w, h: to.h };
     // 짝 없는 방향(거꾸로 선 세로 대신 바로 선 세로)은 180° 돌지 않고 접기만 보인 뒤 정지 자세로 맞춘다
     const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
-      on: true, turn, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
+      on: true, turn, q: tallOf(d) ? 90 : 0, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
       s0: f0.s, s1: f1.s,
-      half: { u: H, v: d.open.h }, cover: { u: d.cover.w, v: d.cover.h },
+      half: { u: H, v: O.h }, cover: { u: C.w, v: C.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
       hx1: dir === "fold" ? coverU(f1) : openU(f1),
       plan: dir === "fold"
@@ -413,7 +424,7 @@ export function createResizeScene(root, hooks) {
   function rigPose(e, bezel) {
     const th = (rig.dir === "fold" ? e : 1 - e) * 180;
     const baseS = lerp(rig.s0, rig.s1, e), cy = lerp(rig.f0.y + rig.f0.h / 2, rig.f1.y + rig.f1.h / 2, e);
-    const angle = rig.from.angle + rig.turn * e, rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
+    const angle = rig.from.angle + rig.turn * e + rig.q, rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
     const u = lerp(rig.half.u, rig.cover.u, k), v = lerp(rig.half.v, rig.cover.v, k);
     const hx = lerp(rig.hx0, rig.hx1, e), r = room(), offset = (hx - r.cx) / baseS;
     const perspective = P.perspective / (P.perspective - (u + rig.d.plate.thickness) * Math.sin(rad) * baseS);
@@ -503,7 +514,7 @@ export function createResizeScene(root, hooks) {
 
   // 접기는 기기 고유 좌표에서 하고, 그림은 장면의 회전을 상쇄해 화면 위로 선다.
   function foldImage(img, spec, size, folded, du, s, now, blur = 0, opacity = 1) {
-    const panel = rig.d[folded ? "cover" : "open"];
+    const panel = plateOf(rig.d, folded ? "cover" : "open");
     place(img, spec, (panel.w - size.w) * s / 2 - du * s, size.w * s, size.h * s, opacity, blur, (panel.h - size.h) * s / 2);
     img.style.transform = `rotate(${-rigAt(now).angle}deg)`;
   }
@@ -607,6 +618,19 @@ export function createResizeScene(root, hooks) {
     if (on) f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * lift * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
   }
 
+  // 조개형의 옆 단추는 힌지와 나란한 변(판 좌표의 위 · 아래 변)에 있고 접히는 장을 따라 돈다 — 힌지에서 잰 거리를 펼친 자리에서
+  // 커버 자리로 옮기며 그 거리의 앞모습(cos)만큼 그린다. 펼친 화면의 오른쪽 변(side 1)이 판 좌표의 위 변이다.
+  function tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone }) {
+    const d = rig.d, H = d.open.hinge, bw = 3;
+    d.look.open.btn.forEach((bo, i) => {
+      const bc = d.look.cover.btn[i], leaf = bo.at < H;
+      const w0 = lerp(leaf ? H - bo.at - bo.len : bo.at - H, bc.at, leaf ? k : 0), w1 = lerp(leaf ? H - bo.at : bo.at + bo.len - H, bc.at + bc.len, leaf ? k : 0);
+      const [u0, u1] = leaf ? [-w1 * cs, -w0 * cs].sort((a, b) => a - b) : [w0, w1], wm = (w0 + w1) / 2;
+      Object.assign(RG.btns[i].style, { left: px(hu + u0 * s), top: px(bo.side > 0 ? T0 - t - bw + .5 : T0 + Bv + t - .5), width: px((u1 - u0) * s), height: bw + "px",
+        backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
+    });
+  }
+
   function drawRig(now) {
     const { th, s, hx: hu, top: T0, angle } = rigAt(now);
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), d = rig.d;
@@ -620,7 +644,12 @@ export function createResizeScene(root, hooks) {
     const lift = (T + 2 * za) * (1 - cs) / 2;
     const hk = smooth(20, 160, th), e = t * hk;
     // 반경은 면마다 고정한다 — 펼친 화면 반경에서 60~120° 사이에 커버 반경으로 옮겨, 다 접혔을 때 아래 판이 비어져 나오지 않는다.
-    const rIn = d.look.open.radius * s, rOut = d.look.cover.radius * s, rB = lerp(rIn, rOut, smooth(60, 120, th)) + t, rH = rB * hk;
+    // 모서리는 판 좌표 [좌상, 우상, 우하, 좌하] 이고 힌지는 바닥 판의 왼쪽 변이다. 접힌 장의 모서리는 다 접히면 좌우가 뒤바뀐 커버 모서리에 닿는다.
+    const q = tallOf(d) ? 3 : 0, R = turnR(d.look.open.radius, q).map(v => v * s), C = turnR(d.look.cover.radius, q).map(v => v * s);
+    const sm = smooth(60, 120, th), mix = (a, b) => lerp(a, b, sm) + t;
+    const baseR = [mix(R[0], C[0]) * hk, mix(R[1], C[1]), mix(R[2], C[2]), mix(R[3], C[3]) * hk];
+    const leafR = [mix(R[0], C[1]), mix(R[1], C[0]) * hk, mix(R[2], C[3]) * hk, mix(R[3], C[2])];
+    const rB = baseR[1], rH = baseR[0];
     const pivot = `${px(hu)} ${px(T0 + Bv / 2)}`;
     Object.assign(RG.lift.style, { perspective: P.perspective + "px", perspectiveOrigin: pivot });
     RG.space.style.transform = `translateZ(${px(-lift)})`;
@@ -630,9 +659,9 @@ export function createResizeScene(root, hooks) {
     const fold = n => [n[0] * cs + n[2] * sn, n[1], -n[0] * sn + n[2] * cs];
     for (const p of [RG.base, RG.leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
     RG.leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
-    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: [rH, rB, rB, rH], scr: [0, 0, Bu, Bv], scrR: [rIn * hk, rIn, rIn, rIn * hk], T, normal: turn, tone, hk, hingeLeft: true });
-    drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: [rB, rH, rH, rB], scr: [-Lu, 0, 0, Lv], scrR: [rIn, rIn * hk, rIn * hk, rIn],
-      backScrR: [rOut, rOut * hk, rOut * hk, rOut], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false });
+    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true });
+    drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
+      backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false });
     paintFace(RG.F.base, rig.plan.base, s, now);
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
@@ -658,7 +687,8 @@ export function createResizeScene(root, hooks) {
     Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
       transform: `translateZ(${px(-T - 1)})`, boxShadow: `var(--elevation-2), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
-    lk.btn.forEach((b, i) => {
+    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone });
+    else lk.btn.forEach((b, i) => {
       Object.assign(RG.btns[i].style, { left: Math.max(hu + Bu, tip) + t - .5 + "px", top: T0 + b.at * s + "px",
         width: "3px", height: b.len * s + "px", backgroundColor: lk.tone, opacity: b.len * s > .5 ? 1 : 0, transform: `translateZ(${px(lift)})` });
     });
@@ -720,12 +750,12 @@ export function createResizeScene(root, hooks) {
     Object.assign(U.stage.style, { left: cx - rect.w / 2 + "px", top: y + "px", width: rect.w + "px", height: rect.h + "px" });
     const top = turning ? drawUpright(U, rect, s, now) : drawContent(U, rect, s, layers, now);
     U.stage.style.background = top ? top.edge : "var(--surface-container)";
-    const lk = ol.look, sr = lk.radius * s * ol.shell;
-    U.stage.style.borderRadius = sr.toFixed(2) + "px";
+    const lk = ol.look, sr = turnR(lk.radius, (ol.rot ? 1 : 0) + (ol.mirrored ? 2 : 0)).map(r => r * s * ol.shell);
+    U.stage.style.borderRadius = radii(sr);
     Object.assign(U.outline.style, { left: cx - ol.w / 2 + "px", top: y - g + "px", width: ol.w + "px", height: ol.h + "px",
-      borderRadius: sr > 0 ? sr + g + "px" : "0px", opacity: ol.op });
+      borderRadius: radii(sr.map(r => r > 0 ? r + g : 0)), opacity: ol.op });
     const t = lk.bezel * P.shellK * s, te = endsOf(lk) * P.shellK * s, L = cx - rect.w / 2, tx = ol.rot ? te : t, ty = ol.rot ? t : te;
-    Object.assign(U.shell.style, { left: L - tx + "px", top: y - ty + "px", width: rect.w + 2 * tx + "px", height: rect.h + 2 * ty + "px", borderRadius: sr + t + "px",
+    Object.assign(U.shell.style, { left: L - tx + "px", top: y - ty + "px", width: rect.w + 2 * tx + "px", height: rect.h + 2 * ty + "px", borderRadius: radii(sr.map(r => r + t)),
       backgroundColor: lk.tone, opacity: ol.shell });
     const H0 = (ol.rot ? rect.w : rect.h) / s, bw = 3;
     lk.btn.forEach((b, i) => {
@@ -744,7 +774,7 @@ export function createResizeScene(root, hooks) {
     const hd = endsOf(lk) * P.shellK * HOME_K, homeAt = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, { w: hd, h: hd, y: H0 + (endsOf(lk) * P.shellK - hd) / 2 }, s, ol.mirrored);
     const hk = Number(lk.home) || 0;
     putCam(U.home, { ...homeAt, on: homeAt.on && hk > .01 }, L, y, ol.shell * hk);
-    const c = ol.crease, hz = ol.rot;
+    const c = ol.crease, hz = ol.rot !== !!ol.tall;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
                                      : { left: rect.w / 2 + "px", top: "0px", width: "", height: rect.h + "px", opacity: c * hingeOp.at(now) });
@@ -772,11 +802,11 @@ export function createResizeScene(root, hooks) {
       UA.el.style.transformOrigin = `${f0.cx}px ${c0y}px`;
       UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4)})`;
     }
-    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
+    drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, tall: ua.kind === "device" && tallOf(DEVICES[ua.dev]), look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
     if (fadeB) {
       UB.el.hidden = false;
       const f = fadeB.f, g = P.gap, st = fadeB.st;
-      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, mirrored: !!st.mirrored, look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
+      drawUnit(UB, { w: f.w, h: f.h, y: f.y }, { w: f.w + 2 * g, h: f.h + 2 * g, op: lined(st) ? 1 : 0, crease: isOpen(st) ? P.crease : 0, shell: shelled(st) ? 1 : 0, rot: !!st.rot, mirrored: !!st.mirrored, tall: st.kind === "device" && tallOf(DEVICES[st.dev]), look: shelled(st) ? lookOf(st) : lookAt(now) }, f.s, fadeB.layers, now, unitOp.b.at(now));
     } else UB.el.hidden = true;
   }
 
@@ -812,7 +842,7 @@ export function createResizeScene(root, hooks) {
     draw(now);
     root.classList.toggle("at-rest", !tr && !queued && !draft);
     drawRuler(now);
-    hooks.layout({ w: V.w.at(now), h: V.h.at(now), s: V.s.at(now), y: V.y.at(now), cx: room().cx, radius: lookAt(now).radius * V.s.at(now) * shellOp.at(now), bezel: edgeOf(lookAt(now)) * V.s.at(now) * shellOp.at(now) }, !!tr || !!queued || rig.on || spin.on || !!draft);
+    hooks.layout({ w: V.w.at(now), h: V.h.at(now), s: V.s.at(now), y: V.y.at(now), cx: room().cx, radius: turnR(lookAt(now).radius, (cur?.rot ? 1 : 0) + (cur?.mirrored ? 2 : 0)).map(r => r * V.s.at(now) * shellOp.at(now)), bezel: edgeOf(lookAt(now)) * V.s.at(now) * shellOp.at(now) }, !!tr || !!queued || rig.on || spin.on || !!draft);
   }
   const roll = { w: new Tw(411), h: new Tw(891) };
   const byId = id => document.getElementById(id);   // 조작 독은 장면 밖(무대 아래 가운데에 뜬다)에 선다 — $ 는 장면 안만 찾는다
@@ -852,10 +882,12 @@ export function createResizeScene(root, hooks) {
   // 접는 기기는 힌지 선을 긋는다. 이름은 줄이고 전체 이름은 툴팁에 둔다.
   const silOf = d => {
     const o = d.open, lk = d.look.open, k = 19 / Math.max(o.w, o.h), W = o.w * k, H = o.h * k, x = 10 - W / 2, y = 10 - H / 2, sw = 1.4;
-    const f = n => n.toFixed(2), r = clamp((lk.radius + lk.bezel * P.shellK) * k * 1.8, 1.2, Math.min(W, H) / 3);
-    const inset = sw / 2 + clamp(lk.bezel * P.shellK * k, .9, 2.2), ri = Math.max(.4, r - inset + sw / 2);
-    const screen = (sx, sw2) => `<rect x="${f(sx)}" y="${f(y + inset)}" width="${f(sw2)}" height="${f(H - 2 * inset)}" rx="${f(ri)}" fill="currentColor" fill-opacity=".16"/>`;
-    const glass = d.fold ? screen(x + inset, W / 2 - inset - .4) + screen(x + W / 2 + .4, W / 2 - inset - .4) : screen(x + inset, W - 2 * inset);
+    const f = n => n.toFixed(2), r = clamp((Math.max(...lk.radius) + lk.bezel * P.shellK) * k * 1.8, 1.2, Math.min(W, H) / 3);
+    const inset = sw / 2 + clamp(lk.bezel * P.shellK * k, .9, 2.2), ri = Math.max(.4, r - inset + sw / 2), tall = tallOf(d);
+    const screen = (sx, sy, sw2, sh2) => `<rect x="${f(sx)}" y="${f(sy)}" width="${f(sw2)}" height="${f(sh2)}" rx="${f(ri)}" fill="currentColor" fill-opacity=".16"/>`;
+    const glass = !d.fold ? screen(x + inset, y + inset, W - 2 * inset, H - 2 * inset)
+      : tall ? screen(x + inset, y + inset, W - 2 * inset, H / 2 - inset - .4) + screen(x + inset, y + H / 2 + .4, W - 2 * inset, H / 2 - inset - .4)
+      : screen(x + inset, y + inset, W / 2 - inset - .4, H - 2 * inset) + screen(x + W / 2 + .4, y + inset, W / 2 - inset - .4, H - 2 * inset);
     let cam = "";
     if (lk.cam.w > 0) {
       const cx = x + W * (lk.cam.x ?? .5), cy = y + inset + 1.1;
@@ -865,7 +897,7 @@ export function createResizeScene(root, hooks) {
         ? `<rect x="${f(cx - 1.8)}" y="${f(cy - .6)}" width="3.6" height="1.2" rx=".6" fill="currentColor"/>`
         : `<circle cx="${f(cx)}" cy="${f(cy)}" r=".75" fill="currentColor"/>`;
     }
-    const hinge = d.fold ? `<path d="M${f(x + W / 2)} ${f(y)}V${f(y + H)}" stroke="currentColor" stroke-width=".8"/>` : "";
+    const hinge = !d.fold ? "" : `<path d="${tall ? `M${f(x)} ${f(y + H / 2)}H${f(x + W)}` : `M${f(x + W / 2)} ${f(y)}V${f(y + H)}`}" stroke="currentColor" stroke-width=".8"/>`;
     return `<svg class="pn-sil" viewBox="0 0 20 20" aria-hidden="true">${glass}<rect x="${f(x + sw / 2)}" y="${f(y + sw / 2)}" width="${f(W - sw)}" height="${f(H - sw)}" rx="${f(r)}" fill="none" stroke="currentColor" stroke-width="${sw}"/>${hinge}${cam}</svg>`;
   };
   for (const b of ROWS) {
@@ -927,6 +959,9 @@ export function createResizeScene(root, hooks) {
     if (st.kind === "device") {
       setLook(lookOf(st), instant);
       CTL.fold.hidden = CTL.hinge.hidden = !DEVICES[st.dev].fold;
+      // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 돌릴 곳이 없다.
+      ORIENT.el.hidden = !!DEVICES[st.dev][st.folded ? "cover" : "open"].fixed;
+      if (ORIENT.el.hidden) setOrientationOpen(false, false);
       // 버튼은 아이콘만이다 — 그림은 data-* 로 상태를 따라가고(style.css), 이름은 툴팁 · aria-label 이 갖는다.
       const foldName = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
       CTL.fold.dataset.folded = st.folded;
@@ -976,7 +1011,7 @@ export function createResizeScene(root, hooks) {
   }
   // 접고 펼 때는 손에 든 회전(기본 방향에서 돈 각도)을 잇는다. 다른 화면에 그 각도가 없으면(거꾸로 선 세로) 세로로 간다.
   const foldSel = st => ["portrait", "landscape-left", "landscape-right"].map(o => devSel(st, !st.folded, o))
-    .find(sel => resolve(sel).angle === st.angle) ?? devSel(st, !st.folded, "portrait");
+    .find(sel => resolve(sel)?.angle === st.angle) ?? devSel(st, !st.folded, "portrait");
   function toggleFold() { if (cur.kind === "device" && DEVICES[cur.dev].fold) request(foldSel(cur)); }
 
   const RL = { el: $("ruler"), ext: $("rlExt"), dim: $("rlDim"), w: $("rlW"), h: $("rlH"), shown: { w: "", h: "" } };

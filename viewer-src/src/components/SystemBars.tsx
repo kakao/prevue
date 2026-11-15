@@ -9,7 +9,7 @@ import { systemBarsHost } from './WorkspaceShell';
 // 앱 인셋 선택과 독립된 표시다. 카메라는 장면이, 기기의 바(iOS · Android)는 이 층이, 기기 없는 크기의 Preview 기본 바는 렌더러가 그린다.
 // cut 은 전달 인셋의 옆 컷아웃(좌 · 우)이다 — Android 상태 줄이 그만큼 안으로 들어간다.
 // topCam 은 위 띠에서 시작하는 장면 카메라(resize-scene.js cameraOf)의 좌우 끝과 세로 가운데다 — 옆 · 아래 가장자리 카메라는 null 이다.
-export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; radius: number; topCam: TopCam | null };
+export type Bars = { device: string; ios: boolean; w: number; h: number; statusDp: number; navDp: number; side: 'left' | 'right' | null; sideDp: number; duo: boolean; folded: boolean; cut: [number, number]; radius: number; topCam: TopCam | null; lowCam: [number, number] | null };
 export type TopCam = { x0: number; x1: number; cy: number };
 type Ink = 'dark' | 'light';
 type Region = [number, number, number, number];
@@ -19,10 +19,14 @@ export function barsOf(systemUi: SystemUi | null, size: Size | null, deviceInset
   if (!b?.insets || size?.kind !== 'device') return null;
   const cutout = deviceInsets?.values.displayCutout, cam = cameraOf(sizeKey(size));
   const topCam = cam && cam.y < b.insets.statusDp ? { x0: cam.x, x1: cam.x + cam.w, cy: cam.y + cam.h / 2 } : null;
+  // 스펙이 아래 가장자리에 붙인 컷아웃(Flip8 커버의 오른쪽 아래)의 좌우 끝 — 내비 핸들이 그 옆 띠로 비켜 선다.
+  // 돌린 자세에서 아래로 온 위 카메라는 베젤 쪽이라 핸들이 비키지 않는다.
+  const own = DEVICES[size.device]?.look?.[size.folded ? 'cover' : 'open']?.cam;
+  const lowCam: [number, number] | null = cam && own?.edge === 'bottom' && cam.y + cam.h >= size.heightDp - .5 ? [cam.x, cam.x + cam.w] : null;
   const area = size.insetProfile?.safeArea, duo = size.device === 'duo';
   const side = duo && area ? (area.left > 0 ? 'left' : area.right > 0 ? 'right' : null) : null;
   return { device: size.device, ios: b.look === 'ios', w: size.widthDp, h: size.heightDp, statusDp: b.insets.statusDp, navDp: b.insets.navDp,
-    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], radius: DEVICES[size.device]?.look?.[size.folded ? 'cover' : 'open']?.radius ?? 0, topCam };
+    side, sideDp: side && area ? area[side] : 0, duo, folded: size.folded, cut: [cutout?.left ?? 0, cutout?.right ?? 0], radius: DEVICES[size.device]?.look?.[size.folded ? 'cover' : 'open']?.radius[0] ?? 0, topCam, lowCam };
 }
 
 const SAMPLE_W = 24, SAMPLE_H = 4, LIGHT_ABOVE = 0.6, RESAMPLE_MS = 1000;
@@ -165,8 +169,10 @@ function AndroidStatus({ bars }: { bars: Bars }) {
 
 function NavHandle({ bars }: { bars: Bars }) {
   if (bars.ios) return <rect className="sb-handle" x={(bars.w - 134) / 2} y={bars.h - 13} width="134" height="5" rx="2.5" />;
-  const cy = bars.h - Math.min(bars.navDp, A_HANDLE.band) / 2;
-  return <rect className="sb-handle" x={(bars.w - A_HANDLE.w) / 2} y={cy - A_HANDLE.h / 2} width={A_HANDLE.w} height={A_HANDLE.h} rx={A_HANDLE.h / 2} />;
+  const cy = bars.h - Math.min(bars.navDp, A_HANDLE.band) / 2, low = bars.lowCam;
+  // 컷아웃이 아래 가장자리를 차지하면 남은 띠 중 넓은 쪽의 가운데에 둔다(눈대중 — 사이트에 핸들 자리가 없다).
+  const cx = !low ? bars.w / 2 : low[0] >= bars.w - low[1] ? low[0] / 2 : (low[1] + bars.w) / 2;
+  return <rect className="sb-handle" x={cx - A_HANDLE.w / 2} y={cy - A_HANDLE.h / 2} width={A_HANDLE.w} height={A_HANDLE.h} rx={A_HANDLE.h / 2} />;
 }
 
 export function SystemBarsOverlay({ systemUi, size, deviceInsets = null, host }: { systemUi: SystemUi | null; size: Size | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement }) {
