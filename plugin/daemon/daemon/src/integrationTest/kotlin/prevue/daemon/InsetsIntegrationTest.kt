@@ -191,7 +191,7 @@ internal abstract class InsetsRenderChecks {
             assertTrue(handle.opened.ok, handle.opened.message?.text)
             val root = session().viewRoot()!!
             val density = root.context.resources.displayMetrics.density
-            assertEquals(model.dpi / 160f, density, model.id)
+            assertEquals(device.dpi / 160f, density, model.id)
             assertEquals(device.widthDp, root.width / density.toDouble(), 1.0, "${model.id} 폭 dp")
             assertEquals(device.heightDp, root.height / density.toDouble(), 1.0, "${model.id} 높이 dp")
             handle.close()

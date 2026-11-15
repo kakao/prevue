@@ -62,10 +62,10 @@ val deviceTable = tasks.register("deviceTable") {
         val dir = out.get().dir("prevue/application/domain/model").asFile.apply { mkdirs() }
         dir.resolve("DeviceModel.kt").writeText(buildString {
             append("package prevue.application.domain.model\n\n")
-            append("enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {\n")
+            append("enum class DeviceModel(val id: String, val label: String, val open: Panel, val cover: Panel?, val look: BarLook) {\n")
             devices.forEach { d ->
                 val m = obj(d["measured"]); val screens = obj(m["screens"])
-                append("    ${constant(d)}(\n        ${str(d["id"])},\n        ${str(d["label"])},\n        ${m["dpi"]},\n")
+                append("    ${constant(d)}(\n        ${str(d["id"])},\n        ${str(d["label"])},\n")
                 append("        ${panel(screens["open"], m["dpi"])},\n        ${screens["cover"]?.let { panel(it, m["dpi"]) } ?: "null"},\n")
                 append("        BarLook.entries.single { it.key == ${str(obj(d["look"])["bar"])} },\n    ),\n")
             }
