@@ -2,6 +2,8 @@ package prevue.application.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.DeviceOrientation.LANDSCAPE_LEFT
 import prevue.application.domain.model.DeviceOrientation.LANDSCAPE_RIGHT
@@ -13,14 +15,17 @@ class PosturesTest {
         (false to LANDSCAPE_LEFT) to PORTRAIT, (false to PORTRAIT) to LANDSCAPE_RIGHT, (false to LANDSCAPE_RIGHT) to PORTRAIT,
     )
 
-    private fun foldButton(d: ScreenSize.Device): DeviceOrientation =
-        if (d.model == DeviceModel.IPHONE_DUO || d.model == DeviceModel.GALAXY_Z_FOLD8) heldTurn.getValue(d.folded to d.orientation) else d.orientation
+    private fun foldButton(d: ScreenSize.Device): DeviceOrientation = when {
+        d.model == DeviceModel.IPHONE_DUO || d.model == DeviceModel.GALAXY_Z_FOLD8 -> heldTurn.getValue(d.folded to d.orientation)
+        d.model.panel(!d.folded).fixed -> d.model.panel(!d.folded).orientation
+        else -> d.orientation
+    }
 
     private val foldables = DeviceModel.entries.filter { it.cover != null }
 
     @Test fun `접기 목표는 뷰어 접기 버튼이 요청하는 자세와 같다 — tests viewer fold mjs의 HAND 표`() {
         val all = foldables.flatMap { it.postures }
-        assertEquals(24, all.size)
+        assertEquals(28, all.size)
         all.forEach { d -> assertEquals(ScreenSize.Device(d.model, !d.folded, foldButton(d)), d.folding, d.key) }
     }
 
@@ -28,8 +33,9 @@ class PosturesTest {
         foldables.flatMap { it.postures }.forEach { d ->
             val own = Postures.plan(d).filterIsInstance<ScreenSize.Device>().filter { it.model == d.model }
             assertEquals(d.folding, own.first(), d.key)
-            assertEquals(List(2) { false }, own.drop(1).take(2).map { it.folded != d.folded }, d.key)
-            assertEquals(List(2) { true }, own.drop(3).map { it.folded != d.folded }, d.key)
+            val turns = d.model.postures.count { it.folded == d.folded } - 1
+            assertEquals(List(turns) { false }, own.drop(1).take(turns).map { it.folded != d.folded }, d.key)
+            assertTrue(own.drop(1 + turns).all { it.folded != d.folded }, d.key)
         }
     }
 
@@ -38,5 +44,13 @@ class PosturesTest {
             assertNull(d.folding, d.key)
             assertEquals(d.model.postures - d, Postures.plan(d).filterIsInstance<ScreenSize.Device>().filter { it.model == d.model })
         }
+    }
+
+    @Test fun `측정한 자세가 하나뿐인 화면은 돌리지 않는다 — Flip8 커버는 세로만 있고 돌린 요청은 거절한다`() {
+        val flip = DeviceModel.GALAXY_Z_FLIP8
+        assertEquals(listOf(PORTRAIT), flip.postures.filter { it.folded }.map { it.orientation })
+        assertEquals(3, flip.postures.count { !it.folded })
+        assertThrows(IllegalArgumentException::class.java) { ScreenSize.parse(null, "flip8", folded = true, landscape = true) }
+        assertEquals(ScreenSize.Device(flip, true, PORTRAIT), ScreenSize.Device(flip, false, LANDSCAPE_LEFT).folding)
     }
 }

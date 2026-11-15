@@ -47,6 +47,14 @@ class ScreenSizeTest {
         assertEquals(listOf(951.0, 669.0, 475.5), ScreenSize.Device(DeviceModel.IPHONE_DUO).let { listOf(it.widthDp, it.heightDp, it.hingeDp) })
     }
 
+    @Test fun `화면마다 밀도가 다르면 그 화면의 dpi로 그린다 — Flip8 커버 380 · 펼침 480`() {
+        val open = ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8)
+        val cover = ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true)
+        assertEquals(listOf(360.0, 840.0, 420.0, 480.0), listOf(open.widthDp, open.heightDp, open.hingeDp, open.dpi.toDouble()))
+        assertEquals(listOf(399.16, 441.26, 380.0), listOf(cover.widthDp, cover.heightDp, cover.dpi.toDouble()))
+        assertEquals("spec:width=948px,height=1048px,dpi=380", cover.applyTo(spec()).params["device"])
+    }
+
     @Test fun `새 기기의 dp 크기는 공개 스펙의 px 과 밀도로 나온다`() {
         fun dp(id: String, folded: Boolean = false) = ScreenSize.parse(null, id, folded, landscape = false) as ScreenSize.Device
         assertEquals(listOf(411.43, 923.43), dp("pixel9").let { listOf(it.widthDp, it.heightDp) })

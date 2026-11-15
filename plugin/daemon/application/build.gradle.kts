@@ -52,7 +52,11 @@ val deviceTable = tasks.register("deviceTable") {
         @Suppress("UNCHECKED_CAST")
         fun obj(v: Any?) = v as Map<String, Any?>
         fun edges(e: Any?) = obj(e).entries.joinToString(", ", "InsetEdges(", ")") { (k, v) -> "$k = ${num(v)}" }
-        fun panel(s: Any?) = obj(s).let { p -> "Panel(${p["widthPx"]}, ${p["heightPx"]}" + (p["hingePx"]?.let { ", ${num(it)}" } ?: "") + ")" }
+        // 화면마다 밀도가 다를 수 있고(없으면 기기 dpi), 측정한 자세가 하나뿐인 화면은 돌리지 않는다(fixed).
+        fun panel(s: Any?, dpi: Any?) = obj(s).let { p ->
+            "Panel(${p["widthPx"]}, ${p["heightPx"]}, ${p["dpi"] ?: dpi}" + (p["hingePx"]?.let { ", hingePx = ${num(it)}" } ?: "") +
+                (if (obj(p["postures"]).size == 1) ", fixed = true" else "") + ")"
+        }
 
         out.get().asFile.deleteRecursively()
         val dir = out.get().dir("prevue/application/domain/model").asFile.apply { mkdirs() }
@@ -62,7 +66,7 @@ val deviceTable = tasks.register("deviceTable") {
             devices.forEach { d ->
                 val m = obj(d["measured"]); val screens = obj(m["screens"])
                 append("    ${constant(d)}(\n        ${str(d["id"])},\n        ${str(d["label"])},\n        ${m["dpi"]},\n")
-                append("        ${panel(screens["open"])},\n        ${screens["cover"]?.let { panel(it) } ?: "null"},\n")
+                append("        ${panel(screens["open"], m["dpi"])},\n        ${screens["cover"]?.let { panel(it, m["dpi"]) } ?: "null"},\n")
                 append("        BarLook.entries.single { it.key == ${str(obj(d["look"])["bar"])} },\n    ),\n")
             }
             append("    ;\n\n    fun panel(folded: Boolean): Panel = panelOf(folded)\n\n")
