@@ -68,13 +68,13 @@ try {
     window.__frames = []; window.__rec = true;
     const tick = () => {
       if (!window.__rec) return;
-      const ua = document.querySelector('#ua'), st = ua.querySelector('.stage'), duo = document.querySelector('#duo');
+      const ua = document.querySelector('#ua'), st = ua.querySelector('.stage'), rig = document.querySelector('#rig');
       __frames.push({
         t: performance.now(), moving: document.querySelector('#stage').classList.contains('resize-hidden'),
         uaHidden: ua.hidden, uaTf: ua.style.transform, stage: R(st), bg: st.style.background,
         l0: img(st.querySelector('.l0')), l1: img(st.querySelector('.l1')),
         real: R(document.querySelector('#stage')), shot: R(document.querySelector('#shot')),
-        duo: !duo.hidden, clip: duo.querySelector('.duo-flap').style.clipPath, duoBase: duo.querySelector('.duo-base').style.borderRadius, duoBtn: R(duo.querySelector('.btn')), uaBtn: R(ua.querySelector('.btn')), face: duo.querySelector('.duo-face').style.transform,
+        rig: !rig.hidden, leaf: rig.querySelector('.leaf').style.transform, rigBtn: R(rig.querySelector('.btn')), uaBtn: R(ua.querySelector('.btn')),
         loading: !document.querySelector('#workspaceLoading').hidden,
       });
       requestAnimationFrame(tick);
@@ -88,7 +88,7 @@ try {
   const top = f => f.l1.op > .5 ? f.l1 : f.l0;
 
   // 칠하지 않은 빈칸 — 틀(.stage) 중 그림이 덮지 못한 자리가 가장자리 색(rgb)이 아니라 기본 바탕으로 남는 프레임.
-  const gaps = frames => frames.filter(f => f.moving && !f.uaHidden && !f.duo && !(covers(top(f), f.stage) || /^rgb/.test(f.bg)));
+  const gaps = frames => frames.filter(f => f.moving && !f.uaHidden && !f.rig && !(covers(top(f), f.stage) || /^rgb/.test(f.bg)));
   // 장면이 끝나 실제 스트림이 보이는 첫 프레임 — 그 직전 장면의 틀 · 그림과 자리가 같아야 한다.
   const handoff = frames => {
     const i = frames.findIndex((f, k) => k > 0 && frames[k - 1].moving && !f.moving);
@@ -165,39 +165,10 @@ try {
   await post("/viewer/resize", { device: "duo", folded: true, landscape: false });
   await until(`__store.st.focus.size?.folded && ${settled}`);
   frames = await stop();
-  // 모서리마다 a C p1 p2 b(3차, K=0.5523) — 꼭짓점은 a + (p1 - a) / K로 되짚는다.
-  const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
-  const corners = clip => {
-    const n = clip.match(/-?[\d.]+/g)?.map(Number);
-    if (!n || n.length < 32) return null;
-    return [0, 1, 2, 3].map(i => { const a = [n[i * 8], n[i * 8 + 1]], p1 = [n[i * 8 + 2], n[i * 8 + 3]], b = [n[i * 8 + 6], n[i * 8 + 7]];
-      return { a, b, c: [a[0] + (p1[0] - a[0]) / .5523, a[1] + (p1[1] - a[1]) / .5523] }; });
-  };
-  const corner = f => {
-    const c = corners(f.clip);
-    if (!c) return null;
-    const sq = Number((/scale[XY]\(([\d.]+)\)/.exec(f.face) || [0, 1])[1]), kF = d(c[1].c, c[2].c) / d(c[0].c, c[3].c);
-    const err = [];
-    if (d(c[0].a, c[0].c) > 2) err.push(Math.abs(d(c[0].b, c[0].c) / d(c[0].a, c[0].c) - sq));
-    if (d(c[1].b, c[1].c) > 2) err.push(Math.abs(d(c[1].a, c[1].c) / d(c[1].b, c[1].c) - sq / kF));
-    return { sq, err: Math.max(0, ...err) };
-  };
-  const duo = frames.filter(f => f.duo && f.clip.startsWith("path(")).map(corner).filter(c => c && c.sq > .05 && c.sq < .97);
-  const duoWorst = Math.max(0, ...duo.map(c => c.err));
-  check(duo.length >= 5 && duoWorst < .03, "Duo 접는 동안 모서리 반경이 내용과 같은 비율", { frames: duo.length, worst: duoWorst.toFixed(4) });
-  // 펼친 쪽 장의 힌지에서 먼 모서리 반경은 접는 내내 같다(기기 모양 모프를 따르지 않는다).
-  const baseFar = new Set(frames.filter(f => f.duo).map(f => Number.parseFloat((s => s[1] ?? s[0])(f.duoBase.split(" "))).toFixed(2)));
-  check(baseFar.size === 1, "Duo 접는 동안 펼친 쪽 모서리 반경이 그대로", [...baseFar]);
-  // 접히는 장의 먼 모서리 반경을 원근 배율로 나누면 앞면 · 뒷면 각각 하나의 값이다.
-  const flapFar = new Set(frames.filter(f => f.duo && f.clip.startsWith("path(")).map(f => {
-    const c = corners(f.clip), kF = d(c[1].c, c[2].c) / d(c[0].c, c[3].c), rv = d(c[1].b, c[1].c);
-    return rv > 2 ? rv / kF : null;
-  }).filter(Boolean));
-  const groups = [...flapFar].sort((x, y) => x - y).reduce((g, v) => (g.length && v - g[g.length - 1].at(-1) <= 1 ? g[g.length - 1].push(v) : g.push([v]), g), []);
-  check(groups.length <= 2, "Duo 접는 동안 접히는 장 반경은 면마다 하나", groups.map(g => `${g[0].toFixed(1)}~${g.at(-1).toFixed(1)}`));
-  // 접기가 끝나 멈춘 기기로 바뀌는 프레임에서 옆 단추가 제자리다.
-  const end = frames.findIndex((f, k) => k > 0 && frames[k - 1].duo && !f.duo);
-  const btnJump = end > 0 ? Math.max(Math.abs(frames[end - 1].duoBtn.x - frames[end].uaBtn.x), Math.abs(frames[end - 1].duoBtn.y - frames[end].uaBtn.y)) : null;
+  // 접는 장은 두께 있는 두 판이다 — 접히는 판이 실제로 돌고, 접기가 끝나 멈춘 기기로 바뀌는 프레임에서 옆 단추가 제자리다.
+  check(new Set(frames.filter(f => f.rig).map(f => f.leaf)).size >= 5, "Duo 접는 동안 판이 돈다");
+  const end = frames.findIndex((f, k) => k > 0 && frames[k - 1].rig && !f.rig);
+  const btnJump = end > 0 ? Math.max(Math.abs(frames[end - 1].rigBtn.x - frames[end].uaBtn.x), Math.abs(frames[end - 1].rigBtn.y - frames[end].uaBtn.y)) : null;
   check(btnJump !== null && btnJump < 1, "Duo 접기가 끝날 때 옆 단추가 제자리", { jump: btnJump?.toFixed(2) });
 
   // 캐시 없는 크기(커스텀) — 옛 화면을 틀에 채워 24px까지 흐리고, 표시 없이 새 그림이 드러난다.

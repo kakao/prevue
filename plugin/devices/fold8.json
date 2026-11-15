@@ -144,6 +144,8 @@
     "bar": "oneui",
     "short": "Fold8",
     "tone": "#2b2d32",
+    "thickness": 26,
+    "hinge": { "axis": "width", "gap": 3 },
     "cover": {"bezel": 6, "cam": {"w": 9, "h": 9, "y": 15.31}, "btn": [[1, 170, 80], [1, 270, 55]]},
     "open": {"bezel": 6, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 170, 80], [1, 270, 55]]}
   }

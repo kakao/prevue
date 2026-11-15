@@ -683,6 +683,12 @@ export const DEVICES = {
           }
         ]
       }
+    },
+    "plate": {
+      "thickness": 28,
+      "gap": 2,
+      "axis": "width",
+      "blur": true
     }
   },
   "fold8": {
@@ -773,6 +779,11 @@ export const DEVICES = {
           }
         ]
       }
+    },
+    "plate": {
+      "thickness": 26,
+      "gap": 3,
+      "axis": "width"
     }
   },
   "ultra": {
@@ -863,6 +874,11 @@ export const DEVICES = {
           }
         ]
       }
+    },
+    "plate": {
+      "thickness": 26,
+      "gap": 3,
+      "axis": "width"
     }
   },
   "pixelfold": {
@@ -954,6 +970,11 @@ export const DEVICES = {
           }
         ]
       }
+    },
+    "plate": {
+      "thickness": 32,
+      "gap": 2,
+      "axis": "width"
     }
   },
   "tablet": {

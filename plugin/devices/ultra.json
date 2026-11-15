@@ -168,6 +168,8 @@
     "bar": "oneui",
     "short": "Fold8 Ultra",
     "tone": "#1f2125",
+    "thickness": 26,
+    "hinge": { "axis": "width", "gap": 3 },
     "cover": {"bezel": 5, "cam": {"w": 8, "h": 8, "y": 14}, "btn": [[1, 190, 85], [1, 300, 55]]},
     "open": {"bezel": 5, "cam": {"w": 0, "h": 0, "y": 10}, "btn": [[1, 190, 85], [1, 300, 55]]}
   }
