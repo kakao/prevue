@@ -68,8 +68,7 @@ class KmpRenderIntegrationTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @BeforeAll fun up() {
-        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = configureOnDemand)
-        app = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
+        app = appDump(configureOnDemand)
         val home = app.dependency(":feature:pearl")
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
@@ -175,9 +174,12 @@ class KmpRenderIntegrationTest {
     @Test @Order(12) fun `configure-on-demand를 켜든 끄든 앱 덤프가 닿는 KMP 모듈 컴파일 클래스패스를 모두 싣는다`() {
         val reached = setOf(":core:model", ":core:designsystem", ":core:ui", ":feature:pearl", ":feature:search")
         assertEquals(reached, app.moduleCompileClassPaths.keys, "configure-on-demand 켬")
-        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = noKonan)
-        val off = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
-        assertEquals(reached, off.moduleCompileClassPaths.keys, "configure-on-demand 끔")
+        assertEquals(reached, appDump(noKonan).moduleCompileClassPaths.keys, "configure-on-demand 끔")
+    }
+
+    private fun appDump(env: Map<String, String>): ClasspathSpec {
+        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = env)
+        return ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
     }
 
     private fun open(file: File) {

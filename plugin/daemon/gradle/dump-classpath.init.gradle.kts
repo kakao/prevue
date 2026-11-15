@@ -43,6 +43,11 @@ fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n 
 fun <T> orders(xs: List<T>): List<List<T>> =
     if (xs.size <= 1) listOf(xs) else xs.indices.flatMap { i -> orders(xs.filterIndexed { j, _ -> j != i }).map { listOf(xs[i]) + it } }
 
+// 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
+fun currentBuildKey(id: ProjectComponentIdentifier): String? = buildTreePath(id) ?: id.projectPath.takeIf {
+    runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
+}
+
 // 같은 라이브러리에 이르는 길이 여럿이면 앱에서 가장 가까운 길의 변형을 쓴다. 프로젝트 노드만 따라간다 — 외부 모듈 아래로는 프로젝트가 없다.
 fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponentResult): Map<String, java.util.function.Predicate<String>> {
     val out = mutableMapOf<String, java.util.function.Predicate<String>>()
@@ -54,10 +59,7 @@ fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponen
         val attrs = d.resolvedVariant.attributes
         val values = attrs.keySet().associate { k -> k.name to attrs.getAttribute(k).let { v -> (v as? Named)?.name ?: v.toString() } }
         val buildType = values["com.android.build.api.attributes.BuildTypeAttr"]
-        // 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
-        val key = buildTreePath(id) ?: id.projectPath.takeIf {
-            runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
-        }
+        val key = currentBuildKey(id)
         if (buildType != null && key != null && key !in out) {
             val flavors = values.filterKeys { it.startsWith("com.android.build.api.attributes.ProductFlavor:") }.values.toList()
             val names = orders(flavors).map { (it + buildType).joinToString("").lowercase() }.toSet()
@@ -171,18 +173,18 @@ fun kmpModulesReached(p: Project, variant: String): Map<String, String> {
 // 앱 런타임 해석 결과에 든 이 빌드의 KMP 모듈(Android 컴파일이 있는 것) 중 컴파일 클래스패스를 못 모은 것. kotlin 확장만 있는
 // Android 모듈은 컴파일이 없어 빠지고, included build 모듈은 이 빌드의 kotlinModules 에 없어 빠진다(그 클래스패스는 모으지 않는다).
 fun unseenKmpModules(root: org.gradle.api.artifacts.result.ResolvedComponentResult, variant: String): List<String> {
-    val byTree = kotlinModules.values.filter { it.treePath != null }.associateBy { it.treePath!! }
+    val kmp = kotlinModules.values.filter { it.treePath != null && kmpAndroidCompilation(it, variant) != null }.associateBy { it.treePath!! }
+    if (kmp.isEmpty()) return emptyList()
     val seen = mutableSetOf(root)
     val todo = ArrayDeque(listOf(root))
     val unseen = sortedSetOf<String>()
     while (todo.isNotEmpty()) for (d in todo.removeFirst().dependencies) {
         if (d !is org.gradle.api.artifacts.result.ResolvedDependencyResult) continue
+        val id = d.selected.id as? ProjectComponentIdentifier ?: continue
         if (!seen.add(d.selected)) continue
         todo.add(d.selected)
-        val id = d.selected.id as? ProjectComponentIdentifier ?: continue
-        val tree = buildTreePath(id) ?: id.projectPath
-        val m = byTree[tree] ?: continue
-        if (kmpAndroidCompilation(m, variant) != null && kmpCompileByPath["$tree@$variant"] == null) unseen.add(tree)
+        val tree = currentBuildKey(id) ?: continue
+        if (tree in kmp && kmpCompileByPath["$tree@$variant"] == null) unseen.add(tree)
     }
     return unseen.toList()
 }
