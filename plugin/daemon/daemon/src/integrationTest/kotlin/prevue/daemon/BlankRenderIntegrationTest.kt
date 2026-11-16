@@ -135,7 +135,7 @@ class BlankRenderIntegrationTest {
         assertEquals(before + 1, compiler.recompiled)
     }
 
-    // 렌더 중 던진 NoSuchMethodError는 공유 로더로도 새 로더로도 EXCEPTION이다 — 옛 오버로드로 풀린 호출(HotCompiler의 재컴파일 보정을 끈 경우)은 덮지 않는다
+    // 렌더 중 던진 NoSuchMethodError는 공유 로더로도 새 로더로도 EXCEPTION이다 — 옛 오버로드로 풀린 호출은 [ShadowedOverloadRenderIntegrationTest]가 본다
     @Test @Order(5) fun `렌더 중 NoSuchMethodError는 공유 로더에서도 새 로더에서도 EXCEPTION이다`() {
         stub.writeText(THROWING)
         val w = runBlocking { uc.status.awaitRender(listOf(stub), 60_000) }
@@ -153,7 +153,7 @@ class BlankRenderIntegrationTest {
     companion object {
         @JvmStatic fun available() = PearlFixture.available()
 
-        private val FILLED = """
+        internal val FILLED = """
             package com.example.pearl.feature.pearl
 
             import androidx.compose.foundation.background
@@ -182,5 +182,64 @@ class BlankRenderIntegrationTest {
         """.trimIndent()
 
         private val THROWING = FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
+    }
+}
+
+/**
+ * 재컴파일 보정을 끈 첫 핫 컴파일 — 프리뷰가 빌드의 옛 오버로드 `BlankStub()`로 풀려 렌더 중 NoSuchMethodError가 난다. 공유 로더도 그것을 성공으로 내지 않는다.
+ * 화면 흐름(저장 · 열기)으로 그리면 옛 호출자 복구가 같은 파일을 다시 컴파일해 고치므로 컴파일러와 엔진을 직접 부른다. 감시도 붙이지 않는다.
+ * [BlankRenderIntegrationTest]와 엔진 · 오버레이를 나누지 않는다 — 그쪽은 이미 보정된 첫 컴파일을 썼다.
+ */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@EnabledIf("prevue.daemon.BlankRenderIntegrationTest#available")
+class ShadowedOverloadRenderIntegrationTest {
+    private val out = Files.createTempDirectory("prevue-shadowed").toFile()
+    private lateinit var engine: RenderEngine
+    private lateinit var ws: Workspace
+    private lateinit var compiler: HotCompiler
+    private lateinit var project: String
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val appRoot = File(out, "app").canonicalFile
+    private lateinit var stub: File
+
+    @BeforeAll fun up() {
+        val (home, app) = PearlFixture.warmup()
+        val (spec, _) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
+        compiler = PearlFixture.hotCompiler(home, File(out, "overlay")).also { it.recompileShadowed = false }
+        project = home.project
+        val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
+        stub = PearlFixture.stubCopy(appRoot)
+        val watched = listOf(appRoot)
+        ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
+        val uc = testGraph(TestPorts(engine, engine, compiler, SourcePreviewRepository(spec.classPath), home.repoRoot,
+            realDispatchers, sources = PollingSourceWatcher(watched, realDispatchers)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
+        val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
+        assertTrue(r.ok, r.shot.out.message?.text)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+    }
+
+    @AfterAll fun down() {
+        scope.cancel()
+        runCatching { engine.close() }; runCatching { compiler.close() }
+        out.deleteRecursively(); PearlFixture.stopGradle()
+    }
+
+    @Test fun `재컴파일 보정을 끈 첫 핫 컴파일 뒤 옛 오버로드로 풀린 호출은 공유 로더에서도 EXCEPTION이다`() {
+        eventually(20_000, pollMs = 200) { engine.preloaded().held > 0 }
+        stub.writeText(BlankRenderIntegrationTest.FILLED)
+        val c = runBlocking { compiler.compile(project, listOf(stub)) }
+        assertTrue(c.ok, c.messages)
+        assertEquals(0, compiler.recompiled, "보정을 껐으면 다시 컴파일하지 않는다")
+        engine.codeChanged()
+        val spec = ws.now.board!!.focusCard.spec.copy(fqn = "com.example.pearl.feature.pearl.BlankStubKt.BlankStubPreview", previewId = "BlankStubPreview", file = stub)
+        val seen = { o: prevue.application.port.RenderOutput -> "ok=${o.ok} failure=${o.failure} freshLoader=${o.freshLoader} warnings=${o.warnings} message=${o.message?.text}" }
+        // 다시 컴파일한 뒤 첫 렌더는 새 로더다 — 공유 로더가 이미 쓰인 채로 다시 그린 두 번째가 판정 대상이다
+        val first = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
+        val again = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
+        assertTrue(!again.freshLoader, "공유 로더가 이미 쓰인 것이어야 한다 · ${seen(again)}")
+        assertEquals(FailureKind.EXCEPTION, first.failure, "첫 렌더 · ${seen(first)}")
+        assertEquals(FailureKind.EXCEPTION, again.failure, "다시 그린 렌더 · ${seen(again)}")
+        assertTrue("NoSuchMethodError" in again.message!!.text, seen(again))
     }
 }

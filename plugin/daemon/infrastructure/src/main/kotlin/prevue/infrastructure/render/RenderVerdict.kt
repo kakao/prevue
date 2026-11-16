@@ -60,6 +60,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val presence = probe.presence(p.fqn, checkMethod = succeeded && treeEmpty)
         val blank = blank(presence, succeeded, treeEmpty)
         private val missing = logger.missingClasses
+        private val linkFailed = logger.messages.any { m -> generateSequence(m.throwable) { it.cause }.any { it is LinkageError } }
         private val all = texts(logger).joinToString("\n")
 
         private fun texts(logger: RenderLogger): List<String> = buildList {
@@ -75,6 +76,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         fun failure(): Failure? = when {
             previewClassMissing() -> Failure(FailureKind.NOT_FOUND, lines(classMissing(), all))
             else -> loud()?.let { Failure(it.first, it.second) }
+                ?: Failure(FailureKind.EXCEPTION, Verbatim(all), blank).takeIf { blank == Blank.EMPTY_TREE && linkFailed }
                 ?: Failure(FailureKind.NOT_FOUND, lines(methodMissing(), all), blank).takeIf { blank == Blank.NO_METHOD }
         }
 
