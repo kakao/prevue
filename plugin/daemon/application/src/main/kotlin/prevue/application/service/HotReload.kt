@@ -172,7 +172,7 @@ class HotReload(
         }
         ed.update { it.copy(current = p) }
         live.recordFocus(ed, r.shot)
-        live.seedPostures(ed, kept, keep = false)
+        live.seedPostures(ed, out.ok, kept, keep = false)
         boards.fill(save.by, save.since)
         return ReloadResult.Rendered(r)
     }

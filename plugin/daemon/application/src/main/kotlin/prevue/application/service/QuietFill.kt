@@ -40,10 +40,10 @@ class QuietFill(
         }
     }
 
-    private data class Round(val epoch: BoardEpoch, val gen: Int, val focus: Int, val postures: Long?)
+    private data class Round(val epoch: BoardEpoch, val gen: Int, val focus: Int, val postures: Long?, val shown: ScreenSize?)
 
     private fun roundOf(s: WorkspaceState): Round? =
-        s.board?.takeIf { s.interactive }?.let { Round(it.epoch, it.gen, it.focus, s.livePostures()?.round) }
+        s.board?.takeIf { s.interactive }?.let { Round(it.epoch, it.gen, it.focus, s.livePostures()?.round, s.shownTarget()?.second) }
 
     private sealed interface Step {
         data object Done : Step
