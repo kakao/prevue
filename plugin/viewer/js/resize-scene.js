@@ -164,7 +164,7 @@ export function createResizeScene(root, hooks) {
   // CAPSULE_ROOM — 아래 캡슐(바닥 20 + 높이 약 40)과 조작 독(바닥 12 + 슬라이더를 띄운 높이 약 68) 중 큰 쪽과 그 위 틈. 맞춤일 때 기기가 가리지 않게 이만큼만 비운다.
   const TOP = 14, RULER_TOP = 34, RULER_SIDE = 90, FRAME_TOP = TOP + RULER_TOP, CAPSULE_ROOM = 88;
   // 좁은 판(터미널 옆에 세운 브라우저)에서 양옆 90이 판의 절반 가까이를 먹어 넓은 기기가 작게 그려졌다 —
-  // 좁을수록 양옆을 높이 자와 그 숫자가 들어갈 만큼만 비운다. 틀은 판 가운데(아래 캡슐과 같은 가운데)에 두므로 오른쪽도 왼쪽과 같은 폭을 비운다.
+  // 좁을수록 양옆을 높이 자와 그 숫자가 들어갈 만큼만 비운다(자 간격은 껍데기가 없는 틀의 P.gap — 껍데기가 있으면 옆 bezel 이 더 메운다). 틀은 판 가운데(아래 캡슐과 같은 가운데)에 두므로 오른쪽도 왼쪽과 같은 폭을 비운다.
   // 그 폭은 배지의 실제 폭에서 나온다(자 간격 + 눈금 22 + 배지 반폭 + 판 끝 틈) — 배지가 커지면 같이 는다.
   const NARROW = 400, WIDE = 800, RULER_RAIL = 22, PLATE_EDGE = 10, BADGE_W = 45;
   const clock = { t: 0 };
@@ -529,22 +529,9 @@ export function createResizeScene(root, hooks) {
     if (cached) sharpen(now); else hold(now);
     const degrees = ((to.angle - from.angle + 540) % 360) - 180;
     Object.assign(spin, { on: true, t0: now, dur: P.rotDur, from, to, f0: fit(from), f1: fit(to), dir: degrees / 90, cached });
-    spin.dip = spinDip(spin, edgeOf(lookAt(now)) * spin.f0.s);
     roll.w.snap(from.w); roll.h.snap(from.h);
     rulerOp.to(0, 120, now);
     tr = { kind: "spin", from, to, t0: now, arriveAt: Infinity, arrived: false };
-  }
-  // 도는 틀의 대각선이 맞춤 영역의 폭을 넘는 만큼을 시작할 때 전 구간에서 재고, 그 자리에서 가장 깊고 양끝 0으로 오르내리는 곡선으로 줄인다(rigDip 과 같은 방식).
-  function spinDip(sp, bezel) {
-    const { f0, f1, dir } = sp, half = r => r / 2 + bezel, hw = half(f0.w), hh = half(f0.h), limit = room().maxW / 2, n = 48, need = [];
-    const ease = spinEase();
-    for (let i = 1; i < n; i++) {
-      const c = i / n, e = ease(c), phi = Math.abs(dir) * Math.PI / 2 * e, k = lerp(1, f1.s / f0.s, e) * (1 - P.rotDip * Math.sin(Math.PI * e));
-      const reach = k * (hw * Math.abs(Math.cos(phi)) + hh * Math.abs(Math.sin(phi))), lack = 1 - limit / reach;
-      if (lack > 0) need.push([e, lack + .004]);
-    }
-    const hump = (e, c) => e <= c ? smooth(0, c, e) : 1 - smooth(c, 1, e);
-    return e => need.reduce((m, [c, lack]) => Math.max(m, lack * hump(e, c)), 0);
   }
   function spinAt(now) {
     const t = (now - spin.t0) / 1000, T = Math.max(.05, spin.dur);
@@ -887,7 +874,7 @@ export function createResizeScene(root, hooks) {
     if (spin.on) {
       const { p } = spinAt(now), { f0, f1 } = spin, c0y = f0.y + f0.h / 2, c1y = f1.y + f1.h / 2;
       UA.el.style.transformOrigin = `${f0.cx}px ${c0y}px`;
-      UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p)) * (1 - spin.dip(p))).toFixed(4)})`;
+      UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4)})`;
     }
     drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, tall: ua.kind === "device" && tallOf(DEVICES[ua.dev]), look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
     if (fadeB) {
@@ -1275,7 +1262,7 @@ export function createResizeScene(root, hooks) {
     if (cur) { clock.t = performance.now(); tick(); }
   }
   // 높이 자 배지의 폭이 바뀌면(글꼴 · 스타일) 양옆 비움이 달라진다 — 숨겨 폭이 0일 때는 지난 값을 둔다
-  new ResizeObserver(() => { const w = Math.round(RL.h.getBoundingClientRect().width); if (w && w !== badge.w) { badge.w = w; relayout(); } }).observe(RL.h);
+  new ResizeObserver(() => { const w = RL.h.offsetWidth; if (w && w !== badge.w) { badge.w = w; relayout(); } }).observe(RL.h, { box: "border-box" });
   return {
     devices: new Set(Object.keys(DEVICES)),
     setOriginal(w,h,img) {

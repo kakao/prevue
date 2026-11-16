@@ -45,7 +45,11 @@ try {
     for (const end = Date.now() + ms; Date.now() < end; await pause(80)) if (await evaluate(expression)) return;
     throw Error(`시간 초과: ${expression}`);
   };
-  const check = (ok, name, detail) => { if (process.env.DIAG && !ok) console.log("실패(진단)", name, JSON.stringify(detail)); else assert(ok, `${name} — ${JSON.stringify(detail)}`); checked++; console.log(`통과 ${checked}: ${name}`, detail ?? ""); };
+  let failed = 0;
+  const check = (ok, name, detail) => {
+    if (!ok && process.env.DIAG) { failed++; console.log("실패(진단)", name, JSON.stringify(detail)); return; }
+    assert(ok, `${name} — ${JSON.stringify(detail)}`); checked++; console.log(`통과 ${checked}: ${name}`, detail ?? "");
+  };
   const click = async selector => {
     const at = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...at, button: "left", clickCount: 1 });
@@ -65,7 +69,7 @@ try {
   // 프레임마다 판(#resizeScene) 밖으로 나간 가장 큰 거리를 쌓는다 — 보이는 유닛(#ua · #ub)과 접기 장치(#rig)의 경계 상자를 본다.
   const begin = () => evaluate(`window.__out=[];window.__probe=true;(()=>{
     const tick=()=>{if(!__probe)return;const s=document.querySelector('#resizeScene').getBoundingClientRect();let out=0;
-      for(const el of document.querySelectorAll('#ua .shell,#ua .stage,#ub .shell,#ub .stage,#rig .plate,#rig .slab')){
+      for(const el of document.querySelectorAll('#ua .shell,#ua .stage,#ua .btn,#ub .shell,#ub .stage,#ub .btn,#rig .plate,#rig .slab')){
         const own=el.closest('#ua,#ub,#rig');if(own.hidden||+getComputedStyle(own).opacity<.01||getComputedStyle(el).display==='none')continue;
         const r=el.getBoundingClientRect();if(!r.width)continue;out=Math.max(out,s.left-r.left,r.right-s.right)}
       __out.push(out);requestAnimationFrame(tick)};requestAnimationFrame(tick)})()`);
@@ -83,14 +87,16 @@ try {
   await post("/viewer/resize", { size: "original" });
   await until(`!__store.st.focus.size && ${atRest}`);
 
-  await choose("tablet");
-  await until(`__store.st.focus.size?.device==='tablet' && ${atRest}`); await pause(400);
-  await begin(); await orientBy("portrait");
-  const spinOut = await end();
-  check(spinOut.frames > 10 && spinOut.out <= 0, "400px 판에서 태블릿 가로 → 세로 회전의 모든 프레임이 판 안", spinOut);
-  await begin(); await orientBy("landscape-left");
-  const spinBack = await end();
-  check(spinBack.frames > 10 && spinBack.out <= 0, "400px 판에서 태블릿 세로 → 가로 회전의 모든 프레임이 판 안", spinBack);
+  for (const [dev, label] of [["tablet", "태블릿"], ["s11ultra", "Tab S11 Ultra"], ["ipair", "iPad Air"], ["duo", "iPhone Duo"]]) {
+    await choose(dev);
+    await until(`__store.st.focus.size?.device==='${dev}' && ${atRest}`); await pause(400);
+    for (const o of ["portrait", "landscape-left"]) {
+      if (await evaluate(`__store.st.focus.size.orientation==='${o}'`)) continue;
+      await begin(); await orientBy(o);
+      const spin = await end();
+      check(spin.frames > 10 && spin.out <= 0, `400px 판에서 ${label} → ${o} 회전의 모든 프레임이 판 안`, spin);
+    }
+  }
 
   for (const [dev, label] of [["fold8", "Fold8"], ["pixelfold", "Pixel Fold"]]) {
     await choose(dev);
@@ -117,7 +123,7 @@ try {
   const widened = await evaluate(`(()=>{const st=document.createElement('style');st.textContent='.resize-scene .rl-badge{width:9ch !important}';document.head.append(st);return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const s=document.querySelector('#resizeScene').getBoundingClientRect(),b=document.querySelector('#rlH').getBoundingClientRect();st.remove();r({badgeLeft:Math.round(b.left-s.left)})})))})()`);
   check(widened.badgeLeft >= 0, "배지 폭을 9ch로 키워도 높이 자 숫자가 잘리지 않는다", widened);
-  console.log(`검사 ${checked}건 통과`);
+  console.log(`검사 ${checked}건 통과${failed ? ` · 실패 ${failed}건(진단)` : ""}`);
 } finally {
   ws?.close(); chrome.kill();
   await new Promise(r => chrome.exitCode !== null ? r() : chrome.once("exit", r));
