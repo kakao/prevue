@@ -380,7 +380,8 @@ export function createResizeScene(root, hooks) {
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
   const sideOf = el => {
-    const gloss = document.createElement("div"); gloss.className = "gloss"; el.prepend(gloss);
+    const gloss = document.createElement("div"), rim = document.createElement("div");
+    gloss.className = "gloss"; rim.className = "rim"; el.prepend(gloss, rim);
     return { body: el, gloss, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit"), fit: [] };
   };
   const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
@@ -547,9 +548,9 @@ export function createResizeScene(root, hooks) {
     place(img, spec, (panel.w - size.w) * s / 2 - du * s, size.w * s, size.h * s, opacity, blur, (panel.h - size.h) * s / 2);
     img.style.transform = `rotate(${-rigAt(now).angle}deg)`;
   }
-  function paintFace(f, plan, s, now) {
+  function paintFace(f, plan, s, now, u) {
     const o = layer.old, n = layer.neu, spec = rig.oldSpec, folded = plan === rig.plan.outer;
-    const put = (img, src, size, blur, op = 1) => foldImage(img, src, size, folded, plan.du, s, now, blur, op);
+    const put = (img, src, size, blur, op = 1) => foldImage(img, src, size, folded, plan.du, s, now, blur * u, op);
     if (plan.role === "crisp") {
       put(f.old, spec, { w: spec.dpW, h: spec.dpH }, rig.restBlur);
       f.veil.style.opacity = 0;
@@ -627,18 +628,18 @@ export function createResizeScene(root, hooks) {
       const g = segs[i];
       if (!g || g.len < .05 || T < .05) { el.style.display = "none"; return; }
       // 이웃 띠와 .6px 겹쳐 안티에일리어싱이 남기는 틈을 덮는다
-      const len = g.len + .6, a = g.a * Math.PI / 180;
+      const len = g.len + .6 * u, a = g.a * Math.PI / 180;
       Object.assign(el.style, { display: "", width: px(T), height: px(len), marginLeft: px(-T / 2), marginTop: px(-len / 2),
         transform: `translate3d(${px(g.x)},${px(g.y)},${px(-T / 2)}) rotateZ(${g.a.toFixed(3)}deg) rotateY(90deg)` });
       el.style.background = stripPaint(tone, lightOf(normal([Math.cos(a), Math.sin(a), 0])));
     });
   }
 
-  // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고 힌지에서 먼 쪽(dir)으로 갈수록 세다.
-  function smear(f, lift) {
+  // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고, 힌지에서 먼 쪽일수록 센 겹이 드러난다(마스크는 paintShades).
+  function smear(f, lift, u) {
     const on = rig.d.plate.blur && lift > .01, top = Number(f.neu.style.opacity) > .5 ? f.neu : f.old;
     f.blurs.forEach(({ el, inv, img }, i) => {
-      const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35), base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
+      const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35) * u, base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
       el.style.opacity = on && blur > .2 ? 1 : 0;
       if (!on || blur <= .2) return;
       if (img.src !== top.src) img.src = top.src;
@@ -697,11 +698,11 @@ export function createResizeScene(root, hooks) {
     drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
     drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
       backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false, u });
-    paintFace(RG.F.base, rig.plan.base, s, now);
-    paintFace(RG.F.inner, rig.plan.inner, s, now);
-    paintFace(RG.F.outer, rig.plan.outer, s, now);
-    smear(RG.F.inner, th <= 90 ? sn : 0);
-    smear(RG.F.outer, th > 90 ? sn : 0);
+    paintFace(RG.F.base, rig.plan.base, s, now, u);
+    paintFace(RG.F.inner, rig.plan.inner, s, now, u);
+    paintFace(RG.F.outer, rig.plan.outer, s, now, u);
+    smear(RG.F.inner, th <= 90 ? sn : 0, u);
+    smear(RG.F.outer, th > 90 ? sn : 0, u);
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
@@ -712,15 +713,15 @@ export function createResizeScene(root, hooks) {
     // 책등 — 두 판의 뒤쪽 힌지 모서리를 잇는 띠. 펼치면 폭 0, 다 접히면 두께 둘 + 틈. 둥근 힌지 쪽 모서리까지 덮게 몸체 높이 전체에 반경을 준다.
     const bx = -e, bz = -T, dz = -T - za, lx = e * cs + dz * sn, lz = za - e * sn + dz * cs;
     const sl = Math.hypot(lx - bx, lz - bz), phi = Math.atan2(-(lz - bz), lx - bx), sv = Bv + 2 * t;
-    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t), width: px(sl + .6), height: px(sv), marginLeft: px(-(sl + .6) / 2),
-      borderRadius: `${px(Math.min(rH, (sl + .6) / 2))} / ${px(rH)}`,
+    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t), width: px(sl + .6 * u), height: px(sv), marginLeft: px(-(sl + .6 * u) / 2),
+      borderRadius: `${px(Math.min(rH, (sl + .6 * u) / 2))} / ${px(rH)}`,
       transform: `translate3d(${px((bx + lx) / 2)},0,${px((bz + lz) / 2)}) rotateY(${(phi * 180 / Math.PI).toFixed(3)}deg)` });
     RG.spine.style.background = stripPaint(tone, lightOf(turn([Math.sin(phi), 0, Math.cos(phi)])));
 
     // 바닥에 드리우는 그림자 — 두 판을 덮는 상자 하나를 바닥 판 뒤에 둔다.
     const tip = hu - Lu * cs, p0 = Math.min(hu - e, tip - t), p1 = Math.max(hu + Bu + t, tip + t);
     Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
-      transform: `translateZ(${px(-T - 1)})`, boxShadow: `var(--elevation-2), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
+      transform: `translateZ(${px(-T - u)})`, boxShadow: `var(--elevation-2), 0 ${px((10 + 18 * sn) * u)} ${px((30 + 34 * sn) * u)} ${shade(.05 * sn)}` });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
     if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone, u });
     else lk.btn.forEach((b, i) => {

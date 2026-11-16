@@ -1,5 +1,6 @@
 // 접는 동안의 래스터 비용을 잰다 — tests/viewer/fold.mjs 와 같은 하네스로 펼친 자연 방향에서 접고,
 // 33ms 간격 31프레임을 실제 프레임으로 그리며 CDP 트레이스의 RasterTask 합계(ms)를 낸다.
+// 하네스 HTML 과 기기 표는 fold.mjs 의 사본이다 — 그쪽을 고치면 여기도 같이 고친다.
 // 헤드리스(--disable-gpu)라 소프트웨어 래스터 숫자다. 실제 GPU 프레임 시간은 사람이 본다.
 //
 //   node tools/fold-raster.mjs [--root=<체크아웃>] [--devices=fold8,duo] [--arrivals=cached,late] [--runs=3] [--layers] [--shots=<폴더>]
