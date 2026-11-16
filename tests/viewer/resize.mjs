@@ -296,9 +296,12 @@ try {
   await send("Emulation.setDeviceMetricsOverride", { width: 820, height: 1000, deviceScaleFactor: 1, mobile: false }); await pause(300);
   await check(`${dockAt} && document.querySelector('#panel').getBoundingClientRect().width<=${DOCK_MAX} && getComputedStyle(document.querySelector('#dcRot .tb-chev')).display!=='none'`, `820 창에서 독은 한 줄 · 펼친 Fold8 독 폭이 기준 이하 · 돌리기 ▾ 유지(${await evaluate(`document.querySelector('#panel').getBoundingClientRect().width`)}px)`);
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  // 데몬은 크기 요청을 병렬로 처리해 끝난 순서대로 넣는다 — 연타가 겹쳐 나가면 늦게 끝난 앞 요청에 멈춘다(부하 평균 8~13에서 7회 중 2회)
+  await evaluate(`window.__resizeFlight={now:0,max:0,sent:[]};(f=>{window.fetch=(u,o)=>{if(u!=='/viewer/resize')return f(u,o);const s=__resizeFlight;s.now++;s.max=Math.max(s.max,s.now);const b=JSON.parse(o.body);s.sent.push(b.size||b.device);return f(u,o).finally(()=>s.now--)}})(window.fetch.bind(window))`);
   await evaluate(`for(const x of ['s26','narrow','ultra','foldable'])document.querySelector('#pnPick [data-sel="'+x+'"]').click()`);
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden') && document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`);
   await check(`document.querySelector('#rlW').value==='673' && document.querySelector('#rlH').value==='841'`, "연타의 마지막 크기 적용");
+  await check(`__resizeFlight.max===1 && __resizeFlight.sent.at(-1)==='foldable'`, `연타의 크기 요청은 하나씩 나가고 마지막이 foldable(${await evaluate(`JSON.stringify(__resizeFlight)`)})`);
   await openMenu(); await key("Escape"); await pause(250);
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && __store.st.screen==='focus' && document.querySelector('#pnSum .nm').textContent==='673×841'`, "Esc 는 메뉴만 닫고 작업 공간에 남는다");
   await openMenu(); await click("#wsTitle"); await pause(250);

@@ -56,7 +56,8 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .rig .face { overflow: hidden; box-shadow: 0 0 0 .5px var(--device-hairline); }
 /* 테는 광택 겹 위에 따로 둔다 — 면의 inset 그림자는 자식(.gloss) 아래에 깔려 멈춘 몸체(.shell)보다 어두워진다 */
 .resize-scene .rig .rim { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--device-rim); }
-.resize-scene .rig .gloss { background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
+/* 장면이 --turn 만큼 돌아 있어 그만큼 되돌린다 — 멈춘 몸체(.shell)처럼 화면 기준 150° 빛이다 */
+.resize-scene .rig .gloss { background-image: linear-gradient(calc(150deg - var(--turn, 0deg)), var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
 .resize-scene .rig .clip { position: absolute; overflow: hidden; }
 .resize-scene .rig .lit { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
 /* 그림과 그라디언트 겹은 각자 합성 층이다 — 그 위아래가 바뀌어도 다시 래스터하지 않고, 크기는 scale 로만 바뀐다(stretch) */

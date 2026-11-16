@@ -155,8 +155,8 @@ export function createResizeScene(root, hooks) {
     done(now, eps = .25) { const [x, v] = this.d(now); return Math.abs(x) < eps && Math.abs(v) < eps * 20; }
   }
   class Tw {
-    constructor(v = 0) { this.a = v; this.b = v; this.t0 = 0; this.dur = 0; }
-    at(now) { if (this.dur <= 0) return this.b; const k = clamp((now - this.t0) / this.dur, 0, 1); return lerp(this.a, this.b, easeOut(k)); }
+    constructor(v = 0, ease = easeOut) { this.a = v; this.b = v; this.t0 = 0; this.dur = 0; this.ease = ease; }
+    at(now) { if (this.dur <= 0) return this.b; const k = clamp((now - this.t0) / this.dur, 0, 1); return lerp(this.a, this.b, this.ease(k)); }
     to(b, dur, now) { this.a = this.at(now); this.b = b; this.t0 = now; this.dur = dur; }
     snap(v) { this.a = this.b = v; this.dur = 0; }
     done(now) { return this.dur <= 0 || now - this.t0 >= this.dur; }
@@ -201,7 +201,7 @@ export function createResizeScene(root, hooks) {
     for (const [v, to] of [[O.w, f.w + 2 * g], [O.h, f.h + 2 * g]]) spO ? v.set(to, spO, now) : v.snap(to);
   }
   // fill — 도착 그림이 없어 옛 화면을 틀에 채워 흐린다. swap — 덮는 쪽 레이아웃으로 바꾸는 흐림 교체(가운데서 가장 흐리다).
-  const layersOf = img => ({ old: { r: img, held: false, fill: false, blur: new Tw(0), veil: new Tw(0), op: new Tw(1) }, neu: { r: null, op: new Tw(0), blur: new Tw(0) }, swap: null });
+  const layersOf = img => ({ old: { r: img, held: false, grow: new Tw(0, k => smooth(0, 1, k)), blur: new Tw(0), veil: new Tw(0), op: new Tw(1) }, neu: { r: null, op: new Tw(0), blur: new Tw(0) }, swap: null });
   const layer = layersOf(null);
   const swapAt = (sw, now) => clamp((now - sw.t0) / sw.dur, 0, 1);
   const bump = k => P.swapBlur * 4 * k * (1 - k);
@@ -246,26 +246,27 @@ export function createResizeScene(root, hooks) {
   }
   function settle(img) {
     const o = layer.old, n = layer.neu;
-    o.r = img; o.held = false; o.fill = false; o.blur.snap(0); o.veil.snap(0); o.op.snap(1);
+    o.r = img; o.held = false; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); o.op.snap(1);
     n.r = null; n.op.snap(0); n.blur.snap(0); layer.swap = null;
   }
 
   function freeze(now) {
     const n = layer.neu, o = layer.old, sw = layer.swap;
     const nb = sw ? swapBlurAt(sw, swapAt(sw, now)) : n.blur.at(now), nop = sw ? smooth(0, 1, swapAt(sw, now)) : n.op.at(now);
-    if (n.r && nop > .5) { o.r = n.r; o.fill = false; o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
+    if (n.r && nop > .5) { o.r = n.r; o.grow.snap(0); o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
     else if (sw) o.blur.snap(nb);
     o.held = true;
     n.r = null; n.op.snap(0); n.blur.snap(0); layer.swap = null;
   }
   // 도착 그림이 없으면 옛 화면을 틀에 채워 흐린다 — 빈칸 · 잘림 대신 흐린 화면이 자리를 지킨다.
+  // 채움은 흐림이 오르는 동안 원래 dp 자리에서 덮는 크기로 자란다 — 틀이 움직이던 중이면 그 사이가 커서 한 프레임에 튀었다.
   function hold(now) {
     const o = layer.old;
-    o.fill = true; o.blur.to(Math.max(P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
+    o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
   }
   function sharpen(now) {
     const o = layer.old;
-    o.fill = false; o.blur.to(0, 120, now); o.veil.to(0, 120, now);
+    o.grow.to(0, 120, now); o.blur.to(0, 120, now); o.veil.to(0, 120, now);
   }
 
   const reducedOn = () => reduced.matches;
@@ -332,7 +333,7 @@ export function createResizeScene(root, hooks) {
     if (rig.on) endRig(now);
     if (spin.on) endSpin(now);
     freeze(now);
-    layer.old.fill = false; layer.old.blur.to(0, 120, now); layer.old.veil.to(0, 120, now);
+    layer.old.grow.to(0, 120, now); layer.old.blur.to(0, 120, now); layer.old.veil.to(0, 120, now);
     for (const v of [V.w, V.h, V.s, V.y, O.w, O.h]) v.snap(v.at(now));
     roll.w.snap(from.w); roll.h.snap(from.h);
     layer.old.op.to(P.reducedDim, 160, now);
@@ -401,9 +402,12 @@ export function createResizeScene(root, hooks) {
   RG.base.front.fit.push(RG.F.base.cast);
   // 접는 동안 크기가 바뀌는 그라디언트 층(광택 · 그늘 · 겹 흐림)은 첫 프레임의 크기로 한 번 그리고 그 뒤로는 scale 로만 늘인다 —
   // 크기가 바뀌면 층 전체를 다시 래스터해, 소프트웨어 래스터에서 접기 한 번에 수백 ms 가 들었다.
+  // 면마다 그 면이 정면으로 보이는 끝(펼친 끝 · 접힌 끝)의 크기로 칠한다 — 그 끝 프레임에서 배율이 1이라 멈춘 몸체와 같은 그라디언트다.
   const stretchOf = new Map();
+  let seeding = null;
   function stretch(el, w, h) {
     let st = stretchOf.get(el);
+    if (!st && seeding && !seeding.has(el)) return;
     if (!st) { st = { w0: Math.max(w, 1), h0: Math.max(h, 1) }; stretchOf.set(el, st); Object.assign(el.style, { width: px(st.w0), height: px(st.h0) }); }
     st.k = [w / st.w0, h / st.h0];
     el.style.transform = `scale(${st.k[0].toFixed(5)}, ${st.k[1].toFixed(5)})`;
@@ -422,7 +426,7 @@ export function createResizeScene(root, hooks) {
     const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", H = d.open.hinge;
     const f0 = fit(from), f1 = fit(to);
     freeze(now);
-    if (cached) { const o = layer.old; o.fill = false; o.blur.snap(0); o.veil.snap(0); }
+    if (cached) { const o = layer.old; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); }
     const restBlur = layer.old.blur.at(now);
     const O = plateOf(d, "open"), C = plateOf(d, "cover");
     const openU = f => f.cx - O.w * f.s / 2 + H * f.s;
@@ -431,7 +435,7 @@ export function createResizeScene(root, hooks) {
     // 짝 없는 방향(거꾸로 선 세로 대신 바로 선 세로)은 180° 돌지 않고 접기만 보인 뒤 정지 자세로 맞춘다
     const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
-      on: true, turn, q: tallOf(d) ? 90 : 0, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
+      on: true, turn, q: tallOf(d) ? 90 : 0, z: parseFloat(getComputedStyle(rigEl).getPropertyValue("--z")) || 1, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
       s0: f0.s, s1: f1.s, sRef: Math.max(f0.s, f1.s),
       half: { u: H, v: O.h }, cover: { u: C.w, v: C.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
@@ -443,6 +447,12 @@ export function createResizeScene(root, hooks) {
     rig.dip = rigDip();
     stretchOf.clear();
     paintShades();
+    const openE = dir === "fold" ? 0 : 1, endOf = new Map([[RG.base.front, openE], [RG.leaf.front, openE], [RG.base.back, openE], [RG.leaf.back, 1 - openE]]);
+    for (const [side, e] of endOf) side.gloss.style.setProperty("--turn", rigAngle(e) + "deg");
+    const ends = [...endOf].filter(([, e]) => e === 1).map(([side]) => side);
+    seeding = new Set(ends.flatMap(side => [side.gloss, ...side.fit]));
+    drawRig(now + rig.dur * 1000);
+    seeding = null;
     if (!cached) hold(now);
     creaseOp.snap(0);
     roll.w.snap(from.w); roll.h.snap(from.h);
@@ -450,11 +460,12 @@ export function createResizeScene(root, hooks) {
     tr = { kind: dir, from, to, t0: now, arriveAt: Infinity, arrived: false };
   }
 
+  const rigAngle = e => rig.from.angle + rig.turn * e + rig.q;
   // 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
   function rigPose(e, bezel) {
     const th = (rig.dir === "fold" ? e : 1 - e) * 180;
     const baseS = lerp(rig.s0, rig.s1, e), cy = lerp(rig.f0.y + rig.f0.h / 2, rig.f1.y + rig.f1.h / 2, e);
-    const angle = rig.from.angle + rig.turn * e + rig.q, rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
+    const angle = rigAngle(e), rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
     const u = lerp(rig.half.u, rig.cover.u, k), v = lerp(rig.half.v, rig.cover.v, k);
     const hx = lerp(rig.hx0, rig.hx1, e), r = room(), offset = (hx - r.cx) / baseS;
     const perspective = P.perspective / (P.perspective - (u + rig.d.plate.thickness) * Math.sin(rad) * baseS);
@@ -485,12 +496,14 @@ export function createResizeScene(root, hooks) {
       angle, top: cy - v * s / 2, settled: t >= T };
   }
 
+  const rigCrease = th => clamp(1 - th / 24, 0, 1);
   function endRig(now) {
+    const shown = P.crease * rigCrease(rigAt(now).th);
     rig.on = false;
     if (rig.cached) settle(cur.img);
     setFrame(fit(cur));
     outlineOp.snap(lined(cur) ? 1 : 0); shellOp.snap(shelled(cur) ? 1 : 0);
-    creaseOp.snap(0); if (isOpen(cur)) creaseOp.to(P.crease, 240, now);
+    creaseOp.snap(isOpen(cur) ? shown : 0); if (isOpen(cur)) creaseOp.to(P.crease, 240, now);
     rulerOp.to(1, 200, now);
   }
 
@@ -562,7 +575,7 @@ export function createResizeScene(root, hooks) {
       f.el.style.background = ts.edge;
       return;
     } else {
-      put(f.old, spec, holdSize(spec, plan.frame, o.fill), o.blur.at(now));
+      put(f.old, spec, holdSize(spec, plan.frame, o.grow.b > 0), o.blur.at(now));
       f.veil.style.opacity = o.veil.at(now);
     }
     if (plan.neu && n.r) put(f.neu, n.r, { w: n.r.dpW, h: n.r.dpH }, n.blur.at(now), n.op.at(now));
@@ -587,6 +600,9 @@ export function createResizeScene(root, hooks) {
   // 화면은 스스로 빛나서 몸체보다 덜 어두워진다.
   // 색은 둘 중 하나로 두고 세기는 불투명도로 준다 — 색이 프레임마다 바뀌면 층을 다시 래스터한다.
   const litOf = b => b <= 1 ? ["var(--device-shade)", P.screenDim * (1 - b)] : ["var(--device-veil)", (b - 1) * .25];
+  const splitTop = text => { const out = []; let depth = 0, from = 0;
+    for (let i = 0; i < text.length; i++) { const c = text[i]; if (c === "(") depth++; else if (c === ")") depth--; else if (c === "," && !depth) { out.push(text.slice(from, i)); from = i + 1; } }
+    return [...out, text.slice(from)].filter(p => p.trim()); };
   const px = v => v.toFixed(2) + "px", radii = r => r.map(px).join(" ");
   // 둥근 사각형 윤곽의 옆면 띠 — 직선 변은 한 장, 모서리는 호에 외접하는 n장이라 이웃 띠의 끝이 만난다.
   function perimeter([x0, y0, x1, y1], [tl, tr, br, bl], n) {
@@ -604,7 +620,7 @@ export function createResizeScene(root, hooks) {
   }
   // 판 하나 — 몸체 상자(body)와 그 안의 화면(scr). 좌표는 힌지 위 끝이 원점인 판의 평면이고, 뒷면은 두께 T 만큼 뒤에서 뒤집힌다.
   // normal(v) 은 판 좌표의 법선을 화면 좌표로 옮긴다. hingeLeft 는 판 좌표에서 힌지가 화면의 왼쪽 변인지다.
-  function drawPanel(p, { body, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }) {
+  function drawPanel(p, { body, span, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }) {
     const [x0, y0, x1, y1] = body, W = x1 - x0, H = y1 - y0, cap = r => r.map(v => clamp(v, 0, Math.min(W, H) / 2));
     const R = cap(bodyR), mirror = r => [r[1], r[0], r[3], r[2]];
     for (const [f, back] of [[p.front, false], [p.back, true]]) {
@@ -613,13 +629,15 @@ export function createResizeScene(root, hooks) {
         borderRadius: radii(back ? mirror(R) : R), transform: back ? `translateZ(${px(-T)}) rotateY(180deg)` : "none" });
       if (f.clip) Object.assign(f.clip.style, { left: px(sx), top: px(scr[1] - y0), width: px(sw), height: px(sh), borderRadius: radii(sr) });
       if (f.ring) {
-        // 고리는 화면 바깥 1.5px — 힌지 쪽은 접히기 시작하면서 생긴다(펼친 동안 두 판의 고리가 힌지에서 겹치지 않게).
-        const w = 1.5 * u, hinge = w * hk, [l, r] = hingeLeft ? [hinge, w] : [w, hinge], [ll, rr] = back ? [r, l] : [l, r];
+        // 고리는 화면 바깥으로 멈춘 무대의 링(.stage, 2px / --z)과 같은 굵기 — 힌지 쪽은 접히기 시작하면서 생긴다(펼친 동안 두 판의 고리가 힌지에서 겹치지 않게).
+        const w = 2 * u / rig.z, hinge = w * hk, [l, r] = hingeLeft ? [hinge, w] : [w, hinge], [ll, rr] = back ? [r, l] : [l, r];
         Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - w), width: px(sw + ll + rr), height: px(sh + 2 * w),
           borderWidth: `${px(w)} ${px(rr)} ${px(w)} ${px(ll)}`, borderRadius: radii(sr.map(v => v + w)) });
       }
       if (f.lit) { const [color, a] = litOf(lightOf(normal([0, 0, back ? -1 : 1]))); f.lit.style.background = color; f.lit.style.opacity = a.toFixed(4); }
-      stretch(f.gloss, W, H);
+      // 앞면의 광택은 두 판을 펼친 폭 하나에 칠하고 면이 제 몫을 자른다 — 펼친 끝에서 멈춘 몸체처럼 한 장의 빛이다.
+      f.gloss.style.left = back ? "0px" : px(span[0] - x0);
+      stretch(f.gloss, back ? W : span[1] - span[0], H);
       for (const el of f.fit) stretch(el, sw, sh);
     }
     const segs = perimeter(body, R, P.arcSegs);
@@ -666,6 +684,14 @@ export function createResizeScene(root, hooks) {
 
   // 판은 접는 내내 한 배율(rig.sRef)로 배치하고 프레임마다의 배율은 .space 의 scale3d 로만 준다 — 배치 크기가 바뀌면 층을 모두 다시 래스터한다.
   // 화면 픽셀로 정한 굵기(단추 · 고리 · 눈금 · 접힌 자국)는 u 를 곱해 변환 뒤에도 같은 굵기로 남긴다.
+  // 그림자는 멈춘 몸체(.shell)의 --elevation-2 를 그대로 쓰되, 장면이 돈 만큼 오프셋을 되돌리고 배율만큼 굵기를 되돌려 화면에서 같은 자리 · 크기로 드리운다.
+  let elevationOf = null;
+  const elevation = () => elevationOf ??= splitTop(getComputedStyle(rigEl).getPropertyValue("--elevation-2")).map(part => {
+    const m = /^\s*(-?[\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+([\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+(.+)$/.exec(part);
+    return m ? [+m[1], +m[2], +m[3], +m[4], m[5].trim()] : null;
+  }).filter(Boolean);
+  const castShadow = (list, a, u) => list.map(([x, y, b, sp, color]) =>
+    `${px((x * Math.cos(a) + y * Math.sin(a)) * u)} ${px((-x * Math.sin(a) + y * Math.cos(a)) * u)} ${px(b * u)} ${px(sp * u)} ${color}`).join(", ");
   function drawRig(now) {
     const { th, s: sNow, hx: hu, top, cy, angle } = rigAt(now);
     const s = rig.sRef, K = sNow / s, u = 1 / K, T0 = cy - (cy - top) * s / sNow;
@@ -695,8 +721,9 @@ export function createResizeScene(root, hooks) {
     const fold = n => [n[0] * cs + n[2] * sn, n[1], -n[0] * sn + n[2] * cs];
     for (const p of [RG.base, RG.leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
     RG.leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
-    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
-    drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
+    const span = [-Lu - t, Bu + t];
+    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], span, bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
+    drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], span, bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
       backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false, u });
     paintFace(RG.F.base, rig.plan.base, s, now, u);
     paintFace(RG.F.inner, rig.plan.inner, s, now, u);
@@ -721,17 +748,19 @@ export function createResizeScene(root, hooks) {
     // 바닥에 드리우는 그림자 — 두 판을 덮는 상자 하나를 바닥 판 뒤에 둔다.
     const tip = hu - Lu * cs, p0 = Math.min(hu - e, tip - t), p1 = Math.max(hu + Bu + t, tip + t);
     Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
-      transform: `translateZ(${px(-T - u)})`, boxShadow: `var(--elevation-2), 0 ${px((10 + 18 * sn) * u)} ${px((30 + 34 * sn) * u)} ${shade(.05 * sn)}` });
+      transform: `translateZ(${px(-T - u)})`, boxShadow: castShadow([...elevation(), [0, (10 + 18 * sn), (30 + 34 * sn), 0, shade(.05 * sn)]], a, u) });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
     if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone, u });
     else lk.btn.forEach((b, i) => {
       Object.assign(RG.btns[i].style, { left: px(Math.max(hu + Bu, tip) + t - .5 * u), top: px(T0 + b.at * s),
         width: px(3 * u), height: px(b.len * s), backgroundColor: lk.tone, opacity: b.len * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift)})` });
     });
-    const ck = P.crease * clamp(1 - th / 24, 0, 1), tk = clamp(1 - th / 24, 0, 1);
+    const tk = rigCrease(th), ck = P.crease * tk;
     Object.assign(RG.crease.style, { left: px(hu), top: px(T0), width: px(14 * u), marginLeft: px(-7 * u), height: px(Bv), opacity: ck * hingeOp.at(now) });
-    Object.assign(RG.tTop.style, { left: px(hu), top: px(T0 - t), width: px(u), height: px(t), opacity: tk });
-    Object.assign(RG.tBot.style, { left: px(hu), top: px(T0 + Bv), width: px(u), height: px(t), opacity: tk });
+    // 멈춘 장면의 눈금은 화면의 오른쪽 · 아래로 1px 이다 — 장면이 돈 쪽에 따라 판 좌표의 어느 쪽으로 그을지 고른다.
+    const tx = hu - (ca + sa > 0 ? 0 : u);
+    Object.assign(RG.tTop.style, { left: px(tx), top: px(T0 - t), width: px(u), height: px(t), opacity: tk });
+    Object.assign(RG.tBot.style, { left: px(tx), top: px(T0 + Bv), width: px(u), height: px(t), opacity: tk });
   }
 
   const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
@@ -743,8 +772,8 @@ export function createResizeScene(root, hooks) {
     U.l0.style.transform = U.l1.style.transform = "";
     if (o.r) {
       // 채운 그림은 가운데에 둔다 — 돌리는 동안의 똑바로 선 그림과 같은 자리라 돌기 전후에 튀지 않는다.
-      const fill = o.held && o.fill, hs = holdSize(o.r, { w: rect.w / s, h: rect.h / s }, fill);
-      place(U.l0, o.r, fill ? (rect.w - hs.w * s) / 2 : 0, hs.w * s, hs.h * s, o.op.at(now), ob, fill ? (rect.h - hs.h * s) / 2 : 0);
+      const k = o.held ? o.grow.at(now) : 0, hs = holdSize(o.r, { w: rect.w / s, h: rect.h / s }, k > 0), w = lerp(o.r.dpW, hs.w, k) * s, h = lerp(o.r.dpH, hs.h, k) * s;
+      place(U.l0, o.r, (rect.w - hs.w * s) / 2 * k, w, h, o.op.at(now), ob, (rect.h - hs.h * s) / 2 * k);
     } else U.l0.style.opacity = 0;
     U.veil.style.opacity = o.veil.at(now);
     if (n.r) place(U.l1, n.r, 0, n.r.dpW * s, n.r.dpH * s, nop, nb);
@@ -761,16 +790,16 @@ export function createResizeScene(root, hooks) {
   // 돌리는 동안 — 틀은 몸체와 함께 돌고, 그림은 틀 가운데에서 반대로 돌아 화면 기준 0°에 선다.
   function drawUpright(U, rect, s, now) {
     const { p } = spinAt(now), deg = spin.dir * 90 * p, a = deg * Math.PI / 180, o = layer.old;
-    const up = (img, spec, size, op, blur) => {
-      place(img, spec, (rect.w - size.w) / 2, size.w, size.h, op, blur, (rect.h - size.h) / 2);
+    const up = (img, spec, size, op, blur, dx = 0, dy = 0) => {
+      place(img, spec, (rect.w - size.w) / 2 + dx, size.w, size.h, op, blur, (rect.h - size.h) / 2 + dy);
       img.style.transform = `rotate(${(-deg).toFixed(3)}deg)`;
     };
     U.veil.style.opacity = o.veil.at(now);
     if (!o.r) { U.l0.style.opacity = U.l1.style.opacity = 0; return null; }
     if (!spin.cached || !spin.to.img) {
       const box = { w: (Math.abs(rect.w * Math.cos(a)) + Math.abs(rect.h * Math.sin(a))) / s, h: (Math.abs(rect.w * Math.sin(a)) + Math.abs(rect.h * Math.cos(a))) / s };
-      const hs = holdSize(o.r, box, true);
-      up(U.l0, o.r, { w: hs.w * s, h: hs.h * s }, 1, o.blur.at(now));
+      const hs = holdSize(o.r, box, true), k = o.grow.at(now), size = { w: lerp(o.r.dpW, hs.w, k) * s, h: lerp(o.r.dpH, hs.h, k) * s };
+      up(U.l0, o.r, size, 1, o.blur.at(now), (o.r.dpW * s - rect.w) / 2 * (1 - k), (o.r.dpH * s - rect.h) / 2 * (1 - k));
       U.l1.style.opacity = 0;
       return o.r;
     }
@@ -860,7 +889,7 @@ export function createResizeScene(root, hooks) {
       if (tr?.kind === "size" && keep) layer.old.blur.snap(keep);
     }
     // 크기 전환은 틀이 멈춘 뒤에 선명해진다 — 움직이는 동안 늘었다 줄었다 하는 화면을 옅은 흐림이 가린다
-    if (tr?.kind === "size" && tr.arrived && !layer.neu.r && nearRest(now) && layer.old.blur.b > 0 && !layer.old.fill) layer.old.blur.to(0, P.settleSharp, now);
+    if (tr?.kind === "size" && tr.arrived && !layer.neu.r && nearRest(now) && layer.old.blur.b > 0 && !(layer.old.grow.b > 0)) layer.old.blur.to(0, P.settleSharp, now);
     if (tr) {
       if (tr.kind === "fade") { if (tr.arrived && unitOp.b.done(now)) endFade(now); }
       else if (tr.kind !== "spin" && tr.arrived && !rig.on && !layer.neu.r && atRest(now) && O.w.done(now) && O.h.done(now) && layer.old.blur.b === 0 && layer.old.blur.done(now)) {
@@ -1201,7 +1230,7 @@ export function createResizeScene(root, hooks) {
     if (!enabled || !cur) return;
     clock.t = ts;
     tick();
-    const tweens = [outlineOp, creaseOp, rulerOp, shellOp, hingeOp, unitOp.a, unitOp.b, layer.old.blur, layer.old.veil, layer.old.op, layer.neu.op, layer.neu.blur, roll.w, roll.h];
+    const tweens = [outlineOp, creaseOp, rulerOp, shellOp, hingeOp, unitOp.a, unitOp.b, layer.old.grow, layer.old.blur, layer.old.veil, layer.old.op, layer.neu.op, layer.neu.blur, roll.w, roll.h];
     if (tr || queued || rig.on || spin.on || !atRest(ts) || ts < look.t0 + look.dur || tweens.some(v => !v.done(ts))) wake();
   }
   function wake() { if (enabled && !raf) raf = requestAnimationFrame(animate); }
