@@ -379,15 +379,43 @@ export function createResizeScene(root, hooks) {
   const RG = { lift: q(rigEl, ".lift"), space: q(rigEl, ".space"), plate: q(rigEl, ".plate"), spine: q(rigEl, ".spine"),
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
-  const sideOf = el => ({ body: el, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit") });
+  const sideOf = el => {
+    const gloss = document.createElement("div"), rim = document.createElement("div");
+    gloss.className = "gloss"; rim.className = "rim"; el.prepend(gloss, rim);
+    return { body: el, gloss, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit"), fit: [] };
+  };
   const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
   RG.base = panelOf(q(rigEl, ".slab.base")); RG.leaf = panelOf(q(rigEl, ".slab.leaf"));
   RG.btns = Array.from({ length: 5 }, () => { const el = document.createElement("div"); el.className = "btn"; RG.space.append(el); return el; });
   RG.F = { inner: faceOf(RG.leaf.front.clip), outer: faceOf(RG.leaf.back.clip), base: faceOf(RG.base.front.clip) };
   // 겹 흐림(plate.blur) — 접히는 판의 화면에 힌지에서 먼 쪽일수록 더 흐린 그림 네 겹과 그늘을 덮는다. 면 안은 평평한 층이라 filter · mask 를 둬도 장면이 눌리지 않는다.
-  for (const f of [RG.F.inner, RG.F.outer]) {
-    f.blurs = Array.from({ length: 4 }, () => { const el = document.createElement("div"); el.className = "smear"; el.innerHTML = '<img class="ly" alt="">'; f.el.insertBefore(el, f.cam); return { el, img: q(el, "img") }; });
+  // 겹은 화면 크기로 늘여지므로(stretch) 그림은 되돌린 겹(.unstretch) 안에 둬 화면 좌표 그대로 선다.
+  for (const [side, f] of [[RG.leaf.front, RG.F.inner], [RG.leaf.back, RG.F.outer]]) {
+    f.blurs = Array.from({ length: 4 }, () => {
+      const el = document.createElement("div"); el.className = "smear"; el.innerHTML = '<div class="unstretch"><img class="ly" alt=""></div>'; f.el.insertBefore(el, f.cam);
+      return { el, inv: q(el, ".unstretch"), img: q(el, "img") };
+    });
     f.dark = document.createElement("div"); f.dark.className = "smear"; f.el.insertBefore(f.dark, f.cam);
+    side.fit.push(...f.blurs.map(b => b.el), f.dark);
+  }
+  RG.base.front.fit.push(RG.F.base.cast);
+  // 접는 동안 크기가 바뀌는 그라디언트 층(광택 · 그늘 · 겹 흐림)은 첫 프레임의 크기로 한 번 그리고 그 뒤로는 scale 로만 늘인다 —
+  // 크기가 바뀌면 층 전체를 다시 래스터해, 소프트웨어 래스터에서 접기 한 번에 수백 ms 가 들었다.
+  const stretchOf = new Map();
+  function stretch(el, w, h) {
+    let st = stretchOf.get(el);
+    if (!st) { st = { w0: Math.max(w, 1), h0: Math.max(h, 1) }; stretchOf.set(el, st); Object.assign(el.style, { width: px(st.w0), height: px(st.h0) }); }
+    st.k = [w / st.w0, h / st.h0];
+    el.style.transform = `scale(${st.k[0].toFixed(5)}, ${st.k[1].toFixed(5)})`;
+  }
+  // 그늘의 세기는 불투명도로만 준다 — 그라디언트는 접기마다 한 번 칠한다. 바닥 그늘은 세기에 비례해 모양이 같고,
+  // 겹 흐림의 그늘은 다 선(90°) 순간의 모양으로 칠해 그보다 얕은 각도에서는 옛 모양보다 조금 옅다.
+  function paintShades() {
+    RG.F.base.cast.style.background = `linear-gradient(90deg, ${shade(1)}, ${shade(.35)} 45%, ${shade(0)} 90%)`;
+    for (const [f, dir] of [[RG.F.inner, "to left"], [RG.F.outer, "to right"]]) {
+      f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
+      f.blurs.forEach(({ el }, i) => { el.style.webkitMaskImage = el.style.maskImage = `linear-gradient(${dir}, transparent ${((i + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((i + 1) / 4 * 100).toFixed(1)}%)`; });
+    }
   }
 
   function startFold(from, to, now, cached) {
@@ -404,7 +432,7 @@ export function createResizeScene(root, hooks) {
     const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
       on: true, turn, q: tallOf(d) ? 90 : 0, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
-      s0: f0.s, s1: f1.s,
+      s0: f0.s, s1: f1.s, sRef: Math.max(f0.s, f1.s),
       half: { u: H, v: O.h }, cover: { u: C.w, v: C.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
       hx1: dir === "fold" ? coverU(f1) : openU(f1),
@@ -413,6 +441,8 @@ export function createResizeScene(root, hooks) {
         : { outer: { role: "crisp", du: 0 }, inner: { role: "hold", du: 0, neu: true, frame }, base: { role: "hold", du: H, neu: true, frame } },
     });
     rig.dip = rigDip();
+    stretchOf.clear();
+    paintShades();
     if (!cached) hold(now);
     creaseOp.snap(0);
     roll.w.snap(from.w); roll.h.snap(from.h);
@@ -518,9 +548,9 @@ export function createResizeScene(root, hooks) {
     place(img, spec, (panel.w - size.w) * s / 2 - du * s, size.w * s, size.h * s, opacity, blur, (panel.h - size.h) * s / 2);
     img.style.transform = `rotate(${-rigAt(now).angle}deg)`;
   }
-  function paintFace(f, plan, s, now) {
+  function paintFace(f, plan, s, now, u) {
     const o = layer.old, n = layer.neu, spec = rig.oldSpec, folded = plan === rig.plan.outer;
-    const put = (img, src, size, blur, op = 1) => foldImage(img, src, size, folded, plan.du, s, now, blur, op);
+    const put = (img, src, size, blur, op = 1) => foldImage(img, src, size, folded, plan.du, s, now, blur * u, op);
     if (plan.role === "crisp") {
       put(f.old, spec, { w: spec.dpW, h: spec.dpH }, rig.restBlur);
       f.veil.style.opacity = 0;
@@ -555,7 +585,8 @@ export function createResizeScene(root, hooks) {
     return `linear-gradient(90deg, ${hi} 0, ${mid} 10%, ${mid} 90%, ${lo} 100%)`;
   };
   // 화면은 스스로 빛나서 몸체보다 덜 어두워진다.
-  const litOf = b => b <= 1 ? shade(P.screenDim * (1 - b)) : `color-mix(in srgb, var(--device-veil) ${((b - 1) * 25).toFixed(1)}%, transparent)`;
+  // 색은 둘 중 하나로 두고 세기는 불투명도로 준다 — 색이 프레임마다 바뀌면 층을 다시 래스터한다.
+  const litOf = b => b <= 1 ? ["var(--device-shade)", P.screenDim * (1 - b)] : ["var(--device-veil)", (b - 1) * .25];
   const px = v => v.toFixed(2) + "px", radii = r => r.map(px).join(" ");
   // 둥근 사각형 윤곽의 옆면 띠 — 직선 변은 한 장, 모서리는 호에 외접하는 n장이라 이웃 띠의 끝이 만난다.
   function perimeter([x0, y0, x1, y1], [tl, tr, br, bl], n) {
@@ -573,7 +604,7 @@ export function createResizeScene(root, hooks) {
   }
   // 판 하나 — 몸체 상자(body)와 그 안의 화면(scr). 좌표는 힌지 위 끝이 원점인 판의 평면이고, 뒷면은 두께 T 만큼 뒤에서 뒤집힌다.
   // normal(v) 은 판 좌표의 법선을 화면 좌표로 옮긴다. hingeLeft 는 판 좌표에서 힌지가 화면의 왼쪽 변인지다.
-  function drawPanel(p, { body, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft }) {
+  function drawPanel(p, { body, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }) {
     const [x0, y0, x1, y1] = body, W = x1 - x0, H = y1 - y0, cap = r => r.map(v => clamp(v, 0, Math.min(W, H) / 2));
     const R = cap(bodyR), mirror = r => [r[1], r[0], r[3], r[2]];
     for (const [f, back] of [[p.front, false], [p.back, true]]) {
@@ -583,11 +614,13 @@ export function createResizeScene(root, hooks) {
       if (f.clip) Object.assign(f.clip.style, { left: px(sx), top: px(scr[1] - y0), width: px(sw), height: px(sh), borderRadius: radii(sr) });
       if (f.ring) {
         // 고리는 화면 바깥 1.5px — 힌지 쪽은 접히기 시작하면서 생긴다(펼친 동안 두 판의 고리가 힌지에서 겹치지 않게).
-        const hinge = 1.5 * hk, [l, r] = hingeLeft ? [hinge, 1.5] : [1.5, hinge], [ll, rr] = back ? [r, l] : [l, r];
-        Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - 1.5), width: px(sw + ll + rr), height: px(sh + 3),
-          borderWidth: `1.5px ${px(rr)} 1.5px ${px(ll)}`, borderRadius: radii(sr.map(v => v + 1.5)) });
+        const w = 1.5 * u, hinge = w * hk, [l, r] = hingeLeft ? [hinge, w] : [w, hinge], [ll, rr] = back ? [r, l] : [l, r];
+        Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - w), width: px(sw + ll + rr), height: px(sh + 2 * w),
+          borderWidth: `${px(w)} ${px(rr)} ${px(w)} ${px(ll)}`, borderRadius: radii(sr.map(v => v + w)) });
       }
-      if (f.lit) f.lit.style.background = litOf(lightOf(normal([0, 0, back ? -1 : 1])));
+      if (f.lit) { const [color, a] = litOf(lightOf(normal([0, 0, back ? -1 : 1]))); f.lit.style.background = color; f.lit.style.opacity = a.toFixed(4); }
+      stretch(f.gloss, W, H);
+      for (const el of f.fit) stretch(el, sw, sh);
     }
     const segs = perimeter(body, R, P.arcSegs);
     while (p.strips.length < segs.length) { const el = document.createElement("div"); el.className = "strip"; p.el.append(el); p.strips.push(el); }
@@ -595,44 +628,47 @@ export function createResizeScene(root, hooks) {
       const g = segs[i];
       if (!g || g.len < .05 || T < .05) { el.style.display = "none"; return; }
       // 이웃 띠와 .6px 겹쳐 안티에일리어싱이 남기는 틈을 덮는다
-      const len = g.len + .6, a = g.a * Math.PI / 180;
+      const len = g.len + .6 * u, a = g.a * Math.PI / 180;
       Object.assign(el.style, { display: "", width: px(T), height: px(len), marginLeft: px(-T / 2), marginTop: px(-len / 2),
         transform: `translate3d(${px(g.x)},${px(g.y)},${px(-T / 2)}) rotateZ(${g.a.toFixed(3)}deg) rotateY(90deg)` });
       el.style.background = stripPaint(tone, lightOf(normal([Math.cos(a), Math.sin(a), 0])));
     });
   }
 
-  // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고 힌지에서 먼 쪽(dir)으로 갈수록 세다.
-  function smear(f, lift, dir) {
+  // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고, 힌지에서 먼 쪽일수록 센 겹이 드러난다(마스크는 paintShades).
+  function smear(f, lift, u) {
     const on = rig.d.plate.blur && lift > .01, top = Number(f.neu.style.opacity) > .5 ? f.neu : f.old;
-    f.blurs.forEach(({ el, img }, i) => {
-      const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35), base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
+    f.blurs.forEach(({ el, inv, img }, i) => {
+      const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35) * u, base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
       el.style.opacity = on && blur > .2 ? 1 : 0;
       if (!on || blur <= .2) return;
       if (img.src !== top.src) img.src = top.src;
+      const [kx, ky] = stretchOf.get(el).k;
+      inv.style.transform = `scale(${(1 / kx).toFixed(5)}, ${(1 / ky).toFixed(5)})`;
       Object.assign(img.style, { left: top.style.left, top: top.style.top, width: top.style.width, height: top.style.height, transform: top.style.transform,
         filter: `blur(${Math.max(blur, base).toFixed(2)}px)` });
-      el.style.webkitMaskImage = el.style.maskImage = `linear-gradient(${dir}, transparent ${((i + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((i + 1) / 4 * 100).toFixed(1)}%)`;
     });
-    f.dark.style.opacity = on ? 1 : 0;
-    if (on) f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * lift * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
+    f.dark.style.opacity = on ? lift.toFixed(4) : 0;
   }
 
   // 조개형의 옆 단추는 힌지와 나란한 변(판 좌표의 위 · 아래 변)에 있고 접히는 장을 따라 돈다 — 힌지에서 잰 거리를 펼친 자리에서
   // 커버 자리로 옮기며 그 거리의 앞모습(cos)만큼 그린다. 펼친 화면의 오른쪽 변(side 1)이 판 좌표의 위 변이다.
-  function tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone }) {
-    const d = rig.d, H = d.open.hinge, bw = 3;
+  function tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone, u }) {
+    const d = rig.d, H = d.open.hinge, bw = 3 * u;
     d.look.open.btn.forEach((bo, i) => {
       const bc = d.look.cover.btn[i], leaf = bo.at < H;
       const w0 = lerp(leaf ? H - bo.at - bo.len : bo.at - H, bc.at, leaf ? k : 0), w1 = lerp(leaf ? H - bo.at : bo.at + bo.len - H, bc.at + bc.len, leaf ? k : 0);
       const [u0, u1] = leaf ? [-w1 * cs, -w0 * cs].sort((a, b) => a - b) : [w0, w1], wm = (w0 + w1) / 2;
-      Object.assign(RG.btns[i].style, { left: px(hu + u0 * s), top: px(bo.side > 0 ? T0 - t - bw + .5 : T0 + Bv + t - .5), width: px((u1 - u0) * s), height: bw + "px",
-        backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
+      Object.assign(RG.btns[i].style, { left: px(hu + u0 * s), top: px(bo.side > 0 ? T0 - t - bw + .5 * u : T0 + Bv + t - .5 * u), width: px((u1 - u0) * s), height: px(bw),
+        backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
     });
   }
 
+  // 판은 접는 내내 한 배율(rig.sRef)로 배치하고 프레임마다의 배율은 .space 의 scale3d 로만 준다 — 배치 크기가 바뀌면 층을 모두 다시 래스터한다.
+  // 화면 픽셀로 정한 굵기(단추 · 고리 · 눈금 · 접힌 자국)는 u 를 곱해 변환 뒤에도 같은 굵기로 남긴다.
   function drawRig(now) {
-    const { th, s, hx: hu, top: T0, angle } = rigAt(now);
+    const { th, s: sNow, hx: hu, top, cy, angle } = rigAt(now);
+    const s = rig.sRef, K = sNow / s, u = 1 / K, T0 = cy - (cy - top) * s / sNow;
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), d = rig.d;
     const lk = lookAt(now), t = lk.bezel * P.shellK * s, tone = rgbOf(lk.tone);
     const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
@@ -650,52 +686,52 @@ export function createResizeScene(root, hooks) {
     const baseR = [mix(R[0], C[0]) * hk, mix(R[1], C[1]), mix(R[2], C[2]), mix(R[3], C[3]) * hk];
     const leafR = [mix(R[0], C[1]), mix(R[1], C[0]) * hk, mix(R[2], C[3]) * hk, mix(R[3], C[2])];
     const rB = baseR[1], rH = baseR[0];
-    const pivot = `${px(hu)} ${px(T0 + Bv / 2)}`;
+    const pivot = `${px(hu)} ${px(cy)}`, k3 = K.toFixed(5);
     Object.assign(RG.lift.style, { perspective: P.perspective + "px", perspectiveOrigin: pivot });
-    RG.space.style.transform = `translateZ(${px(-lift)})`;
+    Object.assign(RG.space.style, { transformOrigin: pivot, transform: `scale3d(${k3},${k3},${k3}) translateZ(${px(-lift)})` });
     // 법선 — 판 좌표 → 접힘(rotateY) → 장면 회전(turnRig 의 rotate). 빛은 화면에 고정이다.
     const a = angle * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
     const turn = n => [n[0] * ca - n[1] * sa, n[0] * sa + n[1] * ca, n[2]];
     const fold = n => [n[0] * cs + n[2] * sn, n[1], -n[0] * sn + n[2] * cs];
     for (const p of [RG.base, RG.leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
     RG.leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
-    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true });
+    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
     drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
-      backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false });
-    paintFace(RG.F.base, rig.plan.base, s, now);
-    paintFace(RG.F.inner, rig.plan.inner, s, now);
-    paintFace(RG.F.outer, rig.plan.outer, s, now);
-    smear(RG.F.inner, th <= 90 ? sn : 0, "to left");
-    smear(RG.F.outer, th > 90 ? sn : 0, "to right");
+      backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false, u });
+    paintFace(RG.F.base, rig.plan.base, s, now, u);
+    paintFace(RG.F.inner, rig.plan.inner, s, now, u);
+    paintFace(RG.F.outer, rig.plan.outer, s, now, u);
+    smear(RG.F.inner, th <= 90 ? sn : 0, u);
+    smear(RG.F.outer, th > 90 ? sn : 0, u);
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, -sh, 0, 1);
     const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
-    RG.F.base.cast.style.background = `linear-gradient(90deg, ${shade(cast)}, ${shade(cast * .35)} 45%, ${shade(0)} 90%)`;
+    RG.F.base.cast.style.opacity = cast.toFixed(4);
 
     // 책등 — 두 판의 뒤쪽 힌지 모서리를 잇는 띠. 펼치면 폭 0, 다 접히면 두께 둘 + 틈. 둥근 힌지 쪽 모서리까지 덮게 몸체 높이 전체에 반경을 준다.
     const bx = -e, bz = -T, dz = -T - za, lx = e * cs + dz * sn, lz = za - e * sn + dz * cs;
     const sl = Math.hypot(lx - bx, lz - bz), phi = Math.atan2(-(lz - bz), lx - bx), sv = Bv + 2 * t;
-    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t), width: px(sl + .6), height: px(sv), marginLeft: px(-(sl + .6) / 2),
-      borderRadius: `${px(Math.min(rH, (sl + .6) / 2))} / ${px(rH)}`,
+    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t), width: px(sl + .6 * u), height: px(sv), marginLeft: px(-(sl + .6 * u) / 2),
+      borderRadius: `${px(Math.min(rH, (sl + .6 * u) / 2))} / ${px(rH)}`,
       transform: `translate3d(${px((bx + lx) / 2)},0,${px((bz + lz) / 2)}) rotateY(${(phi * 180 / Math.PI).toFixed(3)}deg)` });
     RG.spine.style.background = stripPaint(tone, lightOf(turn([Math.sin(phi), 0, Math.cos(phi)])));
 
     // 바닥에 드리우는 그림자 — 두 판을 덮는 상자 하나를 바닥 판 뒤에 둔다.
     const tip = hu - Lu * cs, p0 = Math.min(hu - e, tip - t), p1 = Math.max(hu + Bu + t, tip + t);
     Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
-      transform: `translateZ(${px(-T - 1)})`, boxShadow: `var(--elevation-2), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
+      transform: `translateZ(${px(-T - u)})`, boxShadow: `var(--elevation-2), 0 ${px((10 + 18 * sn) * u)} ${px((30 + 34 * sn) * u)} ${shade(.05 * sn)}` });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
-    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone });
+    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone, u });
     else lk.btn.forEach((b, i) => {
-      Object.assign(RG.btns[i].style, { left: Math.max(hu + Bu, tip) + t - .5 + "px", top: T0 + b.at * s + "px",
-        width: "3px", height: b.len * s + "px", backgroundColor: lk.tone, opacity: b.len * s > .5 ? 1 : 0, transform: `translateZ(${px(lift)})` });
+      Object.assign(RG.btns[i].style, { left: px(Math.max(hu + Bu, tip) + t - .5 * u), top: px(T0 + b.at * s),
+        width: px(3 * u), height: px(b.len * s), backgroundColor: lk.tone, opacity: b.len * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift)})` });
     });
     const ck = P.crease * clamp(1 - th / 24, 0, 1), tk = clamp(1 - th / 24, 0, 1);
-    Object.assign(RG.crease.style, { left: hu + "px", top: T0 + "px", height: Bv + "px", opacity: ck * hingeOp.at(now) });
-    Object.assign(RG.tTop.style, { left: hu + "px", top: T0 - t + "px", width: "1px", height: t + "px", opacity: tk });
-    Object.assign(RG.tBot.style, { left: hu + "px", top: T0 + Bv + "px", width: "1px", height: t + "px", opacity: tk });
+    Object.assign(RG.crease.style, { left: px(hu), top: px(T0), width: px(14 * u), marginLeft: px(-7 * u), height: px(Bv), opacity: ck * hingeOp.at(now) });
+    Object.assign(RG.tTop.style, { left: px(hu), top: px(T0 - t), width: px(u), height: px(t), opacity: tk });
+    Object.assign(RG.tBot.style, { left: px(hu), top: px(T0 + Bv), width: px(u), height: px(t), opacity: tk });
   }
 
   const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
