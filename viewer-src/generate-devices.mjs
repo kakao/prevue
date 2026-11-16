@@ -53,7 +53,7 @@ function body(raw, where, measured) {
   for (const [name, value] of Object.entries(cam)) if (name !== 'edge') number(value, `${where}.cam.${name}`);
   if (cam.edge !== undefined && (!['right', 'bottom'].includes(cam.edge) || cam.notch === undefined)) throw Error(`${where}.cam.edge: right · bottom 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
   if (cam.notch !== undefined && (cam.y !== 0 || cam.notch < 0 || cam.notch > Math.min(cam.w, cam.h) / 2)) throw Error(`${where}.cam.notch: 가장자리에 붙으려면 y 가 0 이고, 반경은 짧은 변의 절반 이하다`);
-  if (!Array.isArray(raw.btn) || raw.btn.length > 5) throw Error(`${where}.btn: 5개 이하의 목록이 아니다`);
+  if (!Array.isArray(raw.btn) || raw.btn.length < 1 || raw.btn.length > 5) throw Error(`${where}.btn: 1개 이상 5개 이하의 목록이 아니다`);
   const btn = raw.btn.map((entry, i) => {
     if (!Array.isArray(entry) || entry.length !== 3) throw Error(`${where}.btn[${i}]: [변, 위치, 길이]가 아니다`);
     const [side, at, len] = entry.map((v, k) => number(v, `${where}.btn[${i}][${k}]`));
