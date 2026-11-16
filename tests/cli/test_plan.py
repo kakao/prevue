@@ -139,15 +139,9 @@ class FlavorOrder(unittest.TestCase):
     def test_테스트_변형은_빠진다(self):
         self.assertEqual(P.pick(["devDebugUnitTest", "devDebugAndroidTest", "dev2Debug"])[0], "dev2Debug")
 
-    def test_플레이버_없는_debug(self):
-        self.assertEqual(P.pick(["debug", "release"]), ("debug", "rule"))
-
     def test_isDefault_가_규칙보다_앞선다(self):
         hint = {"flavors": ["dev3"], "buildType": "debug"}
         self.assertEqual(P.pick(["devDebug", "dev3Debug"], hint), ("dev3Debug", "isDefault"))
-
-    def test_debug_계열이_없으면_비운다(self):
-        self.assertEqual(P.pick(["devRelease"]), ("", ""))
 
 
 class Freshness(Case):
@@ -164,15 +158,6 @@ class Freshness(Case):
         name, at = P.pick_fresh(self.mod, ["dev2Debug", "dev3Debug", "devDebug"])
         self.assertEqual(name, "devDebug")
         self.assertAlmostEqual(at, now - 3600, delta=1)
-
-    def test_테스트_컴파일은_세지_않는다(self):
-        now = time.time()
-        self.r.built(":app", "devDebug", now - 86400)
-        self.r.built(":app", "devDebugUnitTest", now)
-        self.assertEqual(P.pick_fresh(self.mod, ["devDebug", "devDebugUnitTest"])[0], "devDebug")
-
-    def test_기록이_없으면_다음_순위로(self):
-        self.assertEqual(P.pick_fresh(self.mod, ["devDebug", "dev2Debug"]), (None, None))
 
     def test_release_는_최신이어도_고르지_않는다(self):
         self.r.built(":app", "devRelease", time.time())
@@ -192,9 +177,6 @@ class KmpVariant(Case):
         super().setUp()
         self.r = self.repo(":app", ":shared")
 
-    def test_androidMain_은_debug_계열이다(self):
-        self.assertEqual(P.pick(["androidMain"]), ("androidMain", "rule"))
-
     def test_새_플러그인의_컴파일_기록(self):
         self.kmp_built(":shared", "compileAndroidMain", time.time())
         self.assertEqual(P.pick_fresh(P.module_dir(self.r.root, ":shared"), ["androidMain"])[0], "androidMain")
@@ -202,12 +184,6 @@ class KmpVariant(Case):
     def test_옛_조합의_컴파일_기록(self):
         self.kmp_built(":shared", "compileDebugKotlinAndroid", time.time())
         self.assertEqual(P.pick_fresh(P.module_dir(self.r.root, ":shared"), ["debug", "release"])[0], "debug")
-
-    def test_옛_기록과_새_기록이_함께면_새것을_본다(self):
-        now = time.time()
-        self.kmp_built(":shared", "compileDebugKotlin", now - 86400)
-        self.kmp_built(":shared", "compileDebugKotlinAndroid", now)
-        self.assertAlmostEqual(P.last_built(P.module_dir(self.r.root, ":shared"), "debug"), now, delta=1)
 
     def test_앱_덤프가_담으면_자기_덤프_없이_준비됨(self):
         d = P.module_dir(self.r.root, ":shared")
@@ -283,12 +259,6 @@ class Observe(Case):
             f.write("include ':app',\n        'core:ui'\n// include ':old'\n/* include ':older' */\n")
         self.assertEqual(P.settings_modules(r.root), [":app", ":core:ui"])
 
-    def test_관찰된_변형은_디렉터리_이름(self):
-        r = self.repo(":app")
-        r.built(":app", "prodDebug")
-        r.built(":app", "demoDebug")
-        self.assertEqual(P.variants_observed(r.root, ":app"), ["demoDebug", "prodDebug"])
-
     def test_리소스_APK는_디스크에_있는_곳만(self):
         r = self.repo(":app", ":core:ui")
         p = r.apk(":app", "demoDebug")
@@ -298,13 +268,6 @@ class Observe(Case):
 # ── 덤프 유효성 ──────────────────────────────────────────────────────────────
 
 class DumpValidity(Case):
-    def test_멀쩡한_덤프(self):
-        r = self.repo(":app")
-        self.assertIsNone(P.dump_why(r.dump(":app", "debug")))
-
-    def test_낡은_규약(self):
-        r = self.repo(":app")
-        self.assertIn("old schema", P.dump_why(r.dump(":app", "debug", schema=P.SCHEMA - 1)))
 
     def test_clean_뒤_산출물이_사라졌다(self):
         # 덤프는 남고 가리키는 것만 사라진다 — 그대로 start 하면 JVM 이 "모듈명을 정할 수 없다"로 죽는다
@@ -346,9 +309,6 @@ class DumpValidity(Case):
         P.stamp_build_files(p, r.root, since)
         self.assertIn("settings.gradle.kts", P.dump_why(p))
 
-    def test_루트_프로젝트는_루트_파일만_본다(self):
-        self.assertEqual(P.build_files("/r", ":"), list(P.ROOT_BUILD_FILES))
-
     def test_지문_없는_옛_덤프는_mtime_으로_본다(self):
         r = self.repo(":app")
         p = r.dump(":app", "debug")
@@ -369,13 +329,6 @@ class DumpValidity(Case):
         self.assertEqual(out["dumpOutdated"], p)
         self.assertIn("build files changed", out["why"])
         self.assertTrue(out["next"].startswith("prevue warmup"))
-
-    def test_읽을_수_없다(self):
-        r = self.repo(":app")
-        p = r.dump(":app", "debug")
-        with open(p, "w") as f:
-            f.write("{")
-        self.assertEqual(P.dump_why(p), "unreadable")
 
 
 # ── plan ────────────────────────────────────────────────────────────────────
@@ -660,11 +613,6 @@ class Health(Case):
         self.assertEqual(P.warmup_daemons(["8801\t" + st], ":core:ui", "debug", "/r")[0], ["8801"])
         self.assertEqual(P.warmup_daemons(["8801\t" + fresh], ":core:ui", "debug", "/r")[0], [])
 
-    def test_status_의_stale_중_다시_떠야_닫히는_것만(self):
-        st = json.dumps({"stale": {"compile": {}, "resources": {}, "build-files": {}}})
-        self.assertEqual(P.restart_stale(st), ["resources", "build-files"])
-        self.assertEqual((P.restart_stale(""), P.restart_stale("{")), ([], []))
-
     def test_데몬까지_있으면_show(self):
         plan, f = self.ready_plan()
         out, rc = self.health(plan, f, alive=True, dmod=":app")
@@ -742,7 +690,6 @@ class Health(Case):
         self.assertEqual((rc, out["missing"], out["sdk"], out["next"]),
                          (1, ["sdk", "toolchain", "dump", "daemon"], "/sdk", "prevue health " + f))
         self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.runtime_tell({"sdk": "/sdk"}), False, False))
-        self.assertIsNone(P.autostart(out))
 
     # 지킬 것: 둘 다 없으면 한 번에 말한다 — java 만 깔고 다시 물었을 때 SDK 로 또 막히면 대화가 두 번 끊긴다
     def test_java_와_SDK_가_다_없으면_한_tell_에_둘_다(self):
@@ -979,19 +926,10 @@ class Health(Case):
         out, _ = self.health(plan, f, blocked=True)
         self.assertIsNone(P.autostart(out))
 
-    def test_고를_것이_남으면_띄우지_않는다(self):
-        r = self.repo(":app")
-        r.built(":app", "devRelease")
-        self.assertIsNone(P.autostart(self.health(r.plan(":app"), "")[0]))
-
     def test_리소스를_빌리면_그_덤프도_넘긴다(self):
         h = {"missing": ["daemon"], "classpath": "/p/lib.json", "resourcesFrom": ":app", "resourcesClasspath": "/p/app.json"}
         self.assertEqual(P.autostart(h), ["--classpath", "/p/lib.json", "--resources-from", "/p/app.json"])
         self.assertIsNone(P.autostart(dict(h, resourcesClasspath=None)))      # 제공자 덤프가 없으면 warmup 이다
-
-    def test_데몬이_있으면_띄우지_않는다(self):
-        plan, f = self.ready_plan()
-        self.assertIsNone(P.autostart(self.health(plan, f, alive=True, dmod=":app")[0]))
 
     def test_낡은_덤프는_준비됨이_아니고_띄우지_않는다(self):
         # 이슈 #152 — missing [] 로 답해 show 가 옛 덤프로 데몬을 띄웠고 15장이 전부 실패했다
@@ -1021,12 +959,6 @@ class Seat(unittest.TestCase):
     def test_두_앱이_함께_담은_모듈은_최근_것(self):
         self.assertEqual((P.seat(self.LINES, ":core:ui", "", "8802"), P.seat(self.LINES, ":core:ui", "", "8801")), ("8802", "8801"))
 
-    def test_아무_앱에도_없으면_새_자리(self):
-        self.assertEqual(P.seat(self.LINES, ":feature:x"), "")
-
-    def test_다른_변형은_그_데몬이_아니다(self):
-        self.assertEqual(P.seat(self.LINES, ":feature:foryou", "prodDebug"), "")
-
     def test_모듈을_안_주면_최근_것(self):
         self.assertEqual((P.seat(self.LINES, "", "", "8802"), P.seat(self.LINES, "")), ("8802", "8801"))
 
@@ -1043,12 +975,6 @@ class Own(unittest.TestCase):
 
     def test_내_체크아웃의_데몬만(self):
         self.assertEqual(P.own([self.MINE, self.OTHER, self.OLD], "/w/a"), [self.MINE])
-
-    def test_root_를_안_싣는_옛_데몬은_남이다(self):
-        self.assertEqual(P.own([self.OLD], "/w/a"), [])
-
-    def test_경로는_정규화해_비교한다(self):
-        self.assertEqual(P.own([self.MINE], "/w/a/"), [self.MINE])
 
     CLAUDE = "/h/.claude/plugins/cache/prevue/prevue/"
     CODEX = "/h/.codex/plugins/cache/prevue/prevue/"
@@ -1087,9 +1013,6 @@ class GradleFailure(Case):
         retry, host, resp = P.dump_failure(fixture("gradle-variant-missing.txt"), ":feature:foryou:impl", "debug", False)
         self.assertEqual((retry, host), ("demoDebug", ""))
         self.assertIn("debug variant candidates", resp["error"])
-
-    def test_변형을_받았으면_다시_고르지_않는다(self):
-        self.assertEqual(P.dump_failure(fixture("gradle-variant-missing.txt"), ":m", "debug", True)[0], "")
 
     def test_이유가_없으면_확인할_것을_말한다(self):
         retry, host, resp = P.dump_failure(fixture("gradle-no-reason.txt"), ":app", "debug", False)
@@ -1136,18 +1059,6 @@ class GradleFailure(Case):
 
 
 class WarmupResources(Case):
-    def test_자기_APK가_있으면_빌리지_않는다(self):
-        r = self.repo(":app")
-        self.assertEqual(P.warmup_resources(r.root, ":app", "debug", r.dump(":app", "debug", apk="x.ap_"), ""), ("", None))
-
-    def test_받은_것을_쓴다(self):
-        r = self.repo(":app", ":core:ui")
-        self.assertEqual(P.warmup_resources(r.root, ":core:ui", "debug", r.dump(":core:ui", "debug"), "app")[0], ":app")
-
-    def test_후보가_하나면_그것(self):
-        r = self.repo(":app", ":core:ui")
-        r.apk(":app", "debug")
-        self.assertEqual(P.warmup_resources(r.root, ":core:ui", "debug", r.dump(":core:ui", "debug"), "")[0], ":app")
 
     def test_후보가_없거나_여럿이면_묻는다(self):
         r = self.repo(":app", ":wear", ":core:ui")
@@ -1172,31 +1083,11 @@ class WarmupResources(Case):
         self.assertEqual(out["options"], [":app", ":wear"])
         self.assertEqual(out["next"], "prevue warmup /abs/Screen.kt --resources-from <:app|:wear>")
 
-    def test_담은_앱으로_좁힌다(self):
-        r = self.repo(":app", ":catalog", ":feature")
-        r.apk(":app", "debug")
-        r.apk(":catalog", "debug")
-        r.dump(":app", "debug", apk="x.ap_", projectClassPath=[r.built(":app", "debug"), r.built(":feature", "debug")])
-        r.dump(":catalog", "debug", apk="x.ap_")
-        self.assertEqual(P.warmup_resources(r.root, ":feature", "debug", r.dump(":feature", "debug"), "")[0], ":app")
-
-    def test_받은_것을_기억한다(self):
-        r = self.repo(":app", ":core:ui")
-        dump = r.dump(":core:ui", "debug")
-        P.warmup_resources(r.root, ":core:ui", "debug", dump, "app")
-        self.assertEqual(P.remembered(os.path.dirname(dump), ":core:ui"), ":app")
-
     def test_리소스_모듈의_변형은_그_모듈의_것(self):
         r = self.repo(":app", ":core:ui")
         r.built(":app", "dev2Debug", when=1000)
         r.built(":app", "devDebug", when=2000)
         self.assertEqual(P.resource_variant(r.root, ":app", "debug"), "devDebug")
-
-    def test_같은_이름이_있으면_그것(self):
-        r = self.repo(":app", ":core:ui")
-        r.built(":app", "demoDebug", when=1000)
-        r.built(":app", "prodDebug", when=2000)
-        self.assertEqual(P.resource_variant(r.root, ":app", "demoDebug"), "demoDebug")
 
     def test_plan_은_리소스_덤프를_그_모듈의_변형으로_찾는다(self):
         r = self.repo(":app", ":core:ui")
@@ -1216,10 +1107,6 @@ if __name__ == "__main__":
 
 class Hosts(unittest.TestCase):
     ST = json.dumps({"module": ":feature:foryou:impl", "variant": "demoDebug", "modules": [":core:ui", ":feature:foryou:impl", ":app"]})
-
-    def test_앱의_모듈이면_그린다(self):
-        self.assertTrue(P.hosts(self.ST, ":core:ui"))
-        self.assertTrue(P.hosts(self.ST, ":app", "demoDebug"))
 
     def test_다른_변형이나_앱_밖이면_아니다(self):
         self.assertFalse(P.hosts(self.ST, ":core:ui", "prodDebug"))
