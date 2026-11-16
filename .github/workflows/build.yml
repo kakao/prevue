@@ -79,6 +79,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build-logic 의 convention plugin(prevue.jvm)이 고정한다
+          # Gradle 의존성 · 래퍼를 되살린다. 기본 키 패턴은 루트의 gradle/ 만 봐서 plugin/daemon 의 카탈로그를 직접 준다.
+          # 캐시는 만든 ref 에서만 보인다 — PR 실행이 만든 것은 그 PR 의 다음 실행부터 맞는다.
+          cache: gradle
+          cache-dependency-path: |
+            plugin/daemon/**/*.gradle.kts
+            plugin/daemon/**/libs.versions.toml
+            plugin/daemon/**/gradle-wrapper.properties
 
       # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:daemon 조립 · 테스트 + 안쪽 :application · 바깥 :infrastructure, D-148 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
       - name: 툴체인을 빌드한다
