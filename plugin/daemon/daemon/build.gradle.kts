@@ -139,7 +139,7 @@ sourceSets.test { kotlin.srcDir(deviceReadings) }
 
 /**
  * 통합 테스트 — 진짜 layoutlib 으로 저장소 안 픽스처(`fixtures/pearl` · KMP 복제본 `fixtures/pearl-kmp`)를 그린다(`src/integrationTest`). 덤프는 테스트가 `bin/prevue warmup` 으로 뜬다.
- * 툴체인 · Android SDK 가 있어야 하고, 없으면 건너뛴다. PR 의 CI 는 단위 테스트(`test`)만 돈다 — 손으로 부른 CI(workflow_dispatch)의 `integration` job 이 시험으로 이것을 돈다. 가짜 포트(`fake/`)는 단위 쪽 것을 같이 쓴다.
+ * 툴체인 · Android SDK 가 있어야 하고, 없으면 건너뛴다. 가짜 포트(`fake/`)는 단위 쪽 것을 같이 쓴다.
  */
 val integrationTest: SourceSet = sourceSets.create("integrationTest") {
     compileClasspath += sourceSets.test.get().output
@@ -164,7 +164,7 @@ val pearlFixture: File = rootDir.resolve("../../fixtures/pearl").canonicalFile
 val pearlKmpFixture: File = rootDir.resolve("../../fixtures/pearl-kmp").canonicalFile
 
 tasks.register<Test>("integrationTest") {
-    description = "진짜 렌더러로 로더 공유 · 인터랙티브 회귀를 본다(로컬)"
+    description = "진짜 렌더러로 로더 공유 · 인터랙티브 회귀를 본다"
     group = "verification"
     testClassesDirs = integrationTest.output.classesDirs
     classpath = integrationTest.runtimeClasspath

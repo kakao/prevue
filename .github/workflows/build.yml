@@ -162,14 +162,45 @@ jobs:
 
   # 시험용 — 통합 테스트(진짜 layoutlib 으로 fixtures/pearl · pearl-kmp 를 그린다)를 Ubuntu 러너가 맡을 수 있는지 잰다.
   # 손으로 부를 때만 돈다(gh workflow run 빌드 검증 --ref <브랜치>). PR 에서는 건너뛰어 "빌드 검증"의 시간과 판정을 바꾸지 않는다.
+  # 테스트는 한 JVM 에서 차례로 돌아 러너 하나로는 20분이 넘는다 — 클래스를 조각으로 나눠 러너 여럿에서 동시에 돈다.
   integration:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [render, insets, kmp]
+    env:
+      # 조각마다 맡는 클래스. 조각을 고를 때 모든 테스트 클래스가 정확히 한 조각에 있는지 본다 — 새 클래스가 조용히 빠지지 않게.
+      # 첫 클래스가 픽스처 Gradle 을 처음 돌리는 몫을 낸다. 나누는 기준은 클래스별 소요 시간이다(KMP 둘은 KMP 픽스처 준비를 같이 쓴다).
+      SHARDS: |
+        render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
+        insets: InsetsIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest
+        kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
 
     steps:
       - name: 저장소를 받는다
         uses: actions/checkout@v4
+
+      - name: 이 조각의 클래스를 고른다
+        id: shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -eu
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, re, pathlib, sys
+          shards = dict(line.split(":", 1) for line in os.environ["SHARDS"].strip().splitlines())
+          shards = {k.strip(): v.split() for k, v in shards.items()}
+          src = pathlib.Path("plugin/daemon/daemon/src/integrationTest/kotlin")
+          declared = sorted(set(re.findall(r"^(?:internal |open )*class (\w+IntegrationTest)\b", "\n".join(p.read_text() for p in src.rglob("*.kt")), re.M)))
+          assigned = sorted(c for cs in shards.values() for c in cs)
+          if declared != assigned:
+              print(f"::error::조각 배정이 테스트 클래스와 어긋난다 — 선언 {declared} · 배정 {assigned}", file=sys.stderr)
+              sys.exit(1)
+          print("tests=" + " ".join(f"--tests prevue.daemon.{c}" for c in shards[os.environ["SHARD"]]))
+          PY
 
       - name: JDK를 올린다
         uses: actions/setup-java@v4
@@ -177,7 +208,8 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # 데몬(Gradle 9.7.1)과 픽스처(9.5.0) 둘의 래퍼 · 의존성이 같은 Gradle 홈에 쌓인다. 키는 둘의 빌드 파일 전부다.
+      # 데몬과 픽스처 둘의 래퍼 · 의존성이 같은 Gradle 홈에 쌓인다. 키는 둘의 빌드 파일 전부다.
+      # 조각마다 받는 것이 달라(KMP 조각만 KMP 의존성을 받는다) 조각별로 저장한다.
       - name: Gradle 홈 캐시를 되살린다
         id: gradle-cache
         uses: actions/cache/restore@v4
@@ -185,8 +217,10 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: integration-gradle-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'fixtures/pearl/**/*.gradle.kts', 'fixtures/pearl/**/libs.versions.toml', 'fixtures/pearl/**/gradle-wrapper.properties', 'fixtures/pearl-kmp/**/*.gradle.kts', 'fixtures/pearl-kmp/**/libs.versions.toml', 'fixtures/pearl-kmp/**/gradle-wrapper.properties') }}
-          restore-keys: integration-gradle-${{ runner.os }}-
+          key: integration-gradle-${{ matrix.shard }}-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'fixtures/pearl/**/*.gradle.kts', 'fixtures/pearl/**/libs.versions.toml', 'fixtures/pearl/**/gradle-wrapper.properties', 'fixtures/pearl-kmp/**/*.gradle.kts', 'fixtures/pearl-kmp/**/libs.versions.toml', 'fixtures/pearl-kmp/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            integration-gradle-${{ matrix.shard }}-${{ runner.os }}-
+            integration-gradle-${{ runner.os }}-
 
       # layoutlib · 컴파일러 · 서드파티 jar 를 받아 푼 자리(installPrevue). 버전은 데몬의 카탈로그가 정한다.
       - name: 툴체인 캐시를 되살린다
@@ -212,7 +246,7 @@ jobs:
         working-directory: plugin/daemon
         env:
           PREVUE_JDK: ${{ env.JAVA_HOME }}
-        run: ./gradlew :daemon:integrationTest --no-daemon
+        run: ./gradlew :daemon:integrationTest ${{ steps.shard.outputs.tests }} --no-daemon
 
       # 툴체인 · SDK 가 없으면 테스트는 조용히 건너뛰고 초록이 된다 — 그건 실측이 아니라 실패로 본다.
       - name: 실제로 돌았는지 본다
@@ -235,7 +269,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-results
+          name: integration-test-results-${{ matrix.shard }}
           path: |
             plugin/daemon/daemon/build/test-results/integrationTest
             plugin/daemon/daemon/build/reports/tests/integrationTest
@@ -251,8 +285,9 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
+      # 툴체인은 조각마다 같다 — 한 조각만 저장한다.
       - name: 툴체인 캐시를 저장한다
-        if: always() && steps.toolchain-cache.outputs.cache-hit != 'true'
+        if: always() && matrix.shard == 'render' && steps.toolchain-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.prevue/toolchain
