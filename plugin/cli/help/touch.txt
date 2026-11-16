@@ -7,6 +7,7 @@ Sends a touch to the interactive card (prevue focus <index> --on). By default it
 --at presses the center of the node that line drew — found in the current screen's tree (the same file:line as selection · a card's tree). A file name alone is enough.
   The response's at is the pressed node (index · of · name · bounds · point)
   #N is the Nth in the whole list inside a lazy list, otherwise the reading order
+  The list index counts every item, headers (item { }) included — take N from matches, don't count cards yourself
   If that line has several nodes on screen (the same line for every list item), it doesn't press and exits 2 · need:"choose" — run it again with a matches entry's at
   If it isn't on screen now, it doesn't press and exits 1 — scroll it into view with prevue scroll and run it again
 <x> <y> are PNG pixel coordinates.

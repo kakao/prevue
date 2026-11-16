@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **`#N` in `scroll --to` and `touch --at` now picks the Nth list item even when every item root has padding** (`items { Card(Modifier.padding(8.dp)) }`) instead of the Nth on screen; `#N` counts headers and every other `item { }` too, so take N from `matches`.
 - **The live ring around the frame keeps its 2 px width while a device rotates** instead of briefly thickening or thinning with the turn.
 - **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
 - **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
