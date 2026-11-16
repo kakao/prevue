@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
 - **Picking sizes or devices in quick succession now always lands on the last one** — the viewer sends one size change at a time and drops the ones skipped over, so a busy machine can no longer leave the preview on an earlier pick.
 - **The device menu is grouped by product line** — Galaxy, Pixel and iPhone instead of Android and iPhone — and Pixel entries drop the repeated name (`9`, `10 Pro XL`, `Tablet`; the full name stays in the tooltip).
 - **`@PreviewParameter` providers declared inside another class** (`Outer.Inner`) now draw one card per value instead of collapsing into a single card.
