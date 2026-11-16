@@ -1,5 +1,6 @@
 """cli/jdk_rule.py — warmup 이 Gradle 을 부를 JDK. 실행: python3 -m unittest discover -s tests/cli"""
 
+import json
 import os
 import shutil
 import sys
@@ -7,8 +8,10 @@ import tempfile
 import time
 import unittest
 
+sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import jdk_rule  # noqa: E402
+from test_plan import fake_jdk  # noqa: E402
 
 
 PS = """\
@@ -120,6 +123,93 @@ class RepoBuilds(unittest.TestCase):
         self.log(76560, HOMEBREW, [("2026-09-28T09:35:00", "/w/repo")], self.at("12:54:00"))
         self.log(303, JBR, [("2026-09-28T16:05:00", "/x/vscode-gradle/lib")], self.at("16:06:00"))   # 남의 저장소
         self.assertEqual(jdk_rule.choose(jdk_rule.repo_builds(self.dir, "/w/repo"), None)[0], HOMEBREW)
+
+
+class FailedJdk(unittest.TestCase):
+    """JDK 탓으로 실패한 JDK 는 다음 warmup 이 건너뛴다(D-188). 가짜 warmup-runs.jsonl 과 가짜 JDK 로 본다."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.repo = os.path.join(self.dir, "repo")
+        os.makedirs(os.path.join(self.repo, "gradle"))
+        self.toml("kotlin = \"2.2.0\"\n")
+        self.jbr25 = fake_jdk(os.path.join(self.dir, "jbr"), "25.0.2")
+        self.temurin25 = fake_jdk(os.path.join(self.dir, "machine", "temurin-25"), "25.0.1")
+        self.temurin21 = fake_jdk(os.path.join(self.dir, "machine", "temurin-21"), "21.0.12")
+        self.env = {"PREVUE_JDK_SEARCH": os.path.join(self.dir, "machine", "*")}
+        self.runs = os.path.join(self.dir, "warmup-runs.jsonl")
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def toml(self, body):
+        with open(os.path.join(self.repo, "gradle", "libs.versions.toml"), "w") as f:
+            f.write(body)
+
+    def record(self, home, ok, jdk_failed=False):
+        r = {"ok": ok, "gradleJdk": home}
+        if jdk_failed:
+            r.update(jdkFailed=True, buildFiles=jdk_rule.build_fingerprint(self.repo))
+        with open(self.runs, "a") as f:
+            f.write(json.dumps(r) + "\n")
+
+    def failed(self):
+        return jdk_rule.failed_majors(jdk_rule.read_runs(self.runs), jdk_rule.build_fingerprint(self.repo))
+
+    def test_JDK_문구로_실패한_주_버전을_건너뛴다(self):
+        self.record(self.jbr25, False, jdk_failed=True)
+        self.assertEqual(self.failed(), {25})
+
+    def test_JDK_와_무관한_실패는_세지_않는다(self):
+        # 변형 다시 뜨기 · KMP 앱 찾기 · 컴파일 오류도 ok:false 다 — 세면 JDK 가 바뀌어 통째로 다시 굽는다
+        self.record(self.jbr25, False)
+        self.assertEqual(self.failed(), set())
+
+    def test_뒤에_같은_주_버전이_성공하면_풀린다(self):
+        self.record(self.jbr25, False, jdk_failed=True)
+        self.record(self.temurin25, True)
+        self.assertEqual(self.failed(), set())
+
+    def test_빌드_파일이_바뀌면_풀린다(self):
+        # Kotlin 을 올리면 그 JDK 로 다시 될 수 있다 — 원래 JDK(산출물을 구운 것)로 돌아간다
+        self.record(self.jbr25, False, jdk_failed=True)
+        self.toml("kotlin = \"2.3.0\"\n")
+        self.assertEqual(self.failed(), set())
+
+    def test_실패한_데몬_대신_다른_주_버전의_데몬(self):
+        home, _ = jdk_rule.choose([(101, 1000.0, self.temurin21), (202, 2000.0, self.jbr25)], self.jbr25, failed={25})
+        self.assertEqual(home, self.temurin21)
+
+    def test_후보가_다_실패한_주_버전이면_비운다(self):
+        self.assertEqual(jdk_rule.choose([(202, 2000.0, self.jbr25)], self.temurin25, failed={25}), (None, None))
+
+    def test_셸의_폴백도_거른다(self):
+        # AS 가 동기화한 저장소는 .gradle/config.properties 가 실패한 그 JBR 을 다시 준다
+        home, src = jdk_rule.fallback(self.jbr25 + "\t.gradle/config.properties", {25}, self.env)
+        self.assertEqual(home, self.temurin21)
+        self.assertIn("failed with a JDK error", src)
+
+    def test_실패하지_않은_폴백은_그대로(self):
+        self.assertEqual(jdk_rule.fallback(self.temurin21 + "\tJAVA_HOME", {25}, self.env), (self.temurin21, "JAVA_HOME"))
+
+    def test_다른_주_버전이_없으면_실패한_JDK_를_적어_쓴다(self):
+        home, src = jdk_rule.fallback(self.jbr25 + "\t.gradle/config.properties", {25, 21}, self.env)
+        self.assertEqual(home, self.jbr25)
+        self.assertIn("no JDK of another version", src)
+
+    def test_답이_없는데_실패가_있으면_종료_2(self):
+        self.record(self.jbr25, False, jdk_failed=True)
+        last = os.path.join(self.dir, "gradle-jdk")
+        with open(last, "w") as f:
+            f.write(self.jbr25)
+        self.assertEqual(jdk_rule.main(["", last, self.repo, self.dir], "", self.env), (None, 2))
+
+    def test_실패가_없으면_지금처럼(self):
+        last = os.path.join(self.dir, "gradle-jdk")
+        with open(last, "w") as f:
+            f.write(self.jbr25)
+        self.assertEqual(jdk_rule.main(["", last, self.repo, self.dir], "", self.env),
+                         ("%s\tthe JDK Prevue used last time" % self.jbr25, 0))
 
 
 def context_line(home, at="2026-09-28T09:35:00"):

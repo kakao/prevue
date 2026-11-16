@@ -14,7 +14,7 @@ If the app isn't known yet (a fresh clone), the first Gradle call finds it and G
 The dump records fingerprints of the build files (settings · root · that module's build.gradle, gradle.properties, libs.versions.toml) — when they change, health asks to take the dump again.
 If a daemon started by this checkout (including other agents with the same release installed) is drawing that module, it is stopped (stoppedDaemons) — it holds the old dump, so next's start starts a new one. Daemons of other checkouts are only reported in otherDaemons.
 On success next is prevue start --classpath … --show <file> with this dump — it holds the chosen variant · resource provider · module, so run it as is. gradleJdk · gradleJdkFrom say which JDK it ran on — the Gradle daemon that built this module's outputs →
-the JDK Prevue used last time → project settings → the shell's java, in that order. If it took minutes and gradleJdkFrom is marked "guessed", ask which JDK they usually build with and give it as JAVA_HOME.
+the JDK Prevue used last time → project settings → the shell's java, in that order. A JDK whose warmup here failed with a JDK error (JVM target mismatch, class file version) is skipped with every install of the same version, until a root build file changes — if nothing else is left, another version found on this machine. If it took minutes and gradleJdkFrom is marked "guessed", ask which JDK they usually build with and give it as JAVA_HOME.
 
 If the person asks more
   Gradle runs once in the target repository. It is called with the JDK that just built this project, so the outputs already built are reused as is. Dependency requests may go to the company repository.

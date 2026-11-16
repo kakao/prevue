@@ -13,6 +13,8 @@ import shutil
 import sys
 import time
 
+from jdk_rule import ROOT_BUILD_FILES, build_fingerprint, jdk_error
+
 # 덤프 규약 번호. 덤프에 적히는 경로 규칙이 바뀌면 여기와 init 스크립트를 함께 올린다.
 # 도구 버전이 아니라 이 숫자로 판정하므로, 규약이 그대로인 패치에서는 아무도 다시 뜨지 않는다.
 # 옛 규약을 받아 주는 길은 없다 — 번호가 다르면 다시 뜬다.
@@ -277,8 +279,6 @@ def dump_why(path):
 # 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
 # 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
 # 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
-ROOT_BUILD_FILES = ("build.gradle.kts", "build.gradle", "settings.gradle.kts", "settings.gradle",
-                    "gradle.properties", "gradle/libs.versions.toml")
 
 
 def build_files(repo, module):
@@ -1053,9 +1053,10 @@ GRADLE_TASKS = ["graphTasks", "ran", "upToDate", "fromCache", "noSource", "skipp
 RUNS_KEEP = 500
 
 
-def gradle_run(timing, start, end, rc, runs, jdk, targets):
+def gradle_run(timing, start, end, rc, runs, jdk, targets, err="", repo=""):
     """Gradle 호출 한 번의 회차 기록을 runs(jsonl)에 한 줄 붙이고 벽시계 ms 를 돌려준다. 실패한 빌드는 간 데까지의 단계만 남는다.
-    targets 는 "<모듈>|<변형>|<출력>"."""
+    targets 는 "<모듈>|<변형>|<출력>". err(Gradle stderr 파일)가 JDK 문구면 jdkFailed 와 루트 빌드 파일 지문을 남긴다 —
+    다음 warmup 이 그 JDK 를 건너뛴다(jdk_rule, D-188)."""
     try:
         with open(timing, encoding="utf-8") as f:
             st = json.load(f)
@@ -1066,6 +1067,13 @@ def gradle_run(timing, start, end, rc, runs, jdk, targets):
            "targets": ["%s/%s" % tuple(t.split("|")[:2]) for t in targets], "ms": int(end) - int(start),
            "phases": {n: at[b] - at[a] for n, a, b in GRADLE_PHASES if a in at and b in at},
            "tasks": {k: st[k] for k in GRADLE_TASKS if k in st}, "gradleJdk": jdk or None}
+    if str(rc) != "0" and jdk and err and repo:
+        try:
+            with open(err, encoding="utf-8", errors="replace") as f:
+                if jdk_error(f.read()):
+                    rec.update(jdkFailed=True, buildFiles=build_fingerprint(repo))
+        except OSError:
+            pass
     try:
         # 덧붙이기다 — 같은 저장소의 warmup 둘이 함께 끝나도 줄을 잃지 않는다. 두 배로 불면 최근 것만 남겨 통째로 바꾼다.
         os.makedirs(os.path.dirname(runs), exist_ok=True)
@@ -1374,8 +1382,8 @@ def main(argv):
                 except (OSError, ValueError) as e:   # 지문이 없으면 다음 health 가 빌드 파일의 mtime 으로 본다
                     sys.stderr.write("prevue: couldn't write build file fingerprints to %s — %s\n" % (d, e))
         _emit(warmup_result(out, resout, *a[7:13], stopped=" ".join(stop), others=" ".join(others)))
-    elif cmd == "gradle-run":                # <시각 파일> <시작 ms> <끝 ms> <종료 코드> <회차 기록> <gradle jdk> <모듈|변형|출력>... — 벽시계 ms
-        print(gradle_run(a[0], a[1], a[2], a[3], a[4], a[5], a[6:]))
+    elif cmd == "gradle-run":                # <시각 파일> <시작 ms> <끝 ms> <종료 코드> <회차 기록> <gradle jdk> <stderr 파일> <저장소> <모듈|변형|출력>...
+        print(gradle_run(a[0], a[1], a[2], a[3], a[4], a[5], a[8:], a[6], a[7]))   # — 벽시계 ms
     else:
         sys.exit("unknown command: %s" % cmd)
 

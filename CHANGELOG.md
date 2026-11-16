@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM Target Compatibility") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
 - **The live ring around the frame keeps its 2 px width while a device rotates** instead of briefly thickening or thinning with the turn.
 - **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
 - **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
