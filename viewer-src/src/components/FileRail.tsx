@@ -14,6 +14,13 @@ type Tab = ViewerState['tabs'][number];
 const SHARED_ONCE = 'prevue.sharedOnce';
 const NONE: Tab[] = [];
 
+// 좁은 창(≤640px)의 서랍 — 레일이 보드를 밀지 않고 헤더 단추로 떠오른다. 폭은 넓은 창과 같아 아래 줄임 규칙이 그대로다.
+// 지금 파일이 바뀌면(줄 · 빠른 열기 · 단축키 어느 길이든) · 파일 열기 · 덮개 · Esc · 창을 넓히면 닫힌다.
+const narrow = matchMedia('(max-width: 640px)');
+let setDrawer = (_open: boolean) => {};
+const drawerOpen = () => document.body.classList.contains('rail-drawer');
+export const closeRailDrawer = () => { if (!drawerOpen()) return false; setDrawer(false); return true; };
+
 // 단축키(⇧← ⇧→ · 1~9)가 보는 것은 마지막으로 그린 레일이다.
 let railTabs: Tab[] = [];
 /** `⇧←` `⇧→` — 이웃 탭. 끝에서 멈춘다(돌지 않는다). */
@@ -65,7 +72,7 @@ function fit(name: string, room: number, font: string) {
   return name[0] + '…';
 }
 
-// 레일의 줄임 — 폭은 레일이 정하고(200px) 줄마다 같다. 이름이 먼저다: 모듈 · 함수 표시는 이름이 남긴 칸을 갖되 MOD_MIN 까지는 지키고
+// 레일의 줄임 — 폭은 레일이 정하고(--rail-size, 좁은 창의 서랍도 같다) 줄마다 같다. 이름이 먼저다: 모듈 · 함수 표시는 이름이 남긴 칸을 갖되 MOD_MIN 까지는 지키고
 // 끝을 자른다. 이름은 남은 칸에서 꼬리를 남기고 가운데를 줄인다. 이름 · 표시 · 칸이 그대로인 줄은 건너뛴다.
 // 이름 칸(.rt-name)의 글자와 표시 칸의 max-width 는 잰 뒤에만 정해지므로 React 가 아니라 여기서 쓴다.
 const MOD_MIN = 56;
@@ -130,7 +137,7 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
     className={['rt', tab.active && 'active', tab.stale && 'stale', entering && 'entering', leaving && 'leaving'].filter(Boolean).join(' ')}
     // 공유 세트는 그림이 Android 빌드라는 것을 툴팁에서도 말한다 — 표식만으로는 뜻을 모른다.
     title={kind === 'kmp' ? tab.title + '\n' + phrase('tabs.sharedTip') : tab.title}
-    onClick={() => { if (!tab.active) post('/viewer/tab', { key: tab.key }); }}
+    onClick={() => { if (tab.active) closeRailDrawer(); else post('/viewer/tab', { key: tab.key }); }}
     // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇
     onAuxClick={e => { if (e.button === 1) { e.preventDefault(); close(); } }}>
     <FileIcon kind={kind} />
@@ -142,7 +149,7 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
   </div>;
 }
 
-export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement; open: HTMLElement };
+export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement; open: HTMLElement; toggle: HTMLElement; scrim: HTMLElement };
 
 export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: ViewerState['screen'] | null; hosts?: RailHosts }) {
   const { phrase } = useMessages();
@@ -202,10 +209,25 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   useEffect(() => {
     if (railEl && list) document.fonts?.ready.then(() => layout(railEl, list, true));
   }, [railEl, list]);
+  useEffect(() => {
+    if (!hosts) return;
+    const { toggle, scrim, open } = hosts;
+    setDrawer = (v: boolean) => { document.body.classList.toggle('rail-drawer', v); toggle.setAttribute('aria-expanded', String(v)); };
+    const flip = () => setDrawer(!drawerOpen()), close = () => setDrawer(false);
+    toggle.addEventListener('click', flip);
+    scrim.addEventListener('click', close);
+    open.addEventListener('click', close);
+    narrow.addEventListener('change', close);
+    return () => {
+      toggle.removeEventListener('click', flip); scrim.removeEventListener('click', close);
+      open.removeEventListener('click', close); narrow.removeEventListener('change', close);
+    };
+  }, [hosts]);
 
   useLayoutEffect(() => {
     if (!tabs || !railEl || !list) return;
     railEl.hidden = !on;
+    if (!on) closeRailDrawer();
     if (hosts) document.body.classList.toggle('rail-on', on);
     if (emptyEl) emptyEl.hidden = tabs.length > 0;
     layout(railEl, list);
@@ -217,6 +239,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
     else hideOnce(SHARED_ONCE);
     const key = active?.key ?? null;
     const moved = shown.current && on && key !== activeKey.current && activeKey.current !== null;
+    if (moved) closeRailDrawer();
     activeKey.current = key;
     shown.current = on;
     move(moved);

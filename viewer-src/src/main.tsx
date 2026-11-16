@@ -1,6 +1,6 @@
 import { boardMarks, moveCursor } from './runtime/board';
 import { daemonText, phrase } from './runtime/strings';
-import { jumpTab, stepTab, tabCount } from './components/FileRail';
+import { closeRailDrawer, jumpTab, stepTab, tabCount } from './components/FileRail';
 import type { PointActions } from './components/PointOverlay';
 import { closeDirPop } from './components/ProjectHeader';
 import type { WorkspaceActions } from './components/Workspace';
@@ -42,6 +42,7 @@ installShortcuts(shortcuts, actions, {
   closeZoomMenu: workspace.closeZoomMenu,
   closeDeviceMenu: workspace.closeDeviceMenu,
   closeDirPop,
+  closeRailDrawer,
   closeCard,
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,

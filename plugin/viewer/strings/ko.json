@@ -158,6 +158,7 @@
   "rail.open.label": "Preview 파일 열기",
   "rail.open.tip": "파일 열기 (/ · ⌘K)",
   "rail.title": "열린 파일",
+  "rail.toggle": "열린 파일 보기",
   "render.androidView": "AndroidView·네이티브 뷰는 헤드리스에서 그릴 수 없어요",
   "render.classMissing": "Preview 클래스를 찾지 못했어요: {class}. 컴파일 산출물이 없거나 FQN이 틀렸어요",
   "render.classMissing.reload": "Preview 클래스를 찾지 못했어요: {class}. 컴파일 산출물이 없거나 FQN이 틀렸어요. `prevue reload {file}`로 그 파일을 다시 컴파일하세요. 컴파일이 실패하면 그 오류가 답해요",

@@ -17,6 +17,10 @@
 <header class="bar" id="bar">
   <div class="bar-row">
     <div class="bar-l">
+      <!-- 좁은 창(≤640px)에서 레일은 보드를 밀지 않는 서랍이다 — 이 단추가 띄운다. 넓은 창 · 작업 공간에서는 숨는다. -->
+      <button class="icon-btn rail-toggle" id="railToggle" type="button" aria-controls="rail" aria-expanded="false" data-t-aria-label="rail.toggle" data-t-title="rail.toggle">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg>
+      </button>
       <!-- 워드마크(D-60) — 메뉴 막대의 앱 이름 자리. 브라우저에는 메뉴 막대가 없어 Prevue 가 말할 곳이 여기다.
            단색 · 앱 이름보다 작고 옅게 — 주인공은 여전히 대상 앱이고 색은 그 아이콘에만 둔다. 누르는 것이 아니다. -->
       <span class="brand" id="brand" title="Prevue">
@@ -49,6 +53,8 @@
   <p class="rail-empty" id="railEmpty" data-t="rail.empty" hidden></p>
   <button class="rail-open" id="railOpen" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet"></button>
 </nav>
+<!-- 좁은 창에서 서랍이 열렸을 때만 보드를 덮는다 — 누르면 닫힌다. -->
+<div class="rail-scrim" id="railScrim" aria-hidden="true"></div>
 
 <!-- 그림이 소스보다 옛것이다. 보드와 한 장 모두에 걸리므로 두 섹션 밖에 둔다. 안은 React 의 StaleBanner 가 그린다. -->
 <div class="stalebar" id="staleBar"></div>
