@@ -106,6 +106,8 @@ try {
   await check(`document.querySelector('#pnSum .nm').textContent==='@Preview' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#pnBody').inert && getComputedStyle(document.querySelector('#pnBody')).visibility==='hidden'`, "메뉴 버튼은 고른 것의 이름 · 메뉴는 닫혀 있다");
   await openMenu();
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='true' && document.querySelector('#pnBody').getBoundingClientRect().bottom<=document.querySelector('#pnSum').getBoundingClientRect().top`, "메뉴는 독 위로 열린다");
+  // 기기 묶음은 제품 라인(label 첫 단어)이고, 칸 이름은 그 묶음 이름을 되풀이하지 않는다 — 전체 이름은 툴팁이다.
+  await check(`(()=>{let g=null,ok=true;const seen=new Set();for(const el of document.querySelectorAll('#pnPick .pn-sec:last-child :is(.pn-g,.pn-it)')){if(el.matches('.pn-g')){g=el.textContent;ok&&=!seen.has(g);seen.add(g)}else ok&&=!!g&&el.title.startsWith(g+' ')&&!el.querySelector('.nm').textContent.startsWith(g)}return ok&&[...seen].join()==='Galaxy,Pixel,iPhone'})()`, "기기 메뉴는 Galaxy · Pixel · iPhone 묶음 · 칸 이름에 묶음 이름이 없다");
   await evaluate(`window.__signals={busy:0,liveOff:0};new MutationObserver(()=>{if(document.querySelector('#bar').classList.contains('busy'))__signals.busy++;if(!document.querySelector('#stage').classList.contains('live'))__signals.liveOff++}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','data-state']})`);
   await evaluate(`window.__widths=[];window.__recordWidths=true;function record(){if(!__recordWidths)return;__widths.push(document.querySelector('#stage').offsetWidth);requestAnimationFrame(record)}requestAnimationFrame(record)`);
   await pick("narrow", "widthDp===320");

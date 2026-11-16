@@ -84,7 +84,7 @@
   },
   "look": {
     "bar": "pixel",
-    "short": "Pixel 10 Pro XL",
+    "short": "10 Pro XL",
     "tone": "#2d2f33",
     "open": {"bezel": 6, "cam": {"w": 31.64, "h": 31.64, "y": 17.14}, "btn": [[1, 205, 52], [1, 290, 100]]}
   }
