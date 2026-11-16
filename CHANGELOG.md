@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **`prevue start` asks for `prevue setup` when the shared toolchain in `~/.prevue/toolchain` is gone**, even if this checkout built Prevue before (a deleted toolchain, or another account using the same checkout), and `health` reports the toolchain as missing — the daemon no longer dies with "JavaFX runtime components are missing".
 - **The live ring around the frame keeps its 2 px width while a device rotates** instead of briefly thickening or thinning with the turn.
 - **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
 - **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
