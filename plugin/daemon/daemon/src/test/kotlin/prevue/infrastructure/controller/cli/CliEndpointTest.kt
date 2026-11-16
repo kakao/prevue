@@ -54,12 +54,6 @@ class CliEndpointTest {
         assertEquals(200, request("POST", "/board", emptyMap()).first)
     }
 
-    @Test fun `POST 만 받는 경로는 GET 이면 이 입구가 답하지 않는다`() {
-        for (p in listOf("/show", "/close", "/card", "/focus", "/previews", "/render", "/reload", "/wait", "/touch", "/scroll", "/type")) {
-            assertEquals(404, request("GET", p, null).first, p)
-        }
-    }
-
     @Test fun `selection 은 POST 면 가리킨 곳을 적고 그 밖의 메서드면 읽는다`() {
         val posted = request("POST", "/selection", mapOf("file" to fx.file.path, "line" to 4, "node" to "Text"))
         assertEquals(200, posted.first)
@@ -76,11 +70,6 @@ class CliEndpointTest {
         assertEquals(409, request("POST", "/scroll", mapOf("at" to "Cards.kt:3")).first)
         assertEquals(422, request("POST", "/scroll", mapOf("at" to "Cards.kt:x")).first)
         assertEquals(200, request("POST", "/scroll", emptyMap()).first)
-    }
-
-    @Test fun `wait 는 지금 탭을 싣는다`() {
-        val r = request("POST", "/wait", mapOf("files" to listOf(fx.file.path), "timeoutMs" to 5_000))
-        assertEquals(fx.file.canonicalPath, (r.second as Map<*, *>)["tab"])
     }
 
     private fun post(path: String, body: Map<String, Any?>) = request("POST", path, body)

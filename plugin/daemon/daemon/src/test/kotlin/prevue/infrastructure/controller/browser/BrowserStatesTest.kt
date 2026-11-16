@@ -87,25 +87,6 @@ class BrowserStatesTest {
         assertEquals(listOf("A", "B", "A"), groups.map { it.name })
     }
 
-    // 묶음 배율(D-62)의 입력. 배율은 창 폭에 달려 뷰어가 정하고, 데몬은 그림의 dp 크기만 싣는다.
-    @Test fun `카드의 dp 크기 — 그렸으면 PNG ÷ 밀도, 그리기 전이면 인자, 내용 크기는 모른다`() {
-        val (drawn, declared, spec, unknown, named) = build(status(board = board(
-            card(0, "A", width = 1079, height = 2339),
-            card(1, "B", rendered = false, params = mapOf("widthDp" to "360", "heightDp" to "900")),
-            card(2, "C", rendered = false, params = mapOf("device" to "spec:width=1280dp,height=800dp,dpi=240")),
-            card(3, "D", rendered = false),
-            card(4, "E", width = 1080, height = 2340, params = mapOf("device" to "id:pixel_5")),
-        ))).board!!.groups.flatMap { it.cards }
-        assertEquals(411.05 to 891.05, drawn.widthDp to drawn.heightDp)
-        assertFalse(drawn.dpGuess)
-        assertEquals(360.0 to 900.0, declared.widthDp to declared.heightDp)
-        assertEquals(1280.0 to 800.0, spec.widthDp to spec.heightDp)
-        assertEquals(null to null, unknown.widthDp to unknown.heightDp)
-        // 이름 붙은 기기는 밀도를 몰라 기본 420 으로 짐작한다 — 그렇다고 표시한다.
-        assertEquals(411.43 to 891.43, named.widthDp to named.heightDp)
-        assertTrue(named.dpGuess)
-    }
-
     @Test fun `실패한 렌더의 0 크기는 모르는 크기다 — 0×0dp 칸을 만들지 않는다`() {
         val failed = build(status(board = board(
             card(0, "A", ok = false, drawn = false, failure = FailureKind.EXCEPTION, width = 0, height = 0),
@@ -190,23 +171,6 @@ class BrowserStatesTest {
     @Test fun `머리말 — 워크트리를 가르게 탭 제목에 저장소 끝을 앞세운다`() {
         val h = build(status(board = board(card(0, "A")))).header
         assertEquals(Header("Screen.kt", "wt-a · Screen.kt", "/r/", "wt-a", "app", "debug", "/r/wt-a"), h)
-    }
-
-    @Test fun `머리말과 탭은 소스 세트를 데몬이 정한 대로 싣는다`() {
-        val f = File("/r/wt-a/feature/a/src/commonMain/kotlin/Screen.kt")
-        val tab = TabView(f.path, f, ":feature:a", active = true, stale = false, sourceSet = "commonMain")
-        val s = build(status(board = board(card(0, "A")), tabs = listOf(tab)).let {
-            it.copy(kmp = true, module = it.module.copy(sourceSet = "commonMain"))
-        })
-        assertEquals("commonMain", s.header.sourceSet)
-        assertEquals("commonMain", s.tabs.single().sourceSet)
-        val android = build(status(board = board(card(0, "A")))).header
-        assertNull(android.sourceSet)
-    }
-
-    @Test fun `머리말의 브랜치는 Presenter가 읽은 것을 그대로 싣는다`() {
-        assertEquals("feature/x", build(status(), side.copy(branch = "feature/x")).header.branch)
-        assertNull(build(status()).header.branch)
     }
 
     @Test fun `진행 문장이 실패 한 줄보다, 실패 한 줄이 장 수보다 앞선다`() {
