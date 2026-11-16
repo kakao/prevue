@@ -57,6 +57,53 @@ internal object LazyListPlacement {
     }
 
     private fun bestFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
+        val exact = exactFit(r, nodes, byBox)
+        if (exact != null && exact.matched.size * 2 > r.cells.size) return exact
+        val inset = insetFit(r, nodes, byBox)?.takeIf { it.matched.size > (exact?.matched?.size ?: 0) } ?: return exact
+        return inset
+    }
+
+    private class Inset(val dx: Int, val dy: Int, val w: Int, val h: Int)
+
+    private fun insetFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
+        val tried = HashSet<List<Int>>()
+        var best: Pair<Inset, List<ViewNode>>? = null
+        for (c in r.cells) for (n in nodes) {
+            val inset = insetOf(r, c, n) ?: continue
+            if (!tried.add(listOf(inset.dx, inset.dy, inset.w, inset.h))) continue
+            val matched = r.cells.mapNotNull { byBox[insetKey(r, it, inset)] }
+            val b = best
+            if (b == null || matched.size > b.second.size || matched.size == b.second.size && inset.w + inset.h < b.first.w + b.first.h) best = inset to matched
+        }
+        val (inset, matched) = best ?: return null
+        if (matched.size * 2 <= r.cells.size) return null
+        return resolve(r, inset, matched, nodes)
+    }
+
+    private fun insetOf(r: Raw, c: Cell, n: ViewNode): Inset? {
+        val w = if (!r.crossFills || !r.vertical) c.w - (n.right - n.left) else 0
+        val h = if (!r.crossFills || r.vertical) c.h - (n.bottom - n.top) else 0
+        if (w < 0 || h < 0 || w + h == 0) return null
+        val dx = if (!r.crossFills || !r.vertical) n.left - c.x else 0
+        val dy = if (!r.crossFills || r.vertical) n.top - c.y else 0
+        return Inset(dx, dy, w, h)
+    }
+
+    private fun insetKey(r: Raw, c: Cell, i: Inset) = key(r, i.dx + c.x, i.dy + c.y, i.dx + c.x + c.w - i.w, i.dy + c.y + c.h - i.h)
+
+    private fun resolve(r: Raw, i: Inset, matched: List<ViewNode>, nodes: List<ViewNode>): Fit {
+        val axes = Axes(r.vertical)
+        val length = if (r.vertical) r.height else r.width
+        val (near, room) = if (r.vertical) i.dy to i.h else i.dx to i.w
+        val frame = nodes.firstOrNull { f ->
+            val (s, e) = axes.main(f)
+            e - s == length && s - r.start in near - room..near && matched.all { f.contains(it) }
+        }
+        val mainShift = frame?.let { axes.main(it).first - r.start } ?: (near - room / 2)
+        return if (r.vertical) Fit(i.dx - i.w / 2, mainShift, matched) else Fit(mainShift, i.dy - i.h / 2, matched)
+    }
+
+    private fun exactFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
         val tried = HashSet<Pair<Int, Int>>()
         var best: Fit? = null
         for (c in r.cells) {
