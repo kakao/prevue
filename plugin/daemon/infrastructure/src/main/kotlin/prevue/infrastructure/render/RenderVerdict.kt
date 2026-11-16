@@ -60,6 +60,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val presence = probe.presence(p.fqn, checkMethod = succeeded && treeEmpty)
         val blank = blank(presence, succeeded, treeEmpty)
         private val missing = logger.missingClasses
+        private val thrown = logger.messages.any { it.throwable != null }
         private val all = texts(logger).joinToString("\n")
 
         private fun texts(logger: RenderLogger): List<String> = buildList {
@@ -84,6 +85,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
             status != null && !status.isSuccess -> FailureKind.EXCEPTION to Verbatim(all.ifBlank { "status=${status.status}" })
             broken.isNotEmpty() -> FailureKind.EXCEPTION to Verbatim(all)
             imageEmpty() -> FailureKind.EXCEPTION to lines(phrase("render.emptyImage"), all)
+            blank == Blank.EMPTY_TREE && thrown -> FailureKind.EXCEPTION to Verbatim(all)
             else -> null
         }
 

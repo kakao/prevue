@@ -206,7 +206,7 @@ class ShadowedOverloadRenderIntegrationTest {
         val (home, app) = PearlFixture.warmup()
         val (spec, _) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
-        compiler = PearlFixture.hotCompiler(home, File(out, "overlay"), recompileShadowed = false)
+        compiler = PearlFixture.hotCompiler(home, File(out, "overlay")).also { it.recompileShadowed = false }
         project = home.project
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
         stub = PearlFixture.stubCopy(appRoot)
@@ -234,11 +234,12 @@ class ShadowedOverloadRenderIntegrationTest {
         engine.codeChanged()
         val spec = ws.now.board!!.focusCard.spec.copy(fqn = "com.example.pearl.feature.pearl.BlankStubKt.BlankStubPreview", previewId = "BlankStubPreview", file = stub)
         val seen = { o: prevue.application.port.RenderOutput -> "ok=${o.ok} failure=${o.failure} freshLoader=${o.freshLoader} warnings=${o.warnings} message=${o.message?.text}" }
+        // 다시 컴파일한 뒤 첫 렌더는 새 로더다 — 공유 로더가 이미 쓰인 채로 다시 그린 두 번째가 판정 대상이다
         val first = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
         val again = runBlocking { engine.written(engine.show(spec, ownLoader = false)) }
-        System.err.println("[shadowed] first: ${seen(first)}\n[shadowed] again: ${seen(again)}")
         assertTrue(!again.freshLoader, "공유 로더가 이미 쓰인 것이어야 한다 · ${seen(again)}")
         assertEquals(FailureKind.EXCEPTION, first.failure, "첫 렌더 · ${seen(first)}")
         assertEquals(FailureKind.EXCEPTION, again.failure, "다시 그린 렌더 · ${seen(again)}")
+        assertTrue("NoSuchMethodError" in again.message!!.text, seen(again))
     }
 }

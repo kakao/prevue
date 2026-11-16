@@ -32,7 +32,6 @@ internal class HotCompiler(
     override val overlayDir: File,
     private val stagingDir: File,
     dispatchers: PrevueDispatchers,
-    private val recompileShadowed: Boolean = true,
 ) : Compiler, AutoCloseable {
     private val loader = URLClassLoader(
         (compilerJars + bridgeClasses).map { it.toURI().toURL() }.toTypedArray(),
@@ -51,6 +50,7 @@ internal class HotCompiler(
     private var asked = 0
     internal var recompiled = 0
         private set
+    internal var recompileShadowed = true
 
     private class Module(val project: String, var spec: ClasspathSpec, val dir: File) {
         val members = HashMap<String, Set<String>>()

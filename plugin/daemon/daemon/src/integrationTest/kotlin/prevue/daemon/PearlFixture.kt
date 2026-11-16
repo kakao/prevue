@@ -60,10 +60,10 @@ object PearlFixture {
     fun layoutlib(): File? = env("PREVUE_LAYOUTLIB")?.takeIf { File(it, "data").isDirectory }
 
     /** 데몬과 같은 상주 컴파일러 — 저장을 진짜로 컴파일한다. [overlay]는 렌더 클래스패스 앞에 둔 그 자리다. */
-    internal fun hotCompiler(home: ClasspathSpec, overlay: File, dispatchers: PrevueDispatchers = realDispatchers, recompileShadowed: Boolean = true): HotCompiler {
+    internal fun hotCompiler(home: ClasspathSpec, overlay: File, dispatchers: PrevueDispatchers = realDispatchers): HotCompiler {
         val jars = CompilerJars.find(env("PREVUE_COMPILER")!!)
         return HotCompiler({ home }, jars.jars, env("PREVUE_BRIDGE")!!, jars.composePlugin,
-            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"), dispatchers, recompileShadowed)
+            AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk!!.path)), overlay, File("$overlay.modules"), dispatchers)
     }
 
     internal fun infraConfig(home: ClasspathSpec, app: ClasspathSpec?, cache: File): InfraConfig = InfraConfig(
