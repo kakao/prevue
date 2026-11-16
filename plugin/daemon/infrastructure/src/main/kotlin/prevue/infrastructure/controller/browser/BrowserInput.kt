@@ -38,13 +38,13 @@ internal class BrowserInput(
         }
     }
 
-    fun enterFocus(index: Int) = core.post { boards.focus(index, on = true, by = "viewer") }
+    fun enterFocus(index: Int) = enqueue(GestureLine.Step.Kept { boards.focus(index, on = true, by = "viewer") })
 
-    fun exitFocus() = core.post { boards.unfocus(by = "viewer") }
+    fun exitFocus() = enqueue(GestureLine.Step.Kept { boards.unfocus(by = "viewer") })
 
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 
-    fun systemUi(choice: SystemUi) = core.post { if (status.board() != null) live.setSystemUi(choice, by = "viewer") }
+    fun systemUi(choice: SystemUi) = enqueue(GestureLine.Step.Kept { if (status.board() != null) live.setSystemUi(choice, by = "viewer") })
 
     private suspend fun resized(s: ScreenSize) {
         if (status.board() == null) return

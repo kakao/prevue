@@ -107,4 +107,24 @@ class BrowserInputTest {
         runBlocking { presenter.drain() }
         assertEquals(listOf("press", "drag", "release", "wheel"), order.toList())
     }
+
+    @Test fun `나가기는 먼저 온 뗌을 앞지르지 않는다`() {
+        interactive()
+        val (entered, gate) = holdFirstDrag()
+        val hold = fx.renderer.onTouch
+        val open = fx.renderer.closes.get()
+        var closedBeforeRelease = -1
+        fx.renderer.onTouch = { type, x, y ->
+            hold(type, x, y)
+            if (type == "release") closedBeforeRelease = fx.renderer.closes.get() - open
+        }
+        input.touch("press", 5, 0)
+        input.touch("drag", 5, 1)
+        assertTrue(entered.await(5, TimeUnit.SECONDS), "첫 끌기가 세션에 닿지 않았다")
+        input.touch("release", 5, 1)
+        input.exitFocus()
+        gate.complete(Unit)
+        runBlocking { presenter.drain() }
+        assertEquals(0, closedBeforeRelease, "뗌이 닿기 전에 세션이 닫혔다 — 나가기가 뗌을 앞질렀다")
+    }
 }

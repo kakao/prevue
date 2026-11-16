@@ -1,14 +1,20 @@
-// 인터랙티브 휠 스크롤 중 프레임 간격을 잰다 — 휠 전 · 휠 중 · 휠 뒤 세 구간의 rAF 간격(중앙값 · p95 · 최대 · 50ms 넘는 프레임 수)과 long task.
-// 사용자 보고: "스크롤이 발동하면 그 다음 무조건 정크" — 그래서 휠이 멈춘 뒤 구간(after)까지 따로 낸다.
+// 인터랙티브 스크롤 중 프레임 간격을 잰다 — 굴리기 전 · 굴리는 중 · 굴린 뒤 세 구간의 rAF 간격(중앙값 · p95 · 최대 · 50ms 넘는 프레임 수),
+// long task, 입력 POST(/viewer/wheel · /viewer/touch)의 왕복 시간과 간격, 스트림 프레임의 도착 간격(같은 /stream 을 따로 읽는다)을 낸다.
+// 기본은 휠이고 --drag 면 마우스로 눌러 끈다. 끌기의 밀림(손동작이 끝난 뒤 데몬이 따라잡는 시간)은 tools/drag-lag.py 가 잰다.
 // 헤드리스(--disable-gpu)라 소프트웨어 래스터 숫자다. 실제 GPU 느낌은 사람이 본다.
 //
 //   node tools/scroll-jank.mjs <전용 프리뷰 서버 URL> [--index=0] [--size=original] [--runs=3] [--wheel=2500] [--idle=1500]
 //
-//   --device=<id> [--folded]  기기로 켠다(prevue focus --device 와 같다 — duo · fold8 · s26 …). --keep 은 /focus 를 보내지 않는다
-//   --oneway [--delta=40]  한 방향으로만 굴린다(목록 끝에 닿으면 멎는다) — 방향 전환 틱이 섞이지 않는 실제 스크롤 모양
-//   --drag [--hz=60]  휠 대신 마우스로 눌러 끈다(터치 드래그)
+//   --device=<id> [--folded]  기기로 켠다(prevue focus --device 와 같다 — duo · fold8 · s26 …)
+//   --settle=<ms>  진입 뒤 재기 전의 기다림(기본 800) — 기기 사전 렌더(입력이 1초 잠잠하면 돈다)가 끝난 뒤를 재려면 12000
+//   --drag [--hz=60]  휠 대신 마우스로 눌러 끈다(터치 드래그) — 위아래로 번갈아 끌어 출발점을 지날 때 목록 끝의 오버스크롤이 섞인다
+//   --oneway [--delta=40]  휠을 한 방향으로만 굴린다(목록 끝에 닿으면 멎는다). 기본은 6프레임 아래 · 5프레임 위
 //   --headed       창 있는 Chrome(GPU 합성)으로 잰다 — 기본은 헤드리스 소프트웨어 래스터
 //   --css='<규칙>'  페이지에 규칙을 주입해 A/B 한다(예: '#shot{object-fit:fill!important}')
+//   --trace        굴리는 구간의 Chrome 트레이스에서 합성기 그리기 간격 · 이미지 디코드 · 래스터 합계를 함께 낸다(창이 가려지면 그리기가 안 잡힌다)
+//   --urls         굴리는 동안 뷰어가 보낸 요청을 주소별 개수로 낸다
+//
+// 굴리는 내용이 화면을 바꾸지 않으면(목록이 한 화면에 들어간다 · 끝에 닿았다) 스트림 프레임이 안 와 간격이 길게 잡힌다 — 정크가 아니다.
 // 데몬은 이 체크아웃의 plugin/bin/prevue 로 띄운 fixtures/pearl 이어야 한다(tests/viewer/README.md).
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile } from 'node:fs/promises';
@@ -62,7 +68,7 @@ try {
   if (args.css) await send('Page.addScriptToEvaluateOnNewDocument', { source: `document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent=${JSON.stringify(args.css)};document.head.append(s)})` });
   if (args.css) await send('Page.navigate', { url: viewer });
   if (args.css) { await until(`!!document.querySelector('#shot')`); await evaluate(`import('/js/store.js').then(m=>window.__store=m.store)`); await until(`!!window.__store && !!__store.st`); }
-  if (!args.keep) await post('/focus', { index, interactive: true, ...(size === 'original' ? {} : { size }), ...(args.device ? { device: args.device, folded: !!args.folded } : {}) });
+  await post('/focus', { index, interactive: true, ...(size === 'original' ? {} : { size }), ...(args.device ? { device: args.device, folded: !!args.folded } : {}) });
   await ready(); await pause(Number(args.settle || 800)); // --settle=<ms> 진입 뒤 기다림 — 기기 사전 렌더(QuietFill)가 끝난 뒤를 재려면 길게
 
   // 페이지 안에서 rAF 간격을 구간 이름표와 함께 모은다.
@@ -90,7 +96,6 @@ try {
       tail = buf.subarray(Math.max(0, buf.length - 2));
     }
   })().catch(() => {});
-  const results = [];
   for (let run = 0; run < runs; run++) {
     await evaluate(`__j.frames.length=0;__j.tasks.length=0;__j.phase='before'`); phaseNow = 'before'; arrivals.length = 0;
     await pause(idleMs);
@@ -135,7 +140,6 @@ try {
       const gaps = at.slice(1).map((t, k) => ['s', t - at[k]]);
       row[phase] = { ...stat(j.frames.filter(f => f[0] === phase)), longtasks: j.tasks.filter(t => t[0] === phase).length, wheelPost: (() => { const p = j.posts.filter(x => x[0] === phase); const st = stat(p.map(x => ['p', x[1]])); const gaps = p.slice(1).map((x, k) => ['g', x[2] - p[k][2]]); return { n: p.length, rttMedian: st.median, rttP95: st.p95, rttMax: st.max, startEveryMs: stat(gaps).median }; })(), stream: { frames: at.length, ...(({ median, p95, max, over50 }) => ({ median, p95, max, over50 }))(stat(gaps)) } };
     }
-    results.push(row);
     console.log(JSON.stringify(row));
   }
   console.log(JSON.stringify({ viewer, index, size, runs, wheelMs, idleMs, note: 'headless software raster' }));
