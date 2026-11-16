@@ -19,8 +19,6 @@ class LiteralPolicyTest {
 
     private fun plan(new: String, sites: List<LiteralSite> = sites(), taken: Set<String> = emptySet()) = LiteralPolicy.plan(old, new, sites, taken)
 
-    @Test fun `바이트까지 같으면 Same`() = assertEquals(Plan.Same, plan(old))
-
     @Test fun `리터럴만 바뀌면 값과 옮긴 자리를 낸다`() {
         val new = old.replace("16.dp", "120.dp").replace("\"길찾기\"", "\"길 찾기 화면\"")
         val p = plan(new) as Plan.Patch

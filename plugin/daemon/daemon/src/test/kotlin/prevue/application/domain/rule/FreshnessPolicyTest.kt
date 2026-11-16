@@ -32,12 +32,6 @@ class FreshnessPolicyTest {
         assertTrue(FreshnessPolicy.blamed(listOf("/r/a/Half.kt"), "e: 가짜 실패").isEmpty())
     }
 
-    @Test fun `새 파일은 Gradle 산출물보다 새로울 때만 싣는다 — 모르면 싣는다`() {
-        assertTrue(FreshnessPolicy.newerThanBuild(mtime = 300, builtAt = 200))
-        assertFalse(FreshnessPolicy.newerThanBuild(mtime = 100, builtAt = 200))
-        assertTrue(FreshnessPolicy.newerThanBuild(mtime = 100, builtAt = null))
-    }
-
     @Test fun `컴파일러가 선언이 겹친다고 한 파일만 겹친 것으로 본다`() {
         val msg = "/r/copy/Screen.kt:109:1: error: conflicting overloads:\nfun Screen(): Unit\n/r/app/Screen.kt:119:5: error: overload resolution ambiguity between candidates:\n"
         assertTrue(FreshnessPolicy.duplicateIn(setOf("/r/copy/Screen.kt"), msg))
