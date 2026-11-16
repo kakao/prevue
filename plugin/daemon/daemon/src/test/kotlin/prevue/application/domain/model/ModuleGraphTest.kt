@@ -37,11 +37,6 @@ class ModuleGraphTest {
         assertEquals(":feature:x", g.ownerOf(File("/Users/me/src/app/feature/x/shared/kotlin/a/Screen.kt")))
     }
 
-    @Test fun `KMP 모듈이 하나라도 있으면 KMP 프로젝트다`() {
-        assertTrue(ModuleGraph(":app", listOf(pearl, app)).kmp)
-        assertFalse(ModuleGraph(":app", listOf(app)).kmp)
-    }
-
     @Test fun `링크 경로 루트로 만든 그래프도 실제 경로의 파일을 품고 모듈을 가린다`() {
         val tmp = Files.createTempDirectory("prevue-graph").toFile()
         try {

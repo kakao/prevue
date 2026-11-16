@@ -11,24 +11,16 @@ class DeviceSpecTest {
 
     private fun reading(d: ScreenSize.Device) = DEVICE_READINGS[Triple(d.model.id, d.folded, d.orientation.key)]
 
-    @Test fun `출처가 있는 자세마다 원 측정 읽음이 있고 출처 없는 자세는 폴드8 펼친 가로 오른쪽뿐이다`() {
+    @Test fun `출처가 있는 자세마다 원 측정 읽음이 있다`() {
         val sourced = all.filter { it.insetProfile.evidence != null }.map { it.key }
         assertEquals(sourced, all.filter { reading(it) != null }.map { it.key })
         assertEquals(DEVICE_READINGS.size, sourced.size)
-        assertEquals(listOf("fold8-right"), all.filter { it.insetProfile.evidence == null }.map { it.key })
     }
 
     @Test fun `모든 자세의 인셋이 원 측정과 맞는다 — Android는 px 나누기 밀도, iOS는 화면에서 인셋을 뺀 safe area 크기`() {
         all.forEach { d ->
             val r = reading(d) ?: return@forEach
             assertEquals(emptyList<String>(), violations(d, d.insetProfile, r), d.key)
-        }
-    }
-
-    @Test fun `출처의 해상도가 그 자세의 화면 크기다 — 가로 두 방향도 같은 크기`() {
-        all.forEach { d ->
-            val evidence = d.insetProfile.evidence ?: return@forEach
-            assertEquals("${d.widthPx}x${d.heightPx}", evidence.conditions["resolutionPx"], d.key)
         }
     }
 

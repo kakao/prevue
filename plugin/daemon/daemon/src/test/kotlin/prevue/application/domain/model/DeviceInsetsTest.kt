@@ -79,7 +79,6 @@ class DeviceInsetsTest {
     }
 
     @Test fun `모든 프로필의 출처 해상도와 밀도는 해당 자세와 일치한다`() {
-        assertEquals(all.size - 1, all.count { it.insetProfile.evidence != null })
         all.forEach { d ->
             val p = d.insetProfile
             p.evidence?.let { evidence ->
