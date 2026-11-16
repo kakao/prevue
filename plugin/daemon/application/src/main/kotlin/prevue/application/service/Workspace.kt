@@ -58,6 +58,10 @@ class Workspace(
         store.edit { it.withPosture(round, d, shot) }
     }
 
+    fun recordMiss(round: Long, d: ScreenSize) {
+        store.edit { it.withMiss(round, d) }
+    }
+
     fun noteCreated(created: List<File>, deleted: List<File>) {
         if (created.isEmpty() && deleted.isEmpty()) return
         val added = created.map { it.canonicalPath }; val gone = deleted.map { it.canonicalPath }.toSet()

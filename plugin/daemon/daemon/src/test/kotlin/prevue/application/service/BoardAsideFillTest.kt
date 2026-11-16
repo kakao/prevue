@@ -90,15 +90,15 @@ class BoardAsideFillTest {
         assertEquals(uc.cardSpecs().drop(1), after.drop(firstCard))
     }
 
-    @Test fun `자세 칸이 예외로 멈춰도 보드 카드는 그린다`() {
+    @Test fun `자세 칸이 늘 예외를 던져도 칸마다 두 번에 그치고 보드 카드는 그린다`() {
         val uc = opened()
         fx.renderer.asideThrows = { '@' in it.previewId }
         uc.focus(ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8))
+        awaitUntil("저장 전 회차의 자세 칸 두 바퀴") { fx.renderer.asides.count { '@' in it.previewId } == fold * 2 }
         uc.save()
         uc.workspace.awaitBoardFilled()
         assertEquals(uc.cardSpecs().drop(1), cardAsides())
-        val tried = fx.renderer.asides.count { '@' in it.previewId }
-        assertTrue(tried in 1..2, "회차마다 자세를 한 번 던지면 접는다 — ${tried}번")
+        assertEquals(fold * 4, fx.renderer.asides.count { '@' in it.previewId })
     }
 
     /** [gate]에 선 옆 태스크부터 하나씩 들여보내다 보드 카드가 들어오면 그 자리에 세운다. 돌려준 빗장을 풀면 이어 간다. */

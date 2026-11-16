@@ -74,8 +74,12 @@ data class WorkspaceState(
 
     fun withFill(fill: BoardFill): WorkspaceState = copy(boardFill = fill)
 
-    fun withPosture(round: Long, d: ScreenSize, shot: Shot): WorkspaceState =
-        postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = ps.with(it.second, d, shot)) } } ?: this
+    fun withPosture(round: Long, d: ScreenSize, shot: Shot): WorkspaceState = withPostures(round) { ps, shown -> ps.with(shown, d, shot) }
+
+    fun withMiss(round: Long, d: ScreenSize): WorkspaceState = withPostures(round) { ps, shown -> ps.missed(shown, d) }
+
+    private fun withPostures(round: Long, edit: (Postures, ScreenSize) -> Postures): WorkspaceState =
+        postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = edit(ps, it.second)) } } ?: this
 
     fun withCreated(added: List<String>, gone: Set<String>): WorkspaceState = copy(newFiles = (newFiles + added) - gone)
 }

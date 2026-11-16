@@ -49,33 +49,32 @@ class QuietFill(
         data object Done : Step
         data object Later : Step
         class Posture(val round: Long, val d: ScreenSize, val out: RenderOutput, val t: Long) : Step
-        class PostureFailed(val e: Exception) : Step
+        class Missed(val round: Long, val d: ScreenSize, val why: String?) : Step
         class Card(val next: Int) : Step
     }
 
     private suspend fun fill(round: Round) {
         var from = 0
-        var posturesFailed = false
         while (true) {
             val wait = quietMs - quietFor()
             if (wait > 0) { delay(wait); continue }
-            when (val s = step(round, from, posturesFailed)) {
+            when (val s = step(round, from)) {
                 Step.Done -> return
                 Step.Later -> delay(quietMs)
                 is Step.Posture -> ws.recordPosture(s.round, s.d, postureShot(s))
-                is Step.PostureFailed -> {
-                    System.err.println("[prevue] 자세별 그림을 그리지 못했다: ${s.e}")
-                    posturesFailed = true
+                is Step.Missed -> {
+                    System.err.println("[prevue] 자세 ${s.d.key} 그림을 그리지 못했다: ${s.why}")
+                    ws.recordMiss(s.round, s.d)
                 }
                 is Step.Card -> from = s.next
             }
         }
     }
 
-    private suspend fun step(round: Round, from: Int, posturesFailed: Boolean): Step = ws.exclusive { ed ->
+    private suspend fun step(round: Round, from: Int): Step = ws.exclusive { ed ->
         if (roundOf(ws.now) != round) return@exclusive Step.Done
         if (ws.reloadPending || quietFor() < quietMs) return@exclusive Step.Later
-        if (!posturesFailed) postureStep()?.let { return@exclusive it }
+        postureStep()?.let { return@exclusive it }
         boards.startNextAside(ed, from, QUIET_BY)?.let { Step.Card(it + 1) } ?: Step.Done
     }
 
@@ -86,10 +85,10 @@ class QuietFill(
         val t = System.nanoTime()
         val out = try { engine.showAside(ps.specOf(d)) } catch (e: Exception) {
             if (e is CancellationException) throw e
-            return Step.PostureFailed(e)
+            return Step.Missed(ps.round, d, e.toString())
         }
-        val failed = if (out.ok) "" else " 실패: ${out.message?.text}"
-        println("[prevue] 자세 ${d.key} 미리 그림 ${(System.nanoTime() - t) / 1_000_000}ms ${out.width}x${out.height}$failed")
+        if (!out.ok) return Step.Missed(ps.round, d, out.message?.text)
+        println("[prevue] 자세 ${d.key} 미리 그림 ${(System.nanoTime() - t) / 1_000_000}ms ${out.width}x${out.height}")
         return Step.Posture(ps.round, d, out, t)
     }
 

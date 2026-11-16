@@ -8,16 +8,17 @@ import org.junit.jupiter.api.Test
 /**
  * 작업 공간의 상태를 쓰는 길(D-74) — 줄 안은 `exclusive`가 건네는 편집기뿐이고, 줄 밖은 이름 붙은 넷뿐이다.
  * 줄(공정 Mutex · `work` 지우기 · 저장 기다림)은 서비스 `Workspace`가 갖고, 저장소 포트(`WorkspaceStore`)는 그 한 곳만 쥔다 — 저장소를 바꿔 끼워도 줄이 빠지지 않는다.
- * 카드 쓰기 완료(`recordCard`) · 채우기 완료(`recordFill`) · 자세 한 장(`recordPosture`)은 줄을 서면 채우기에 밀려 굶고, 감시 스레드의 새 파일(`noteCreated`)은 같은 묶음의 저장보다 먼저 적혀야 한다.
+ * 카드 쓰기 완료(`recordCard`) · 채우기 완료(`recordFill`) · 자세 한 장 · 자세 실패(`recordPosture` · `recordMiss`)는 줄을 서면 채우기에 밀려 굶고, 감시 스레드의 새 파일(`noteCreated`)은 같은 묶음의 저장보다 먼저 적혀야 한다.
  */
 class WorkspaceWriteRuleTest {
     private val files = prevue.daemon.Sources.daemon()
 
-    @Test fun `줄 밖의 쓰기는 카드 쓰기 완료 · 채우기 완료 · 자세 한 장 · 감시의 새 파일 넷뿐이다`() {
+    @Test fun `줄 밖의 쓰기는 카드 쓰기 완료 · 채우기 완료 · 자세 한 장 · 자세 실패 · 감시의 새 파일 다섯뿐이다`() {
         assertTrue(files.size > 50, "본체를 못 찾았다 — 작업 디렉터리: ${File("").absolutePath}")
         assertEquals(
             listOf("application/service/Boards.kt → recordFill", "application/service/Boards.kt → recordCard",
-                "application/service/QuietFill.kt → recordPosture", "application/service/Watchers.kt → noteCreated"),
+                "application/service/QuietFill.kt → recordPosture", "application/service/QuietFill.kt → recordMiss",
+                "application/service/Watchers.kt → noteCreated"),
             WriteRule.outOfQueue(files),
         )
     }
@@ -53,7 +54,7 @@ class WorkspaceWriteRuleTest {
 }
 
 object WriteRule {
-    private val outside = Regex("""\.(recordCard|noteCreated|recordFill|recordPosture)\(""")
+    private val outside = Regex("""\.(recordCard|noteCreated|recordFill|recordPosture|recordMiss)\(""")
     private val EDITOR = Regex("""\bWorkspaceEditor\s*\(""")
     private val STORE = Regex("""\bWorkspaceStore\b""")
     val MAKERS = setOf("application/service/Workspace.kt")
