@@ -1,8 +1,8 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
+import { memo, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import { findCard, type DeviceInsets, type Focus, type Size, type SystemUi, type ViewerState } from '../state';
-import { loadingView, zoomView } from '../workspace/view';
+import { loadingView, zoomView, type ZoomView } from '../workspace/view';
 import { InsetMarks, InsetOverlay, InsetOverlayButton } from './InsetOverlay';
 import { SystemBarsOverlay } from './SystemBars';
 import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
@@ -47,15 +47,23 @@ const PLUS = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWi
  * 확대는 늘 보인다(W4) — 숨은 제스처(핀치 · ⌘ + 휠)를 받치는 눈에 보이는 컨트롤. 조작 독의 오른쪽 끝이다(D-167). 배율의 100% 는 1dp = 1 CSS px(실제 크기)다.
  * 맞춤이 아니면 `맞춤` 단추가 폭이 자라며 살아나 처음 화면으로 돌린다 — 그래서 hidden 대신 클래스로 접는다. 메뉴는 그 위로 열린다.
  */
-export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElement; actions?: WorkspaceActions }) {
+// 크기 전환은 프레임마다 배율을 쓴다 — 숫자는 배율 단추만 구독하고, 컨트롤은 부모가 상태마다 다시 그려도 따라 그리지 않는다(memo).
+const useZoom = <K extends keyof ZoomView>(key: K) => useSyncExternalStore(zoomView.subscribe, () => zoomView.get()[key]);
+function ZoomPct({ real, menu, disabled, actions }: { real: boolean; menu: boolean; disabled: boolean; actions: WorkspaceActions }) {
+  const { phrase } = useMessages();
+  const pct = useZoom('pct');
+  return <button type="button" id="zoomPct" className="z-pct" aria-haspopup="menu" aria-expanded={menu} disabled={disabled}
+    title={phrase(real ? 'zoom.tip.real' : 'zoom.tip.fit')} onClick={e => actions.toggleZoomMenu(e.detail === 0)}>{pct}%</button>;
+}
+
+export const ZoomControls = memo(function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
-  const { pct, real, atFit, menu, disabled } = useSyncExternalStore(zoomView.subscribe, zoomView.get);
+  const real = useZoom('real'), atFit = useZoom('atFit'), menu = useZoom('menu'), disabled = useZoom('disabled');
   useLayoutEffect(() => { element?.classList.toggle('at-fit', atFit); }, [element, atFit]);
   const body = <>
     <button type="button" id="zoomOutBtn" aria-label={phrase('zoom.out')} title={phrase('zoom.out.tip')} disabled={disabled} onClick={actions.zoomOut}>{MINUS}</button>
-    <button type="button" id="zoomPct" className="z-pct" aria-haspopup="menu" aria-expanded={menu} disabled={disabled}
-      title={phrase(real ? 'zoom.tip.real' : 'zoom.tip.fit')} onClick={e => actions.toggleZoomMenu(e.detail === 0)}>{pct}%</button>
+    <ZoomPct real={real} menu={menu} disabled={disabled} actions={actions} />
     <button type="button" id="zoomInBtn" aria-label={phrase('zoom.in')} title={phrase('zoom.in.tip')} disabled={disabled} onClick={actions.zoomIn}>{PLUS}</button>
     <button type="button" id="zoomFitBtn" className="z-fit" title={phrase('zoom.fit.tip')} disabled={disabled}
       tabIndex={atFit ? -1 : 0} aria-hidden={atFit} onClick={actions.zoomFit}>{phrase('zoom.fit')}</button>
@@ -66,7 +74,7 @@ export function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElemen
     </div>
   </>;
   return place(body, zoomHost);
-}
+});
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
 /** 기기는 바를 늘 보이고 인셋을 늘 전달하니 이 자리에 인셋 영역 보기 토글을 둔다. 비기기는 기존 시스템 UI 선택을 사용한다. */
