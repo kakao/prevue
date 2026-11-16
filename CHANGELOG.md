@@ -21,12 +21,13 @@ Only changes users can see go here.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
 - **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
 - **Android status bar keeps clear of large rounded screen corners** — where a large rounded corner would cut the time or icons (such as Pixel 10 Pro XL in landscape), they move in from the edge instead.
-- **Foldables fold as two solid slabs** — Galaxy Z Fold8, Z Fold8 Ultra, Pixel 9 Pro Fold and iPhone Duo now show each half's thickness, a spine at the hinge and shading that follows the fold angle, and every fold takes 1 second (Galaxy and Pixel folds took 0.6 s).
+- **Foldables fold as two solid slabs** — Galaxy Z Fold8, Z Fold8 Ultra, Pixel 9 Pro Fold and iPhone Duo now show each half's thickness, a spine at the hinge and shading that follows the fold angle, and land on the resting device with the same light, shadow and hinge marks in every orientation; every fold takes 1 second (Galaxy and Pixel folds took 0.6 s).
 - **Galaxy Z Flip8 joins the device menu** (`--device flip8`) — it folds top over bottom like a clamshell, and its cover screen renders at its own 380 dpi (399 × 441 dp) with the bottom-right camera cutout and its uneven screen corners, from [windowinsets.info](https://windowinsets.info/); the cover is measured in portrait only, so the viewer hides the turn control there and `--folded --landscape` is an error.
 - **KMP library modules in repositories with `org.gradle.configureondemand=true`** no longer fail on save with "unresolved reference" ([#210](https://github.com/kakao/prevue/issues/210)) — warm up once more; a dump that would miss a KMP module's compile classpath now stops with the module names instead. Reported by @DXMHXR.
 - **A size-bar cell or posture that fails to pre-render is retried once in the background** after the other cells, instead of staying empty until the next save or size change.
 - **Switching cells in the size bar keeps the pictures already drawn for the other cells** until you save, so after moving to another device only that device's own postures are drawn again.
 - **In windows 640 px wide or narrower, the open-files rail no longer pushes the board aside** — it opens over the board from a new button at the left of the header, so a group of previews keeps two or more cards per row even at 360 px, and the board margin narrows to 12 px with the stale-image banner text on the same line.
+- Picking a size that has no picture yet while the frame is still moving, or whose picture is smaller than the frame, now grows the blurred placeholder into the frame instead of jumping to fill it in one frame.
 
 ## [0.22.1] — 2026-11-13
 
