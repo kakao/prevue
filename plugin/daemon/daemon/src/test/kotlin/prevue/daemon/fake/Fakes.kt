@@ -66,6 +66,8 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val showEntered = Semaphore(0)
     /** 걸어 두면 다음 [show] 한 번이 그것을 던진다 — 렌더러가 결과 없이 죽는 자리다. */
     @Volatile var showThrows: Throwable? = null
+    /** 걸어 두면 그것이 예외를 돌려주는 [show]마다 그 예외를 던진다 — 순서와 상관없이 고른 카드만 죽는다. */
+    @Volatile var showThrowsIf: ((PreviewSpec) -> Throwable?)? = null
     /** 걸어 두면 [codeChanged]가 멈춘다 — 컴파일 성공과 세대 올리기 사이의 자리다. */
     @Volatile var codeGate: CountDownLatch? = null
     val codeEntered = Semaphore(0)
@@ -116,6 +118,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         showEntered.release()
         showGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "showGate가 안 풀렸다" } }
         showThrows?.let { showThrows = null; throw it }
+        showThrowsIf?.invoke(p)?.let { throw it }
         if (shown.size > holdAfter) check(hold.await(5, TimeUnit.SECONDS)) { "hold가 안 풀렸다" }
         exceptions.poll()?.let { return output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) }
         failures.poll()?.let { return output(p).copy(ok = false, failure = it, message = Verbatim("가짜 $it")) }
@@ -205,7 +208,14 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 걸어 두면 [previewId]의 다음 쓰기 한 번이 그 자리에서 멈춘다 — 렌더는 끝났고 PNG가 디스크로 가는 중인 순간이다. */
     @Volatile var writeHold: Pair<String, CountDownLatch>? = null
     val writeEntered = Semaphore(0)
+    /** 걸어 두면 그 previewId의 다음 쓰기 한 번이 취소될 때까지 멈춘다 — 데몬이 끝나며 쓰기를 거두는 자리다. */
+    @Volatile var writeParks: String? = null
     override suspend fun written(out: RenderOutput): RenderOutput {
+        if (writeParks == out.preview.previewId) {
+            writeParks = null
+            writeEntered.release()
+            kotlinx.coroutines.awaitCancellation()
+        }
         val (id, gate) = writeHold?.takeIf { it.first == out.preview.previewId } ?: return out
         writeHold = null
         writeEntered.release()
