@@ -115,7 +115,7 @@ git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 �
 
 ## 5. 로컬 검증 → PR → 머지
 
-머지 관문은 둘이다 — 밀기 전에 마지막 커밋에서 돌리는 로컬 검증 다섯과, PR을 연 뒤 그 head에서 도는 CI(빌드 검증)의 성공. develop에는 필수 체크가 없어 서버가 막아 주지 않으므로 CI를 기다리는 것은 여기가 지킨다(`AGENTS.md`).
+머지 관문은 둘이다 — 밀기 전에 마지막 커밋에서 돌리는 로컬 검증 다섯과, PR을 연 뒤 그 head에서 도는 CI(`Verify`)의 판정 `build` 성공. develop에는 필수 체크가 없어 서버가 막아 주지 않으므로 CI를 기다리는 것은 여기가 지킨다(`AGENTS.md`).
 
 ```sh
 sh tools/gen-agents.sh --check     # 스킬 두 벌 · CLAUDE.md 가 원본과 같다
@@ -142,7 +142,7 @@ gh pr create --base develop --title "<무엇을 · 왜 한 줄>" --body "<본문
 gh pr checks <N> --watch --fail-fast
 ```
 
-"빌드 검증"(약 7~10분, job 시간 제한 20분이 기다림의 상한이다)이 초록이어야 한다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
+`Verify`의 판정 job `build`(정적 검사 · 빌드 · 단위 테스트를 모은다)가 초록이어야 한다. 같은 실행의 통합 테스트(`integration / integration (…)`)는 관찰 중이라 판정에 넣지 않는다 — 실패하면 PR 본문에 적고 막지 않는다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->

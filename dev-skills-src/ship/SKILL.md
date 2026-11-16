@@ -75,7 +75,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 다섯 — 스킬 두 벌 · 고지 사본 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 여섯 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 "빌드 검증"이 같은 다섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 다섯 — 스킬 두 벌 · 고지 사본 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 여섯 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 같은 다섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
@@ -92,7 +92,7 @@ gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본�
 
 본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 
-**스킬 평가 — 2단계에서 실었으면 PR을 연 직후 돌린다.** CI(빌드 검증)는 PR을 열면 저절로 돌고, 평가는 그와 나란히 돈다. **먼저 PR head에 `스킬 평가`를 `pending`으로 올린다** — 4단계의 `gh pr checks --watch`는 이미 있는 체크만 기다려서, 상태가 없으면 CI가 끝나는 순간 평가가 돌고 있어도 초록으로 끝난다.
+**스킬 평가 — 2단계에서 실었으면 PR을 연 직후 돌린다.** CI(`Verify`)는 PR을 열면 저절로 돌고, 평가는 그와 나란히 돈다. **먼저 PR head에 `스킬 평가`를 `pending`으로 올린다** — 4단계의 `gh pr checks --watch`는 이미 있는 체크만 기다려서, 상태가 없으면 CI가 끝나는 순간 평가가 돌고 있어도 초록으로 끝난다.
 
 ```sh
 H=$(gh pr view <N> --json headRefOid -q .headRefOid)     # 평가할 커밋 — 로컬 HEAD 와 같아야 한다(아니면 2단계부터)
@@ -130,7 +130,7 @@ git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin
 gh pr checks <N> --watch --fail-fast
 ```
 
-"빌드 검증"(약 7~10분)이 초록이어야 하고, 스킬 평가를 실은 판이면 PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). 빌드 검증은 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
+`Verify`의 판정 job `build`가 초록이어야 하고, 스킬 평가를 실은 판이면 PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->
@@ -148,8 +148,8 @@ gh pr merge <N> --merge             # merge commit. --delete-branch 를 붙이�
 ## 5. 기록 — 태그 · GitHub Release
 
 ```sh
-gh workflow run 릴리즈 --ref main
-gh run list --workflow 릴리즈 --branch main --limit 1 --json databaseId,status,createdAt   # 방금 뜬 실행인지 createdAt 으로 본다
+gh workflow run release.yml --ref main
+gh run list --workflow release.yml --branch main --limit 1 --json databaseId,status,createdAt   # 방금 뜬 실행인지 createdAt 으로 본다
 gh run watch <id> --exit-status
 gh release view v0.11.0 --json tagName,url
 ```

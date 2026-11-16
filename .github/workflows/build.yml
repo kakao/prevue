@@ -1,284 +1,56 @@
-# 빌드 · 테스트 · 산출물 · CLI 계약 — 릴리즈 PR 의 CI 는 이 하나다. 버전 · 태그 · 동기화는 /ship 이 버전 커밋 전에 보고,
-# 릴리즈 워크플로(release.yml)가 태그를 달기 전에 한 번 더 본다.
-name: 빌드 검증
+# Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. This is the only CI of
+# a release PR. Version · tag · sync are checked by /ship before the version commit, and once more by the Release workflow
+# (release.yml) before it tags.
+# The file keeps its name build.yml: the README badges link to it, and dispatching a branch needs this file on main.
+name: Verify
 
 on:
-  # 릴리즈 PR(→ main)과 작업 PR(→ develop)에서 돈다. 작업 PR 은 로컬 검증 뒤 이 결과까지 기다려 머지하고(implement 스킬),
-  # 로컬 검증을 거치지 않는 외부 기여 PR 에는 이것이 유일한 검증이다. develop 에는 필수 체크로 걸지 않는다.
-  # push 는 걸지 않는다 — 머지할 때마다 같은 트리를 또 빌드한다(릴리즈 PR 하나에 빌드 셋이 돌았다).
+  # Runs on release PRs (→ main) and work PRs (→ develop). Work PRs are merged after local checks and this result (implement
+  # skill); for outside contributions, which skip the local checks, this is the only verification. Not a required check on develop.
+  # No push trigger — every merge would build the same tree again (one release PR once ran three builds).
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
-
-# 사용자의 /bin/sh 에서 도는 스크립트(plugin/bin/prevue · plugin/daemon/daemon/build/prevue-env)를 bash 가 아니라 sh 로 본다.
-defaults:
-  run:
-    shell: sh
 
 permissions:
   contents: read
 
 concurrency:
-  # 릴리즈와 달리 앞선 실행은 버린다. 마지막 커밋의 결과만 의미가 있다.
+  # Unlike Release, earlier runs are dropped. Only the result for the last commit matters.
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+# The static checks and the build run side by side first; when both pass, the unit and integration tests run side by side.
 jobs:
-  build:
-    # Python 3.9 배포본이 없는 Ubuntu 26.04로 넘어가지 않도록 고정한다.
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+  lint:
+    uses: ./.github/workflows/lint.yml
 
-    steps:
-      - name: 저장소를 받는다
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0    # 린트가 origin/main 과의 diff 로 새 주석 · 건드린 함수를 본다
+  compile:
+    uses: ./.github/workflows/compile.yml
 
-      # 스킬 두 벌(plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/)과 CLAUDE.md 는 원본의 생성물이다. 한쪽만 손으로 고친 커밋을 여기서 막는다.
-      - name: 스킬 두 벌과 CLAUDE.md가 원본에서 만들어졌는지 본다
-        run: sh tools/gen-agents.sh --check
+  unit:
+    needs: [lint, compile]
+    uses: ./.github/workflows/unit.yml
 
-      # 설치본은 plugin/ 만 받는다(D-123) — 그 안의 LICENSE · NOTICE.md 는 루트 원본의 사본이다.
-      - name: 플러그인의 고지 사본이 원본과 맞는지 본다
-        run: sh tools/plugin-copies.sh --check
-
-      - name: 뷰어 개발용 Node를 맞춘다
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: viewer-src/.node-version
-          cache: npm
-          cache-dependency-path: viewer-src/package-lock.json
-
-      - name: 뷰어 개발 의존성을 설치한다
-        working-directory: viewer-src
-        run: npm ci --no-audit --no-fund
-
-      - name: 뷰어 생성물과 계약 타입을 확인한다
-        run: sh tools/gen-viewer.sh --check
-
-      - name: 뷰어 타입과 Storybook 조립을 확인한다
-        working-directory: viewer-src
-        run: |
-          set -eu
-          npm run typecheck
-          npm run build-storybook
-
-      # CLI 는 macOS 기본 python3(3.9)에서 돈다 — 러너의 새 python 으로 보면 3.10+ 문법이 그대로 지나간다.
-      - name: python3를 3.9로 맞춘다
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"
-
-      # CLI 판정(prevue_plan.py · jdk_rule.py · daemon_records.py)과 에이전트 응답 크기(NFR-17 · NFR-18)의 단위 테스트.
-      - name: 판정 로직 단위 테스트
-        run: python3 -m unittest discover -s tests/cli
-
-      - name: JDK를 올린다
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"      # 사용자 최소 JDK와 같다. 바이트코드 17은 build-logic 의 convention plugin(prevue.jvm)이 고정한다
-          # Gradle 의존성 · 래퍼를 되살린다. 기본 키 패턴은 루트의 gradle/ 만 봐서 plugin/daemon 의 카탈로그를 직접 준다.
-          # 캐시는 만든 ref 에서만 보인다 — PR 실행이 만든 것은 그 PR 의 다음 실행부터 맞는다.
-          cache: gradle
-          cache-dependency-path: |
-            plugin/daemon/**/*.gradle.kts
-            plugin/daemon/**/libs.versions.toml
-            plugin/daemon/**/gradle-wrapper.properties
-
-      # 제품 빌드는 plugin/daemon/ 의 Gradle 빌드 하나다(:daemon 조립 · 테스트 + 안쪽 :application · 바깥 :infrastructure, D-148 · 공통 설정은 included build build-logic, D-140) — 설치본이 그 자리에서 굽는다.
-      - name: 툴체인을 빌드한다
-        working-directory: plugin/daemon
-        run: |
-          set -eu
-          ./gradlew installPrevue --no-daemon
-
-      # 가짜 포트 위의 Session·Server 테스트. 조용히 되돌아가도 화면은 멀쩡한 규칙들이라 눈으로는 못 잡는다.
-      - name: 데몬 단위 테스트
-        working-directory: plugin/daemon
-        run: ./gradlew test --no-daemon
-
-      # 슬롭 규칙 · detekt 지표 · 새 주석(D-70). 작업 PR 마다 로컬에서 돌렸으면 깨끗하다 — 여기는 건너뛴 것을 잡는 그물이다.
-      # 비교 기준은 PR 이 가는 브랜치다. 손으로 돌리면(workflow_dispatch) main 과 견준다.
-      - name: Kotlin 린트
-        env:
-          BASE_REF: ${{ github.base_ref || 'main' }}
-        run: |
-          set -eu
-          sh tools/lint.sh --base "origin/$BASE_REF"
-
-      - name: 산출물이 나왔는지 본다
-        working-directory: plugin
-        run: |
-          set -eu
-          test -s daemon/daemon/build/libs/prevue.jar || { echo "::error::prevue.jar 가 없다"; exit 1; }
-
-      - name: 빌드 결과를 확인한다
-        working-directory: plugin
-        run: |
-          set -eu
-          test -s daemon/daemon/build/prevue-env || { echo "::error::prevue-env 가 없다"; exit 1; }
-
-          # prevue-env 는 절대 경로를 적지 않는다 — 빌드한 머신에서만 맞는 값이 되기 때문이다.
-          # 값은 ROOT(플러그인 디렉터리)와 HOME 기준이라 읽는 쪽이 ROOT 를 준다. bin/prevue 가 하는 것과 같다.
-          grep -qE '=\"/|:/[A-Za-z]' daemon/daemon/build/prevue-env \
-            && { echo "::error file=daemon/daemon/build/prevue-env::절대 경로가 들어갔다"; sed -n '4,9p' daemon/daemon/build/prevue-env; exit 1; } || true
-          ROOT="$PWD"
-          . daemon/daemon/build/prevue-env
-          # 이름으로 값을 읽는다. 이름은 아래 목록으로 한정된다.
-          for NAME in PREVUE_CP PREVUE_BRIDGE PREVUE_LAYOUTLIB PREVUE_COMPILER PREVUE_VIEWER; do
-            eval "VAL=\${$NAME:-}"
-            test -n "$VAL" || { echo "::error::prevue-env 에 $NAME 이 비었다"; exit 1; }
-          done
-          # 어긋났을 때 무엇과 무엇이 어긋났는지 보이게 한다. 값만 보고는 못 읽는다.
-          echo "HOME=$HOME · ROOT=$ROOT"
-          echo "layoutlib=$PREVUE_LAYOUTLIB"; ls -d "$PREVUE_LAYOUTLIB" 2>/dev/null || echo "  (그 경로가 없다)"
-          ls -d "$HOME"/.prevue/toolchain/* 2>/dev/null || echo "  (툴체인이 HOME 아래 없다)"
-          test -d "$PREVUE_LAYOUTLIB/data" || { echo "::error::layoutlib 조립이 덜 됐다"; exit 1; }
-          test -s "$PREVUE_BRIDGE" || { echo "::error::브리지 jar 가 없다"; exit 1; }
-          ls "$PREVUE_COMPILER"/*.jar >/dev/null || { echo "::error::컴파일러 jar 가 없다"; exit 1; }
-
-          # kotlin-reflect 가 renderer 보다 앞에 있어야 한다. 렌더러 jar가 옛 reflect 를
-          # 섀도잉 없이 품고 있어 순서가 뒤집히면 @PreviewParameter 가 런타임에 죽는다.
-          # 컴파일로는 안 잡히는 회귀라 여기서 본다.
-          # 순서만 보고 실재를 안 봤더니, prevue.jar 를 아무도 굽지 않는 회귀를 이 스텝이 놓쳤다.
-          for P in $(echo "$PREVUE_CP" | tr ':' ' '); do
-            test -e "$P" || { echo "::error::클래스패스가 없는 것을 가리킨다: $P"; exit 1; }
-          done
-          echo "클래스패스 항목 전부 실재한다"
-
-          R=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'kotlin-reflect' | head -1 | cut -d: -f1 || true)
-          N=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'compose-preview-renderer' | head -1 | cut -d: -f1 || true)
-          test -n "$R" -a -n "$N" || { echo "::error::클래스패스에서 reflect 나 renderer 를 못 찾았다"; exit 1; }
-          test "$R" -lt "$N" || { echo "::error::kotlin-reflect($R) 가 renderer($N) 보다 뒤에 있다"; exit 1; }
-          echo "클래스패스 순서 OK — reflect $R < renderer $N"
-
-      - name: CLI 계약을 확인한다
-        working-directory: plugin
-        run: |
-          set -eu
-          command -v bash >/dev/null || { echo "::warning::bash 가 없어 CLI 계약 검사를 건너뛴다"; exit 0; }
-          # 사용법은 2, 데몬에 닿지 못하면 3이다(FR-13). 이 숫자로 스킬이 분기한다.
-          set +e; ./bin/prevue >/dev/null 2>&1; RC=$?; set -e
-          test "$RC" = "2" || { echo "::error::prevue 사용법 종료 코드가 2가 아니라 $RC"; exit 1; }
-          set +e; OUT="$(./bin/prevue status 2>&1)"; RC=$?; set -e
-          test "$RC" = "3" || { echo "::error::데몬 없는 status 종료 코드가 3이 아니라 $RC"; exit 1; }
-          # 3 은 python3 가 없을 때도 난다 — 그 경로면 데몬 없음을 본 것이 아니다.
-          case "$OUT" in *'"python3"'*) echo "::error::status 가 데몬이 아니라 python3 확인에서 3으로 끝났다: $OUT"; exit 1;; esac
-
-  # 시험용 — 통합 테스트(진짜 layoutlib 으로 fixtures/pearl · pearl-kmp 를 그린다)를 Ubuntu 러너가 맡을 수 있는지 잰다.
-  # 손으로 부를 때만 돈다(gh workflow run 빌드 검증 --ref <브랜치>). PR 에서는 건너뛰어 "빌드 검증"의 시간과 판정을 바꾸지 않는다.
-  # 테스트는 한 JVM 에서 차례로 돌아 러너 하나로는 20분이 넘는다 — 클래스를 조각으로 나눠 러너 여럿에서 동시에 돈다.
+  # Under observation — the result is visible but not part of the verdict (build below) until it proves stable on shared runners.
   integration:
-    if: github.event_name == 'workflow_dispatch'
+    needs: [lint, compile]
+    uses: ./.github/workflows/integration.yml
+
+  # The verdict. The main ruleset's required check and the implement skill look for this name (build). Checks of called
+  # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
+  # failed, was cancelled or was skipped.
+  build:
+    if: ${{ !cancelled() }}
+    needs: [lint, compile, unit]
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [render, insets, kmp]
-    env:
-      # 조각마다 맡는 클래스. 조각을 고를 때 모든 테스트 클래스가 정확히 한 조각에 있는지 본다 — 새 클래스가 조용히 빠지지 않게.
-      # 첫 클래스가 픽스처 Gradle 을 처음 돌리는 몫을 낸다. 나누는 기준은 클래스별 소요 시간이다(KMP 둘은 KMP 픽스처 준비를 같이 쓴다).
-      SHARDS: |
-        render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
-        insets: InsetsIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest
-        kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
-
+    timeout-minutes: 5
     steps:
-      - name: 저장소를 받는다
-        uses: actions/checkout@v4
-
-      - name: 이 조각의 클래스를 고른다
-        id: shard
+      - name: Check that static checks, build and unit tests passed
         env:
-          SHARD: ${{ matrix.shard }}
+          RESULTS: lint=${{ needs.lint.result }} compile=${{ needs.compile.result }} unit=${{ needs.unit.result }}
         run: |
-          set -eu
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, re, pathlib, sys
-          shards = dict(line.split(":", 1) for line in os.environ["SHARDS"].strip().splitlines())
-          shards = {k.strip(): v.split() for k, v in shards.items()}
-          src = pathlib.Path("plugin/daemon/daemon/src/integrationTest/kotlin")
-          declared = sorted(set(re.findall(r"^(?:internal |open )*class (\w+IntegrationTest)\b", "\n".join(p.read_text() for p in src.rglob("*.kt")), re.M)))
-          assigned = sorted(c for cs in shards.values() for c in cs)
-          if declared != assigned:
-              print(f"::error::조각 배정이 테스트 클래스와 어긋난다 — 선언 {declared} · 배정 {assigned}", file=sys.stderr)
-              sys.exit(1)
-          print("tests=" + " ".join(f"--tests prevue.daemon.{c}" for c in shards[os.environ["SHARD"]]))
-          PY
-
-      - name: JDK를 올린다
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-
-      # 데몬과 픽스처 둘의 래퍼 · 의존성이 같은 Gradle 홈에 쌓인다. 키는 둘의 빌드 파일 전부다.
-      # 조각마다 받는 것이 달라(KMP 조각만 KMP 의존성을 받는다) 조각별로 저장한다.
-      - name: Gradle 홈 캐시를 되살린다
-        id: gradle-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: integration-gradle-${{ matrix.shard }}-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'fixtures/pearl/**/*.gradle.kts', 'fixtures/pearl/**/libs.versions.toml', 'fixtures/pearl/**/gradle-wrapper.properties', 'fixtures/pearl-kmp/**/*.gradle.kts', 'fixtures/pearl-kmp/**/libs.versions.toml', 'fixtures/pearl-kmp/**/gradle-wrapper.properties') }}
-          restore-keys: |
-            integration-gradle-${{ matrix.shard }}-${{ runner.os }}-
-            integration-gradle-${{ runner.os }}-
-
-      # 픽스처는 compileSdk 37 이다. 테스트는 ANDROID_HOME 의 platforms 에서 android.jar 를 찾는다.
-      # 러너 이미지가 android-37.0 을 갖고 있다(2026-11 확인) — 없어진 이미지면 받는다.
-      - name: Android 플랫폼을 맞춘다
-        run: |
-          set -eu
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          if [ ! -f "$ANDROID_HOME/platforms/android-37.0/android.jar" ]; then
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37.0" >/dev/null
-          fi
-          ls "$ANDROID_HOME/platforms"
-
-      - name: 통합 테스트
-        working-directory: plugin/daemon
-        env:
-          PREVUE_JDK: ${{ env.JAVA_HOME }}
-        run: ./gradlew :daemon:integrationTest ${{ steps.shard.outputs.tests }} --no-daemon
-
-      # 툴체인 · SDK 가 없으면 테스트는 조용히 건너뛰고 초록이 된다 — 그건 실측이 아니라 실패로 본다.
-      - name: 실제로 돌았는지 본다
-        if: always()
-        run: |
-          set -eu
-          python3 tools/test-summary.py || true
-          python3 - <<'PY'
-          import glob, sys, xml.etree.ElementTree as ET
-          suites = [ET.parse(p).getroot() for p in glob.glob("plugin/daemon/daemon/build/test-results/integrationTest/TEST-*.xml")]
-          tests = sum(int(s.get("tests", 0)) for s in suites)
-          skipped = sum(int(s.get("skipped", 0)) for s in suites)
-          print(f"클래스 {len(suites)} · 테스트 {tests} · 건너뜀 {skipped}")
-          if tests == 0 or skipped:
-              print("::error::통합 테스트가 돌지 않았거나 건너뛴 것이 있다")
-              sys.exit(1)
-          PY
-
-      - name: 테스트 결과를 남긴다
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-test-results-${{ matrix.shard }}
-          path: |
-            plugin/daemon/daemon/build/test-results/integrationTest
-            plugin/daemon/daemon/build/reports/tests/integrationTest
-          if-no-files-found: ignore
-
-      # 테스트가 깨져도 받은 것은 남긴다 — 다음 실행이 캐시 맞은 시간을 잴 수 있게. 키가 이미 있으면 저장을 건너뛴다.
-      - name: Gradle 홈 캐시를 저장한다
-        if: always() && steps.gradle-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+          echo "$RESULTS"
+          for R in $RESULTS; do
+            case "$R" in *=success) ;; *) echo "::error::$R"; exit 1;; esac
+          done

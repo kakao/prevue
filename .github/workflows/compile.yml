@@ -1,0 +1,113 @@
+# Called by Verify (build.yml) — builds what an install builds, then checks the output, the classpath and the CLI contract.
+name: Verify — build
+
+on:
+  workflow_call:
+
+# Scripts that run under the user's /bin/sh (plugin/bin/prevue · plugin/daemon/daemon/build/prevue-env) are checked with sh, not bash.
+defaults:
+  run:
+    shell: sh
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # The CLI runs on macOS's default python3 (3.9) — checking with the runner's newer python lets 3.10+ syntax through.
+      - name: Set python3 to 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
+
+      # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
+      # A cache is only visible from the ref that made it — a PR run's cache hits from that PR's next run on.
+      - name: Gradle home cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-build-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-build-${{ runner.os }}-
+
+      # The product build is the one Gradle build in plugin/daemon/ (:daemon assembly · tests + inner :application · outer
+      # :infrastructure, D-148 · shared settings in the included build build-logic, D-140) — installs build it in place.
+      - name: Build the toolchain
+        working-directory: plugin/daemon
+        run: |
+          set -eu
+          ./gradlew installPrevue --no-daemon
+
+      - name: Check that the artifact was produced
+        working-directory: plugin
+        run: |
+          set -eu
+          test -s daemon/daemon/build/libs/prevue.jar || { echo "::error::prevue.jar is missing"; exit 1; }
+
+      - name: Check the build output
+        working-directory: plugin
+        run: |
+          set -eu
+          test -s daemon/daemon/build/prevue-env || { echo "::error::prevue-env is missing"; exit 1; }
+
+          # prevue-env never holds absolute paths — they would only be right on the machine that built it.
+          # Values are relative to ROOT (the plugin directory) and HOME, so the reader supplies ROOT, as bin/prevue does.
+          grep -qE '=\"/|:/[A-Za-z]' daemon/daemon/build/prevue-env \
+            && { echo "::error file=daemon/daemon/build/prevue-env::an absolute path got in"; sed -n '4,9p' daemon/daemon/build/prevue-env; exit 1; } || true
+          ROOT="$PWD"
+          . daemon/daemon/build/prevue-env
+          # Read the values by name. The names are limited to the list below.
+          for NAME in PREVUE_CP PREVUE_BRIDGE PREVUE_LAYOUTLIB PREVUE_COMPILER PREVUE_VIEWER; do
+            eval "VAL=\${$NAME:-}"
+            test -n "$VAL" || { echo "::error::$NAME is empty in prevue-env"; exit 1; }
+          done
+          # When something is off, show what disagrees with what. The values alone do not tell.
+          echo "HOME=$HOME · ROOT=$ROOT"
+          echo "layoutlib=$PREVUE_LAYOUTLIB"; ls -d "$PREVUE_LAYOUTLIB" 2>/dev/null || echo "  (that path does not exist)"
+          ls -d "$HOME"/.prevue/toolchain/* 2>/dev/null || echo "  (no toolchain under HOME)"
+          test -d "$PREVUE_LAYOUTLIB/data" || { echo "::error::layoutlib is not fully assembled"; exit 1; }
+          test -s "$PREVUE_BRIDGE" || { echo "::error::the bridge jar is missing"; exit 1; }
+          ls "$PREVUE_COMPILER"/*.jar >/dev/null || { echo "::error::the compiler jars are missing"; exit 1; }
+
+          # kotlin-reflect must come before the renderer. The renderer jar bundles an old reflect without shading,
+          # so if the order flips, @PreviewParameter dies at runtime.
+          # Compilation does not catch this regression, so it is checked here.
+          # Checking only the order and not existence let a regression through where nothing built prevue.jar.
+          for P in $(echo "$PREVUE_CP" | tr ':' ' '); do
+            test -e "$P" || { echo "::error::the classpath points at something missing: $P"; exit 1; }
+          done
+          echo "every classpath entry exists"
+
+          R=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'kotlin-reflect' | head -1 | cut -d: -f1 || true)
+          N=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'compose-preview-renderer' | head -1 | cut -d: -f1 || true)
+          test -n "$R" -a -n "$N" || { echo "::error::reflect or renderer not found on the classpath"; exit 1; }
+          test "$R" -lt "$N" || { echo "::error::kotlin-reflect($R) comes after renderer($N)"; exit 1; }
+          echo "classpath order OK — reflect $R < renderer $N"
+
+      - name: Check the CLI contract
+        working-directory: plugin
+        run: |
+          set -eu
+          command -v bash >/dev/null || { echo "::warning::no bash, skipping the CLI contract check"; exit 0; }
+          # Usage is 2, no daemon reachable is 3 (FR-13). Skills branch on these numbers.
+          set +e; ./bin/prevue >/dev/null 2>&1; RC=$?; set -e
+          test "$RC" = "2" || { echo "::error::prevue usage exit code is $RC, not 2"; exit 1; }
+          set +e; OUT="$(./bin/prevue status 2>&1)"; RC=$?; set -e
+          test "$RC" = "3" || { echo "::error::status without a daemon exited $RC, not 3"; exit 1; }
+          # 3 also comes out when python3 is missing — on that path it did not see "no daemon".
+          case "$OUT" in *'"python3"'*) echo "::error::status ended with 3 at the python3 check, not at the daemon: $OUT"; exit 1;; esac
