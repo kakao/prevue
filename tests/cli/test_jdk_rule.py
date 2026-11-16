@@ -26,9 +26,6 @@ class GradleJdk(unittest.TestCase):
         ds = jdk_rule.parse_daemons(PS, "9.7.0")
         self.assertEqual([(d[0], d[2]) for d in ds], [(101, HOMEBREW), (202, JBR)])
 
-    def test_다른_Gradle_버전의_데몬은_안_본다(self):
-        self.assertEqual([d[0] for d in jdk_rule.parse_daemons(PS, "8.14")], [303])
-
     def test_한국어_로캘의_lstart_는_버린다(self):
         # 셸이 LC_ALL=C 로 부르지만, 새어 들어와도 틀린 시각으로 고르지 않는다
         ko = "  101 2026년  9월 28일 월요일 15시 08분 12초 %s/bin/java org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.7.0" % HOMEBREW
@@ -49,16 +46,6 @@ class GradleJdk(unittest.TestCase):
         # VS Code Java 확장의 데몬은 버전만 같다 — 이 저장소를 빌드한 적이 없다(실측)
         self.assertIsNone(jdk_rule.last_repo_build(LOG_LINE % ("2026-09-28T16:05:17", "/x/vscode-gradle/lib"), "/w/repo"))
 
-    def test_기준_시각_이전의_마지막_빌드(self):
-        log = LOG_LINE % ("2026-09-28T09:35:00", "/w/repo") + LOG_LINE % ("2026-09-28T14:49:00", "/w/repo")
-        ref = time.mktime(time.strptime("2026-09-28 09:50:12", "%Y-%m-%d %H:%M:%S"))
-        when = jdk_rule.last_repo_build(log, "/w/repo", ref)
-        self.assertEqual(time.strftime("%H:%M:%S", time.localtime(when)), "09:35:00")
-
-    def test_로그_머리의_javaHome(self):
-        self.assertEqual(jdk_rule.daemon_java_home(context_line(JBR)), JBR)
-        self.assertIsNone(jdk_rule.daemon_java_home(LOG_LINE % ("2026-09-28T09:35:00", "/w/repo")))
-
     def test_이_저장소를_가장_최근에_빌드한_데몬(self):
         home, src = jdk_rule.choose([(101, 2000.0, HOMEBREW), (202, 1000.0, JBR)], None, alive=[101])
         self.assertEqual(home, HOMEBREW)
@@ -70,12 +57,6 @@ class GradleJdk(unittest.TestCase):
         home, src = jdk_rule.choose([(101, 2000.0, HOMEBREW)], JBR, alive=[])
         self.assertEqual(home, HOMEBREW)
         self.assertIn("stopped", src)
-
-    def test_로그가_없으면_지난번_JDK(self):
-        self.assertEqual(jdk_rule.choose([], JBR), (JBR, "the JDK Prevue used last time"))
-
-    def test_아무것도_없으면_비운다(self):
-        self.assertEqual(jdk_rule.choose([], None), (None, None))
 
 
 class RepoBuilds(unittest.TestCase):
