@@ -240,12 +240,20 @@ baked() {
 gradle_version_of() {  # <repo>
   sed -nE 's/.*gradle-([0-9][0-9.]*)-(bin|all)\.zip.*/\1/p' "$1/gradle/wrapper/gradle-wrapper.properties" 2>/dev/null | head -1
 }
+# JDK 탓으로 실패한 JDK 는 건너뛴다(D-188) — 종료 2 는 답이 없는데 실패 기록이 있다는 뜻이라 gradle_jdk_of 의 답도 jdk_rule 이 거른다.
+# 거르지 않으면 AS 가 동기화한 저장소에서는 프로젝트 설정 · JAVA_HOME 이 실패한 그 JDK 를 다시 준다.
 gradle_jdk_pick() {  # <repo> [<모듈 디렉터리>] -> "<경로>\t<출처>"
-  local v
+  local v rc=0 proj
+  proj="$HOME/.prevue/projects/$(repo_key "$1")"
   v="$(LC_ALL=C ps -axo pid=,lstart=,command= 2>/dev/null \
        | python3 "$ROOT/cli/jdk_rule.py" "$(gradle_version_of "$1")" \
-           "$HOME/.prevue/projects/$(repo_key "$1")/gradle-jdk" "$1" "${GRADLE_USER_HOME:-$HOME/.gradle}" "${2:-}" 2>/dev/null)"
+           "$proj/gradle-jdk" "$1" "${GRADLE_USER_HOME:-$HOME/.gradle}" "${2:-}" 2>/dev/null)" || rc=$?
   [ -n "$v" ] && { printf '%s' "$v"; return; }
+  if [ "$rc" = 2 ]; then
+    v="$(gradle_jdk_of "$1")"
+    printf '%s' "$(python3 "$ROOT/cli/jdk_rule.py" fallback "$1" "$proj/warmup-runs.jsonl" "$v" 2>/dev/null || printf '%s' "$v")"
+    return
+  fi
   gradle_jdk_of "$1"
 }
 
@@ -767,8 +775,12 @@ case "$cmd" in
       (cd "$ROOTDIR" && JAVA_HOME="${GRADLE_JDK:-${JAVA_HOME:-}}" ./gradlew --init-script "$ROOT/daemon/gradle/dump-classpath.init.gradle.kts" \
         "${props[@]}" -Dprevue.timing="$timing" "${tasks[@]}" --no-configuration-cache \
         -Dorg.gradle.isolated-projects=false -q) 2>"$GRADLE_ERR" >&2 || rc=$?
-      ms="$(python3 "$PLAN_PY" gradle-run "$timing" "$t0" "$(now_ms)" "$rc" "$RUNS" "$GRADLE_JDK" "$@" 2>/dev/null)"
+      ms="$(python3 "$PLAN_PY" gradle-run "$timing" "$t0" "$(now_ms)" "$rc" "$RUNS" "$GRADLE_JDK" "$GRADLE_ERR" "$ROOTDIR" "$@" 2>/dev/null)"
       rm -f "$timing"
+      # 다시 고르는 것은 다음 warmup 이다 — 같은 호출 안에서 다시 뜨면 Gradle 을 한 번 더 부르고 변형 · KMP 다시 뜨기 갈래와 엮인다
+      if [ "$rc" != 0 ] && tail -1 "$RUNS" 2>/dev/null | grep -q '"jdkFailed": true'; then
+        echo "prevue: Gradle failed with a JDK error on $GRADLE_JDK — the next warmup picks a JDK of another version" >&2
+      fi
       GRADLE_CALLS=$((GRADLE_CALLS + 1)); GRADLE_MS=$((GRADLE_MS + ${ms:-0}))
       return $rc
     }

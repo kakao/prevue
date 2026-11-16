@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
 - **`#N` in `scroll --until` and `touch --at` now picks the Nth list item even when every item root has padding** (`items { Card(Modifier.padding(8.dp)) }`) instead of the Nth on screen; `#N` counts headers and every other `item { }` too, so take N from `matches`.
 - **A project whose `ui-tooling` lacks a Compose node's file, line or bounds getter now fails the render with a renderer-pairing message** instead of pointing at an empty or wrong place.
 - **`prevue start` asks for `prevue setup` when the shared toolchain in `~/.prevue/toolchain` is gone**, even if this checkout built Prevue before (a deleted toolchain, or another account using the same checkout), and `health` reports the toolchain as missing — the daemon no longer dies with "JavaFX runtime components are missing".

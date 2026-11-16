@@ -14,11 +14,19 @@
        warmup 은 last-build.bin 을 움직이지 않아 기준 시각 뒤로 밀려 고르지 않는다.
   2. Prevue 가 이 저장소에서 지난번에 쓴 JDK — 로그가 지워졌을 때(Gradle 이 오래된 로그를 치운다)
   3. 없으면 셸의 gradle_jdk_of(프로젝트 설정 → …)
+JDK 탓으로 실패한 JDK 는 위 순서 어디서 나오든 건너뛴다(D-188, D-36 의 예외). 판정은 warmup-runs.jsonl 의 jdkFailed — Gradle stderr 가
+JDK 문구(너무 새것 · 너무 낡은 것 둘 다)일 때만 붙는다. 변형 다시 뜨기 · KMP 앱 찾기 · 사용자 컴파일 오류도 ok:false 라 그것까지 세면 JDK 가 바뀌어 산출물을 통째로
+다시 굽는다. 같은 주 버전이면 다른 설치본도 같이 실패하므로(jvmTarget 과 어긋나는 것은 판이다) 주 버전으로 거른다. 다 걸리면 이
+머신의 다른 주 버전 JDK(jdk_find 의 자리와 순서), 그것도 없으면 실패한 JDK 를 그대로 쓰고 출처에 적는다.
 """
 
 import datetime
+import glob
+import json
 import os
 import re
+
+import jdk_find
 
 DAEMON_MAIN = "org.gradle.launcher.daemon.bootstrap.GradleDaemon"
 
@@ -131,12 +139,100 @@ def repo_builds(log_dir, repo, before=None):
     return out
 
 
-def choose(daemons, last_used, alive=()):
+JDK_ERROR = re.compile(r"Inconsistent JVM[- ]Target Compatibility|Unsupported class file major version"
+                       r"|compiled by a more recent version of the Java Runtime|requires at least JVM runtime version"
+                       r"|Unknown Kotlin JVM target|Gradle requires JVM \d+ or later|Android Gradle plugin requires Java", re.I)
+# 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
+# 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
+# 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
+# JDK 실패 표시의 지문도 이것으로 뜬다(build_fingerprint) — 목록을 바꾸면 덤프 낡음 판정과 데몬 감시 목록이 함께 바뀐다.
+ROOT_BUILD_FILES = ("build.gradle.kts", "build.gradle", "settings.gradle.kts", "settings.gradle",
+                    "gradle.properties", "gradle/libs.versions.toml")
+
+
+def jdk_error(err_text):
+    return bool(JDK_ERROR.search(err_text))
+
+
+def build_fingerprint(repo):
+    """루트 빌드 파일 내용의 지문. Kotlin · AGP 를 올리면 바뀌어, 그 전에 실패한 JDK 를 다시 시험하게 한다."""
+    import hashlib   # prevue_plan 이 이 모듈을 부를 때마다 드는 import 를 피한다(2ms)
+    h = hashlib.sha1()
+    for rel in ROOT_BUILD_FILES:
+        try:
+            with open(os.path.join(repo, rel), "rb") as f:
+                body = f.read()
+        except OSError:
+            body = b"-"
+        h.update(rel.encode() + b"\0" + hashlib.sha1(body).digest())
+    return h.hexdigest()
+
+
+def major(home):
+    """주 버전. 판을 모르면 실제 경로 — 그 설치본만 거른다."""
+    v = jdk_find.version(home)
+    return v[0] if v else os.path.realpath(home)
+
+
+def read_runs(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            pass
+    return out
+
+
+def failed_majors(records, fingerprint):
+    """지금 피할 주 버전들. 기록은 오래된 것부터 — 같은 주 버전의 뒤 성공이 앞 실패를 지운다. 지문이 지금과 다른 실패는 세지 않는다."""
+    if not any(r.get("jdkFailed") and r.get("buildFiles") == fingerprint for r in records):
+        return set()   # 실패가 없으면 성공 기록마다 release 를 읽지 않는다
+    failed = set()
+    for r in records:
+        home = r.get("gradleJdk")
+        if not home:
+            continue
+        if r.get("ok"):
+            failed.discard(major(home))
+        elif r.get("jdkFailed") and r.get("buildFiles") == fingerprint:
+            failed.add(major(home))
+    return failed
+
+
+def other_jdk(failed, env):
+    """이 머신에서 찾은 JDK 중 failed 밖의 것 — jdk_find 의 순서(25 → 21~24 → 26+). Gradle 은 17 도 된다."""
+    homes = [(h, v) for h, v in jdk_find.installed(*jdk_find.search_places(env)) if v and v[0] >= 17 and v[0] not in failed]
+    return min(homes, key=lambda h: jdk_find.rank(h[1]))[0] if homes else None
+
+
+def fallback(given, failed, env):
+    """셸의 gradle_jdk_of 답("<경로>\t<출처>")을 failed 로 거른다. (java home, 출처)."""
+    home, _, src = given.partition("\t")
+    if home and major(home) not in failed:
+        return home, src
+    other = other_jdk(failed, env)
+    if other:
+        return other, "a JDK found on this machine (the JDK picked before failed with a JDK error)"
+    if not home:
+        return "", src
+    return home, src + " — failed with a JDK error last time, no JDK of another version found"
+
+
+def choose(daemons, last_used, alive=(), failed=()):
     """(java home, 출처) 또는 (None, None) — 셸이 gradle_jdk_of 로 넘어간다.
 
     daemons 는 [(pid, 이 저장소 빌드 시작 시각, java home)] — 이 저장소를 빌드한 적 없는 데몬은 넣지 않는다.
     alive 는 떠 있는 데몬 pid 로, 출처 문구에만 쓴다 — 내려간 데몬이라도 그 JDK 로 구운 산출물은 그대로 있다.
     """
+    if failed:
+        daemons = [d for d in daemons if major(d[2]) not in failed]
+        last_used = None if last_used and major(last_used) in failed else last_used
     if daemons:
         pid, _, home = max(daemons, key=lambda d: d[1])
         return home, "the Gradle daemon that last built this repository (pid %d%s)" % (pid, "" if pid in set(alive) else ", stopped")
@@ -145,12 +241,13 @@ def choose(daemons, last_used, alive=()):
     return None, None
 
 
-if __name__ == "__main__":
-    import sys
-    import glob
-    # jdk_rule.py <gradle 버전> <지난번 JDK 파일> <저장소> <Gradle 사용자 홈> [<모듈 디렉터리>]  (stdin: ps 출력)
-    # → "<home>\t<출처>"
-    ver, last_file, repo, gradle_home, moddir = (sys.argv[1:6] + [""] * 5)[:5]
+def main(argv, ps_text, env):
+    """(출력 줄, 종료 코드). 종료 2 는 답이 없는데 실패 기록이 있다 — 셸이 gradle_jdk_of 를 fallback 으로 다시 거른다."""
+    if argv[:1] == ["fallback"]:
+        repo, runs, given = (argv[1:4] + [""] * 3)[:3]
+        home, src = fallback(given, failed_majors(read_runs(runs), build_fingerprint(repo)), env)
+        return "%s\t%s" % (home, src), 0
+    ver, last_file, repo, gradle_home, moddir = (argv + [""] * 5)[:5]
     try:
         last = open(last_file, encoding="utf-8").read().strip() or None
     except OSError:
@@ -158,11 +255,24 @@ if __name__ == "__main__":
     # 모듈의 마지막 컴파일 — 코틀린 플러그인이 실제로 컴파일할 때만 갱신한다(prevue_plan.last_built 와 같은 파일)
     stamps = [os.path.getmtime(p) for p in glob.glob(os.path.join(moddir, "build", "kotlin", "*", "cacheable", "last-build.bin"))] if moddir else []
     before = max(stamps) if stamps else None
-    alive = [d[0] for d in parse_daemons(sys.stdin.read(), ver or None)]
+    alive = [d[0] for d in parse_daemons(ps_text, ver or None)]
     daemons = [d for d in (repo_builds(os.path.join(gradle_home, "daemon", ver), repo, before) if repo and ver else [])
                if os.access(os.path.join(d[2], "bin", "java"), os.X_OK)]
     if last and not os.access(os.path.join(last, "bin", "java"), os.X_OK):
         last = None
-    home, src = choose(daemons, last, alive)
+    failed = failed_majors(read_runs(os.path.join(os.path.dirname(last_file), "warmup-runs.jsonl")), build_fingerprint(repo)) if repo else set()
+    home, src = choose(daemons, last, alive, failed)
     if home:
-        print("%s\t%s" % (home, src))
+        return "%s\t%s" % (home, src), 0
+    return None, 2 if failed else 0
+
+
+if __name__ == "__main__":
+    import sys
+    # jdk_rule.py <gradle 버전> <지난번 JDK 파일> <저장소> <Gradle 사용자 홈> [<모듈 디렉터리>]  (stdin: ps 출력)
+    # jdk_rule.py fallback <저장소> <회차 기록> "<gradle_jdk_of 답>"
+    # → "<home>\t<출처>"
+    line, code = main(sys.argv[1:], "" if sys.argv[1:2] == ["fallback"] else sys.stdin.read(), os.environ)
+    if line:
+        print(line)
+    sys.exit(code)
