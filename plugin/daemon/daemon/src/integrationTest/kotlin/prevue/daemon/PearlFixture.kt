@@ -38,6 +38,7 @@ object PearlFixture {
     val until: File get() = kotlin("feature/pearl", "ScrollUntilPreviews.kt")
     /** 중첩 클래스 제공자(`Providers.Fruits`) 하나 — 카드 셋. */
     val nestedProvider: File get() = kotlin("feature/pearl", "NestedProviderPreviews.kt")
+    val objectProvider: File get() = kotlin("feature/pearl", "ObjectProviderPreviews.kt")
     val strings: File get() = File(main("feature/pearl"), "res/values/strings.xml")
     /** [board]의 카드 수. 멀티 프리뷰 · `@PreviewParameter` 펼치기가 줄면 여기서 잡힌다. */
     const val BOARD_CARDS = 30

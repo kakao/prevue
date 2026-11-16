@@ -4,7 +4,6 @@ import com.android.resources.ResourceFolderType
 import com.android.tools.configurations.Configuration
 import com.android.tools.render.RenderEnvironmentBootstrapper
 import com.android.tools.render.Renderer
-import com.android.tools.render.compose.ComposeScreenshot
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderService
@@ -61,7 +60,7 @@ internal class RenderEngine(
 
     private val loaders: SharedLoaders
     private val literals = LiteralLedger()
-    private val shapes = PreviewShapes()
+    private val elements by lazy { PreviewElements(renderer.module, File(spec.projectClassPath.first())) { loaders.current } }
 
     private var live: LayoutlibSession? = null
     var renderTimeoutSec: Long = 30
@@ -99,7 +98,7 @@ internal class RenderEngine(
 
     internal fun preloaded(): SharedLoaders.Preloaded = loaders.preloaded(live?.task?.classLoader)
 
-    override fun codeChanged() { shapes.recount(); loaders.codeChanged(); outputs.afterBuild = false }
+    override fun codeChanged() { elements.codeChanged(); loaders.codeChanged(); outputs.afterBuild = false }
 
     override fun patchLiterals(owner: String, values: Map<String, Any>): Boolean {
         if (!preloadNext) { literals.record(owner, values); return true }
@@ -123,22 +122,14 @@ internal class RenderEngine(
         forgetShapes()
     }
 
-    override fun forgetShapes() = shapes.forgetAll()
+    override fun forgetShapes() = elements.forgetAll()
 
     override suspend fun awaitWrites() = artifacts.awaitWrites()
     override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
     override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
     override suspend fun written(out: RenderOutput): RenderOutput = out.copy(phases = out.phases + out.written.await())
 
-    override fun instances(p: PreviewSpec): List<String?> {
-        if (p.methodParams.isEmpty()) return listOf(null)
-        return shapes.instances(p) {
-            val n = runCatching { screenshot(p).toPreviewElement(renderer.module).resolveXmlLayouts().count() }.getOrElse { 1 }.coerceAtLeast(1)
-            ProviderValues.labels(renderer.module, p.methodParams.first()["provider"], n)
-        }
-    }
-
-    private fun screenshot(p: PreviewSpec) = ComposeScreenshot(p.fqn, p.methodParams, p.params, p.previewId, "")
+    override fun instances(p: PreviewSpec): List<String?> = elements.instances(p)
 
     override suspend fun show(p: PreviewSpec, ownLoader: Boolean): RenderOutput = render(p, interactive = false, ownLoader)
 
@@ -189,10 +180,10 @@ internal class RenderEngine(
 
     private fun layoutFor(p: PreviewSpec, ph: MutableMap<String, Long>): Pair<Configuration, String>? {
         val t = System.nanoTime()
-        val element = screenshot(p).toPreviewElement(renderer.module)
+        val element = elements.element(p)
         val cfg = baseConfiguration.clone()
         Shim.applyTo(element, cfg, p.params["device"])
-        val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
+        val layouts = elements.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null
         return cfg to layouts[p.paramIndex.coerceIn(0, layouts.size - 1)]
