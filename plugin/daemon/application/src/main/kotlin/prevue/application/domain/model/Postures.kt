@@ -9,10 +9,10 @@ data class Postures(
 
     fun specOf(s: ScreenSize): PreviewSpec = CardOverride(spec.previewId, s).applyTo(spec).copy(previewId = idOf(s))
 
-    fun carriedTo(shown: ScreenSize): Postures = copy(shots = shots.filterKeys { it == shown || it in plan(shown) })
+    fun carriedTo(shown: ScreenSize): Postures = copy(shots = shots.filterKeys { reaches(shown, it) })
 
     fun with(shown: ScreenSize, d: ScreenSize, shot: Shot): Postures =
-        if (d == shown || d in plan(shown)) copy(shots = shots + (d to shot)) else this
+        if (reaches(shown, d)) copy(shots = shots + (d to shot)) else this
 
     fun next(shown: ScreenSize): ScreenSize? = plan(shown).firstOrNull { it !in shots }
 
@@ -23,6 +23,8 @@ data class Postures(
     companion object {
         private const val FOLD = 1
         private const val TURN = 2
+
+        private fun reaches(shown: ScreenSize, s: ScreenSize): Boolean = s == shown || s in plan(shown)
 
         fun idOf(spec: PreviewSpec, s: ScreenSize): String = "${spec.previewId}@${s.key}"
 
