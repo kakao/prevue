@@ -34,7 +34,7 @@ data class Postures(
     companion object {
         private const val FOLD = 1
         private const val TURN = 2
-        const val TRIES = 2
+        private const val TRIES = 2
 
         private fun reaches(shown: ScreenSize, s: ScreenSize): Boolean = s == shown || s in plan(shown)
 
