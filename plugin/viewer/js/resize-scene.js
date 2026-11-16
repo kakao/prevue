@@ -234,6 +234,11 @@ export function createResizeScene(root, hooks) {
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
   }
 
+  // 홈 버튼 — 자연 방향의 아래 베젤(ends) 가운데. 멈춘 몸체와 접기 판이 같은 자리를 써야 착지가 이어진다.
+  const homeBox = (lk, W0, H0, rot, s, mirrored, hk) => {
+    const e = endsOf(lk) * P.shellK, hd = e * HOME_K, b = camBox(W0, H0, rot, { w: hd, h: hd, y: H0 + (e - hd) / 2 }, s, mirrored);
+    return { ...b, on: b.on && hk > .01 };
+  };
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
 
   function snapTo(sel) {
@@ -470,7 +475,7 @@ export function createResizeScene(root, hooks) {
   }
 
   const rigAngle = e => rig.from.angle + rig.turn * e + rig.q;
-  // 판 좌표의 몸체 두께 [힌지와 수직인 변(u), 힌지와 나란한 변(v)] — ends 는 기기 자연 방향의 위 · 아래라 조개형(tall)은 u, 책형은 v 다.
+  // 판 좌표의 몸체 두께 [왼 · 오른 변(u), 위 · 아래 변(v)] — ends 는 기기 자연 방향의 위 · 아래라 조개형(tall)은 u, 책형은 v 다.
   const rigEdges = lk => { const side = lk.bezel * P.shellK, end = endsOf(lk) * P.shellK; return tallOf(rig.d) ? [end, side] : [side, end]; };
   // 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
   function rigPose(e, [bu, bv]) {
@@ -747,14 +752,12 @@ export function createResizeScene(root, hooks) {
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, -sh, 0, 1);
     // 홈 버튼은 화면 밖 아래 베젤에 있어 화면(.clip)이 아니라 몸체 면에 둔다 — 자리는 카메라와 같은 화면 기준에 면 안의 화면 자리만 더한다.
-    const home = folded => { const hd = endsOf(lk) * P.shellK * HOME_K, panel = d[folded ? "cover" : "open"];
-      return camBox(panel.w, panel.h, tallOf(d), { w: hd, h: hd, y: panel.h + (endsOf(lk) * P.shellK - hd) / 2 }, s, tallOf(d)); };
-    const oh = home(false), on = Number(d.look.open.home) || 0, cn = Number(d.look.cover.home) || 0;
-    putCam(RG.base.front.home, { ...oh, on: oh.on && on > .01 }, e - sh, tv, on);
-    putCam(RG.leaf.front.home, { ...oh, on: oh.on && on > .01 }, tu, tv, on);
-    const ch = home(true);
-    putCam(RG.leaf.back.home, { ...ch, on: ch.on && cn > .01 }, e, tv, cn);
-    RG.base.back.home.style.opacity = 0;
+    const home = folded => { const panel = d[folded ? "cover" : "open"], hk = Number(d.look[folded ? "cover" : "open"].home) || 0;
+      return [homeBox(lk, panel.w, panel.h, tallOf(d), s, tallOf(d), hk), hk]; };
+    const [oh, on] = home(false), [ch, cn] = home(true);
+    putCam(RG.base.front.home, oh, e - sh, tv, on);
+    putCam(RG.leaf.front.home, oh, tu, tv, on);
+    putCam(RG.leaf.back.home, ch, e, tv, cn);
     const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
     RG.F.base.cast.style.opacity = cast.toFixed(4);
 
@@ -857,9 +860,8 @@ export function createResizeScene(root, hooks) {
     });
     const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s, ol.mirrored);
     putCam(U.cam, camera, 0, 0, ol.shell);
-    const hd = endsOf(lk) * P.shellK * HOME_K, homeAt = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, { w: hd, h: hd, y: H0 + (endsOf(lk) * P.shellK - hd) / 2 }, s, ol.mirrored);
     const hk = Number(lk.home) || 0;
-    putCam(U.home, { ...homeAt, on: homeAt.on && hk > .01 }, L, y, ol.shell * hk);
+    putCam(U.home, homeBox(lk, (ol.rot ? rect.h : rect.w) / s, H0, ol.rot, s, ol.mirrored, hk), L, y, ol.shell * hk);
     const c = ol.crease, hz = ol.rot !== !!ol.tall;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
