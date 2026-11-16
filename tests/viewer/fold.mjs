@@ -362,6 +362,38 @@ try {
     assert(r.blurred <= 225, `${name} 미리 그림: 흐린 시간 ${r.blurred}ms`);
     console.log(`통과 ${++checked}: 기기 전환 흐림 ${name} 미리 그림 — ${r.blurred}ms`);
   }
+  // 확대한 장면의 링 — 실제처럼 틀(.wrap)에 --z 를, #resizeGeometry 에 scale 을 함께 건다. 링은 화면에서 늘 2px 이다.
+  // 회전 중의 유닛은 배율(f1.s/f0.s 와 살짝 줄어드는 몫)을 더 받는다 — 모든 프레임에서 그 배율까지 되돌려야 한다.
+  await evaluate(`window.zoomTo=z=>{document.querySelector('#focusView .wrap').style.setProperty('--z',String(z));document.querySelector('#resizeGeometry').style.transform=z===1?'':'scale('+z+')'};
+    window.unitRing=()=>{const st=document.querySelector('#ua .stage'),m=new DOMMatrix(getComputedStyle(document.querySelector('#ua')).transform),g=new DOMMatrix(getComputedStyle(document.querySelector('#resizeGeometry')).transform).a,
+      sp=(getComputedStyle(st).boxShadow.match(/(-?[\\d.]+)px/g)||[]).map(parseFloat)[3]??0;return {spin:Math.hypot(m.a,m.b),screen:sp*Math.hypot(m.a,m.b)*g}};
+    window.liveRing=()=>{const st=document.querySelector('#stage');st.classList.add('live');const sp=parseFloat(getComputedStyle(st).boxShadow.match(/(-?[\\d.]+)px/g)[3]);st.classList.remove('live');
+      return sp*new DOMMatrix(getComputedStyle(document.querySelector('#resizeGeometry')).transform).a}`);
+  for (const z of [.5, 2]) {
+    await evaluate(`zoomTo(${z})`);
+    for (const [device, ...size] of devices.filter(([d]) => d === 'fold8' || d === 'duo')) {
+      const from = pose(device,false,'landscape-left',size), to = pose(device,true,handOf(device,false,'landscape-left')[0],size), name = `확대 ${z} ${device} 접기 착지 링`;
+      await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}))`);
+      const {ring,live}=await evaluate(`(()=>{const start=time;scene.update(${JSON.stringify(to)});let ring=null;
+        for(let t=0;t<=1400;t+=16){step(start+t);if(document.querySelector('#rig').hidden)break;const f=document.querySelector('#rig .leaf .rear'),c=box(f.querySelector('.clip')),r=box(f.querySelector('.ring'));ring=Math.max(c.x-r.x,c.y-r.y,r.x+r.w-c.x-c.w,r.y+r.h-c.y-c.h)}
+        return {ring,live:liveRing()}})()`);
+      assert(ring!==null&&Math.abs(live-2)<=.05&&Math.abs(ring-live)<=.1, `${name}: ${ring}px / 멈춘 무대 ${live}px`);
+      console.log(`통과 ${++checked}: ${name}`);
+    }
+  }
+  for (const z of [1, 2]) {
+    await evaluate(`zoomTo(${z})`);
+    for (const [device, ...size] of devices) for (const [oa, ob] of [['portrait','landscape-left'],['landscape-left','portrait']]) {
+      const a = pose(device,false,oa,size), b = pose(device,false,ob,size), name = `확대 ${z} ${device} 돌리기 ${oa} → ${ob} 링`;
+      await evaluate(`states=${JSON.stringify({[a.sel]:a,[b.sel]:b})};reset(${JSON.stringify(a)});scene.image(${JSON.stringify(b.sel)},spec(${b.w},${b.h}))`);
+      const frames = await evaluate(`(()=>{const start=time,out=[];scene.update(${JSON.stringify(b)});for(let t=0;t<=700;t+=16){step(start+t);out.push(unitRing())}return out})()`);
+      const drawn = frames.filter(f => f.screen > 0), spread = drawn.map(f => f.screen);
+      assert(drawn.some(f => Math.abs(f.spin-1) > .02), `${name}: 회전 배율이 바뀌는 프레임이 없다`);
+      assert(drawn.every(f => Math.abs(f.screen-2) <= .05), `${name}: 회전 중 링 ${Math.min(...spread).toFixed(3)}~${Math.max(...spread).toFixed(3)}px`);
+      console.log(`통과 ${++checked}: ${name}`);
+    }
+  }
+  await evaluate('zoomTo(1)');
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   for(const [device,...size] of devices){
     const natural=size[0]>size[1]?'landscape-left':'portrait';
