@@ -58,8 +58,13 @@ function u() {
 		a = !1;
 	};
 }
-var d = 2 * Math.PI / .55, f = 385;
-function p({ from: e, to: n, radius: r, shadow: i, a, b: o = null, swapAt: s = 0, swapMs: c = 150, ceiling: l = null }) {
+var d = 2 * Math.PI / .55, f = 385, p = (e) => [
+	e.borderTopLeftRadius,
+	e.borderTopRightRadius,
+	e.borderBottomRightRadius,
+	e.borderBottomLeftRadius
+].map((e) => parseFloat(e) || 0);
+function m({ from: e, to: n, radius: r, shadow: i, a, b: o = null, swapAt: s = 0, swapMs: c = 150, ceiling: l = null }) {
 	let u = document.createElement("div"), f = new Image(), p = new Image();
 	u.className = "morph", f.alt = p.alt = "", p.style.opacity = "0", a ? f.src = a : f.style.opacity = "0", u.append(f, p), u.style.boxShadow = i[0], document.body.append(u);
 	let m = 0, h = performance.now(), g = 0, _ = !1, v, y, b = !1, x = new Promise((e) => {
@@ -69,7 +74,7 @@ function p({ from: e, to: n, radius: r, shadow: i, a, b: o = null, swapAt: s = 0
 		top: e.y + "px",
 		width: e.width + "px",
 		height: e.height + "px",
-		borderRadius: t + "px"
+		borderRadius: t.map((e) => e + "px").join(" ")
 	}), C = (e) => {
 		let t = l && l(), n = t ? t.bottom - e : 0;
 		u.style.maskImage = n > 0 ? `linear-gradient(transparent ${(t.top - e).toFixed(1)}px, #000 ${n.toFixed(1)}px)` : "";
@@ -86,7 +91,7 @@ function p({ from: e, to: n, radius: r, shadow: i, a, b: o = null, swapAt: s = 0
 			y: s,
 			width: i.width + (e.width - i.width) * a,
 			height: i.height + (e.height - i.height) * a
-		}, r[1] + (r[0] - r[1]) * a), C(s), g = requestAnimationFrame(w);
+		}, r[1].map((e, t) => e + (r[0][t] - e) * a)), C(s), g = requestAnimationFrame(w);
 	}
 	w(h), requestAnimationFrame(() => {
 		u.style.transition = "box-shadow var(--duration-long3) var(--easing-standard)", u.style.boxShadow = i[1];
@@ -118,4 +123,4 @@ function p({ from: e, to: n, radius: r, shadow: i, a, b: o = null, swapAt: s = 0
 		cancel: D
 	};
 }
-export { f as MORPH_LEAD, p as frameMorph, c as freeze, u as hold, n as motionMs, t as motionToken, e as reduced, i as swapImage, s as transition, l as transitioning };
+export { f as MORPH_LEAD, m as frameMorph, c as freeze, u as hold, n as motionMs, t as motionToken, p as radiiOf, e as reduced, i as swapImage, s as transition, l as transitioning };

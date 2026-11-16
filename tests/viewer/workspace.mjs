@@ -300,6 +300,34 @@ try {
   }
   await post("/show", { target: boardFile, index: null, params: {}, by: "test" });
   await until(`__store.st.screen==='board'`);
+  // 모서리가 고르지 않은 화면(Flip8 커버 5.05 · 5.05 · 40.84 · 40.84dp)도 틀이 네 모서리를 따로 옮긴다 — 넘겨받는 순간 아래 모서리가 튀지 않는다
+  await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph') && !!document.querySelector('.card[data-i="0"] .go')`);
+  await evaluate(`document.querySelector('.card[data-i="0"] .go').scrollIntoView({block:"nearest"})`); await pause(300);
+  await click('.card[data-i="0"] .go'); await ready();
+  await post("/viewer/resize", { device: "flip8", folded: true, orientation: "portrait" }); await ready();
+  await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`); await pause(400);
+  const radii = `(e=>{const c=getComputedStyle(e);return [c.borderTopLeftRadius,c.borderTopRightRadius,c.borderBottomRightRadius,c.borderBottomLeftRadius].map(v=>parseFloat(v)||0)})`;
+  const corners = async run => {
+    await evaluate(`window.__rad=[];window.__radRec=true;requestAnimationFrame(function f(){if(!__radRec)return;const m=document.querySelector('.morph');if(m)__rad.push(${radii}(m));requestAnimationFrame(f)})`);
+    await run();
+    await until(`!document.documentElement.classList.contains('vt-workspace') && !document.querySelector('.morph')`); await pause(200);
+    await evaluate(`__radRec=false`);
+    return evaluate(`__rad`);
+  };
+  const coverRadii = await evaluate(`${radii}(document.querySelector('#stage'))`), cardRadii = await evaluate(`${radii}(document.querySelector('.card[data-i="0"] .cstage'))`);
+  assert(coverRadii[2] > coverRadii[0] * 3 && cardRadii.every(v => v === 0), `Flip8 커버 캔버스는 아래 모서리가 더 둥글다 ${coverRadii} · 카드 ${cardRadii}`);
+  // 각 모서리가 출발값에서 도착값까지 한 방향으로만 움직이고 끝 프레임이 도착값이다
+  const along = (fs, from, to) => fs.length > 5 && fs[0].every((v, i) => Math.abs(v - from[i]) < 1) && fs.at(-1).every((v, i) => Math.abs(v - to[i]) < .5)
+    && fs.every((f, n) => !n || f.every((v, i) => (v - fs[n - 1][i]) * Math.sign(to[i] - from[i]) > -.01));
+  const shrink = await corners(exit);
+  assert(along(shrink, coverRadii, cardRadii), `나갈 때 틀의 네 모서리가 커버 반경에서 카드 반경으로 ${JSON.stringify(shrink.map(f => f.map(v => +v.toFixed(1))))}`);
+  console.log(`통과 ${++checked}: Flip8 커버에서 나갈 때 틀이 네 모서리를 따로 옮긴다(${shrink.length}프레임)`);
+  // 크기는 들어갈 때마다 프리뷰 자체로 돌아간다 — 기기를 실어 들어가야 커버 캔버스로 모프한다
+  const grow = await corners(async () => { await post("/focus", { index: 0, interactive: true, device: "flip8", folded: true }); await ready(); });
+  const landed = await evaluate(`${radii}(document.querySelector('#stage'))`);
+  assert(landed.every((v, i) => Math.abs(v - coverRadii[i]) < .5) && along(grow, cardRadii, landed), `들어갈 때 틀의 네 모서리가 카드 반경에서 커버 반경으로 ${JSON.stringify(grow.map(f => f.map(v => +v.toFixed(1))))} → ${landed}`);
+  console.log(`통과 ${++checked}: Flip8 커버로 들어갈 때 틀이 네 모서리를 따로 옮기고 캔버스와 같은 반경에서 넘겨준다(${grow.length}프레임)`);
+  await exit();
   await check(`__errors.length===0`, "브라우저 오류 0");
   console.log(`총 ${checked}개 통과`);
 } finally {
