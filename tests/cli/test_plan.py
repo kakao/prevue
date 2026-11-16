@@ -268,7 +268,6 @@ class Observe(Case):
 # ── 덤프 유효성 ──────────────────────────────────────────────────────────────
 
 class DumpValidity(Case):
-
     def test_clean_뒤_산출물이_사라졌다(self):
         # 덤프는 남고 가리키는 것만 사라진다 — 그대로 start 하면 JVM 이 "모듈명을 정할 수 없다"로 죽는다
         r = self.repo(":app")
@@ -1059,7 +1058,6 @@ class GradleFailure(Case):
 
 
 class WarmupResources(Case):
-
     def test_후보가_없거나_여럿이면_묻는다(self):
         r = self.repo(":app", ":wear", ":core:ui")
         dump = r.dump(":core:ui", "debug")
