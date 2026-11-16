@@ -46,13 +46,14 @@ internal class Derivation private constructor(
     val derivedFrom: String?,
     internal val fillFrom: ClasspathSpec?,
     internal val exactArgs: Boolean = false,
+    val renderOverlay: File? = null,
 ) {
     companion object {
         val NONE = Derivation(null, null, 0, null, null)
         fun borrowed(ownClassPath: List<String>, from: String?, count: Int) = Derivation(ownClassPath, from, count, null, null)
         fun derived(ownClassPath: List<String>, from: ClasspathSpec) = Derivation(ownClassPath, null, 0, from.project, from)
         fun derivedExact(ownClassPath: List<String>, from: ClasspathSpec) = Derivation(ownClassPath, null, 0, from.project, null, exactArgs = true)
-        fun rendered(from: String?, count: Int) = Derivation(null, from, count, null, null)
+        fun rendered(from: String?, count: Int, overlay: File) = Derivation(null, from, count, null, null, renderOverlay = overlay)
     }
 }
 
@@ -65,7 +66,6 @@ internal class ClasspathSpec(
     paths: DumpPaths,
     derivation: Derivation = Derivation.NONE,
     private val originals: GradleOriginals = GradleOriginals.default,
-    val renderOverlay: File? = null,
 ) {
     val classPath: List<String> = paths.classPath
     val projectClassPath: List<String> = paths.projectClassPath
@@ -82,6 +82,7 @@ internal class ClasspathSpec(
     val borrowedFrom: String? = derivation.borrowedFrom
     val borrowedCount: Int = derivation.borrowedCount
     val derivedFrom: String? = derivation.derivedFrom
+    val renderOverlay: File? = derivation.renderOverlay
     private val fillFrom: ClasspathSpec? = derivation.fillFrom
     val moduleCompileClassPaths: Map<String, List<String>> = kmp.moduleCompileClassPaths
     val argsFrom: String? = derivedFrom.takeUnless { derivation.exactArgs }
@@ -260,8 +261,8 @@ internal class ClasspathSpec(
                 assetsDirs = r.assetsDirs, layout = home.layout + r.layout, kmp = home.kmp + r.kmp,
             )
             val borrowedCount = if (onApp) (app!!.classPath.toSet() - home.classPath.toSet()).size else r.borrowedCount
-            val derivation = Derivation.rendered(app?.project, borrowedCount)
-            return ClasspathSpec(r.file, r.project, r.variant, r.namespace, r.resourceApkPath, paths, derivation, renderOverlay = overlay) to onApp
+            val derivation = Derivation.rendered(app?.project, borrowedCount, overlay)
+            return ClasspathSpec(r.file, r.project, r.variant, r.namespace, r.resourceApkPath, paths, derivation) to onApp
         }
 
         fun load(file: File): ClasspathSpec {
