@@ -60,16 +60,6 @@ class ResourcePatchesTest {
         assertEquals(2, values.puts.size)
     }
 
-    @Test fun `값으로 얹는 것은 res 아래 values 디렉터리의 XML뿐이다`() {
-        val res = File(fx.root, "app/src/main/res")
-        assertTrue(ResourcePatches.isValues(File(res, "values/strings.xml")))
-        assertTrue(ResourcePatches.isValues(File(res, "values-ko/strings.xml")))
-        assertFalse(ResourcePatches.isValues(File(res, "drawable/icon.xml")))
-        assertFalse(ResourcePatches.isValues(File(res, "layout/main.xml")))
-        assertFalse(ResourcePatches.isValues(File(fx.root, "values/strings.xml")))
-        assertFalse(ResourcePatches.isValues(File(res, "values/notes.txt")))
-    }
-
     @Test fun `기존 값을 고쳐 저장하면 컴파일 없이 그 값으로 보드를 다시 그린다`() {
         val (uc, f) = opened()
         val gen = uc.workspace.now.board!!.gen

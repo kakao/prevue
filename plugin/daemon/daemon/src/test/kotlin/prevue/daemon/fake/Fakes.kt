@@ -183,13 +183,12 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         codeEntered.release()
         codeGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "codeGate가 안 풀렸다" } }
     }
-    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [patchOk]를 끄면 넣기가 실패한다 — 공유 로더가 없는 자리다. */
+    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [refuses]에 든 클래스는 넣기가 실패한다 — 공유 로더가 없는 자리다. */
     val patched = CopyOnWriteArrayList<Pair<String, Map<String, Any>>>()
     val dropped = CopyOnWriteArrayList<String>()
-    @Volatile var patchOk = true
     @Volatile var refuses: Set<String> = emptySet()
     override fun patchLiterals(owner: String, values: Map<String, Any>): Boolean {
-        val ok = patchOk && owner !in refuses
+        val ok = owner !in refuses
         if (ok) patched += owner to values
         return ok
     }

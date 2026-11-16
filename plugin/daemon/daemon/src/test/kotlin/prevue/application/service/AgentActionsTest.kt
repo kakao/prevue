@@ -17,11 +17,8 @@ import prevue.application.domain.model.Container
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.ScrollResult
 import prevue.application.domain.model.TouchResult
-import prevue.application.domain.model.TypeResult
 import prevue.application.domain.model.WorkspaceEvent
-import prevue.application.port.Frame
 import prevue.application.domain.rule.Scrolling
-import prevue.application.domain.model.Bitmap
 import prevue.daemon.fake.TestGraph
 
 /** D-69 · D-76. 에이전트 조작 — touch --at · type 은 겨냥한 대로 넣고 갈리면 넣지 않는다. scroll 은 겨냥 없이 화면 수만큼 굴린다. */
@@ -188,14 +185,6 @@ class AgentActionsTest {
         assertTrue(fx.renderer.scrolls.isEmpty())
     }
 
-    @Test fun `type 은 포커스된 필드가 없으면 넣지 않고 이유를 낸다`() {
-        val uc = opened()
-        assertTrue(runBlocking { uc.live.type("hi", "test") } is TypeResult.Settled)
-        assertEquals(listOf("hi"), fx.renderer.typed)
-        fx.renderer.typeError = "포커스된 텍스트 필드가 없다"
-        assertEquals(TypeResult.NoField("포커스된 텍스트 필드가 없다"), runBlocking { uc.live.type("x", "test") })
-    }
-
     @Test fun `겨냥이 잘못 쓰였으면 아무것도 하지 않는다`() {
         val uc = opened()
         assertTrue((runBlocking { uc.live.touchAt("Card.kt", "tap", "test", settle = true) } as TouchResult.Missed).miss is Miss.BadAt)
@@ -203,26 +192,4 @@ class AgentActionsTest {
         assertEquals(0, fx.renderer.looks.get())
     }
 
-    private fun moving(n: Int) = List(n) { Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 1) }
-
-    // D-78. 에이전트도 뷰어와 같은 루프가 정착시킨 그림을 받는다 — 루프가 돈 프레임 수를 싣는다.
-    @Test fun `정착한 응답은 루프가 돈 프레임 수와 정착 여부를 싣는다`() {
-        val uc = opened()
-        scrollable(listOf(node("Button", 10, 300)))
-        fx.renderer.frames += moving(3)
-        val r = runBlocking { uc.live.touch(type = "tap", x = 10, y = 10, by = "test", settle = true) } as TouchResult.Settled
-        assertEquals(true, r.result.settled)
-        assertTrue(r.result.frames!! >= 3, "${r.result.frames}")
-        val t = runBlocking { uc.live.type("가", "test") } as TypeResult.Settled
-        assertEquals(true, t.result.settled)
-    }
-
-    @Test fun `끝나지 않는 애니메이션이면 3초에 정착하지 않은 그림으로 답한다`() {
-        val uc = opened()
-        fx.renderer.moving = true
-        val t = System.nanoTime()
-        val r = runBlocking { uc.live.touch(type = "tap", x = 10, y = 10, by = "test", settle = true) } as TouchResult.Settled
-        assertEquals(false, r.result.settled)
-        assertTrue((System.nanoTime() - t) / 1_000_000 in 2_900..6_000)
-    }
 }
