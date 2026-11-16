@@ -32,6 +32,7 @@ internal class HotCompiler(
     override val overlayDir: File,
     private val stagingDir: File,
     dispatchers: PrevueDispatchers,
+    private val recompileShadowed: Boolean = true,
 ) : Compiler, AutoCloseable {
     private val loader = URLClassLoader(
         (compilerJars + bridgeClasses).map { it.toURI().toURL() }.toTypedArray(),
@@ -206,7 +207,7 @@ internal class HotCompiler(
         val now = written.associateWith { membersOf(File(u.dir, it)) }
         val shadowed = now.mapValues { (entry, members) -> (before(u, entry) ?: emptySet()) - (members ?: return@mapValues emptySet()) }
             .filterValues { it.isNotEmpty() }
-        val r = if (shadowed.isEmpty()) first else {
+        val r = if (shadowed.isEmpty() || !recompileShadowed) first else {
             recompiled++
             val seen = shadowed.entries.take(3).map { (k, v) -> "$k ${v.take(3)}" }
             System.err.println("[prevue] 이 컴파일 전에 보이던 옛 클래스 ${shadowed.size}개에만 있는 멤버가 있었다 — 새 클래스로 가려 한 번 더 컴파일한다: $seen")
