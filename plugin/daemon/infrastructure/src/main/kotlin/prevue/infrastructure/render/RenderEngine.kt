@@ -60,7 +60,7 @@ internal class RenderEngine(
 
     private val loaders: SharedLoaders
     private val literals = LiteralLedger()
-    private val elements by lazy { PreviewElements(renderer.module, File(spec.projectClassPath.first())) { loaders.current } }
+    private val elements by lazy { PreviewElements(renderer.module, spec.renderOverlay) { loaders.current } }
 
     private var live: LayoutlibSession? = null
     var renderTimeoutSec: Long = 30

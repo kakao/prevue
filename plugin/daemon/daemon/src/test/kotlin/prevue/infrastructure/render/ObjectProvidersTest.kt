@@ -56,8 +56,13 @@ class ObjectProvidersTest {
         assertEquals(0, overlay.walkTopDown().count { it.isFile })
     }
 
-    @Test fun `제공자가 없는 인자는 그대로 둔다`() {
-        val plain = listOf(mapOf("name" to "x"))
-        assertEquals(plain, providers.swapped(plain, ::bytesOf))
+    @Test fun `판정은 class 제공자도 한 번만 읽고 forget 뒤에 다시 읽는다`() {
+        var reads = 0
+        val counting = { name: String -> reads++; bytesOf(name) }
+        repeat(2) { providers.swapped(param(SeasonsClass::class.java), counting) }
+        assertEquals(1, reads)
+        providers.forget()
+        providers.swapped(param(SeasonsClass::class.java), counting)
+        assertEquals(2, reads)
     }
 }

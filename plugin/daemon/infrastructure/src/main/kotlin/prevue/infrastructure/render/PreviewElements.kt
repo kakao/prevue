@@ -7,11 +7,11 @@ import prevue.application.domain.model.PreviewSpec
 
 internal class PreviewElements(
     private val module: StandaloneRenderModelModule,
-    overlay: File,
+    overlay: File?,
     private val currentLoader: () -> ClassLoader?,
 ) {
     private val shapes = PreviewShapes()
-    private val objectProviders = ObjectProviders(overlay)
+    private val objectProviders = overlay?.let(::ObjectProviders)
 
     fun instances(p: PreviewSpec): List<String?> {
         if (p.methodParams.isEmpty()) return listOf(null)
@@ -22,13 +22,15 @@ internal class PreviewElements(
     }
 
     fun element(p: PreviewSpec) =
-        ComposeScreenshot(p.fqn, objectProviders.swapped(p.methodParams, ::classBytes), p.params, p.previewId, "").toPreviewElement(module)
+        ComposeScreenshot(p.fqn, providerParams(p), p.params, p.previewId, "").toPreviewElement(module)
+
+    private fun providerParams(p: PreviewSpec) = objectProviders?.swapped(p.methodParams, ::classBytes) ?: p.methodParams
 
     fun layouts(p: PreviewSpec, resolve: () -> List<String>): List<String> = shapes.layouts(p, resolve)
 
-    fun codeChanged() { shapes.recount(); objectProviders.forget() }
+    fun codeChanged() { shapes.recount(); objectProviders?.forget() }
 
-    fun forgetAll() { shapes.forgetAll(); objectProviders.forget() }
+    fun forgetAll() { shapes.forgetAll(); objectProviders?.forget() }
 
     private fun classBytes(name: String): ByteArray? = runCatching {
         val path = name.replace('.', '/') + ".class"

@@ -65,6 +65,7 @@ internal class ClasspathSpec(
     paths: DumpPaths,
     derivation: Derivation = Derivation.NONE,
     private val originals: GradleOriginals = GradleOriginals.default,
+    val renderOverlay: File? = null,
 ) {
     val classPath: List<String> = paths.classPath
     val projectClassPath: List<String> = paths.projectClassPath
@@ -260,7 +261,7 @@ internal class ClasspathSpec(
             )
             val borrowedCount = if (onApp) (app!!.classPath.toSet() - home.classPath.toSet()).size else r.borrowedCount
             val derivation = Derivation.rendered(app?.project, borrowedCount)
-            return ClasspathSpec(r.file, r.project, r.variant, r.namespace, r.resourceApkPath, paths, derivation) to onApp
+            return ClasspathSpec(r.file, r.project, r.variant, r.namespace, r.resourceApkPath, paths, derivation, renderOverlay = overlay) to onApp
         }
 
         fun load(file: File): ClasspathSpec {
