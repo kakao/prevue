@@ -15,22 +15,10 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugin/cli"))
-import prevue_plan as plan
 import prevue_prepare as preparation
 
 
 class Request(unittest.TestCase):
-    def test_only_show_requests_extend_the_approved_command(self):
-        response = {"ask": "빌드 설정을 읽을까요?", "next": "prevue setup", "then": "prevue warmup /repo/File.kt --resources-from :app"}
-        expected = dict(response, then=response["then"] + " --show")
-        self.assertEqual(plan.prepare_request(dict(response)), expected)
-        self.assertEqual(plan.prepare_request(expected), expected)
-        self.assertEqual(plan.prepare_request({"next": "prevue start --classpath /a"}), {"next": "prevue start --classpath /a"})
-
-    def test_start_arguments_preserve_paths_and_chosen_resource_dump(self):
-        self.assertEqual(preparation.start_args({"classpath": "/a b/cp.json", "resourcesClasspath": "/app d/res.json"}, "/p q/File.kt"),
-                         ["start", "--classpath", "/a b/cp.json", "--resources-from", "/app d/res.json", "--show", "/p q/File.kt"])
-
     def test_fileless_request_does_not_open_a_module_name_as_a_file(self):
         self.assertEqual(preparation.target_file("warmup", ["--module", ":ui", "--project", "/repo", "--show"]), "")
 

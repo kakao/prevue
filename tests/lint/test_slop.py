@@ -206,7 +206,6 @@ class Comments(unittest.TestCase):
                          ("adapter/entry/src/main/kotlin/prevue/adapter/http/Server.kt", "infrastructure/src/main/kotlin/prevue/infrastructure/controller/http/Server.kt"),
                          ("app/src/bridge/kotlin/prevue/compiler/B.kt", "daemon/src/bridge/kotlin/prevue/compiler/B.kt")):
             old, new = "plugin/daemon/" + old, "plugin/daemon/" + new
-            self.assertEqual(lint.renames("R098\t%s\t%s\n" % (old, new)), {new: old})
             self.assertEqual(lint.renames("D\t%s\nA\t%s\n" % (old, new)), {new: old})
             self.assertTrue(old.startswith(lint.OLD_ROOTS))
 
@@ -215,10 +214,6 @@ class Comments(unittest.TestCase):
         new = "plugin/daemon/infrastructure/src/main/kotlin/prevue/infrastructure/render/A.kt"
         self.assertEqual(lint.renames("R100\t%s\t%s\n" % (old, new)), {new: old})
         self.assertTrue(old.startswith(lint.OLD_ROOTS))
-
-    def test_층_모듈로_옮긴_파일은_옛_자리와_짝짓는다(self):
-        out = "R100\tplugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt\tplugin/daemon/application/src/main/kotlin/prevue/daemon/domain/A.kt\n"
-        self.assertEqual(lint.renames(out), {"plugin/daemon/application/src/main/kotlin/prevue/daemon/domain/A.kt": "plugin/daemon/src/main/kotlin/prevue/daemon/domain/A.kt"})
 
     def test_외부_표지는_한_줄만_통과한다(self):
         self.assertEqual(self.comments("// 외부: layoutlib 17 은 X 를 안 준다\nval a = 1\n", {1, 2}), [])

@@ -234,6 +234,11 @@ export function createResizeScene(root, hooks) {
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
   }
 
+  // 홈 버튼 — 자연 방향의 아래 베젤(ends) 가운데. 멈춘 몸체와 접기 판이 같은 자리를 써야 착지가 이어진다.
+  const homeBox = (lk, W0, H0, rot, s, mirrored, hk) => {
+    const e = endsOf(lk) * P.shellK, hd = e * HOME_K, b = camBox(W0, H0, rot, { w: hd, h: hd, y: H0 + (e - hd) / 2 }, s, mirrored);
+    return { ...b, on: b.on && hk > .01 };
+  };
   const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
 
   function snapTo(sel) {
@@ -390,9 +395,9 @@ export function createResizeScene(root, hooks) {
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
   const sideOf = el => {
-    const gloss = document.createElement("div"), rim = document.createElement("div");
-    gloss.className = "gloss"; rim.className = "rim"; el.prepend(gloss, rim);
-    return { body: el, gloss, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit"), fit: [] };
+    const gloss = document.createElement("div"), rim = document.createElement("div"), home = document.createElement("div");
+    gloss.className = "gloss"; rim.className = "rim"; home.className = "home"; el.prepend(gloss, rim); el.append(home);
+    return { body: el, gloss, home, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit"), fit: [] };
   };
   const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
   RG.base = panelOf(q(rigEl, ".slab.base")); RG.leaf = panelOf(q(rigEl, ".slab.leaf"));
@@ -470,8 +475,10 @@ export function createResizeScene(root, hooks) {
   }
 
   const rigAngle = e => rig.from.angle + rig.turn * e + rig.q;
+  // 판 좌표의 몸체 두께 [왼 · 오른 변(u), 위 · 아래 변(v)] — ends 는 기기 자연 방향의 위 · 아래라 조개형(tall)은 u, 책형은 v 다.
+  const rigEdges = lk => { const side = lk.bezel * P.shellK, end = endsOf(lk) * P.shellK; return tallOf(rig.d) ? [end, side] : [side, end]; };
   // 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
-  function rigPose(e, bezel) {
+  function rigPose(e, [bu, bv]) {
     const th = (rig.dir === "fold" ? e : 1 - e) * 180;
     const baseS = lerp(rig.s0, rig.s1, e), cy = lerp(rig.f0.y + rig.f0.h / 2, rig.f1.y + rig.f1.h / 2, e);
     const angle = rigAngle(e), rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
@@ -480,8 +487,8 @@ export function createResizeScene(root, hooks) {
     const perspective = P.perspective / (P.perspective - (u + rig.d.plate.thickness) * Math.sin(rad) * baseS);
     const tip = -u * Math.cos(rad) * perspective;
     const baseU = lerp(rig.half.u, Math.min(rig.half.u, rig.cover.u), smooth(P.shrinkFrom, 180, th));
-    const xs = [offset + Math.min(0, tip) - bezel, offset + Math.max(baseU, tip) + bezel];
-    const ys = [-v * perspective / 2 - bezel, v * perspective / 2 + bezel];
+    const xs = [offset + Math.min(0, tip) - bu, offset + Math.max(baseU, tip) + bu];
+    const ys = [-v * perspective / 2 - bv, v * perspective / 2 + bv];
     const corners = xs.flatMap(x => ys.map(y => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)]));
     const extent = axis => Math.max(...corners.map(p => Math.abs(p[axis])));
     const need = Math.min(1, r.maxW / (2 * extent(0) * baseS), r.maxH / (2 * extent(1) * baseS));
@@ -491,7 +498,7 @@ export function createResizeScene(root, hooks) {
   // 기기 전체가 덜컥였다 — 시작할 때 전 구간의 모자람을 재고, 양끝 0에서 그 자리까지 부드럽게 오르내리는 곡선의 최댓값으로 준다.
   // 양끝은 정지 자세의 fit 이라 재지 않는다.
   function rigDip() {
-    const bezel = Math.max(rig.d.look.open.bezel, rig.d.look.cover.bezel) * P.shellK, n = 48, need = [];
+    const [ou, ov] = rigEdges(rig.d.look.open), [cu, cv] = rigEdges(rig.d.look.cover), bezel = [Math.max(ou, cu), Math.max(ov, cv)], n = 48, need = [];
     for (let i = 1; i < n; i++) { const e = i / n, lack = 1 - rigPose(e, bezel).need; if (lack > 0) need.push([e, lack + .004]); }
     const hump = (e, c) => e <= c ? smooth(0, c, e) : 1 - smooth(c, 1, e);
     return e => need.reduce((m, [c, lack]) => Math.max(m, lack * hump(e, c)), 0);
@@ -499,7 +506,7 @@ export function createResizeScene(root, hooks) {
   function rigAt(now) {
     const t = (now - rig.t0) / 1000, T = Math.max(.05, rig.dur);
     const e = foldEase()(clamp(t / T, 0, 1));
-    const { th, baseS, cy, angle, v, hx, r } = rigPose(e, lookAt(now).bezel * P.shellK);
+    const { th, baseS, cy, angle, v, hx, r } = rigPose(e, rigEdges(lookAt(now)));
     const s = baseS * (1 - rig.dip(e));
     return { t, th, p: e, s, hx: r.cx + (hx - r.cx) * s / baseS, cy,
       angle, top: cy - v * s / 2, settled: t >= T };
@@ -706,7 +713,7 @@ export function createResizeScene(root, hooks) {
     const { th, s: sNow, hx: hu, top, cy, angle } = rigAt(now);
     const s = rig.sRef, K = sNow / s, u = 1 / K, T0 = cy - (cy - top) * s / sNow;
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), d = rig.d;
-    const lk = lookAt(now), t = lk.bezel * P.shellK * s, tone = rgbOf(lk.tone);
+    const lk = lookAt(now), t = lk.bezel * P.shellK * s, [tu, tv] = rigEdges(lk).map(b => b * s), tone = rgbOf(lk.tone);
     const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
     // 커버가 펼친 반쪽보다 좁으면 바닥 반쪽도 커버 폭으로 줄어야 다 접힌 순간 커버 밖으로 비어져 나오지 않는다.
     // 장이 바닥을 덮기 시작한 뒤에만 줄인다 — 드러난 바닥의 가장자리가 접는 동안 미끄러지지 않게
@@ -714,7 +721,7 @@ export function createResizeScene(root, hooks) {
     const T = d.plate.thickness * s, za = d.plate.gap * s / 2;
     // 다 접히면 커버는 바닥 화면보다 두께 + 틈만큼 앞에 있다 — 원근으로 커지지 않게 장면을 그만큼 뒤로 물려 보이는 화면이 양끝에서 z=0 에 선다.
     const lift = (T + 2 * za) * (1 - cs) / 2;
-    const hk = smooth(20, 160, th), e = t * hk;
+    const hk = smooth(20, 160, th), e = tu * hk;
     // 반경은 면마다 고정한다 — 펼친 화면 반경에서 60~120° 사이에 커버 반경으로 옮겨, 다 접혔을 때 아래 판이 비어져 나오지 않는다.
     // 모서리는 판 좌표 [좌상, 우상, 우하, 좌하] 이고 힌지는 바닥 판의 왼쪽 변이다. 접힌 장의 모서리는 다 접히면 좌우가 뒤바뀐 커버 모서리에 닿는다.
     const q = tallOf(d) ? 3 : 0, R = turnR(d.look.open.radius, q).map(v => v * s), C = turnR(d.look.cover.radius, q).map(v => v * s);
@@ -731,9 +738,9 @@ export function createResizeScene(root, hooks) {
     const fold = n => [n[0] * cs + n[2] * sn, n[1], -n[0] * sn + n[2] * cs];
     for (const p of [RG.base, RG.leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
     RG.leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
-    const span = [-Lu - t, Bu + t];
-    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], span, bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
-    drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], span, bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
+    const span = [-Lu - tu, Bu + tu];
+    drawPanel(RG.base, { body: [-e, -tv, Bu + tu, Bv + tv], span, bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
+    drawPanel(RG.leaf, { body: [-Lu - tu, -tv, e, Lv + tv], span, bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
       backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false, u });
     paintFace(RG.F.base, rig.plan.base, s, now, u);
     paintFace(RG.F.inner, rig.plan.inner, s, now, u);
@@ -744,33 +751,40 @@ export function createResizeScene(root, hooks) {
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, -sh, 0, 1);
+    // 홈 버튼은 화면 밖 아래 베젤에 있어 화면(.clip)이 아니라 몸체 면에 둔다 — 자리는 카메라와 같은 화면 기준에 면 안의 화면 자리만 더한다.
+    const home = folded => { const panel = d[folded ? "cover" : "open"], hk = Number(d.look[folded ? "cover" : "open"].home) || 0;
+      return [homeBox(lk, panel.w, panel.h, tallOf(d), s, tallOf(d), hk), hk]; };
+    const [oh, on] = home(false), [ch, cn] = home(true);
+    putCam(RG.base.front.home, oh, e - sh, tv, on);
+    putCam(RG.leaf.front.home, oh, tu, tv, on);
+    putCam(RG.leaf.back.home, ch, e, tv, cn);
     const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
     RG.F.base.cast.style.opacity = cast.toFixed(4);
 
     // 책등 — 두 판의 뒤쪽 힌지 모서리를 잇는 띠. 펼치면 폭 0, 다 접히면 두께 둘 + 틈. 둥근 힌지 쪽 모서리까지 덮게 몸체 높이 전체에 반경을 준다.
     const bx = -e, bz = -T, dz = -T - za, lx = e * cs + dz * sn, lz = za - e * sn + dz * cs;
-    const sl = Math.hypot(lx - bx, lz - bz), phi = Math.atan2(-(lz - bz), lx - bx), sv = Bv + 2 * t;
-    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - t), width: px(sl + .6 * u), height: px(sv), marginLeft: px(-(sl + .6 * u) / 2),
+    const sl = Math.hypot(lx - bx, lz - bz), phi = Math.atan2(-(lz - bz), lx - bx), sv = Bv + 2 * tv;
+    Object.assign(RG.spine.style, { display: sl > .3 && T > .05 ? "" : "none", left: px(hu), top: px(T0 - tv), width: px(sl + .6 * u), height: px(sv), marginLeft: px(-(sl + .6 * u) / 2),
       borderRadius: `${px(Math.min(rH, (sl + .6 * u) / 2))} / ${px(rH)}`,
       transform: `translate3d(${px((bx + lx) / 2)},0,${px((bz + lz) / 2)}) rotateY(${(phi * 180 / Math.PI).toFixed(3)}deg)` });
     RG.spine.style.background = stripPaint(tone, lightOf(turn([Math.sin(phi), 0, Math.cos(phi)])));
 
     // 바닥에 드리우는 그림자 — 두 판을 덮는 상자 하나를 바닥 판 뒤에 둔다.
-    const tip = hu - Lu * cs, p0 = Math.min(hu - e, tip - t), p1 = Math.max(hu + Bu + t, tip + t);
-    Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
+    const tip = hu - Lu * cs, p0 = Math.min(hu - e, tip - tu), p1 = Math.max(hu + Bu + tu, tip + tu);
+    Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - tv), width: px(p1 - p0), height: px(Bv + 2 * tv), borderRadius: px(rB),
       transform: `translateZ(${px(-T - u)})`, boxShadow: castShadow([...elevation(), [0, (10 + 18 * sn), (30 + 34 * sn), 0, shade(.05 * sn)]], a, u) });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
-    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone, u });
+    if (tallOf(d)) tallButtons({ hu, T0, Bv, t: tv, s, k, sn, cs, lift, tone: lk.tone, u });
     else lk.btn.forEach((b, i) => {
-      Object.assign(RG.btns[i].style, { left: px(Math.max(hu + Bu, tip) + t - .5 * u), top: px(T0 + b.at * s),
+      Object.assign(RG.btns[i].style, { left: px(Math.max(hu + Bu, tip) + tu - .5 * u), top: px(T0 + b.at * s),
         width: px(3 * u), height: px(b.len * s), backgroundColor: lk.tone, opacity: b.len * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift)})` });
     });
     const tk = rigCrease(th), ck = P.crease * tk;
     Object.assign(RG.crease.style, { left: px(hu), top: px(T0), width: px(14 * u), marginLeft: px(-7 * u), height: px(Bv), opacity: ck * hingeOp.at(now) });
     // 멈춘 장면의 눈금은 화면의 오른쪽 · 아래로 1px 이다 — 장면이 돈 쪽에 따라 판 좌표의 어느 쪽으로 그을지 고른다.
     const tx = hu - (ca + sa > 0 ? 0 : u);
-    Object.assign(RG.tTop.style, { left: px(tx), top: px(T0 - t), width: px(u), height: px(t), opacity: tk });
-    Object.assign(RG.tBot.style, { left: px(tx), top: px(T0 + Bv), width: px(u), height: px(t), opacity: tk });
+    Object.assign(RG.tTop.style, { left: px(tx), top: px(T0 - tv), width: px(u), height: px(tv), opacity: tk });
+    Object.assign(RG.tBot.style, { left: px(tx), top: px(T0 + Bv), width: px(u), height: px(tv), opacity: tk });
   }
 
   const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
@@ -846,20 +860,19 @@ export function createResizeScene(root, hooks) {
     });
     const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s, ol.mirrored);
     putCam(U.cam, camera, 0, 0, ol.shell);
-    const hd = endsOf(lk) * P.shellK * HOME_K, homeAt = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, { w: hd, h: hd, y: H0 + (endsOf(lk) * P.shellK - hd) / 2 }, s, ol.mirrored);
     const hk = Number(lk.home) || 0;
-    putCam(U.home, { ...homeAt, on: homeAt.on && hk > .01 }, L, y, ol.shell * hk);
+    putCam(U.home, homeBox(lk, (ol.rot ? rect.h : rect.w) / s, H0, ol.rot, s, ol.mirrored, hk), L, y, ol.shell * hk);
     const c = ol.crease, hz = ol.rot !== !!ol.tall;
     U.crease.classList.toggle("h", hz);
     Object.assign(U.crease.style, hz ? { left: "0px", top: rect.h / 2 + "px", width: rect.w + "px", height: "", opacity: c * hingeOp.at(now) }
                                      : { left: rect.w / 2 + "px", top: "0px", width: "", height: rect.h + "px", opacity: c * hingeOp.at(now) });
     const so = c > 0 ? ol.shell * Math.min(1, c / Math.max(.01, P.crease)) : 0;
     if (hz) {
-      Object.assign(U.tTop.style, { left: L - t + "px", top: y + rect.h / 2 + "px", width: t + "px", height: "1px", opacity: so });
-      Object.assign(U.tBot.style, { left: L + rect.w + "px", top: y + rect.h / 2 + "px", width: t + "px", height: "1px", opacity: so });
+      Object.assign(U.tTop.style, { left: L - tx + "px", top: y + rect.h / 2 + "px", width: tx + "px", height: "1px", opacity: so });
+      Object.assign(U.tBot.style, { left: L + rect.w + "px", top: y + rect.h / 2 + "px", width: tx + "px", height: "1px", opacity: so });
     } else {
-      Object.assign(U.tTop.style, { left: cx + "px", top: y - t + "px", width: "1px", height: t + "px", opacity: so });
-      Object.assign(U.tBot.style, { left: cx + "px", top: y + rect.h + "px", width: "1px", height: t + "px", opacity: so });
+      Object.assign(U.tTop.style, { left: cx + "px", top: y - ty + "px", width: "1px", height: ty + "px", opacity: so });
+      Object.assign(U.tBot.style, { left: cx + "px", top: y + rect.h + "px", width: "1px", height: ty + "px", opacity: so });
     }
   }
 

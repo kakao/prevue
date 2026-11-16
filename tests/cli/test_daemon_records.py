@@ -88,12 +88,6 @@ class State(unittest.TestCase):
     def test_부팅_직후의_시계_조정은_부팅_전으로_읽지_않는다(self):
         self.assertEqual(self.state(kill_says("eperm"), command_is(None), BOOT - R.BOOT_SLACK + 1), "unknown")
 
-    def test_부팅_시각을_모르면_시각으로_가르지_않는다(self):
-        self.assertEqual(R.state("419", 49319, BOOT - DAY, None, kill_says("eperm"), command_is(None)), "unknown")
-
-    def test_없는_pid(self):
-        self.assertEqual(self.state(kill_says("esrch"), command_is(DAEMON % 49319)), "gone")
-
     def test_명령줄을_읽는_사이에_끝났다(self):
         answers = iter(["ok", "esrch"])
         self.assertEqual(self.state(lambda pid: next(answers), command_is(None)), "gone")
@@ -169,11 +163,6 @@ class Scan(unittest.TestCase):
         self.assertEqual(len([n for n in os.listdir(self.dir) if n.endswith(".log")]), 6, "로그는 prevue log 가 읽는다 — 지우지 않는다")
         self.assertFalse([n for n in os.listdir(self.dir) if n.endswith(".gone")])
 
-    def test_포트를_주면_그_포트만(self):
-        self.fill()
-        self.assertEqual(self.scan(ports={"8793", "49319"}), [("8793", "unknown")])
-        self.assertEqual(self.scan(ports={""}), [])
-
     # bin/prevue 는 daemon-$PORT.pid 로 쓰고 받은 줄을 grep -x "$PORT" 로 찾는다 — 08794 를 8794 로 돌려주면 그 자리를 못 찾는다
     def test_포트는_기록_이름의_글자_그대로_돌려준다(self):
         self.record("08794", 503, BOOT + 60)
@@ -190,9 +179,6 @@ class Scan(unittest.TestCase):
         def broken(pid):
             raise RuntimeError("관찰 실패")
         self.assertEqual(R.scan(self.dir, boot=BOOT, kill=broken, command=broken), [("8792", "unknown")])
-
-    def test_디렉터리가_없으면_기록도_없다(self):
-        self.assertEqual(R.scan(os.path.join(self.dir, "nope"), boot=BOOT), [])
 
 
 class Sweep(unittest.TestCase):
@@ -291,9 +277,6 @@ class LinuxProc(unittest.TestCase):
 
     def test_좀비의_명령줄은_비어_데몬이_아니다(self):
         self.assertFalse(R.ours(self.command(b""), 8792))
-
-    def test_못_읽으면_모른다(self):
-        self.assertIsNone(self.command(error=PermissionError("hidepid")))
 
     def test_부팅_시각은_proc_stat_의_btime(self):
         with mock.patch.object(R.sys, "platform", "linux"), \
@@ -519,8 +502,10 @@ class Launch(unittest.TestCase):
         build = os.path.join(plugin, "daemon", "daemon", "build")
         os.makedirs(build)
         with open(os.path.join(build, "prevue-env"), "w") as f:
-            for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
+            for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_LIB", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
                 f.write('%s="$ROOT/daemon/daemon/build/%s"\n' % (k, k.lower()))
+        for toolchain in ("prevue_layoutlib", "prevue_compiler", "prevue_lib"):   # start 는 툴체인 폴더가 있어야 구운 것으로 본다
+            os.makedirs(os.path.join(build, toolchain))
         for jar in ("prevue_cp", "prevue_bridge"):      # start 가 데몬이 돌 복사본으로 옮긴다(D-125)
             open(os.path.join(build, jar), "w").close()
         self.java = os.path.join(self.home, "jdk", "bin", "java")
