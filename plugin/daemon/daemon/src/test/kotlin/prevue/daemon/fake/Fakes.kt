@@ -205,7 +205,14 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 걸어 두면 [previewId]의 다음 쓰기 한 번이 그 자리에서 멈춘다 — 렌더는 끝났고 PNG가 디스크로 가는 중인 순간이다. */
     @Volatile var writeHold: Pair<String, CountDownLatch>? = null
     val writeEntered = Semaphore(0)
+    /** 걸어 두면 그 previewId의 다음 쓰기 한 번이 취소될 때까지 멈춘다 — 데몬이 끝나며 쓰기를 거두는 자리다. */
+    @Volatile var writeParks: String? = null
     override suspend fun written(out: RenderOutput): RenderOutput {
+        if (writeParks == out.preview.previewId) {
+            writeParks = null
+            writeEntered.release()
+            kotlinx.coroutines.awaitCancellation()
+        }
         val (id, gate) = writeHold?.takeIf { it.first == out.preview.previewId } ?: return out
         writeHold = null
         writeEntered.release()

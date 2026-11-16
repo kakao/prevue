@@ -3,6 +3,7 @@ package prevue.application.service
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -57,7 +58,8 @@ class Boards(
             val idx = i++
             if (now.cards[idx].fresh(b.gen)) continue
             val tc = System.nanoTime()
-            val r = runCatching { drawCard(idx, false, by, await = false) }.getOrNull()
+            val r = try { drawCard(idx, false, by, await = false) } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { System.err.println("[prevue] 보드 카드 $idx 그리기 실패: $e"); null }
             renderNs += System.nanoTime() - tc
             if (r is CardResult.Skipped && r.reason == SkipReason.RELOAD) { i = idx; yield(); continue }
             if (r !is CardResult.Skipped) drawn++
@@ -120,6 +122,7 @@ class Boards(
         }
         scope.launch {
             val r = try { CardResult.Drawn(index, live.shot(out, null, t, by)) }
+                    catch (e: CancellationException) { done.cancel(e); throw e }
                     catch (e: Exception) { CardResult.WriteFailed(index, phrase("render.writeFailed", "why" to e)) }
             ws.recordCard(b.epoch, index, gen, r)
             done.complete(r)
