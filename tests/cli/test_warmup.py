@@ -18,7 +18,8 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import prevue_plan as P  # noqa: E402
-from test_plan import Repo, search_path  # noqa: E402
+from test_plan import Repo, fake_jdk, search_path  # noqa: E402
+import jdk_rule  # noqa: E402
 
 PREVUE = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "prevue")
 PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli", "prevue_plan.py")
@@ -250,7 +251,6 @@ class Warmup(unittest.TestCase):
     def test_JDK_탓으로_실패한_JDK_를_다음_warmup_이_고르지_않는다(self):
         # DroidKaigi 2025: AS 가 동기화한 저장소라 config.properties 가 JBR 25 를 가리키고, 툴체인 없는 모듈이 jvmTarget 24 라 25 로는
         # 빌드되지 않는다. 다음 warmup 은 이 머신의 다른 주 버전 JDK 로 간다(D-188)
-        from test_plan import fake_jdk
         r = self.repo()
         jbr = fake_jdk(os.path.join(self.tmp.name, "jbr"), "25.0.2")
         jdk21 = fake_jdk(os.path.join(self.tmp.name, "machine", "temurin-21"), "21.0.12")
@@ -459,7 +459,8 @@ class GradleRun(unittest.TestCase):
         with open(err, "w") as f:
             f.write("> Inconsistent JVM-target compatibility detected for tasks 'compileJava' (25) and 'compileKotlin' (24).\n")
         P.gradle_run("", "1000", "4000", "1", self.runs, "/jbr", [":a|debug|/o.json"], err, self.tmp.name)
-        self.assertEqual((self.last()["jdkFailed"], len(self.last()["buildFiles"])), (True, 40))
+        self.assertEqual(jdk_rule.failed_majors(jdk_rule.read_runs(self.runs), jdk_rule.build_fingerprint(self.tmp.name)),
+                         {os.path.realpath("/jbr")})
 
     def test_JDK_와_무관한_실패는_표시하지_않는다(self):
         err = os.path.join(self.tmp.name, "err")

@@ -276,11 +276,6 @@ def dump_why(path):
     return None
 
 
-# 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
-# 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
-# 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
-
-
 def build_files(repo, module):
     """저장소 상대 경로 목록. 없는 파일도 싣는다 — 새로 생긴 것도 바뀐 것이다."""
     mod = os.path.relpath(module_dir(repo, module), repo) if module.strip(":") else ""

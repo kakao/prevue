@@ -22,7 +22,6 @@ JDK 문구일 때만 붙는다. 변형 다시 뜨기 · KMP 앱 찾기 · 사용
 
 import datetime
 import glob
-import hashlib
 import json
 import os
 import re
@@ -143,6 +142,10 @@ def repo_builds(log_dir, repo, before=None):
 JDK_ERROR = re.compile(r"Inconsistent JVM[- ]Target Compatibility|Unsupported class file major version"
                        r"|compiled by a more recent version of the Java Runtime|requires at least JVM runtime version"
                        r"|Unknown Kotlin JVM target", re.I)
+# 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
+# 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
+# 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
+# JDK 실패 표시의 지문도 이것으로 뜬다(build_fingerprint) — 목록을 바꾸면 덤프 낡음 판정과 데몬 감시 목록이 함께 바뀐다.
 ROOT_BUILD_FILES = ("build.gradle.kts", "build.gradle", "settings.gradle.kts", "settings.gradle",
                     "gradle.properties", "gradle/libs.versions.toml")
 
@@ -153,6 +156,7 @@ def jdk_error(err_text):
 
 def build_fingerprint(repo):
     """루트 빌드 파일 내용의 지문. Kotlin · AGP 를 올리면 바뀌어, 그 전에 실패한 JDK 를 다시 시험하게 한다."""
+    import hashlib   # prevue_plan 이 이 모듈을 부를 때마다 드는 import 를 피한다(2ms)
     h = hashlib.sha1()
     for rel in ROOT_BUILD_FILES:
         try:
@@ -187,6 +191,8 @@ def read_runs(path):
 
 def failed_majors(records, fingerprint):
     """지금 피할 주 버전들. 기록은 오래된 것부터 — 같은 주 버전의 뒤 성공이 앞 실패를 지운다. 지문이 지금과 다른 실패는 세지 않는다."""
+    if not any(r.get("jdkFailed") and r.get("buildFiles") == fingerprint for r in records):
+        return set()   # 실패가 없으면 성공 기록마다 release 를 읽지 않는다
     failed = set()
     for r in records:
         home = r.get("gradleJdk")
