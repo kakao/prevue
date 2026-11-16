@@ -929,7 +929,8 @@ class RenderIntegrationTest {
         return out
     }
 
-    // 자세별 그림은 라이브 옆의 태스크로 그린다. layoutlib 시계(System_Delegate)는 전역이라, 옆 그림이 시계를 옮기면 라이브의 애니메이션이 건너뛴다.
+    // 자세별 그림은 라이브 옆의 태스크로 그린다. 옆 태스크도 System_Delegate.setNanosTime 으로 시계를 옮기지만, layoutlib 17 의 시각은 세션마다
+    // 따로라(직전 setNanosTime 과의 델타 + 그 세션의 코레오그래퍼 시각) 라이브의 애니메이션은 건너뛰지 않아야 한다.
     @Test @Order(28) fun `옆 태스크로 한 장 그려도 라이브의 애니메이션 시각이 건너뛰지 않는다`() {
         val bar = single("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
         val other = single("com.example.pearl.feature.pearl.AnimationPreviewsKt.TransitionBarPreview")
@@ -1016,6 +1017,22 @@ class RenderIntegrationTest {
         } finally {
             runBlocking { uc.boards.focus(0, on = false, by = "test") }
         }
+        assertAlive()
+    }
+
+    // render --at 은 버리는 세션에서 걸음 시계(1µs 틱)로 그린다. 그 뒤의 조작이 같은 시계를 물려받으면 애니메이션이 멈춘 채로 정착한다.
+    @Test @Order(37) fun `render --at 뒤 조작은 실제 시계로 애니메이션을 끝까지 돌린다`() {
+        single("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
+        val at = runBlocking { uc.live.renderAt(300, "test") }
+        assertTrue(at.ok, at.shot.out.message?.text)
+        val t = runBlocking { uc.live.touch("tap", 1, 1, "test", settle = true) }
+        val shot = (t as TouchResult.Settled).result
+        assertTrue(shot.ok, shot.shot.out.message?.text)
+        runBlocking { engine.awaitWrites() }
+        val img = ImageIO.read(shot.shot.out.image!!)
+        val y = img.height / 2
+        val red = (0 until img.width).count { x -> img.getRGB(x, y).let { (it shr 16 and 0xff) > 200 && (it shr 8 and 0xff) < 80 } }.toDouble() / img.width
+        assertEquals(1.0, red, 0.05, "render --at 뒤 터치로 정착한 막대가 $red 만큼만 찼다 — 걸음 시계가 남아 실제 시간을 따르지 않는다")
         assertAlive()
     }
 
