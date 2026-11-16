@@ -104,6 +104,20 @@ try {
   await click("#railList .rt.active");
   await until(`!${drawer}`);
   check(true, "파일 줄을 누르면 닫힌다");
+  // 단축키 · 빠른 열기로 파일을 바꿔도 닫힌다 — 지금 파일이 바뀌는 길은 하나로 모인다. 탭이 둘 이상일 때만 잰다.
+  if (await evaluate(`document.querySelectorAll('#railList .rt:not(.leaving)').length > 1`)) {
+    const before = await evaluate(`document.querySelector('#railList .rt.active').dataset.key`);
+    const shiftArrow = async k => { for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: k, code: k, modifiers: 8, windowsVirtualKeyCode: k === "ArrowLeft" ? 37 : 39 }); };
+    await click("#railToggle");
+    await until(drawer);
+    await shiftArrow("ArrowRight");
+    await until(`document.querySelector('#railList .rt.active')?.dataset.key !== ${JSON.stringify(before)}`);
+    await until(`!${drawer}`);
+    check(true, "단축키로 탭을 옮기면 닫힌다");
+    await shiftArrow("ArrowLeft");
+    await until(`document.querySelector('#railList .rt.active')?.dataset.key === ${JSON.stringify(before)}`);
+    await pause(800);   // 탭 전환의 view transition 동안은 클릭이 페이지에 닿지 않는다
+  }
   await click("#railToggle");
   await until(drawer);
   await size(900);

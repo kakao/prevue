@@ -1,9 +1,8 @@
 import { boardMarks, moveCursor } from './runtime/board';
 import { daemonText, phrase } from './runtime/strings';
-import { jumpTab, stepTab, tabCount } from './components/FileRail';
+import { closeRailDrawer, jumpTab, stepTab, tabCount } from './components/FileRail';
 import type { PointActions } from './components/PointOverlay';
 import { closeDirPop } from './components/ProjectHeader';
-import { closeRailDrawer } from './components/FileRail';
 import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';

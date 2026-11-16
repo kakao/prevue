@@ -366,7 +366,6 @@ body.rail-on { --rail-w: var(--rail-size); }
 .rail-open-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 단축키 표의 키캡(kbd)이 아니라 글자에 두른 테두리다 — 시안의 크기. */
 .rail-open kbd { display: inline; min-width: 0; height: auto; background: transparent; box-shadow: none; padding: 0 var(--space-4); border: 1px solid var(--outline-variant); border-radius: var(--corner-small); color: var(--on-surface-variant); font: var(--type-code-small); }
-/* 탭을 옮기면 보드는 엇갈려 바뀌고, 레일은 찍지 않고 살아 있는 채로 둔다 — 바탕이 미끄러지는 것이 보여야 한다. */
 /* 좁은 창(≤640px)에서는 레일이 보드를 밀지 않는다 — 360px 창에서 200px 를 먹으면 보드가 100px 남짓으로 줄어 묶음이 한 칸씩 쌓였다.
    헤더 맨 왼쪽 단추가 같은 폭의 레일을 덮개와 함께 보드 위에 띄운다(서랍). 폭이 그대로라 줄임 규칙(FileRail layout, D-103)도 그대로다. */
 .rail-toggle, .rail-scrim { display: none; }
@@ -378,6 +377,7 @@ body.rail-on { --rail-w: var(--rail-size); }
   body.rail-drawer .rail { visibility: visible; transform: none; transition: transform var(--duration-medium2) var(--easing-standard); }
   body.rail-drawer .rail-scrim { display: block; position: fixed; inset: calc(var(--bar-h) + 1px) 0 0 0; z-index: 16; background: var(--scrim); }
 }
+/* 탭을 옮기면 보드는 엇갈려 바뀌고, 레일은 찍지 않고 살아 있는 채로 둔다 — 바탕이 미끄러지는 것이 보여야 한다. */
 ::view-transition-old(rail) { display: none; }
 ::view-transition-new(rail) { animation: none; }
 /* 탭 이동 중에도 툴바·캡슐은 제자리에서 바뀐다. 늘 이름을 달면 작업 공간 전환이 툴바를 찍힌 그림으로 바꾼다. */

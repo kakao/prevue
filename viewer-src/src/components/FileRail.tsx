@@ -15,7 +15,7 @@ const SHARED_ONCE = 'prevue.sharedOnce';
 const NONE: Tab[] = [];
 
 // 좁은 창(≤640px)의 서랍 — 레일이 보드를 밀지 않고 헤더 단추로 떠오른다. 폭은 넓은 창과 같아 아래 줄임 규칙이 그대로다.
-// 파일을 고르거나 · 파일 열기 · 덮개 · Esc · 창을 넓히면 닫힌다.
+// 지금 파일이 바뀌면(줄 · 빠른 열기 · 단축키 어느 길이든) · 파일 열기 · 덮개 · Esc · 창을 넓히면 닫힌다.
 const narrow = matchMedia('(max-width: 640px)');
 let setDrawer = (_open: boolean) => {};
 const drawerOpen = () => document.body.classList.contains('rail-drawer');
@@ -137,7 +137,7 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
     className={['rt', tab.active && 'active', tab.stale && 'stale', entering && 'entering', leaving && 'leaving'].filter(Boolean).join(' ')}
     // 공유 세트는 그림이 Android 빌드라는 것을 툴팁에서도 말한다 — 표식만으로는 뜻을 모른다.
     title={kind === 'kmp' ? tab.title + '\n' + phrase('tabs.sharedTip') : tab.title}
-    onClick={() => { closeRailDrawer(); if (!tab.active) post('/viewer/tab', { key: tab.key }); }}
+    onClick={() => { if (tab.active) closeRailDrawer(); else post('/viewer/tab', { key: tab.key }); }}
     // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇
     onAuxClick={e => { if (e.button === 1) { e.preventDefault(); close(); } }}>
     <FileIcon kind={kind} />
@@ -239,6 +239,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
     else hideOnce(SHARED_ONCE);
     const key = active?.key ?? null;
     const moved = shown.current && on && key !== activeKey.current && activeKey.current !== null;
+    if (moved) closeRailDrawer();
     activeKey.current = key;
     shown.current = on;
     move(moved);

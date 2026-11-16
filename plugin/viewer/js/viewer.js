@@ -701,7 +701,7 @@ function Bt({ tab: e, leaving: t, enter: n, onGone: r, observe: i }) {
 		].filter(Boolean).join(" "),
 		title: d === "kmp" ? e.title + "\n" + a("tabs.sharedTip") : e.title,
 		onClick: () => {
-			Dt(), e.active || N("/viewer/tab", { key: e.key });
+			e.active ? Dt() : N("/viewer/tab", { key: e.key });
 		},
 		onAuxClick: (e) => {
 			e.button === 1 && (e.preventDefault(), f());
@@ -778,7 +778,7 @@ function Vt({ tabs: e, screen: t, hosts: n }) {
 		let t = e.find((e) => e.active);
 		t && Te(t.sourceSet) === "kmp" ? ce(St, () => r("capsule.sharedOnce", { sourceSet: t.sourceSet })) : ie(St);
 		let a = t?.key ?? null, o = x.current && g && a !== S.current && S.current !== null;
-		S.current = a, x.current = g, T(o);
+		o && Dt(), S.current = a, x.current = g, T(o);
 	}, [
 		e,
 		t,
