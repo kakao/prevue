@@ -66,6 +66,8 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val showEntered = Semaphore(0)
     /** 걸어 두면 다음 [show] 한 번이 그것을 던진다 — 렌더러가 결과 없이 죽는 자리다. */
     @Volatile var showThrows: Throwable? = null
+    /** 걸어 두면 그것이 예외를 돌려주는 [show]마다 그 예외를 던진다 — 순서와 상관없이 고른 카드만 죽는다. */
+    @Volatile var showThrowsIf: ((PreviewSpec) -> Throwable?)? = null
     /** 걸어 두면 [codeChanged]가 멈춘다 — 컴파일 성공과 세대 올리기 사이의 자리다. */
     @Volatile var codeGate: CountDownLatch? = null
     val codeEntered = Semaphore(0)
@@ -116,6 +118,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         showEntered.release()
         showGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "showGate가 안 풀렸다" } }
         showThrows?.let { showThrows = null; throw it }
+        showThrowsIf?.invoke(p)?.let { throw it }
         if (shown.size > holdAfter) check(hold.await(5, TimeUnit.SECONDS)) { "hold가 안 풀렸다" }
         exceptions.poll()?.let { return output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) }
         failures.poll()?.let { return output(p).copy(ok = false, failure = it, message = Verbatim("가짜 $it")) }

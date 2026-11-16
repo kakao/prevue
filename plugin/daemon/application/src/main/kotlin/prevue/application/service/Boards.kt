@@ -59,7 +59,7 @@ class Boards(
             if (now.cards[idx].fresh(b.gen)) continue
             val tc = System.nanoTime()
             val r = try { drawCard(idx, false, by, await = false) } catch (e: CancellationException) { throw e }
-                    catch (e: Exception) { System.err.println("[prevue] 보드 카드 $idx 그리기 실패: $e"); null }
+                    catch (e: Throwable) { System.err.println("[prevue] 보드 카드 $idx 그리기 실패: $e"); null }
             renderNs += System.nanoTime() - tc
             if (r is CardResult.Skipped && r.reason == SkipReason.RELOAD) { i = idx; yield(); continue }
             if (r !is CardResult.Skipped) drawn++

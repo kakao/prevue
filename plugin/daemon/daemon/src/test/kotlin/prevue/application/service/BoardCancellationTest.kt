@@ -64,18 +64,20 @@ class BoardCancellationTest {
         assertFalse(uc.workspace.now.board!!.cards[2].result is CardResult.WriteFailed, "취소를 쓰기 실패로 적었다")
     }
 
-    @Test fun `한 카드에서 예외가 나도 채우기는 남은 카드를 그리고 끝까지 간다`() {
-        fx.renderer.holdAfter = 1
-        fx.renderer.hold = CountDownLatch(1)
+    @Test fun `한 카드에서 예외나 Error가 나도 채우기는 남은 카드를 그리고 끝까지 간다`() {
+        fx.renderer.showThrowsIf = { p ->
+            when (p.functionName) {
+                "Card1" -> IllegalStateException("렌더러가 죽었다")
+                "Card2" -> NoClassDefFoundError("demo/Gone")
+                else -> null
+            }
+        }
         val uc = opened()
-        assertTrue(fx.renderer.showEntered.tryAcquire(2, 5, TimeUnit.SECONDS), "채우기가 카드 1을 그리지 않았다")
-        fx.renderer.showThrows = IllegalStateException("렌더러가 죽었다")
-        fx.renderer.holdAfter = Int.MAX_VALUE
-        fx.renderer.hold.countDown()
 
         awaitUntil("채움 기록") { uc.workspace.now.boardFill != null }
         awaitUntil("예외 뒤 남은 카드") { uc.workspace.now.board!!.let { it.cards[3].fresh(it.gen) } }
         val b = uc.workspace.now.board!!
-        assertFalse(b.cards[2].fresh(b.gen), "예외 난 카드가 그린 것으로 적혔다")
+        assertFalse(b.cards[1].fresh(b.gen), "예외 난 카드가 그린 것으로 적혔다")
+        assertFalse(b.cards[2].fresh(b.gen), "Error 난 카드가 그린 것으로 적혔다")
     }
 }
