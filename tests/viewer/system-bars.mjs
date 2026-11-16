@@ -109,8 +109,10 @@ try {
   await ready();
   const smoke = process.argv.includes('--smoke');
   const selected=process.argv.find(a=>a.startsWith('--devices='))?.slice(10).split(',');
-  const devices = selected ?? (smoke ? ['duo'] : ['s26','s26ultra','a07','pixel9','pixel10xl','ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo','fold8','ultra','pixelfold','tablet','s11ultra']);
-  const foldable = new Set(['duo','fold8','ultra','pixelfold']);
+  const devices = selected ?? (smoke ? ['duo'] : ['s26','s26ultra','a07','pixel9','pixel10xl','ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo','fold8','ultra','flip8','pixelfold','tablet','s11ultra']);
+  const foldable = new Set(['duo','fold8','ultra','flip8','pixelfold']);
+  // 측정한 자세가 하나뿐인 화면 — 돌린 자세가 없다(Flip8 커버).
+  const fixed = new Set(['flip8-cover']);
   const ios = new Set(['ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo']), pixel = new Set(['pixel9','pixel10xl','pixelfold','tablet']);
   // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
   // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
@@ -126,22 +128,29 @@ try {
     // 노치 — 상자 가운데다. A07 은 윗변의 42.67×34.13dp, Tab S11 Ultra 는 세로 자세의 오른쪽 긴 변에 붙은 16×57.14dp 라 가로에서 위(왼쪽 가로) · 아래(오른쪽 가로)로 간다.
     'a07-open-portrait': [192, 17.07], 'a07-open-landscape-left': [17.07, 192], 'a07-open-landscape-right': [836.27, 192],
     's11ultra-open-portrait': [1048, 845.71], 's11ultra-open-landscape-left': [845.71, 8], 's11ultra-open-landscape-right': [845.71, 1048],
+    // Flip8 — 펼침은 윗변 20.67×36dp 구멍, 커버는 오른쪽 아래 모서리를 차지하는 218.95×88dp 컷아웃이다.
+    'flip8-open-portrait': [180, 18], 'flip8-open-landscape-left': [18, 180], 'flip8-open-landscape-right': [822, 180], 'flip8-cover-portrait': [289.69, 397.26],
   };
-  // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세 · 네 모서리가 같아 기기 · 화면마다 하나다. Pixel Tablet 은 원자료가 비어 뺀다.
-  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46, 'a07-open': 36.27, 's11ultra-open': 25.14,
+  // Android 화면 모서리 반경(dp) — 같은 evidence 파일의 roundedCorners 다. 자세마다 같아 기기 · 화면마다 하나이고, 네 모서리가 다르면 [좌상, 우상, 우하, 좌하](세로 자세)다. Pixel Tablet 은 원자료가 비어 뺀다.
+  const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46, 'a07-open': 36.27, 's11ultra-open': 25.14, 'flip8-open': 22, 'flip8-cover': [5.05, 5.05, 40.84, 40.84],
     // safearea.info 의 그 자세 조건 그대로의 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
     'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'ip17e-open': 47.33, 'ipse3-open': 0, 'duo-cover': 59, 'duo-open': 59 };
   // 화면 모서리 반경(둥근 스테이지의 border-radius)과, 상자 네 꼭짓점이 그 둥근 화면 안에 있는지 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
   const cornerOf = () => evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
-    return {k,radius:parseFloat(getComputedStyle(document.querySelector('#ua .stage')).borderTopLeftRadius),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);
-  const assertRound = (name, { shot, radius: rr }, boxes) => {
-    const inRound = ([x, y]) => { const cx = Math.min(Math.max(x, shot.l + rr), shot.r - rr), cy = Math.min(Math.max(y, shot.t + rr), shot.b - rr); return Math.hypot(x - cx, y - cy) <= rr + 1; };
-    for (const [part, b] of Object.entries(boxes)) if (b) for (const p of [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]]) assert(inRound(p), `${name} ${part} 가 둥근 화면 모서리에 잘리지 않는다: ${JSON.stringify({ p, radius: rr, shot })}`);
+    const cs=getComputedStyle(document.querySelector('#ua .stage'));
+    return {k,radii:['TopLeft','TopRight','BottomRight','BottomLeft'].map(c=>parseFloat(cs['border'+c+'Radius'])),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);
+  // 점마다 가까운 모서리의 반경으로 본다 — 네 모서리가 다른 화면(Flip8 커버)도 있다.
+  const assertRound = (name, { shot, radii }, boxes) => {
+    const inRound = ([x, y]) => {
+      const right = x > (shot.l + shot.r) / 2, bottom = y > (shot.t + shot.b) / 2, rr = radii[bottom ? (right ? 2 : 3) : (right ? 1 : 0)];
+      const cx = Math.min(Math.max(x, shot.l + rr), shot.r - rr), cy = Math.min(Math.max(y, shot.t + rr), shot.b - rr); return Math.hypot(x - cx, y - cy) <= rr + 1; };
+    for (const [part, b] of Object.entries(boxes)) if (b) for (const p of [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]]) assert(inRound(p), `${name} ${part} 가 둥근 화면 모서리에 잘리지 않는다: ${JSON.stringify({ p, radii, shot })}`);
   };
   const boxOf = q => evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(q)});if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}})()`);
-  const total = devices.reduce((n,d)=>n+(foldable.has(d)?6:3),0);
+  const total = devices.reduce((n,d)=>n+(foldable.has(d)?(fixed.has(d+'-cover')?4:6):3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
+    if (fixed.has(`${device}-${folded?'cover':'open'}`) && orientation !== 'portrait') continue;
     await post('/viewer/resize', { device, folded, orientation });
     await until(`__store.st.focus?.size?.device===${JSON.stringify(device)} && __store.st.focus.size.folded===${folded} && __store.st.focus.size.orientation===${JSON.stringify(orientation)}`);
     await ready();
@@ -176,7 +185,11 @@ try {
     assert(await evaluate(`document.querySelectorAll('#sysBars .sb-status').length`) <= 1, `${name} 상태 표시는 많아야 한 벌`);
     const corner = await cornerOf();
     const rawR = RAW_RADIUS[`${device}-${folded?'cover':'open'}`];
-    if (rawR != null) assert(Math.abs(corner.radius / corner.k - rawR) <= .5, `${name} 화면 모서리 반경이 원자료 ±0.5dp: ${JSON.stringify({ got: corner.radius / corner.k, raw: rawR })}`);
+    if (rawR != null) {
+      // 원자료는 세로(자연) 자세의 네 모서리다 — 고정 화면만 넷이 달라 돌린 자세를 따로 맞출 일이 없다.
+      const raw = Array.isArray(rawR) ? rawR : [rawR, rawR, rawR, rawR], got = corner.radii.map(r => r / corner.k);
+      assert(raw.every((v, i) => Math.abs(got[i] - v) <= .5), `${name} 화면 모서리 반경이 원자료 ±0.5dp: ${JSON.stringify({ got, raw })}`);
+    }
     if (device==='ipse3') {
       // 홈 버튼 기기 — 상태바는 신호 · Wi-Fi(왼쪽) · 시각(가운데) · 배터리(오른쪽)로 갈리고, 위 · 아래 베젤이 옆 베젤보다 두꺼우며 아래 베젤 가운데에 홈 버튼이 있다. 가로에는 상태바가 없다.
       const s = await evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
@@ -227,6 +240,13 @@ try {
         const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, (mid(cam) - shot.t) / bars.k];
         assert(Math.abs(got[0] - raw[0]) <= .5 && Math.abs(got[1] - raw[1]) <= .5, `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got, raw })}`);
       } else assert(!cam, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
+      // 상태바 인셋이 0인 화면(Flip8 커버)은 상태 줄이 없다.
+      if (!bars.top) {
+        assert(!time && !icons && handle, `${name} 상태 줄 없이 핸들만: ${JSON.stringify(bars)}`);
+        // 아래 오른쪽 컷아웃이 아래 띠를 차지해 핸들은 그 왼쪽 띠 가운데로 비켜 선다.
+        assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && cam && handle.r < cam.l && Math.abs((handle.l + handle.r) / 2 - (shot.l + cam.l) / 2) < 1, `${name} 핸들이 컷아웃 왼쪽 띠 가운데: ${JSON.stringify(bars)}`);
+        assertRound(name, corner, { handle });
+      } else {
       assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
       const rowY = cam && cam.t < shot.t + bars.top ? mid(cam) : shot.t + bars.top / 2;
       assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 상태 줄이 ${cam && cam.t < shot.t + bars.top ? '카메라' : '띠'} 가운데 높이: ${JSON.stringify({ rowY, ...bars })}`);
@@ -236,6 +256,7 @@ try {
       if (cam) for (const b of [time, icons]) assert(apart(b, cam), `${name} 상태 줄이 카메라와 겹치지 않는다: ${JSON.stringify(bars)}`);
       assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
       assertRound(name, corner, { time, icons, handle });
+      }
     }
     if (device==='duo') {
       assertRound(name, corner, { status: await boxOf('#sysBars .sb-duo-status') });

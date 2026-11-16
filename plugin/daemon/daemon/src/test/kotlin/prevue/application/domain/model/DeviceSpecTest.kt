@@ -51,11 +51,11 @@ class DeviceSpecTest {
             val m = p.measured ?: return listOf("측정 인셋이 없다")
             val dp = mapOf("statusBars" to m.statusBars, "navigationBars" to m.navigationBars, "captionBar" to m.captionBar, "displayCutout" to m.displayCutout)
             dp.forEach { (kind, edges) ->
-                val expected = dpOf(px.getValue(kind), d.model.dpi)
+                val expected = dpOf(px.getValue(kind), d.dpi)
                 if (edges != expected) found += "$kind $edges ≠ $expected"
             }
             val widest = px.values.reduce { a, b -> InsetEdges(maxOf(a.left, b.left), maxOf(a.top, b.top), maxOf(a.right, b.right), maxOf(a.bottom, b.bottom)) }
-            val expected = dpOf(widest, d.model.dpi)
+            val expected = dpOf(widest, d.dpi)
             if (p.safeArea != expected) found += "safeArea ${p.safeArea} ≠ 변마다 max $expected"
         }
         r.safeAreaSize?.let { size ->

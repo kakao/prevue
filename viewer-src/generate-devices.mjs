@@ -17,21 +17,29 @@ const dp = (px, dpi) => Math.round(number(px, 'px') / dpi * 160 * 100) / 100;
 const BARS = ['aosp', 'oneui', 'pixel', 'ios'];
 
 // 화면 모서리는 사이트의 측정값(자세마다 cornerRadius)이 있으면 그것이고, 없을 때만 look.radius(그림 값)다 — 둘 다 있으면 어느 쪽이 맞는지 알 수 없어 실패한다.
+// 값은 네 모서리 [좌상, 우상, 우하, 좌하](자연 방향)다. 스펙은 넷이 같으면 숫자 하나, 다르면 그 순서의 목록으로 적는다.
+const corners = (value, where) => {
+  const list = Array.isArray(value) ? value : [value, value, value, value];
+  if (list.length !== 4) throw Error(`${where}: 숫자 하나이거나 [좌상, 우상, 우하, 좌하] 넷이다`);
+  return list.map((v, i) => number(v, `${where}[${i}]`));
+};
 function measuredRadius(screen, dpi, ios, where) {
   const found = new Set(), postures = Object.entries(screen.postures);
   for (const [name, posture] of postures) {
     const c = posture.cornerRadius;
     if (c === undefined) continue;
     const at = `${where}.postures.${name}.cornerRadius`;
-    if (ios) { found.add(number(keys(c, ['pt'], at).pt, at)); continue; }
+    if (ios) { found.add(JSON.stringify(corners(keys(c, ['pt'], at).pt, `${at}.pt`))); continue; }
     keys(c, ['px', 'dp'], at);
-    if (Math.abs(dp(c.px, dpi) - number(c.dp, at)) > .01) throw Error(`${at}: px ÷ 밀도가 dp 와 다르다`);
-    found.add(c.dp);
+    const pxs = corners(c.px, `${at}.px`), dps = corners(c.dp, `${at}.dp`);
+    if (Array.isArray(c.px) !== Array.isArray(c.dp)) throw Error(`${at}: px 와 dp 의 모양이 다르다`);
+    pxs.forEach((v, i) => { if (Math.abs(dp(v, dpi) - dps[i]) > .01) throw Error(`${at}: px ÷ 밀도가 dp 와 다르다`); });
+    found.add(JSON.stringify(dps));
   }
   const have = postures.filter(([, posture]) => posture.cornerRadius !== undefined).length;
   if (have && have !== postures.length) throw Error(`${where}: 모서리 반경이 일부 자세에만 있다`);
   if (found.size > 1) throw Error(`${where}: 자세마다 모서리 반경이 다르다 ${[...found]}`);
-  return found.size ? [...found][0] : undefined;
+  return found.size ? JSON.parse([...found][0]) : undefined;
 }
 
 function body(raw, where, measured) {
@@ -43,7 +51,7 @@ function body(raw, where, measured) {
   if (measured === undefined && !('radius' in raw)) throw Error(`${where}: radius 가 없다`);
   const cam = keys(raw.cam, ['w', 'h', 'y', 'x', 'notch', 'edge'], `${where}.cam`, ['w', 'h', 'y']);
   for (const [name, value] of Object.entries(cam)) if (name !== 'edge') number(value, `${where}.cam.${name}`);
-  if (cam.edge !== undefined && (cam.edge !== 'right' || cam.notch === undefined)) throw Error(`${where}.cam.edge: right 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
+  if (cam.edge !== undefined && (!['right', 'bottom'].includes(cam.edge) || cam.notch === undefined)) throw Error(`${where}.cam.edge: right · bottom 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
   if (cam.notch !== undefined && (cam.y !== 0 || cam.notch < 0 || cam.notch > Math.min(cam.w, cam.h) / 2)) throw Error(`${where}.cam.notch: 가장자리에 붙으려면 y 가 0 이고, 반경은 짧은 변의 절반 이하다`);
   if (!Array.isArray(raw.btn) || raw.btn.length > 5) throw Error(`${where}.btn: 5개 이하의 목록이 아니다`);
   const btn = raw.btn.map((entry, i) => {
@@ -53,7 +61,7 @@ function body(raw, where, measured) {
     return { side, at, len };
   });
   while (btn.length < 5) { const last = btn[btn.length - 1]; btn.push({ side: last.side, at: last.at + last.len, len: 0 }); }
-  return { bezel: number(bezel.side, `${where}.bezel`), ...bezel.ends === undefined ? {} : { ends: bezel.ends }, ...raw.home ? { home: true } : {}, radius: measured ?? number(raw.radius, `${where}.radius`), cam, btn };
+  return { bezel: number(bezel.side, `${where}.bezel`), ...bezel.ends === undefined ? {} : { ends: bezel.ends }, ...raw.home ? { home: true } : {}, radius: measured ?? corners(raw.radius, `${where}.radius`), cam, btn };
 }
 
 function status(raw, where) {
@@ -64,11 +72,11 @@ function status(raw, where) {
 }
 
 // 접기 장면의 판 — 펼친 판 하나의 두께와 다 접혔을 때 두 화면 사이 틈(dp, 실물 mm 에서 옮긴 어림값).
-// 힌지가 높이를 가르는 조개형은 아직 그리지 않아 width 만 받는다. blur 는 접히는 판의 화면에 겹 흐림을 준다(iPhone Duo 의 접기 모양).
+// axis 는 힌지가 가르는 변이다 — width 는 책형, height 는 조개형. blur 는 접히는 판의 화면에 겹 흐림을 준다(iPhone Duo 의 접기 모양).
 function plate(look, where) {
   const hinge = keys(look.hinge, ['axis', 'gap', 'blur'], `${where}.hinge`, ['axis', 'gap']);
   if (hinge.blur !== undefined && hinge.blur !== true) throw Error(`${where}.hinge.blur: true 만 받는다`);
-  if (hinge.axis !== 'width') throw Error(`${where}.hinge.axis: width 만 받는다(height 는 아직 그리지 않는다)`);
+  if (!['width', 'height'].includes(hinge.axis)) throw Error(`${where}.hinge.axis: width · height 만 받는다`);
   const thickness = number(look.thickness, `${where}.thickness`), gap = number(hinge.gap, `${where}.hinge.gap`);
   if (thickness <= 0 || gap < 0) throw Error(`${where}: thickness 는 0보다 크고 hinge.gap 은 0 이상이다`);
   return { thickness, gap, axis: hinge.axis, ...hinge.blur ? { blur: true } : {} };
@@ -86,14 +94,18 @@ export function deviceTable(specList) {
     if (!/^#[0-9a-f]{6}$/i.test(look.tone)) throw Error(`${where}.look.tone: #rrggbb 가 아니다 — 접기 장면이 빛에 맞춰 채널을 나눠 계산한다`);
     if (look.bar === 'ios' && !folds && !look.status) throw Error(`${where}: iOS 홑 기기에는 look.status 가 필요하다`);
     if (look.status && (look.bar !== 'ios' || folds)) throw Error(`${where}: look.status 는 iOS 홑 기기만 갖는다`);
+    // 화면마다 밀도가 다를 수 있다(Galaxy Z Flip8 커버 380 · 펼침 480) — 화면의 dpi 가 없으면 기기 dpi 다.
+    const dpiOf = key => screens[key].dpi === undefined ? number(m.dpi, `${where}.measured.dpi`) : number(screens[key].dpi, `${where}.measured.screens.${key}.dpi`);
+    // 측정한 자세가 하나뿐인 화면은 그 자세로만 둔다 — 돌리기를 끈다(fixed).
     const panel = key => {
-      const s = screens[key], out = { w: dp(s.widthPx, m.dpi), h: dp(s.heightPx, m.dpi) };
-      if (s.hingePx !== undefined) out.hinge = dp(s.hingePx, m.dpi);
+      const s = screens[key], dpi = dpiOf(key), out = { w: dp(s.widthPx, dpi), h: dp(s.heightPx, dpi) };
+      if (s.hingePx !== undefined) out.hinge = dp(s.hingePx, dpi);
+      if (Object.keys(s.postures).length === 1) out.fixed = true;
       return out;
     };
     const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
-    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], m.dpi, look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
+    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);
     return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };

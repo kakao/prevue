@@ -89,7 +89,10 @@ try {
   const devices = [
     ['fold8',932.57,704,475.43,751.24], ['ultra',752,834.67,360,840],
     ['duo',951,669,466,678], ['pixelfold',851.69,882.87,443.08,994.46],
+    ['flip8',360,840,399.16,441.26],
   ];
+  // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 세로만 있다 — 펼친 가로에서 접으면 세로로 서며 접힌다(셋째 값 true).
+  const FIXED = { flip8: { 'open:portrait':['portrait'], 'open:landscape-left':['portrait',false,true], 'open:landscape-right':['portrait',false,true], 'cover:portrait':['portrait'] } };
   const results = [];
   const click = async selector => {
     const at = await evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),r=el.getBoundingClientRect();if(el.hidden||!r.width||!r.height)throw Error('버튼이 숨었다: '+el.id);return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
@@ -133,12 +136,14 @@ try {
     'cover:portrait':['landscape-left'], 'cover:landscape-right':['portrait'], 'cover:landscape-left':['portrait',true],
     'open:landscape-left':['portrait'], 'open:portrait':['landscape-right'], 'open:landscape-right':['portrait',true],
   };
-  const handOf = (device, folded, orientation) => ['duo','fold8'].includes(device) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
+  const handOf = (device, folded, orientation) => FIXED[device] ? FIXED[device][(folded?'cover':'open')+':'+orientation]
+    : ['duo','fold8'].includes(device) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
   const flip = (b, c) => ({x:2*c.x-b.x-b.w,y:2*c.y-b.y-b.h,w:b.w,h:b.h});
   const centre = b => ({x:b.x+b.w/2,y:b.y+b.h/2});
   for (const [device, ...size] of devices) {
     for (const orientation of ['portrait','landscape-left','landscape-right']) for (const folded of [false,true]) {
-      const [toOrientation,unpaired=false]=handOf(device,folded,orientation);
+      if (!handOf(device,folded,orientation)) continue;
+      const [toOrientation,unpaired=false,upright=false]=handOf(device,folded,orientation);
       const from=pose(device,folded,orientation,size),to=pose(device,!folded,toOrientation,size),open=folded?to:from,cover=folded?from:to;
       const name=`${device} ${folded?'cover':'open'} ${orientation} → ${toOrientation}`;
       await evaluate(`window.states=${JSON.stringify({[from.sel]:from,[to.sel]:to})}`);
@@ -168,7 +173,8 @@ try {
           assert(frames.every(Boolean),`${name}: 매 프레임 접기 장면 표시`);
           // 접는 동안 몸체는 돌지 않는다 — 짝 없는 경우도 180° 돌지 않고 접기만 보인다.
           const turns=new Set([first,...frames].map(f=>f.angle));
-          assert.equal(turns.size,1,`${name}: 회전 모션 없음 ${[...turns].join(' · ')}`);
+          if(upright) assert(turns.size>=10,`${name}: 세로로 서며 접힌다`);
+          else assert.equal(turns.size,1,`${name}: 회전 모션 없음 ${[...turns].join(' · ')}`);
           for(const frame of frames){
             const boxes=[frame.body,...frame.buttons];
             assert(boxes.every(b=>b.x>=0&&b.y>=0&&b.x+b.w<=1440&&b.y+b.h<=900),`${name}: 모션 중 몸체와 단추가 창 안`);
@@ -232,6 +238,12 @@ try {
       console.log(`통과 ${++checked}: ${name}`);
     }
   }
+  // 돌리기 끄기 — 측정한 자세가 하나뿐인 Flip8 커버에서는 방향 고르기가 숨고, 돌린 자세는 장면이 받지 않는다.
+  for (const [sel, w, h, fixed] of [['flip8:cover',399.16,441.26,true], ['flip8:open',360,840,false], ['fold8:cover',475.43,751.24,false]]) {
+    await evaluate(`states={};reset(${JSON.stringify({sel,w,h})})`);
+    await check(`document.querySelector('#dcOrientation').hidden===${fixed}`, `${sel} 돌리기 ${fixed?'꺼짐':'켜짐'}`);
+  }
+  await check("scene.sizeOf('flip8:cover:rot')===null&&scene.sizeOf('flip8:cover')!==null", 'flip8 커버의 돌린 자세는 없다');
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   for(const [device,...size] of devices){
     const natural=size[0]>size[1]?'landscape-left':'portrait';
@@ -246,6 +258,7 @@ try {
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   for (const [device,...size] of devices) {
     for(const orientation of ['portrait','landscape-left','landscape-right']) for(const folded of [false,true]) {
+      if (!handOf(device,folded,orientation)) continue;
       const from=pose(device,folded,orientation,size),to=pose(device,!folded,handOf(device,folded,orientation)[0],size);
       for(const cached of [false,true]) {
         await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});${cached?`scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}))`:""}`);

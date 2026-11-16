@@ -170,7 +170,7 @@ class RenderIntegrationTest {
             val insets = (spec.systemBars as SystemBars.Shown).insets!!
             val out = engine.written(engine.show(spec))
             assertTrue(out.ok, out.message?.text)
-            val k = device.model.dpi / 160.0
+            val k = device.dpi / 160.0
             val row = PearlFixture.lineOf(screenFile, HEADER_ROW)
             val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == row }
             val expected = Math.round(insets.statusDp * k) + Math.round(HEADER_PADDING_DP * k)

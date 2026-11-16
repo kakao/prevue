@@ -191,7 +191,7 @@ internal abstract class InsetsRenderChecks {
             assertTrue(handle.opened.ok, handle.opened.message?.text)
             val root = session().viewRoot()!!
             val density = root.context.resources.displayMetrics.density
-            assertEquals(model.dpi / 160f, density, model.id)
+            assertEquals(device.dpi / 160f, density, model.id)
             assertEquals(device.widthDp, root.width / density.toDouble(), 1.0, "${model.id} 폭 dp")
             assertEquals(device.heightDp, root.height / density.toDouble(), 1.0, "${model.id} 높이 dp")
             handle.close()
@@ -220,7 +220,7 @@ internal abstract class InsetsRenderChecks {
                 assertTrue(handle.opened.ok, "${device.key} $choice: ${handle.opened.message}")
                 val values = reads(handle)
                 val density = session().viewRoot()!!.context.resources.displayMetrics.density
-                assertEquals(device.model.dpi / 160f, density, "${device.key} 렌더 밀도는 스펙 dpi 그대로")
+                assertEquals(device.dpi / 160f, density, "${device.key} 렌더 밀도는 스펙 dpi 그대로")
                 fun pixels(edges: InsetEdges) = listOf(edges.left, edges.top, edges.right, edges.bottom)
                     .joinToString(",") { (it * density).roundToInt().toString() }
                 val expected = spec.appInsets!!
@@ -280,7 +280,7 @@ internal abstract class InsetsRenderChecks {
             }
             val (on, off) = grids
             val area = device.insetProfile.safeArea!!
-            val density = device.model.dpi / 160.0
+            val density = device.dpi / 160.0
             val titleGap = (24 * density).roundToInt()
             assertEquals((area.top * density).roundToInt() + titleGap, titles[0].top, device.key)
             assertEquals(titleGap, titles[1].top, device.key)
@@ -309,7 +309,7 @@ internal abstract class InsetsRenderChecks {
                 handle.close()
             }
             val area = device.insetProfile.safeArea!!
-            val density = device.model.dpi / 160.0
+            val density = device.dpi / 160.0
             val (on, off) = buttons
             assertEquals((area.right * density).roundToInt(), off.right - on.right, device.key)
             assertEquals((area.bottom * density).roundToInt(), off.bottom - on.bottom, device.key)
