@@ -51,6 +51,23 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
   let original: { w: number; h: number; img: SceneImage | null } | null = null, shown = false, pending = false;
   let preparing = false, arrival: Animation | null = null;
   const decoded = new Map<string, Promise<HTMLImageElement>>(), edges = new Map<string, string>();
+  // 데몬은 크기 요청을 병렬로 받아 처리를 끝낸 순서대로 넣는다 — 연타의 앞 요청이 늦게 끝나면 그 크기에 멈춘다.
+  // 그래서 한 번에 하나만 보내고, 기다리는 동안 온 것은 가장 최근 것만 남긴다. 밀려난 요청은 실패가 아니다(true).
+  let sending = false, queued: { body: object; settle(ok: boolean): void } | null = null;
+  const requestSize = (body: object) => new Promise<boolean>(settle => {
+    if (sending) { queued?.settle(true); queued = { body, settle }; } else sendSize(body, settle);
+  });
+  function sendSize(body: object, settle: (ok: boolean) => void) {
+    sending = true;
+    // 장면이 실패를 알아야 끌던 틀을 지금 크기로 되돌린다 — 성공 여부로 답한다
+    post('/viewer/resize', body).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; })
+      .catch(e => { flash(phrase('resize.failed', { why: (e as Error).message })); return false; })
+      .then(ok => {
+        settle(ok);
+        const next = queued; queued = null; sending = false;
+        if (next) sendSize(next.body, next.settle);
+      });
+  }
   const edgeOfUrl = (img: HTMLImageElement) => { if (!edges.has(img.src)) edges.set(img.src, edgeOf(img, img.naturalWidth, img.naturalHeight)); return edges.get(img.src)!; };
   const scene = createResizeScene(root, {
     request: sel => {
@@ -58,9 +75,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       const [dev, state, ...turns] = sel.split(':'), device = scene.devices.has(dev);
       const body = device ? { device: dev, folded: state === 'cover', orientation: turns.includes('right') ? 'landscape-right' : (scene.sizeOf(sel)!.w > scene.sizeOf(sel)!.h ? 'landscape-left' : 'portrait') }
         : { size: sel.startsWith('custom:') ? sel.slice(7) : sel };
-      // 장면이 실패를 알아야 끌던 틀을 지금 크기로 되돌린다 — 성공 여부로 답한다
-      return post('/viewer/resize', body).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; })
-        .catch(e => { flash(phrase('resize.failed', { why: (e as Error).message })); return false; });
+      return requestSize(body);
     },
     layout: (rect, moving) => {
       if (!active) return;
