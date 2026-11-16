@@ -205,8 +205,8 @@ export function createResizeScene(root, hooks) {
   const layer = layersOf(null);
   const swapAt = (sw, now) => clamp((now - sw.t0) / sw.dur, 0, 1);
   const bump = k => P.swapBlur * 4 * k * (1 - k);
-  // 크기 교체의 흐림 — 가운데서 가장 흐리고 끝까지 걷는다. tail 이 있으면 그만큼 남기고 멈추면 tick 이 걷는다
-  const swapBlurAt = (sw, k) => k < .5 ? bump(k) : lerp(P.swapBlur, sw.tail || 0, smooth(.5, 1, k));
+  // 크기 교체의 흐림 — 가운데서 가장 흐리고 틀이 멈추길 기다리지 않고 끝까지 걷는다
+  const swapBlurAt = k => k < .5 ? bump(k) : lerp(P.swapBlur, 0, smooth(.5, 1, k));
   const unitOp = { a: new Tw(1), b: new Tw(0) };
   let fadeB = null;
 
@@ -252,7 +252,7 @@ export function createResizeScene(root, hooks) {
 
   function freeze(now) {
     const n = layer.neu, o = layer.old, sw = layer.swap;
-    const nb = sw ? swapBlurAt(sw, swapAt(sw, now)) : n.blur.at(now), nop = sw ? smooth(0, 1, swapAt(sw, now)) : n.op.at(now);
+    const nb = sw ? swapBlurAt(swapAt(sw, now)) : n.blur.at(now), nop = sw ? smooth(0, 1, swapAt(sw, now)) : n.op.at(now);
     if (n.r && nop > .5) { o.r = n.r; o.grow.snap(0); o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
     else if (sw) o.blur.snap(nb);
     o.held = true;
@@ -326,7 +326,7 @@ export function createResizeScene(root, hooks) {
     const n = layer.neu;
     tr.swapped = tr.arrived = true;
     n.r = tr.to.img; n.op.snap(0); n.blur.snap(0);
-    layer.swap = { t0: now, dur: P.swapDur, tail: 0 };
+    layer.swap = { t0: now, dur: P.swapDur };
   }
 
   function startFade(from, to, now) {
@@ -775,7 +775,7 @@ export function createResizeScene(root, hooks) {
 
   function drawContent(U, rect, s, layers, now) {
     const o = layers.old, n = layers.neu, sw = layers.swap, k = sw ? swapAt(sw, now) : 0;
-    const nop = sw ? smooth(0, 1, k) : n.op.at(now), nb = sw ? swapBlurAt(sw, k) : n.blur.at(now), ob = Math.max(o.blur.at(now), sw ? swapBlurAt(sw, k) : 0);
+    const nop = sw ? smooth(0, 1, k) : n.op.at(now), nb = sw ? swapBlurAt(k) : n.blur.at(now), ob = Math.max(o.blur.at(now), sw ? swapBlurAt(k) : 0);
     U.l0.style.transform = U.l1.style.transform = "";
     if (o.r) {
       // 채운 그림은 가운데에 둔다 — 돌리는 동안의 똑바로 선 그림과 같은 자리라 돌기 전후에 튀지 않는다.
@@ -892,7 +892,7 @@ export function createResizeScene(root, hooks) {
     const n = layer.neu;
     const shown = layer.swap ? swapAt(layer.swap, now) >= 1 : n.op.done(now) && n.op.b === 1 && n.blur.done(now);
     if (!rig.on && n.r && shown) {
-      const keep = layer.swap ? layer.swap.tail : n.blur.b;
+      const keep = layer.swap ? 0 : n.blur.b;
       settle(n.r);
       if (tr?.kind === "size" && keep) layer.old.blur.snap(keep);
     }
