@@ -52,11 +52,13 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-scene .rig .plate { position: absolute; left: 0; top: 0; }
 .resize-scene .rig :is(.face, .strip, .spine) { position: absolute; left: 0; top: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 /* 판의 면은 멈춘 몸체(.shell)와 같은 150° 빛 · 테 · 외곽선이라 양끝에서 바뀌지 않는다 — 그림자는 바닥 상자(.plate)가 한 번만 드리운다 */
-.resize-scene .rig .face { background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade));
-             box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline); }
+.resize-scene .rig .face { overflow: hidden; box-shadow: inset 0 0 0 1px var(--device-rim), 0 0 0 .5px var(--device-hairline); }
+.resize-scene .rig .gloss { background-image: linear-gradient(150deg, var(--device-gloss), var(--device-gloss-clear) 40%, var(--device-gloss-shade)); }
 .resize-scene .rig .clip { position: absolute; overflow: hidden; }
-.resize-scene .rig :is(.lit, .cast) { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
-.resize-scene .rig .smear { position: absolute; inset: 0; pointer-events: none; }
+.resize-scene .rig .lit { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+/* 그림과 그라디언트 겹은 각자 합성 층이다 — 그 위아래가 바뀌어도 다시 래스터하지 않고, 크기는 scale 로만 바뀐다(stretch) */
+.resize-scene .rig :is(.gloss, .cast, .smear, .unstretch) { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; }
+.resize-scene .rig :is(.gloss, .cast, .smear, .smear .ly) { will-change: transform; }
 .resize-scene .rig .edge { position: absolute; pointer-events: none; border-style: solid; }
 .resize-scene .rig .ring { border-color: var(--live); }
 .resize-scene .rig .crease { transform: translateZ(.5px); }

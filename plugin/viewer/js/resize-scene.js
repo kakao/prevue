@@ -379,15 +379,42 @@ export function createResizeScene(root, hooks) {
   const RG = { lift: q(rigEl, ".lift"), space: q(rigEl, ".space"), plate: q(rigEl, ".plate"), spine: q(rigEl, ".spine"),
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
   const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
-  const sideOf = el => ({ body: el, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit") });
+  const sideOf = el => {
+    const gloss = document.createElement("div"); gloss.className = "gloss"; el.prepend(gloss);
+    return { body: el, gloss, clip: q(el, ".clip"), ring: q(el, ".ring"), lit: q(el, ".lit"), fit: [] };
+  };
   const panelOf = el => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
   RG.base = panelOf(q(rigEl, ".slab.base")); RG.leaf = panelOf(q(rigEl, ".slab.leaf"));
   RG.btns = Array.from({ length: 5 }, () => { const el = document.createElement("div"); el.className = "btn"; RG.space.append(el); return el; });
   RG.F = { inner: faceOf(RG.leaf.front.clip), outer: faceOf(RG.leaf.back.clip), base: faceOf(RG.base.front.clip) };
   // 겹 흐림(plate.blur) — 접히는 판의 화면에 힌지에서 먼 쪽일수록 더 흐린 그림 네 겹과 그늘을 덮는다. 면 안은 평평한 층이라 filter · mask 를 둬도 장면이 눌리지 않는다.
-  for (const f of [RG.F.inner, RG.F.outer]) {
-    f.blurs = Array.from({ length: 4 }, () => { const el = document.createElement("div"); el.className = "smear"; el.innerHTML = '<img class="ly" alt="">'; f.el.insertBefore(el, f.cam); return { el, img: q(el, "img") }; });
+  // 겹은 화면 크기로 늘여지므로(stretch) 그림은 되돌린 겹(.unstretch) 안에 둬 화면 좌표 그대로 선다.
+  for (const [side, f] of [[RG.leaf.front, RG.F.inner], [RG.leaf.back, RG.F.outer]]) {
+    f.blurs = Array.from({ length: 4 }, () => {
+      const el = document.createElement("div"); el.className = "smear"; el.innerHTML = '<div class="unstretch"><img class="ly" alt=""></div>'; f.el.insertBefore(el, f.cam);
+      return { el, inv: q(el, ".unstretch"), img: q(el, "img") };
+    });
     f.dark = document.createElement("div"); f.dark.className = "smear"; f.el.insertBefore(f.dark, f.cam);
+    side.fit.push(...f.blurs.map(b => b.el), f.dark);
+  }
+  RG.base.front.fit.push(RG.F.base.cast);
+  // 접는 동안 크기가 바뀌는 그라디언트 층(광택 · 그늘 · 겹 흐림)은 첫 프레임의 크기로 한 번 그리고 그 뒤로는 scale 로만 늘인다 —
+  // 크기가 바뀌면 층 전체를 다시 래스터해, 소프트웨어 래스터에서 접기 한 번에 수백 ms 가 들었다.
+  const stretchOf = new Map();
+  function stretch(el, w, h) {
+    let st = stretchOf.get(el);
+    if (!st) { st = { w0: Math.max(w, 1), h0: Math.max(h, 1) }; stretchOf.set(el, st); Object.assign(el.style, { width: px(st.w0), height: px(st.h0) }); }
+    st.k = [w / st.w0, h / st.h0];
+    el.style.transform = `scale(${st.k[0].toFixed(5)}, ${st.k[1].toFixed(5)})`;
+  }
+  // 그늘의 세기는 불투명도로만 준다 — 그라디언트는 접기마다 한 번 칠한다. 바닥 그늘은 세기에 비례해 모양이 같고,
+  // 겹 흐림의 그늘은 다 선(90°) 순간의 모양으로 칠해 그보다 얕은 각도에서는 옛 모양보다 조금 옅다.
+  function paintShades() {
+    RG.F.base.cast.style.background = `linear-gradient(90deg, ${shade(1)}, ${shade(.35)} 45%, ${shade(0)} 90%)`;
+    for (const [f, dir] of [[RG.F.inner, "to left"], [RG.F.outer, "to right"]]) {
+      f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
+      f.blurs.forEach(({ el }, i) => { el.style.webkitMaskImage = el.style.maskImage = `linear-gradient(${dir}, transparent ${((i + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((i + 1) / 4 * 100).toFixed(1)}%)`; });
+    }
   }
 
   function startFold(from, to, now, cached) {
@@ -413,6 +440,8 @@ export function createResizeScene(root, hooks) {
         : { outer: { role: "crisp", du: 0 }, inner: { role: "hold", du: 0, neu: true, frame }, base: { role: "hold", du: H, neu: true, frame } },
     });
     rig.dip = rigDip();
+    stretchOf.clear();
+    paintShades();
     if (!cached) hold(now);
     creaseOp.snap(0);
     roll.w.snap(from.w); roll.h.snap(from.h);
@@ -555,7 +584,8 @@ export function createResizeScene(root, hooks) {
     return `linear-gradient(90deg, ${hi} 0, ${mid} 10%, ${mid} 90%, ${lo} 100%)`;
   };
   // 화면은 스스로 빛나서 몸체보다 덜 어두워진다.
-  const litOf = b => b <= 1 ? shade(P.screenDim * (1 - b)) : `color-mix(in srgb, var(--device-veil) ${((b - 1) * 25).toFixed(1)}%, transparent)`;
+  // 색은 둘 중 하나로 두고 세기는 불투명도로 준다 — 색이 프레임마다 바뀌면 층을 다시 래스터한다.
+  const litOf = b => b <= 1 ? ["var(--device-shade)", P.screenDim * (1 - b)] : ["var(--device-veil)", (b - 1) * .25];
   const px = v => v.toFixed(2) + "px", radii = r => r.map(px).join(" ");
   // 둥근 사각형 윤곽의 옆면 띠 — 직선 변은 한 장, 모서리는 호에 외접하는 n장이라 이웃 띠의 끝이 만난다.
   function perimeter([x0, y0, x1, y1], [tl, tr, br, bl], n) {
@@ -587,7 +617,9 @@ export function createResizeScene(root, hooks) {
         Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - w), width: px(sw + ll + rr), height: px(sh + 2 * w),
           borderWidth: `${px(w)} ${px(rr)} ${px(w)} ${px(ll)}`, borderRadius: radii(sr.map(v => v + w)) });
       }
-      if (f.lit) f.lit.style.background = litOf(lightOf(normal([0, 0, back ? -1 : 1])));
+      if (f.lit) { const [color, a] = litOf(lightOf(normal([0, 0, back ? -1 : 1]))); f.lit.style.background = color; f.lit.style.opacity = a.toFixed(4); }
+      stretch(f.gloss, W, H);
+      for (const el of f.fit) stretch(el, sw, sh);
     }
     const segs = perimeter(body, R, P.arcSegs);
     while (p.strips.length < segs.length) { const el = document.createElement("div"); el.className = "strip"; p.el.append(el); p.strips.push(el); }
@@ -603,19 +635,19 @@ export function createResizeScene(root, hooks) {
   }
 
   // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고 힌지에서 먼 쪽(dir)으로 갈수록 세다.
-  function smear(f, lift, dir) {
+  function smear(f, lift) {
     const on = rig.d.plate.blur && lift > .01, top = Number(f.neu.style.opacity) > .5 ? f.neu : f.old;
-    f.blurs.forEach(({ el, img }, i) => {
+    f.blurs.forEach(({ el, inv, img }, i) => {
       const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35), base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || [0, 0])[1]);
       el.style.opacity = on && blur > .2 ? 1 : 0;
       if (!on || blur <= .2) return;
       if (img.src !== top.src) img.src = top.src;
+      const [kx, ky] = stretchOf.get(el).k;
+      inv.style.transform = `scale(${(1 / kx).toFixed(5)}, ${(1 / ky).toFixed(5)})`;
       Object.assign(img.style, { left: top.style.left, top: top.style.top, width: top.style.width, height: top.style.height, transform: top.style.transform,
         filter: `blur(${Math.max(blur, base).toFixed(2)}px)` });
-      el.style.webkitMaskImage = el.style.maskImage = `linear-gradient(${dir}, transparent ${((i + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((i + 1) / 4 * 100).toFixed(1)}%)`;
     });
-    f.dark.style.opacity = on ? 1 : 0;
-    if (on) f.dark.style.background = `linear-gradient(${dir}, ${[0, .2, .4, .6, .8, 1].map(dd => `${shade(Math.min(1, 2 * lift * Math.pow(Math.max(0, (dd - .2) / .8), 1.35)) * P.foldDark)} ${dd * 100}%`).join(", ")})`;
+    f.dark.style.opacity = on ? lift.toFixed(4) : 0;
   }
 
   // 조개형의 옆 단추는 힌지와 나란한 변(판 좌표의 위 · 아래 변)에 있고 접히는 장을 따라 돈다 — 힌지에서 잰 거리를 펼친 자리에서
@@ -668,14 +700,14 @@ export function createResizeScene(root, hooks) {
     paintFace(RG.F.base, rig.plan.base, s, now);
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
-    smear(RG.F.inner, th <= 90 ? sn : 0, "to left");
-    smear(RG.F.outer, th > 90 ? sn : 0, "to right");
+    smear(RG.F.inner, th <= 90 ? sn : 0);
+    smear(RG.F.outer, th > 90 ? sn : 0);
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
     putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
     putCam(RG.F.inner.cam, oc, 0, 0, 1);
     putCam(RG.F.base.cam, oc, -sh, 0, 1);
     const cast = P.shade * (.85 * smooth(90, 180, th) + .25 * sn);
-    RG.F.base.cast.style.background = `linear-gradient(90deg, ${shade(cast)}, ${shade(cast * .35)} 45%, ${shade(0)} 90%)`;
+    RG.F.base.cast.style.opacity = cast.toFixed(4);
 
     // 책등 — 두 판의 뒤쪽 힌지 모서리를 잇는 띠. 펼치면 폭 0, 다 접히면 두께 둘 + 틈. 둥근 힌지 쪽 모서리까지 덮게 몸체 높이 전체에 반경을 준다.
     const bx = -e, bz = -T, dz = -T - za, lx = e * cs + dz * sn, lz = za - e * sn + dz * cs;
