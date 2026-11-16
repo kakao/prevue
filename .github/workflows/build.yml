@@ -198,15 +198,15 @@ jobs:
           restore-keys: integration-toolchain-${{ runner.os }}-
 
       # 픽스처는 compileSdk 37 이다. 테스트는 ANDROID_HOME 의 platforms 에서 android.jar 를 찾는다.
+      # 러너 이미지가 android-37.0 을 갖고 있다(2026-11 확인) — 없어진 이미지면 받는다.
       - name: Android 플랫폼을 맞춘다
         run: |
           set -eu
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME/platforms" || true
-          if [ ! -d "$ANDROID_HOME/platforms/android-37" ]; then
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37" >/dev/null
-            ls "$ANDROID_HOME/platforms"
+          if [ ! -f "$ANDROID_HOME/platforms/android-37.0/android.jar" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37.0" >/dev/null
           fi
+          ls "$ANDROID_HOME/platforms"
 
       - name: 통합 테스트
         working-directory: plugin/daemon
