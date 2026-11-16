@@ -13,16 +13,29 @@ class ViewInfoJsonTest {
     @TempDir lateinit var dir: Path
 
     // 진짜 ui-tooling 과 같은 이름이라 테스트 출력에 두면 통합 테스트의 렌더 클래스패스를 가린다 — 제 로더에만 싣는다
-    private fun adapterWithoutTreeGetter(): Any {
-        val src = File(dir.toFile(), "androidx/compose/ui/tooling/ComposeViewAdapter.java").apply {
-            parentFile.mkdirs()
-            writeText("package androidx.compose.ui.tooling; public class ComposeViewAdapter { public java.util.List<Object> getViewInfos() { return null; } }")
+    private fun fakeTooling(adapterBody: String, viewInfoBody: String = ""): Any {
+        val pkg = File(dir.toFile(), "androidx/compose/ui/tooling").apply { mkdirs() }
+        val adapter = File(pkg, "ComposeViewAdapter.java").apply {
+            writeText("package androidx.compose.ui.tooling; public class ComposeViewAdapter { $adapterBody }")
+        }
+        val viewInfo = File(pkg, "ViewInfo.java").apply {
+            writeText("package androidx.compose.ui.tooling; public class ViewInfo { $viewInfoBody }")
         }
         val javac = ToolProvider.getSystemJavaCompiler()
-        assertEquals(0, javac.run(null, null, null, "-d", dir.toString(), src.path))
+        assertEquals(0, javac.run(null, null, null, "-d", dir.toString(), adapter.path, viewInfo.path))
         return URLClassLoader(arrayOf(dir.toUri().toURL()), null).loadClass("androidx.compose.ui.tooling.ComposeViewAdapter")
             .getConstructor().newInstance()
     }
+
+    private fun adapterWithoutTreeGetter() = fakeTooling("public java.util.List<Object> getViewInfos() { return null; }")
+
+    private fun adapterWithNode(nodeGetters: String) = fakeTooling(
+        "public java.util.List<ViewInfo> getViewInfos\$ui_tooling() { return java.util.List.of(new ViewInfo()); }",
+        nodeGetters + " public java.util.List<ViewInfo> getChildren() { return java.util.List.of(); }" +
+            " public Edges getBounds() { return new Edges(); }" +
+            " public static class Edges { public int getLeft() { return 0; } public int getTop() { return 0; }" +
+            " public int getRight() { return 0; } public int getBottom() { return 0; } }",
+    )
 
     private fun node(name: String, b: List<Int>, vararg children: Map<String, Any?>) =
         mapOf("name" to name, "fileName" to "A.kt", "lineNumber" to 1, "bounds" to b, "children" to children.toList())
@@ -50,5 +63,15 @@ class ViewInfoJsonTest {
         val roots = listOf(view("FrameLayout", null, view("ComposeViewAdapter", adapterWithoutTreeGetter())))
         assertEquals("ComposeViewAdapter.getViewInfos\$ui_tooling", ViewInfoJson.toolingMismatch(roots))
         assertEquals(emptyList<Any>(), ViewInfoJson.compose(roots))
+    }
+
+    @Test fun `ui-tooling 노드가 위치 getter를 갖지 않으면 빈 자리 대신 그 이름을 판 짝 실패로 낸다`() {
+        val roots = listOf(view("ComposeViewAdapter", adapterWithNode("public String getFileName() { return \"A.kt\"; }")))
+        assertEquals("ViewInfo.getLineNumber", ViewInfoJson.toolingMismatch(roots))
+    }
+
+    @Test fun `ui-tooling 노드가 위치 getter를 다 가지면 판 짝 실패가 아니다`() {
+        val getters = "public String getFileName() { return \"A.kt\"; } public int getLineNumber() { return 1; }"
+        assertEquals(null, ViewInfoJson.toolingMismatch(listOf(view("ComposeViewAdapter", adapterWithNode(getters)))))
     }
 }
