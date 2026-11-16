@@ -61,8 +61,8 @@ export function createResizeScene(root, hooks) {
   const P = { rotDur: .6, rotLift: .42, rotLand: .18, rotDip: .12, shellK: 1.6,
     frameDur: .45, frameBounce: 0, outlineBounce: 0, outlineLead: 0, veil: .06,
     foldDur: 1, foldLift: .42, foldLand: .18, perspective: 3200, shade: .22,
-    swapDur: 320, swapBlur: 8, swapNear: .15, spinSwapA: .35, spinSwapB: .65,
-    holdBlur: 24, holdRise: 150, revealFade: 240, revealDur: 280, swapZoom: .03, moveBlur: 6, settleSharp: 220,
+    swapDur: 220, swapBlur: 8, swapNear: .15, spinSwapA: .35, spinSwapB: .65,
+    holdBlur: 24, holdRise: 150, holdLight: 8, holdDeepAfter: 250, holdDeepen: 200, fastReveal: 120, revealFade: 240, revealDur: 280, swapZoom: .03, moveBlur: 6, settleSharp: 220,
     reducedFade: 240, reducedDim: .62, gap: 7, crease: .35,
     hingeLine: true, foldBlur: 24, foldDark: .85, shrinkFrom: 90, ambient: .35, screenDim: .6, lightAz: 125, lightEl: 55, arcSegs: 4 };
   // 커스텀 크기의 범위와 키 한 번의 걸음 — 치수선 입력과 슬라이더가 같이 쓴다
@@ -205,7 +205,7 @@ export function createResizeScene(root, hooks) {
   const layer = layersOf(null);
   const swapAt = (sw, now) => clamp((now - sw.t0) / sw.dur, 0, 1);
   const bump = k => P.swapBlur * 4 * k * (1 - k);
-  // 크기 교체의 흐림 — 가운데서 가장 흐리고, 틀이 아직 움직이면 다 걷지 않고 moveBlur 에 머문다(멈추면 tick 이 걷는다)
+  // 크기 교체의 흐림 — 가운데서 가장 흐리고 끝까지 걷는다. tail 이 있으면 그만큼 남기고 멈추면 tick 이 걷는다
   const swapBlurAt = (sw, k) => k < .5 ? bump(k) : lerp(P.swapBlur, sw.tail || 0, smooth(.5, 1, k));
   const unitOp = { a: new Tw(1), b: new Tw(0) };
   let fadeB = null;
@@ -260,9 +260,10 @@ export function createResizeScene(root, hooks) {
   }
   // 도착 그림이 없으면 옛 화면을 틀에 채워 흐린다 — 빈칸 · 잘림 대신 흐린 화면이 자리를 지킨다.
   // 채움은 흐림이 오르는 동안 원래 dp 자리에서 덮는 크기로 자란다 — 틀이 움직이던 중이면 그 사이가 커서 한 프레임에 튀었다.
-  function hold(now) {
+  // 기기를 바꿀 때 그림은 대개 수백 ms 안에 온다 — 크기 전환은 옅게만 흐리고(light), 그 안에 안 오면 tick 이 holdBlur 로 깊인다.
+  function hold(now, light = false) {
     const o = layer.old;
-    o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
+    o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(light ? P.holdLight : P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
   }
   function sharpen(now) {
     const o = layer.old;
@@ -313,8 +314,8 @@ export function createResizeScene(root, hooks) {
     outlineOp.to(shelled(to) ? 0 : lined(from) || lined(to) ? 1 : outlineOp.b, 140, now);
     shellOp.to(shelled(to) ? 1 : 0, 220, now);
     creaseOp.to(isOpen(to) ? P.crease : 0, 220, now);
-    if (cached) sharpen(now); else hold(now);
-    tr = { kind: "size", from, to, t0: now, arriveAt: Infinity, arrived: false, cached, swapped: false,
+    if (cached) sharpen(now); else hold(now, true);
+    tr = { kind: "size", from, to, t0: now, arriveAt: Infinity, arrived: false, cached, swapped: false, deepAt: cached ? 0 : now + P.holdDeepAfter,
       grow: to.w >= from.w && to.h >= from.h, f0, f1: f };
   }
   function nearTarget(now) {
@@ -325,7 +326,7 @@ export function createResizeScene(root, hooks) {
     const n = layer.neu;
     tr.swapped = tr.arrived = true;
     n.r = tr.to.img; n.op.snap(0); n.blur.snap(0);
-    layer.swap = { t0: now, dur: P.swapDur, tail: P.moveBlur };
+    layer.swap = { t0: now, dur: P.swapDur, tail: 0 };
   }
 
   function startFade(from, to, now) {
@@ -362,8 +363,14 @@ export function createResizeScene(root, hooks) {
       rulerOp.to(0, 120, at);
       return;
     }
-    // 새 그림은 옛 화면의 흐림에서 시작해 걷히며 드러난다.
     const n = layer.neu;
+    // 깊어지기 전에 온 그림은 그 순간의 옅은 흐림에서 바로 끝까지 걷는다 — 틀이 멈추길 기다리면 흐린 시간이 또렷한 시간과 맞먹었다.
+    if (tr.deepAt) {
+      tr.deepAt = 0;
+      n.r = tr.to.img; n.op.snap(0); n.op.to(1, P.fastReveal, at); n.blur.snap(layer.old.blur.at(at)); n.blur.to(0, P.fastReveal, at);
+      return;
+    }
+    // 새 그림은 옛 화면의 흐림에서 시작해 걷히며 드러난다.
     n.r = tr.to.img; n.op.snap(0); n.op.to(1, P.revealFade, at); n.blur.snap(Math.max(layer.old.blur.at(at), layer.old.blur.b));
     // 틀이 아직 움직이면 다 걷지 않는다 — 움직이는 동안은 옅게 흐리고, 멈추면 tick 이 걷는다(B + 흐림 → B)
     n.blur.to(tr.kind === "size" && !nearRest(at) ? P.moveBlur : 0, P.revealDur, at);
@@ -878,6 +885,7 @@ export function createResizeScene(root, hooks) {
   function tick() {
     const now = clock.t;
     if (tr && !tr.arrived && now >= tr.arriveAt) arrive();
+    if (tr?.deepAt && now >= tr.deepAt) { tr.deepAt = 0; layer.old.blur.to(Math.max(P.holdBlur, layer.old.blur.at(now)), P.holdDeepen, now); }
     if (tr && tr.kind === "size" && tr.cached && !tr.swapped && (tr.grow || nearTarget(now) || now - tr.t0 > P.frameDur * 800)) startSwap(now);
     if (rig.on && rigAt(now).settled) endRig(now);
     if (spin.on && spinAt(now).done) endSpin(now);
