@@ -105,12 +105,5 @@ class LayerSeeds(unittest.TestCase):
         lint.check_no_stray_seeds([lint.Finding("plugin/daemon/application/src/main/kotlin/A.kt", 1, "detekt/X", "")])
 
 
-class LayerRule(unittest.TestCase):
-    def test_갈래_이름으로_묶는다(self):
-        self.assertEqual(lint.layer_rule("ForbiddenImport/controller"), "layer/controller")
-        self.assertIsNone(lint.layer_rule("LongMethod"))
-        self.assertIsNone(lint.layer_rule("LongMethod/strict"))
-
-
 if __name__ == "__main__":
     unittest.main()

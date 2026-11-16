@@ -226,6 +226,14 @@ shared_toolchain() {
     && [ -d "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/$mv" ]
 }
 
+# 이 체크아웃이 구워 둔 실행 환경이 지금도 쓸 수 있는가. prevue-env 는 체크아웃에 남아도 그것이 가리키는 공유 툴체인은
+# 홈에 있어 따로 사라진다(~/.prevue/toolchain 을 지웠거나 같은 체크아웃을 다른 계정이 쓸 때) — 파일만 보면 없는 jar 로
+# 데몬을 띄워 JVM 이 엉뚱한 "JavaFX 런타임 구성요소 누락"을 내며 죽는다. 서브셸에서 읽어 PREVUE_* 가 새지 않게 한다.
+baked() {
+  [ -s "$ENV_FILE" ] || return 1
+  ( . "$ENV_FILE" 2>/dev/null && [ -d "${PREVUE_LAYOUTLIB:-}" ] && [ -d "${PREVUE_COMPILER:-}" ] && [ -d "${PREVUE_LIB:-}" ] )
+}
+
 # warmup 이 Gradle 을 부를 JDK — 모듈의 최신 산출물을 구운 데몬(로그, 내려간 것도) → Prevue 가 지난번에 쓴 JDK → gradle_jdk_of 순(cli/jdk_rule.py).
 # 누가 빌드했는지(AS·터미널·Prevue)는 따지지 않는다 — 가장 최신 산출물을 재사용하는 JDK 가 답이다(이슈 #4).
 # ps 는 떠 있는지를 출처 문구에 적는 데만 쓴다. LC_ALL=C — 한국어 로캘에서는 lstart 가 "2026년 9월 28일 월요일 …"로 찍혀 못 읽는다(실측).
@@ -481,7 +489,7 @@ plan_json() {  # <파일|""> <variant|""> <projdir|""> [module]
     module="$(python3 "$PLAN_PY" module "$repo" "$file" plan)" || { echo "$module"; return 2; }
   fi
   # build/ 가 비어도 받아 둔 렌더러·컴파일러가 있으면 있는 것이다 — 이 버전의 jar 는 start 가 굽는다(판올림 뒤 한 번, 승인 없음).
-  [ -s "$ENV_FILE" ] || shared_toolchain || toolchain=false
+  baked || shared_toolchain || toolchain=false
   python3 "$PLAN_PY" plan "$repo" "$module" "$variant" "$file" "$toolchain" \
     "$(gradle_jdk_pick "$repo" "$(module_dir "$repo" "$module")")" "$HOME/.prevue/projects"
 }
@@ -502,7 +510,7 @@ health_json() {  # <파일>
       blocked=true; viewer="$(viewer_at "$seat")"
     fi
   fi
-  local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
+  local unbaked=false; baked || unbaked=true
   local nojdk="" nosdk=""; have_java || nojdk="$JDK"; have_sdk || nosdk="$SDK"
   python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
 }
@@ -684,7 +692,7 @@ case "$cmd" in
         | python3 "$PLAN_PY" runnable
       exit 2
     fi
-    HAD=false; [ -s "$ENV_FILE" ] && HAD=true
+    HAD=false; baked && HAD=true
     # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
     have_java && export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
@@ -695,7 +703,7 @@ case "$cmd" in
     elif ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q) >&2; then
       echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
     fi
-    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE is missing\"}"; exit 1; }
+    baked || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE or the toolchain it points to is missing\"}"; exit 1; }
     echo "{\"ok\":true,\"toolchain\":true,\"alreadyHad\":$HAD}"
     ;;
   warmup)
@@ -885,7 +893,7 @@ case "$cmd" in
       *) ARGS+=("$1"); shift;; esac; done
     # 판올림하면 플러그인 디렉터리가 새로 생겨 build/ 가 빈다. 받아 둔 툴체인으로 굽는 것은 승인이 없으니 여기서 한다 —
     # health 가 build 로 에이전트를 보내면 스킬 읽기·setup·health 재확인으로 모델 호출이 셋 더 들었다(Codex 실측).
-    if [ ! -s "$ENV_FILE" ] && shared_toolchain; then
+    if ! baked && shared_toolchain; then
       # 굽기는 Gradle 이라 ~/.gradle 에 쓴다 — 샌드박스 안이면 이번 한 번만 권한 상승으로 다시 치게 한다.
       if [ "${CODEX_SANDBOX:-}" = seatbelt ]; then
         echo '{"ok":false,"needsEscalation":true,"error":"The first start after an update calls Gradle to build the executable — run the same command again outside the sandbox (escalated), just this once"}'
@@ -895,7 +903,7 @@ case "$cmd" in
       have_java && export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
-    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
+    baked || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
     . "$ENV_FILE"
 
     # 자리는 전역에서 정했다(--classpath 의 덤프 경로에 저장소 키가, 덤프에 모듈이 들어 있다).
@@ -1189,7 +1197,7 @@ out = {"ok": True, "paths": [
     {"what": w, "path": p or None, "mb": size(p), "note": n} for w, p, n in items
 ]}
 out["toolchainRoot"] = os.path.join(prevuehome, "toolchain")
-out["note"] = "toolchainRoot, projects and aot can be deleted — the next run recreates them"
+out["note"] = "toolchainRoot, projects and aot can be deleted — prevue setup downloads the toolchain again and health says what else to recreate"
 print(json.dumps(out, ensure_ascii=False))
 PY
     ;;

@@ -30,7 +30,7 @@ internal object LazyListPlacement {
         val free = nodes.filter { it.sameBox !in claimed }
         val byBox = HashMap<List<Int>, ViewNode>()
         free.forEach { n -> byBox.putIfAbsent(key(r, n.left, n.top, n.right, n.bottom), n) }
-        val fit = bestFit(r, free, byBox)
+        val fit = bestFit(r, free, byBox, nodes)
         if (fit == null || fit.matched.isEmpty()) return if (r.cells.isEmpty()) emptyList(r, nodes)?.let { Placed(it, null) } else null
         fit.matched.forEach { claimed += it.sameBox }
         val box = viewport(r, fit, nodes)
@@ -56,7 +56,64 @@ internal object LazyListPlacement {
         return LazyList(f.left, f.top, f.right, f.bottom, r.vertical, r.total, emptyList())
     }
 
-    private fun bestFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
+    private fun bestFit(r: Raw, free: List<ViewNode>, byBox: Map<List<Int>, ViewNode>, all: List<ViewNode>): Fit? {
+        val exact = exactFit(r, free, byBox)
+        if (exact != null && exact.matched.size * 2 > r.cells.size) return exact
+        return insetFit(r, free, byBox, all) ?: exact
+    }
+
+    private data class Inset(val dx: Int, val dy: Int, val w: Int, val h: Int)
+
+    private fun insetFit(r: Raw, free: List<ViewNode>, byBox: Map<List<Int>, ViewNode>, all: List<ViewNode>): Fit? {
+        val tried = HashSet<Inset>()
+        var best: Pair<Inset, List<ViewNode>>? = null
+        for (c in r.cells.take((r.cells.size + 1) / 2)) for (n in free) {
+            val inset = insetOf(r, c, n) ?: continue
+            if (!tried.add(inset)) continue
+            val matched = r.cells.mapNotNull { byBox[insetKey(r, it, inset)] }
+            if (accepts(r, inset, matched, all) && beats(inset, matched, best)) best = inset to matched
+        }
+        val (inset, matched) = best ?: return null
+        return resolve(r, inset, matched, all)
+    }
+
+    private fun accepts(r: Raw, inset: Inset, matched: List<ViewNode>, all: List<ViewNode>) =
+        matched.size * 2 > r.cells.size && (matched.size >= 2 || frameOf(r, inset, matched, all) != null)
+
+    private fun beats(inset: Inset, matched: List<ViewNode>, best: Pair<Inset, List<ViewNode>>?): Boolean {
+        val (other, theirs) = best ?: return true
+        return matched.size > theirs.size || matched.size == theirs.size && inset.w + inset.h < other.w + other.h
+    }
+
+    private fun insetOf(r: Raw, c: Cell, n: ViewNode): Inset? {
+        val w = if (!r.crossFills || !r.vertical) c.w - (n.right - n.left) else 0
+        val h = if (!r.crossFills || r.vertical) c.h - (n.bottom - n.top) else 0
+        if (w < 0 || h < 0 || w + h == 0) return null
+        val dx = if (!r.crossFills || !r.vertical) n.left - c.x else 0
+        val dy = if (!r.crossFills || r.vertical) n.top - c.y else 0
+        return Inset(dx, dy, w, h)
+    }
+
+    private fun insetKey(r: Raw, c: Cell, i: Inset) = key(r, i.dx + c.x, i.dy + c.y, i.dx + c.x + c.w - i.w, i.dy + c.y + c.h - i.h)
+
+    private fun frameOf(r: Raw, i: Inset, matched: List<ViewNode>, all: List<ViewNode>): ViewNode? {
+        val axes = Axes(r.vertical)
+        val length = if (r.vertical) r.height else r.width
+        val (near, room) = if (r.vertical) i.dy to i.h else i.dx to i.w
+        return all.firstOrNull { f ->
+            val (s, e) = axes.main(f)
+            e - s == length && s - r.start in near - room..near && matched.all { f.contains(it) }
+        }
+    }
+
+    private fun resolve(r: Raw, i: Inset, matched: List<ViewNode>, all: List<ViewNode>): Fit {
+        val near = if (r.vertical) i.dy else i.dx
+        val room = if (r.vertical) i.h else i.w
+        val mainShift = frameOf(r, i, matched, all)?.let { Axes(r.vertical).main(it).first - r.start } ?: (near - room / 2)
+        return if (r.vertical) Fit(i.dx - i.w / 2, mainShift, matched) else Fit(mainShift, i.dy - i.h / 2, matched)
+    }
+
+    private fun exactFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
         val tried = HashSet<Pair<Int, Int>>()
         var best: Fit? = null
         for (c in r.cells) {

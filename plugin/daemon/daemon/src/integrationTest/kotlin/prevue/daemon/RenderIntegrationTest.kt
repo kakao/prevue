@@ -720,6 +720,24 @@ class RenderIntegrationTest {
         }
     }
 
+    // 트리 노드는 Modifier.padding 을 뺀 크기라, 아이템 루트마다 패딩이 있으면 어느 칸에도 크기가 같은 노드가 없어 #N 이 읽는 순서로 떨어졌다.
+    @Test @Order(20) fun `아이템 루트마다 패딩이 있어도 #N 은 목록 순번이다`() {
+        openApp()
+        val card = "DrinkCard(drink, ambient = ambient, onClick = { onDrinkClick(drink) })"
+        val padded = "DrinkCard(drink, Modifier.padding(6.dp), ambient = ambient, onClick = { onDrinkClick(drink) })"
+        val at = "PearlScreen.kt:" + PearlFixture.lineOf(screenFile, card)
+        save(screenFile, card, padded)
+        try {
+            settled("list", "카드 패딩 저장")
+            scrollUntil(at, 30)
+            val t = runBlocking { uc.live.touchAt("$at#30", "tap", "test", settle = true) }
+            assertTrue(t is TouchResult.Settled && t.aim!!.index == 30, "패딩 카드에서 #30 이 목록 순번이 아니다 — $t")
+            backToList(settled("detail", "#30 누름"), "#30")
+        } finally {
+            save(screenFile, padded, card)
+        }
+    }
+
     // FR-5. 공유 로더에서는 Compose 디스패처가 앞 태스크가 버린 세션에 걸려 시계를 밀어도 막대가 0 그대로였다(데모 take8, API 셋 모두).
     // delay는 실제 시계라 밀지 못한다 — 그림 대신 경고로 알린다.
     @Test @Order(21) fun `render --at 은 애니메이션 API마다 그 시점의 프레임을 그리고 delay 는 경고한다`() {

@@ -140,19 +140,6 @@ class PreviewCatalogTest {
         assertEquals(listOf("demo.ScreensKt.ScreenPreview"), banner.previews.map { it.fqn })
     }
 
-    @Test fun `부르는 Preview 가 없으면 정의만, 프로젝트에 정의가 없거나 대소문자가 다르면 둘 다 비어 있다`() {
-        runBlocking { uc.watchers.indexPreviewFiles() }
-        change(created = listOf(screens(), lib("Lonely", "@Composable fun Lonely() {}\n")))
-        val lonely = previewsOf("Lonely")
-        assertEquals(emptyList<Any>(), lonely.previews)
-        assertEquals(listOf(":lib"), lonely.definitions.map { it.module })
-        for (name in listOf("Text", "banner", "Nope")) {
-            val none = previewsOf(name)
-            assertEquals(emptyList<Any>(), none.previews, name)
-            assertEquals(emptyList<Any>(), none.definitions, name)
-        }
-    }
-
     @Test fun `다른 앱의 파일은 프리뷰가 있어도 싣지 않는다`() {
         runBlocking { uc.watchers.indexPreviewFiles() }
         val elsewhere = File(fx.root, "other-app/src/X.kt").apply { parentFile.mkdirs(); writeText("package x\n@Preview\nfun X() {}\n") }

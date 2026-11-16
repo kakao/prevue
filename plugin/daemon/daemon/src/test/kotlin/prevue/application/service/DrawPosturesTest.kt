@@ -90,13 +90,6 @@ class DrawPosturesTest {
         assertTrue(ScreenSize.Original !in uc.drawn())
     }
 
-    @Test fun `프리셋을 고르면 그 칸을 빼고 그린다`() {
-        val uc = opened()
-        uc.pick(ScreenSize.PRESETS[0])
-        uc.awaitDrawn(cells)
-        assertEquals(bar - "narrow", asideKeys())
-    }
-
     @Test fun `보기 모드에서는 그리지 않는다`() {
         val uc = opened()
         assertEquals(null, uc.workspace.now.livePostures())

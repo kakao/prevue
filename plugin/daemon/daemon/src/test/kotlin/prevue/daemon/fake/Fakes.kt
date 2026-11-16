@@ -140,7 +140,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
 
     inner class Session(override val preview: PreviewSpec, override val opened: RenderOutput) : LiveSession {
         override suspend fun touch(type: String, x: Int, y: Int) { touches += Triple(type, x, y); onTouch(type, x, y) }
-        override fun type(text: String): String? = typeError ?: run { typed += text; null }
+        override fun type(text: String): String? = typeError
         override fun scroll(x: Int, y: Int, dx: Float, dy: Float): Boolean { scrolls += listOf(x.toFloat(), y.toFloat(), dx, dy); onScroll(dx, dy); return true }
         override fun tick(forceImage: Boolean): Frame {
             ticks.incrementAndGet()
@@ -173,8 +173,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val scrolls = CopyOnWriteArrayList<List<Float>>()
     @Volatile var onScroll: (Float, Float) -> Unit = { _, _ -> }
     val touches = CopyOnWriteArrayList<Triple<String, Int, Int>>()
-    /** 넣은 글자. [typeError]를 걸면 넣지 못한 이유로 돌려준다 — 포커스된 필드가 없는 자리다. */
-    val typed = CopyOnWriteArrayList<String>()
+    /** [typeError]를 걸면 넣지 못한 이유로 돌려준다 — 포커스된 필드가 없는 자리다. */
     @Volatile var typeError: String? = null
 
     override fun codeChanged() {
@@ -183,13 +182,12 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         codeEntered.release()
         codeGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "codeGate가 안 풀렸다" } }
     }
-    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [patchOk]를 끄면 넣기가 실패한다 — 공유 로더가 없는 자리다. */
+    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [refuses]에 든 클래스는 넣기가 실패한다 — 공유 로더가 없는 자리다. */
     val patched = CopyOnWriteArrayList<Pair<String, Map<String, Any>>>()
     val dropped = CopyOnWriteArrayList<String>()
-    @Volatile var patchOk = true
     @Volatile var refuses: Set<String> = emptySet()
     override fun patchLiterals(owner: String, values: Map<String, Any>): Boolean {
-        val ok = patchOk && owner !in refuses
+        val ok = owner !in refuses
         if (ok) patched += owner to values
         return ok
     }

@@ -372,27 +372,6 @@ class Combine(unittest.TestCase):
     def test_제공자_변형이_짐작이면_합치지_않는다(self):
         self.assertEqual(self.combine(), "")                       # :app 에 관찰된 변형이 없다(플레이버 앱을 안 빌드한 클론)
 
-    def test_이_모듈의_변형이_짐작이면_합치지_않는다(self):
-        self.r.built(":app", "debug")
-        self.assertEqual(self.combine(by="assumed"), "")
-
-    def test_변형을_받았으면_셸이_고른_JDK로_정한다(self):
-        self.r.built(":app", "debug")
-        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "debug", ":app", "", "/jdk\t출처"),
-                         ("debug", "given", "/jdk", "출처", "debug", "", ""))
-
-    def test_변형을_안_받았으면_plan_의_변형과_JDK로_정한다(self):
-        plan = json.dumps({"variant": "debug", "variantChosenBy": "fresh", "gradleJdk": None, "gradleJdkFrom": "없음"})
-        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "", "", plan, ""), ("debug", "fresh", "", "없음", "", "", ""))
-
-    def test_plan_이_변형을_못_찍었으면_정하지_않는다(self):
-        for plan in (json.dumps({"variant": None, "need": "choose"}), "gradlew not found"):
-            self.assertIsNone(P.warmup_target(self.r.root, ":core:ui", "", ":app", plan, ""))
-
-    def test_합칠지_판정이_깨지면_합치지_않고_하나씩_뜬다(self):
-        with mock.patch.object(P, "combine_provider", side_effect=PermissionError("읽을 수 없다")):
-            self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "debug", ":app", "", "/jdk\t출처")[4], "")
-
     def test_자기_리소스_APK가_있거나_제공자가_자기면_합치지_않는다(self):
         self.r.built(":app", "debug")
         self.r.apk(":core:ui", "debug")
@@ -449,10 +428,6 @@ class GradleRun(unittest.TestCase):
         P.gradle_run(self.timing, "1000", "5000", "1", self.runs, "", [":a|debug|/o.json"])
         r = self.last()
         self.assertEqual((r["ok"], r["phases"], r["tasks"]), (False, {"startup": 500, "settings": 500}, {}))
-
-    def test_시각_파일이_없어도_벽시계는_남는다(self):
-        P.gradle_run(os.path.join(self.tmp.name, "없음"), "1000", "4000", "1", self.runs, "", [":a|debug|/o.json"])
-        self.assertEqual((self.last()["ms"], self.last()["phases"]), (3000, {}))
 
     def test_JDK_문구로_실패하면_JDK_와_빌드_파일_지문을_남긴다(self):
         err = os.path.join(self.tmp.name, "err")

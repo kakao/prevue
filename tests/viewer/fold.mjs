@@ -31,9 +31,15 @@ scene.setOriginal(360,740,spec(360,740));
 scene.enable(true);
 window.ready=true;
 </script>`;
+// 위 · 아래 짧은 변이 두꺼운(ends) 홈 버튼 접는 기기는 아직 없다 — 책형 · 조개형을 하나씩 본떠 기기 표에 덧붙여 접는 경로를 잰다.
+const SYNTH = { fold8e: ['fold8', 16], flip8e: ['flip8', 14] };
+const synth = `\nfor (const [id, [from, ends]] of Object.entries(${JSON.stringify(SYNTH)})) { const d = structuredClone(DEVICES[from]); for (const k of ['open', 'cover']) Object.assign(d.look[k], { ends, home: true }); DEVICES[id] = d; }\n`;
+// 메뉴 칸은 빌드가 기기 표에서 미리 그린다 — 덧붙인 기기도 칸을 하나씩 단다.
+const rows = Object.keys(SYNTH).map(id => `<button class="pn-it" type="button" role="radio" data-sel="${id}"></button>`).join('');
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, 'http://localhost').pathname;
-  if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup+harness); return; }
+  if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup.replace('data-sel="duo"></button>', '$&' + rows)+harness); return; }
+  if (path === '/js/devices.js') { response.setHeader('Content-Type','text/javascript'); response.end(await readFile(join(root, 'plugin/viewer/js/devices.js'), 'utf8') + synth); return; }
   const file = resolve(root, 'plugin/viewer', '.' + path);
   if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
   try {
@@ -90,7 +96,9 @@ try {
     ['fold8',932.57,704,475.43,751.24], ['ultra',752,834.67,360,840],
     ['duo',951,669,466,678], ['pixelfold',851.69,882.87,443.08,994.46],
     ['flip8',360,840,399.16,441.26],
+    ['fold8e',932.57,704,475.43,751.24], ['flip8e',360,840,399.16,441.26],
   ];
+  const kin = device => SYNTH[device]?.[0] ?? device;
   // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 세로만 있다 — 펼친 가로에서 접으면 세로로 서며 접힌다(셋째 값 true).
   const FIXED = { flip8: { 'open:portrait':['portrait'], 'open:landscape-left':['portrait',false,true], 'open:landscape-right':['portrait',false,true], 'cover:portrait':['portrait'] } };
   const results = [], landings = [];
@@ -103,6 +111,7 @@ try {
       radii:(c=>['borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius'].map(k=>parseFloat(c[k])))(getComputedStyle(document.querySelector('#ua .shell'))),
       ticks:[...document.querySelectorAll('#ua .tick')].filter(e=>Number(e.style.opacity)>0).map(box),cam:box(document.querySelector('#ua .cam')),
       cameraOn:Number(document.querySelector('#ua .cam').style.opacity)>0,
+      homes:[...document.querySelectorAll('#ua .home')].filter(e=>Number(e.style.opacity)>0).map(box),
       buttons:[...document.querySelectorAll('#ua .btn')].filter(e=>Number(e.style.opacity)>0).map(box),
       content:box(document.querySelector('#ua .l0')),layout,src:document.querySelector('#ua .l0').src});
     window.reset=st=>{scene.enable(false);scene.setOriginal(360,740,spec(360,740));scene.enable(true);scene.image(st.sel,spec(st.w,st.h));scene.update(st,true);step(time+2000)};
@@ -124,7 +133,9 @@ try {
       const over=Math.max(0,outer.x-base.x,outer.y-base.y,base.x+base.w-outer.x-outer.w,base.y+base.h-outer.y-outer.h);
       const face=document.querySelector(back?'#rig .leaf .rear .clip':'#rig .base .front .clip');
       const cam=box(face.querySelector('.cam')),content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
-      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
+      // 펼친 화면의 홈 버튼은 힌지에 걸치면 두 판이 반씩 그린다 — 보이는 면의 것을 합친 상자 하나로 잰다.
+      const homes=(back?['.leaf .rear']:['.base .front','.leaf .front']).map(f=>el.querySelector(f+' > .home')).filter(e=>Number(e.style.opacity)>0).map(box).reduce((a,b)=>[a.length?union(a[0],b):b],[]);
+      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,homes,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
     };`);
   // 착지 — 접기의 마지막 프레임과 멈춘 첫 프레임을 화면째 찍어 몸체의 테 · 빛 · 그림자를 견준다. 화면 안과 그 둘레 3px(링 자리)는
   // 그림이 달라 빼고, 외곽선 · 단추 · 힌지 눈금의 2px 띠도 뺀다 — 접기 층은 합성기가 소수점 자리에서 다시 표본해 1px 짜리 선이 반 픽셀 번진다.
@@ -158,8 +169,8 @@ try {
     'cover:portrait':['landscape-left'], 'cover:landscape-right':['portrait'], 'cover:landscape-left':['portrait',true],
     'open:landscape-left':['portrait'], 'open:portrait':['landscape-right'], 'open:landscape-right':['portrait',true],
   };
-  const handOf = (device, folded, orientation) => FIXED[device] ? FIXED[device][(folded?'cover':'open')+':'+orientation]
-    : ['duo','fold8'].includes(device) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
+  const handOf = (device, folded, orientation) => FIXED[kin(device)] ? FIXED[kin(device)][(folded?'cover':'open')+':'+orientation]
+    : ['duo','fold8'].includes(kin(device)) ? HAND[(folded?'cover':'open')+':'+orientation] : [orientation];
   const flip = (b, c) => ({x:2*c.x-b.x-b.w,y:2*c.y-b.y-b.h,w:b.w,h:b.h});
   const centre = b => ({x:b.x+b.w/2,y:b.y+b.h/2});
   for (const [device, ...size] of devices) {
@@ -191,6 +202,8 @@ try {
           near(first.body,refs[from.sel].body,`${name}: 시작 몸체`);
           if(refs[from.sel].cameraOn) near(first.cam,refs[from.sel].cam,`${name}: 시작 카메라`);
           first.buttons.forEach((b,i)=>near(b,refs[from.sel].buttons[i],`${name}: 시작 단추 ${i}`));
+          assert.equal(first.homes.length,refs[from.sel].homes.length,`${name}: 시작 홈 버튼 수`);
+          first.homes.forEach((b,i)=>near(b,refs[from.sel].homes[i],`${name}: 시작 홈 버튼`));
           near(first.content,refs[from.sel].content,`${name}: 시작 콘텐츠`);
           assert(frames.every(Boolean),`${name}: 매 프레임 접기 장면 표시`);
           // 접는 동안 몸체는 돌지 않는다 — 짝 없는 경우도 180° 돌지 않고 접기만 보인다.
@@ -217,6 +230,8 @@ try {
           assert.equal(last.buttons.length,expected.buttons.length,'모션 중 측면 단추 수');
           const ends=unpaired?expected.buttons.map(at):expected.buttons,used=new Set();
           for(const b of last.buttons){const i=ends.findIndex((e,j)=>!used.has(j)&&['x','y','w','h'].every(k=>Math.abs(b[k]-e[k])<=.2));assert(i>=0,`${name}: 단추 ${JSON.stringify(b)}`);used.add(i)}
+          assert.equal(last.homes.length,expected.homes.length,`${name}: 모션 끝 홈 버튼 수`);
+          last.homes.forEach((b,i)=>near(b,at(expected.homes[i]),`${name}: 모션 끝 홈 버튼`));
           if(arrival!=='late') near(last.content,expected.content,`${name}: 모션 끝 콘텐츠`);
           if(cached&&!unpaired){
             const sh=expected.shell,clip={x:Math.max(0,Math.floor(sh.x-40)),y:Math.max(0,Math.floor(sh.y-40))};

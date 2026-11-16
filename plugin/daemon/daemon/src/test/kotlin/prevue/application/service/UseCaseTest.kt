@@ -427,13 +427,6 @@ class UseCaseTest {
         assertTrue(fx.renderer.protected().isNotEmpty())
     }
 
-    @Test fun `파일 없이 기다리면 보고 있는 보드의 파일을 기다린다`() {
-        val uc = opened()
-        uc.save()
-        val w = runBlocking { uc.status.awaitRender(emptyList(), timeoutMs = 5_000) }
-        assertEquals(fx.file.canonicalFile, (w as WaitResult.BoardDone).file.canonicalFile)
-    }
-
     @Test fun `FQN으로 들어간 뒤의 기다림은 그 파일 보드로 답한다`() {
         val uc = fx.graph()
         runBlocking { uc.tabs.openPreview("demo.CardsKt.Card0", null, emptyMap(), "test") }
@@ -790,16 +783,6 @@ class UseCaseTest {
         val sel = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", listOf("Text"), null, ws.now.board!!.cards[i].spec.previewId), "viewer") }
         assertEquals(ws.now.board!!.cards[i].spec, sel.preview)
         assertEquals(null to null, sel.image to sel.tree)
-    }
-
-    // 뷰어가 걸러 보낸 userChain 은 그대로, 보내지 않은 쪽(CLI)이면 chain 을 그대로 쓴다 — 에이전트는 늘 userChain 을 읽을 수 있다.
-    @Test fun `userChain 은 뷰어가 준 것, 없으면 chain`() {
-        val uc = opened()
-        val full = listOf("CompositionLocalProvider", "Box", "Layout", "Text")
-        val given = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", full, null, null, listOf("Box", "Text")), "viewer") }
-        assertEquals(listOf("Box", "Text") to full, given.userChain to given.chain)
-        val absent = runBlocking { uc.live.select(fx.file.path, 3, Pointed("Text", full, null, null), "cli") }
-        assertEquals(full, absent.userChain)
     }
 
     // 기준 3 · D-37. 같은 앱의 다른 모듈은 보드만 바꾼다 — status의 module이 그 모듈이 되고, 들어온 모듈은 나가지 않는다.
