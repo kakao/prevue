@@ -108,7 +108,7 @@ export function deviceTable(specList) {
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);
-    return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };
+    return { order: number(spec.order, `${where}.order`), id: spec.id, entry };
   }).sort((a, b) => a.order - b.order);
   const ids = devices.map(d => d.id);
   if (new Set(ids).size !== ids.length) throw Error('기기 id 가 겹친다');
