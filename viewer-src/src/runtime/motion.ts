@@ -91,8 +91,13 @@ export const MORPH_LEAD = 385;   // 모프 70% — 장식이 들어오는 때. �
  * ceiling()이 화면 y 두 선을 주면 틀이 top 위로는 보이지 않고 bottom 까지 점점 드러난다 — 바탕이 흐려지는 머리 밑으로 들어가 보이게.
  */
 type Rect = { x: number; y: number; width: number; height: number };
+/** 모서리 반경 [좌상, 우상, 우하, 좌하] — 화면 모서리가 고르지 않은 기기(Flip8 커버)도 모서리마다 옮긴다. */
+export type Radii = [number, number, number, number];
+/** 요소의 네 모서리 반경을 잰다(타원 반경은 가로값만). */
+export const radiiOf = (cs: CSSStyleDeclaration): Radii =>
+  [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].map(v => parseFloat(v) || 0) as Radii;
 export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, swapMs = 150, ceiling = null }: {
-  from: Rect; to(): Rect; radius: [number, number]; shadow: [string, string]; a: string; b?: string | null; swapAt?: number; swapMs?: number; ceiling?: (() => { top: number; bottom: number } | null) | null;
+  from: Rect; to(): Rect; radius: [Radii, Radii]; shadow: [string, string]; a: string; b?: string | null; swapAt?: number; swapMs?: number; ceiling?: (() => { top: number; bottom: number } | null) | null;
 }) {
   const el = document.createElement("div"), ia = new Image(), ib = new Image();
   el.className = "morph"; ia.alt = ib.alt = ""; ib.style.opacity = "0";
@@ -104,7 +109,7 @@ export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, 
   let t = 0, last = performance.now();
   let raf = 0, landed = false, land: () => void, timer: ReturnType<typeof setTimeout> | undefined, gone = false;
   const landedP = new Promise<void>(r => { land = r; });
-  const put = (r: Rect, rad: number) => Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: rad + "px" });
+  const put = (r: Rect, rad: number[]) => Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: rad.map(v => v + "px").join(" ") });
   // 위만 가린다 — 마스크를 옆 · 아래로 넓혀 두어야 그림자가 함께 지워지지 않는다
   const cut = (y: number) => {
     const c = ceiling && ceiling(), b = c ? c.bottom - y : 0;
@@ -120,7 +125,7 @@ export function frameMorph({ from, to, radius, shadow, a, b = null, swapAt = 0, 
     if (!landed && off < .5) { k = 0; landed = true; land(); }
     const y = T.y + (from.y - T.y) * k;
     put({ x: T.x + (from.x - T.x) * k, y, width: T.width + (from.width - T.width) * k, height: T.height + (from.height - T.height) * k },
-      radius[1] + (radius[0] - radius[1]) * k);
+      radius[1].map((v, i) => v + (radius[0][i] - v) * k));
     cut(y);
     raf = requestAnimationFrame(frame);
   }

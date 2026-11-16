@@ -2,7 +2,7 @@
 // 마크업은 React 의 Workspace 가 그리고, 여기서는 그 요소를 받아 스트림 · 좌표 · 틀 모프처럼 잰 뒤에만 정해지는 것을 다룬다.
 import { get, post, reportStreamWidth, viewerStream } from '../runtime/api';
 import { flash, setStatus, setSummary } from '../runtime/capsule';
-import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, reduced, swapImage, transition } from '../runtime/motion';
+import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, radiiOf, reduced, swapImage, transition, type Radii } from '../runtime/motion';
 import { stuckHead } from '../runtime/board';
 import { store } from '../runtime/store';
 import { phrase } from '../runtime/strings';
@@ -27,7 +27,7 @@ export function findWorkspaceParts(): WorkspaceParts {
 }
 
 /** 모프의 출발점 · 도착점 — 그리기 전에 잰다. */
-export type Frame = { el: HTMLElement; rect: DOMRect; radius: number; shadow: string; url: string; ratio: number };
+export type Frame = { el: HTMLElement; rect: DOMRect; radius: Radii; shadow: string; url: string; ratio: number };
 type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLElement[]; entering?: boolean; ready?: boolean; landed?: boolean; lead?: number; giveUp?: number };
 
 export type Workspace = ReturnType<typeof createWorkspace>;
@@ -185,7 +185,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     const same = sameRatio(src.ratio, to.width / to.height), cs = getComputedStyle(stage);
     focusView.classList.add('morph-hold');
     decorations(false, 0);
-    const m = frameMorph({ from: src.rect, to: () => stage.getBoundingClientRect(), radius: [src.radius, parseFloat(cs.borderTopLeftRadius) || 0],
+    const m = frameMorph({ from: src.rect, to: () => stage.getBoundingClientRect(), radius: [src.radius, radiiOf(cs)],
       shadow: [src.shadow, cs.boxShadow], a: src.url, b: same ? null : '', swapAt: 0, swapMs: 250 });
     const f: Flight = flight = { m, same, hidden: [], entering: true, ready: !resizeUI.preparing(), landed: false };
     f.lead = window.setTimeout(() => { if (flight === f) decorations(true, motionMs('--duration-short4')); }, MORPH_LEAD);
@@ -511,7 +511,7 @@ function still(img: HTMLImageElement | null) {
 export function frameOf(el: HTMLElement | null): Frame | null {
   if (!el) return null;
   const img = el.querySelector('img'), cs = getComputedStyle(el), url = img ? img.getAttribute('src') || '' : '';
-  return { el, rect: el.getBoundingClientRect(), radius: parseFloat(cs.borderTopLeftRadius) || 0, shadow: cs.boxShadow,
+  return { el, rect: el.getBoundingClientRect(), radius: radiiOf(cs), shadow: cs.boxShadow,
     url: !img ? '' : url.startsWith('/stream') ? img.dataset.still || '' : img.currentSrc || url, ratio: ratioOf(img) || ratioOf(still(img)) };
 }
 
