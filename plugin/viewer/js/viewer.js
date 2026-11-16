@@ -4744,38 +4744,47 @@ var ko = /* @__PURE__ */ (0, R.jsx)("svg", {
 	strokeWidth: "1.7",
 	strokeLinecap: "round",
 	children: /* @__PURE__ */ (0, R.jsx)("path", { d: "M4 8h8M8 4v8" })
-});
-function jo({ host: e, actions: t = Do }) {
-	let { phrase: n } = s(), { element: r, place: i } = o(e), { pct: a, real: c, atFit: l, menu: u, disabled: d } = (0, L.useSyncExternalStore)(xn.subscribe, xn.get);
+}), jo = (e) => (0, L.useSyncExternalStore)(xn.subscribe, () => xn.get()[e]);
+function Mo({ real: e, menu: t, disabled: n, actions: r }) {
+	let { phrase: i } = s(), a = jo("pct");
+	return /* @__PURE__ */ (0, R.jsxs)("button", {
+		type: "button",
+		id: "zoomPct",
+		className: "z-pct",
+		"aria-haspopup": "menu",
+		"aria-expanded": t,
+		disabled: n,
+		title: i(e ? "zoom.tip.real" : "zoom.tip.fit"),
+		onClick: (e) => r.toggleZoomMenu(e.detail === 0),
+		children: [a, "%"]
+	});
+}
+var No = (0, L.memo)(function({ host: e, actions: t = Do }) {
+	let { phrase: n } = s(), { element: r, place: i } = o(e), a = jo("real"), c = jo("atFit"), l = jo("menu"), u = jo("disabled");
 	return (0, L.useLayoutEffect)(() => {
-		r?.classList.toggle("at-fit", l);
-	}, [r, l]), i(/* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [
+		r?.classList.toggle("at-fit", c);
+	}, [r, c]), i(/* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [
 		/* @__PURE__ */ (0, R.jsx)("button", {
 			type: "button",
 			id: "zoomOutBtn",
 			"aria-label": n("zoom.out"),
 			title: n("zoom.out.tip"),
-			disabled: d,
+			disabled: u,
 			onClick: t.zoomOut,
 			children: ko
 		}),
-		/* @__PURE__ */ (0, R.jsxs)("button", {
-			type: "button",
-			id: "zoomPct",
-			className: "z-pct",
-			"aria-haspopup": "menu",
-			"aria-expanded": u,
-			disabled: d,
-			title: n(c ? "zoom.tip.real" : "zoom.tip.fit"),
-			onClick: (e) => t.toggleZoomMenu(e.detail === 0),
-			children: [a, "%"]
+		/* @__PURE__ */ (0, R.jsx)(Mo, {
+			real: a,
+			menu: l,
+			disabled: u,
+			actions: t
 		}),
 		/* @__PURE__ */ (0, R.jsx)("button", {
 			type: "button",
 			id: "zoomInBtn",
 			"aria-label": n("zoom.in"),
 			title: n("zoom.in.tip"),
-			disabled: d,
+			disabled: u,
 			onClick: t.zoomIn,
 			children: Ao
 		}),
@@ -4784,14 +4793,14 @@ function jo({ host: e, actions: t = Do }) {
 			id: "zoomFitBtn",
 			className: "z-fit",
 			title: n("zoom.fit.tip"),
-			disabled: d,
-			tabIndex: l ? -1 : 0,
-			"aria-hidden": l,
+			disabled: u,
+			tabIndex: c ? -1 : 0,
+			"aria-hidden": c,
 			onClick: t.zoomFit,
 			children: n("zoom.fit")
 		}),
 		/* @__PURE__ */ (0, R.jsxs)("div", {
-			className: u ? "zoom-menu on" : "zoom-menu",
+			className: l ? "zoom-menu on" : "zoom-menu",
 			id: "zoomMenu",
 			role: "menu",
 			children: [
@@ -4799,7 +4808,7 @@ function jo({ host: e, actions: t = Do }) {
 					type: "button",
 					role: "menuitem",
 					"data-z": "fit",
-					disabled: d,
+					disabled: u,
 					onClick: () => t.zoomMenuPick("fit"),
 					children: [/* @__PURE__ */ (0, R.jsx)("span", { children: n("zoom.fit") }), /* @__PURE__ */ (0, R.jsx)("kbd", { children: "0" })]
 				}),
@@ -4807,8 +4816,8 @@ function jo({ host: e, actions: t = Do }) {
 					type: "button",
 					role: "menuitem",
 					"data-z": "1",
-					hidden: !c,
-					disabled: d,
+					hidden: !a,
+					disabled: u,
 					onClick: () => t.zoomMenuPick("1"),
 					children: n("zoom.real")
 				}),
@@ -4816,15 +4825,14 @@ function jo({ host: e, actions: t = Do }) {
 					type: "button",
 					role: "menuitem",
 					"data-z": "2",
-					disabled: d,
+					disabled: u,
 					onClick: () => t.zoomMenuPick("2"),
 					children: "200%"
 				})
 			]
 		})
 	] }), ya);
-}
-var Mo = /* @__PURE__ */ (0, R.jsxs)("svg", {
+}), Po = /* @__PURE__ */ (0, R.jsxs)("svg", {
 	className: "tb-ic",
 	viewBox: "0 0 20 20",
 	fill: "none",
@@ -4841,7 +4849,7 @@ var Mo = /* @__PURE__ */ (0, R.jsxs)("svg", {
 		rx: "1.8"
 	}), /* @__PURE__ */ (0, R.jsx)("path", { d: "M5.5 5.5h9M8.5 15h3" })]
 });
-function No({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Do }) {
+function Fo({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Do }) {
 	let { phrase: i } = s(), { element: a, place: c } = o(n), { on: l } = (0, L.useSyncExternalStore)(Sn.subscribe, Sn.get), u = !e && !t;
 	(0, L.useLayoutEffect)(() => {
 		a && (a.hidden = u);
@@ -4870,30 +4878,30 @@ function No({ systemUi: e, deviceInsets: t = null, host: n, actions: r = Do }) {
 		onClick: () => {
 			e && r.pickSystemUi(!d === e.annotated ? "annotated" : d ? "off" : "on");
 		},
-		children: Mo
+		children: Po
 	}), va);
 }
-var Po = 12, Fo = 48;
-function Io(e, t) {
+var Io = 12, Lo = 48;
+function Ro(e, t) {
 	let n = e.querySelector("#backName"), r = t.querySelector("#wsName"), i = t.querySelector("#wsFn"), a = e.parentElement, o = document.getElementById("barR");
 	if (!n || !r || !i || !a || !o || (n.style.maxWidth = "", n.style.display = "", t.hidden || !(t.offsetParent instanceof HTMLElement))) return;
 	if (getComputedStyle(t).position !== "absolute") {
 		t.style.removeProperty("--ws-left"), t.style.removeProperty("--ws-max");
 		return;
 	}
-	let s = t.offsetParent.clientWidth, c = o.offsetLeft - Po, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
+	let s = t.offsetParent.clientWidth, c = o.offsetLeft - Io, l = Math.min(Math.max(r.scrollWidth, i.hidden ? 0 : i.scrollWidth) + 1, s * .34), u = Math.min(s / 2 - l / 2, c - l), d = () => {
 		let e = 0;
 		for (let t of a.children) t instanceof HTMLElement && t.offsetParent && (e = Math.max(e, a.offsetLeft + t.offsetLeft + t.offsetWidth));
-		return e + Po;
+		return e + Io;
 	}, f = d();
 	if (f > u && !e.hidden) {
 		let e = n.offsetWidth - (f - u);
-		e < Fo ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
+		e < Lo ? n.style.display = "none" : n.style.maxWidth = `${e}px`, f = d();
 	}
 	let p = Math.max(u, f), m = Math.max(0, Math.min(l, c - p));
 	t.style.setProperty("--ws-left", `${p + m / 2}px`), t.style.setProperty("--ws-max", `${m}px`);
 }
-var Lo = /* @__PURE__ */ (0, R.jsx)("svg", {
+var zo = /* @__PURE__ */ (0, R.jsx)("svg", {
 	viewBox: "0 0 16 16",
 	fill: "none",
 	stroke: "currentColor",
@@ -4902,18 +4910,18 @@ var Lo = /* @__PURE__ */ (0, R.jsx)("svg", {
 	strokeLinejoin: "round",
 	children: /* @__PURE__ */ (0, R.jsx)("path", { d: "M10 3.5 5.5 8l4.5 4.5" })
 });
-function Ro({ state: e, hosts: t, actions: n = Do }) {
+function Bo({ state: e, hosts: t, actions: n = Do }) {
 	let { phrase: r } = s(), i = o(t?.back), a = o(t?.title), c = e?.screen === "focus" ? e.focus : null, l = c ? (e.tabs || []).find((e) => e.active) : void 0, u = c ? Fe(e?.board, e?.board?.focus) : null;
 	(0, L.useLayoutEffect)(() => {
-		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && Io(i.element, a.element);
+		document.body.classList.toggle("ws", !!c), i.element && (i.element.hidden = !c), a.element && (a.element.hidden = !c, a.element.title = c ? u ? u.title : l ? l.title : c.previewId : ""), i.element && a.element && Ro(i.element, a.element);
 	}), (0, L.useLayoutEffect)(() => () => document.body.classList.remove("ws"), []), (0, L.useLayoutEffect)(() => {
 		let e = i.element, t = a.element, n = e?.parentElement?.parentElement, r = document.getElementById("barR");
 		if (!e || !t) return;
-		let o = new ResizeObserver(() => Io(e, t));
+		let o = new ResizeObserver(() => Ro(e, t));
 		for (let e of [n, r]) e && o.observe(e);
 		return () => o.disconnect();
 	}, [i.element, a.element]);
-	let d = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [Lo, /* @__PURE__ */ (0, R.jsx)("span", {
+	let d = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [zo, /* @__PURE__ */ (0, R.jsx)("span", {
 		id: "backName",
 		children: l ? l.name : r("nav.board")
 	})] }), f = /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [/* @__PURE__ */ (0, R.jsx)("span", {
@@ -4944,7 +4952,7 @@ function Ro({ state: e, hosts: t, actions: n = Do }) {
 		children: t
 	}))] });
 }
-function zo({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = null, hosts: i, actions: a = Do }) {
+function Vo({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = null, hosts: i, actions: a = Do }) {
 	let { phrase: o } = s(), [c, l] = (0, L.useState)(null), u = i?.view ?? c;
 	return (0, L.useLayoutEffect)(() => {
 		u && e !== null && (u.hidden = e !== "focus");
@@ -4966,13 +4974,13 @@ function zo({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = n
 			size: r,
 			host: i.insetMarks
 		}),
-		/* @__PURE__ */ (0, R.jsx)(No, {
+		/* @__PURE__ */ (0, R.jsx)(Fo, {
 			systemUi: t,
 			deviceInsets: n,
 			host: i.systemUi,
 			actions: a
 		}),
-		/* @__PURE__ */ (0, R.jsx)(jo, {
+		/* @__PURE__ */ (0, R.jsx)(No, {
 			host: i.zoom,
 			actions: a
 		})
@@ -5001,17 +5009,17 @@ function zo({ screen: e, systemUi: t = null, deviceInsets: n = null, size: r = n
 		role: "toolbar",
 		"aria-label": o("panel.label"),
 		children: /* @__PURE__ */ (0, R.jsx)(Ma, {
-			systemUi: /* @__PURE__ */ (0, R.jsx)(No, {
+			systemUi: /* @__PURE__ */ (0, R.jsx)(Fo, {
 				systemUi: t,
 				deviceInsets: n,
 				actions: a
 			}),
-			zoom: /* @__PURE__ */ (0, R.jsx)(jo, { actions: a })
+			zoom: /* @__PURE__ */ (0, R.jsx)(No, { actions: a })
 		})
 	})] });
 }
 // src/ViewerRoot.tsx
-function Bo() {
+function Ho() {
 	let e = (e) => document.getElementById(e);
 	return {
 		bar: e("bar"),
@@ -5058,7 +5066,7 @@ function Bo() {
 		chooser: e("chooser")
 	};
 }
-function Vo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
+function Uo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, point: l, renderLegacy: u }) {
 	return (0, L.useLayoutEffect)(() => {
 		e && u(e);
 	}, [t]), o ? /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [
@@ -5106,7 +5114,7 @@ function Vo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			vacant: e?.vacant ?? null,
 			host: o.vacant
 		}),
-		/* @__PURE__ */ (0, R.jsx)(zo, {
+		/* @__PURE__ */ (0, R.jsx)(Vo, {
 			screen: e?.screen ?? null,
 			systemUi: e?.focus?.systemUi ?? null,
 			deviceInsets: e?.focus?.deviceInsets ?? null,
@@ -5114,7 +5122,7 @@ function Vo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 			hosts: o.workspace,
 			actions: c
 		}),
-		/* @__PURE__ */ (0, R.jsx)(Ro, {
+		/* @__PURE__ */ (0, R.jsx)(Bo, {
 			state: e,
 			hosts: o.workspaceHeader,
 			actions: c
@@ -5133,12 +5141,12 @@ function Vo({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 		})
 	] }) : null;
 }
-function Ho({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
+function Wo({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, point: o }) {
 	let s = document.createElement("div");
 	s.hidden = !0, document.body.append(s);
 	let c = (0, ui.createRoot)(s), l = null, u = null, f = null, p = null, m = 0, h = () => c.render(/* @__PURE__ */ (0, R.jsx)(d.Provider, {
 		value: t,
-		children: /* @__PURE__ */ (0, R.jsx)(Vo, {
+		children: /* @__PURE__ */ (0, R.jsx)(Uo, {
 			state: l,
 			draw: m,
 			statusState: u,
@@ -5169,12 +5177,12 @@ function Ho({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 	};
 }
 // src/main.tsx
-var Uo = qt(), $ = xr(br()), Wo = (e) => {
-	Lr(e), Uo?.update(e);
-}, Go = () => {
+var Go = qt(), $ = xr(br()), Ko = (e) => {
+	Lr(e), Go?.update(e);
+}, qo = () => {
 	let { cursor: e } = p();
 	e != null && Er(e);
-}, Ko = {
+}, Jo = {
 	exit: Dr,
 	zoomIn: $.zoomIn,
 	zoomOut: $.zoomOut,
@@ -5182,7 +5190,7 @@ var Uo = qt(), $ = xr(br()), Wo = (e) => {
 	zoomMenuPick: $.zoomMenuPick,
 	toggleZoomMenu: $.toggleZoomMenu,
 	pickSystemUi: Or
-}, qo = {
+}, Yo = {
 	choose: lr,
 	cancel: ur,
 	follow: hr,
@@ -5192,22 +5200,22 @@ var Uo = qt(), $ = xr(br()), Wo = (e) => {
 	close: Z
 };
 cr();
-var Jo = {
+var Xo = {
 	screen: () => I.st ? I.st.screen : "offline",
 	tabCount: jt,
 	moveCursor: v,
-	openCursor: Go,
+	openCursor: qo,
 	exitFocus: Dr,
 	stepTab: kt,
 	jumpTab: At,
 	openQuickOpen: dt,
 	helpOpen: Qt,
 	toggleHelp: $t,
-	zoomIn: Ko.zoomIn,
-	zoomOut: Ko.zoomOut,
-	zoomFit: Ko.zoomFit
-}, Yo = ai(k, Jo);
-ci(Yo, Jo, {
+	zoomIn: Jo.zoomIn,
+	zoomOut: Jo.zoomOut,
+	zoomFit: Jo.zoomFit
+}, Zo = ai(k, Xo);
+ci(Zo, Xo, {
 	chooserOpen: () => !!document.getElementById("chooser")?.classList.contains("on"),
 	cancelChoice: ur,
 	closeZoomMenu: $.closeZoomMenu,
@@ -5216,29 +5224,29 @@ ci(Yo, Jo, {
 	closeRailDrawer: Dt,
 	closeCard: sr
 });
-var Xo = Ho({
-	renderLegacy: Wo,
+var Qo = Wo({
+	renderLegacy: Ko,
 	messages: {
 		phrase: k,
 		daemonText: O
 	},
-	hosts: Bo(),
-	shortcuts: Yo,
+	hosts: Ho(),
+	shortcuts: Zo,
 	board: {
 		open: Er,
 		point: gr
 	},
-	workspace: Ko,
-	point: qo
+	workspace: Jo,
+	point: Yo
 });
 ii({
 	workspace: $,
-	render: Xo.apply,
-	onConnection: Xo.connection,
+	render: Qo.apply,
+	onConnection: Qo.connection,
 	onPreviewFiles: () => {
 		ft(), Zn();
 	},
-	prepared: Uo
+	prepared: Go
 });
 for (let e of [
 	"bar",
