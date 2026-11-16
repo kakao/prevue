@@ -27,6 +27,7 @@ internal class BrowserInput(
 ) {
     private val sizes = Channel<ScreenSize>(Channel.CONFLATED)
     private val wheelWarned = MutableStateFlow(false)
+    private val gestures = GestureLine()
 
     init {
         core.scope.launch(dispatchers.default) {
@@ -50,11 +51,22 @@ internal class BrowserInput(
         live.resize(s, by = "viewer")
     }
 
-    fun touch(type: String, x: Int, y: Int) = core.post { live.touch(type, x, y, by = "viewer", settle = false) }
+    fun touch(type: String, x: Int, y: Int) {
+        val step = suspend { live.touch(type, x, y, by = "viewer", settle = false); Unit }
+        enqueue(if (type.equals(DRAG, ignoreCase = true)) GestureLine.Step.Drag(step) else GestureLine.Step.Kept(step))
+    }
 
-    fun wheel(x: Int, y: Int, dx: Float, dy: Float) = core.post {
+    fun wheel(x: Int, y: Int, dx: Float, dy: Float) = enqueue(GestureLine.Step.Kept {
         if (!live.wheel(x, y, dx, dy, by = "viewer") && !wheelWarned.getAndUpdate { true }) {
             core.flash(phrase("input.wheel.failed"))
         }
+    })
+
+    private fun enqueue(step: GestureLine.Step) {
+        if (gestures.add(step)) core.post { gestures.drain { core.guarded(it.run) } }
+    }
+
+    private companion object {
+        const val DRAG = "drag"
     }
 }

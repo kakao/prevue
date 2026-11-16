@@ -113,7 +113,9 @@ internal class BrowserPresenter(
         if (on != (before?.state?.focus?.streamUrl != null)) watchWanted.value = on
     }
 
-    fun post(intent: suspend () -> Unit): Job = scope.launch(inputs + dispatchers.default, CoroutineStart.UNDISPATCHED) {
+    fun post(intent: suspend () -> Unit): Job = scope.launch(inputs + dispatchers.default, CoroutineStart.UNDISPATCHED) { guarded(intent) }
+
+    suspend fun guarded(intent: suspend () -> Unit) {
         try { intent() } catch (e: CancellationException) { throw e }
         catch (e: Exception) { if (e !is VacantTab) flash(phrase("request.failed", "why" to why(e))) }
     }
