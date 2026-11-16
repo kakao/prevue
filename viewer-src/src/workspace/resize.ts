@@ -68,7 +68,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
         if (next) sendSize(next.body, next.settle);
       });
   }
-  const edgeOfUrl =(img: HTMLImageElement) => { if (!edges.has(img.src)) edges.set(img.src, edgeOf(img, img.naturalWidth, img.naturalHeight)); return edges.get(img.src)!; };
+  const edgeOfUrl = (img: HTMLImageElement) => { if (!edges.has(img.src)) edges.set(img.src, edgeOf(img, img.naturalWidth, img.naturalHeight)); return edges.get(img.src)!; };
   const scene = createResizeScene(root, {
     request: sel => {
       if (preparing) return Promise.resolve(false);
