@@ -238,7 +238,7 @@ export function createResizeScene(root, hooks) {
 
   function snapTo(sel) {
     const st = resolve(sel), f = fit(st);
-    cur = st; tr = null; queued = null; rig.on = false; spin.on = false; fadeB = null; UA.el.style.transform = "";
+    cur = st; tr = null; queued = null; rig.on = false; spin.on = false; fadeB = null; UA.el.style.transform = ""; UA.el.style.removeProperty("--spin-s");
     setFrame(f);
     rulerOp.snap(1);
     settle(st.img);
@@ -541,6 +541,7 @@ export function createResizeScene(root, hooks) {
     const st = spin.to, cached = spin.cached;
     spin.on = false;
     UA.el.style.transform = "";
+    UA.el.style.removeProperty("--spin-s");
     for (const img of [UA.l0, UA.l1]) img.style.transform = "";
     setFrame(fit(st));
     creaseOp.snap(isOpen(st) ? P.crease : 0);
@@ -874,7 +875,10 @@ export function createResizeScene(root, hooks) {
     if (spin.on) {
       const { p } = spinAt(now), { f0, f1 } = spin, c0y = f0.y + f0.h / 2, c1y = f1.y + f1.h / 2;
       UA.el.style.transformOrigin = `${f0.cx}px ${c0y}px`;
-      UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${(lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4)})`;
+      const k = (lerp(1, f1.s / f0.s, p) * (1 - P.rotDip * Math.sin(Math.PI * p))).toFixed(4);
+      UA.el.style.transform = `translate(${((f1.cx - f0.cx) * p).toFixed(2)}px, ${((c1y - c0y) * p).toFixed(2)}px) rotate(${(spin.dir * 90 * p).toFixed(3)}deg) scale(${k})`;
+      // 링(.stage)은 확대(--z)처럼 회전 배율도 되돌려 화면에서 같은 굵기다
+      UA.el.style.setProperty("--spin-s", k);
     }
     drawUnit(UA, { w: V.w.at(now), h: V.h.at(now), y: V.y.at(now) }, { w: O.w.at(now), h: O.h.at(now), op: outlineOp.at(now), crease: creaseOp.at(now), shell: shellOp.at(now), rot: !!ua.rot, mirrored: !!ua.mirrored, tall: ua.kind === "device" && tallOf(DEVICES[ua.dev]), look: lookAt(now) }, s, layer, now, unitOp.a.at(now), spin.on);
     if (fadeB) {
