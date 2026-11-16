@@ -404,7 +404,7 @@ export function createResizeScene(root, hooks) {
     const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
     Object.assign(rig, {
       on: true, turn, q: tallOf(d) ? 90 : 0, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: layer.old.r, from, to, f0, f1, cached,
-      s0: f0.s, s1: f1.s,
+      s0: f0.s, s1: f1.s, sRef: Math.max(f0.s, f1.s),
       half: { u: H, v: O.h }, cover: { u: C.w, v: C.h },
       hx0: dir === "fold" ? openU(f0) : coverU(f0),
       hx1: dir === "fold" ? coverU(f1) : openU(f1),
@@ -573,7 +573,7 @@ export function createResizeScene(root, hooks) {
   }
   // 판 하나 — 몸체 상자(body)와 그 안의 화면(scr). 좌표는 힌지 위 끝이 원점인 판의 평면이고, 뒷면은 두께 T 만큼 뒤에서 뒤집힌다.
   // normal(v) 은 판 좌표의 법선을 화면 좌표로 옮긴다. hingeLeft 는 판 좌표에서 힌지가 화면의 왼쪽 변인지다.
-  function drawPanel(p, { body, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft }) {
+  function drawPanel(p, { body, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }) {
     const [x0, y0, x1, y1] = body, W = x1 - x0, H = y1 - y0, cap = r => r.map(v => clamp(v, 0, Math.min(W, H) / 2));
     const R = cap(bodyR), mirror = r => [r[1], r[0], r[3], r[2]];
     for (const [f, back] of [[p.front, false], [p.back, true]]) {
@@ -583,9 +583,9 @@ export function createResizeScene(root, hooks) {
       if (f.clip) Object.assign(f.clip.style, { left: px(sx), top: px(scr[1] - y0), width: px(sw), height: px(sh), borderRadius: radii(sr) });
       if (f.ring) {
         // 고리는 화면 바깥 1.5px — 힌지 쪽은 접히기 시작하면서 생긴다(펼친 동안 두 판의 고리가 힌지에서 겹치지 않게).
-        const hinge = 1.5 * hk, [l, r] = hingeLeft ? [hinge, 1.5] : [1.5, hinge], [ll, rr] = back ? [r, l] : [l, r];
-        Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - 1.5), width: px(sw + ll + rr), height: px(sh + 3),
-          borderWidth: `1.5px ${px(rr)} 1.5px ${px(ll)}`, borderRadius: radii(sr.map(v => v + 1.5)) });
+        const w = 1.5 * u, hinge = w * hk, [l, r] = hingeLeft ? [hinge, w] : [w, hinge], [ll, rr] = back ? [r, l] : [l, r];
+        Object.assign(f.ring.style, { left: px(sx - ll), top: px(scr[1] - y0 - w), width: px(sw + ll + rr), height: px(sh + 2 * w),
+          borderWidth: `${px(w)} ${px(rr)} ${px(w)} ${px(ll)}`, borderRadius: radii(sr.map(v => v + w)) });
       }
       if (f.lit) f.lit.style.background = litOf(lightOf(normal([0, 0, back ? -1 : 1])));
     }
@@ -620,19 +620,22 @@ export function createResizeScene(root, hooks) {
 
   // 조개형의 옆 단추는 힌지와 나란한 변(판 좌표의 위 · 아래 변)에 있고 접히는 장을 따라 돈다 — 힌지에서 잰 거리를 펼친 자리에서
   // 커버 자리로 옮기며 그 거리의 앞모습(cos)만큼 그린다. 펼친 화면의 오른쪽 변(side 1)이 판 좌표의 위 변이다.
-  function tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone }) {
-    const d = rig.d, H = d.open.hinge, bw = 3;
+  function tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone, u }) {
+    const d = rig.d, H = d.open.hinge, bw = 3 * u;
     d.look.open.btn.forEach((bo, i) => {
       const bc = d.look.cover.btn[i], leaf = bo.at < H;
       const w0 = lerp(leaf ? H - bo.at - bo.len : bo.at - H, bc.at, leaf ? k : 0), w1 = lerp(leaf ? H - bo.at : bo.at + bo.len - H, bc.at + bc.len, leaf ? k : 0);
       const [u0, u1] = leaf ? [-w1 * cs, -w0 * cs].sort((a, b) => a - b) : [w0, w1], wm = (w0 + w1) / 2;
-      Object.assign(RG.btns[i].style, { left: px(hu + u0 * s), top: px(bo.side > 0 ? T0 - t - bw + .5 : T0 + Bv + t - .5), width: px((u1 - u0) * s), height: bw + "px",
-        backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
+      Object.assign(RG.btns[i].style, { left: px(hu + u0 * s), top: px(bo.side > 0 ? T0 - t - bw + .5 * u : T0 + Bv + t - .5 * u), width: px((u1 - u0) * s), height: px(bw),
+        backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
     });
   }
 
+  // 판은 접는 내내 한 배율(rig.sRef)로 배치하고 프레임마다의 배율은 .space 의 scale3d 로만 준다 — 배치 크기가 바뀌면 층을 모두 다시 래스터한다.
+  // 화면 픽셀로 정한 굵기(단추 · 고리 · 눈금 · 접힌 자국)는 u 를 곱해 변환 뒤에도 같은 굵기로 남긴다.
   function drawRig(now) {
-    const { th, s, hx: hu, top: T0, angle } = rigAt(now);
+    const { th, s: sNow, hx: hu, top, cy, angle } = rigAt(now);
+    const s = rig.sRef, K = sNow / s, u = 1 / K, T0 = cy - (cy - top) * s / sNow;
     const k = th / 180, rad = th * Math.PI / 180, sn = Math.sin(rad), cs = Math.cos(rad), d = rig.d;
     const lk = lookAt(now), t = lk.bezel * P.shellK * s, tone = rgbOf(lk.tone);
     const Lu = lerp(rig.half.u, rig.cover.u, k) * s, Lv = lerp(rig.half.v, rig.cover.v, k) * s;
@@ -650,18 +653,18 @@ export function createResizeScene(root, hooks) {
     const baseR = [mix(R[0], C[0]) * hk, mix(R[1], C[1]), mix(R[2], C[2]), mix(R[3], C[3]) * hk];
     const leafR = [mix(R[0], C[1]), mix(R[1], C[0]) * hk, mix(R[2], C[3]) * hk, mix(R[3], C[2])];
     const rB = baseR[1], rH = baseR[0];
-    const pivot = `${px(hu)} ${px(T0 + Bv / 2)}`;
+    const pivot = `${px(hu)} ${px(cy)}`, k3 = K.toFixed(5);
     Object.assign(RG.lift.style, { perspective: P.perspective + "px", perspectiveOrigin: pivot });
-    RG.space.style.transform = `translateZ(${px(-lift)})`;
+    Object.assign(RG.space.style, { transformOrigin: pivot, transform: `scale3d(${k3},${k3},${k3}) translateZ(${px(-lift)})` });
     // 법선 — 판 좌표 → 접힘(rotateY) → 장면 회전(turnRig 의 rotate). 빛은 화면에 고정이다.
     const a = angle * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
     const turn = n => [n[0] * ca - n[1] * sa, n[0] * sa + n[1] * ca, n[2]];
     const fold = n => [n[0] * cs + n[2] * sn, n[1], -n[0] * sn + n[2] * cs];
     for (const p of [RG.base, RG.leaf]) Object.assign(p.el.style, { left: px(hu), top: px(T0) });
     RG.leaf.el.style.transform = `translateZ(${px(za)}) rotateY(${th.toFixed(3)}deg) translateZ(${px(-za)})`;
-    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true });
+    drawPanel(RG.base, { body: [-e, -t, Bu + t, Bv + t], bodyR: baseR, scr: [0, 0, Bu, Bv], scrR: [R[0] * hk, R[1], R[2], R[3] * hk], T, normal: turn, tone, hk, hingeLeft: true, u });
     drawPanel(RG.leaf, { body: [-Lu - t, -t, e, Lv + t], bodyR: leafR, scr: [-Lu, 0, 0, Lv], scrR: [R[0], R[1] * hk, R[2] * hk, R[3]],
-      backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false });
+      backScrR: [C[1], C[0] * hk, C[3] * hk, C[2]], T, normal: n => turn(fold(n)), tone, hk, hingeLeft: false, u });
     paintFace(RG.F.base, rig.plan.base, s, now);
     paintFace(RG.F.inner, rig.plan.inner, s, now);
     paintFace(RG.F.outer, rig.plan.outer, s, now);
@@ -687,15 +690,15 @@ export function createResizeScene(root, hooks) {
     Object.assign(RG.plate.style, { left: px(p0), top: px(T0 - t), width: px(p1 - p0), height: px(Bv + 2 * t), borderRadius: px(rB),
       transform: `translateZ(${px(-T - 1)})`, boxShadow: `var(--elevation-2), 0 ${10 + 18 * sn}px ${30 + 34 * sn}px ${shade(.05 * sn)}` });
     // 옆 단추는 접힌 몸체의 바깥 끝을 따라가고, 보이는 화면과 같은 깊이에 서 양끝에서 멈춘 몸체의 단추와 겹친다.
-    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone });
+    if (tallOf(d)) tallButtons({ hu, T0, Bv, t, s, k, sn, cs, lift, tone: lk.tone, u });
     else lk.btn.forEach((b, i) => {
-      Object.assign(RG.btns[i].style, { left: Math.max(hu + Bu, tip) + t - .5 + "px", top: T0 + b.at * s + "px",
-        width: "3px", height: b.len * s + "px", backgroundColor: lk.tone, opacity: b.len * s > .5 ? 1 : 0, transform: `translateZ(${px(lift)})` });
+      Object.assign(RG.btns[i].style, { left: px(Math.max(hu + Bu, tip) + t - .5 * u), top: px(T0 + b.at * s),
+        width: px(3 * u), height: px(b.len * s), backgroundColor: lk.tone, opacity: b.len * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift)})` });
     });
     const ck = P.crease * clamp(1 - th / 24, 0, 1), tk = clamp(1 - th / 24, 0, 1);
-    Object.assign(RG.crease.style, { left: hu + "px", top: T0 + "px", height: Bv + "px", opacity: ck * hingeOp.at(now) });
-    Object.assign(RG.tTop.style, { left: hu + "px", top: T0 - t + "px", width: "1px", height: t + "px", opacity: tk });
-    Object.assign(RG.tBot.style, { left: hu + "px", top: T0 + Bv + "px", width: "1px", height: t + "px", opacity: tk });
+    Object.assign(RG.crease.style, { left: px(hu), top: px(T0), width: px(14 * u), marginLeft: px(-7 * u), height: px(Bv), opacity: ck * hingeOp.at(now) });
+    Object.assign(RG.tTop.style, { left: px(hu), top: px(T0 - t), width: px(u), height: px(t), opacity: tk });
+    Object.assign(RG.tBot.style, { left: px(hu), top: px(T0 + Bv), width: px(u), height: px(t), opacity: tk });
   }
 
   const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
