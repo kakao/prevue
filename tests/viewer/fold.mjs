@@ -320,6 +320,48 @@ try {
     assert(Math.max(...steps) <= jump * .25, `${name}: 첫 세 프레임 중 한 프레임에 ${Math.max(...steps).toFixed(1)}px / 덮는 크기까지 ${jump.toFixed(1)}px`);
     console.log(`통과 ${++checked}: 흐린 채움 ${name} — 첫 세 프레임 최대 ${Math.max(...steps).toFixed(1)}px / 덮는 크기까지 ${jump.toFixed(1)}px`);
   }
+  // 기기 전환의 흐림 — 그림 없는 크기로 갈 때 그림이 금방 오면 옅게만 흐렸다 바로 걷고, 늦게 오면 예전처럼 짙게 가린다.
+  // 도착 시각을 넣어 주고 4ms 걸음으로 보이는 겹의 흐림을 잰다(두 겹이 녹는 동안은 불투명도로 섞은 값).
+  await evaluate(`window.blurOf=()=>{const f=e=>{const m=/blur\\(([\\d.]+)px/.exec(e.style.filter);return [Number(e.style.opacity)||0,m?Number(m[1]):0]};
+      const [o0,b0]=f(document.querySelector('#ua .l0')),[o1,b1]=f(document.querySelector('#ua .l1'));
+      return o1>=.999?b1:o1>.02?(o0>.02?Math.min(Math.max(b0,b1),b0*(1-o1)+b1*o1):b1):o0>.02?b0:0};
+    window.blurRun=(from,to,delay)=>{reset(from);if(delay<0)scene.image(to.sel,spec(to.w,to.h));const t0=time+4;step(t0);const out=[];let sent=false,atArrival=0;scene.update(to);
+      for(let t=0;t<=3000;t+=4){if(!sent&&delay>=0&&t>=delay){sent=true;atArrival=blurOf();time=t0+t;scene.image(to.sel,spec(to.w,to.h))}step(t0+t);out.push(blurOf())}
+      let sharpAt=0;out.forEach((b,i)=>{if(b>.5)sharpAt=i*4});
+      return {blurred:out.filter(b=>b>.5).length*4,peak:Math.max(...out),atArrival,sharpAt,rest:document.querySelector('#resizeScene').classList.contains('at-rest')}}`);
+  const phone = {sel:'s26:open',w:360,h:780}, tabletSt = {sel:'tablet:open',w:1280,h:800};
+  // 고치기 전(develop d7c8727)의 흐린 시간 — 큰 전환은 도착이 200ms 안이면 틀이 멈출 때까지 656~672ms, 작은 전환은 도착 + 204ms 였다.
+  const switches = [
+    ['폰 → 태블릿', phone, tabletSt, 656], ['태블릿 → 폰', tabletSt, phone, 656],
+    ['폰 → 폴드', phone, {sel:'fold8:open',w:932.57,h:704}, 656], ['폰 → 큰 폰', phone, {sel:'ip17pm:open',w:440,h:956}, 0],
+  ];
+  for (const [name, from, to, before] of switches) {
+    const fast = [];
+    for (const delay of [50, 100, 200]) {
+      const r = await evaluate(`blurRun(${JSON.stringify(from)},${JSON.stringify(to)},${delay})`);
+      assert(r.rest, `${name} ${delay}ms: 전환이 끝난다`);
+      if (before) assert(r.blurred <= before / 2, `${name} ${delay}ms: 흐린 시간 ${r.blurred}ms / 전 ${before}ms`);
+      // 도착 전 시간은 렌더가 정한다 — 줄일 수 있는 도착 뒤 흐린 시간이 전(작은 전환 204ms, 큰 전환 틀이 멈출 때까지)의 절반 이하다
+      assert(r.sharpAt - delay <= (before ? before - delay : 204) / 2, `${name} ${delay}ms: 도착 뒤 흐린 시간 ${r.sharpAt - delay}ms`);
+      assert(r.peak <= 8.01, `${name} ${delay}ms: 옅은 흐림까지만 ${r.peak}`);
+      fast.push(`${delay}→${r.blurred}`);
+    }
+    for (const delay of [800, 1500]) {
+      const r = await evaluate(`blurRun(${JSON.stringify(from)},${JSON.stringify(to)},${delay})`);
+      assert(r.rest && r.atArrival > 23.9 && r.peak <= 24.01, `${name} ${delay}ms: 늦은 도착은 짙은 흐림이 가린다 ${r.atArrival}`);
+      assert(Math.abs(r.sharpAt - delay - 204) <= 8, `${name} ${delay}ms: 도착 뒤 걷는 시간이 그대로 ${r.sharpAt - delay}ms`);
+    }
+    console.log(`통과 ${++checked}: 기기 전환 흐림 ${name} — 도착→흐린 시간(ms) ${fast.join(' · ')}${before ? ` / 전 ${before}` : ''}, 늦은 도착은 24px 가림 그대로`);
+  }
+  // 미리 그린 그림이 있는 전환(실제 기기 전환의 대부분) — 교체 흐림이 틀이 멈추길 기다리지 않고 끝까지 걷는다.
+  // 고치기 전(develop d7c8727)에는 교체 320ms 뒤 6px 에 머물다 틀이 멈춘 뒤 220ms 에 걷혀 이 장면에서 436ms(폰 → 태블릿은 668ms) 흐렸다.
+  for (const [name, from, to] of switches) {
+    const r = await evaluate(`blurRun(${JSON.stringify(from)},${JSON.stringify(to)},-1)`);
+    assert(r.rest, `${name} 미리 그림: 전환이 끝난다`);
+    assert(r.peak <= 8.01, `${name} 미리 그림: 교체 흐림까지만 ${r.peak}`);
+    assert(r.blurred <= 225, `${name} 미리 그림: 흐린 시간 ${r.blurred}ms`);
+    console.log(`통과 ${++checked}: 기기 전환 흐림 ${name} 미리 그림 — ${r.blurred}ms`);
+  }
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   for(const [device,...size] of devices){
     const natural=size[0]>size[1]?'landscape-left':'portrait';

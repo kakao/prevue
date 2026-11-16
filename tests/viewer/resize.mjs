@@ -137,7 +137,7 @@ try {
   await check(`__store.st.focus.size.preset==='narrow' && document.querySelector('#pnPick [aria-checked="true"]')?.dataset.sel==='narrow'`, "프리셋과 같은 치수를 입력하면 그 프리셋");
   await click("#rlH"); await until(`!__store.st.focus.size?.preset && __store.st.focus.size?.widthDp===320 && document.activeElement===document.querySelector('#rlH')`);
   await check(`document.querySelector('#pnPick [aria-checked="true"]')?.dataset.sel==='custom'`, "프리셋에서 숫자를 누르면 바로 커스텀");
-  await check(`document.querySelector('#resizeScene').classList.contains('at-rest') && ![...document.querySelectorAll('#resizeScene .ly')].some(e=>/blur\\([1-9]/.test(e.style.filter))`, "같은 크기 커스텀은 전환 · 흐림 없이");
+  await check(`document.querySelector('#resizeScene').classList.contains('at-rest') && ![...document.querySelectorAll('#resizeScene .ly')].some(e=>Number(e.style.opacity)>0 && /blur\\([1-9]/.test(e.style.filter))`, "같은 크기 커스텀은 전환 · 흐림 없이");
   await evaluate(`document.querySelector('#rlH').value='999'`);
   await choose("foldable");
   await until(`__store.st.focus.size?.preset==='foldable' && !document.querySelector('#stage').classList.contains('resize-hidden')`); await pause(300);
