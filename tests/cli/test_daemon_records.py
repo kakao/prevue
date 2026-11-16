@@ -519,8 +519,10 @@ class Launch(unittest.TestCase):
         build = os.path.join(plugin, "daemon", "daemon", "build")
         os.makedirs(build)
         with open(os.path.join(build, "prevue-env"), "w") as f:
-            for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
+            for k in ("PREVUE_CP", "PREVUE_LAYOUTLIB", "PREVUE_COMPILER", "PREVUE_LIB", "PREVUE_BRIDGE", "PREVUE_VIEWER"):
                 f.write('%s="$ROOT/daemon/daemon/build/%s"\n' % (k, k.lower()))
+        for toolchain in ("prevue_layoutlib", "prevue_compiler", "prevue_lib"):   # start 는 툴체인 폴더가 있어야 구운 것으로 본다
+            os.makedirs(os.path.join(build, toolchain))
         for jar in ("prevue_cp", "prevue_bridge"):      # start 가 데몬이 돌 복사본으로 옮긴다(D-125)
             open(os.path.join(build, jar), "w").close()
         self.java = os.path.join(self.home, "jdk", "bin", "java")
