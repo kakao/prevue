@@ -160,6 +160,11 @@ class FailedJdk(unittest.TestCase):
         self.record(self.jbr25, False, jdk_failed=True)
         self.assertEqual(self.failed(), {25})
 
+    def test_너무_낡은_JDK_의_문구도_JDK_탓이다(self):
+        self.assertTrue(jdk_rule.jdk_error("Gradle requires JVM 17 or later to run. Your build is currently configured to use JVM 11."))
+        self.assertTrue(jdk_rule.jdk_error("Android Gradle plugin requires Java 17 to run. You are currently using Java 11."))
+        self.assertFalse(jdk_rule.jdk_error("e: file:///w/Foo.kt:3:5 Unresolved reference 'bar'."))
+
     def test_JDK_와_무관한_실패는_세지_않는다(self):
         # 변형 다시 뜨기 · KMP 앱 찾기 · 컴파일 오류도 ok:false 다 — 세면 JDK 가 바뀌어 통째로 다시 굽는다
         self.record(self.jbr25, False)

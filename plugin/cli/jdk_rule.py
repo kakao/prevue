@@ -15,7 +15,7 @@
   2. Prevue 가 이 저장소에서 지난번에 쓴 JDK — 로그가 지워졌을 때(Gradle 이 오래된 로그를 치운다)
   3. 없으면 셸의 gradle_jdk_of(프로젝트 설정 → …)
 JDK 탓으로 실패한 JDK 는 위 순서 어디서 나오든 건너뛴다(D-188, D-36 의 예외). 판정은 warmup-runs.jsonl 의 jdkFailed — Gradle stderr 가
-JDK 문구일 때만 붙는다. 변형 다시 뜨기 · KMP 앱 찾기 · 사용자 컴파일 오류도 ok:false 라 그것까지 세면 JDK 가 바뀌어 산출물을 통째로
+JDK 문구(너무 새것 · 너무 낡은 것 둘 다)일 때만 붙는다. 변형 다시 뜨기 · KMP 앱 찾기 · 사용자 컴파일 오류도 ok:false 라 그것까지 세면 JDK 가 바뀌어 산출물을 통째로
 다시 굽는다. 같은 주 버전이면 다른 설치본도 같이 실패하므로(jvmTarget 과 어긋나는 것은 판이다) 주 버전으로 거른다. 다 걸리면 이
 머신의 다른 주 버전 JDK(jdk_find 의 자리와 순서), 그것도 없으면 실패한 JDK 를 그대로 쓰고 출처에 적는다.
 """
@@ -141,7 +141,7 @@ def repo_builds(log_dir, repo, before=None):
 
 JDK_ERROR = re.compile(r"Inconsistent JVM[- ]Target Compatibility|Unsupported class file major version"
                        r"|compiled by a more recent version of the Java Runtime|requires at least JVM runtime version"
-                       r"|Unknown Kotlin JVM target", re.I)
+                       r"|Unknown Kotlin JVM target|Gradle requires JVM \d+ or later|Android Gradle plugin requires Java", re.I)
 # 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
 # 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
 # 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
