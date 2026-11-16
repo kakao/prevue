@@ -27,6 +27,7 @@ Only changes users can see go here.
 - **A size-bar cell or posture that fails to pre-render is retried once in the background** after the other cells, instead of staying empty until the next save or size change.
 - **Switching cells in the size bar keeps the pictures already drawn for the other cells** until you save, so after moving to another device only that device's own postures are drawn again.
 - **In windows 640 px wide or narrower, the open-files rail no longer pushes the board aside** — it opens over the board from a new button at the left of the header, so a group of previews keeps two or more cards per row even at 360 px, and the board margin narrows to 12 px with the stale-image banner text on the same line.
+- A picture whose shape differs from the size frame keeps its proportions in the top-left corner of the frame instead of being stretched to fill it, and pointing at it lines up with what you see.
 - Picking a size that has no picture yet while the frame is still moving, or whose picture is smaller than the frame, now grows the blurred placeholder into the frame instead of jumping to fill it in one frame.
 
 ## [0.22.1] — 2026-11-13

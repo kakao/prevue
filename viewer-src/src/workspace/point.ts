@@ -54,9 +54,19 @@ export const byPick = (a: Hit, b: Hit) => a.area - b.area || b.chain.length - a.
 export function narrow(list: Hit[]) { return store.projectFiles.size ? list.filter(n => store.projectFiles.has(n.fileName)) : list; }
 export function hitIn(list: Hit[], x: number, y: number) { return list.find(n => { const [l, t, r, b] = n.bounds; return x >= l && x < r && y >= t && y < b; }); }
 /** 표시 배율. 보드 카드는 폭을 잘라 보이므로 PNG 좌표와 화면 좌표가 다르다 — 가리키기·터치 둘 다 여기를 지난다. */
-// 인터랙티브 스트림은 보이는 크기로 줄여 오므로 좌표의 기준은 원래 크기(data-full-w)다. 없으면 받은 그림의 크기.
+// 인터랙티브 스트림은 보이는 크기로 줄여 오므로 좌표의 기준은 원래 크기(data-full-w · data-full-h)다. 없으면 받은 그림의 크기.
 const natW = (img: HTMLImageElement) => +(img.dataset.fullW ?? 0) || img.naturalWidth;
-export function scaleOf(img: HTMLImageElement) { return natW(img) ? img.getBoundingClientRect().width / natW(img) : 1; }
+const natH = (img: HTMLImageElement) => +(img.dataset.fullH ?? 0) || img.naturalHeight;
+/**
+ * 상자(w × h)에 비율을 지켜 담은 그림의 배율 — 작업 공간의 #shot 은 틀과 비율이 다르면 늘리지 않고 왼쪽 위에 붙여 담는다(resize.css).
+ * 그림은 상자의 왼쪽 위에서 시작하므로 좌표의 원점은 상자와 같고 배율만 두 축 중 작은 쪽이다. 크기를 모르면 0.
+ */
+export function containScale(w: number, h: number, img: HTMLImageElement) {
+  const nw = natW(img), nh = natH(img);
+  if (!nw || !nh) return 0;
+  return Math.min(w / nw, h / nh);
+}
+export function scaleOf(img: HTMLImageElement) { const r = img.getBoundingClientRect(); return containScale(r.width, r.height, img) || 1; }
 export function posIn(e: MouseEvent, img: HTMLImageElement): [number, number] {
   const r = img.getBoundingClientRect(), s = scaleOf(img) || 1;
   return [Math.round((e.clientX - r.left) / s), Math.round((e.clientY - r.top) / s)];
