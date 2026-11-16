@@ -229,15 +229,6 @@ jobs:
             integration-gradle-${{ matrix.shard }}-${{ runner.os }}-
             integration-gradle-${{ runner.os }}-
 
-      # layoutlib · 컴파일러 · 서드파티 jar 를 받아 푼 자리(installPrevue). 버전은 데몬의 카탈로그가 정한다.
-      - name: 툴체인 캐시를 되살린다
-        id: toolchain-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.prevue/toolchain
-          key: integration-toolchain-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/*.gradle.kts') }}
-          restore-keys: integration-toolchain-${{ runner.os }}-
-
       # 픽스처는 compileSdk 37 이다. 테스트는 ANDROID_HOME 의 platforms 에서 android.jar 를 찾는다.
       # 러너 이미지가 android-37.0 을 갖고 있다(2026-11 확인) — 없어진 이미지면 받는다.
       - name: Android 플랫폼을 맞춘다
@@ -291,11 +282,3 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
-
-      # 툴체인은 조각마다 같다 — 한 조각만 저장한다.
-      - name: 툴체인 캐시를 저장한다
-        if: always() && matrix.shard == 'render' && steps.toolchain-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.prevue/toolchain
-          key: ${{ steps.toolchain-cache.outputs.cache-primary-key }}
