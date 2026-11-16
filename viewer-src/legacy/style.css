@@ -462,7 +462,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
   background: var(--live); vertical-align: 2px; }
 /* 칸 사이(10px)에서 덜어 이름 앞 점과 같은 6px. 칸이 없으면 덜지 않는다 — 덜면 칸 줄이 점보다 좁아져 점이 반쯤 잘린다. */
 .card.noname.focus:not(.cursor) .specs:not(:empty)::before { margin-right: calc(var(--space-4) * -1); }
-/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기가 표시 폭 하나로 배율을 낸다(workspace/point.ts scaleOf). */
+/* 폭은 dp × 묶음 배율(board.js), 높이는 그림의 비를 따른다 — 가리키기 배율(workspace/point.ts scaleOf)이 두 축에서 같다. */
 .cstage img { display: block; max-width: 100%; height: auto; cursor: crosshair; }
 .cstage img.ghost, .stage img.ghost { position: absolute; pointer-events: none; transition: opacity var(--duration-medium2) var(--easing-standard); }
 .card.stale .cstage img { opacity: .4; }
@@ -679,7 +679,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .stage { position: relative; line-height: 0; background: var(--surface-container);
          box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant); max-width: 100%; min-width: 120px; min-height: 60px;
          transition: background-color var(--duration-medium2) var(--easing-standard); }
-/* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 너비/naturalWidth 로 배율을 내므로 축소해도 그대로 맞는다.
+/* 화면급 프리뷰는 창 높이에 맞춰 줄인다 — 클릭 좌표는 scaleOf()가 표시 크기/원래 크기로 배율을 내므로 축소해도 그대로 맞는다.
    min-height 를 이미지에 걸면 945x184 같은 납작한 프리뷰가 세로로 늘어난다. 하한은 --stage-max-h 를 계산할 때 둔다. */
 .stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(var(--stage-max-h, 70vh) - 2px); }
 /* 조작 중 — 말 대신 표면으로 알린다. */

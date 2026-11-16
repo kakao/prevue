@@ -1434,7 +1434,7 @@ function An(e, t, n) {
 var jn = (e) => +(e.dataset.fullW ?? 0) || e.naturalWidth, Mn = (e) => +(e.dataset.fullH ?? 0) || e.naturalHeight;
 function Nn(e, t, n) {
 	let r = jn(n), i = Mn(n);
-	return r ? i ? Math.min(e / r, t / i) : e / r : 0;
+	return !r || !i ? 0 : Math.min(e / r, t / i);
 }
 function Pn(e) {
 	let t = e.getBoundingClientRect();
