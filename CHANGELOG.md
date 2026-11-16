@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
 - **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
 - **On a narrow browser panel (about 400 px), rotating a tablet no longer swings out past the panel edge**, and the frame now centers over the bottom capsule while the height ruler's number stays clear of the left edge at any badge width.
 - **Picking sizes or devices in quick succession now always lands on the last one** — the viewer sends one size change at a time and drops the ones skipped over, so a busy machine can no longer leave the preview on an earlier pick.

@@ -319,6 +319,17 @@ try {
     console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
   }
   assert.equal(results.length,total);
+  // 전환이 끝나 무대가 다시 보일 때 바는 튀어나오지 않고 페이드인한다 — 프레임마다 무대 숨김과 바의 불투명도를 적는다.
+  await evaluate(`window.__barFrames=[];(function f(){const s=document.querySelector('#stage'),b=document.querySelector('#sysBars');window.__barFrames.push({hidden:s.classList.contains('resize-hidden'),op:Number(getComputedStyle(b).opacity)});if(!window.__barStop)requestAnimationFrame(f)})()`);
+  await post('/viewer/resize', { device: 'duo', folded: false, orientation: 'landscape-left' });
+  await until(`__store.st.focus.size?.device==='duo' && !__store.st.focus.size.folded`);
+  await ready(); await pause(400);
+  const frames = await evaluate(`(window.__barStop=true,window.__barFrames)`);
+  const hiddenOps = frames.filter(f => f.hidden).map(f => f.op), shownOps = frames.filter(f => !f.hidden).map(f => f.op);
+  assert(hiddenOps.length && hiddenOps.every(o => o === 0), `전환 중에는 바가 숨어 있다: ${JSON.stringify(hiddenOps)}`);
+  assert(shownOps.some(o => o < 1), `무대가 다시 보여도 바는 곧바로 1이 아니라 페이드인한다: ${JSON.stringify(shownOps.slice(0, 20))}`);
+  assert.equal(shownOps.at(-1), 1, '전환이 끝나면 바는 정지 자세와 같은 불투명도 1');
+  checked++; console.log(`통과 ${checked}: 전환이 끝나면 바가 페이드인한다`);
   await post('/viewer/resize',{device:'duo',folded:true,orientation:'portrait'});
   await until(`__store.st.focus.size?.device==='duo' && __store.st.focus.size.folded && __store.st.focus.size.orientation==='portrait'`);
   await ready();

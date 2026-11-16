@@ -7,6 +7,9 @@ body.resizing-ui main { padding-bottom: 0; }
 /* 틀과 비율이 다른 그림은 늘리지 않고 왼쪽 위에 붙여 담는다 — 남는 자리는 틀 바탕(그림 가장자리 색, resize-scene.js)이 채운다. 가리키기 배율은 point.ts containScale */
 .resize-wrap #stage > #shot { width: 100% !important; height: 100%; max-width: none; max-height: none; border-radius: inherit; object-fit: contain; object-position: 0 0; }
 .resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
+/* 시스템 바는 무대가 다시 보일 때 같이 튀어나오지 않고 페이드인한다 — 숨는 쪽은 즉시여야 무대가 사라지는 프레임에 남지 않는다 */
+.resize-wrap #stage .sys-bars { transition: opacity var(--duration-short4) var(--easing-decelerate); }
+.resize-wrap #stage.resize-hidden .sys-bars { opacity: 0; transition: none; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
 .resize-scene.preparing :is(#sysBars, #insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
