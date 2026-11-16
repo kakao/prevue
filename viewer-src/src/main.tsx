@@ -3,6 +3,7 @@ import { daemonText, phrase } from './runtime/strings';
 import { jumpTab, stepTab, tabCount } from './components/FileRail';
 import type { PointActions } from './components/PointOverlay';
 import { closeDirPop } from './components/ProjectHeader';
+import { closeRailDrawer } from './components/FileRail';
 import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
@@ -42,6 +43,7 @@ installShortcuts(shortcuts, actions, {
   closeZoomMenu: workspace.closeZoomMenu,
   closeDeviceMenu: workspace.closeDeviceMenu,
   closeDirPop,
+  closeRailDrawer,
   closeCard,
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,

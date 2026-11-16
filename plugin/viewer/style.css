@@ -8,6 +8,9 @@
   --qo-w: 640px;   /* 팔레트 · 시작 화면 상자 폭(D-100) */
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
+  --rail-size: 200px;   /* 레일 자체의 폭 — 좁은 창에서는 본문을 밀지 않고(--rail-w 0) 이 폭 그대로 서랍으로 뜬다 */
+  /* 본문 좌우 여백. 낡음 띠 글자도 이 선에서 시작한다 — 둘이 따로 값을 가지면 좁은 창에서 어긋난다. */
+  --board-pad: var(--space-24);
   --stage-min-h: 260px;
   /* 떠 있는 캡슐 자리 = 캡슐 바닥 여백 + 한 줄 캡슐 높이 + 간격. 그림이 캡슐 밑으로 들어가지 않게 늘 비워 둔다 — 캡슐이 뜰 때마다 그림이 줄면 출렁인다. */
   --cap-room: calc(var(--space-20) + var(--control-xlarge) + var(--space-16));
@@ -294,7 +297,7 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
   body.ws .back span { display: none; }
   body.ws .bar-l { flex: 0 0 auto; }   /* 아이콘 · ‹ 만 남아 줄 것이 없다 — 긴 제목이 칸을 다투면 제목이 말줄임으로 준다 */
   body.ws .brand, body.ws .brand-sep { display: none; }   /* 워드마크 글리프보다 이 장의 이름 — 360 에서 제목이 0 이 되지 않게 */
-  main { padding-left: var(--space-12); padding-right: var(--space-12); }
+  :root { --board-pad: var(--space-12); }
 }
 
 
@@ -312,10 +315,10 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 @keyframes sweep { to { left: 100%; } }
 
 /* ---------- 열린 파일 레일(D-98) ---------- */
-/* 헤더 아래 왼쪽 200px. 지금 파일만 옅은 회색 판이 깔린다 — 하이라이트는 하나다. 파일이 없으면(시작 화면) "열린 파일 없음"과 "파일 열기"만 남는다.
+/* 헤더 아래 왼쪽 --rail-size. 지금 파일만 옅은 회색 판이 깔린다 — 하이라이트는 하나다. 파일이 없으면(시작 화면) "열린 파일 없음"과 "파일 열기"만 남는다.
    작업 공간에서는 접힌다(D-99) — 단번에, 전환 없이(커지는 그림의 목적지가 움직이지 않게). */
-body.rail-on { --rail-w: 200px; }
-.rail { position: fixed; top: calc(var(--bar-h) + 1px); left: 0; bottom: 0; z-index: 16; width: var(--rail-w); display: flex; flex-direction: column; gap: var(--space-2);
+body.rail-on { --rail-w: var(--rail-size); }
+.rail { position: fixed; top: calc(var(--bar-h) + 1px); left: 0; bottom: 0; z-index: 16; width: var(--rail-size); display: flex; flex-direction: column; gap: var(--space-2);
         padding: var(--space-12) var(--space-8); overflow: hidden auto; scrollbar-width: none; background: var(--surface); border-right: 1px solid var(--outline-variant);
         view-transition-name: rail; }
 .rail-h { margin: 0 var(--space-8) var(--space-6); color: var(--on-surface-variant); font: var(--type-label-medium); }
@@ -364,6 +367,17 @@ body.rail-on { --rail-w: 200px; }
 /* 단축키 표의 키캡(kbd)이 아니라 글자에 두른 테두리다 — 시안의 크기. */
 .rail-open kbd { display: inline; min-width: 0; height: auto; background: transparent; box-shadow: none; padding: 0 var(--space-4); border: 1px solid var(--outline-variant); border-radius: var(--corner-small); color: var(--on-surface-variant); font: var(--type-code-small); }
 /* 탭을 옮기면 보드는 엇갈려 바뀌고, 레일은 찍지 않고 살아 있는 채로 둔다 — 바탕이 미끄러지는 것이 보여야 한다. */
+/* 좁은 창(≤640px)에서는 레일이 보드를 밀지 않는다 — 360px 창에서 200px 를 먹으면 보드가 100px 남짓으로 줄어 묶음이 한 칸씩 쌓였다.
+   헤더 맨 왼쪽 단추가 같은 폭의 레일을 덮개와 함께 보드 위에 띄운다(서랍). 폭이 그대로라 줄임 규칙(FileRail layout, D-103)도 그대로다. */
+.rail-toggle, .rail-scrim { display: none; }
+@media (max-width: 640px) {
+  body.rail-on { --rail-w: 0px; }
+  body.rail-on .rail-toggle { display: inline-grid; }
+  .rail { z-index: 17; visibility: hidden; transform: translateX(-100%); box-shadow: var(--elevation-3);
+          transition: transform var(--duration-medium2) var(--easing-standard), visibility 0s linear var(--duration-medium2); }
+  body.rail-drawer .rail { visibility: visible; transform: none; transition: transform var(--duration-medium2) var(--easing-standard); }
+  body.rail-drawer .rail-scrim { display: block; position: fixed; inset: calc(var(--bar-h) + 1px) 0 0 0; z-index: 16; background: var(--scrim); }
+}
 ::view-transition-old(rail) { display: none; }
 ::view-transition-new(rail) { animation: none; }
 /* 탭 이동 중에도 툴바·캡슐은 제자리에서 바뀐다. 늘 이름을 달면 작업 공간 전환이 툴바를 찍힌 그림으로 바꾼다. */
@@ -387,7 +401,7 @@ body.rail-on { --rail-w: 200px; }
             transition: grid-template-rows var(--duration-medium2) var(--easing-standard); }
 .stalebar.on { grid-template-rows: 1fr; }
 .stalebar > .in { overflow: hidden; }
-.stalebar .rows { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-8) var(--space-24); border-bottom: 1px solid var(--outline-variant);
+.stalebar .rows { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-8) var(--board-pad); border-bottom: 1px solid var(--outline-variant);
                   background: linear-gradient(var(--error-container) 0 0), var(--surface); color: var(--on-surface); font: var(--type-body-small);
                   opacity: 0; transform: translateY(calc(var(--motion-enter-shift) * -1)); transition: opacity var(--duration-medium2) var(--easing-standard), transform var(--duration-medium2) var(--easing-standard); }
 .stalebar.on .rows { opacity: 1; transform: none; }
@@ -398,7 +412,7 @@ body.stale .stage img, body.stale .card .cstage img { opacity: .4; filter: grays
 
 /* ---------- 보드 ---------- */
 /* 레일 몫만 왼쪽에서 비킨다 — 오른쪽 끝에 붙인다. 한 장의 조작은 무대 위에 뜨는 독이라 본문 폭을 빼지 않는다(D-167) */
-main { position: relative; width: calc(100% - var(--rail-w)); margin-left: auto; padding: var(--space-20) var(--space-24) calc(var(--cap-room) + var(--space-16)); }
+main { position: relative; width: calc(100% - var(--rail-w)); margin-left: auto; padding: var(--space-20) var(--board-pad) calc(var(--cap-room) + var(--space-16)); }
 /* 묶음 배율은 보드 폭에서 나온다(board.js) — 일반 스크롤바가 생겼다 사라지며 폭이 15px 흔들리면 배율이 따라 출렁인다(배율이 줄어
    보드가 짧아지면 스크롤바가 사라지고, 그러면 다시 넓어진다). 뿌리의 scrollbar-gutter 는 브라우저마다 잡히지 않아 스크롤 막대를 늘 둔다. */
 html { overflow-y: scroll; scrollbar-gutter: stable; }

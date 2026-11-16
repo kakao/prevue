@@ -159,6 +159,7 @@
   "rail.open.label": "Open a Preview file",
   "rail.open.tip": "Open file (/ · ⌘K)",
   "rail.title": "Open files",
+  "rail.toggle": "Show open files",
   "render.androidView": "AndroidView and native views can't be drawn headless",
   "render.classMissing": "Couldn't find the Preview class: {class}. The compile output is missing or the FQN is wrong",
   "render.classMissing.reload": "Couldn't find the Preview class: {class}. The compile output is missing or the FQN is wrong. Recompile that file with `prevue reload {file}`. If the compile fails, its error is the answer",
