@@ -71,12 +71,18 @@ internal object LazyListPlacement {
             val inset = insetOf(r, c, n) ?: continue
             if (!tried.add(inset)) continue
             val matched = r.cells.mapNotNull { byBox[insetKey(r, it, inset)] }
-            if (matched.size * 2 <= r.cells.size || matched.size < 2 && frameOf(r, inset, matched, all) == null) continue
-            val b = best
-            if (b == null || matched.size > b.second.size || matched.size == b.second.size && inset.w + inset.h < b.first.w + b.first.h) best = inset to matched
+            if (accepts(r, inset, matched, all) && beats(inset, matched, best)) best = inset to matched
         }
         val (inset, matched) = best ?: return null
         return resolve(r, inset, matched, all)
+    }
+
+    private fun accepts(r: Raw, inset: Inset, matched: List<ViewNode>, all: List<ViewNode>) =
+        matched.size * 2 > r.cells.size && (matched.size >= 2 || frameOf(r, inset, matched, all) != null)
+
+    private fun beats(inset: Inset, matched: List<ViewNode>, best: Pair<Inset, List<ViewNode>>?): Boolean {
+        val (other, theirs) = best ?: return true
+        return matched.size > theirs.size || matched.size == theirs.size && inset.w + inset.h < other.w + other.h
     }
 
     private fun insetOf(r: Raw, c: Cell, n: ViewNode): Inset? {
