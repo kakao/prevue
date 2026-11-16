@@ -30,7 +30,7 @@ internal object LazyListPlacement {
         val free = nodes.filter { it.sameBox !in claimed }
         val byBox = HashMap<List<Int>, ViewNode>()
         free.forEach { n -> byBox.putIfAbsent(key(r, n.left, n.top, n.right, n.bottom), n) }
-        val fit = bestFit(r, free, byBox)
+        val fit = bestFit(r, free, byBox, nodes)
         if (fit == null || fit.matched.isEmpty()) return if (r.cells.isEmpty()) emptyList(r, nodes)?.let { Placed(it, null) } else null
         fit.matched.forEach { claimed += it.sameBox }
         val box = viewport(r, fit, nodes)
@@ -56,28 +56,27 @@ internal object LazyListPlacement {
         return LazyList(f.left, f.top, f.right, f.bottom, r.vertical, r.total, emptyList())
     }
 
-    private fun bestFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
-        val exact = exactFit(r, nodes, byBox)
+    private fun bestFit(r: Raw, free: List<ViewNode>, byBox: Map<List<Int>, ViewNode>, all: List<ViewNode>): Fit? {
+        val exact = exactFit(r, free, byBox)
         if (exact != null && exact.matched.size * 2 > r.cells.size) return exact
-        val inset = insetFit(r, nodes, byBox)?.takeIf { it.matched.size > (exact?.matched?.size ?: 0) } ?: return exact
-        return inset
+        return insetFit(r, free, byBox, all) ?: exact
     }
 
-    private class Inset(val dx: Int, val dy: Int, val w: Int, val h: Int)
+    private data class Inset(val dx: Int, val dy: Int, val w: Int, val h: Int)
 
-    private fun insetFit(r: Raw, nodes: List<ViewNode>, byBox: Map<List<Int>, ViewNode>): Fit? {
-        val tried = HashSet<List<Int>>()
+    private fun insetFit(r: Raw, free: List<ViewNode>, byBox: Map<List<Int>, ViewNode>, all: List<ViewNode>): Fit? {
+        val tried = HashSet<Inset>()
         var best: Pair<Inset, List<ViewNode>>? = null
-        for (c in r.cells) for (n in nodes) {
+        for (c in r.cells.take((r.cells.size + 1) / 2)) for (n in free) {
             val inset = insetOf(r, c, n) ?: continue
-            if (!tried.add(listOf(inset.dx, inset.dy, inset.w, inset.h))) continue
+            if (!tried.add(inset)) continue
             val matched = r.cells.mapNotNull { byBox[insetKey(r, it, inset)] }
+            if (matched.size * 2 <= r.cells.size || matched.size < 2 && frameOf(r, inset, matched, all) == null) continue
             val b = best
             if (b == null || matched.size > b.second.size || matched.size == b.second.size && inset.w + inset.h < b.first.w + b.first.h) best = inset to matched
         }
         val (inset, matched) = best ?: return null
-        if (matched.size * 2 <= r.cells.size) return null
-        return resolve(r, inset, matched, nodes)
+        return resolve(r, inset, matched, all)
     }
 
     private fun insetOf(r: Raw, c: Cell, n: ViewNode): Inset? {
@@ -91,15 +90,20 @@ internal object LazyListPlacement {
 
     private fun insetKey(r: Raw, c: Cell, i: Inset) = key(r, i.dx + c.x, i.dy + c.y, i.dx + c.x + c.w - i.w, i.dy + c.y + c.h - i.h)
 
-    private fun resolve(r: Raw, i: Inset, matched: List<ViewNode>, nodes: List<ViewNode>): Fit {
+    private fun frameOf(r: Raw, i: Inset, matched: List<ViewNode>, all: List<ViewNode>): ViewNode? {
         val axes = Axes(r.vertical)
         val length = if (r.vertical) r.height else r.width
         val (near, room) = if (r.vertical) i.dy to i.h else i.dx to i.w
-        val frame = nodes.firstOrNull { f ->
+        return all.firstOrNull { f ->
             val (s, e) = axes.main(f)
             e - s == length && s - r.start in near - room..near && matched.all { f.contains(it) }
         }
-        val mainShift = frame?.let { axes.main(it).first - r.start } ?: (near - room / 2)
+    }
+
+    private fun resolve(r: Raw, i: Inset, matched: List<ViewNode>, all: List<ViewNode>): Fit {
+        val near = if (r.vertical) i.dy else i.dx
+        val room = if (r.vertical) i.h else i.w
+        val mainShift = frameOf(r, i, matched, all)?.let { Axes(r.vertical).main(it).first - r.start } ?: (near - room / 2)
         return if (r.vertical) Fit(i.dx - i.w / 2, mainShift, matched) else Fit(mainShift, i.dy - i.h / 2, matched)
     }
 
