@@ -59,6 +59,59 @@ class LazyListPlacementTest {
         assertEquals(listOf(200, 370, 680, 990), list.items.map { it.top })
     }
 
+    // 트리 노드는 Modifier.padding 을 뺀 크기라 아이템 루트마다 패딩이 있으면 칸과 크기가 같은 노드가 없다.
+    @Test fun `아이템 루트마다 패딩이 있어도 그리드를 놓는다`() {
+        val cells = (0 until 4).map { LazyListReflection.Cell(it, it / 2, (it % 2) * 510, (it / 2) * 420, 490, 400) }
+        val raw = LazyListReflection.Raw(true, 30, 1000, 2000, 0, crossFills = false, cells = cells)
+        val nodes = listOf(node(0, 100, 1000, 2100, "LazyVerticalGrid")) + cells.map { node(it.x + 21, 100 + it.y + 21, it.x + 469, 100 + it.y + 379, "Card") }
+        val list = LazyListPlacement.placeAll(listOf(raw), nodes).first.single()
+        assertEquals(listOf(0, 100, 490, 500), list.items[0].let { listOf(it.left, it.top, it.right, it.bottom) })
+        assertEquals(listOf(510, 520, 1000, 920), list.items[3].let { listOf(it.left, it.top, it.right, it.bottom) })
+    }
+
+    @Test fun `한쪽만 있는 아이템 패딩은 뷰포트 노드로 주축 위치를 정한다`() {
+        val raw = LazyListReflection.Raw(true, 10, 1000, 1500, 0, crossFills = true,
+            cells = (0 until 3).map { LazyListReflection.Cell(it, it, 0, it * 300, 1000, 300) })
+        val nodes = listOf(node(0, 200, 1000, 1700, "LazyColumn")) + (0 until 3).map { node(0, 230 + it * 300, 1000, 500 + it * 300) }
+        val list = LazyListPlacement.placeAll(listOf(raw), nodes).first.single()
+        assertEquals(listOf(200, 500, 800), list.items.map { it.top })
+    }
+
+    @Test fun `큰 칸 안에 든 노드 하나로는 목록을 놓지 않는다`() {
+        val raw = LazyListReflection.Raw(true, 10, 1000, 900, 0, crossFills = true,
+            cells = (0 until 3).map { LazyListReflection.Cell(it, it, 0, it * 300, 1000, 300) })
+        assertTrue(LazyListPlacement.placeAll(listOf(raw), listOf(node(0, 0, 1000, 100, "TopBar"))).first.isEmpty())
+    }
+
+    @Test fun `패딩 아이템 안의 가로 목록은 바깥 목록이 아이템을 뺏지 않는다`() {
+        val outer = LazyListReflection.Raw(true, 5, 1000, 2000, 0, crossFills = true, cells = listOf(LazyListReflection.Cell(0, 0, 0, 0, 1000, 400)))
+        val inner = LazyListReflection.Raw(false, 9, 1000, 380, 0, crossFills = true,
+            cells = (0 until 3).map { LazyListReflection.Cell(it, it, it * 300, 0, 300, 380) })
+        val nodes = listOf(node(0, 0, 1000, 2000, "LazyColumn"), node(0, 10, 1000, 390, "Column")) +
+            (0 until 3).map { node(it * 300, 40, it * 300 + 300, 360, "Chip") }
+        val lists = LazyListPlacement.placeAll(listOf(outer, inner), nodes).first
+        assertEquals(2, lists.size)
+        assertEquals(listOf(0, 400), lists[0].items.single().let { listOf(it.top, it.bottom) })
+        assertEquals(listOf(0, 300, 600), lists[1].items.map { it.left })
+    }
+
+    @Test fun `바깥 목록이 차지한 안쪽 목록 노드로도 안쪽 목록의 주축 위치를 정한다`() {
+        val outer = LazyListReflection.Raw(true, 5, 1000, 2000, 0, crossFills = true, cells = listOf(LazyListReflection.Cell(0, 0, 0, 0, 1000, 300)))
+        val inner = LazyListReflection.Raw(false, 9, 968, 300, 0, crossFills = true,
+            cells = (0 until 3).map { LazyListReflection.Cell(it, it, it * 300, 0, 300, 300) })
+        val nodes = listOf(node(0, 0, 1000, 2000, "LazyColumn"), node(16, 0, 984, 300, "LazyRow")) +
+            (0 until 3).map { node(16 + it * 300, 0, 16 + it * 300 + 292, 300, "Chip") }
+        val lists = LazyListPlacement.placeAll(listOf(outer, inner), nodes).first
+        assertEquals(listOf(16, 316, 616), lists[1].items.map { it.left })
+    }
+
+    @Test fun `칸이 하나면 목록 노드 밖의 노드로는 놓지 않는다`() {
+        val raw = LazyListReflection.Raw(true, 3, 1000, 1000, 0, crossFills = true, cells = listOf(LazyListReflection.Cell(0, 0, 0, 0, 1000, 400)))
+        val nodes = listOf(node(0, 0, 1000, 350, "Hero"), node(0, 500, 1000, 1500, "LazyColumn"), node(0, 542, 1000, 858, "Card"))
+        val list = LazyListPlacement.placeAll(listOf(raw), nodes).first.single()
+        assertEquals(listOf(500, 900), list.items.single().let { listOf(it.top, it.bottom) })
+    }
+
     @Test fun `맞는 아이템 노드가 없으면 놓지 않는다`() {
         val raw = LazyListReflection.Raw(true, 10, 500, 500, 0, crossFills = false, cells = listOf(LazyListReflection.Cell(0, 0, 0, 0, 123, 45)))
         assertTrue(LazyListPlacement.placeAll(listOf(raw), listOf(node(0, 0, 500, 500))).first.isEmpty())

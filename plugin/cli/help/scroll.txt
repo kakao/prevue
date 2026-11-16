@@ -13,7 +13,7 @@ scroll, read the response, decide the next step. If you are looking for somethin
               #N here is the reading order on screen (not touch's list index)
 --until       after each wheel step checks whether the target is fully visible, and stops right there when it is. If it is already fully visible before scrolling, it doesn't scroll.
               A target bigger than the viewport stops once as much as can be visible is in. If several match, the one that came in first in the scrolling direction
-                <file>:<line>[#N]  that line's node. Inside a lazy list #N is the same list index as touch (from 1),
+                <file>:<line>[#N]  that line's node. Inside a lazy list #N is the same list index as touch (from 1, headers count too),
                                    outside a list the reading order counted past the screen too
                 any other text     whatever has that text in its semantics text · contentDescription (text drawn without semantics can't be found —
                                    find it by line then)
