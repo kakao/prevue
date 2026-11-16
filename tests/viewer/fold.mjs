@@ -93,13 +93,15 @@ try {
   ];
   // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 세로만 있다 — 펼친 가로에서 접으면 세로로 서며 접힌다(셋째 값 true).
   const FIXED = { flip8: { 'open:portrait':['portrait'], 'open:landscape-left':['portrait',false,true], 'open:landscape-right':['portrait',false,true], 'cover:portrait':['portrait'] } };
-  const results = [];
+  const results = [], landings = [];
   const click = async selector => {
     const at = await evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),r=el.getBoundingClientRect();if(el.hidden||!r.width||!r.height)throw Error('버튼이 숨었다: '+el.id);return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
     for (const type of ['mousePressed','mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...at, button: 'left', clickCount: 1 });
   };
   await evaluate(`window.box=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};
-    window.snapshot=()=>({body:box(document.querySelector('#ua .stage')),cam:box(document.querySelector('#ua .cam')),
+    window.snapshot=()=>({body:box(document.querySelector('#ua .stage')),shell:box(document.querySelector('#ua .shell')),
+      radii:(c=>['borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius'].map(k=>parseFloat(c[k])))(getComputedStyle(document.querySelector('#ua .shell'))),
+      ticks:[...document.querySelectorAll('#ua .tick')].filter(e=>Number(e.style.opacity)>0).map(box),cam:box(document.querySelector('#ua .cam')),
       cameraOn:Number(document.querySelector('#ua .cam').style.opacity)>0,
       buttons:[...document.querySelectorAll('#ua .btn')].filter(e=>Number(e.style.opacity)>0).map(box),
       content:box(document.querySelector('#ua .l0')),layout,src:document.querySelector('#ua .l0').src});
@@ -124,6 +126,26 @@ try {
       const cam=box(face.querySelector('.cam')),content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
       return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
     };`);
+  // 착지 — 접기의 마지막 프레임과 멈춘 첫 프레임을 화면째 찍어 몸체의 테 · 빛 · 그림자를 견준다. 화면 안과 그 둘레 3px(링 자리)는
+  // 그림이 달라 빼고, 외곽선 · 단추 · 힌지 눈금의 2px 띠도 뺀다 — 접기 층은 합성기가 소수점 자리에서 다시 표본해 1px 짜리 선이 반 픽셀 번진다.
+  // 차는 1px 이웃 중 가장 가까운 값과 잰다(반 픽셀 어긋남은 차가 아니다).
+  await evaluate(`window.decodeAll=()=>Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{}))).then(()=>new Promise(r=>setTimeout(r,80)));
+    window.landing=async(a,b,o)=>{
+      const load=async d=>{const bm=await createImageBitmap(await (await fetch('data:image/png;base64,'+d)).blob()),c=new OffscreenCanvas(bm.width,bm.height),x=c.getContext('2d');x.drawImage(bm,0,0);return x.getImageData(0,0,bm.width,bm.height)};
+      const A=await load(a),B=await load(b),W=A.width,H=A.height,{screen:m,shell:sh,radii:R,bands}=o;
+      const inside=(r,e,x,y)=>x>=r.x-e&&x<r.x+r.w+e&&y>=r.y-e&&y<r.y+r.h+e;
+      const sdf=(x,y)=>{const cx=sh.x+sh.w/2,cy=sh.y+sh.h/2,r=R[x<cx?(y<cy?0:3):(y<cy?1:2)],qx=Math.abs(x+.5-cx)-(sh.w/2-r),qy=Math.abs(y+.5-cy)-(sh.h/2-r);return Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-r};
+      const near=(P,Q,i,x,y)=>{let best=255;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const qx=x+dx,qy=y+dy;if(qx<0||qy<0||qx>=W||qy>=H)continue;const j=(qy*W+qx)*4;best=Math.min(best,Math.max(Math.abs(P[i]-Q[j]),Math.abs(P[i+1]-Q[j+1]),Math.abs(P[i+2]-Q[j+2])))}return best};
+      const out={bezel:{max:0,sum:0,n:0},halo:{max:0,sum:0,n:0}};
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+        if(inside(m,3,x,y)||Math.abs(sdf(x,y))<2||bands.some(b=>inside(b,2,x,y)))continue;
+        const i=(y*W+x)*4,d=Math.max(near(A.data,B.data,i,x,y),near(B.data,A.data,i,x,y)),g=out[inside(sh,0,x,y)?'bezel':'halo'];
+        if(d>g.max)g.max=d,g.at=[x,y];g.sum+=d;g.n++;
+      }
+      for(const g of Object.values(out))g.mean=g.sum/g.n;
+      return out;
+    };`);
+  const shoot = async clip => (await send('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 1 } })).data;
   const near = (actual, expected, name, tolerance = .2) => {
     for (const key of ['x','y','w','h']) assert(Math.abs(actual[key]-expected[key])<=tolerance, `${name} ${key}: ${actual[key]} / ${expected[key]}`);
   };
@@ -196,6 +218,24 @@ try {
           const ends=unpaired?expected.buttons.map(at):expected.buttons,used=new Set();
           for(const b of last.buttons){const i=ends.findIndex((e,j)=>!used.has(j)&&['x','y','w','h'].every(k=>Math.abs(b[k]-e[k])<=.2));assert(i>=0,`${name}: 단추 ${JSON.stringify(b)}`);used.add(i)}
           if(arrival!=='late') near(last.content,expected.content,`${name}: 모션 끝 콘텐츠`);
+          if(cached&&!unpaired){
+            const sh=expected.shell,clip={x:Math.max(0,Math.floor(sh.x-40)),y:Math.max(0,Math.floor(sh.y-40))};
+            clip.width=Math.min(1440,Math.ceil(sh.x+sh.w+40))-clip.x;clip.height=Math.min(900,Math.ceil(sh.y+sh.h+40))-clip.y;
+            const local=b=>({x:b.x-clip.x,y:b.y-clip.y,w:b.w,h:b.h});
+            // 라이브 링 — 멈춘 무대의 링(.stage)은 화면 밖 2px / --z 다. 착지 면의 고리도 화면에서 같은 굵기다.
+            const ring=await evaluate(`(()=>{const f=document.querySelector(${JSON.stringify(to===cover?'#rig .leaf .rear':'#rig .base .front')}),c=box(f.querySelector('.clip')),r=box(f.querySelector('.ring'));return Math.max(c.x-r.x,c.y-r.y,r.x+r.w-c.x-c.w,r.y+r.h-c.y-c.h)})()`);
+            assert(Math.abs(ring-2)<=.1,`${name}: 착지 면의 링 ${ring}px`);
+            // 하네스는 실제 무대(#stage)를 숨겨 멈춘 쪽에 링이 없다 — 링은 위에서 굵기로 견주고 화면은 둘 다 링 없이 찍는다.
+            await evaluate(`document.head.insertAdjacentHTML('beforeend','<style id=landing>#ruler,#rig .ring{visibility:hidden}</style>');decodeAll()`);
+            const end=await shoot(clip);
+            await evaluate(`step(time+.001);step(time+16);decodeAll()`);
+            assert(await evaluate(`document.querySelector('#rig').hidden`),`${name}: 착지한 뒤 멈춘 장면`);
+            const rest=await shoot(clip);
+            await evaluate(`document.getElementById('landing').remove()`);
+            const d=await evaluate(`landing(${JSON.stringify(end)},${JSON.stringify(rest)},${JSON.stringify({screen:local(expected.body),shell:local(sh),radii:expected.radii,bands:[...expected.buttons,...expected.ticks].map(local)})})`);
+            for(const [part,g] of Object.entries(d)) assert(g.mean<=1&&g.max<=32,`${name}: 착지 ${part} 평균 ${g.mean.toFixed(2)} · 최대 ${g.max} @${g.at}`);
+            landings.push({name,bezel:+d.bezel.mean.toFixed(2),bezelMax:d.bezel.max,halo:+d.halo.mean.toFixed(2),haloMax:d.halo.max});
+          }
           // 캐시 없음은 몸체가 다 접혀도 그림을 기다린다. 늦은 렌더 도착 뒤 최종 좌표를 따로 잰다.
           const final=await evaluate(`step(time+100);scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));step(time+1500);step(time+1500);snapshot()`);
           assert.equal(await evaluate('scene.moving()'),false,'렌더 도착 후 정착');
@@ -244,6 +284,25 @@ try {
     await check(`document.querySelector('#dcOrientation').hidden===${fixed}`, `${sel} 돌리기 ${fixed?'꺼짐':'켜짐'}`);
   }
   await check("scene.sizeOf('flip8:cover:rot')===null&&scene.sizeOf('flip8:cover')!==null", 'flip8 커버의 돌린 자세는 없다');
+  // 흐린 채움의 시작 — 그림이 없는 크기로 가면 옛 그림이 원래 dp 자리에서 덮는 크기로 자란다. 틀이 dp와 다를 때(캐시 있는 전환 도중 ·
+  // 내용 크기로 줄어든 그림) 한 프레임에 덮는 크기로 튀지 않고, 흐림이 오르는 동안 여러 프레임에 나눠 자란다.
+  const A = {sel:'custom:400x700',w:400,h:700}, B = {sel:'custom:600x500',w:600,h:500}, C = {sel:'custom:300x300',w:300,h:300};
+  const holds = [
+    ['캐시 있는 전환 도중', A, [400,700], `scene.image('${B.sel}',spec(600,500));scene.update(${JSON.stringify(B)});for(let k=16;k<=160;k+=16)step(time+16);`, C],
+    ['그림이 틀보다 작다', A, [400,520], '', B],
+    ['돌리기 · 그림이 틀보다 작다', {sel:'ip17:open',w:402,h:874}, [402,600], '', {sel:'ip17:open:rot',w:874,h:402}],
+  ];
+  for (const [name, from, [w, h], before, to] of holds) {
+    await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to,[B.sel]:B})};scene.enable(false);scene.setOriginal(360,740,spec(360,740));scene.enable(true);scene.image('${from.sel}',spec(${w},${h}));scene.update(${JSON.stringify(from)},true);step(time+2000);${before}`);
+    const { boxes, frame } = await evaluate(`(()=>{const l0=()=>box(document.querySelector('#ua .l0')),out=[l0()],frame=box(document.querySelector('#ua .stage'));scene.update(${JSON.stringify(to)});for(let k=0;k<4;k++){step(time+(k?16:.01));out.push(l0())}return {boxes:out,frame}})()`);
+    // 옛 코드가 한 프레임에 건너뛰던 거리 — 그때의 틀을 덮는 크기와 원래 dp 크기의 차
+    const jump = boxes[0].w * Math.max(frame.w / boxes[0].w, frame.h / boxes[0].h) - boxes[0].w;
+    const steps = boxes.slice(1).map((b, i) => Math.max(...['x','y','w','h'].map(k => Math.abs(b[k] - boxes[i][k]))));
+    assert(jump > 20, `${name}: 틀과 그림 크기가 다르다 ${jump}`);
+    assert(steps[0] <= .5, `${name}: 시작 프레임에 그림 박스가 그대로 ${steps[0]}`);
+    assert(Math.max(...steps) <= jump * .25, `${name}: 첫 세 프레임 중 한 프레임에 ${Math.max(...steps).toFixed(1)}px / 덮는 크기까지 ${jump.toFixed(1)}px`);
+    console.log(`통과 ${++checked}: 흐린 채움 ${name} — 첫 세 프레임 최대 ${Math.max(...steps).toFixed(1)}px / 덮는 크기까지 ${jump.toFixed(1)}px`);
+  }
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   for(const [device,...size] of devices){
     const natural=size[0]>size[1]?'landscape-left':'portrait';
@@ -273,6 +332,7 @@ try {
   }
   await mkdir(join(root,'.cache/fold'),{recursive:true});
   await writeFile(join(root,'.cache/fold/results.json'),JSON.stringify(results,null,2)+'\n');
+  await writeFile(join(root,'.cache/fold/landings.json'),JSON.stringify(landings,null,2)+'\n');
   assert.deepEqual(await evaluate('__errors'),[],'브라우저 오류');
   await check('__errors.length===0','브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
