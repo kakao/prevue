@@ -338,9 +338,11 @@ try {
   for (const [name, from, to, before] of switches) {
     const fast = [];
     for (const delay of [50, 100, 200]) {
-      const r = await evaluate(`blurRun(${JSON.stringify(from)},${JSON.stringify(to)},${delay})`), was = before || delay + 204;
+      const r = await evaluate(`blurRun(${JSON.stringify(from)},${JSON.stringify(to)},${delay})`);
       assert(r.rest, `${name} ${delay}ms: 전환이 끝난다`);
-      assert(r.blurred <= (before ? was / 2 : was), `${name} ${delay}ms: 흐린 시간 ${r.blurred}ms / 전 ${was}ms`);
+      if (before) assert(r.blurred <= before / 2, `${name} ${delay}ms: 흐린 시간 ${r.blurred}ms / 전 ${before}ms`);
+      // 도착 전 시간은 렌더가 정한다 — 줄일 수 있는 도착 뒤 흐린 시간이 전(작은 전환 204ms, 큰 전환 틀이 멈출 때까지)의 절반 이하다
+      assert(r.sharpAt - delay <= (before ? before - delay : 204) / 2, `${name} ${delay}ms: 도착 뒤 흐린 시간 ${r.sharpAt - delay}ms`);
       assert(r.peak <= 8.01, `${name} ${delay}ms: 옅은 흐림까지만 ${r.peak}`);
       fast.push(`${delay}→${r.blurred}`);
     }
