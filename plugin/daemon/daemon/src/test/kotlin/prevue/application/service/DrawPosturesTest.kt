@@ -205,14 +205,42 @@ class DrawPosturesTest {
         assertTrue(System.currentTimeMillis() - t >= 300, "잠잠해지기 전에 그렸다")
     }
 
-    @Test fun `그리지 못한 칸은 싣지 않고 다시 그리지 않는다`() {
+    @Test fun `한 번 실패한 칸은 나머지 칸을 다 그린 뒤 같은 회차에 한 번 더 그린다`() {
+        val uc = opened()
+        fx.renderer.asideFails = "렌더 예외"
+        fx.renderer.asideFailsIf = firstTry("fold8-folded")
+        uc.pick(fold8)
+        uc.awaitDrawn(fold)
+        val plan = listOf("fold8-folded", "fold8-land", "fold8-right", "fold8-folded-land", "fold8-folded-land-right") + (bar - "fold8")
+        assertEquals(plan + "fold8-folded", asideKeys())
+    }
+
+    @Test fun `옆 태스크가 예외를 던진 칸도 회차를 멈추지 않고 같은 회차에 한 번 더 그린다`() {
+        val uc = opened()
+        fx.renderer.asideThrows = firstTry("fold8-folded")
+        uc.pick(fold8)
+        uc.awaitDrawn(fold)
+        assertEquals("fold8-folded", asideKeys().last())
+        assertEquals(fold + 1, postureAsides().size)
+    }
+
+    @Test fun `늘 실패하는 칸은 한 회차에 칸마다 두 번만 그리고 칸을 바꿔도 더 그리지 않는다`() {
         val uc = opened()
         fx.renderer.asideFails = "렌더 예외"
         uc.pick(fold8)
-        awaitUntil("옆 태스크를 칸마다 한 번") { postureAsides().size == fold }
-        awaitUntil("실패한 칸을 모두 적었다") { uc.workspace.now.postures!!.shots.size == fold + 1 }
-        assertEquals(emptyMap<ScreenSize, String>(), uc.drawn())
-        assertEquals(fold, postureAsides().size)
+        awaitUntil("칸마다 두 번") { postureAsides().size == fold * 2 }
+        assertEquals(asideKeys().take(fold), asideKeys().drop(fold))
+        val round = uc.workspace.now.postures!!.round
+        runBlocking { uc.live.resize(ScreenSize.Device(DeviceModel.GALAXY_S26), "viewer") }
+        assertEquals(round, uc.workspace.now.postures!!.round)
+        awaitUntil("새 기기의 자세만 두 번씩") { postureAsides().size == fold * 2 + 4 }
+        assertEquals(listOf("s26-land", "s26-land-right", "s26-land", "s26-land-right"), asideKeys().drop(fold * 2))
+        assertEquals(setOf("fold8"), uc.drawn().keys.map { it.key }.toSet(), "라이브 첫 장의 복사본만 싣는다")
+    }
+
+    private fun firstTry(key: String): (prevue.application.domain.model.PreviewSpec) -> Boolean {
+        val seen = java.util.concurrent.atomic.AtomicBoolean()
+        return { it.previewId.endsWith("@$key") && seen.compareAndSet(false, true) }
     }
 
     @Test fun `저장한 코드로 라이브를 못 그리면 회차를 열지 않아 옆 태스크도 돌지 않는다`() {

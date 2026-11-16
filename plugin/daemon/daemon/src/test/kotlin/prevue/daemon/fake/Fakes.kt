@@ -87,10 +87,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         asideEntered.release()
         gate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
         asideThrows?.let { check(!it(p)) { "옆 태스크 예외 — ${p.previewId}" } }
-        return asideFails?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
+        return asideFails?.takeIf { asideFailsIf(p) }?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
     }
-    /** 걸어 두면 옆 태스크가 그 문구의 렌더 예외로 실패한다. */
+    /** 걸어 두면 옆 태스크가 그 문구의 렌더 예외로 실패한다. [asideFailsIf]로 실패할 태스크를 고른다. */
     @Volatile var asideFails: String? = null
+    @Volatile var asideFailsIf: (PreviewSpec) -> Boolean = { true }
     /** 걸어 두면 맞는 옆 태스크가 결과 대신 예외를 던진다. */
     @Volatile var asideThrows: ((PreviewSpec) -> Boolean)? = null
 

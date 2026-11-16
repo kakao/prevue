@@ -69,7 +69,7 @@ class LiveShot(private val ws: Workspace, private val engine: Engine) {
             val prev = s.postures?.takeIf { keep && it.spec.previewId == base.previewId }?.carriedTo(d)
             val round = prev?.round ?: (s.postureRound + 1)
             val shots = prev?.shots.orEmpty() + listOfNotNull(shot?.let { d to it })
-            s.copy(postures = Postures(base, round, shots), postureRound = maxOf(s.postureRound, round))
+            s.copy(postures = Postures(base, round, shots, prev?.misses.orEmpty()), postureRound = maxOf(s.postureRound, round))
         }
     }
 

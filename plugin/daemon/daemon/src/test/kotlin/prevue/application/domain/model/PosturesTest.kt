@@ -53,4 +53,25 @@ class PosturesTest {
         assertThrows(IllegalArgumentException::class.java) { ScreenSize.parse(null, "flip8", folded = true, landscape = true) }
         assertEquals(ScreenSize.Device(flip, true, PORTRAIT), ScreenSize.Device(flip, false, LANDSCAPE_LEFT).folding)
     }
+
+    private val fold8 = ScreenSize.Device(DeviceModel.GALAXY_Z_FOLD8)
+    private val blank = Postures(PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0), round = 1)
+
+    @Test fun `한 번 실패한 칸은 안 그린 칸을 다 고른 뒤에 다시 고르고 두 번 실패하면 고르지 않는다`() {
+        val plan = Postures.plan(fold8)
+        var ps = blank.missed(fold8, plan[0])
+        assertEquals(plan[1], ps.next(fold8))
+        ps = plan.drop(1).fold(ps) { acc, d -> acc.missed(fold8, d) }
+        assertEquals(plan[0], ps.next(fold8))
+        ps = plan.fold(ps) { acc, d -> acc.missed(fold8, d) }
+        assertNull(ps.next(fold8))
+    }
+
+    @Test fun `실패 수는 크기를 바꿔도 닿는 칸만 이어 간다`() {
+        val folded = fold8.copy(folded = true)
+        val s26 = ScreenSize.Device(DeviceModel.GALAXY_S26)
+        val ps = blank.missed(fold8, folded).missed(fold8, ScreenSize.Original).carriedTo(s26)
+        assertEquals(mapOf<ScreenSize, Int>(ScreenSize.Original to 1), ps.misses)
+        assertEquals(ps.misses, ps.missed(s26, folded).misses, "닿지 않는 칸의 실패는 세지 않는다")
+    }
 }
