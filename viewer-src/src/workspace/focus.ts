@@ -8,7 +8,7 @@ import { store } from '../runtime/store';
 import { phrase } from '../runtime/strings';
 import { findCard, type Focus, type ViewerState } from '../state';
 import { drag, press, pressing, release, wheel } from './input';
-import { byPick, clearPick, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
+import { byPick, clearPick, containScale, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
 import { createResizeController } from './resize';
 import { zoomView } from './view';
 
@@ -73,7 +73,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if ((shot.getAttribute('src') || '').startsWith('data:')) return;
     if (!shot.naturalWidth || (streaming() && fullW)) return;
     fullW = shot.naturalWidth; fullH = shot.naturalHeight;
-    shot.dataset.fullW = String(fullW);
+    shot.dataset.fullW = String(fullW); shot.dataset.fullH = String(fullH);
   }
   /** 원래 크기로 맞춤 자리를 잡는다 — 받은 그림이 작아도 같은 자리. 가로 넘침은 CSS max-width 가 자른다. */
   function sizeShot(maxH: number) {
@@ -125,7 +125,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (!f) closeZoomMenu();
     stage.classList.toggle('live', interactive);
     ppd = f ? f.pxPerDp || null : null;
-    if (!f || f.previewId !== zoomFor) { resizeUI.disable(); zoomFor = f ? f.previewId : null; fullW = fullH = 0; delete shot.dataset.fullW; shot.style.width = ''; setZoom(1, 0, 0, false); }
+    if (!f || f.previewId !== zoomFor) { resizeUI.disable(); zoomFor = f ? f.previewId : null; fullW = fullH = 0; delete shot.dataset.fullW; delete shot.dataset.fullH; shot.style.width = ''; setZoom(1, 0, 0, false); }
     if (!f) {
       if (flight?.entering) stopFlight();
       resizeUI.disable();
@@ -334,7 +334,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
    */
   const zoom = { z: 1, x: 0, y: 0 };
   let zoomFor: string | null = null, spaceHeld = false, panned = false, ppd: number | null = null;
-  function layoutScale() { const n = fullW || shot.naturalWidth; return n ? shot.offsetWidth / n : 1; }
+  function layoutScale() { return containScale(shot.offsetWidth, shot.offsetHeight, shot) || 1; }
   /**
    * 실제 크기(1dp = 1 CSS px)의 z. z 는 맞춤 대비 배율이고, 맞춤에서 1dp 는 layoutScale × pxPerDp CSS px 다.
    * 밀도를 모르는 기기(id:)면 null — 배율은 맞춤 기준으로 보이고 `실제 크기`는 메뉴에서 빠진다.
@@ -462,7 +462,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     firstFrame,
     originalSize() { const c = findCard(store.st?.board, store.st?.board?.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
     dimensions(w, h) {
-      if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); sentW = 0; reportViewport(); }
+      if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); shot.dataset.fullH = String(h); sentW = 0; reportViewport(); }
       return { w: fullW, h: fullH };
     },
     layout(r) {
