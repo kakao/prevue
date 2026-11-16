@@ -84,6 +84,8 @@ class ClasspathSpecTest {
         assertEquals("app.ap_", r.resourceApkPath)
         assertFalse("/m2/compose-alpha.jar" in r.classPath)
         assertEquals(":app", r.borrowedFrom)
+        assertEquals(overlay, r.renderOverlay)
+        assertEquals(null, home.renderOverlay)
     }
 
     @Test fun `앱이 안 담은 모듈은 모듈 클래스패스에 리소스만 빌린다`() {

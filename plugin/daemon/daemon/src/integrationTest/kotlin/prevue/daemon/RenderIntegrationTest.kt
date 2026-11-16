@@ -1043,6 +1043,18 @@ class RenderIntegrationTest {
         assertAlive()
     }
 
+    @Test @Order(37) fun `object 제공자도 값마다 카드가 되고 각자 그려진다`() {
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.objectProvider.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        val cards = ws.now.board!!.cards
+        assertEquals(3, cards.size, "제공자 값(봄 · 여름이 오면 · 가을 그리고 겨울)마다 카드 한 장")
+        val outs = cards.map { (it.result as? CardResult.Drawn)?.shot?.out }
+        assertTrue(outs.all { it?.ok == true }, "카드마다 렌더 성공 — ${outs.map { it?.status }}")
+        val pixels = outs.map { out -> ImageIO.read(out!!.image!!).let { img -> img.getRGB(0, 0, img.width, img.height, null, 0, img.width).toList() } }
+        assertEquals(3, pixels.toSet().size, "값마다 다른 그림")
+        assertAlive()
+    }
+
     // 내용 크기로 감싸는 컴포넌트도 기기를 고르면 그 기기 화면 크기로 그린다 — 작게 그리면 뷰어가 틀에 맞춰 늘려 글자가 찌그러졌다.
     @Test @Order(31) fun `내용 크기 컴포넌트도 기기를 고르면 기기 화면 크기로 그린다`() {
         assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
