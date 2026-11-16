@@ -7,11 +7,10 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 
 class LostMembersTest {
-    private fun facade(vararg methods: String, fields: List<String> = emptyList(), access: Int = Opcodes.ACC_PUBLIC): ByteArray {
+    private fun facade(vararg methods: String, access: Int = Opcodes.ACC_PUBLIC): ByteArray {
         val w = ClassWriter(0)
         w.visit(Opcodes.V17, Opcodes.ACC_PUBLIC or Opcodes.ACC_FINAL, "a/HomeScreenKt", null, "java/lang/Object", null)
         for (m in methods) w.visitMethod(access or Opcodes.ACC_STATIC, m.substringBefore('('), "(" + m.substringAfter('('), null, null).visitEnd()
-        for (f in fields) w.visitField(access or Opcodes.ACC_STATIC, f.substringBefore(':'), f.substringAfter(':'), null, null).visitEnd()
         w.visitEnd()
         return w.toByteArray()
     }

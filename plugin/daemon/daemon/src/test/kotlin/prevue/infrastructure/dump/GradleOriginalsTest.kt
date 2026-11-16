@@ -29,9 +29,6 @@ class GradleOriginalsTest {
         ZipOutputStream(f.outputStream()).use { z -> z.putNextEntry(ZipEntry("classes.jar")); z.write(classes); z.closeEntry() }
     }
 
-    private fun jar(group: String, artifact: String, version: String) =
-        File(files2, "$group/$artifact/$version/9f8e/$artifact-$version.jar").apply { parentFile.mkdirs(); writeText("") }
-
     @Test fun `변환본 이름에서 아티팩트와 버전을 읽는다`() {
         assertEquals("coil-compose-base" to "2.7.0", GradleOriginals.coordinate("$transforms/aa/transformed/coil-compose-base-2.7.0-runtime.jar"))
         assertEquals("coil-base" to "2.7.0", GradleOriginals.coordinate("$transforms/bb/transformed/coil-base-2.7.0-api.jar"))
