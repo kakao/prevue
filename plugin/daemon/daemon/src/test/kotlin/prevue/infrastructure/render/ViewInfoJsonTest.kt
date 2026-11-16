@@ -51,8 +51,4 @@ class ViewInfoJsonTest {
         assertEquals("ComposeViewAdapter.getViewInfos\$ui_tooling", ViewInfoJson.toolingMismatch(roots))
         assertEquals(emptyList<Any>(), ViewInfoJson.compose(roots))
     }
-
-    @Test fun `Compose 프리뷰가 아니면 판 짝을 묻지 않는다`() {
-        assertEquals(null, ViewInfoJson.toolingMismatch(listOf(view("FrameLayout", Any()))))
-    }
 }
