@@ -222,14 +222,31 @@ try {
             const sh=expected.shell,clip={x:Math.max(0,Math.floor(sh.x-40)),y:Math.max(0,Math.floor(sh.y-40))};
             clip.width=Math.min(1440,Math.ceil(sh.x+sh.w+40))-clip.x;clip.height=Math.min(900,Math.ceil(sh.y+sh.h+40))-clip.y;
             const local=b=>({x:b.x-clip.x,y:b.y-clip.y,w:b.w,h:b.h});
-            // 라이브 링 — 멈춘 무대의 링(.stage)은 화면 밖 2px / --z 다. 착지 면의 고리도 화면에서 같은 굵기다.
-            const ring=await evaluate(`(()=>{const f=document.querySelector(${JSON.stringify(to===cover?'#rig .leaf .rear':'#rig .base .front')}),c=box(f.querySelector('.clip')),r=box(f.querySelector('.ring'));return Math.max(c.x-r.x,c.y-r.y,r.x+r.w-c.x-c.w,r.y+r.h-c.y-c.h)})()`);
-            assert(Math.abs(ring-2)<=.1,`${name}: 착지 면의 링 ${ring}px`);
+            // 라이브 링 — 착지 면의 고리는 멈춘 무대(#stage.live)의 링과 화면에서 같은 굵기다.
+            const {ring,stageRing}=await evaluate(`(()=>{const f=document.querySelector(${JSON.stringify(to===cover?'#rig .leaf .rear':'#rig .base .front')}),c=box(f.querySelector('.clip')),r=box(f.querySelector('.ring'));
+              // 크기 장면은 조작(interactive) 중에만 켜지고 그때 무대는 .live 다(focus.ts) — 하네스는 그 클래스를 달지 않아 읽을 때만 단다.
+              const st=document.querySelector('#stage');st.classList.add('live');
+              const spread=getComputedStyle(st).boxShadow.match(/(-?[\\d.]+)px/g)?.map(parseFloat)[3];st.classList.remove('live');
+              return {ring:Math.max(c.x-r.x,c.y-r.y,r.x+r.w-c.x-c.w,r.y+r.h-c.y-c.h),stageRing:spread}})()`);
+            assert(stageRing>0&&Math.abs(ring-stageRing)<=.1,`${name}: 착지 면의 링 ${ring}px / 멈춘 무대 ${stageRing}px`);
+            // 접힌 자국 · 힌지 눈금 — 1px 짜리라 픽셀 판정의 띠에 빠진다. 불투명도와 상자로 견준다(펼침 착지만 보인다).
+            const hinge=sel=>evaluate(`[...document.querySelectorAll(${JSON.stringify(sel)})].map(e=>({op:Number(e.style.opacity)*1,...box(e)}))`);
+            const rigMarks=to===open?{crease:await hinge('#rig .crease'),ticks:await hinge('#rig .tick')}:null;
             // 하네스는 실제 무대(#stage)를 숨겨 멈춘 쪽에 링이 없다 — 링은 위에서 굵기로 견주고 화면은 둘 다 링 없이 찍는다.
             await evaluate(`document.head.insertAdjacentHTML('beforeend','<style id=landing>#ruler,#rig .ring{visibility:hidden}</style>');decodeAll()`);
             const end=await shoot(clip);
             await evaluate(`step(time+.001);step(time+16);decodeAll()`);
             assert(await evaluate(`document.querySelector('#rig').hidden`),`${name}: 착지한 뒤 멈춘 장면`);
+            if(rigMarks){
+              const [rc]=rigMarks.crease,[uc]=await hinge('#ua .crease'),uTicks=await hinge('#ua .tick');
+              assert(rc.op>.01&&Math.abs(rc.op-uc.op)<=.02,`${name}: 접힌 자국 불투명도 ${rc.op} / ${uc.op}`);
+              const mid=b=>[b.x+b.w/2,b.y+b.h/2];
+              assert(mid(rc).every((v,i)=>Math.abs(v-mid(uc)[i])<=.5),`${name}: 접힌 자국 자리 ${mid(rc)} / ${mid(uc)}`);
+              for(const t of uTicks){
+                const m=rigMarks.ticks.find(r=>['x','y','w','h'].every(k=>Math.abs(r[k]-t[k])<=.5));
+                assert(m&&Math.abs(m.op-t.op)<=.02,`${name}: 힌지 눈금 ${JSON.stringify(t)} / ${JSON.stringify(rigMarks.ticks)}`);
+              }
+            }
             const rest=await shoot(clip);
             await evaluate(`document.getElementById('landing').remove()`);
             const d=await evaluate(`landing(${JSON.stringify(end)},${JSON.stringify(rest)},${JSON.stringify({screen:local(expected.body),shell:local(sh),radii:expected.radii,bands:[...expected.buttons,...expected.ticks].map(local)})})`);

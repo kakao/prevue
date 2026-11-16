@@ -201,7 +201,7 @@ export function createResizeScene(root, hooks) {
     for (const [v, to] of [[O.w, f.w + 2 * g], [O.h, f.h + 2 * g]]) spO ? v.set(to, spO, now) : v.snap(to);
   }
   // fill — 도착 그림이 없어 옛 화면을 틀에 채워 흐린다. swap — 덮는 쪽 레이아웃으로 바꾸는 흐림 교체(가운데서 가장 흐리다).
-  const layersOf = img => ({ old: { r: img, held: false, fill: false, grow: new Tw(0, k => smooth(0, 1, k)), blur: new Tw(0), veil: new Tw(0), op: new Tw(1) }, neu: { r: null, op: new Tw(0), blur: new Tw(0) }, swap: null });
+  const layersOf = img => ({ old: { r: img, held: false, grow: new Tw(0, k => smooth(0, 1, k)), blur: new Tw(0), veil: new Tw(0), op: new Tw(1) }, neu: { r: null, op: new Tw(0), blur: new Tw(0) }, swap: null });
   const layer = layersOf(null);
   const swapAt = (sw, now) => clamp((now - sw.t0) / sw.dur, 0, 1);
   const bump = k => P.swapBlur * 4 * k * (1 - k);
@@ -246,14 +246,14 @@ export function createResizeScene(root, hooks) {
   }
   function settle(img) {
     const o = layer.old, n = layer.neu;
-    o.r = img; o.held = false; o.fill = false; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); o.op.snap(1);
+    o.r = img; o.held = false; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); o.op.snap(1);
     n.r = null; n.op.snap(0); n.blur.snap(0); layer.swap = null;
   }
 
   function freeze(now) {
     const n = layer.neu, o = layer.old, sw = layer.swap;
     const nb = sw ? swapBlurAt(sw, swapAt(sw, now)) : n.blur.at(now), nop = sw ? smooth(0, 1, swapAt(sw, now)) : n.op.at(now);
-    if (n.r && nop > .5) { o.r = n.r; o.fill = false; o.grow.snap(0); o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
+    if (n.r && nop > .5) { o.r = n.r; o.grow.snap(0); o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
     else if (sw) o.blur.snap(nb);
     o.held = true;
     n.r = null; n.op.snap(0); n.blur.snap(0); layer.swap = null;
@@ -262,11 +262,11 @@ export function createResizeScene(root, hooks) {
   // 채움은 흐림이 오르는 동안 원래 dp 자리에서 덮는 크기로 자란다 — 틀이 움직이던 중이면 그 사이가 커서 한 프레임에 튀었다.
   function hold(now) {
     const o = layer.old;
-    o.fill = true; o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
+    o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
   }
   function sharpen(now) {
     const o = layer.old;
-    o.fill = false; o.grow.to(0, 120, now); o.blur.to(0, 120, now); o.veil.to(0, 120, now);
+    o.grow.to(0, 120, now); o.blur.to(0, 120, now); o.veil.to(0, 120, now);
   }
 
   const reducedOn = () => reduced.matches;
@@ -333,7 +333,7 @@ export function createResizeScene(root, hooks) {
     if (rig.on) endRig(now);
     if (spin.on) endSpin(now);
     freeze(now);
-    layer.old.fill = false; layer.old.grow.to(0, 120, now); layer.old.blur.to(0, 120, now); layer.old.veil.to(0, 120, now);
+    layer.old.grow.to(0, 120, now); layer.old.blur.to(0, 120, now); layer.old.veil.to(0, 120, now);
     for (const v of [V.w, V.h, V.s, V.y, O.w, O.h]) v.snap(v.at(now));
     roll.w.snap(from.w); roll.h.snap(from.h);
     layer.old.op.to(P.reducedDim, 160, now);
@@ -426,7 +426,7 @@ export function createResizeScene(root, hooks) {
     const d = DEVICES[to.dev], dir = to.folded ? "fold" : "unfold", H = d.open.hinge;
     const f0 = fit(from), f1 = fit(to);
     freeze(now);
-    if (cached) { const o = layer.old; o.fill = false; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); }
+    if (cached) { const o = layer.old; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); }
     const restBlur = layer.old.blur.at(now);
     const O = plateOf(d, "open"), C = plateOf(d, "cover");
     const openU = f => f.cx - O.w * f.s / 2 + H * f.s;
@@ -575,7 +575,7 @@ export function createResizeScene(root, hooks) {
       f.el.style.background = ts.edge;
       return;
     } else {
-      put(f.old, spec, holdSize(spec, plan.frame, o.fill), o.blur.at(now));
+      put(f.old, spec, holdSize(spec, plan.frame, o.grow.b > 0), o.blur.at(now));
       f.veil.style.opacity = o.veil.at(now);
     }
     if (plan.neu && n.r) put(f.neu, n.r, { w: n.r.dpW, h: n.r.dpH }, n.blur.at(now), n.op.at(now));
@@ -889,7 +889,7 @@ export function createResizeScene(root, hooks) {
       if (tr?.kind === "size" && keep) layer.old.blur.snap(keep);
     }
     // 크기 전환은 틀이 멈춘 뒤에 선명해진다 — 움직이는 동안 늘었다 줄었다 하는 화면을 옅은 흐림이 가린다
-    if (tr?.kind === "size" && tr.arrived && !layer.neu.r && nearRest(now) && layer.old.blur.b > 0 && !layer.old.fill) layer.old.blur.to(0, P.settleSharp, now);
+    if (tr?.kind === "size" && tr.arrived && !layer.neu.r && nearRest(now) && layer.old.blur.b > 0 && !(layer.old.grow.b > 0)) layer.old.blur.to(0, P.settleSharp, now);
     if (tr) {
       if (tr.kind === "fade") { if (tr.arrived && unitOp.b.done(now)) endFade(now); }
       else if (tr.kind !== "spin" && tr.arrived && !rig.on && !layer.neu.r && atRest(now) && O.w.done(now) && O.h.done(now) && layer.old.blur.b === 0 && layer.old.blur.done(now)) {
