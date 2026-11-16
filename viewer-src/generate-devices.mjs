@@ -108,13 +108,19 @@ export function deviceTable(specList) {
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
     if (look.status) entry.status = status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);
-    return { order: number(spec.order, `${where}.order`), id: spec.id, bar: look.bar, entry };
+    return { order: number(spec.order, `${where}.order`), id: spec.id, entry };
   }).sort((a, b) => a.order - b.order);
   const ids = devices.map(d => d.id);
   if (new Set(ids).size !== ids.length) throw Error('기기 id 가 겹친다');
   const table = Object.fromEntries(devices.map(d => [d.id, d.entry]));
-  const menu = [['Android', devices.filter(d => d.bar !== 'ios')], ['iPhone', devices.filter(d => d.bar === 'ios')]]
-    .map(([group, list]) => ({ group, ids: list.map(d => d.id) }));
+  // 메뉴 묶음은 제품 라인(label 의 첫 단어 — Galaxy · Pixel · iPhone)이고, 묶음 순서는 그 안의 가장 앞 order 다.
+  // 칸 이름은 묶음 머리 아래에서 읽히므로 라인 이름을 되풀이하지 않는다(Pixel 9 → 9).
+  const lineOf = d => d.entry.name.split(' ')[0];
+  for (const d of devices) {
+    const short = d.entry.short;
+    if (short === lineOf(d) || short.startsWith(`${lineOf(d)} `)) throw Error(`${d.id}.look.short: 묶음 이름 ${lineOf(d)} 로 시작한다 — 메뉴의 묶음 머리가 이미 그 이름이다`);
+  }
+  const menu = [...new Set(devices.map(lineOf))].map(group => ({ group, ids: devices.filter(d => lineOf(d) === group).map(d => d.id) }));
   return { table, menu };
 }
 

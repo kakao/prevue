@@ -54,6 +54,59 @@ export const DEVICES = {
       }
     }
   },
+  "s26ultra": {
+    "name": "Galaxy S26 Ultra",
+    "short": "S26 Ultra",
+    "fold": false,
+    "open": {
+      "w": 384,
+      "h": 832
+    },
+    "look": {
+      "open": {
+        "tone": "#34363a",
+        "bezel": 5,
+        "radius": [
+          28.09,
+          28.09,
+          28.09,
+          28.09
+        ],
+        "cam": {
+          "w": 9,
+          "h": 9,
+          "y": 13.99
+        },
+        "btn": [
+          {
+            "side": 1,
+            "at": 185,
+            "len": 100
+          },
+          {
+            "side": 1,
+            "at": 318,
+            "len": 52
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          },
+          {
+            "side": 1,
+            "at": 370,
+            "len": 0
+          }
+        ]
+      }
+    }
+  },
   "a07": {
     "name": "Galaxy A07 5G",
     "short": "A07 5G",
@@ -108,62 +161,9 @@ export const DEVICES = {
       }
     }
   },
-  "s26ultra": {
-    "name": "Galaxy S26 Ultra",
-    "short": "S26 Ultra",
-    "fold": false,
-    "open": {
-      "w": 384,
-      "h": 832
-    },
-    "look": {
-      "open": {
-        "tone": "#34363a",
-        "bezel": 5,
-        "radius": [
-          28.09,
-          28.09,
-          28.09,
-          28.09
-        ],
-        "cam": {
-          "w": 9,
-          "h": 9,
-          "y": 13.99
-        },
-        "btn": [
-          {
-            "side": 1,
-            "at": 185,
-            "len": 100
-          },
-          {
-            "side": 1,
-            "at": 318,
-            "len": 52
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          },
-          {
-            "side": 1,
-            "at": 370,
-            "len": 0
-          }
-        ]
-      }
-    }
-  },
   "pixel9": {
     "name": "Pixel 9",
-    "short": "Pixel 9",
+    "short": "9",
     "fold": false,
     "open": {
       "w": 411.43,
@@ -216,7 +216,7 @@ export const DEVICES = {
   },
   "pixel10xl": {
     "name": "Pixel 10 Pro XL",
-    "short": "Pixel 10 Pro XL",
+    "short": "10 Pro XL",
     "fold": false,
     "open": {
       "w": 443.08,
@@ -1183,7 +1183,7 @@ export const DEVICES = {
   },
   "tablet": {
     "name": "Pixel Tablet",
-    "short": "Pixel Tablet",
+    "short": "Tablet",
     "fold": false,
     "open": {
       "w": 1280,
@@ -1294,19 +1294,24 @@ export const DEVICES = {
 
 export const DEVICE_MENU = [
   {
-    "group": "Android",
+    "group": "Galaxy",
     "ids": [
       "s26",
-      "a07",
       "s26ultra",
-      "pixel9",
-      "pixel10xl",
+      "a07",
       "fold8",
       "ultra",
       "flip8",
-      "pixelfold",
-      "tablet",
       "s11ultra"
+    ]
+  },
+  {
+    "group": "Pixel",
+    "ids": [
+      "pixel9",
+      "pixel10xl",
+      "pixelfold",
+      "tablet"
     ]
   },
   {

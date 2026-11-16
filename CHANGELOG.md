@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The device menu is grouped by product line** — Galaxy, Pixel and iPhone instead of Android and iPhone — and Pixel entries drop the repeated name (`9`, `10 Pro XL`, `Tablet`; the full name stays in the tooltip).
 - **`@PreviewParameter` providers declared inside another class** (`Outer.Inner`) now draw one card per value instead of collapsing into a single card.
 - **Galaxy S26 Ultra and Pixel 10 Pro XL join the device menu** (`--device s26ultra` · `pixel10xl`) with their measured insets, cutout and screen corners in portrait and both landscape directions, from [windowinsets.info](https://windowinsets.info/) (Pixel 10 Pro XL from a real device on Firebase Test Lab, at 1080 × 2404) — on Pixel 10 Pro XL in landscape the status bar's outer item still touches the rounded screen corner.
 - **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
