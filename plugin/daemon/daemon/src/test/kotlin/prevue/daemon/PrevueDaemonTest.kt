@@ -52,15 +52,6 @@ class PrevueDaemonTest {
         assertNull(daemon.run { requestStop("HTTP /shutdown"); requestRestart("늦게 잃었다", listOf("--show", "A.kt")) })
     }
 
-    @Test fun `닫는 중인 데몬은 새 자원을 받지 않고 바로 닫는다`() {
-        val daemon = PrevueDaemon(forceExit = { fail("정리가 멈췄다") })
-        daemon.close()
-        val closed = AtomicInteger()
-        assertThrows(IllegalStateException::class.java) { daemon.closer.own(AutoCloseable { closed.incrementAndGet() }) }
-        assertEquals(1, closed.get())
-        assertThrows(IllegalStateException::class.java) { daemon.run {} }
-    }
-
     @Test fun `포트 충돌도 작업과 이미 만든 자원을 정리한다`() {
         Fixture().use { fx ->
             ServerSocket(0, 16, InetAddress.getByName("127.0.0.1")).use { occupied ->

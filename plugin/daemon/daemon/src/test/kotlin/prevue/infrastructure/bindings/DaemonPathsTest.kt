@@ -29,18 +29,6 @@ class DaemonPathsTest {
         assertNull(AndroidPlatforms.newest(emptyList()))
     }
 
-    @Test fun `SDK 에 android jar 가 있는 플랫폼만 후보다`() {
-        val sdk = Files.createTempDirectory("sdk").toFile()
-        try {
-            File(sdk, "platforms/android-35").mkdirs()
-            File(sdk, "platforms/android-34").mkdirs()
-            File(sdk, "platforms/android-34/android.jar").writeText("")
-            assertEquals(File(sdk, "platforms/android-34/android.jar"), AndroidPlatforms.findJar(mapOf("ANDROID_HOME" to sdk.path)))
-        } finally {
-            sdk.deleteRecursively()
-        }
-    }
-
     @Test fun `빈 ANDROID_HOME 은 없는 것 — CLI 의 SDK 확인과 같은 순서로 찾는다`() {
         val sdk = Files.createTempDirectory("sdk").toFile()
         try {

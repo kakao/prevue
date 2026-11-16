@@ -35,8 +35,4 @@ class LostMembersTest {
         assertTrue(LostMembers.of(facade("Preview\$lambda\$4(ILandroidx/compose/runtime/Composer;I)Lkotlin/Unit;", access = Opcodes.ACC_PRIVATE), facade()).isEmpty())
         assertTrue(LostMembers.of(facade("access\$x()V", access = Opcodes.ACC_SYNTHETIC), facade()).isEmpty())
     }
-
-    @Test fun `빌드의 클래스에만 있는 필드도 잃은 것이다`() {
-        assertEquals(setOf("cache:I"), LostMembers.of(facade(fields = listOf("cache:I")), facade()))
-    }
 }

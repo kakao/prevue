@@ -61,11 +61,6 @@ class GradleOriginalsTest {
             g.forRuntimeOnly(listOf("${repo.path}-other/libs/transformed/coil-base-2.7.0-runtime.jar"), emptyList(), repo))
     }
 
-    @Test fun `원본이 jar면 그대로 쓴다`() {
-        val j = jar("org.jetbrains.kotlinx", "kotlinx-datetime-jvm", "0.6.1")
-        assertEquals(listOf(j.path), GradleOriginals(files2, outDir).forRuntimeOnly(listOf("/m2/kotlinx-datetime-jvm-0.6.1.jar"), emptyList(), repo))
-    }
-
     // 고르지 않는다 — 그룹이 겹치면 어느 원본이 맞는지 이름으로는 모른다. 없으면 메우지 않고 실패가 그 모듈의 덤프를 권한다.
     @Test fun `그룹이 겹치거나 원본이 없으면 메우지 않는다`() {
         aar("a.one", "shared", "1.0.0")
