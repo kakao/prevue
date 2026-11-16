@@ -2,7 +2,6 @@ package prevue.application.domain.model
 
 data class Postures(
     val spec: PreviewSpec,
-    val from: ScreenSize,
     val round: Long,
     val shots: Map<ScreenSize, Shot> = emptyMap(),
 ) {
@@ -10,7 +9,10 @@ data class Postures(
 
     fun specOf(s: ScreenSize): PreviewSpec = CardOverride(spec.previewId, s).applyTo(spec).copy(previewId = idOf(s))
 
-    fun covers(shown: ScreenSize): Boolean = sameFamily(from, shown)
+    fun carriedTo(shown: ScreenSize): Postures = copy(shots = shots.filterKeys { it == shown || it in plan(shown) })
+
+    fun with(shown: ScreenSize, d: ScreenSize, shot: Shot): Postures =
+        if (d == shown || d in plan(shown)) copy(shots = shots + (d to shot)) else this
 
     fun next(shown: ScreenSize): ScreenSize? = plan(shown).firstOrNull { it !in shots }
 
@@ -29,8 +31,7 @@ data class Postures(
             return (own + ScreenSize.BAR).distinct().filter { it != shown }
         }
 
-        fun sameFamily(a: ScreenSize, b: ScreenSize): Boolean =
-            if (a is ScreenSize.Device && b is ScreenSize.Device) a.model == b.model else a == b
+        fun planned(s: ScreenSize): Boolean = s is ScreenSize.Device || s in ScreenSize.BAR
 
         private fun steps(from: ScreenSize.Device, to: ScreenSize.Device): Int = when {
             to == from.folding -> FOLD

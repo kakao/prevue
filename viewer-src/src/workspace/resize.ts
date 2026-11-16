@@ -109,7 +109,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     }
     return decoded.get(url)!;
   }
-  // 디코드한 그림은 지금 상태가 가리키는 것(라이브 첫 장 + 미리 그린 자세, 최대 10장)만 붙든다 — 개수로 밀어내면 쓰는 그림이 빠진다.
+  // 디코드한 그림은 지금 상태가 가리키는 것(라이브 첫 장 + 데몬이 지금 칸에 싣는 미리 그린 그림 — 막대 칸과 지금 기기의 다른 자세)만 붙든다. 장 수는 막대 칸 수를 따라가므로 개수로 밀어내지 않는다 — 밀어내면 쓰는 그림이 빠진다.
   function prune(f: Focus) {
     const keep = new Set([f.imageUrl, ...(f.postures || []).map(p => p.imageUrl)]);
     for (const url of decoded.keys()) if (!keep.has(url)) decoded.delete(url);

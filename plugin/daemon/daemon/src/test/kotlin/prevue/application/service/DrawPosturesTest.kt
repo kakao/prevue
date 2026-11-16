@@ -116,15 +116,34 @@ class DrawPosturesTest {
         assertEquals(fold, postureAsides().size)
     }
 
-    @Test fun `다른 칸으로 바꾸면 새 회차로 옛 그림을 빼고 다시 그린다`() {
+    @Test fun `코드가 같으면 다른 칸으로 바꿔도 회차를 잇고 그린 칸을 다시 그리지 않는다`() {
         val uc = opened()
         uc.pick(fold8)
         uc.awaitDrawn(fold)
         val round = uc.workspace.now.postures!!.round
         runBlocking { uc.live.resize(ScreenSize.PRESETS[1], "viewer") }
-        assertTrue(uc.workspace.now.postures!!.round > round)
+        assertEquals(round, uc.workspace.now.postures!!.round)
         uc.awaitDrawn(cells)
-        assertEquals(bar - "foldable", asideKeys().drop(fold))
+        assertEquals((bar - "foldable").toSet(), uc.drawn().keys.map { it.key }.toSet())
+        assertEquals(fold, postureAsides().size)
+    }
+
+    @Test fun `다른 기기로 바꾸면 그 기기의 빠진 자세만 그리고 옛 기기의 자세는 뺀다`() {
+        val uc = opened()
+        uc.pick(fold8)
+        uc.awaitDrawn(fold)
+        runBlocking { uc.live.resize(ScreenSize.Device(DeviceModel.GALAXY_S26), "viewer") }
+        uc.awaitDrawn(phone)
+        assertEquals(listOf("s26-land", "s26-land-right"), asideKeys().drop(fold))
+        assertTrue(uc.workspace.now.postures!!.shots.keys.none { it is ScreenSize.Device && it.model == DeviceModel.GALAXY_Z_FOLD8 && it != fold8 })
+    }
+
+    @Test fun `막대 칸도 기기 자세도 아닌 크기는 라이브 첫 장을 복사하지 않고 막대 칸을 모두 그린다`() {
+        val uc = opened()
+        uc.pick(ScreenSize.Dp(400, 800))
+        uc.awaitDrawn(bar.size)
+        assertEquals(emptyList<Any>(), fx.renderer.copies)
+        assertEquals(bar, asideKeys())
     }
 
     @Test fun `옆 태스크는 기기 자세마다 그 기기의 인셋을 전달하고 비기기 칸에는 전달하지 않는다`() {
@@ -173,8 +192,8 @@ class DrawPosturesTest {
         fx.renderer.asideGate = null
         runBlocking { resized.await() }
         uc.awaitDrawn(cells)
-        assertEquals(bar - "original", uc.drawn().keys.map { it.key })
-        assertEquals(listOf("fold8-folded") + (bar - "original"), asideKeys())
+        assertEquals((bar - "original").toSet(), uc.drawn().keys.map { it.key }.toSet())
+        assertEquals(listOf("fold8-folded") + (bar - "original" - "fold8"), asideKeys())
     }
 
     @Test fun `기기를 고른 뒤 잠잠해지기 전에는 그리지 않는다`() {

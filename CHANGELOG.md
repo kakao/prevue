@@ -22,6 +22,7 @@ Only changes users can see go here.
 - **Foldables fold as two solid slabs** — Galaxy Z Fold8, Z Fold8 Ultra, Pixel 9 Pro Fold and iPhone Duo now show each half's thickness, a spine at the hinge and shading that follows the fold angle, and every fold takes 1 second (Galaxy and Pixel folds took 0.6 s).
 - **Galaxy Z Flip8 joins the device menu** (`--device flip8`) — it folds top over bottom like a clamshell, and its cover screen renders at its own 380 dpi (399 × 441 dp) with the bottom-right camera cutout and its uneven screen corners, from [windowinsets.info](https://windowinsets.info/); the cover is measured in portrait only, so the viewer hides the turn control there and `--folded --landscape` is an error.
 - **KMP library modules in repositories with `org.gradle.configureondemand=true`** no longer fail on save with "unresolved reference" ([#210](https://github.com/kakao/prevue/issues/210)) — warm up once more; a dump that would miss a KMP module's compile classpath now stops with the module names instead. Reported by @DXMHXR.
+- **Switching cells in the size bar keeps the pictures already drawn for the other cells** until you save, so after moving to another device only that device's own postures are drawn again.
 
 ## [0.22.1] — 2026-11-13
 

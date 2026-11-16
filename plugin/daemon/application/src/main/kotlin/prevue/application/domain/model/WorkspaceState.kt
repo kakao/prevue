@@ -51,9 +51,9 @@ data class WorkspaceState(
     private fun overrideOf(p: PreviewSpec): CardOverride? = cardOverride?.takeIf { it.previewId == p.previewId }
 
     fun livePostures(): Postures? {
-        val (base, size) = shownTarget() ?: return null
+        val (base, _) = shownTarget() ?: return null
         return postures?.takeIf {
-            it.covers(size) && it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars
+            it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars
         }
     }
 
@@ -75,7 +75,7 @@ data class WorkspaceState(
     fun withFill(fill: BoardFill): WorkspaceState = copy(boardFill = fill)
 
     fun withPosture(round: Long, d: ScreenSize, shot: Shot): WorkspaceState =
-        postures?.takeIf { it.round == round }?.let { copy(postures = it.copy(shots = it.shots + (d to shot))) } ?: this
+        postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = ps.with(it.second, d, shot)) } } ?: this
 
     fun withCreated(added: List<String>, gone: Set<String>): WorkspaceState = copy(newFiles = (newFiles + added) - gone)
 }
