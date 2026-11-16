@@ -164,13 +164,15 @@ export function createResizeScene(root, hooks) {
   // CAPSULE_ROOM — 아래 캡슐(바닥 20 + 높이 약 40)과 조작 독(바닥 12 + 슬라이더를 띄운 높이 약 68) 중 큰 쪽과 그 위 틈. 맞춤일 때 기기가 가리지 않게 이만큼만 비운다.
   const TOP = 14, RULER_TOP = 34, RULER_SIDE = 90, FRAME_TOP = TOP + RULER_TOP, CAPSULE_ROOM = 88;
   // 좁은 판(터미널 옆에 세운 브라우저)에서 양옆 90이 판의 절반 가까이를 먹어 넓은 기기가 작게 그려졌다 —
-  // 좁을수록 왼쪽은 높이 자와 그 숫자가 들어갈 만큼만, 오른쪽은 거의 비우고 틀은 남는 자리의 가운데에 둔다
-  const NARROW = 400, WIDE = 800, SIDE_L = 60, SIDE_R = 16;
+  // 좁을수록 양옆을 높이 자와 그 숫자가 들어갈 만큼만 비운다(자 간격은 껍데기가 없는 틀의 P.gap — 껍데기가 있으면 옆 bezel 이 더 메운다). 틀은 판 가운데(아래 캡슐과 같은 가운데)에 두므로 오른쪽도 왼쪽과 같은 폭을 비운다.
+  // 그 폭은 배지의 실제 폭에서 나온다(자 간격 + 눈금 22 + 배지 반폭 + 판 끝 틈) — 배지가 커지면 같이 는다.
+  const NARROW = 400, WIDE = 800, RULER_RAIL = 22, PLATE_EDGE = 10, BADGE_W = 45;
   const clock = { t: 0 };
+  const badge = { w: BADGE_W };
   function room() {
     const W = root.clientWidth, k = clamp((W - NARROW) / (WIDE - NARROW), 0, 1);
-    const l = lerp(SIDE_L, RULER_SIDE, k), r = lerp(SIDE_R, RULER_SIDE, k);
-    return { W, cx: (W + l - r) / 2, top: FRAME_TOP, maxW: Math.max(60, W - l - r), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
+    const side = lerp(P.gap + RULER_RAIL + Math.ceil(badge.w / 2) + PLATE_EDGE, RULER_SIDE, k);
+    return { W, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
   // 위 · 아래 가장자리에 카메라가 붙은 자세는 위 띠의 상태 줄과 카메라 인셋 치수선이 오른쪽에 두 칸으로 서 둘째 배지가 한 칸(LANE_W) 더 나간다 — 폭이 모자란 넓은 기기(Tab)는 양옆을 그만큼씩 비워 창 밖으로 안 나가게 한다(틀은 가운데에 둔다).
@@ -1251,6 +1253,16 @@ export function createResizeScene(root, hooks) {
     ROWS[n].focus(); pick(ROWS[n].dataset.sel, true);
   });
   paintHinge();
+  function relayout() {
+    const size = `${root.clientWidth}:${root.clientHeight}:${badge.w}`;
+    if (size === roomSize) return;
+    roomSize = size;
+    if (cur && !rig.on && !spin.on) setFrame(fit(cur), performance.now(), tr?.kind === "size" ? springOf(P.frameDur, P.frameBounce) : null);
+    wake();
+    if (cur) { clock.t = performance.now(); tick(); }
+  }
+  // 높이 자 배지의 폭이 바뀌면(글꼴 · 스타일) 양옆 비움이 달라진다 — 숨겨 폭이 0일 때는 지난 값을 둔다
+  new ResizeObserver(() => { const w = RL.h.offsetWidth; if (w && w !== badge.w) { badge.w = w; relayout(); } }).observe(RL.h, { box: "border-box" });
   return {
     devices: new Set(Object.keys(DEVICES)),
     setOriginal(w,h,img) {
@@ -1293,14 +1305,7 @@ export function createResizeScene(root, hooks) {
       if (!on) { cancelAnimationFrame(raf); raf=0; images.clear(); cur=null; tr=null; queued=null; dropDraft(); slFocus=false; }
       else if (!raf) raf=requestAnimationFrame(animate);
     },
-    relayout() {
-      const size = `${root.clientWidth}:${root.clientHeight}`;
-      if (size === roomSize) return;
-      roomSize = size;
-      if (cur && !rig.on && !spin.on) setFrame(fit(cur), performance.now(), tr?.kind === "size" ? springOf(P.frameDur, P.frameBounce) : null);
-      wake();
-      if (cur) { clock.t = performance.now(); tick(); }
-    },
+    relayout,
     moving: () => !!tr || !!queued || rig.on || spin.on || !!draft,
     // 준비 중에는 슬라이더도 쉰다 — 칸 단추의 disabled 와 같은 자리에서 부른다
     sliderOff(on) {
