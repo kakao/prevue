@@ -249,7 +249,8 @@ try {
   await click("#zoomFitBtn"); await pause(300);
   await check(`document.querySelector('#zoomCtl').classList.contains('at-fit') && document.querySelector('#zoomPct').textContent!=='' && document.querySelector('#zoomFitBtn').getBoundingClientRect().width<1`, "맞춤 단추로 처음 화면 · 단추는 접힌다");
   // 레터박스 — 틀(#stage)을 그림보다 30% 길게 늘여 비율을 어긋나게 한다. 그림은 늘지 않고 왼쪽 위에 붙고, 가리키기는 두 축 중 작은 배율을 쓴다.
-  const stageH = await evaluate(`(s=>{const h=s.style.height;s.style.height=parseFloat(h)*1.3+'px';return h})(document.querySelector('#stage'))`);
+  // 장면은 가리킨 카드가 뜰 때도 틀의 인라인 크기를 다시 잡으므로 !important 규칙으로 붙들어 둔다.
+  await evaluate(`(s=>{const st=document.createElement('style');st.id='lbTest';st.textContent='#stage{height:'+s.offsetHeight*1.3+'px !important}';document.head.append(st)})(document.querySelector('#stage'))`);
   await pause(100);
   const fitK = `(()=>{const i=document.querySelector('#shot'),r=i.getBoundingClientRect();return Math.min(r.width/Number(i.dataset.fullW),r.height/Number(i.dataset.fullH))})()`;
   await check(`(i=>{const c=getComputedStyle(i),r=i.getBoundingClientRect(),k=${fitK};return c.objectFit==='contain' && c.objectPosition==='0px 0px' && r.height/r.width>Number(i.dataset.fullH)/Number(i.dataset.fullW)*1.2 && Math.abs(Number(i.dataset.fullW)*k-r.width)<1 && Number(i.dataset.fullH)*k<r.height-10})(document.querySelector('#shot'))`, "틀과 비율이 다른 그림은 늘지 않고 왼쪽 위에 붙어 아래에 여백");
@@ -257,9 +258,9 @@ try {
   await evaluate(`document.querySelector('#pickBox').hidden=true`);
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, ...lbAt, button: "left", clickCount: 1, modifiers: 1 });
   await until(`!document.querySelector('#pickBox').hidden && __store.st.selection?.line===52`);
-  await check(`(()=>{const b=document.querySelector('#pickBox').getBoundingClientRect(),r=document.querySelector('#shot').getBoundingClientRect(),n=__pointNode.bounds,k=${fitK};return Math.abs(b.x-(r.x+n[0]*k))<2 && Math.abs(b.y-(r.y+n[1]*k))<2 && Math.abs(b.width-(n[2]-n[0])*k)<2 && Math.abs(b.height-(n[3]-n[1])*k)<2})()`, "레터박스한 그림에서 가리킨 박스 좌표 일치");
+  await check(`(()=>{const b=document.querySelector('#pickBox').getBoundingClientRect(),r=document.querySelector('#shot').getBoundingClientRect(),n=__pointNode.bounds,k=${fitK};const i=document.querySelector('#shot');return r.height/r.width>Number(i.dataset.fullH)/Number(i.dataset.fullW)*1.2 && Math.abs(b.x-(r.x+n[0]*k))<2 && Math.abs(b.y-(r.y+n[1]*k))<2 && Math.abs(b.width-(n[2]-n[0])*k)<2 && Math.abs(b.height-(n[3]-n[1])*k)<2})()`, "레터박스한 그림에서 가리킨 박스 좌표 일치");
   if (process.env.LETTERBOX_SCREENSHOT) { const r = await send("Page.captureScreenshot", { format: "png" }); await writeFile(process.env.LETTERBOX_SCREENSHOT, Buffer.from(r.data, "base64")); }
-  await evaluate(`document.querySelector('#stage').style.height=${JSON.stringify(stageH)}`);
+  await evaluate(`document.querySelector('#lbTest').remove()`); await pause(100);
   // 가리킨 결과 카드(D-162)는 그림 오른쪽 위에 먼저 선다 — 낮은 창에서도 아래 가운데 독과 겹치지 않는다.
   const pointAt = async () => {
     const at = await evaluate(`(()=>{const n=__pointNode.bounds,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/Number(document.querySelector('#shot').dataset.fullW);return{x:r.x+(n[0]+n[2])/2*k,y:r.y+(n[1]+n[3])/2*k}})()`);
