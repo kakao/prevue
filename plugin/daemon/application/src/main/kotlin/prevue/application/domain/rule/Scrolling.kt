@@ -7,6 +7,7 @@ import prevue.application.domain.model.Container
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.SeenItem
+import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ViewNode
 import prevue.application.port.LiveSession
 
@@ -52,11 +53,19 @@ object Scrolling {
 
     fun piecesOf(px: Double): Int = maxOf(1, ceil(px / WHEEL).toInt())
 
-    fun moved(before: LiveTree, after: LiveTree, box: List<Int>): Boolean = boxesIn(before, box) != boxesIn(after, box)
+    fun moved(before: LiveTree, after: LiveTree, box: List<Int>): Boolean =
+        boxesIn(before, box) != boxesIn(after, box) || shownItems(before) != shownItems(after) || contentIn(before, box) != contentIn(after, box)
 
     private fun boxesIn(tree: LiveTree, box: List<Int>): List<List<Int>> {
         val (l, top, r, b) = box
         return tree.nodes.filter { it.right > l && it.left < r && it.bottom > top && it.top < b }.map(ViewNode::sameBox)
+    }
+
+    private fun shownItems(tree: LiveTree): Map<Int, List<Int>> = tree.states.associate { s -> s.id to s.items.map { it.index } }
+
+    private fun contentIn(tree: LiveTree, box: List<Int>): List<Semantics> {
+        val (l, top, r, b) = box
+        return tree.semantics.filter { it.right > l && it.left < r && it.bottom > top && it.top < b }.map { it.semantics }
     }
 
     class Seek(target: ScrollUntil.Target, before: LiveTree, pane: ScrollReport.Pane) {
