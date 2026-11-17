@@ -34,8 +34,6 @@ import prevue.infrastructure.source.SourcePreviewRepository
 import prevue.application.domain.model.DeviceInsetInputs
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.DeviceModel
-import prevue.application.domain.rule.DeviceChrome
-import prevue.application.domain.model.ChromeMark
 import prevue.application.domain.model.DeviceOrientation
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ModuleGraph
@@ -165,7 +163,7 @@ class RenderIntegrationTest {
         assertTrue(differs > withBars.width, "상태바 줄이 바 없는 그림과 같다 — 렌더러가 데코를 다시 껐다(${differs}px)")
     }
 
-    @Test @Order(34) fun `기기를 고르면 바 뷰는 숨고 위쪽 안전 영역 머리가 그 기기의 출처 값만큼 밀린다`() = runBlocking {
+    @Test @Order(34) fun `기기를 고르면 위쪽 안전 영역 머리가 그 기기의 출처 값만큼 밀린다 — 바 뷰가 숨는지는 InsetsIntegrationTest 가 본다`() = runBlocking {
         val phone = ws.now.board!!.cards.first { it.spec.previewId == "PearlPhonePreview" }.spec
         for (device in listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17))) {
             val spec = device.applyTo(phone).copy(previewId = "PearlPhonePreview@${device.key}")
@@ -177,17 +175,6 @@ class RenderIntegrationTest {
             val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == row }
             val expected = Math.round(insets.statusDp * k) + Math.round(HEADER_PADDING_DP * k)
             assertTrue(kotlin.math.abs(header.top - expected) <= 1, "${device.key} 머리 top ${header.top}px — 기대 ${expected}px")
-            val img = ImageIO.read(out.image!!)
-            val (x0, x1, y0, y1) = listOf(8 * k, 80 * k, 4 * k, insets.statusDp * k - 4).map { it.toInt() }
-            // 데몬은 이 자리에 기기의 시각을 굽고 둥근 화면 모서리 밖을 비운다(D-189) — 그 둘을 빼고 남은 것이 렌더러 바다.
-            val time = DeviceChrome.of(device).marks.filterIsInstance<ChromeMark.Time>().single()
-            val half = time.size * (if (time.centered) 1.5 else 0.0)
-            val baked = listOf(time.x - half - 2 / k, time.x + time.size * 2.6 + 2 / k, time.y - time.size - 2 / k, time.y + time.size * .75 + 2 / k).map { it * k }
-            fun bakedTime(x: Int, y: Int) = x >= baked[0] && x <= baked[1] && y >= baked[2] && y <= baked[3]
-            val opaque = (y0 until y1).flatMap { y -> (x0 until x1).map { x -> Triple(x, y, img.getRGB(x, y)) } }.filter { it.third ushr 24 == 0xff }
-            val ground = opaque.groupingBy { it.third }.eachCount().maxBy { it.value }.key
-            val marks = opaque.count { (x, y, c) -> c != ground && !bakedTime(x, y) }
-            assertEquals(0, marks, "${device.key} 상태바 시각 자리에 layoutlib 바가 남았다")
         }
     }
 
