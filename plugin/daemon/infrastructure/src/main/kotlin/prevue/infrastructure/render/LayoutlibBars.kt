@@ -35,12 +35,23 @@ internal object LayoutlibBars {
         }
     }
 
+    fun shown(p: PreviewSpec): Boolean = p.systemBars is SystemBars.Shown
+
     fun insetsOf(p: PreviewSpec): BarInsets? = (p.systemBars as? SystemBars.Shown)?.insets
 
     // 외부: layoutlib 17 은 창을 붙일 때 바 높이를 프레임워크 dimen 으로 InsetsFrameProvider 에 한 번 넣고, 바 뷰의 보임과 상관없이 그 inset 을 앱에 준다
-    fun measured(root: ViewGroup, insets: BarInsets): String? {
+    fun placed(root: ViewGroup, insets: BarInsets?): String? {
         val layout = find(root) ?: return "layoutlib 의 바 레이아웃을 찾지 못했다"
         val impl = root.parent as? ViewRootImpl ?: return "창의 ViewRootImpl 을 찾지 못했다"
+        if (insets != null) resize(layout, insets)
+        InsetUtil.setupSysUiInsets(layout.context, impl.insetsController, layout.insetsFrameProviders)
+        layout.dispatchApplyWindowInsets(windowInsets(impl))
+        if (insets != null) hideBars(root)
+        layout.requestLayout()
+        return null
+    }
+
+    private fun resize(layout: Layout, insets: BarInsets) {
         val density = layout.context.resources.displayMetrics.density
         val status = (insets.statusDp * density).roundToInt()
         val nav = (insets.navDp * density).roundToInt()
@@ -52,11 +63,6 @@ internal object LayoutlibBars {
                 size.bottom > 0 -> provider.setInsetsSize(Insets.of(size.left, 0, size.right, nav))
             }
         }
-        InsetUtil.setupSysUiInsets(layout.context, impl.insetsController, layout.insetsFrameProviders)
-        layout.dispatchApplyWindowInsets(windowInsets(impl))
-        hideBars(root)
-        layout.requestLayout()
-        return null
     }
 
     private val BAR_TYPES: Int

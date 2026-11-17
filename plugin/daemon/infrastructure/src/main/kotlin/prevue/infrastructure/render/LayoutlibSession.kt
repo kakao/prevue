@@ -57,7 +57,10 @@ internal class LayoutlibSession(
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
             val insets = preview.appInsets
-            if (insets != null) placeInsets(insets) else LayoutlibBars.insetsOf(preview)?.let(::placeBars)
+            when {
+                insets != null -> placeInsets(insets)
+                LayoutlibBars.shown(preview) -> placeBars(LayoutlibBars.insetsOf(preview))
+            }
             barsPlaced = true
         }
         return task.render().get(timeoutSec(), TimeUnit.SECONDS)
@@ -93,11 +96,18 @@ internal class LayoutlibSession(
         (manager.getDeclaredField("sent").apply { isAccessible = true }.get(null) as AtomicBoolean).set(false)
     }
 
-    private fun placeBars(insets: BarInsets) {
+    private fun placeBars(insets: BarInsets?) {
+        task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
         task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
         var why: String? = "세션의 루트 뷰를 찾지 못했다"
-        viewRoot()?.let { root -> onSession { why = runCatching { LayoutlibBars.measured(root, insets) }.getOrElse(Throwable::toString) } }
-        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+        viewRoot()?.let { root ->
+            onSession {
+                why = runCatching { LayoutlibBars.placed(root, insets) }.getOrElse(Throwable::toString)
+                if (why == null) placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning)
+            }
+        }
+        why?.let { System.err.println("[prevue] 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+        anchor()
     }
 
     fun advanceCallbacks(at: Long = clock.next()) {

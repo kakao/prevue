@@ -77,6 +77,23 @@ internal abstract class InsetsRenderChecks {
         PearlFixture.stopGradle(fixtureDir)
     }
 
+    @Test fun `기기 없는 showSystemUi 카드는 첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기가 렌더러 바 높이다`() = runBlocking {
+        val common = preview.copy(params = mapOf("showSystemUi" to "true"))
+        for (interactive in listOf(false, true)) {
+            val handle = engine.open(common, interactive, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            val raw = reads(handle)
+            val status = raw.getValue("status").split(",").map(String::toInt)
+            val nav = raw.getValue("nav").split(",").map(String::toInt)
+            assertTrue(status[1] > 0 && nav[3] > 0, raw.toString())
+            assertEquals("0,${status[1]},0,${nav[3]}", raw.getValue("system"))
+            assertIgnoringVisibility(raw)
+            bounds(handle, status[1], nav[3])
+            assertTrue(decorations(session()).any { it.endsWith(",${View.VISIBLE}") })
+            handle.close()
+        }
+    }
+
     @Test fun `첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기와 중첩 패딩이 전달값을 사용한다`() = runBlocking {
         for (interactive in listOf(false, true)) {
             val sized = CardOverride(preview.previewId, ScreenSize.Device(DeviceModel.GALAXY_S26), SystemUi.ON)
