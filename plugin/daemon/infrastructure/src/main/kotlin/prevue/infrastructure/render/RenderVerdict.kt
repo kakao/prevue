@@ -64,6 +64,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val all = texts(logger).joinToString("\n")
 
         private fun texts(logger: RenderLogger): List<String> = buildList {
+            (status?.exception ?: logger.messages.firstNotNullOfOrNull { it.throwable })?.let { add(brief(it)) }
             status?.errorMessage?.let { add(plain(it)) }
             status?.exception?.let { add(brief(it)) }
             broken.forEach { (k, v) -> add("$k: ${brief(v)}") }
