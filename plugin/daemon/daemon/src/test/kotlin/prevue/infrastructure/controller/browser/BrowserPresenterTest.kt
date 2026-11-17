@@ -319,10 +319,10 @@ class BrowserPresenterTest {
 
     @Test fun `렌더가 실패하면 보드 한 줄이 그 실패를 말하고 다음 성공이 걷는다`() {
         opened()
-        fx.renderer.exceptions += "View layout failed\njava.lang.IllegalStateException: boom"
+        fx.renderer.exceptions += "java.lang.IllegalStateException: boom\nView layout failed"
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         val failed = now()
-        assertTrue(failed.boardNote!!.text.endsWith("View layout failed"), failed.boardNote?.text)
+        assertTrue(failed.boardNote!!.text.endsWith("java.lang.IllegalStateException: boom"), failed.boardNote?.text)
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         assertEquals("3 previews · Cards.kt", awaitState { !it.busy }.boardNote?.text)
     }
