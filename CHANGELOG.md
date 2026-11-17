@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **A preview whose library needs an Activity from the context (for example `androidx.xr.compose`'s spatial locals) now says so** — the failure message starts with "This Preview needs an Activity" and explains that previews are drawn without one, instead of only showing the app frame that threw "Unexpected Context type".
+- **A preview whose library needs an Activity from the context (for example `androidx.xr.compose`'s spatial locals) now says so** — the failure message starts with "This Preview needs an Activity" and explains that previews are drawn without one (Android Studio fails the same way), instead of only showing the app frame that threw "Unexpected Context type".
 - **iPhone Duo folded in landscape hides its status indicator like other iPhones in landscape**, since [safearea.info](https://safearea.info/) reserves only the camera corner there.
 - **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
 - **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.

@@ -168,7 +168,7 @@
   "render.literalsNotApplied": "리터럴 빠른 경로가 넣은 값을 새 로더에 넣지 못했어요. 리터럴만 고친 파일을 `prevue reload <파일>`로 컴파일하면 맞춰져요: {why}",
   "render.methodMissing": "Preview 클래스 {class}에 {method}가 없어요. 컴파일 산출물이 낡았거나 FQN이 틀렸어요",
   "render.methodMissing.reload": "Preview 클래스 {class}에 {method}가 없어 그 파일의 옛 컴파일로 그렸어요. `prevue reload {file}`로 그 파일을 다시 컴파일하세요. 컴파일이 실패하면 그 오류가 답해요",
-  "render.needsActivity": "Activity가 필요한 Preview예요 — 라이브러리(androidx.xr.compose 등)가 컨텍스트에서 Activity를 찾는데, 프리뷰는 Activity 없이 그려요. 이 도구로는 고칠 수 없어요",
+  "render.needsActivity": "Activity가 필요한 Preview예요 — 라이브러리(androidx.xr.compose 등)가 컨텍스트에서 Activity를 찾는데, 프리뷰는 Activity 없이 그려요(Android Studio도 같은 예외로 실패해요). 이 도구로는 고칠 수 없어요",
   "render.noInstances": "Preview 인스턴스가 하나도 나오지 않았어요. @PreviewParameter 제공자가 빈 값을 냈어요",
   "render.nothingShown": "보여 주는 Preview가 없어요",
   "render.taskFailed": "RenderTask를 만들다 실패했어요: {why}",
