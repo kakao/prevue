@@ -171,9 +171,20 @@ internal object ChromeCamera {
     fun cutout(device: ScreenSize.Device): CameraCutout? {
         val cam = device.panel.face.camera
         if (cam.w <= VISIBLE) return null
-        val (w0, h0) = naturalDp(device)
         val own = cam.edge.ordinal
         val turns = (own + (if (device.landscape) 1 else 0) + (if (mirrored(device)) 2 else 0)) % 4
+        val placed = placed(device, turns)
+        val rad = cam.notch ?: (min(cam.w, cam.h) / 2)
+        val sharp = if (cam.notch != null) 0.0 else rad
+        return CameraCutout(placed.box, corners(placed, turns, rad, sharp))
+    }
+
+    private class Placed(val box: DpBox, val frameW: Double, val frameH: Double)
+
+    private fun placed(device: ScreenSize.Device, turns: Int): Placed {
+        val cam = device.panel.face.camera
+        val (w0, h0) = naturalDp(device)
+        val own = cam.edge.ordinal
         var fw = if (own % 2 == 1) h0 else w0
         var fh = if (own % 2 == 1) w0 else h0
         val x = if (own == 2) 1 - cam.x else cam.x
@@ -182,16 +193,19 @@ internal object ChromeCamera {
             b = DpBox(fh - b.y - b.h, b.x, b.h, b.w)
             fw = fh.also { fh = fw }
         }
-        val rad = cam.notch ?: (min(cam.w, cam.h) / 2)
-        val sharp = rad * (1 - (if (cam.notch != null) 1 else 0))
+        return Placed(b, fw, fh)
+    }
+
+    private fun corners(p: Placed, turns: Int, rad: Double, sharp: Double): List<Double> {
+        val b = p.box
         val corners = MutableList(4) { rad }
         listOf(0 to 1, 1 to 2, 2 to 3, 3 to 0)[turns].toList().forEach { corners[it] = sharp }
         val onL = b.x <= NEAR
         val onT = b.y <= NEAR
-        val onR = b.x + b.w >= fw - NEAR
-        val onB = b.y + b.h >= fh - NEAR
+        val onR = b.x + b.w >= p.frameW - NEAR
+        val onB = b.y + b.h >= p.frameH - NEAR
         listOf(onL || onT, onT || onR, onR || onB, onB || onL).forEachIndexed { i, on -> if (on) corners[i] = sharp }
-        return CameraCutout(b, corners)
+        return corners
     }
 
     fun turnedRadius(device: ScreenSize.Device): List<Double> {

@@ -10,9 +10,13 @@
 .isb-phone { display: grid; gap: var(--space-4); margin: 0; }
 .isb-big { display: grid; gap: var(--space-16); }
 .isb-big > div { display: grid; gap: var(--space-8); justify-items: start; }
-/* 뷰어의 바(.stage .sys-bars svg)와 같은 글꼴 — 시스템 글꼴(맥에서는 SF)이다. */
+/* 고를 때 뷰어의 바(.stage .sys-bars svg)와 같은 글꼴 — 시스템 글꼴(맥에서는 SF)이다. */
 .isb-strip { display: block; font-family: var(--font-sans); }
 .isb-body { fill: var(--device-body); }
 .isb-island { fill: var(--device-camera); }
 .isb-bright { fill: var(--device-veil); }
 .isb-dark { fill: var(--device-shade); }
+
+/* 바 글자색 — 뷰어가 바를 그리던 때의 규칙이다. 지금은 데몬이 PNG에 같은 두 색으로 굽는다(D-189). */
+.sys-bars .sb-ink-dark { color: var(--device-shade); }
+.sys-bars .sb-ink-light { color: var(--device-veil); }

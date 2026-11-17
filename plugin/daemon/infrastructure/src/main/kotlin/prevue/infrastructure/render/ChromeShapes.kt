@@ -39,10 +39,21 @@ internal object ChromeShapes {
     )
 
     val duo: List<Piece> = buildList {
-        add(Piece(Path2D.Double().apply { moveTo(-16.0, 9.0); arc(this, -16.0, 9.0, 18.0, large = true, 16.0, 9.0) }, fill = false, stroke = 2.5f))
-        add(Piece(Path2D.Double().apply { moveTo(-8.0, -1.0); quadTo(0.0, -9.0, 8.0, -1.0); moveTo(-5.0, 2.0); quadTo(0.0, -3.0, 5.0, 2.0) }, fill = false, stroke = 2.5f))
+        val dial = Path2D.Double().apply {
+            moveTo(-16.0, 9.0)
+            arcTo(-16.0 to 9.0, 18.0, large = true, 16.0 to 9.0)
+        }
+        val waves = Path2D.Double().apply {
+            moveTo(-8.0, -1.0)
+            quadTo(0.0, -9.0, 8.0, -1.0)
+            moveTo(-5.0, 2.0)
+            quadTo(0.0, -3.0, 5.0, 2.0)
+        }
+        add(Piece(dial, fill = false, stroke = 2.5f))
+        add(Piece(waves, fill = false, stroke = 2.5f))
         add(Piece(dot(0.0, 5.0, 1.7), fill = true))
-        listOf(-10.0 to 16.0, -5.0 to 19.0, 0.0 to 20.0, 5.0 to 19.0, 10.0 to 16.0).forEach { (x, y) -> add(Piece(dot(x, y, 1.6), fill = true, opacity = .35f)) }
+        val beads = listOf(-10.0 to 16.0, -5.0 to 19.0, 0.0 to 20.0, 5.0 to 19.0, 10.0 to 16.0)
+        beads.forEach { (x, y) -> add(Piece(dot(x, y, 1.6), fill = true, opacity = .35f)) }
     }
 
     fun round(x: Double, y: Double, w: Double, h: Double, r: Double) = RoundRectangle2D.Double(x, y, w, h, r * 2, r * 2)
@@ -73,15 +84,15 @@ internal object ChromeShapes {
         val (ox1, oy1) = at(cx, cy, outer, WIFI_HALF)
         if (inner > 0) {
             moveTo(ox0, oy0)
-            arc(this, ox0, oy0, outer, large = false, ox1, oy1)
+            arcTo(ox0 to oy0, outer, large = false, ox1 to oy1)
             val (ix1, iy1) = at(cx, cy, inner, WIFI_HALF)
             val (ix0, iy0) = at(cx, cy, inner, -WIFI_HALF)
             lineTo(ix1, iy1)
-            arc(this, ix1, iy1, inner, large = false, ix0, iy0, clockwise = false)
+            arcTo(ix1 to iy1, inner, large = false, ix0 to iy0, clockwise = false)
         } else {
             moveTo(cx, cy)
             lineTo(ox0, oy0)
-            arc(this, ox0, oy0, outer, large = false, ox1, oy1)
+            arcTo(ox0 to oy0, outer, large = false, ox1 to oy1)
         }
         closePath()
     }
@@ -91,11 +102,13 @@ internal object ChromeShapes {
         val (x1, y1) = at(cx, cy, r, half)
         moveTo(cx, cy)
         lineTo(x0, y0)
-        arc(this, x0, y0, r, large = false, x1, y1)
+        arcTo(x0 to y0, r, large = false, x1 to y1)
         closePath()
     }
 
-    private fun arc(p: Path2D.Double, x0: Double, y0: Double, r: Double, large: Boolean, x1: Double, y1: Double, clockwise: Boolean = true) {
+    private fun Path2D.Double.arcTo(from: Pair<Double, Double>, r: Double, large: Boolean, to: Pair<Double, Double>, clockwise: Boolean = true) {
+        val (x0, y0) = from
+        val (x1, y1) = to
         val mx = (x0 + x1) / 2
         val my = (y0 + y1) / 2
         val dx = x1 - x0
@@ -111,7 +124,7 @@ internal object ChromeShapes {
         if (!clockwise && a1 > a0) a1 -= 2 * PI
         for (i in 1..ARC_STEPS) {
             val a = a0 + (a1 - a0) * i / ARC_STEPS
-            p.lineTo(cx + r * cos(a), cy + r * sin(a))
+            lineTo(cx + r * cos(a), cy + r * sin(a))
         }
     }
 }

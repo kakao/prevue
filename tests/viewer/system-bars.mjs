@@ -135,23 +135,10 @@ try {
   const RAW_RADIUS = { 'pixel9-open': 50.29, 'pixelfold-cover': 47.18, 'pixelfold-open': 34.87, 's26-open': 28, 'fold8-cover': 9.9, 'fold8-open': 6.86, 'ultra-cover': 5, 'ultra-open': 5, 's26ultra-open': 28.09, 'pixel10xl-open': 50.46, 'a07-open': 36.27, 's11ultra-open': 25.14, 'flip8-open': 22, 'flip8-cover': [5.05, 5.05, 40.84, 40.84],
     // safearea.info 의 그 자세 조건 그대로의 값(pt = dp) — 스펙이 아니라 사이트에서 옮겨 적은 정답지다.
     'ip17-open': 62, 'ipair-open': 62, 'ip17pm-open': 62, 'ip18pro-open': 62, 'ip17e-open': 47.33, 'ipse3-open': 0, 'duo-cover': 59, 'duo-open': 59 };
-  // Duo 시스템 자리 [x, y, 폭, 높이](pt = dp) — safearea.info/iphone-duo.md(sha256 c7dcd339…, 스펙의 sourceSha256)의 Reserved Regions 중 카메라가 아닌 occlusion 이다(Xcode 27.1 · Split View · Inner Camera · Horizontal Toolbar 끔).
-  // 사이트는 Apple 방향 이름이라 커버 가로의 좌우를 맞바꿔 옮겼다(D-179) — 가로 왼쪽은 사이트 Landscape Right, 가로 오른쪽은 Landscape Left 다.
-  const RAW_DUO_STATUS = {
-    'duo-cover-portrait': [382, 0, 84, 174], 'duo-cover-landscape-left': [0, 0, 84, 82], 'duo-cover-landscape-right': [594, 384, 84, 82],
-    'duo-open-portrait': [525, 0, 144, 82], 'duo-open-landscape-left': [867, 0, 84, 124], 'duo-open-landscape-right': [867, 0, 84, 124] };
-  // 화면 모서리 반경(둥근 스테이지의 border-radius)과, 상자 네 꼭짓점이 그 둥근 화면 안에 있는지 — 사각 상자 검사로는 모서리 잘림을 못 잡는다.
+  // 화면 모서리 반경 — 둥근 스테이지의 border-radius 다.
   const cornerOf = () => evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
     const cs=getComputedStyle(document.querySelector('#ua .stage'));
     return {k,radii:['TopLeft','TopRight','BottomRight','BottomLeft'].map(c=>parseFloat(cs['border'+c+'Radius'])),shot:{l:r.left,t:r.top,r:r.right,b:r.bottom}}})()`);
-  // 점마다 가까운 모서리의 반경으로 본다 — 네 모서리가 다른 화면(Flip8 커버)도 있다.
-  const assertRound = (name, { shot, radii }, boxes) => {
-    const inRound = ([x, y]) => {
-      const right = x > (shot.l + shot.r) / 2, bottom = y > (shot.t + shot.b) / 2, rr = radii[bottom ? (right ? 2 : 3) : (right ? 1 : 0)];
-      const cx = Math.min(Math.max(x, shot.l + rr), shot.r - rr), cy = Math.min(Math.max(y, shot.t + rr), shot.b - rr); return Math.hypot(x - cx, y - cy) <= rr + 1; };
-    for (const [part, b] of Object.entries(boxes)) if (b) for (const p of [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]]) assert(inRound(p), `${name} ${part} 가 둥근 화면 모서리에 잘리지 않는다: ${JSON.stringify({ p, radii, shot })}`);
-  };
-  const boxOf = q => evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(q)});if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}})()`);
   const total = devices.reduce((n,d)=>n+(foldable.has(d)?(fixed.has(d+'-cover')?4:6):3),0);
   const results = [];
   for (const device of devices) for (const folded of foldable.has(device) ? [false,true] : [false]) for (const orientation of ['portrait','landscape-left','landscape-right']) {
@@ -183,12 +170,18 @@ try {
     } else assert.equal(dock.inset, 'true', `${name} 기기 변경 · 접기 · 회전에도 켜 둔 채 유지`);
     const insetMiss = await evaluate(insetGeometry);
     assert.deepEqual(insetMiss, [], `${name} 인셋 띠 · safeDrawing 선이 전달한 인셋과 화면 좌표로 맞는다: ${JSON.stringify(insetMiss)}`);
-    const overlay = await evaluate(`({hidden:document.querySelector('#sysBars').hidden,svg:document.querySelector('#sysBars svg')?.outerHTML,edge:document.querySelector('.sb-status')?.dataset.edge,handle:!!document.querySelector('.sb-handle'),duo:!!document.querySelector('.sb-duo-indicator')})`);
-    assert.equal(overlay.hidden, false, `${name} 기기는 늘 뷰어가 바를 덧그린다`);
-    assert.equal(overlay.handle, device!=='duo' && device!=='ipse3', `${name} 홈 인디케이터 — 홈 버튼 기기(SE)에는 없다`);
-    assert.equal(overlay.duo, device==='duo' && !(folded && orientation!=='portrait'), `${name} Duo 상태 표시 — 커버 가로에는 없다`);
-    assert(await evaluate(`document.querySelectorAll('#sysBars .sb-status').length`) <= 1, `${name} 상태 표시는 많아야 한 벌`);
+    // 바 · 카메라는 데몬이 원본 PNG에 굽는다(D-189) — 뷰어는 덧그리지 않는다. 자리 수치는 DeviceChromeTest 가 뷰어가 그리던 마지막 판과 67자세 대조한다.
+    // 여기서는 PNG 자체를 읽어 장면 카메라 가운데 픽셀이 카메라 색이고, 둥근 화면 모서리 밖이 비었는지 본다.
+    const baked = await evaluate(`(async()=>{const st=__store.st.focus,img=new Image();img.src=st.imageUrl;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const g=c.getContext('2d');g.drawImage(img,0,0);
+      const px=(x,y)=>[...g.getImageData(Math.min(c.width-1,Math.max(0,Math.round(x))),Math.min(c.height-1,Math.max(0,Math.round(y))),1,1).data];
+      const shot=document.querySelector('#shot').getBoundingClientRect(),k=c.width/shot.width,cam=document.querySelector('#ua .cam'),b=cam&&Number(cam.style.opacity)>0?cam.getBoundingClientRect():null;
+      return {overlay:!!document.querySelector('#sysBars, .sb-status, .sb-handle'),size:[c.width,c.height],want:[st.size.widthPx,st.size.heightPx],corner:px(0,0),cam:b?px(((b.left+b.right)/2-shot.left)*k,((b.top+b.bottom)/2-shot.top)*k):null}})()`);
+    assert(!baked.overlay, `${name} 뷰어는 기기 바를 덧그리지 않는다`);
+    assert.deepEqual(baked.size, baked.want, `${name} 바를 구워도 PNG 크기는 기기 화면 그대로`);
+    if (baked.cam) assert.deepEqual(baked.cam.slice(0, 3), [5, 5, 5], `${name} PNG의 카메라 자리가 카메라 색이다: ${JSON.stringify(baked)}`);
+    const overlay = baked;
     const corner = await cornerOf();
+    if (corner.radii[0] > 2) assert.equal(baked.corner[3], 0, `${name} PNG의 둥근 화면 모서리 밖은 비어 있다: ${JSON.stringify(baked)}`);
     const rawR = RAW_RADIUS[`${device}-${folded?'cover':'open'}`];
     if (rawR != null) {
       // 원자료는 세로(자연) 자세의 네 모서리다 — 고정 화면만 넷이 달라 돌린 자세를 따로 맞출 일이 없다.
@@ -196,11 +189,11 @@ try {
       assert(raw.every((v, i) => Math.abs(got[i] - v) <= .5), `${name} 화면 모서리 반경이 원자료 ±0.5dp: ${JSON.stringify({ got, raw })}`);
     }
     if (device==='ipse3') {
-      // 홈 버튼 기기 — 상태바는 신호 · Wi-Fi(왼쪽) · 시각(가운데) · 배터리(오른쪽)로 갈리고, 위 · 아래 베젤이 옆 베젤보다 두꺼우며 아래 베젤 가운데에 홈 버튼이 있다. 가로에는 상태바가 없다.
-      const s = await evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),k=r.width/st.size.widthPx*st.pxPerDp;
+      // 홈 버튼 기기 — 위 · 아래 베젤이 옆 베젤보다 두껍고 아래 베젤 가운데에 홈 버튼이 있다.
+      const s = await evaluate(`(()=>{const r=document.querySelector('#shot').getBoundingClientRect();
         const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
-        return {k,top:st.deviceInsets.values.statusBars.top*k,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},shell:box('#ua .shell'),home:box('#ua .home'),time:box('#sysBars .sb-time'),left:box('#sysBars .sb-icons-left'),right:box('#sysBars .sb-icons-right')}})()`);
-      const { shot, shell, home, time, left, right } = s, cx = (shot.l + shot.r) / 2, cy = (shot.t + shot.b) / 2;
+        return {shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},shell:box('#ua .shell'),home:box('#ua .home')}})()`);
+      const { shot, shell, home } = s, cx = (shot.l + shot.r) / 2, cy = (shot.t + shot.b) / 2;
       const gap = { l: shot.l - shell.l, r: shell.r - shot.r, t: shot.t - shell.t, b: shell.b - shot.b };
       const ends = orientation === 'portrait' ? [gap.t, gap.b] : [gap.l, gap.r], sides = orientation === 'portrait' ? [gap.l, gap.r] : [gap.t, gap.b];
       assert(Math.min(...ends) > Math.max(...sides) + 1, `${name} 짧은 두 변의 베젤이 긴 변보다 두껍다: ${JSON.stringify(gap)}`);
@@ -209,79 +202,24 @@ try {
         : Math.abs((home.t + home.b) / 2 - cy) < 1 && (orientation === 'landscape-left' ? home.l >= shot.r && home.r <= shell.r + 1 : home.r <= shot.l && home.l >= shell.l - 1);
       assert(await evaluate(`+getComputedStyle(document.querySelector('#ua .home')).opacity`) > .9, `${name} 홈 버튼이 실제로 보인다(opacity)`);
       assert(homeAt, `${name} 홈 버튼이 짧은 변 베젤 가운데에 있다: ${JSON.stringify(s)}`);
-      if (orientation === 'portrait') {
-        assert(time && left && right, `${name} 시각 · 왼쪽 · 오른쪽 묶음: ${JSON.stringify(s)}`);
-        for (const b of [time, left, right]) assert(b.t >= shot.t - 1 && b.b <= shot.t + s.top + 1 && b.l >= shot.l && b.r <= shot.r, `${name} 상태바가 위 띠(20pt) 안: ${JSON.stringify(s)}`);
-        assert(left.r < time.l && time.r < right.l && Math.abs((time.l + time.r) / 2 - cx) <= s.k, `${name} 신호 · Wi-Fi | 시각(가운데) | 배터리 순서: ${JSON.stringify(s)}`);
-      } else assert(!time && !left && !right, `${name} 가로에는 상태바가 없다`);
-    } else if (ios.has(device) && device!=='duo') {
-      // 오버레이의 dp 뷰박스가 아니라 #shot · 아일랜드(#ua .cam) · 전달 인셋으로 낸 화면 좌표에 견준다.
-      const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
-        const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
-        return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:box('#ua .cam')}})()`);
-      const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2;
-      assertRound(name, corner, { time, icons, handle });
-      assert(handle && handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 홈 인디케이터가 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
-      if (orientation==='portrait') {
-        assert(time && icons && cam, `${name} 시각 · 아이콘 · 아일랜드: ${JSON.stringify(bars)}`);
-        for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l && b.r <= shot.r, `${name} 상태바가 위 띠 안: ${JSON.stringify(bars)}`);
-        assert(time.r < cam.l && icons.l > cam.r, `${name} 상태바가 아일랜드와 겹치지 않는다: ${JSON.stringify(bars)}`);
-        // 노치(17e)는 상태바 줄이 위 띠 가운데에 놓인다 — 아일랜드 기기만 카메라 가운데 높이다.
-        const rowY = device === 'ip17e' ? shot.t + bars.top / 2 : mid(cam);
-        assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 아이콘 ±1dp · 시각 ±1.5dp(글꼴 상자)로 ${device === 'ip17e' ? '위 띠' : '아일랜드'} 가운데 높이: ${JSON.stringify(bars)}`);
-      } else assert(!time && !icons, `${name} 가로에는 상태바가 없다`);
     }
     if (!ios.has(device)) {
-      // Android 상태 줄은 모든 자세에서 위 띠 안, 옆 컷아웃 안쪽에 놓이고 보이는 카메라와 겹치지 않는다. 핸들은 아래 띠 안 가운데다.
-      // 장면 카메라는 원자료 컷아웃 가운데와 ±0.5dp, 상태 줄의 세로 가운데는 위 띠에서 시작하는 카메라 가운데(아이콘 ±1dp · 시각 ±1.5dp), 그런 카메라가 없으면 띠 가운데다.
-      const bars = await evaluate(`(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
-        const box=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}};
-        const c=document.querySelector('#ua .cam');
-        return {k:s,shot:{l:r.left,t:r.top,r:r.right,b:r.bottom},top:v.statusBars.top*s,bottom:v.navigationBars.bottom*s,cutL:v.displayCutout.left*s,cutR:v.displayCutout.right*s,
-          time:box('#sysBars .sb-time'),icons:box('#sysBars .sb-icons'),handle:box('#sysBars .sb-handle'),cam:c&&Number(c.style.opacity)>0?box('#ua .cam'):null}})()`);
-      const { shot, time, icons, handle, cam } = bars, mid = b => (b.t + b.b) / 2, raw = RAW_CAM[name];
+      // 장면 카메라는 원자료 컷아웃 가운데와 ±0.5dp다 — PNG에 구운 카메라도 같은 자리라 위에서 그 픽셀을 본다.
+      const bars = await evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
+        const c=document.querySelector('#ua .cam'),b=c&&Number(c.style.opacity)>0?c.getBoundingClientRect():null;
+        return {k:s,shot:{l:r.left,t:r.top},cam:b&&{l:b.left,t:b.top,r:b.right,b:b.bottom}}})()`);
+      const { shot, cam } = bars, raw = RAW_CAM[name];
       if (raw) {
         assert(cam, `${name} 카메라가 보인다: ${JSON.stringify(bars)}`);
-        const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, (mid(cam) - shot.t) / bars.k];
+        const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, ((cam.t + cam.b) / 2 - shot.t) / bars.k];
         assert(Math.abs(got[0] - raw[0]) <= .5 && Math.abs(got[1] - raw[1]) <= .5, `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got, raw })}`);
       } else assert(!cam, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
-      // 상태바 인셋이 0인 화면(Flip8 커버)은 상태 줄이 없다.
-      if (!bars.top) {
-        assert(!time && !icons && handle, `${name} 상태 줄 없이 핸들만: ${JSON.stringify(bars)}`);
-        // 아래 오른쪽 컷아웃이 아래 띠를 차지해 핸들은 그 왼쪽 띠 가운데로 비켜 선다.
-        assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && cam && handle.r < cam.l && Math.abs((handle.l + handle.r) / 2 - (shot.l + cam.l) / 2) < 1, `${name} 핸들이 컷아웃 왼쪽 띠 가운데: ${JSON.stringify(bars)}`);
-        assertRound(name, corner, { handle });
-      } else {
-      assert(time && icons && handle, `${name} 시각 · 아이콘 · 핸들: ${JSON.stringify(bars)}`);
-      const rowY = cam && cam.t < shot.t + bars.top ? mid(cam) : shot.t + bars.top / 2;
-      assert(Math.abs(mid(icons) - rowY) <= bars.k && Math.abs(mid(time) - rowY) <= 1.5 * bars.k, `${name} 상태 줄이 ${cam && cam.t < shot.t + bars.top ? '카메라' : '띠'} 가운데 높이: ${JSON.stringify({ rowY, ...bars })}`);
-      for (const b of [time, icons]) assert(b.t >= shot.t - 1 && b.b <= shot.t + bars.top + 1 && b.l >= shot.l + bars.cutL - 1 && b.r <= shot.r - bars.cutR + 1, `${name} 상태 줄이 위 띠 · 옆 컷아웃 안: ${JSON.stringify(bars)}`);
-      assert(time.r < icons.l, `${name} 시각과 아이콘이 겹치지 않는다: ${JSON.stringify(bars)}`);
-      const apart = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
-      if (cam) for (const b of [time, icons]) assert(apart(b, cam), `${name} 상태 줄이 카메라와 겹치지 않는다: ${JSON.stringify(bars)}`);
-      assert(handle.t >= shot.b - bars.bottom - 1 && handle.b <= shot.b + 1 && Math.abs((handle.l + handle.r) / 2 - (shot.l + shot.r) / 2) < 1, `${name} 제스처 핸들이 아래 띠 안 가운데: ${JSON.stringify(bars)}`);
-      assertRound(name, corner, { time, icons, handle });
-      }
     }
     if (device==='duo') {
-      const status = await boxOf('#sysBars .sb-duo-status');
-      assertRound(name, corner, { status });
-      const side = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-left' ? 'left' : 'right';
+      const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-left' ? 'left' : 'right';
       const cam = await evaluate(`(()=>{const c=document.querySelector('#ua .cam');return {opacity:Number(c.style.opacity),left:parseFloat(c.style.left),width:parseFloat(c.style.width),screen:document.querySelector('#ua .stage').getBoundingClientRect().width}})()`);
       assert.equal(cam.opacity>0, folded, name);
-      if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, side==='right', name);
-      // 시스템이 차지하는 자리(x · y · 폭 · 높이 dp)를 화면 좌표로 옮긴다. 커버 가로는 그 자리가 카메라 모서리뿐이라 상태 표시가 없고 카메라가 그 안에 든다.
-      const [rx, ry, rw, rh] = RAW_DUO_STATUS[name], { shot, k } = corner;
-      const region = { l: shot.l + rx * k, t: shot.t + ry * k, r: shot.l + (rx + rw) * k, b: shot.t + (ry + rh) * k };
-      const inside = b => b.l >= region.l - 1 && b.t >= region.t - 1 && b.r <= region.r + 1 && b.b <= region.b + 1;
-      if (folded && orientation !== 'portrait') {
-        assert(!status, `${name} 커버 가로에는 상태 표시가 없다`);
-        const lens = await boxOf('#ua .cam');
-        assert(lens && inside(lens), `${name} 카메라가 사이트의 카메라 모서리 자리 안: ${JSON.stringify({ lens, region })}`);
-      } else {
-        assert.equal(overlay.edge, side, name);
-        assert(status && inside(status), `${name} 상태 표시가 사이트의 시스템 자리 안: ${JSON.stringify({ status, region })}`);
-      }
+      if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
     }
     const tree = await nodes();
     const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');
@@ -336,24 +274,12 @@ try {
     console.log(`${results.length}/${total} ${name}: 바 · 인셋 · 가리키기 · 터치 · 실제 조작 통과`);
   }
   assert.equal(results.length,total);
-  // 전환이 끝나 무대가 다시 보일 때 바는 튀어나오지 않고 페이드인한다 — 프레임마다 무대 숨김과 바의 불투명도를 적는다.
-  await evaluate(`window.__barFrames=[];(function f(){const s=document.querySelector('#stage'),b=document.querySelector('#sysBars');window.__barFrames.push({hidden:s.classList.contains('resize-hidden'),op:Number(getComputedStyle(b).opacity)});if(!window.__barStop)requestAnimationFrame(f)})()`);
-  await post('/viewer/resize', { device: 'duo', folded: false, orientation: 'landscape-left' });
-  await until(`__store.st.focus.size?.device==='duo' && !__store.st.focus.size.folded`);
-  await ready(); await pause(400);
-  const frames = await evaluate(`(window.__barStop=true,window.__barFrames)`);
-  const hiddenOps = frames.filter(f => f.hidden).map(f => f.op), shownOps = frames.filter(f => !f.hidden).map(f => f.op);
-  assert(hiddenOps.length && hiddenOps.every(o => o === 0), `전환 중에는 바가 숨어 있다: ${JSON.stringify(hiddenOps)}`);
-  assert(shownOps.some(o => o < 1), `무대가 다시 보여도 바는 곧바로 1이 아니라 페이드인한다: ${JSON.stringify(shownOps.slice(0, 20))}`);
-  assert.equal(shownOps.at(-1), 1, '전환이 끝나면 바는 정지 자세와 같은 불투명도 1');
-  checked++; console.log(`통과 ${checked}: 전환이 끝나면 바가 페이드인한다`);
   await post('/viewer/resize',{device:'duo',folded:true,orientation:'portrait'});
   await until(`__store.st.focus.size?.device==='duo' && __store.st.focus.size.folded && __store.st.focus.size.orientation==='portrait'`);
   await ready();
-  await check(`!document.querySelector('#sysBars').hidden`, '실패 전 iOS 바 표시');
   await evaluate(`window.__stable=structuredClone(__store.st);window.__replaying=true;const failed=structuredClone(__stable);failed.version++;failed.error='기기 인셋 적용 실패 검증';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:failed})}))`);
   await until(`document.querySelector('#workspaceLoading').classList.contains('failed')`);
-  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#sysBars')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetOverlay')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetMarks')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림 · 바 · 인셋 띠를 숨기고 실패를 표시');
+  await check(`!document.querySelector('#shot').hasAttribute('src') && getComputedStyle(document.querySelector('#insetOverlay')).visibility==='hidden' && getComputedStyle(document.querySelector('#insetMarks')).visibility==='hidden' && !document.querySelector('#workspaceLoading').hidden`, '인셋 렌더 실패는 옛 그림 · 인셋 띠를 숨기고 실패를 표시');
   const beforeFailureInput = await evaluate(`__touches.length`);
   const middle = await evaluate(`(()=>{const r=document.querySelector('#stage').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
   await mouse(middle);
