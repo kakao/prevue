@@ -18,14 +18,6 @@ function turnOf(panel, rot, right) {
   return { orientation, angle, mirrored: angle < 0 || angle === 180 };
 }
 
-// 기기 자세(sel)의 화면 dp 좌표 카메라 — 뷰어의 시스템 바가 장면과 같은 카메라를 피하고 맞춘다. 없으면 null.
-export function cameraOf(sel) {
-  const [dev, state, ...turns] = sel.split(":"), d = DEVICES[dev];
-  if (!d?.[state]) return null;
-  const panel = d[state], rot = turns.includes("rot"), b = camBox(panel.w, panel.h, rot, d.look[state].cam, 1, turnOf(panel, rot, turns.includes("right")).mirrored);
-  return b.on ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
-}
-
 // 카메라 상자 — 스펙의 cam 은 위 가장자리 기준이다(w 는 가장자리를 따른 길이, h 는 깊이, x 는 가장자리를 따른 위치 비율).
 // edge:"right" 면 자연 방향의 오른쪽 가장자리(x 는 위에서), "bottom" 이면 아래 가장자리(x 는 왼쪽에서)에 붙고, 자세가 돌면 그만큼 4분의 1바퀴씩 같이 돈다.
 // notch 는 가장자리에 붙은 노치의 안쪽 모서리 반경이다 — 가장자리 쪽 두 모서리와, 옆 변에 닿은 모서리(Flip8 커버의 오른쪽 아래 컷아웃)는 각진다.

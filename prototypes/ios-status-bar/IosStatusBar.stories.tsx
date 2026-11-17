@@ -5,7 +5,7 @@ import './ios-status-bar.css';
 
 // iPhone 시스템 바(SystemBars.tsx 의 IosStatus)를 iOS 처럼 다시 그릴 때의 후보 — 옮기기 전 모양을 기준으로 기기 실제 크기(1dp = 1px)에서 본다.
 // 수치는 iOS 27.0 시뮬레이터(Xcode 27.1, status_bar override 9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%)의 3x 스크린숏을 pt 로 잰 값이다(2026-11-11).
-// 고른 것(2026-11-11, 사용자): A 실측. SystemBars.tsx 의 IosStatus 와 장면의 iPhone 아일랜드(cam)에 옮겼고, 이 스토리는 고른 기록으로 남는다.
+// 고른 것(2026-11-11, 사용자): A 실측. SystemBars.tsx 의 IosStatus 와 장면의 iPhone 아일랜드(cam)에 옮겼고, 지금은 데몬이 PNG에 굽는다(DeviceChrome · DeviceChromePainter, D-189). 이 스토리는 고른 기록으로 남는다.
 // 모서리는 장면(plugin/viewer/js/resize-scene.js)의 값이다. 아일랜드는 알림이 뜨는 순간의 스크린숏에서 잰 값(125.33×36.67, 위 14 · Air 20)이고, 옮기기 전 장면은 셋 다 124×36 · 위 11 이었다.
 const meta = { title: '시안/iPhone 시스템 바' } satisfies Meta;
 export default meta;

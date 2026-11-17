@@ -318,16 +318,6 @@ export const DEVICES = {
           }
         ]
       }
-    },
-    "status": {
-      "top": 26.33,
-      "right": 366.67,
-      "s": 1,
-      "time": {
-        "cx": 72.67,
-        "base": 39,
-        "size": 17
-      }
     }
   },
   "ip17e": {
@@ -382,16 +372,6 @@ export const DEVICES = {
           }
         ]
       }
-    },
-    "status": {
-      "top": 18.67,
-      "right": 372,
-      "s": 0.89,
-      "time": {
-        "cx": 50.5,
-        "base": 30,
-        "size": 15
-      }
     }
   },
   "ipair": {
@@ -444,16 +424,6 @@ export const DEVICES = {
             "len": 0
           }
         ]
-      }
-    },
-    "status": {
-      "top": 31.33,
-      "right": 385.33,
-      "s": 1.12,
-      "time": {
-        "cx": 76.33,
-        "base": 45.33,
-        "size": 17.7
       }
     }
   },
@@ -508,16 +478,6 @@ export const DEVICES = {
           }
         ]
       }
-    },
-    "status": {
-      "top": 25.33,
-      "right": 399.33,
-      "s": 1.12,
-      "time": {
-        "cx": 82.33,
-        "base": 39.33,
-        "size": 17.7
-      }
     }
   },
   "ip18pro": {
@@ -570,16 +530,6 @@ export const DEVICES = {
             "len": 0
           }
         ]
-      }
-    },
-    "status": {
-      "top": 26.33,
-      "right": 366.67,
-      "s": 1,
-      "time": {
-        "cx": 72.67,
-        "base": 39,
-        "size": 17
       }
     }
   },
@@ -635,17 +585,6 @@ export const DEVICES = {
             "len": 0
           }
         ]
-      }
-    },
-    "status": {
-      "top": 4.8,
-      "right": 368,
-      "left": 7,
-      "s": 0.85,
-      "time": {
-        "cx": 187.5,
-        "base": 14.5,
-        "size": 12
       }
     }
   },

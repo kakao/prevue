@@ -61,10 +61,7 @@ export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode })
 /** 첫 장 대기 표시의 바깥 요소 — 안과 hidden · failed 는 WorkspaceLoading 이 맞춘다. */
 export const loadingHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="workspace-loading" id="workspaceLoading" role="status" hidden ref={ref}>{children}</div>;
-/** 기기별 바를 덧그리는 층 — 그림 위, 가리키기 표시 아래. 안과 hidden 은 SystemBarsOverlay 가 맞춘다. */
-export const systemBarsHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
-  <div className="sys-bars" id="sysBars" aria-hidden="true" hidden ref={ref}>{children}</div>;
-/** 인셋 영역을 덧그리는 층 — 바 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
+/** 인셋 영역을 덧그리는 층 — 그림 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
 export const insetOverlayHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="inset-overlay" id="insetOverlay" aria-hidden="true" hidden ref={ref}>{children}</div>;
 /** 인셋 표지 — 화면과 같은 상자에 서되 #stage 밖이라 잘리지 않아, 기기 몸체 바깥에 dp 배지 · 치수선을 둔다. 상자는 workspace/focus.ts 의 layout 이, 안과 hidden 은 InsetMarks 가 맞춘다. */
@@ -82,20 +79,19 @@ export const zoomHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
  * 정지 그림 · 스트림을 보이는 무대. 그림의 src 는 JSX 가 갖지 않는다 — focus.ts 가 크로스페이드 · 스트림 붙이기로 갈아 끼운다.
  * #shot 은 늘 붙어 있다 — 다시 붙이면 MJPEG 연결이 새로 열리고, WebKit 은 옛 연결을 닫지 않는다.
  */
-export function PreviewStage({ loading = loadingHost(), bars = systemBarsHost(), inset = insetOverlayHost() }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode }) {
+export function PreviewStage({ loading = loadingHost(), inset = insetOverlayHost() }: { loading?: ReactNode; inset?: ReactNode }) {
   return <div className="stage" id="stage">
     <img id="shot" alt="preview" />
     {loading}
     {/* 그림 위 표시 — 구조 테두리(#marks) · 손 아래 옅은 바탕(#box) · 고른 노드(#pickBox). workspace/point.ts 가 그린다. 카드는 그림 밖 #focusView 에 뜬다. */}
-    {bars}
     {inset}
     <div className="marks" id="marks" aria-hidden="true" /><div className="box" id="box" /><div className="box pick" id="pickBox" hidden />
   </div>;
 }
 
 /** 무대 — 장면(기기 틀)과 캔버스. 조작 중에는 workspace/resize.ts 가 캔버스(#stage)를 장면의 틀 안으로 옮긴다. */
-export function WorkspaceStage({ loading, bars, inset, marks }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
-  return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} bars={bars} inset={inset} /></div>;
+export function WorkspaceStage({ loading, inset, marks }: { loading?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
+  return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} inset={inset} /></div>;
 }
 
 /** 커스텀일 때만 조작 독 가운데에 뜬다. 끄는 동안은 틀만 따라오고 놓을 때 한 번 그린다(D-99). 눈금 위치 · 값은 resize-scene.js 가 잡는다. */
