@@ -104,7 +104,7 @@ function DuoIndicator({ x, y }: { x: number; y: number }) {
   </g>;
 }
 
-// 자리는 safearea.info Duo 페이지(sha256 c7dcd339…)의 Reserved Regions 중 카메라가 아닌 occlusion 이다 — 커버 세로 오른쪽 띠 84×174, 펼침 세로 오른쪽 위 144×82, 펼침 가로 오른쪽 위 84×124.
+// 자리는 safearea.info Duo 페이지 Reserved Regions의 시스템 자리다 — 값은 tests/viewer/system-bars.mjs 의 RAW_DUO_STATUS.
 // 커버 가로는 그 자리가 카메라 모서리의 84×82 뿐이라 시각 · 표시가 설 곳이 없다 — 다른 iPhone 가로처럼 그리지 않는다.
 const duoStatusShown = (bars: Bars) => !(bars.folded && bars.w > bars.h);
 
