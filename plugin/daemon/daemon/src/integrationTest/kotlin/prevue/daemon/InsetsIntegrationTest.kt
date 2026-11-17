@@ -24,17 +24,20 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.CardOverride
+import prevue.application.domain.model.ChromeMark
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ViewNode
+import prevue.application.domain.rule.DeviceChrome
 import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
+import prevue.infrastructure.render.DeviceChromePainter
 import prevue.infrastructure.render.LayoutlibSession
 import prevue.infrastructure.render.LayoutlibInsets
 import prevue.infrastructure.render.RenderEngine
@@ -103,8 +106,8 @@ internal abstract class InsetsRenderChecks {
             assertEquals(bars, decorations(session()))
             assertEquals(0, off.semantics().first { it.semantics.contentDescription?.startsWith("status=") == true }.top)
             val offImage = ImageIO.read(engine.written(off.opened).image!!)
-            assertEquals(0xffffff, onImage.getRGB(1000, 1) and 0xffffff)
-            assertEquals(onImage.getRGB(1000, 1), offImage.getRGB(1000, 1))
+            assertEquals(0xffffff, onImage.getRGB(540, 1) and 0xffffff)
+            assertEquals(onImage.getRGB(540, 1), offImage.getRGB(540, 1))
             assertNotEquals(onImage.getRGB(500, paddedTop + 1), offImage.getRGB(500, paddedTop + 1))
             for (y in bare[1] until bare[3]) for (x in bare[0] until bare[2]) assertEquals(onImage.getRGB(x, y), offImage.getRGB(x, y))
             off.close()
@@ -146,6 +149,44 @@ internal abstract class InsetsRenderChecks {
                 assertIgnoringVisibility(values)
                 adjusted.close()
             }
+        }
+    }
+
+    @Test fun `기기 PNG와 라이브 프레임에 그 기기의 바와 카메라를 굽고 크기는 화면 그대로다`() = runBlocking {
+        val postures = listOf(
+            ScreenSize.Device(DeviceModel.IPHONE_17), ScreenSize.Device(DeviceModel.IPHONE_DUO), ScreenSize.Device(DeviceModel.PIXEL_9),
+            ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true), ScreenSize.Device(DeviceModel.GALAXY_S26, landscape = true),
+        )
+        for (device in postures) {
+            val chrome = DeviceChrome.of(device)
+            val handle = engine.open(CardOverride(preview.previewId, device).applyTo(preview), interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, "${device.key}: ${handle.opened.message}")
+            val png = ImageIO.read(engine.written(handle.opened).image!!)
+            val frame = handle.tick(forceImage = true).image!!
+            assertEquals(listOf(device.widthPx, device.heightPx), listOf(png.width, png.height), "${device.key} PNG 크기는 기기 화면")
+            val k = png.width / device.widthDp
+            fun px(x: Double, y: Double) = png.getRGB((x * k).toInt(), (y * k).toInt())
+            fun live(x: Double, y: Double) = (x * k).toInt().let { fx -> frame.pixels[(y * k).toInt() * frame.width + fx] }
+            chrome.camera?.box?.let { cam ->
+                assertEquals(0xff050505.toInt(), px(cam.x + cam.w / 2, cam.y + cam.h / 2), "${device.key} PNG 카메라")
+                assertEquals(0x050505, live(cam.x + cam.w / 2, cam.y + cam.h / 2) and 0xffffff, "${device.key} 라이브 카메라")
+            }
+            chrome.marks.filterIsInstance<ChromeMark.Handle>().forEach { h ->
+                val ink = px(h.box.x + h.box.w / 2, h.box.y + h.box.h / 2)
+                assertTrue(ink == 0xff000000.toInt() || ink == -1, "${device.key} 핸들은 바 글자색으로 채운다: ${Integer.toHexString(ink)}")
+            }
+            if (chrome.radius[0] > 0) assertEquals(0, png.getRGB(0, 0) ushr 24, "${device.key} 둥근 화면 모서리 밖은 비어 있다")
+            handle.close()
+        }
+    }
+
+    @Test fun `기기 없는 크기의 PNG에는 아무것도 굽지 않는다`() = runBlocking {
+        for (spec in listOf(ScreenSize.Dp(360, 780).applyTo(preview), preview.copy(params = mapOf("showSystemUi" to "true")))) {
+            assertNull(DeviceChromePainter.layoutOf(spec), spec.params.toString())
+            val handle = engine.open(spec, interactive = false, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            assertEquals(0xff, ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0) ushr 24, "모서리를 비우지 않는다")
+            handle.close()
         }
     }
 
