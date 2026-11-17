@@ -5,7 +5,7 @@
 #   develop → main(릴리즈 PR, /ship 이 머지한다)  → 통과
 #   그 밖(작업 PR · PR 을 읽지 못함)               → 사람 확인을 띄운다
 #
-# 보는 것은 명령 자리에 놓인 gh 다 — env · command · time 접두는 벗기고, `bash -c '…'` · 백틱 · gh api 는 보지 않는다.
+# 보는 것은 명령 자리에 놓인 gh 다 — env · command · time 접두(와 그 `-` 옵션)는 벗기고, `bash -c '…'` · 백틱 · gh api 는 보지 않는다.
 #
 # 입력은 훅 JSON(stdin)의 tool_input.command · cwd 다. 사람이 터미널에서 직접 치는 머지는 훅을 거치지 않는다.
 import json
@@ -20,8 +20,8 @@ SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "|&"}
 VALUE_FLAGS = {"-b", "--body", "-F", "--body-file", "-t", "--subject", "-A", "--author-email",
                "--match-head-commit", "-R", "--repo"}
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
-# 리다이렉션(2>&1 · >파일 · <<EOF)은 렉서가 쪼개기 전에 지운다 — 쪼개지면 fd 숫자가 PR 번호로 읽힌다
-REDIRECT = re.compile(r"(?:(?<=\s)|^)\d*(?:&>>?|>>?|<<?<?)&?\s*[^\s;&|()]*")
+# 리다이렉션 토큰(2> · >파일 · <<EOF) — fd 숫자나 대상이 PR 번호로 읽히지 않게 토큰 단계에서 뺀다
+REDIRECT = re.compile(r"^\d*(?:>>?|<<?<?)(.*)$")
 PREFIXES = {"env", "command", "time"}
 FALLBACK = re.compile(r"(^|[;&|(\n])\s*(\S*/)?gh\s+pr\s+merge\b")
 
@@ -29,19 +29,30 @@ FALLBACK = re.compile(r"(^|[;&|(\n])\s*(\S*/)?gh\s+pr\s+merge\b")
 def merges(command):
     """명령 안에서 실제로 호출되는 gh pr merge 마다 그 인자 목록을 돌려준다. 따옴표 안 언급은 토큰 하나라 잡히지 않는다."""
     try:
-        lexer = shlex.shlex(REDIRECT.sub(" ", command).replace("\n", " ; "), posix=True, punctuation_chars=True)
+        lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=";&|()")
         lexer.whitespace_split = True
         tokens = list(lexer)
     except ValueError:
         # 따옴표가 안 맞아 못 읽었다 — 놓치느니 넓게 잡는다
         return [[]] if FALLBACK.search(command) else []
-    found, segment = [], []
-    for token in tokens + [";"]:
+    found, segment, i = [], [], 0
+    tokens.append(";")
+    while i < len(tokens):
+        token = tokens[i]
+        i += 1
+        redirect = REDIRECT.match(token)
+        if redirect:
+            if not redirect.group(1):
+                # 대상이 떨어져 있다(`> 파일` · `2>&1` 의 `&` `1`) — 그것까지 넘긴다
+                i += 2 if tokens[i] == "&" else 1
+            continue
         if token not in SEPARATORS:
             segment.append(token)
             continue
         while segment and (ASSIGNMENT.match(segment[0]) or segment[0] in PREFIXES):
-            segment.pop(0)
+            prefixed = segment.pop(0) in PREFIXES
+            while prefixed and segment and segment[0].startswith("-"):
+                segment.pop(0)
         if len(segment) >= 3 and os.path.basename(segment[0]) == "gh" and segment[1:3] == ["pr", "merge"]:
             found.append(segment[3:])
         segment = []

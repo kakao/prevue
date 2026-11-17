@@ -94,13 +94,17 @@ class MergeGuard(unittest.TestCase):
         for command in ("gh pr merge --squash 2>&1", "gh pr merge --squash --auto 1>/dev/null", "gh pr merge --squash > /tmp/o",
                         "gh pr merge --squash 2>&1 | tail -5"):
             self.assertIn("이 브랜치의 PR", self.asked(command), command)
-        self.assertIn("257", self.asked("gh pr merge 257 >/tmp/o 2>&1"))
+        for command in ("gh pr merge 257 >/tmp/o 2>&1", "gh pr merge 2>&1 257", "gh pr merge 257 &>/dev/null",
+                        'gh pr merge --body "see > note" 257', "gh pr list -q '.a > .b' ; gh pr merge 257",
+                        "gh pr merge 257 2>&1|tail -5"):
+            self.assertIn("257", self.asked(command), command)
 
     def test_main으로_잘못_연_작업_PR은_띄운다(self):
         self.assertIn("worktree-x → main", self.asked("gh pr merge 248 --merge"))
 
     def test_명령_앞의_env_command_time은_벗긴다(self):
-        for command in ("env X=1 gh pr merge 257", "command gh pr merge 257", "time gh pr merge 257"):
+        for command in ("env X=1 gh pr merge 257", "command gh pr merge 257", "time gh pr merge 257",
+                        "env -i gh pr merge 257", "time -p gh pr merge 257"):
             self.assertIn("257", self.asked(command), command)
 
     def test_PR_지정이_없으면_지금_브랜치의_PR을_본다(self):
