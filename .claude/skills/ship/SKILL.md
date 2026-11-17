@@ -138,7 +138,17 @@ gh pr checks <N> --watch
 gh pr merge <N> --merge             # merge commit. --delete-branch 를 붙이지 않는다 — head 가 develop 이다
 ```
 
-이 순간이 배포다. 마켓플레이스 둘이 `main`을 읽는다. main ruleset이 두 조건 · merge commit · up to date를 강제하므로 머지가 거절되면 그 이유(대개 그 사이 main이 앞섰다 — develop에 main을 합치는 PR이 먼저다)를 보고하고 멈춘다.
+이 순간이 배포다. 마켓플레이스 둘이 `main`을 읽는다. main ruleset이 두 조건 · merge commit · up to date를 강제하므로 머지가 거절되면 그 이유를 보고하고 멈춘다.
+
+**머지 뒤 develop을 그 머지 커밋으로 fast-forward한다** — 머지 커밋은 main에만 생기는데, up to date 요구 때문에 다음 릴리즈 PR의 head(develop)가 그것을 담아야 머지된다. 머지 커밋은 develop 끝을 두 번째 부모로 가져 코드가 없다. 사람이 손으로 머지했어도 여기서 이어 한다.
+
+```sh
+git fetch -q origin
+git rev-parse origin/main                      # 머지 커밋 SHA — 아래에 리터럴로 적는다(명령 치환이 비면 원격 브랜치가 지워진다)
+git push origin <머지 커밋 SHA>:develop          # fast-forward 만. --force 를 붙이지 않는다
+```
+
+거부되면(그 사이 develop이 움직였다) `main`을 develop에 합치는 PR을 연다 — 다음 릴리즈 전까지만 들어가면 된다.
 
 ## 5. 기록 — 태그 · GitHub Release
 

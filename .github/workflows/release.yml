@@ -56,6 +56,11 @@ jobs:
           NEXT="$(tr -d ' \t\r\n' < plugin/VERSION)"
           if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
             echo "v$NEXT is already tagged — nothing to do"
+            # A release merge carries a new version. A tag elsewhere means main moved without one, and nothing records it.
+            TAGGED="$(git rev-list -n 1 "v$NEXT")"
+            if [ "$TAGGED" != "$GITHUB_SHA" ] && [ "$TAGGED" != "$(git rev-parse -q --verify HEAD^2 || true)" ]; then
+              echo "::warning::main moved to $GITHUB_SHA but plugin/VERSION is still $NEXT (tagged at $TAGGED) — this merge has no release record"
+            fi
             { echo "next=$NEXT"; echo "publish=false"; } >> "$GITHUB_OUTPUT"
             echo "## v$NEXT — already tagged" >> "$GITHUB_STEP_SUMMARY"
             exit 0

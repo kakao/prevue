@@ -32,7 +32,7 @@
 
 - **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 네 파일(`plugin/VERSION` · 매니페스트 둘 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
 - **릴리즈 PR의 머지 조건은 둘이다 — `Verify`의 판정 `ci-success`와 `스킬 평가` 보증서(커밋 상태).** 릴리즈 PR에서도 작업 PR과 같은 `Verify`가 돈다. `/ship`이 그와 나란히 로컬에서 스킬 평가를 돌려 PR head에 `스킬 평가`를 올린다(스킬 · 도움말이 안 바뀐 판은 "변화 없음"으로). 평가는 모델 호출이라 CI에 없다. main ruleset이 두 조건과 merge commit, PR head가 main을 담을 것(up to date)을 강제한다 — 그래서 머지된 트리가 검증한 develop 트리와 같다. 릴리즈에서 로컬 검증을 다시 돌지 않는다.
-- **릴리즈 PR은 `/ship`이 merge commit으로 머지한다** — 머지가 배포다. squash · rebase면 develop과 main이 갈라진다.
+- **릴리즈 PR은 merge commit으로 머지한다**(`/ship` 또는 사람) — 머지가 배포다. squash · rebase면 develop과 main이 갈라진다. 머지 뒤 develop을 그 머지 커밋으로 fast-forward한다(PR 없이, 코드가 없다) — up to date 요구 때문에 다음 릴리즈 PR이 그 커밋을 담아야 한다.
 - **기록은 Release 워크플로가 남긴다** — main에 머지가 들어오면(사람이 머지하든 `/ship`이 머지하든) `release.yml`이 저절로 돌아 머지 커밋에 태그와 GitHub Release를 남긴다(태그가 있으면 아무것도 하지 않는다). 그 실행 결과까지 확인하고 완료라고 말한다.
 - 사람에게 확인받는 곳은 버전 커밋을 밀기 전 한 번이다. 실패하면 되돌리지 않고 멈춰 보고한다 — 고친 뒤 `/ship`이 멈춘 자리부터 이어 간다.
 
