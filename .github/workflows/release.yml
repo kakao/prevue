@@ -1,59 +1,105 @@
-# Release record — run by hand on main after the release PR (develop → main) is merged; leaves the tag and the GitHub Release.
-# The single source of the version is plugin/VERSION — the version commit pushed straight to develop (/ship) bumps it and
-# tools/sync-version.sh carries it over. main is what users install: both marketplaces read the plugin from the main branch,
-# so merging is shipping. Verification therefore finished before the merge, in the release PR's Verify run (build.yml) and in
-# /ship (version · tag · sync). This is only a record: a late or failed run does not affect anyone installing.
-# Kept in its own file that PRs do not run — in the same file it would always show up as "skipped" on PR checks.
+# Release record — runs when the release PR (develop → main) is merged, by hand or by /ship; leaves the tag and the
+# GitHub Release.
+# main is what users install: both marketplaces read the plugin from the main branch, so the merge itself is the shipping
+# moment and this is only a record — a late or failed run does not affect anyone installing.
+# Verification finished before the merge: the main ruleset requires Verify's verdict (ci-success) and the skill evaluation
+# certificate (the "스킬 평가" status, posted by /ship) on the release PR, a merge commit, and a PR head that contains main —
+# so the merged tree is exactly the verified develop tree. This run checks that once more before it tags.
+# The version's single source is plugin/VERSION; tools/sync-version.sh carries it over in the version commit (/ship).
+#
+#   (merge into main)                                            tags and releases
+#   gh workflow run release.yml --ref main                       run again — does nothing when the tag exists
+#   gh workflow run release.yml --ref <branch> -f dry_run=true     print what would happen; never tags or releases
 name: Release
 
 on:
-  # Does nothing when the tag for plugin/VERSION already exists.
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print what would happen, without tagging or releasing.
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   publish:
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: write     # pushes the tag
+      contents: write     # pushes the tag, creates the Release
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
 
     steps:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # needs the tags to see whether this one exists
+          fetch-depth: 0    # needs the tags and both parents of the merge commit
 
-      - name: Read the version to tag
+      - name: Decide
+        id: decide
         run: |
           set -eu
+          DRY=0
+          if [ "${DRY_RUN:-false}" = true ] || [ "$GITHUB_REF" != refs/heads/main ]; then DRY=1; fi
+          # In a dry run every stop is reported and the run goes on, so one run shows all of them.
+          stop() { if [ "$DRY" = 1 ]; then echo "::warning::would stop — $1"; else echo "::error::$1"; exit 1; fi; }
+
           NEXT="$(tr -d ' \t\r\n' < plugin/VERSION)"
-          echo "NEXT=$NEXT" >> "$GITHUB_ENV"
           if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
-            echo "v$NEXT is already tagged — nothing to do"; echo "RELEASE=0" >> "$GITHUB_ENV"; exit 0
+            echo "v$NEXT is already tagged — nothing to do"
+            # A release merge carries a new version. A tag elsewhere means main moved without one, and nothing records it.
+            TAGGED="$(git rev-list -n 1 "v$NEXT")"
+            if [ "$TAGGED" != "$GITHUB_SHA" ] && [ "$TAGGED" != "$(git rev-parse -q --verify HEAD^2 || true)" ]; then
+              echo "::warning::main moved to $GITHUB_SHA but plugin/VERSION is still $NEXT (tagged at $TAGGED) — this merge has no release record"
+            fi
+            { echo "next=$NEXT"; echo "publish=false"; } >> "$GITHUB_OUTPUT"
+            echo "## v$NEXT — already tagged" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
-          # main only moves through verified release PRs. Still, never tag a tree whose versions are out of sync.
-          sh tools/sync-version.sh --check
-          echo "RELEASE=1" >> "$GITHUB_ENV"
+          sh tools/sync-version.sh --check || stop "versions are out of sync — the version commit missed tools/sync-version.sh"
+          # A release merge has develop's head as its second parent and the same tree — anything else did not come
+          # through a verified release PR, so it gets no tag.
+          if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+            stop "$GITHUB_SHA is not a merge commit — main moved without a release PR"
+          elif [ "$(git rev-parse 'HEAD^{tree}')" != "$(git rev-parse 'HEAD^2^{tree}')" ]; then
+            stop "merge commit $GITHUB_SHA differs from its PR head — the merged tree was not the verified one"
+          fi
+
+          PUBLISH=true
+          if [ "$DRY" = 1 ]; then PUBLISH=false; fi
+          { echo "next=$NEXT"; echo "publish=$PUBLISH"; } >> "$GITHUB_OUTPUT"
+          {
+            echo "## v$NEXT"; echo
+            if [ "$DRY" = 1 ]; then echo "Dry run ($GITHUB_REF) — would tag $GITHUB_SHA as v$NEXT and release it."
+            else echo "Tag $GITHUB_SHA as v$NEXT and release it."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push the tag
-        if: ${{ env.RELEASE == '1' }}
+        if: ${{ steps.decide.outputs.publish == 'true' }}
+        env:
+          NEXT: ${{ steps.decide.outputs.next }}
         run: |
           set -eu
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$NEXT" -m "v$NEXT"
+          git tag -a "v$NEXT" -m "v$NEXT" "$GITHUB_SHA"
           git push origin "refs/tags/v$NEXT"
 
       # Creating a Release mails everyone who watches the repository for Releases. GitHub only reports failures by default.
       # The tag is already out, so a failure here is not rolled back — the failure mail points at this step.
       - name: Create the GitHub Release
-        if: ${{ env.RELEASE == '1' }}
+        if: ${{ steps.decide.outputs.publish == 'true' }}
         env:
+          NEXT: ${{ steps.decide.outputs.next }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
@@ -66,16 +112,6 @@ jobs:
             --data @release.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases")"
           [ "$CODE" = 201 ] || { echo "::error::tag v$NEXT is out but the Release could not be created ($CODE)"; cat release.out; exit 1; }
           echo "Created Release v$NEXT"
-
-      - name: Write what was done
-        if: ${{ always() }}
-        run: |
-          set -eu
           {
-            if [ "${RELEASE:-}" = 1 ]; then
-              echo "## v$NEXT"; echo
-              awk -v v="## [$NEXT]" 'index($0,v)==1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md
-            else
-              echo "## v${NEXT:-?} — not tagged"
-            fi
+            echo; awk -v v="## [$NEXT]" 'index($0,v)==1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md
           } >> "$GITHUB_STEP_SUMMARY"

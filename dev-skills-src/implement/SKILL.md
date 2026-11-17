@@ -115,7 +115,7 @@ git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 �
 
 ## 5. 로컬 검증 → PR → 머지
 
-머지 관문은 둘이다 — 밀기 전에 마지막 커밋에서 돌리는 로컬 검증 다섯과, PR을 연 뒤 그 head에서 도는 CI(`Verify`)의 판정 `build` 성공. develop에는 필수 체크가 없어 서버가 막아 주지 않으므로 CI를 기다리는 것은 여기가 지킨다(`AGENTS.md`).
+머지 관문은 둘이다 — 밀기 전에 마지막 커밋에서 돌리는 로컬 검증 다섯과, PR을 연 뒤 그 head에서 도는 CI(`Verify`)의 판정 `ci-success` 성공. develop에는 필수 체크가 없어 서버가 막아 주지 않으므로 CI를 기다리는 것은 여기가 지킨다(`AGENTS.md`).
 
 ```sh
 sh tools/gen-agents.sh --check     # 스킬 두 벌 · CLAUDE.md 가 원본과 같다
@@ -142,16 +142,16 @@ gh pr create --base develop --title "<무엇을 · 왜 한 줄>" --body "<본문
 gh pr checks <N> --watch
 ```
 
-`Verify`의 판정 job `build`(정적 검사 · 빌드 · 단위 테스트를 모은다)가 초록이어야 한다. 같은 실행의 통합 테스트(`integration / integration (…)`)는 관찰 중이라 판정에 넣지 않는다 — 실패하면 PR 본문에 적고 막지 않는다. 단 조각 배정 오류(새 `*IntegrationTest`를 `integration.yml`의 `SHARDS`에 넣지 않았다)이거나 이 PR이 integrationTest · 픽스처 · 클래스패스 경로를 건드렸으면 고친다 — 러너 문제로 보이는 것만 적고 넘어간다. `--fail-fast`를 붙이지 않는다 — 통합 조각이 먼저 실패하면 `build`가 끝나기 전에 기다림이 끝난다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
+`Verify`의 판정 job `ci-success`(정적 검사 · 빌드 · 단위 · 통합 테스트를 모은다)가 초록이어야 한다. 통합 테스트(`integration / integration (…)`)가 실패하면 판정도 실패다 — 조각 배정 오류(새 `*IntegrationTest`를 `integration.yml`의 `SHARDS`에 넣지 않았다)도 여기서 걸린다. `--fail-fast`를 붙이지 않는다 — 한 조각이 먼저 실패하면 `ci-success`가 끝나기 전에 기다림이 끝난다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->
 
 기다림이 끝나면 머지 직전에 `gh pr view <N> --json headRefOid,statusCheckRollup`로 판정한다 — `statusCheckRollup`은 head 커밋의 체크다.
 
-- `headRefOid`가 기다림을 시작할 때의 `git rev-parse HEAD`와 다르거나, `build`가 아직 없거나 진행 중이면 조금 뒤 다시 기다린다.
-- head가 같고 `build`의 `conclusion`이 `SUCCESS`면 초록이다.
-- head가 같고 `build`의 `conclusion`이 `SUCCESS`가 아니면(`FAILURE` · `CANCELLED` · `SKIPPED` · `TIMED_OUT` 등) 실패다 — `gh pr checks`가 종료 0으로 끝났어도 그렇다.
+- `headRefOid`가 기다림을 시작할 때의 `git rev-parse HEAD`와 다르거나, `ci-success`가 아직 없거나 진행 중이면 조금 뒤 다시 기다린다.
+- head가 같고 `ci-success`의 `conclusion`이 `SUCCESS`면 초록이다.
+- head가 같고 `ci-success`의 `conclusion`이 `SUCCESS`가 아니면(`FAILURE` · `CANCELLED` · `SKIPPED` · `TIMED_OUT` 등) 실패다 — `gh pr checks`가 종료 0으로 끝났어도 그렇다.
 
 **실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불려 고친 커밋이 있으면 4단계 리뷰어를 수정 확인으로 띄운다 — 분류기에 `--range <CI가 실패한 head>..HEAD --recheck`(곧 `medium`)를 주고, 위임 프롬프트의 직전 결과 자리에는 CI 실패 요지를 넘긴다. 그다음 이 단계의 로컬 검증부터 다시 돌아 민 뒤 CI를 기다린다.
 

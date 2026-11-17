@@ -82,7 +82,7 @@ squash 커밋 제목 끝의 `(#N)`과 `[Unreleased]`에 걸린 링크만 본다 
 
 1. **히어로 그림 — 있을 때만.** develop에 `assets/release-<버전>.png`가 있으면 맨 위에 한 줄로 건다. 없으면 이 줄 없이 간다 — `/ship`은 그림 때문에 멈추지 않는다.
    `![Prevue 0.21 — Kotlin Multiplatform, in your browser](https://raw.githubusercontent.com/kakao/prevue/v0.21.0/assets/release-0.21.0.png)`
-   주소는 **그 판의 태그**에 고정한다 — Release 본문은 저장소 상대 경로를 풀지 못하고, `main`에 걸면 나중에 그림이 바뀔 때 지난 노트도 바뀐다. 태그는 5단계에서 생기니 그 전까지는 CHANGELOG에서 그림이 깨져 보인다. 그림은 릴리즈 전에 PR로 넣는다(버전 커밋 여섯 파일 밖이다) — 만드는 법은 `tools/release-hero/README.md`.
+   주소는 **그 판의 태그**에 고정한다 — Release 본문은 저장소 상대 경로를 풀지 못하고, `main`에 걸면 나중에 그림이 바뀔 때 지난 노트도 바뀐다. 태그는 5단계에서 생기니 그 전까지는 CHANGELOG에서 그림이 깨져 보인다. 그림은 릴리즈 전에 PR로 넣는다(버전 커밋 네 파일 밖이다) — 만드는 법은 `tools/release-hero/README.md`.
 2. **요약 문단** — 두세 문장. 이 판에서 사용자가 새로 할 수 있게 된 것을 먼저(축이 둘이면 한 문장씩), 나머지 무게를 한 문장으로. 히어로 그림이 있으면 그 제목을 문단 맨 앞에 굵게 둘 수 있다(`**See what it's made of. See where it fits.** Point at an element and …`).
 3. **주제별 `###` 절** — 무엇을 할 수 있게 됐나로 묶는다. 절 이름은 판마다 정하고(`### See where it fits` · `### Kotlin Multiplatform`), 고친 것은 주제 절들 뒤 `### Fixes`로 모은다. 절 순서는 주제 절들 → `### Fixes` → `### Thanks`(맨 끝)다.
    - **절 머리는 그림 한 장 — 있을 때만.** 절 머리에 문단을 두지 않는다 — 무엇이 되나 · 조건 · 사용자가 할 일은 항목이 갖는다. 그림은 그 절의 기능이 움직이는 장면(webp · gif)이고, 주소는 히어로처럼 그 판의 태그에 고정한다. 그림이 없는 절은 절 이름 아래 바로 항목이 온다.
