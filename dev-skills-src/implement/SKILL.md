@@ -27,7 +27,7 @@ RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
 
 ## PLAN — 읽기만 하고 합의한다
 
-코드와 저장소 문서에서 사실을 확인한 뒤, 아래 한 화면으로 합의한다. 열린 결정이 있거나 인자가 `grill`이면 `grilling` 스킬로 하나씩 정한다(없으면 대화로) — 아래 한 화면을 산출물 형식으로 넘기고, `[최종]`이 합의다.
+코드와 저장소 문서에서 사실을 확인한 뒤, 아래 한 화면으로 합의한다. 인계 노트가 인용한 커밋 · 코드 줄 · 관찰값과 문서 문장의 사실 주장은 계획을 보이기 전에 지금 코드에서 확인하고(`git cat-file -e` · `git log -S` · 그 줄 읽기), 어긋난 것은 계획에 적는다. 열린 결정이 있거나 인자가 `grill`이면 `grilling` 스킬로 하나씩 정한다(없으면 대화로) — 아래 한 화면을 산출물 형식으로 넘기고, `[최종]`이 합의다.
 
 ```
 무엇을    <바꾸는 것 한두 줄 · 고칠 자리>
@@ -82,13 +82,13 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 `check-local.sh`를 통과한 커밋을 밀고 `gh pr create --base develop`으로 연다(열린 PR이 있으면 밀기만 한다). 본문: 무엇을 · 왜, 성공 기준과 검증(여기가 원 기록이다), 리뷰 등급과 결과(고치지 않은 지적 · 추천안으로 처리한 물을 것 · 머지 위험, 건너뛰었으면 "독립 리뷰 없음"), 남은 사람 확인. 끝에 세션의 PR 서명 줄.
 
 - 사람 눈이 필요한 확인(모션 · Safari)은 "사람 확인 전"으로 적어 두고 막지 않는다.
-- develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다.
+- develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 그 병합으로 `dev-skills-src/implement` · `AGENTS.md`가 바뀌었으면 이 스킬을 다시 읽고 남은 단계를 새 판대로 따른다.
 - **CI를 기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
 <!-- only:claude -->
   기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다.
 <!-- /only -->
 - **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄운다 — 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지.
-- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다.** PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
+- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다**(불러도 훅 `tools/hooks/merge-guard.py`가 가로챈다). PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
 <!-- only:claude -->
 - 이 세션이 살아 있는 동안은 `run_in_background`로 PR이 `MERGED`나 `CLOSED`가 되기를 기다린다 — `MERGED`면 CLEAN-UP으로 이어 가고, `CLOSED`면 멈춰 보고한다.
 <!-- /only -->
