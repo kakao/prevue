@@ -14,7 +14,9 @@ import re
 import subprocess
 import sys
 
-MENTION = re.compile(r"\bgh\b[^;|&\n]*\bpr\b[^;|&\n]*\bmerge\b")
+# pr · merge 는 홀로 선 단어만 본다 — 브랜치 이름 · 경로 조각(worktree-…-merge-…)에는 띄우지 않는다
+ALONE = r"(?<![\w./-])%s(?![\w./-])"
+MENTION = re.compile(r"\b(?i:gh)\b[^;|&\n]*" + ALONE % "pr" + r"[^;|&\n]*" + ALONE % "merge")
 RELEASE = re.compile(r"gh pr merge ([0-9]+) --merge")
 HUMAN = "develop 머지는 사람이 한다(AGENTS.md). 사용자가 이 머지를 시켰을 때만 허용한다."
 

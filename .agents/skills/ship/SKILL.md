@@ -86,12 +86,12 @@ sh tools/sync-version.sh --check
 git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md 뿐이다
 git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
 git push origin HEAD:develop        # fast-forward 만
-gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본문>"
+gh pr create --base main --head develop --title "0.11.0 릴리즈" --body-file <본문 파일>
 ```
 
 이 네 파일 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
 
-본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
+본문은 파일에 써서 넘긴다 — 머지 명령을 언급한 명령에는 머지 훅(`tools/hooks/merge-guard.py`)이 사람 확인을 띄운다. 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 
 **스킬 평가 — 2단계에서 실었으면 PR을 연 직후 돌린다.** CI(`Verify`)는 PR을 열면 저절로 돌고, 평가는 그와 나란히 돈다. **먼저 PR head에 `스킬 평가`를 `pending`으로 올린다** — 4단계의 `gh pr checks --watch`는 이미 있는 체크만 기다려서, 상태가 없으면 CI가 끝나는 순간 평가가 돌고 있어도 초록으로 끝난다.
 
@@ -134,8 +134,10 @@ gh pr checks <N> --watch
 초록이면:
 
 ```sh
-gh pr merge <N> --merge             # merge commit. --delete-branch 를 붙이지 않는다 — head 가 develop 이다
+gh pr merge <N> --merge
 ```
+
+merge commit이다. `--delete-branch`를 붙이지 않는다 — head가 develop이다. 이 모양 그대로 친다 — 뒤에 무엇이든 붙으면(`2>&1` · 주석) 머지 훅이 사람 확인을 띄운다.
 
 이 순간이 배포다. 마켓플레이스 둘이 `main`을 읽는다. main ruleset이 두 조건 · merge commit · up to date를 강제하므로 머지가 거절되면 그 이유를 보고하고 멈춘다.
 

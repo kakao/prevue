@@ -77,7 +77,9 @@ class MergeGuard(unittest.TestCase):
                         "git merge origin/develop",
                         "gh pr list --state merged; git log --merges",
                         "gh pr create --base develop --title x\ngit merge origin/develop",
-                        "ls tools/hooks/merge-guard.py"):
+                        "ls tools/hooks/merge-guard.py",
+                        "gh pr create --base develop --head worktree-retro-merge-guard-review --body-file /tmp/x-merge-guard/body.md",
+                        "gh pr view worktree-pr-merge-fix --json state"):
             self.assertIsNone(self.asked(command), command)
         self.assertEqual(self.gh_calls(), [])
 
@@ -115,7 +117,9 @@ class MergeGuard(unittest.TestCase):
                         "open https://github.com/kakao/prevue#readme && gh pr merge 257 --squash",
                         "cat <<'EOF' > n.md\nDon't\nEOF\ngh pr merge 257 --squash\ncat <<'EOF' >> n.md\nwon't\nEOF",
                         "gh pr merge 257 --body 'unterminated",
-                        "gh pr merge ２４９ --merge"):
+                        "gh pr merge ２４９ --merge",
+                        "gh pr \\merge 257", "gh 'pr' \"merge\" 257", "GH pr merge 249 --merge",
+                        "gh pr merge 249 --merge             # merge commit"):
             self.assertIsNotNone(self.asked(command), command)
         self.assertEqual(self.gh_calls(), [])
 
