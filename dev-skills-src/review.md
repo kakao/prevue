@@ -1,6 +1,6 @@
 # Prevue 리뷰 규약
 
-`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement` 4단계가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
+`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement` REVIEW가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
 
 ## 코딩 표준
 
@@ -22,7 +22,9 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 - **diff가 닿지 않은 파일에 위반이 났으면 물을 것이다** — detekt 판 · 규칙 변경이 기존 코드를 새로 잡은 것이라 범위를 정해야 한다.
 - **종료 2는 통과가 아니다** — stderr를 결과에 그대로 남긴다. 흔한 원인은 `viewer-src/node_modules`가 없거나(`npm ci --prefix viewer-src`) 이 머신에 detekt가 아직 없는 것(`sh tools/lint.sh --online` 한 번)이다.
 
-리뷰어가 직접 돌려도 된다 — detekt는 Gradle로 돌지만 `build/lint`와 그 안의 프로젝트 캐시를 따로 써서 메인의 빌드 · 테스트와 겹치지 않는다. 그 밖의 빌드 도구는 부르지 않는다. 리뷰어 정의가 빌드 도구 실행을 막으면 돌리지 않고 "검사를 못 했다(리뷰어 정의)"로 적는다 — 관문은 `implement` 5단계의 `lint.sh`다.
+리뷰어가 직접 돌려도 된다 — detekt는 Gradle로 돌지만 `build/lint`와 그 안의 프로젝트 캐시를 따로 써서 메인의 빌드 · 테스트와 겹치지 않는다. 그 밖의 빌드 도구는 부르지 않는다. 리뷰어 정의가 빌드 도구 실행을 막으면 돌리지 않고 "검사를 못 했다(리뷰어 정의)"로 적는다 — 관문은 `implement` DEVELOP의 `tools/check-local.sh`다.
+
+**`implement`가 넘긴 위임에 `check-local.sh` 요약이 실려 오면** 그 커밋이 끝 커밋과 같고 작업 트리가 깨끗하다고 찍혀 있을 때 린트 줄을 결과의 린트 집계 줄로 옮기고 다시 돌리지 않는다. 다르거나 요약이 없으면(단독 리뷰) 위대로 돌린다.
 
 `lint.sh`는 끝 커밋이 아니라 작업 트리를 읽는다. `git diff --quiet <끝 커밋>`이 실패하면(리뷰 중에 메인이 고쳤다) 그 결과를 끝 커밋의 판정으로 쓰지 않고 그렇다고 적는다.
 

@@ -1,47 +1,34 @@
 ---
 name: implement
-description: Prevue 저장소의 코드를 바꾸는 작업을 그 작업의 워크트리 안에서 계획 합의부터 머지 · 치우기까지 끝까지 간다. PR로 가는 경로(src · bin · viewer · skills-src · dev-skills-src · tools · 워크플로 · 빌드 파일)를 고치거나 기능을 더해 달라는 요청에 쓴다 — 원인 조사 · 질문 · 문서만 고치는 일에는 쓰지 않는다. /implement로도 부르고(/implement grill이면 grilling으로 계획한다), 멈춘 자리부터 이어 간다.
+description: Prevue 저장소의 코드를 바꾸는 작업을 그 작업의 워크트리 안에서 계획 합의부터 PR까지, 사람이 머지한 뒤에는 치우기까지 간다. PR로 가는 경로(src · bin · viewer · skills-src · dev-skills-src · tools · 워크플로 · 빌드 파일)를 고치거나 기능을 더해 달라는 요청에 쓴다 — 원인 조사 · 질문 · 문서만 고치는 일에는 쓰지 않는다. /implement로도 부르고(/implement grill이면 grilling으로 계획한다), 멈춘 자리부터 이어 간다.
 ---
 <!-- 생성물이다. dev-skills-src/implement/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
 
-# implement — 작업 하나를 머지까지
+# implement — 작업 하나를 PR까지, 머지 뒤 치우기까지
 
-규칙(브랜치 · 워크트리 · 머지 권한 · 지우면 안 되는 것)은 `AGENTS.md`의 "브랜치와 워크트리" 절이 갖는다 — 여기는 절차만 갖는다.
+규칙(브랜치 · 워크트리 · 머지 · 지우면 안 되는 것)은 `AGENTS.md` "브랜치와 워크트리"가 갖는다. 여기는 순서 · 멈추는 곳 · 판단할 것만 갖는다.
 
-- **사람에게 묻는 곳은 계획 합의 한 번이다.** 그 뒤에는 머지 · 치우기까지 간다. 따로 멈추는 곳은 넷 — 대상 저장소의 Gradle 실행(`AGENTS.md` "승인이 필요한 것"), 합의한 성공 기준을 못 맞추거나 범위를 바꿔야 할 때(4단계 리뷰의 물을 것이 계획 · 범위 · 공개 계약 · 결정을 건드릴 때도), 리뷰 스킬이 설치돼 있는데 독립 리뷰어를 띄울 수 없을 때(4단계), 그리고 PR의 CI가 실패했을 때(5단계). 멈추면 무엇이 왜 어긋났는지 보고한다.
-- **워크트리를 만들고 지우는 것은 이 스킬 밖의 일이다** — 작업을 넘기는 쪽(사람이나 오케스트레이터)이 만들고, 머지 뒤에 지운다. 이 스킬은 그 워크트리 안에서만 돈다.
-- 상태는 git · GitHub에서 읽는다. 따로 적어 두는 파일이 없다 — 다시 불리면 0단계가 멈춘 자리를 찾는다.
+RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
 
-## 0. 어디서부터인가
+- **사람이 하는 일은 둘이다** — PLAN의 합의와 머지. 그 사이는 묻지 않고 간다.
+- **따로 멈추는 곳은 넷이다** — 대상 저장소의 Gradle 실행(`AGENTS.md` "승인이 필요한 것"), 합의한 성공 기준을 못 맞추거나 범위를 바꿔야 할 때, `review` 스킬이 있는데 리뷰어를 띄울 수 없을 때, PR의 CI가 실패했을 때. 멈추면 무엇이 왜 어긋났는지 보고한다.
+- 상태는 git · GitHub에서 읽는다 — 다시 불리면 RESUME이 멈춘 자리를 찾는다.
 
-```sh
-git rev-parse --abbrev-ref HEAD; git status --porcelain
-git fetch -q origin
-git rev-list --count origin/develop..HEAD
-gh pr list --head "$(git rev-parse --abbrev-ref HEAD)" --state all --json number,state,url
-```
+## RESUME — 멈춘 자리를 찾는다
 
-위에서부터 처음 맞는 줄로 간다.
+`git fetch` 뒤 위에서부터 처음 맞는 줄로 간다.
 
 | 지금 | 간다 |
 |---|---|
-| 베이스 체크아웃 | 멈춘다 — 아래 "베이스에서 불렸으면" |
-| 워크트리, 이 브랜치의 PR이 `MERGED` | 6. 치우기 |
-| 워크트리, 열린 PR이 있다 | 5. 머지 |
-| 워크트리, `origin/develop` 위에 커밋이 있다 | 4. 리뷰 — 개발이 덜 끝났으면 3 |
-| 워크트리, 커밋이 없다 | 대화에 합의한 계획이 있으면 2, 없으면 1 |
+| 베이스 체크아웃 | 멈춘다 — 아무것도 만들지 않고, 작업 워크트리 안에서 다시 부르라고 알린다 |
+| 이 브랜치의 PR이 `MERGED` | CLEAN-UP |
+| 열린 PR이 있다 | 로컬에 PR head 뒤 커밋이 있으면 REVIEW(수정 확인)를 거쳐 PR의 밀기부터, 없으면 PR의 CI 보기부터 |
+| `origin/develop` 위에 커밋이 있다 | REVIEW — 개발이 덜 끝났으면 DEVELOP |
+| 커밋이 없다 | 합의한 계획이 대화에 있으면 DEVELOP, 없으면 PLAN |
 
-**베이스에서 불렸으면** 아무것도 만들지 않고, 이 작업의 워크트리를 먼저 만들어 그 안에서 다시 부르라고 알린다. 만드는 법으로 베이스에서 `git fetch -q origin` · `git worktree add .worktrees/<작업명> -b worktree-<작업명> origin/develop`을 알려 준다.
+## PLAN — 읽기만 하고 합의한다
 
-## 1. 계획 — 읽기만
-
-코드와 저장소 문서에서 사실을 먼저 확인한다. 재현이 필요하면 2단계의 빌드 뒤 이 워크트리의 `plugin/bin/prevue`로 본다 — 고치지 않는다.
-
-- **열린 결정이 있으면**(대안이 갈리거나 기준을 정해야 한다) 하나씩 정한다. 인자가 `grill`이면 늘 이쪽이다. `grilling` 스킬이 설치돼 있으면 그것으로 정하고 Prevue 규약은 부르는 여기가 넘긴다 — 없으면 대화로 하나씩 묻는다.
-  - 사실 확인 — 코드와 저장소 문서를 읽고 묻는다.
-  - 산출물 형식 — `[최종]`의 본문을 아래 한 화면 계획(무엇을 · 성공 기준 · 뺀 것)으로 쓴다.
-  - `[최종]`이 오면 그것이 합의다 — 다시 묻지 않고 2단계로 간다.
-- **없으면** 한 화면으로 보이고 "진행할까요?"를 받는다.
+코드와 저장소 문서에서 사실을 확인한 뒤, 아래 한 화면으로 합의한다. 열린 결정이 있거나 인자가 `grill`이면 `grilling` 스킬로 하나씩 정한다(없으면 대화로) — 아래 한 화면을 산출물 형식으로 넘기고, `[최종]`이 합의다.
 
 ```
 무엇을    <바꾸는 것 한두 줄 · 고칠 자리>
@@ -49,46 +36,23 @@ gh pr list --head "$(git rev-parse --abbrev-ref HEAD)" --state all --json number
 뺀 것     … (이유)
 ```
 
-합의가 이 스킬의 유일한 확인이다. 고쳐 달라면 고쳐 다시 보인다. 거절하면 아무것도 만들지 않고 멈춘다.
+## DEVELOP — 성공 기준을 달성한다
 
-## 2. 준비
+- **PLAN에서 합의한 성공 기준을 달성한다.** 기준마다 무엇을 쳐서 무엇을 봤는지 증거를 남긴다.
+- **`sh tools/check-local.sh`가 0이 될 때까지 고친다**(린트 · 기본 테스트). 결과대로 고쳐 다시 돌린다.
 
-```sh
-git log -1 --oneline                 # origin/develop 의 끝인지 본다 — 아니면 origin/HEAD 가 main 이다(AGENTS.md 클론 직후)
-(cd plugin/daemon && ./gradlew --offline installPrevue)    # 이 체크아웃의 plugin/bin/prevue 가 쓸 실행 파일. 스킬 · 문서만 고치면 건너뛴다
-python3 tools/lint/viewer.py --deps 2>/dev/null || npm ci --prefix viewer-src    # node_modules 는 git 밖이라 새 워크트리에 없다 — 없으면 tools/lint.sh 가 종료 2로 멈춘다. 판정은 viewer.py 가 갖는다
-```
+## REVIEW — 짠 쪽의 가정을 모르는 눈이 본다
 
-## 3. 개발
-
-- **성공 기준마다 증거를 남긴다** — 무엇을 쳐서 무엇을 봤는지. 5단계의 검증 기록이 된다.
-  - 단위 테스트 `(cd plugin/daemon && ./gradlew --offline test)` · CLI 판정 `python3 -m unittest discover -s tests/cli` · 스킬 두 벌 · `CLAUDE.md` `sh tools/gen-agents.sh --check`
-  - 통합 테스트 `(cd plugin/daemon && ./gradlew --offline -q :daemon:integrationTest --tests …); echo "gradle=$?"; python3 tools/test-summary.py` — `-q`면 결과가 출력에 없어 요약이 클래스별 tests · failures와 첫 실패 메시지를 찍는다. 판정은 `gradle=`이다 — 컴파일이 실패하면 태스크가 돌지 않아 요약은 지난 실행의 XML을 읽는다(시각 열로 보인다). 단위 테스트 결과는 `plugin/daemon/daemon/build/test-results/test`를 인자로 준다
-  - 렌더는 **이 워크트리의** `plugin/bin/prevue`로 본다(`AGENTS.md` "브랜치와 워크트리").
-  - 뷰어는 헤드리스 Chrome으로 본다. 모션 느낌 · Safari처럼 사람 눈이 필요한 것은 "사람 확인 전"으로 적어 두고 막지 않는다.
-- 사용자에게 보이는 변화는 `CHANGELOG.md` `[Unreleased]`에 적는다 — 무엇을 어떤 모양으로 쓰나, 외부 제보 · 기여를 어떻게 멘션하나는 `dev-skills-src/release-notes.md`가 갖는다. 그 항목이 곧 GitHub Release 본문이다.
-- 검증장 · 대상 체크아웃은 `AGENTS.md` "개발 위생"을 따른다.
-- 커밋은 조각마다. 끝에 세션의 공동 저자 줄을 붙인다.
-
-## 4. 리뷰
-
-짠 쪽의 가정을 모르는 눈이 본다 — 리뷰어(`reviewer-<등급>`)가 `review` 스킬과 이 저장소의 리뷰 규약(`dev-skills-src/review.md`, `AGENTS.md` "리뷰")으로 판정한다. 등급은 분류기가 고른다. 워크트리 루트에서 돌린다 — 규약 경로가 상대 경로다.
-
-**분류기를 돌리기 전에 파일이 있는지 본다**(아래 첫 줄). 없으면 `review` 스킬이 설치되지 않은 환경이다 — 이 단계를 건너뛰고 PR 본문과 7단계 보고에 "독립 리뷰 없음"을 적는다. 설치돼 있는데 리뷰어를 띄울 수 없으면 멈추고 독립 리뷰를 못 했다고 보고한다 — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
+리뷰어(`reviewer-<등급>`)가 `review` 스킬과 `dev-skills-src/review.md`로 판정한다. 등급은 분류기가 고른다 — 워크트리 루트에서 돌린다.
 
 ```sh
-test -f ~/.codex/skills/review/scripts/review_tier.py     # 실패하면 review 스킬이 없다 — 이 단계를 건너뛴다
+test -f ~/.codex/skills/review/scripts/review_tier.py     # 실패하면 review 스킬이 없다 — 건너뛴다
 python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HEAD --config dev-skills-src/review.md
-git merge-base origin/develop HEAD   # 기준 ref — 0단계의 fetch로 origin/develop이 앞서 나가도 이 작업분만 보게 SHA로 넘긴다
-git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 범위가 흔들리지 않게 SHA로 고정한다
 ```
 
-분류기 출력의 첫 줄이 등급, 둘째 줄부터 근거다.
-
-- **`skip`** — 바뀐 파일이 전부 규약의 건너뛰기 패턴에 맞는다. 리뷰어를 띄우지 않고 5단계로 간다.
-- **`medium` · `high` · `xhigh`** — 그 등급의 리뷰어에 위임한다. **종료 코드 2**(판정 못 함)면 `high`로 띄우고 stderr를 위임 프롬프트에 함께 넘긴다.
-
-위임 프롬프트에는 기준 ref(위 merge-base SHA) · 끝 커밋 SHA · 분류기 근거 줄 · 합의한 계획과 성공 기준 · 3단계 증거(무엇을 돌려 무엇을 봤나)를 넣는다.
+- **`test -f`가 실패하면** `review` 스킬이 없는 환경이다 — 건너뛰고 "독립 리뷰 없음"을 적는다. **있는데 리뷰어를 띄울 수 없으면 멈춘다** — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
+- 출력 첫 줄이 등급이다. `skip`이면 띄우지 않는다. 종료 코드 2면 `high`로 띄우고 stderr를 넘긴다.
+- 위임에는 기준(`origin/develop`과의 merge-base) · 끝 커밋을 SHA로, 분류기 근거 · 계획과 성공 기준 · 증거 · `check-local.sh` 요약을 넘긴다.
 
 리뷰어 정의는 `~/.codex/agents/reviewer-<등급>.toml`이다.
 
@@ -97,71 +61,24 @@ git rev-parse HEAD                   # 끝 커밋 — 리뷰 중에 고쳐도 �
 - 그 effort를 지원하지 않으면 지원되는 가장 높은 effort로 띄우고, 요청 등급과 실제 값을 PR 본문에 적는다. 적용 절은 원래 등급의 지시 그대로 둔다.
 - **협업 도구 자체가 없으면 멈춘다** — 독립 리뷰를 못 했다고 보고하고, 자기 diff를 다시 읽는 것으로 리뷰를 대신하지 않는다.
 
-결과를 이렇게 처리한다.
+결과는 이렇게 다룬다.
 
-- **고칠 것** — 고치거나, 고치지 않으면 이유를 PR 본문에 적는다. 고쳤으면 그 고침이 닿는 3단계 증거를 다시 본다.
-- **물을 것** — 계획 · 범위나 기존 공개 계약(CLI 출력 · 매니페스트)을 바꿔야 하거나, 결정(`D-<n>`)을 뒤집는 것이면 멈추고 묻는다. 나머지(API 모양 · 읽기 쉬움처럼 취향이 갈리는 것)는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
+- **고칠 것** — 고치거나, 안 고치는 이유를 PR 본문에 적는다. 고쳤으면 그 고침이 닿는 성공 기준 증거를 다시 보고 `check-local.sh`를 다시 통과시킨다.
+- **물을 것** — 계획 · 범위 · 공개 계약(CLI 출력 · 매니페스트) · 결정(`D-<n>`)을 건드리면 멈추고 묻는다. 나머지는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
 - **머지 위험 줄**은 PR 본문에 옮긴다.
 
-## 5. 로컬 검증 → PR → 머지
+## PR — 올리고, 머지는 사람이 한다
 
-머지 관문은 둘이다 — 밀기 전에 마지막 커밋에서 돌리는 로컬 검증 다섯과, PR을 연 뒤 그 head에서 도는 CI(`Verify`)의 판정 `ci-success` 성공. develop에는 필수 체크가 없어 서버가 막아 주지 않으므로 CI를 기다리는 것은 여기가 지킨다(`AGENTS.md`).
+`check-local.sh`를 통과한 커밋을 밀고 `gh pr create --base develop`으로 연다(열린 PR이 있으면 밀기만 한다). 본문: 무엇을 · 왜, 성공 기준과 검증(여기가 원 기록이다), 리뷰 등급과 결과(고치지 않은 지적 · 추천안으로 처리한 물을 것 · 머지 위험, 건너뛰었으면 "독립 리뷰 없음"), 남은 사람 확인. 끝에 세션의 PR 서명 줄.
 
-```sh
-sh tools/gen-agents.sh --check     # 스킬 두 벌 · CLAUDE.md 가 원본과 같다
-sh tools/plugin-copies.sh --check   # plugin/ 의 LICENSE · NOTICE.md 가 루트 원본과 같다(D-123)
-"$(command -v python3.9 || command -v python3)" -m unittest discover -s tests/cli   # CI 는 python 3.9 — 있으면 그것으로 돌려 3.9에서만 깨지는 것을 밀기 전에 잡는다
-(cd plugin/daemon && ./gradlew --offline test)   # 소스 · 빌드 파일을 안 건드렸으면(문서 · 스킬만) 건너뛴다
-sh tools/lint.sh                     # Kotlin · 뷰어 날값 린트(D-70 · D-96) — 판단하지 말고 결과대로 고친다
-```
+- 사람 눈이 필요한 확인(모션 · Safari)은 "사람 확인 전"으로 적어 두고 막지 않는다.
+- develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다.
+- **CI를 기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
+- **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄운다 — 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지.
+- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다.** PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
 
-하나라도 실패하면 고쳐 다시 돌린다. 통과한 결과(테스트 수)를 PR 본문의 검증 기록에 적는다.
+## CLEAN-UP — 머지된 뒤 이 작업의 것만 치우고 보고한다
 
-```sh
-git push -u origin HEAD
-gh pr create --base develop --title "<무엇을 · 왜 한 줄>" --body "<본문>"   # 열린 PR이 이미 있으면(이어 가는 중) 밀기만 하고 건너뛴다
-```
+PR이 `MERGED`일 때만 한다. `plugin/bin/prevue stop --mine`으로 데몬을 멈추고, 원격 작업 브랜치가 남아 있으면 지운다. 다른 워크트리는 머지됐어도 건드리지 않는다. 워크트리와 로컬 브랜치는 만든 쪽이 지운다. 그 뒤 `retro` 스킬을 **남기기**로 로드한다(없으면 건너뛴다) — 규약은 `dev-skills-src/retro.md`다.
 
-본문: 무엇을 · 왜, 성공 기준과 검증(여기가 원 기록이다), 리뷰 등급과 결과(고치지 않은 지적과 이유 · 추천안으로 처리한 물을 것 · 머지 위험, 건너뛰었으면 "독립 리뷰 없음"), 사람 확인이 남았으면 그것. 끝에 세션의 PR 서명 줄.
-
-- **develop이 앞서 충돌하면** `git fetch -q origin` · `git rebase origin/develop` 뒤 위의 로컬 검증을 다시 돌리고 `git push --force-with-lease`.
-
-**CI를 기다린다.** CI 결과가 나오기 전에는 머지 명령을 부르지 않는다.
-
-```sh
-gh pr checks <N> --watch
-```
-
-`Verify`의 판정 job `ci-success`(정적 검사 · 빌드 · 단위 · 통합 테스트를 모은다)가 초록이어야 한다. 통합 테스트(`integration / integration (…)`)가 실패하면 판정도 실패다 — 조각 배정 오류(새 `*IntegrationTest`를 `integration.yml`의 `SHARDS`에 넣지 않았다)도 여기서 걸린다. `--fail-fast`를 붙이지 않는다 — 한 조각이 먼저 실패하면 `ci-success`가 끝나기 전에 기다림이 끝난다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
-
-기다림이 끝나면 머지 직전에 `gh pr view <N> --json headRefOid,statusCheckRollup`로 판정한다 — `statusCheckRollup`은 head 커밋의 체크다.
-
-- `headRefOid`가 기다림을 시작할 때의 `git rev-parse HEAD`와 다르거나, `ci-success`가 아직 없거나 진행 중이면 조금 뒤 다시 기다린다.
-- head가 같고 `ci-success`의 `conclusion`이 `SUCCESS`면 초록이다.
-- head가 같고 `ci-success`의 `conclusion`이 `SUCCESS`가 아니면(`FAILURE` · `CANCELLED` · `SKIPPED` · `TIMED_OUT` 등) 실패다 — `gh pr checks`가 종료 0으로 끝났어도 그렇다.
-
-**실패하면 머지하지 않고 멈춘다.** 어느 job · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 로컬 검증이 통과했는데 CI만 실패했다면 macOS에서만 통과하는 것(Ubuntu · `sh`)일 수 있다 — 그 짐작도 함께 적되 고치지는 않는다. 다시 불려 고친 커밋이 있으면 4단계 리뷰어를 수정 확인으로 띄운다 — 분류기에 `--range <CI가 실패한 head>..HEAD --recheck`(곧 `medium`)를 주고, 위임 프롬프트의 직전 결과 자리에는 CI 실패 요지를 넘긴다. 그다음 이 단계의 로컬 검증부터 다시 돌아 민 뒤 CI를 기다린다.
-
-초록이면 PR 본문의 성공 기준 결과 · 검증 기록(CI 실행 링크 포함)을 채우고 머지한다.
-
-```sh
-gh pr merge <N> --squash             # --delete-branch 를 붙이지 않는다
-```
-
-## 6. 치우기 — 이 작업의 것만
-
-다른 워크트리는 머지됐어도 건드리지 않는다 — 다른 세션이 쓰고 있을 수 있다.
-
-```sh
-gh pr view <N> --json state -q .state     # MERGED 일 때만 아래로
-plugin/bin/prevue stop --mine
-git ls-remote --exit-code --heads origin <브랜치> && git push origin --delete <브랜치>    # 이미 지웠으면 건너뛴다
-```
-
-워크트리와 로컬 브랜치는 지우지 않는다 — 이 세션이 그 안에 있고, 만든 쪽이 지운다. 7단계 보고에 "워크트리 정리 남음 — <워크트리 경로>"를 적는다.
-
-**회고 남기기.** 치운 뒤 보고 전에 `retro` 스킬을 **남기기**로 로드한다 — 이 세션에서 환경 탓에 헤맨 자리를 기록만 하고 묻지 않는다. 돌려받은 노트 경로(또는 "남길 것 없음" · "회고 규약 없음")를 7단계 보고에 한 줄로 싣는다. 회고 규약은 `dev-skills-src/retro.md`다(`AGENTS.md` "회고"). `retro` 스킬이 없으면 건너뛰고 보고에 적는다. 노트 폴더는 베이스 체크아웃에 있어 워크트리 밖이다 — 쓰지 못하면(샌드박스 · 권한) 기다리지 않고 노트 본문을 7단계 보고에 싣는다.
-
-## 7. 보고
-
-무엇이 바뀌었나 · PR 링크 · 머지 커밋 · 성공 기준별 검증 · 리뷰 결과("독립 리뷰 없음"이면 그대로) · 회고 노트 · 남은 사람 확인 · 워크트리 정리 남음을 한 덩어리로 말한다. 건너뛰거나 멈춘 단계는 그대로 말한다. develop에 쌓인 변화가 릴리즈할 만하면 `/ship`을 권하기만 한다.
+끝으로 바뀐 것 · PR 링크 · 머지 커밋 · 성공 기준별 검증 · 리뷰 결과 · 회고 노트 · 남은 사람 확인 · "워크트리 정리 남음 — <워크트리 경로>"를 한 덩어리로 보고한다. 건너뛰거나 멈춘 단계는 그대로 말한다.
