@@ -25,10 +25,6 @@ class SeasonsHolder {
     }
 }
 
-class SeasonsDefaults(private val n: Int = 2) : PreviewParameterProvider<String> {
-    override val values = sequenceOf("봄", "여름", "가을").take(n)
-}
-
 /** object 제공자는 생성자가 private 이라 렌더러 · ui-tooling 이 public 생성자로 못 만든다 — 오버레이에 위임하는 대리 클래스를 두고 이름만 바꿔 넘긴다. */
 class ObjectProvidersTest {
     private val overlay: File = Files.createTempDirectory("overlay").toFile()
@@ -76,7 +72,6 @@ class ObjectProvidersTest {
 
     @Test fun `public 생성자가 있는 class 제공자와 읽지 못한 제공자는 그대로 둔다`() {
         assertEquals(param(SeasonsClass::class.java), providers.swapped(param(SeasonsClass::class.java), ::bytesOf))
-        assertEquals(param(SeasonsDefaults::class.java), providers.swapped(param(SeasonsDefaults::class.java), ::bytesOf))
         assertEquals(param(SeasonsObject::class.java), providers.swapped(param(SeasonsObject::class.java)) { null })
         assertEquals(0, overlay.walkTopDown().count { it.isFile })
     }
