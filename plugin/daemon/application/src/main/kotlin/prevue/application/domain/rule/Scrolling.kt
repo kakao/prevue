@@ -7,7 +7,6 @@ import prevue.application.domain.model.Container
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.SeenItem
-import prevue.application.domain.model.Semantics
 import prevue.application.domain.model.ViewNode
 import prevue.application.port.LiveSession
 
@@ -54,19 +53,20 @@ object Scrolling {
     fun piecesOf(px: Double): Int = maxOf(1, ceil(px / WHEEL).toInt())
 
     fun moved(before: LiveTree, after: LiveTree, box: List<Int>): Boolean =
-        boxesIn(before, box) != boxesIn(after, box) || shownItems(before) != shownItems(after) || contentIn(before, box) != contentIn(after, box)
+        boxesIn(before, box) != boxesIn(after, box) || shownItems(before, box) != shownItems(after, box) || contentIn(before, box) != contentIn(after, box)
 
     private fun boxesIn(tree: LiveTree, box: List<Int>): List<List<Int>> {
         val (l, top, r, b) = box
         return tree.nodes.filter { it.right > l && it.left < r && it.bottom > top && it.top < b }.map(ViewNode::sameBox)
     }
 
-    private fun shownItems(tree: LiveTree): Map<Int, List<Int>> = tree.states.associate { s -> s.id to s.items.map { it.index } }
+    private fun shownItems(tree: LiveTree, box: List<Int>): Map<Int, List<Int>> =
+        tree.states.filter { s -> ScrollReport.viewport(s, box)?.let { overlaps(it, box) } ?: true }.associate { s -> s.id to s.items.map { it.index } }
 
-    private fun contentIn(tree: LiveTree, box: List<Int>): List<Semantics> {
-        val (l, top, r, b) = box
-        return tree.semantics.filter { it.right > l && it.left < r && it.bottom > top && it.top < b }.map { it.semantics }
-    }
+    private fun contentIn(tree: LiveTree, box: List<Int>): List<Pair<String?, String?>> =
+        tree.semantics.filter { overlaps(listOf(it.left, it.top, it.right, it.bottom), box) }.map { it.semantics.text to it.semantics.contentDescription }
+
+    private fun overlaps(a: List<Int>, b: List<Int>): Boolean = a[2] > b[0] && a[0] < b[2] && a[3] > b[1] && a[1] < b[3]
 
     class Seek(target: ScrollUntil.Target, before: LiveTree, pane: ScrollReport.Pane) {
         private val watch = ScrollUntil.watch(target, before, pane)
