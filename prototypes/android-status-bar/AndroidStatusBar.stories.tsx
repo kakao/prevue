@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import { IosStatus, type Bars } from '../../viewer-src/src/components/SystemBars';
 import '../../viewer-src/legacy/resize.css';
 import './android-status-bar.css';
 
@@ -8,8 +7,8 @@ import './android-status-bar.css';
 // 상태바 · 내비게이션 높이는 windowinsets.info 측정값(plugin/devices 의 기기 스펙)이고, 측정 26건이 모두 제스처 내비게이션이라 버튼 바는 없다.
 // 아이콘 모양 · 자리는 Material 아이콘과 실기기 인상을 따른 근사다 — iOS 처럼 기기 스크린숏으로 잰 값이 아니다.
 // 모서리 · 카메라는 고를 때(2026-11-11)의 장면(plugin/viewer/js/resize-scene.js) 값이다 — 지금 장면 카메라는 windowinsets.info 컷아웃을 따른다.
-// 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. SystemBars.tsx 의 AndroidStatus · NavHandle 에 옮겼고, 이 스토리는 고른 기록으로 남는다.
-// 고를 때 뷰어는 장면의 카메라 · 모서리를 몰라 줄 높이를 상태바 가운데(최대 17), 좌우 여백을 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피했다 — 지금은 SystemBars.tsx 가 장면의 cameraOf 로 위 띠 카메라 가운데에 맞춘다.
+// 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. 뷰어 SystemBars.tsx 를 거쳐 지금은 데몬이 PNG에 굽는다(DeviceChrome · DeviceChromePainter, D-189). 이 스토리는 고른 기록으로 남는다.
+// 고를 때 뷰어는 장면의 카메라 · 모서리를 몰라 줄 높이를 상태바 가운데(최대 17), 좌우 여백을 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피했다 — 지금은 데몬 DeviceChrome 이 장면과 같은 카메라 자리로 위 띠 카메라 가운데에 맞춘다.
 const meta = { title: '시안/Android 시스템 바' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -118,25 +117,9 @@ function Phone({ d, look, ground }: { d: Device; look: Look; ground: Ground }) {
   </figure>;
 }
 
-// 비교용 — 이미 고른 iPhone 17 상태바(SystemBars.tsx 의 IosStatus, 시안 A 실측)와 홈 인디케이터.
-const IP17: Bars = { device: 'ip17', ios: true, cut: [0, 0], radius: 62, topCam: null, lowCam: null, w: 402, h: 874, statusDp: 62, navDp: 34, side: null, sideDp: 0, duo: false, folded: false };
-function IosStrip({ ground, zoom = 1 }: { ground: Ground; zoom?: number }) {
-  const ink = ground === 'bright' ? 'dark' : 'light';
-  return <svg className="asb-strip" width={IP17.w * zoom} height={76 * zoom} viewBox={`0 0 ${IP17.w} 76`} fill="currentColor" aria-hidden="true">
-    <rect className="asb-body" x="0" y="0" width={IP17.w} height="76" />
-    <rect className={`asb-${ground}`} x="0" y="0" width={IP17.w} height={IP17.h} rx="55" />
-    <rect className="asb-cam" x={(IP17.w - 125.33) / 2} y="14" width="125.33" height="36.67" rx="18.33" />
-    <g className="sys-bars"><g className={`sb-ink-${ink}`}><IosStatus bars={IP17} /></g></g>
-  </svg>;
-}
-
 function Sheet({ theme }: { theme: 'light' | 'dark' }) {
   return <section className="asb-sheet" data-theme={theme}>
     <h2>{theme === 'light' ? '라이트' : '다크'} 뷰어</h2>
-    <div>
-      <h3>비교 — iPhone 17 (고른 iOS 안)</h3>
-      <div className="asb-grid"><IosStrip ground="bright" /><IosStrip ground="dark" /></div>
-    </div>
     {OPTIONS.map(o => <div key={o.key}>
       <h3>{o.name}</h3>
       <p className="asb-note">{o.why}</p>
@@ -151,7 +134,6 @@ function Sheet({ theme }: { theme: 'light' | 'dark' }) {
     <div>
       <h3>크게 보기(3배) — 상태바</h3>
       <div className="asb-big">
-        <div><span className="asb-tag">iPhone 17 (iOS)</span><IosStrip ground="bright" zoom={3} /></div>
         {[MATERIAL, PIXEL, ONE_UI].map(look => <div key={look.key}>
           <span className="asb-tag">{look.name} — {look === ONE_UI ? 'Galaxy S26' : 'Pixel 9'}</span>
           <Strip d={look === ONE_UI ? DEVICES[0] : DEVICES[1]} look={look} ground="bright" part="top" zoom={3} />

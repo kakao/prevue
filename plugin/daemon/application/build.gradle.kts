@@ -52,22 +52,37 @@ val deviceTable = tasks.register("deviceTable") {
         @Suppress("UNCHECKED_CAST")
         fun obj(v: Any?) = v as Map<String, Any?>
         fun edges(e: Any?) = obj(e).entries.joinToString(", ", "InsetEdges(", ")") { (k, v) -> "$k = ${num(v)}" }
+        // 화면 모서리는 자세의 측정값(iOS pt · Android dp)이 먼저고 없으면 look.radius 다 — 뷰어 생성기(generate-devices.mjs)와 같은 판단이다.
+        fun corners(v: Any?) = (v as? List<*> ?: List(4) { v }).joinToString(", ", "listOf(", ")") { num(it) }
+        fun radius(screen: Map<String, Any?>, look: Map<String, Any?>) =
+            obj(screen["postures"]).values.map { obj(it)["cornerRadius"] }.firstOrNull { it != null }
+                ?.let { c -> obj(c).let { it["pt"] ?: it["dp"] } } ?: look["radius"]
+        fun camera(c: Map<String, Any?>) = "CameraSpec(${num(c["w"])}, ${num(c["h"])}, ${num(c["y"])}, ${num(c["x"] ?: 0.5)}, " +
+            "${c["notch"]?.let { num(it) } ?: "null"}, CameraEdge.${(c["edge"] ?: "top").toString().uppercase()})"
         // 화면마다 밀도가 다를 수 있고(없으면 기기 dpi), 측정한 자세가 하나뿐인 화면은 돌리지 않는다(fixed).
-        fun panel(s: Any?, dpi: Any?) = obj(s).let { p ->
+        fun panel(s: Any?, dpi: Any?, look: Any?) = obj(s).let { p ->
             "Panel(${p["widthPx"]}, ${p["heightPx"]}, ${p["dpi"] ?: dpi}" + (p["hingePx"]?.let { ", hingePx = ${num(it)}" } ?: "") +
-                (if (obj(p["postures"]).size == 1) ", fixed = true" else "") + ")"
+                (if (obj(p["postures"]).size == 1) ", fixed = true" else "") +
+                ",\n            face = PanelFace(${corners(radius(p, obj(look)))}, ${camera(obj(obj(look)["cam"]))}))"
         }
+        fun status(v: Any?) = v?.let { obj(it) }?.let { s ->
+            val t = obj(s["time"])
+            "IosStatusLayout(${num(s["top"])}, ${num(s["right"])}, ${s["left"]?.let { num(it) } ?: "null"}, ${num(s["scale"])}, " +
+                "${num(t["cx"])}, ${num(t["base"])}, ${num(t["size"])})"
+        } ?: "null"
 
         out.get().asFile.deleteRecursively()
         val dir = out.get().dir("prevue/application/domain/model").asFile.apply { mkdirs() }
         dir.resolve("DeviceModel.kt").writeText(buildString {
             append("package prevue.application.domain.model\n\n")
-            append("enum class DeviceModel(val id: String, val label: String, val open: Panel, val cover: Panel?, val look: BarLook) {\n")
+            append("enum class DeviceModel(\n    val id: String,\n    val label: String,\n    val open: Panel,\n    val cover: Panel?,\n")
+            append("    val look: BarLook,\n    val status: IosStatusLayout?,\n) {\n")
             devices.forEach { d ->
-                val m = obj(d["measured"]); val screens = obj(m["screens"])
+                val m = obj(d["measured"]); val screens = obj(m["screens"]); val look = obj(d["look"])
                 append("    ${constant(d)}(\n        ${str(d["id"])},\n        ${str(d["label"])},\n")
-                append("        ${panel(screens["open"], m["dpi"])},\n        ${screens["cover"]?.let { panel(it, m["dpi"]) } ?: "null"},\n")
-                append("        BarLook.entries.single { it.key == ${str(obj(d["look"])["bar"])} },\n    ),\n")
+                append("        ${panel(screens["open"], m["dpi"], look["open"])},\n")
+                append("        ${screens["cover"]?.let { panel(it, m["dpi"], look["cover"]) } ?: "null"},\n")
+                append("        BarLook.entries.single { it.key == ${str(look["bar"])} },\n        ${status(look["status"])},\n    ),\n")
             }
             append("    ;\n\n    fun panel(folded: Boolean): Panel = panelOf(folded)\n\n")
             append("    val postures: List<ScreenSize.Device> get() = posturesOf()\n}\n")

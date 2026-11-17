@@ -6,7 +6,6 @@ export type DeviceEntry = {
   open: DevicePanel; cover?: DevicePanel;
   look: { open: DeviceBody; cover?: DeviceBody };
   plate?: { thickness: number; gap: number; axis: 'width' | 'height'; blur?: true };
-  status?: { top: number; right: number; left?: number; s: number; time: { cx: number; base: number; size: number } };
 };
 export const DEVICES: Record<string, DeviceEntry>;
 export const DEVICE_MENU: { group: string; ids: string[] }[];

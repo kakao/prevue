@@ -131,7 +131,14 @@ enum class DeviceOrientation(val key: String, val degrees: Int) {
     }
 }
 
-data class Panel(val widthPx: Int, val heightPx: Int, val dpi: Int, val hingePx: Double? = null, val fixed: Boolean = false) {
+data class Panel(
+    val widthPx: Int,
+    val heightPx: Int,
+    val dpi: Int,
+    val hingePx: Double? = null,
+    val fixed: Boolean = false,
+    val face: PanelFace,
+) {
     val orientation: DeviceOrientation
         get() = if (widthPx > heightPx) DeviceOrientation.LANDSCAPE_LEFT else DeviceOrientation.PORTRAIT
 

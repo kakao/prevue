@@ -6,8 +6,9 @@
 name: Verify
 
 on:
-  # Runs on release PRs (→ main) and work PRs (→ develop). Work PRs are merged after local checks and this result (implement
-  # skill); for outside contributions, which skip the local checks, this is the only verification. Not a required check on develop.
+  # Runs on release PRs (→ main) and work PRs (→ develop). Work PRs pass local checks (tools/check-local.sh) before they are
+  # opened; for outside contributions, which skip the local checks, this is the only verification. A person merges once the
+  # verdict is green.
   # No push trigger — every merge would build the same tree again (one release PR once ran three builds).
   pull_request:
     branches: [main, develop]
@@ -37,7 +38,7 @@ jobs:
     needs: [lint, compile]
     uses: ./.github/workflows/integration.yml
 
-  # The verdict. The main ruleset's required check and the implement skill look for this name (ci-success). Checks of called
+  # The verdict. The required check of both rulesets (develop and main) is this name (ci-success). Checks of called
   # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
   # failed, was cancelled or was skipped. always(), not !cancelled(): a job that never starts reports as skipped, and a
   # skipped required check lets a PR merge — this job must run and fail instead.

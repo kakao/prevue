@@ -61,6 +61,9 @@ internal class RenderOutputs(
         t = System.nanoTime()
         val copy = img.copy
         ph["copyMs"] = msSince(t)
+        t = System.nanoTime()
+        DeviceChromePainter.layoutOf(p)?.let { chrome -> copy?.let { DeviceChromePainter.paint(it, chrome, clearCorners = true) } }
+        ph["chromeMs"] = msSince(t)
         val status = result.renderResult?.status?.toString() ?: "null"
         t = System.nanoTime()
         val treeJson = mapOf(
