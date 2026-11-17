@@ -22,17 +22,16 @@
 - **작은 수정은 PR 없이 develop에 바로 넣는다** — 동작이 안 바뀌는 것(문서 · 주석 · 오타)과 릴리즈의 버전 커밋. develop 위로 리베이스해 `git push origin HEAD:develop`(fast-forward만). `plugin/` · `skills-src/` · `dev-skills-src/` · `tools/` · 워크플로 · 빌드 파일을 건드리면 PR로 간다. 이 파일을 고치면 `sh tools/gen-agents.sh`로 만든 `CLAUDE.md`를 같은 커밋에 싣는다 — develop 푸시에는 CI가 돌지 않아 어긋난 채로 들어가면 뒤의 모든 PR이 CI에서 막힌다.
 - **워크트리에서 `gh pr merge` · `gh pr close`에 `--delete-branch`를 붙이지 않는다** — 로컬 브랜치를 지우고 워크트리를 `main`으로 옮긴다(그 위에서 리베이스하면 로컬 main이 develop이 된다). 원격 브랜치는 머지한 뒤 따로 지운다.
 - **PR은 `gh pr create --base develop`.** 기본 브랜치가 `main`이라 base를 빠뜨리면 main으로 간다.
-- **develop 머지는 에이전트가 한다.** PR 본문의 성공 기준·검증 기록을 채우고 로컬 검증과 CI(`Verify`)의 판정 `build`가 통과했으면 squash로 머지한다(`implement` 5단계).
+- **develop 머지는 에이전트가 한다.** PR 본문의 성공 기준·검증 기록을 채우고 로컬 검증과 CI(`Verify`)의 판정 `ci-success`가 통과했으면 squash로 머지한다(`implement` 5단계).
 - **머지한 뒤 그 작업의 것을 치운다** — 데몬 · 원격 작업 브랜치는 워크트리 안의 세션이, 워크트리 · 로컬 브랜치는 만든 쪽이. 다른 세션의 워크트리는 머지됐어도 건드리지 않는다. **저장소의 "머지 후 head 브랜치 자동 삭제"는 켜지 않는다** — 릴리즈 PR의 head가 `develop`이라 켜 두면 릴리즈 머지 때 `develop`이 지워진다(0.9.0에서 실제로 지워져 되살렸다). `develop` · `main`은 지우지 않는다. 쌓인 변화가 릴리즈할 만하면 사용자에게 **권하기만** 한다.
 
 ## 릴리즈 — 사용자가 지시할 때만
 
 절차는 **`/ship` 스킬**(`dev-skills-src/ship/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 
-- **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈 PR의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 여섯 파일(`plugin/VERSION` · 매니페스트 둘 · README 두 벌 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
-- **릴리즈 PR은 merge commit으로 머지한다** — squash · rebase면 develop과 main이 갈라진다. 머지가 배포다.
-- **기록** `gh workflow run release.yml --ref main`이 태그와 GitHub Release를 만든다. 그 실행 결과까지 확인하고 완료라고 말한다.
-- **릴리즈의 머지 관문은 CI(`Verify`)의 판정 `build`와 PR head의 `스킬 평가` 상태다** — 버전 · 태그 · 동기화는 `/ship`이 버전 커밋 전에 본다 — 릴리즈에서 로컬 검증을 다시 돌지 않는다. main ruleset이 그 `build` 통과와 merge commit만 강제하고, `스킬 평가`는 서버가 아니라 `/ship`이 지킨다.
+- **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 여섯 파일(`plugin/VERSION` · 매니페스트 둘 · README 두 벌 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
+- **main에 들이는 것은 Release 워크플로다** — `gh workflow run release.yml --ref develop` 한 번이 `Verify`(build.yml을 그대로 부른다) → 릴리즈 PR을 merge commit으로 머지 → 그 머지 커밋에 태그 → GitHub Release를 잇는다. 검증한 커밋만 머지하고, 실패하면 main은 움직이지 않는다. 머지가 배포다 — squash · rebase면 develop과 main이 갈라진다. 그 실행 결과까지 확인하고 완료라고 말한다.
+- **릴리즈의 머지 관문은 `Verify`의 판정 `ci-success`와 develop 끝 커밋의 `스킬 평가` 상태다**(스킬 · 도움말이 바뀐 판만) — Release가 머지 전에 둘과 버전 · 태그 · 동기화를 본다. 릴리즈에서 로컬 검증을 다시 돌지 않는다. main ruleset은 `ci-success` 통과와 merge commit만 강제한다 — Release가 연 PR에는 `pull_request` 실행이 붙지 않아 Release가 자기 실행에서 `ci-success`를 다시 낸다.
 - 사람에게 확인받는 곳은 버전 커밋을 밀기 전 한 번이다. 실패하면 되돌리지 않고 멈춰 보고한다 — 고친 뒤 `/ship`이 멈춘 자리부터 이어 간다.
 
 ## 승인이 필요한 것

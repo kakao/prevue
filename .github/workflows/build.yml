@@ -1,6 +1,6 @@
-# Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. This is the only CI of
-# a release PR. Version · tag · sync are checked by /ship before the version commit, and once more by the Release workflow
-# (release.yml) before it tags.
+# Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. The Release workflow
+# (release.yml) calls this whole file before it merges develop into main, so a release runs exactly what PRs run.
+# Version · tag · sync are checked by /ship before the version commit, and by Release before it merges.
 # The file keeps its name build.yml: the README badges link to it, and dispatching a branch needs this file on main.
 name: Verify
 
@@ -11,6 +11,7 @@ on:
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -32,24 +33,24 @@ jobs:
     needs: [lint, compile]
     uses: ./.github/workflows/unit.yml
 
-  # Under observation — the result is visible but not part of the verdict (build below) until it proves stable on shared runners.
   integration:
     needs: [lint, compile]
     uses: ./.github/workflows/integration.yml
 
-  # The verdict. The main ruleset's required check and the implement skill look for this name (build). Checks of called
-  # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
+  # The verdict. The main ruleset's required check and the implement skill look for this name (ci-success). Checks of called
+  # workflows are named "caller job / called job", so the results are gathered into this one job. Called from Release it
+  # shows as "verify / ci-success" — Release repeats the verdict under the bare name. Fails when any of them
   # failed, was cancelled or was skipped. always(), not !cancelled(): a job that never starts reports as skipped, and a
   # skipped required check lets a PR merge — this job must run and fail instead.
-  build:
+  ci-success:
     if: ${{ always() }}
-    needs: [lint, compile, unit]
+    needs: [lint, compile, unit, integration]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Check that static checks, build and unit tests passed
+      - name: Check that static checks, build, unit and integration tests passed
         env:
-          RESULTS: lint=${{ needs.lint.result }} compile=${{ needs.compile.result }} unit=${{ needs.unit.result }}
+          RESULTS: lint=${{ needs.lint.result }} compile=${{ needs.compile.result }} unit=${{ needs.unit.result }} integration=${{ needs.integration.result }}
         run: |
           echo "$RESULTS"
           for R in $RESULTS; do
