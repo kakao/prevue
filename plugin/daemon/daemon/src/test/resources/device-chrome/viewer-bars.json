@@ -1385,21 +1385,7 @@
     18.5
    ]
   },
-  "marks": [
-   {
-    "kind": "time",
-    "x": 42,
-    "y": 84,
-    "size": 15,
-    "weight": 600
-   },
-   {
-    "kind": "sb-duo-indicator",
-    "x": 42,
-    "y": 124,
-    "scale": 1
-   }
-  ]
+  "marks": []
  },
  "duo-right": {
   "w": 951,
@@ -1448,21 +1434,7 @@
     18.5
    ]
   },
-  "marks": [
-   {
-    "kind": "time",
-    "x": 636,
-    "y": 84,
-    "size": 15,
-    "weight": 600
-   },
-   {
-    "kind": "sb-duo-indicator",
-    "x": 636,
-    "y": 124,
-    "scale": 1
-   }
-  ]
+  "marks": []
  },
  "fold8-land": {
   "w": 704,

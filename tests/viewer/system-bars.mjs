@@ -220,6 +220,14 @@ try {
       const cam = await evaluate(`(()=>{const c=document.querySelector('#ua .cam');return {opacity:Number(c.style.opacity),left:parseFloat(c.style.left),width:parseFloat(c.style.width),screen:document.querySelector('#ua .stage').getBoundingClientRect().width}})()`);
       assert.equal(cam.opacity>0, folded, name);
       if(folded) assert.equal(cam.left+cam.width/2>cam.screen/2, expected==='right', name);
+      // 커버 가로는 safearea.info Reserved Regions 의 시스템 자리가 카메라 모서리뿐이다 — 장면 카메라가 그 안에 든다(D-179 로 사이트의 좌우를 맞바꿨다).
+      // 상태 표시가 시스템 자리 안인지는 DeviceChromeTest 가 본다.
+      const lensAt = { 'duo-cover-landscape-left': [0, 0, 84, 82], 'duo-cover-landscape-right': [594, 384, 84, 82] }[name];
+      if (lensAt) {
+        const [rx, ry, rw, rh] = lensAt, { shot, k } = corner, lens = await evaluate(`(()=>{const b=document.querySelector('#ua .cam').getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom}})()`);
+        const region = { l: shot.l + rx * k, t: shot.t + ry * k, r: shot.l + (rx + rw) * k, b: shot.t + (ry + rh) * k };
+        assert(lens.l >= region.l - 1 && lens.t >= region.t - 1 && lens.r <= region.r + 1 && lens.b <= region.b + 1, `${name} 카메라가 사이트의 카메라 모서리 자리 안: ${JSON.stringify({ lens, region })}`);
+      }
     }
     const tree = await nodes();
     const grid=tree.find(n=>n.name==='LazyVerticalGrid'&&n.fileName==='FilterScreen.kt');

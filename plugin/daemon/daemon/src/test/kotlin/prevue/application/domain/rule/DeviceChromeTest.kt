@@ -12,7 +12,7 @@ import prevue.application.domain.model.InkBand
 import prevue.application.domain.model.ScreenSize
 import prevue.infrastructure.json.Json
 
-// 기준값 viewer-bars.json 은 기기 바를 뷰어(SystemBars.tsx · resize-scene.js 의 camBox)가 그리던 마지막 판이 그때의 67자세에 낸 수치다(9f823da).
+// 기준값 viewer-bars.json 은 기기 바를 뷰어(SystemBars.tsx · resize-scene.js 의 camBox)가 그리던 마지막 판이 그때의 67자세에 낸 수치다(34ca9d6 — Duo 커버 가로는 상태 표시가 없다).
 // 옮기기의 기록으로 얼렸다 — 그 자세들은 자리가 조금이라도 움직이면 잡히고, 뒤에 더한 기기는 아래 불변식(띠 · 컷아웃 · 카메라 · 둥근 모서리 안)이 지킨다.
 class DeviceChromeTest {
     private val all = DeviceModel.entries.flatMap { it.postures }
@@ -141,4 +141,44 @@ class DeviceChromeTest {
             }
         }
     }
+
+    // Duo 시스템 자리 [x, y, 폭, 높이](pt = dp) — safearea.info/iphone-duo.md(스펙의 sourceSha256)의 Reserved Regions 중 카메라가 아닌 occlusion 이다(Xcode 27.1 · Split View · Inner Camera · Horizontal Toolbar 끔).
+    // 사이트는 Apple 방향 이름이라 커버 가로의 좌우를 맞바꿔 옮겼다(D-179). 커버 가로는 그 자리가 카메라 모서리뿐이라 상태 표시가 없다.
+    private val duoReserved = mapOf(
+        "duo-folded" to DpBox(382.0, 0.0, 84.0, 174.0),
+        "duo-folded-land" to DpBox(0.0, 0.0, 84.0, 82.0),
+        "duo-folded-land-right" to DpBox(594.0, 384.0, 84.0, 82.0),
+        "duo-land" to DpBox(525.0, 0.0, 144.0, 82.0),
+        "duo" to DpBox(867.0, 0.0, 84.0, 124.0),
+        "duo-right" to DpBox(867.0, 0.0, 84.0, 124.0),
+    )
+
+    private fun inside(b: DpBox, region: DpBox) =
+        b.x >= region.x - slop && b.y >= region.y - slop && b.x + b.w <= region.x + region.w + slop && b.y + b.h <= region.y + region.h + slop
+
+    @Test fun `Duo 상태 표시는 사이트의 시스템 자리 안이고 커버 가로에는 없이 카메라만 그 카메라 모서리 자리 안이다`() {
+        val duo = all.filter { it.model == DeviceModel.IPHONE_DUO }
+        assertEquals(duoReserved.keys, duo.map { it.key }.toSet())
+        duo.forEach { d ->
+            val chrome = DeviceChrome.of(d)
+            val region = duoReserved.getValue(d.key)
+            val status = duoStatusBox(chrome)
+            if (d.folded && d.widthDp > d.heightDp) {
+                assertNull(status, "${d.key} 커버 가로에는 상태 표시가 없다")
+                assertTrue(inside(chrome.camera!!.box, region), "${d.key} 카메라 ${chrome.camera!!.box} 가 $region 안")
+            } else assertTrue(status != null && inside(status, region), "${d.key} 상태 표시 $status 가 $region 안")
+        }
+    }
+
+    private fun duoStatusBox(chrome: ChromeLayout): DpBox? {
+        val time = chrome.marks.filterIsInstance<ChromeMark.Time>().singleOrNull() ?: return null
+        val dot = chrome.marks.filterIsInstance<ChromeMark.DuoIndicator>().single()
+        val half = time.size * 1.2
+        val x0 = minOf(time.x - half, dot.x - 18.0)
+        val x1 = maxOf(time.x + half, dot.x + 18.0)
+        val y0 = minOf(time.y - time.size * .65, dot.y - 18.5)
+        val y1 = maxOf(time.y + time.size * .65, dot.y + 21.6)
+        return DpBox(x0, y0, x1 - x0, y1 - y0)
+    }
 }
+

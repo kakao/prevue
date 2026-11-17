@@ -131,6 +131,7 @@ internal object StatusRows {
     }
 
     fun duo(bars: DeviceChrome.Bars, folded: Boolean): List<ChromeMark> {
+        if (folded && bars.w > bars.h) return emptyList()
         val side = bars.side
         val x = when (side) {
             DeviceChrome.Side.LEFT -> bars.sideDp / 2
