@@ -243,3 +243,115 @@ class ShadowedOverloadRenderIntegrationTest {
         assertTrue("NoSuchMethodError" in again.message!!.text, seen(again))
     }
 }
+
+/**
+ * `--no-preload` 엔진(`preloadNext = false`)이 미리 구운 공유 로더와 같은 스텁에서 같은 렌더 보고를 내는지 견준다.
+ * 테스트의 `ownLoader = true`는 미리 굽기 엔진 안에서 한 번만 전용 로더를 쓰는 것이라 엔진 단위의 `--no-preload`와 같은 경로가 아니다.
+ * 엔진을 동시에 둘 띄우지 않는다 — 미리 굽기 엔진으로 그리며 오버레이를 떠 두고, 닫은 뒤 no-preload 엔진에 같은 클래스 바이트를 되돌려 그린다.
+ * 옛 오버로드 상황은 첫 핫 컴파일에서만 생겨 다시 컴파일로는 재현되지 않기 때문이다.
+ */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@EnabledIf("prevue.daemon.BlankRenderIntegrationTest#available")
+class NoPreloadRenderIntegrationTest {
+    private val out = Files.createTempDirectory("prevue-no-preload").toFile()
+    private val overlay = File(out, "overlay")
+    private lateinit var spec: ClasspathSpec
+    private lateinit var compiler: HotCompiler
+    private var engine: RenderEngine? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val appRoot = File(out, "app").canonicalFile
+    private lateinit var stub: File
+    private lateinit var base: prevue.application.domain.model.PreviewSpec
+    private val preloaded = mutableMapOf<String, Report>()
+    private var ownShadowed: Report? = null
+
+    // 첫 줄 아래는 layoutlib 문구라 로더 상태마다 다르다(이미 쓰인 로더로 다시 그리면 `View layout failed`) — 견주는 것은 판정과 첫 줄이다
+    data class Report(val ok: Boolean, val failure: FailureKind?, val warnings: List<String>, val headline: String?)
+
+    @BeforeAll fun up() {
+        val (home, app) = PearlFixture.warmup()
+        spec = ClasspathSpec.forRender(home, app, overlay).first
+        val shared = RenderEngine(spec, PearlFixture.layoutlib()!!, File(out, "preload"), realDispatchers).also { engine = it }
+        compiler = PearlFixture.hotCompiler(home, overlay).also { it.recompileShadowed = false }
+        val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
+        stub = PearlFixture.stubCopy(appRoot)
+        val watched = listOf(appRoot)
+        val ws = Workspace(module, Clock(System::currentTimeMillis), ModuleGraph.single(home.project, home.sourceRoots, emptyList()), watched, InMemoryWorkspaceStore())
+        val uc = testGraph(TestPorts(shared, shared, compiler, SourcePreviewRepository(spec.classPath), home.repoRoot,
+            realDispatchers, sources = PollingSourceWatcher(watched, realDispatchers)), ws, scope, PrevueCheckout(PearlFixture.viewer!!), TargetRepo(out))
+        val r = runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }
+        assertTrue(r.ok, r.shot.out.message?.text)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        base = ws.now.board!!.focusCard.spec.copy(fqn = "com.example.pearl.feature.pearl.BlankStubKt.BlankStubPreview", previewId = "BlankStubPreview", file = stub)
+        eventually(20_000, pollMs = 200) { shared.preloaded().held > 0 }
+        scope.cancel()
+
+        compileAndKeep(home.project, BlankRenderIntegrationTest.FILLED, SHADOWED)
+        shared.codeChanged()
+        preloaded[SHADOWED] = sharedAgain(shared)
+        ownShadowed = report(runBlocking { shared.written(shared.show(base, ownLoader = true)) })
+
+        compileAndKeep(home.project, THROWING, THROWN)
+        shared.codeChanged()
+        preloaded[THROWN] = sharedAgain(shared)
+
+        shared.close()
+        engine = RenderEngine(spec, PearlFixture.layoutlib()!!, File(out, "no-preload"), realDispatchers).apply { preloadNext = false }
+    }
+
+    @AfterAll fun down() {
+        scope.cancel()
+        runCatching { engine?.close() }; runCatching { compiler.close() }
+        out.deleteRecursively(); PearlFixture.stopGradle()
+    }
+
+    private fun compileAndKeep(project: String, source: String, name: String) {
+        stub.writeText(source)
+        val c = runBlocking { compiler.compile(project, listOf(stub)) }
+        assertTrue(c.ok, c.messages)
+        overlay.copyRecursively(File(out, "kept-$name"), overwrite = true)
+    }
+
+    private fun restore(name: String) {
+        overlay.deleteRecursively()
+        File(out, "kept-$name").copyRecursively(overlay)
+    }
+
+    // 코드가 바뀐 뒤 첫 렌더는 새 로더다 — 공유 로더가 이미 쓰인 채로 다시 그린 두 번째를 공유 로더의 보고로 쓴다
+    private fun sharedAgain(shared: RenderEngine): Report {
+        runBlocking { shared.written(shared.show(base, ownLoader = false)) }
+        val again = runBlocking { shared.written(shared.show(base, ownLoader = false)) }
+        assertTrue(!again.freshLoader, "공유 로더가 이미 쓰인 것이어야 한다 · ${report(again)}")
+        return report(again)
+    }
+
+    private fun noPreload(name: String): Report {
+        restore(name)
+        val e = engine!!
+        e.codeChanged()
+        return report(runBlocking { e.written(e.show(base)) })
+    }
+
+    @Test fun `옛 오버로드로 풀린 호출은 no-preload 엔진도 공유 로더와 같은 보고를 낸다`() {
+        val shared = preloaded.getValue(SHADOWED)
+        assertEquals(FailureKind.EXCEPTION, shared.failure, "$shared")
+        assertEquals("java.lang.NoSuchMethodError: 'void com.example.pearl.feature.pearl.BlankStubKt.BlankStub(androidx.compose.runtime.Composer, int)'", shared.headline)
+        assertEquals(shared, noPreload(SHADOWED))
+        assertEquals(shared, ownShadowed)
+    }
+
+    @Test fun `렌더 중 NoSuchMethodError는 no-preload 엔진도 공유 로더와 같은 보고를 낸다`() {
+        val shared = preloaded.getValue(THROWN)
+        assertEquals(FailureKind.EXCEPTION, shared.failure, "$shared")
+        assertEquals("java.lang.NoSuchMethodError: 'void com.example.pearl.feature.pearl.Gone.call()'", shared.headline)
+        assertEquals(shared, noPreload(THROWN))
+    }
+
+    private companion object {
+        const val SHADOWED = "shadowed"
+        const val THROWN = "thrown"
+        val THROWING = BlankRenderIntegrationTest.FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
+
+        fun report(o: prevue.application.port.RenderOutput) = Report(o.ok, o.failure, o.warnings, o.message?.text?.lineSequence()?.first())
+    }
+}
