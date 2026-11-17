@@ -181,7 +181,7 @@ class BlankRenderIntegrationTest {
             }
         """.trimIndent()
 
-        private val THROWING = FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
+        internal val THROWING = FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
     }
 }
 
@@ -291,7 +291,7 @@ class NoPreloadRenderIntegrationTest {
         preloaded[SHADOWED] = sharedAgain(shared)
         ownShadowed = report(runBlocking { shared.written(shared.show(base, ownLoader = true)) })
 
-        compileAndKeep(home.project, THROWING, THROWN)
+        compileAndKeep(home.project, BlankRenderIntegrationTest.THROWING, THROWN)
         shared.codeChanged()
         preloaded[THROWN] = sharedAgain(shared)
 
@@ -350,7 +350,6 @@ class NoPreloadRenderIntegrationTest {
     private companion object {
         const val SHADOWED = "shadowed"
         const val THROWN = "thrown"
-        val THROWING = BlankRenderIntegrationTest.FILLED.replace("    Column(modifier) {", "    throw NoSuchMethodError(\"'void com.example.pearl.feature.pearl.Gone.call()'\")\n    Column(modifier) {")
 
         fun report(o: prevue.application.port.RenderOutput) = Report(o.ok, o.failure, o.warnings, o.message?.text?.lineSequence()?.first())
     }

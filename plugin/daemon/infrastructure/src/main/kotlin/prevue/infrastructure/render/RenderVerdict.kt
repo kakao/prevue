@@ -1,5 +1,6 @@
 package prevue.infrastructure.render
 
+import com.android.tools.rendering.ProblemSeverity
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import prevue.application.domain.model.PreviewSpec
@@ -64,15 +65,17 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val all = texts(logger).joinToString("\n")
 
         private fun texts(logger: RenderLogger): List<String> = buildList {
-            (status?.exception ?: logger.messages.firstNotNullOfOrNull { it.throwable })?.let { add(brief(it)) }
+            (status?.exception ?: firstError(logger))?.let { add(brief(it)) }
             status?.errorMessage?.let { add(plain(it)) }
-            status?.exception?.let { add(brief(it)) }
             broken.forEach { (k, v) -> add("$k: ${brief(v)}") }
             logger.messages.forEach { m ->
                 add(plain(m.html))
                 m.throwable?.let { add(brief(it)) }
             }
         }.filter { it.isNotBlank() }.distinct()
+
+        private fun firstError(logger: RenderLogger): Throwable? =
+            logger.messages.firstNotNullOfOrNull { m -> m.throwable.takeIf { m.severity == ProblemSeverity.ERROR } }
 
         fun failure(): Failure? = when {
             previewClassMissing() -> Failure(FailureKind.NOT_FOUND, lines(classMissing(), all))

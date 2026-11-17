@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **A failed render now leads with the exception that broke it** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.
+- **A render that fails with an exception now leads with that exception** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.
 - **iPhone Duo folded in landscape hides its status indicator like other iPhones in landscape**, since [safearea.info](https://safearea.info/) reserves only the camera corner there.
 - **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
 - **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
