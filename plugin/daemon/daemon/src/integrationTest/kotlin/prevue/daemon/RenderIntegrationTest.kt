@@ -981,6 +981,7 @@ class RenderIntegrationTest {
             val (x, y) = (c.left + c.right) / 2 to (c.top + c.bottom) / 2
             val first = s.tick(forceImage = true).image!!
             repeat(3) { aside(other) }
+            // 외부: Compose 속도 추적은 터치 사이가 40ms를 넘으면 멈춤으로 보고 관성을 버린다 — 걸음 시계로 부하와 떼어 놓는다
             runBlocking {
                 suspend fun step(ms: Long) = s.renderAt(ms, 16).also { assertTrue(it.ok, it.message?.text) }
                 step(16)
