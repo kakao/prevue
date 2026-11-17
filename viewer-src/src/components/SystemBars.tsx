@@ -51,7 +51,7 @@ function inkOver(img: HTMLImageElement, [x, y, w, h]: Region): Ink {
 
 function useInk(img: HTMLImageElement | null, bars: Bars | null): [Ink, Ink] {
   const [ink, setInk] = useState<[Ink, Ink]>(['dark', 'dark']);
-  const enabled = bars !== null;
+  const enabled = bars !== null && (!bars.duo || duoStatusShown(bars));
   const { w = 1, h = 1, statusDp = 0, navDp = 0, side = null, sideDp = 0 } = bars ?? {};
   useEffect(() => {
     if (!img || !enabled) return;
@@ -104,7 +104,12 @@ function DuoIndicator({ x, y }: { x: number; y: number }) {
   </g>;
 }
 
+// 자리는 safearea.info Duo 페이지 Reserved Regions의 시스템 자리다 — 값은 tests/viewer/system-bars.mjs 의 RAW_DUO_STATUS.
+// 커버 가로는 그 자리가 카메라 모서리의 84×82 뿐이라 시각 · 표시가 설 곳이 없다 — 다른 iPhone 가로처럼 그리지 않는다.
+const duoStatusShown = (bars: Bars) => !(bars.folded && bars.w > bars.h);
+
 function DuoStatus({ bars }: { bars: Bars }) {
+  if (!duoStatusShown(bars)) return null;
   const x = bars.side ? (bars.side === 'left' ? bars.sideDp / 2 : bars.w - bars.sideDp / 2) : bars.w - 46;
   const y = bars.side ? (bars.folded ? 124 : 78) : 42;
   return <g className="sb-status sb-duo-status" data-edge={bars.side ?? 'top'}>
