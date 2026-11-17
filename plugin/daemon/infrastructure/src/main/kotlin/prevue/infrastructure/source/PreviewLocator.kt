@@ -17,9 +17,7 @@ internal object PreviewLocator {
         "Configuration.UI_MODE_TYPE_NORMAL" to 1, "UI_MODE_TYPE_NORMAL" to 1,
     )
 
-    private class Head(val pkg: String, val classFqn: String, val imports: Map<String, String>) {
-        fun resolve(name: String) = if (name.contains('.')) name else imports[name] ?: "$pkg.$name"
-    }
+    private class Head(val pkg: String, val classFqn: String, val imports: Map<String, String>)
 
     private class Found(val name: String, val direct: Boolean, val sets: List<Map<String, String>>, val methodParams: List<Map<String, String>>)
 
@@ -58,9 +56,9 @@ internal object PreviewLocator {
     private fun found(text: String, m: MatchResult, head: Head, multi: MultiPreview?): Found? {
         val raw = m.groupValues[1]
         val (args, after) = argsAfter(text, m.range.last + 1)
-        val fqn = head.resolve(raw)
-        val direct = raw.substringAfterLast('.') == "Preview" || fqn in PREVIEW_FQNS
-        val sets = if (direct) listOf(args) else multi?.expand(fqn).orEmpty()
+        val names = binaryNames(raw, head.imports, head.pkg)
+        val direct = raw.substringAfterLast('.') == "Preview" || names.any { it in PREVIEW_FQNS }
+        val sets = if (direct) listOf(args) else multi?.let { mp -> names.firstNotNullOfOrNull { mp.expand(it).ifEmpty { null } } }.orEmpty()
         if (sets.isEmpty()) return null
         val f = funRe.find(text, after) ?: return null
         if (declBetweenRe.containsMatchIn(text.substring(after, f.range.first))) return null
@@ -103,7 +101,7 @@ internal object PreviewLocator {
             val open = m.range.last
             val args = parseArgsRaw(one.substring(open + 1, matchParen(one, open)))
             val provider = (args["provider"] ?: args["name"])?.removeSuffix("::class")?.trim() ?: continue
-            val fqn = providerName(provider, imports, pkg)
+            val fqn = binaryNames(provider, imports, pkg).first()
             val e = linkedMapOf("provider" to fqn)
             args["limit"]?.let { e["limit"] = it }
             out += e
@@ -111,18 +109,19 @@ internal object PreviewLocator {
         return out
     }
 
-    private fun providerName(provider: String, imports: Map<String, String>, pkg: String): String {
-        val head = provider.substringBefore('.')
-        val rest = if (provider.contains('.')) "$" + provider.substringAfter('.').replace('.', '$') else ""
-        imports[head]?.let { return binaryName(it) + rest }
-        if (provider.contains('.') && !head[0].isUpperCase()) return binaryName(provider)
-        return (if (pkg.isEmpty()) "" else "$pkg.") + head + rest
+    private fun binaryNames(name: String, imports: Map<String, String>, pkg: String): List<String> {
+        val head = name.substringBefore('.')
+        val rest = if (name.contains('.')) "$" + name.substringAfter('.').replace('.', '$') else ""
+        imports[head]?.let { imported -> return nestingSplits(imported).map { it + rest } }
+        if (name.contains('.') && head.firstOrNull()?.isUpperCase() != true) return nestingSplits(name)
+        return listOf((if (pkg.isEmpty()) "" else "$pkg.") + head + rest)
     }
 
-    private fun binaryName(fqn: String): String {
+    private fun nestingSplits(fqn: String): List<String> {
         val parts = fqn.split('.')
-        val at = parts.indexOfFirst { it.firstOrNull()?.isUpperCase() == true }
-        return if (at < 0) fqn else parts.take(at).plus(parts.drop(at).joinToString("$")).joinToString(".")
+        val first = parts.indexOfFirst { it.firstOrNull()?.isUpperCase() == true }
+        if (first < 0) return listOf(fqn)
+        return (first until parts.size).map { at -> parts.take(at).plus(parts.drop(at).joinToString("$")).joinToString(".") }
     }
 
     private fun matchParen(s: String, open: Int): Int {
