@@ -169,6 +169,7 @@
   "render.literalsNotApplied": "Couldn't carry the values from the literal fast path into the new loader. Compile the file where only literals changed with `prevue reload <file>` to catch up: {why}",
   "render.methodMissing": "The Preview class {class} has no {method}. The compile output is out of date or the FQN is wrong",
   "render.methodMissing.reload": "The Preview class {class} has no {method}, so an older compile of that file was drawn. Recompile that file with `prevue reload {file}`. If the compile fails, its error is the answer",
+  "render.needsActivity": "This Preview needs an Activity — a library (such as androidx.xr.compose) looks up an Activity from the context, but previews are drawn without one. This tool can't fix it",
   "render.noInstances": "No Preview instances came out. The @PreviewParameter provider returned nothing",
   "render.nothingShown": "No Preview to show",
   "render.taskFailed": "Failed while creating the RenderTask: {why}",
