@@ -22,13 +22,13 @@ RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
 |---|---|
 | 베이스 체크아웃 | 멈춘다 — 아무것도 만들지 않고, 작업 워크트리 안에서 다시 부르라고 알린다 |
 | 이 브랜치의 PR이 `MERGED` | CLEAN-UP |
-| 열린 PR이 있다 | PR의 CI 보기부터 |
+| 열린 PR이 있다 | 로컬에 PR head 뒤 커밋이 있으면 REVIEW(수정 확인)를 거쳐 PR의 밀기부터, 없으면 PR의 CI 보기부터 |
 | `origin/develop` 위에 커밋이 있다 | REVIEW — 개발이 덜 끝났으면 DEVELOP |
 | 커밋이 없다 | 합의한 계획이 대화에 있으면 DEVELOP, 없으면 PLAN |
 
 ## PLAN — 읽기만 하고 합의한다
 
-코드와 저장소 문서에서 사실을 확인한 뒤, 아래 한 화면으로 합의한다. 열린 결정이 있거나 인자가 `grill`이면 `grilling` 스킬로 하나씩 정한다(없으면 대화로) — `[최종]`이 합의다.
+코드와 저장소 문서에서 사실을 확인한 뒤, 아래 한 화면으로 합의한다. 열린 결정이 있거나 인자가 `grill`이면 `grilling` 스킬로 하나씩 정한다(없으면 대화로) — 아래 한 화면을 산출물 형식으로 넘기고, `[최종]`이 합의다.
 
 ```
 무엇을    <바꾸는 것 한두 줄 · 고칠 자리>
@@ -46,10 +46,11 @@ RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
 리뷰어(`reviewer-<등급>`)가 `review` 스킬과 `dev-skills-src/review.md`로 판정한다. 등급은 분류기가 고른다 — 워크트리 루트에서 돌린다.
 
 ```sh
+test -f ~/.codex/skills/review/scripts/review_tier.py     # 실패하면 review 스킬이 없다 — 건너뛴다
 python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HEAD --config dev-skills-src/review.md
 ```
 
-- **이 파일이 없으면** `review` 스킬이 없는 환경이다 — 건너뛰고 "독립 리뷰 없음"을 적는다. **있는데 리뷰어를 띄울 수 없으면 멈춘다** — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
+- **`test -f`가 실패하면** `review` 스킬이 없는 환경이다 — 건너뛰고 "독립 리뷰 없음"을 적는다. **있는데 리뷰어를 띄울 수 없으면 멈춘다** — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
 - 출력 첫 줄이 등급이다. `skip`이면 띄우지 않는다. 종료 코드 2면 `high`로 띄우고 stderr를 넘긴다.
 - 위임에는 기준(`origin/develop`과의 merge-base) · 끝 커밋을 SHA로, 분류기 근거 · 계획과 성공 기준 · 증거 · `check-local.sh` 요약을 넘긴다.
 
@@ -62,7 +63,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 
 결과는 이렇게 다룬다.
 
-- **고칠 것** — 고치거나, 안 고치는 이유를 PR 본문에 적는다. 고쳤으면 `check-local.sh`를 다시 통과시킨다.
+- **고칠 것** — 고치거나, 안 고치는 이유를 PR 본문에 적는다. 고쳤으면 그 고침이 닿는 성공 기준 증거를 다시 보고 `check-local.sh`를 다시 통과시킨다.
 - **물을 것** — 계획 · 범위 · 공개 계약(CLI 출력 · 매니페스트) · 결정(`D-<n>`)을 건드리면 멈추고 묻는다. 나머지는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
 - **머지 위험 줄**은 PR 본문에 옮긴다.
 

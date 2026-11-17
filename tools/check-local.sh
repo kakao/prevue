@@ -38,11 +38,14 @@ run "고지 사본(plugin-copies)" sh tools/plugin-copies.sh --check
 PY="$(command -v python3.9 || command -v python3)"
 run "CLI 판정(tests/cli, $("$PY" --version 2>&1))" "$PY" -m unittest discover -s tests/cli
 
-# 데몬 단위 테스트는 Gradle 이라 느리다 — 데몬 소스 · 빌드 파일 · 기기 스펙이 develop 과 같으면(문서 · 스킬만 고쳤다) 건너뛴다.
+# 데몬 단위 테스트는 Gradle 이라 느리다 — 그 테스트가 읽는 입력이 develop 과 같으면(문서만 고쳤다) 건너뛴다.
+# 입력은 데몬 소스 · 빌드 파일 · 기기 스펙만이 아니다 — 화면 문구(viewer 문자열 · viewer-src · CLI)와 스킬 예산(plugin/skills)도 읽는다.
 # 커밋하지 않은 변경과 새 파일도 본다.
 BASE="$(git merge-base origin/develop HEAD 2>/dev/null || echo origin/develop)"
-if git diff --quiet "$BASE" -- plugin/daemon plugin/devices && [ -z "$(git status --porcelain -- plugin/daemon plugin/devices)" ]; then
-  note "건너뜀  데몬 단위 테스트 — plugin/daemon · plugin/devices 가 develop 과 같다"
+INPUTS="plugin/daemon plugin/devices plugin/viewer plugin/cli plugin/skills viewer-src"
+# shellcheck disable=SC2086
+if git diff --quiet "$BASE" -- $INPUTS && [ -z "$(git status --porcelain -- $INPUTS)" ]; then
+  note "건너뜀  데몬 단위 테스트 — 그 입력($INPUTS)이 develop 과 같다"
 else
   if (cd plugin/daemon && ./gradlew --offline test) > "$OUT" 2>&1; then
     TESTS="$(cat plugin/daemon/*/build/test-results/test/*.xml 2>/dev/null \
