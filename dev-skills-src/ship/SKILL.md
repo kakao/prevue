@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가가 나란히 통과하면 Release 워크플로가 머지(=배포)하고 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
+description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 Release 워크플로가 머지(=배포)하고 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
 ---
 
 # ship — Prevue 릴리즈
@@ -36,7 +36,7 @@ gh pr list --base main --head develop --state open --json number,url
 | 상태 | 간다 |
 |---|---|
 | `v$M` 태그가 없다 | 5. Release (머지 뒤 멈춘 실행 — 다시 돌리면 태그 · Release만 남긴다) |
-| `D` > `M`, 열린 `develop → main` PR이 있다 | 4. 기다리기 — 스킬 평가를 실은 판인데 PR head에 `스킬 평가` 상태가 없으면 3단계의 "상태가 없는 head"부터 |
+| `D` > `M`, 열린 `develop → main` PR이 있다 | 4. 기다리기 — PR head에 `스킬 평가` 상태가 없으면 3단계의 "상태가 없는 head"부터 |
 | `D` > `M`, PR이 없다 | 3단계의 PR 열기부터 |
 | `D` = `M` | 2. 새 릴리즈 |
 
@@ -53,7 +53,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 **실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. 확인 화면의 "실리는 PR"이 된다.
 
-**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 싣지 않는다.
+**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 평가를 돌리지 않는다 — 그래도 `스킬 평가` 상태는 3단계에서 올린다. main ruleset이 모든 릴리즈 PR에 `ci-success`와 `스킬 평가` 둘 다를 요구한다.
 
 이것을 한 화면으로 보이고 승인을 받는다.
 
@@ -115,6 +115,7 @@ gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 
 - 실패한 케이스는 그 케이스만 한 번 다시 돌린다(`--case <이름>`) — 모델 행동이라 회차마다 흔들린다. 다시 돌려도 실패하면 `failure`로 올리고 **멈춰** 실패한 채점기 · 트레이스 요지를 보고한다. 사람이 그 결과를 보고 진행하라고 하면 그 말을 코멘트에 남기고 `success`(설명 "사람 승인 — …")로 올려 4단계로 간다.
 - `claude` · `codex`가 없거나 로그인이 안 됐으면 그 평가를 건너뛰고 `success`로 올리되 설명을 "건너뜀(…)"으로 **시작한다** — 평가 때문에 릴리즈를 멈추지 않는 대신 체크 목록에서 보이게 한다. 6단계 보고에도 싣는다.
 - 사용자가 2단계에서 평가를 뺐으면 돌리지 않고 `success`(설명 "뺐다(사용자)")를 바로 올린다 — 다시 불렸을 때 1단계가 빠진 평가로 읽지 않게.
+- 스킬 · 도움말이 바뀌지 않은 판이면 PR을 연 직후 `success`(설명 "변화 없음 — v$M 이후 스킬 · 도움말이 같다")를 바로 올린다 — 보증서가 없으면 Release가 머지하지 않는다.
 
 **상태가 없는 head.** 평가 도중이나 실패 뒤 고침으로 PR head가 바뀌면(develop이 움직였다) 새 head에는 상태가 없다. 1단계 · 4단계 모두 같은 규칙이다:
 
@@ -130,7 +131,7 @@ git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin
 gh pr checks <N> --watch
 ```
 
-`Verify`의 판정 job `ci-success`가 초록이어야 하고, 스킬 평가를 실은 판이면 PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
+`Verify`의 판정 job `ci-success`가 초록이어야 하고, PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->
@@ -148,7 +149,7 @@ gh run watch <id> --exit-status
 gh release view v0.11.0 --json tagName,url
 ```
 
-한 실행이 `Verify`를 다시 돌고, 버전 · 태그 · 동기화 · `스킬 평가` 상태를 본 뒤, 이 PR을 merge commit으로 머지하고(이 순간이 배포다) 그 머지 커밋에 태그와 Release를 남긴다. 머지 전에 실패하면 main은 그대로다 — 4단계의 실패와 같이 멈춰 보고한다. 태그가 이미 있으면 아무것도 하지 않고, 머지 뒤에 실패했으면 다시 돌리면 태그 · Release만 남긴다 — 다시 돌려도 안전하다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계(보고)로 간다 — 설치하는 사람에게 영향이 없다.
+검증은 다시 돌지 않는다 — 한 실행이 버전 · 태그 · 동기화와 PR head(= develop 끝)의 `ci-success` · `스킬 평가`를 본 뒤 이 PR을 merge commit으로 머지하고(이 순간이 배포다) 그 머지 커밋에 태그와 Release를 남긴다. 머지 전에 실패하면 main은 그대로다 — 4단계의 실패와 같이 멈춰 보고한다. 태그가 이미 있으면 아무것도 하지 않고, 머지 뒤에 실패했으면 develop이 그대로인 동안 다시 돌리면 태그 · Release만 남긴다. 머지 단계가 권한으로 거절되면(워크플로 파일이 바뀐 판에서 `GITHUB_TOKEN`이 막힐 수 있다) 사람이 PR을 merge commit으로 머지한 뒤 Release를 다시 돌린다 — 같은 길로 태그 · Release만 남긴다. 머지 뒤 develop이 움직였는데 태그가 없으면 Release는 멈춘다 — 그 머지 커밋에 손으로 태그를 달고 Release를 만든다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계(보고)로 간다 — 설치하는 사람에게 영향이 없다.
 
 ## 6. 보고
 

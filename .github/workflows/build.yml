@@ -1,6 +1,6 @@
-# Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. The Release workflow
-# (release.yml) calls this whole file before it merges develop into main, so a release runs exactly what PRs run.
-# Version · tag · sync are checked by /ship before the version commit, and by Release before it merges.
+# Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. On a release PR
+# (develop → main) its verdict is one of the two merge conditions; the other is the skill evaluation (/ship). Version · tag ·
+# sync are checked by /ship before the version commit, and by the Release workflow (release.yml) before it merges.
 # The file keeps its name build.yml: the README badges link to it, and dispatching a branch needs this file on main.
 name: Verify
 
@@ -11,7 +11,6 @@ on:
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: read
@@ -38,8 +37,7 @@ jobs:
     uses: ./.github/workflows/integration.yml
 
   # The verdict. The main ruleset's required check and the implement skill look for this name (ci-success). Checks of called
-  # workflows are named "caller job / called job", so the results are gathered into this one job. Called from Release it
-  # shows as "verify / ci-success" — Release repeats the verdict under the bare name. Fails when any of them
+  # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
   # failed, was cancelled or was skipped. always(), not !cancelled(): a job that never starts reports as skipped, and a
   # skipped required check lets a PR merge — this job must run and fail instead.
   ci-success:

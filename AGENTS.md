@@ -30,8 +30,8 @@
 절차는 **`/ship` 스킬**(`dev-skills-src/ship/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 
 - **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 여섯 파일(`plugin/VERSION` · 매니페스트 둘 · README 두 벌 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
-- **main에 들이는 것은 Release 워크플로다** — `gh workflow run release.yml --ref develop` 한 번이 `Verify`(build.yml을 그대로 부른다) → 릴리즈 PR을 merge commit으로 머지 → 그 머지 커밋에 태그 → GitHub Release를 잇는다. 검증한 커밋만 머지하고, 실패하면 main은 움직이지 않는다. 머지가 배포다 — squash · rebase면 develop과 main이 갈라진다. 그 실행 결과까지 확인하고 완료라고 말한다.
-- **릴리즈의 머지 관문은 `Verify`의 판정 `ci-success`와 develop 끝 커밋의 `스킬 평가` 상태다**(스킬 · 도움말이 바뀐 판만) — Release가 머지 전에 둘과 버전 · 태그 · 동기화를 본다. 릴리즈에서 로컬 검증을 다시 돌지 않는다. main ruleset은 `ci-success` 통과와 merge commit만 강제한다 — Release가 연 PR에는 `pull_request` 실행이 붙지 않아 Release가 자기 실행에서 `ci-success`를 다시 낸다.
+- **릴리즈 PR의 머지 조건은 둘이다 — `Verify`의 판정 `ci-success`와 `스킬 평가` 보증서(커밋 상태).** `/ship`이 PR을 열어 Verify가 돌게 하고, 나란히 로컬에서 스킬 평가를 돌려 PR head에 `스킬 평가`를 올린다(스킬 · 도움말이 안 바뀐 판은 "변화 없음"으로). main ruleset이 둘과 merge commit을 강제한다. 평가는 모델 호출이라 CI에 없다. 릴리즈에서 로컬 검증을 다시 돌지 않는다.
+- **머지 · 태그 · Release는 Release 워크플로가 한다** — `gh workflow run release.yml --ref develop`이 버전 · 태그 · 동기화와 PR head의 두 조건을 본 뒤 그 커밋만 merge commit으로 머지하고, 머지 커밋에 태그와 GitHub Release를 남긴다. 검증을 다시 돌지 않는다. 실패하면 main은 움직이지 않는다. 머지가 배포다 — squash · rebase면 develop과 main이 갈라진다. 그 실행 결과까지 확인하고 완료라고 말한다.
 - 사람에게 확인받는 곳은 버전 커밋을 밀기 전 한 번이다. 실패하면 되돌리지 않고 멈춰 보고한다 — 고친 뒤 `/ship`이 멈춘 자리부터 이어 간다.
 
 ## 승인이 필요한 것
