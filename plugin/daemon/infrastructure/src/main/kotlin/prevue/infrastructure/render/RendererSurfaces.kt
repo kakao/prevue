@@ -72,7 +72,6 @@ internal class RendererSurfaces(renderer: Renderer) {
 
 internal class SessionSurfaces(
     task: Class<*> = RenderTask::class.java,
-    bridgeSession: Class<*> = BridgeRenderSession::class.java,
     sessionImpl: Class<*> = RenderSessionImpl::class.java,
     cleanerName: String = "com.android.tools.rendering.RenderSessionCleaner",
 ) {
@@ -82,7 +81,7 @@ internal class SessionSurfaces(
     val cleaner = Surface<Method>("RenderSessionCleaner.dispose") {
         Class.forName(cleanerName, true, task.classLoader).getMethod("dispose", RenderSession::class.java, ModuleClassLoader::class.java)
     }
-    val bridgeImpl = Surface("BridgeRenderSession.mSession") { RendererSurfaces.field(bridgeSession, "mSession") }
+    val bridgeImpl = Surface("BridgeRenderSession.mSession") { RendererSurfaces.field(BridgeRenderSession::class.java, "mSession") }
     val viewRoot = Surface("RenderSessionImpl.mViewRoot") { RendererSurfaces.field(sessionImpl, "mViewRoot") }
 
     fun all(): List<Surface<*>> = listOf(renderSession, loaderReference, layoutlibCallback, cleaner, bridgeImpl, viewRoot)
