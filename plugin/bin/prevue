@@ -131,19 +131,19 @@ have_sdk() {
 
 # 데몬을 띄울 java · SDK 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 나
 # 데몬 로그의 android.jar 한 줄만 남고, 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
-# Gradle 을 띄울 JDK(21+)가 없으면 그 응답을 내고 끝낸다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다
-require_java() {
-  have_java && return 0
-  python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"
-  exit 3
-}
-
 require_runtime() {
   local nojdk="" nosdk=""
   have_java || nojdk="$JDK"
   have_sdk || nosdk="$SDK"
   [ -z "$nojdk$nosdk" ] && return 0
   python3 "$PLAN_PY" runtime-missing "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
+  exit 3
+}
+
+# Gradle 을 띄울 JDK(21+)가 없으면 그 응답을 내고 끝낸다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다
+require_java() {
+  have_java && return 0
+  python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"
   exit 3
 }
 
