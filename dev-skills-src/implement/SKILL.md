@@ -139,10 +139,10 @@ gh pr create --base develop --title "<무엇을 · 왜 한 줄>" --body "<본문
 **CI를 기다린다.** CI 결과가 나오기 전에는 머지 명령을 부르지 않는다.
 
 ```sh
-gh pr checks <N> --watch --fail-fast
+gh pr checks <N> --watch
 ```
 
-`Verify`의 판정 job `build`(정적 검사 · 빌드 · 단위 테스트를 모은다)가 초록이어야 한다. 같은 실행의 통합 테스트(`integration / integration (…)`)는 관찰 중이라 판정에 넣지 않는다 — 실패하면 PR 본문에 적고 막지 않는다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
+`Verify`의 판정 job `build`(정적 검사 · 빌드 · 단위 테스트를 모은다)가 초록이어야 한다. 같은 실행의 통합 테스트(`integration / integration (…)`)는 관찰 중이라 판정에 넣지 않는다 — 실패하면 PR 본문에 적고 막지 않는다. 단 조각 배정 오류(새 `*IntegrationTest`를 `integration.yml`의 `SHARDS`에 넣지 않았다)이거나 이 PR이 integrationTest · 픽스처 · 클래스패스 경로를 건드렸으면 고친다 — 러너 문제로 보이는 것만 적고 넘어간다. `--fail-fast`를 붙이지 않는다 — 통합 조각이 먼저 실패하면 `build`가 끝나기 전에 기다림이 끝난다. 기다림은 통합 테스트까지 약 10~15분, job 시간 제한(통합 60분)이 상한이다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝나거나, `license/cla`만 붙은 채로 초록으로 끝날 수 있다 — 그래서 끝난 뒤의 아래 확인이 판정이다. 기다리는 사이 새 커밋을 밀었으면 앞 실행은 취소된다(`cancel-in-progress`) — 새 head의 실행을 다시 기다린다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->

@@ -39,9 +39,10 @@ jobs:
 
   # The verdict. The main ruleset's required check and the implement skill look for this name (build). Checks of called
   # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
-  # failed, was cancelled or was skipped.
+  # failed, was cancelled or was skipped. always(), not !cancelled(): a job that never starts reports as skipped, and a
+  # skipped required check lets a PR merge — this job must run and fail instead.
   build:
-    if: ${{ !cancelled() }}
+    if: ${{ always() }}
     needs: [lint, compile, unit]
     runs-on: ubuntu-24.04
     timeout-minutes: 5

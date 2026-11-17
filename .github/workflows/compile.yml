@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  compile:
     # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
     runs-on: ubuntu-24.04
     timeout-minutes: 20

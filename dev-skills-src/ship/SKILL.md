@@ -127,15 +127,15 @@ git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin
 ## 4. CI · 평가를 기다리고 머지
 
 ```sh
-gh pr checks <N> --watch --fail-fast
+gh pr checks <N> --watch
 ```
 
-`Verify`의 판정 job `build`가 초록이어야 하고, 스킬 평가를 실은 판이면 PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
+`Verify`의 판정 job `build`가 초록이어야 하고, 스킬 평가를 실은 판이면 PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 같은 실행의 통합 테스트(`integration / integration (…)`)는 관찰 중이라 판정에 넣지 않는다 — 실패하면 PR 본문과 6단계 보고에 적고 막지 않는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
 <!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 <!-- /only -->
 
-실패하면 **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/ship`을 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
+실패하면(rollup에서 `build`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/ship`을 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
 
 초록이면:
 
