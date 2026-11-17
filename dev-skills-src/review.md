@@ -91,7 +91,6 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 - **`plugin/daemon/daemon/src/bridge/`** — `kotlin-compiler-embeddable`에 `compileOnly`로 묶이고, 실행 때는 격리 클래스로더에 공유 툴체인의 컴파일러 jar와 함께 올라가 데몬이 리플렉션으로 부른다. 이름 · 시그니처가 어긋나면 컴파일이 아니라 실행 때 드러난다.
 - **대상 앱 클래스패스 · Compose 판** — 렌더 결과는 대상의 클래스패스 덤프에 달렸고, 대상 저장소의 Gradle 실행은 승인이 필요해 리뷰에서 돌릴 수 없다(`AGENTS.md` "승인이 필요한 것").
 - **CLI**(`plugin/cli/`의 파이썬 · `plugin/bin/prevue`의 bash와 인라인 `python3`) — 정적 검사(타입 · shellcheck)가 없다. 호출처 누락 · 키 이름 오타는 `tests/cli`에 없는 경로면 빌드로도 잡히지 않는다.
-- **PNG 픽셀을 읽는 통합 테스트** — PNG 내용 · 크기 · 투명도를 바꾸는 diff는 `integrationTest`에서 그 픽셀을 읽는 단언(`ImageIO.read` · `getRGB`)을 찾아 전제를 대조한다. 로컬 검증(`tools/check-local.sh`)에 통합 테스트가 없어 어긋나면 CI에서 처음 드러난다.
 - **생성물** — 위 "저장소"의 생성물은 diff에 보여도 판정 대상은 원본이다. 원본과 생성물이 함께 바뀌었으면 원본을 읽는다.
 - **버전 핀** — `plugin/daemon/`의 빌드 파일 · 버전 카탈로그는 layoutlib · 컴파일러 판과 맞물린다. 핀을 바꾼 diff는 "빌드 실패 시 볼 곳"에 적는다.
 
