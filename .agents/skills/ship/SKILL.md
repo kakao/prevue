@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 Release 워크플로가 머지(=배포)하고 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
+description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 머지(=배포)하고, Release 워크플로가 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
 ---
 <!-- 생성물이다. dev-skills-src/ship/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
 
@@ -36,7 +36,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 | 상태 | 간다 |
 |---|---|
-| `v$M` 태그가 없다 | 5. Release (머지 뒤 멈춘 실행 — 다시 돌리면 태그 · Release만 남긴다) |
+| `v$M` 태그가 없다 | 5. 기록 |
 | `D` > `M`, 열린 `develop → main` PR이 있다 | 4. 기다리기 — PR head에 `스킬 평가` 상태가 없으면 3단계의 "상태가 없는 head"부터 |
 | `D` > `M`, PR이 없다 | 3단계의 PR 열기부터 |
 | `D` = `M` | 2. 새 릴리즈 |
@@ -47,7 +47,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 실을 것이 없으면 멈춘다: `git log --oneline origin/main..origin/develop`이 비었거나 `CHANGELOG.md`의 `## [Unreleased]` 아래에 `- ` 줄이 없다.
 
-**버전.** 인자가 있으면 그것. 없으면 `[Unreleased]`를 읽고 제안한다 — 새 기능·동작 변화가 하나라도 있으면 마이너(`0.10.0 → 0.11.0`), 고친 것뿐이면 패치(`0.10.0 → 0.10.1`). 메이저는 사람이 적을 때만 올린다. `M`보다 높아야 하고 `v<버전>` 태그가 없어야 한다 — Release 워크플로도 머지 전에 태그를 다시 본다.
+**버전.** 인자가 있으면 그것. 없으면 `[Unreleased]`를 읽고 제안한다 — 새 기능·동작 변화가 하나라도 있으면 마이너(`0.10.0 → 0.11.0`), 고친 것뿐이면 패치(`0.10.0 → 0.10.1`). 메이저는 사람이 적을 때만 올린다. `M`보다 높아야 하고 `v<버전>` 태그가 없어야 한다 — 머지(=배포) 전에 이것을 보는 곳은 여기뿐이다.
 
 **CHANGELOG 정리.** `dev-skills-src/release-notes.md`의 "릴리즈 정리"대로 한다 — **외부 기여자 · 제보자 멘션 점검**과 **판의 모양**(히어로 그림 · 요약 문단 · 주제별 절 · Thanks)까지. 이 절이 그대로 GitHub Release 본문이 되므로 여기서 빠지면 끝이다. 아직 파일에 쓰지 않는다.
 히어로 그림은 `git cat-file -e origin/develop:assets/release-<버전>.png`로 있는지만 본다 — 없으면 그림 없이 가고, 확인 화면에 그렇다고 한 줄 적는다.
@@ -76,20 +76,20 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 다섯 — 스킬 두 벌 · 고지 사본 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 여섯 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 같은 다섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 5단계가 같은 다섯 — 스킬 두 벌 · 고지 사본 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 문서 · 주석과 버전 커밋(버전 문자열 네 파일)뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 같은 다섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
 printf '%s\n' 0.11.0 > plugin/VERSION
-sh tools/sync-version.sh            # 매니페스트 둘 · README 두 벌의 배지 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜)
+sh tools/sync-version.sh            # 매니페스트 둘 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜). README 배지는 Release를 읽는 동적 배지다
 sh tools/sync-version.sh --check
-git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · README.md · README.ko.md · CHANGELOG.md 뿐이다
-git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트 · 배지, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
+git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md 뿐이다
+git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
 git push origin HEAD:develop        # fast-forward 만
 gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본문>"
 ```
 
-이 여섯 파일 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
+이 네 파일 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
 
 본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 
@@ -111,7 +111,7 @@ gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 
 - 실패한 케이스는 그 케이스만 한 번 다시 돌린다(`--case <이름>`) — 모델 행동이라 회차마다 흔들린다. 다시 돌려도 실패하면 `failure`로 올리고 **멈춰** 실패한 채점기 · 트레이스 요지를 보고한다. 사람이 그 결과를 보고 진행하라고 하면 그 말을 코멘트에 남기고 `success`(설명 "사람 승인 — …")로 올려 4단계로 간다.
 - `claude` · `codex`가 없거나 로그인이 안 됐으면 그 평가를 건너뛰고 `success`로 올리되 설명을 "건너뜀(…)"으로 **시작한다** — 평가 때문에 릴리즈를 멈추지 않는 대신 체크 목록에서 보이게 한다. 6단계 보고에도 싣는다.
 - 사용자가 2단계에서 평가를 뺐으면 돌리지 않고 `success`(설명 "뺐다(사용자)")를 바로 올린다 — 다시 불렸을 때 1단계가 빠진 평가로 읽지 않게.
-- 스킬 · 도움말이 바뀌지 않은 판이면 PR을 연 직후 `success`(설명 "변화 없음 — v$M 이후 스킬 · 도움말이 같다")를 바로 올린다 — 보증서가 없으면 Release가 머지하지 않는다.
+- 스킬 · 도움말이 바뀌지 않은 판이면 PR을 연 직후 `success`(설명 "변화 없음 — v$M 이후 스킬 · 도움말이 같다")를 바로 올린다 — 보증서가 없으면 main ruleset이 머지를 막는다.
 
 **상태가 없는 head.** 평가 도중이나 실패 뒤 고침으로 PR head가 바뀌면(develop이 움직였다) 새 head에는 상태가 없다. 1단계 · 4단계 모두 같은 규칙이다:
 
@@ -121,7 +121,7 @@ git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin
 
 비었으면 앞 결과를 새 head에 그대로 올리고(설명 끝에 "· 앞 커밋 <짧은 sha> 결과"), 아니면 새 head에서 평가를 다시 돌린다. 앞 head는 PR 코멘트의 평가 결과나 `gh api $GHE repos/$R/commits/<sha>/status`로 찾는다.
 
-## 4. CI · 평가를 기다린다
+## 4. CI · 평가를 기다리고 머지
 
 ```sh
 gh pr checks <N> --watch
@@ -131,18 +131,25 @@ gh pr checks <N> --watch
 
 실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/ship`을 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
 
-초록이면 5단계로 간다. 손으로 머지하지 않는다 — Release 워크플로가 머지한다.
-
-## 5. Release — 머지 · 태그 · GitHub Release
+초록이면:
 
 ```sh
-gh workflow run release.yml --ref develop
-gh run list --workflow release.yml --branch develop --limit 1 --json databaseId,status,createdAt   # 방금 뜬 실행인지 createdAt 으로 본다
+gh pr merge <N> --merge             # merge commit. --delete-branch 를 붙이지 않는다 — head 가 develop 이다
+```
+
+이 순간이 배포다. 마켓플레이스 둘이 `main`을 읽는다. main ruleset이 두 조건 · merge commit · up to date를 강제하므로 머지가 거절되면 그 이유(대개 그 사이 main이 앞섰다 — develop에 main을 합치는 PR이 먼저다)를 보고하고 멈춘다.
+
+## 5. 기록 — 태그 · GitHub Release
+
+머지가 main에 들어오면 Release 워크플로가 저절로 돈다. 그 실행을 지켜본다.
+
+```sh
+gh run list --workflow release.yml --branch main --limit 1 --json databaseId,status,createdAt,headSha   # headSha 가 머지 커밋인 실행
 gh run watch <id> --exit-status
 gh release view v0.11.0 --json tagName,url
 ```
 
-검증은 다시 돌지 않는다 — 한 실행이 버전 · 태그 · 동기화와 PR head(= develop 끝)의 `ci-success` · `스킬 평가`를 본 뒤 이 PR을 merge commit으로 머지하고(이 순간이 배포다) 그 머지 커밋에 태그와 Release를 남긴다. 머지 전에 실패하면 main은 그대로다 — 4단계의 실패와 같이 멈춰 보고한다. 태그가 이미 있으면 아무것도 하지 않고, 머지 뒤에 실패했으면 develop이 그대로인 동안 다시 돌리면 태그 · Release만 남긴다. 머지 단계가 권한으로 거절되면(워크플로 파일이 바뀐 판에서 `GITHUB_TOKEN`이 막힐 수 있다) 사람이 PR을 merge commit으로 머지한 뒤 Release를 다시 돌린다 — 같은 길로 태그 · Release만 남긴다. 머지 뒤 develop이 움직였는데 태그가 없으면 Release는 멈춘다 — 그 머지 커밋에 손으로 태그를 달고 Release를 만든다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계(보고)로 간다 — 설치하는 사람에게 영향이 없다.
+태그가 이미 있으면 워크플로가 아무것도 하지 않는다 — 다시 돌려도 안전하다(`gh workflow run release.yml --ref main`). 머지 커밋이 release PR head와 트리가 다르면(검증하지 않은 판) 태그를 달지 않고 실패한다 — 그대로 보고한다. Release를 만들지 못했으면(태그는 나갔다) 실패 스텝을 보고하고 6단계(보고)로 간다 — 설치하는 사람에게 영향이 없다.
 
 ## 6. 보고
 

@@ -53,7 +53,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 되돌려도 결과가 남는 것이다.
 
 - **배포** — `main`에 머지되는 순간 마켓플레이스가 읽는다. 매니페스트 넷(`.claude-plugin/marketplace.json` · `.agents/plugins/marketplace.json` · `plugin/.claude-plugin/plugin.json` · `plugin/.codex-plugin/plugin.json`)과 `plugin/VERSION`이 잘못되면 설치 · 갱신이 모두에게 깨진다.
-- **릴리즈 · CI 워크플로**(`.github/workflows/`) — 태그 · GitHub Release를 만들고, main의 머지 관문(`Verify`의 `ci-success`)이다 — Release가 main 머지까지 한다.
+- **릴리즈 · CI 워크플로**(`.github/workflows/`) — 태그 · GitHub Release를 만들고, main의 머지 관문(`Verify`의 `ci-success`)이다.
 - **공개 CLI 계약** — 종료 코드(사용법 2 · 데몬에 닿지 못함 3, FR-13), JSON 응답의 키, `help/` 문구. 배포 스킬과 사용자 에이전트 · 스크립트가 이것으로 분기한다.
 - **배포 스킬 본문**(`skills-src/`) — 사용자의 에이전트가 그대로 실행한다. 릴리즈 뒤 되돌려도 이미 받은 판이 남는다.
 - **사용자 기기에 남는 것** — `~/.prevue`의 데몬 기록(`PREVUE_HOME`으로 옮길 수 있다) · 프로젝트별 기록 · 공유 툴체인의 형식과 자리. 새 판이 옛 판이 남긴 것을 읽는다.

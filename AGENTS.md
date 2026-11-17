@@ -11,7 +11,7 @@
 - **하드 제약** — 빌드 무침습(대상 저장소의 빌드 파일·플러그인·태스크를 건드리지 않는다) · 뷰어는 브라우저 · Gradle은 부트스트랩 1회 · debug 산출물만. 뒤집을 조건이 "없음"인 것은 뒤집지 않는다.
 - **`CHANGELOG.md`에는 사용자에게 보이는 변화만** `[Unreleased]` 아래에 적는다. 작업 PR에서 적는다 — 병렬 PR이 같은 자리에 적어도 `merge=union`이 둘 다 남긴다. 쓰는 법과 외부 기여 · 제보 멘션은 `dev-skills-src/release-notes.md` — 외부 PR을 머지할 때도 본다.
 - **뷰어의 색 · 글자 · 모서리 · 그림자 · 시간 · 간격은 `plugin/viewer/tokens.css`의 역할 이름으로만 쓴다**(D-96) — `sh tools/lint.sh`가 날값을 막는다. 새 값이 필요하면 `tokens.css`와 Storybook `재료/Tokens`(`viewer-src/stories/Tokens.stories.tsx`)를 같은 PR에서 고치고, 색 역할이면 대비 쌍(`tests/viewer/contrast-pairs.json`)도 고친다.
-- **버전 숫자(`plugin.json`의 `version` · README 버전 배지 · CHANGELOG 제목)는 손으로 고치지 않는다.** `plugin/VERSION`만 올리고 `tools/sync-version.sh`로 옮긴다. 마켓플레이스의 플러그인 소스는 `main` 브랜치라 main에 머지되는 순간 배포된다.
+- **버전 숫자(`plugin.json`의 `version` · CHANGELOG 제목)는 손으로 고치지 않는다.** `plugin/VERSION`만 올리고 `tools/sync-version.sh`로 옮긴다. README의 버전 배지는 GitHub Release를 읽는 동적 배지라 고칠 것이 없다. 마켓플레이스의 플러그인 소스는 `main` 브랜치라 main에 머지되는 순간 배포된다.
 
 ## 브랜치와 워크트리
 
@@ -29,9 +29,10 @@
 
 절차는 **`/ship` 스킬**(`dev-skills-src/ship/SKILL.md`)이 갖는다. 여기는 규칙만 둔다.
 
-- **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 여섯 파일(`plugin/VERSION` · 매니페스트 둘 · README 두 벌 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
-- **릴리즈 PR의 머지 조건은 둘이다 — `Verify`의 판정 `ci-success`와 `스킬 평가` 보증서(커밋 상태).** `/ship`이 PR을 열어 Verify가 돌게 하고, 나란히 로컬에서 스킬 평가를 돌려 PR head에 `스킬 평가`를 올린다(스킬 · 도움말이 안 바뀐 판은 "변화 없음"으로). main ruleset이 둘과 merge commit을 강제한다. 평가는 모델 호출이라 CI에 없다. 릴리즈에서 로컬 검증을 다시 돌지 않는다.
-- **머지 · 태그 · Release는 Release 워크플로가 한다** — `gh workflow run release.yml --ref develop`이 버전 · 태그 · 동기화와 PR head의 두 조건을 본 뒤 그 커밋만 merge commit으로 머지하고, 머지 커밋에 태그와 GitHub Release를 남긴다. 검증을 다시 돌지 않는다. 실패하면 main은 움직이지 않는다. 머지가 배포다 — squash · rebase면 develop과 main이 갈라진다. 그 실행 결과까지 확인하고 완료라고 말한다.
+- **PR은 `develop` → `main` 하나다.** 버전 커밋(`plugin/VERSION` · `sh tools/sync-version.sh` · `[Unreleased]` 정리)은 PR 없이 develop에 fast-forward로 민다 — 코드가 없어 릴리즈의 `Verify`가 같은 트리를 본다(main · develop 푸시에는 아무것도 돌지 않는다). 네 파일(`plugin/VERSION` · 매니페스트 둘 · CHANGELOG) 밖이 바뀌면 이 예외가 아니다.
+- **릴리즈 PR의 머지 조건은 둘이다 — `Verify`의 판정 `ci-success`와 `스킬 평가` 보증서(커밋 상태).** 릴리즈 PR에서도 작업 PR과 같은 `Verify`가 돈다. `/ship`이 그와 나란히 로컬에서 스킬 평가를 돌려 PR head에 `스킬 평가`를 올린다(스킬 · 도움말이 안 바뀐 판은 "변화 없음"으로). 평가는 모델 호출이라 CI에 없다. main ruleset이 두 조건과 merge commit, PR head가 main을 담을 것(up to date)을 강제한다 — 그래서 머지된 트리가 검증한 develop 트리와 같다. 릴리즈에서 로컬 검증을 다시 돌지 않는다.
+- **릴리즈 PR은 `/ship`이 merge commit으로 머지한다** — 머지가 배포다. squash · rebase면 develop과 main이 갈라진다.
+- **기록은 Release 워크플로가 남긴다** — main에 머지가 들어오면(사람이 머지하든 `/ship`이 머지하든) `release.yml`이 저절로 돌아 머지 커밋에 태그와 GitHub Release를 남긴다(태그가 있으면 아무것도 하지 않는다). 그 실행 결과까지 확인하고 완료라고 말한다.
 - 사람에게 확인받는 곳은 버전 커밋을 밀기 전 한 번이다. 실패하면 되돌리지 않고 멈춰 보고한다 — 고친 뒤 `/ship`이 멈춘 자리부터 이어 간다.
 
 ## 승인이 필요한 것
