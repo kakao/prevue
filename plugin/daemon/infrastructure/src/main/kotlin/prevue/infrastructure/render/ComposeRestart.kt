@@ -38,5 +38,5 @@ internal object ComposeRestart {
     }
 
     private const val COMPOSE_VIEW = "androidx.compose.ui.platform.AbstractComposeView"
-    private const val FAILED = "인셋을 넣은 뒤 컴포지션을 다시 만들지 못했다 — 옆 인셋 자세에서는 칸이 인셋 전 자리에서 움직이는 중인 그림일 수 있다"
+    private const val FAILED = "인셋을 넣은 뒤 컴포지션을 다시 만들지 못했다 — 컴포지션에서 읽은 WindowInsets 가 인셋 전 값일 수 있고, 옆 인셋 자세에서는 칸이 인셋 전 자리에서 움직이는 중인 그림일 수 있다"
 }
