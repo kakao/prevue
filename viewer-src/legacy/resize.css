@@ -8,11 +8,9 @@ body.resizing-ui main { padding-bottom: 0; }
 .resize-wrap #stage > #shot { width: 100% !important; height: 100%; max-width: none; max-height: none; border-radius: inherit; object-fit: contain; object-position: 0 0; }
 .resize-wrap #stage.resize-hidden { opacity: 0; pointer-events: none; }
 /* 시스템 바는 무대가 다시 보일 때 같이 튀어나오지 않고 페이드인한다 — 숨는 쪽은 즉시여야 무대가 사라지는 프레임에 남지 않는다 */
-.resize-wrap #stage .sys-bars { transition: opacity var(--duration-short4) var(--easing-decelerate); }
-.resize-wrap #stage.resize-hidden .sys-bars { opacity: 0; transition: none; }
 .resize-scene.preparing #stage { cursor: default !important; }
 .resize-scene.preparing #shot, .resize-scene.preparing .unit .stage > img { visibility: hidden; }
-.resize-scene.preparing :is(#sysBars, #insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
+.resize-scene.preparing :is(#insetOverlay, #marks, #box, #pickBox) { visibility: hidden; }
 /* 몸체 밖 인셋 표지는 #stage 밖이라 무대의 숨김을 따로 따른다 — 준비 중 · 크기 전환 중(resize-hidden) · 진입 모프 동안 */
 .resize-scene.preparing #insetMarks, #resizeGeometry:has(> #stage.resize-hidden) #insetMarks, #focusView.morph-hold #insetMarks { visibility: hidden; }
 .resize-scene.preparing .ruler { opacity: .45; }
@@ -114,11 +112,6 @@ body.resizing-ui main { padding-bottom: 0; }
 .morph { position: fixed; z-index: 14; overflow: hidden; pointer-events: none; background: var(--surface-container);
          mask-size: calc(100% + 200vmax) calc(100% + 100vmax); mask-position: -100vmax 0; mask-repeat: no-repeat; mask-clip: no-clip; }
 .morph img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 0 0; }
-/* 그림 시작 — 기기별 바(D-169). 그림 위에 dp 좌표 SVG 로 덧그리고, 글자색은 아래 그림의 밝기로 고른다 */
-.stage .sys-bars { position: absolute; inset: 0; pointer-events: none; }
-.stage .sys-bars svg { display: block; width: 100%; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
-.sys-bars .sb-ink-dark { color: var(--device-shade); }
-.sys-bars .sb-ink-light { color: var(--device-veil); }
 /* 인셋 영역 보기 — 바와 같은 dp 좌표 SVG. 띠는 옅게 채우고 안쪽 경계에 선을 둬서 겹쳐도 각 종류의 끝이 보인다. 선 굵기는 확대해도 화면 px 이다(non-scaling-stroke). */
 .stage .inset-overlay { position: absolute; inset: 0; pointer-events: none; }
 .stage .inset-overlay svg { display: block; width: 100%; height: 100%; }
@@ -153,7 +146,7 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-dim[data-side="bottom"] .im-ext { bottom: 0; height: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); border-left: var(--im-hair) dashed currentColor; }
 .im-dim[data-side="bottom"] .im-from { left: 0; }
 .im-dim[data-side="bottom"] .im-to { right: 0; }
-.im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; line-height: 1; }
+.im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; }
 .im-badge { z-index: 1; left: 50%; top: 50%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-radius: var(--corner-small);
   background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant); color: var(--on-surface); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
 /* 종류 색은 점 하나로만 잇는다 — 배지는 옆 치수 눈금(#ruler)과 같은 무채색 크롬이다. */
@@ -167,4 +160,3 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-safe { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-8); border-radius: var(--corner-small);
   background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elevation-2); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
 .im-safe b { font-weight: var(--weight-medium); color: var(--success); }
-/* 그림 끝 */

@@ -1,5 +1,6 @@
 package prevue.infrastructure.render
 
+import com.android.tools.rendering.ProblemSeverity
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import prevue.application.domain.model.PreviewSpec
@@ -36,6 +37,13 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
             return "${root.javaClass.name}: ${root.message}" + (where?.let { "\n    at $it" } ?: "")
         }
 
+        fun byText(all: String): Pair<FailureKind, Phrase>? = when {
+            all.contains(DI) -> FailureKind.DI to lines(phrase("render.di"), all)
+            all.contains(ANDROID_VIEW) -> FailureKind.ANDROID_VIEW to lines(phrase("render.androidView"), all)
+            all.contains(NEEDS_ACTIVITY) -> FailureKind.EXCEPTION to lines(phrase("render.needsActivity"), all)
+            else -> null
+        }
+
         private fun plain(html: String): String =
             html.replace(Regex("<[^>]*>"), "").replace("&nbsp;", " ").replace(Regex("[ \\t]+"), " ").trim()
 
@@ -44,6 +52,8 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val R_CLASS = Regex("""(^|\.)R(\$\w+)?$""")
         private val DI = Regex("Hilt|EntryPoint|dagger|@Inject|hiltViewModel")
         private val ANDROID_VIEW = Regex("AndroidView|GLSurfaceView|SurfaceView|MapView|UnsatisfiedLinkError")
+        // 외부: androidx.xr.compose 의 getActivity 가 Activity 에 닿지 못할 때 던지는 문구다
+        private val NEEDS_ACTIVITY = Regex("""resolve the context's Activity""")
         private val PLATFORM_PACKAGES = listOf("android.", "androidx.", "java.", "javax.", "jdk.", "sun.", "kotlin.", "com.android.")
     }
 
@@ -64,14 +74,17 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
         private val all = texts(logger).joinToString("\n")
 
         private fun texts(logger: RenderLogger): List<String> = buildList {
+            (status?.exception ?: firstError(logger))?.let { add(brief(it)) }
             status?.errorMessage?.let { add(plain(it)) }
-            status?.exception?.let { add(brief(it)) }
             broken.forEach { (k, v) -> add("$k: ${brief(v)}") }
             logger.messages.forEach { m ->
                 add(plain(m.html))
                 m.throwable?.let { add(brief(it)) }
             }
         }.filter { it.isNotBlank() }.distinct()
+
+        private fun firstError(logger: RenderLogger): Throwable? =
+            logger.messages.firstNotNullOfOrNull { m -> m.throwable.takeIf { m.severity == ProblemSeverity.ERROR } }
 
         fun failure(): Failure? = when {
             previewClassMissing() -> Failure(FailureKind.NOT_FOUND, lines(classMissing(), all))
@@ -80,9 +93,7 @@ internal data class RenderVerdict(val failure: FailureKind?, val message: Phrase
                 ?: Failure(FailureKind.NOT_FOUND, lines(methodMissing(), all), blank).takeIf { blank == Blank.NO_METHOD }
         }
 
-        private fun loud(): Pair<FailureKind, Phrase>? = when {
-            all.contains(DI) -> FailureKind.DI to lines(phrase("render.di"), all)
-            all.contains(ANDROID_VIEW) -> FailureKind.ANDROID_VIEW to lines(phrase("render.androidView"), all)
+        private fun loud(): Pair<FailureKind, Phrase>? = byText(all) ?: when {
             status != null && !status.isSuccess -> FailureKind.EXCEPTION to Verbatim(all.ifBlank { "status=${status.status}" })
             broken.isNotEmpty() -> FailureKind.EXCEPTION to Verbatim(all)
             imageEmpty() -> FailureKind.EXCEPTION to lines(phrase("render.emptyImage"), all)

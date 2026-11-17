@@ -32,6 +32,7 @@ internal class LayoutlibSession(
     private val timeoutSec: () -> Long,
 ) {
     val clock = SessionClock()
+    private val chrome = DeviceChromePainter.layoutOf(preview)
     private var barsPlaced = false
     private var placedWarning: String? = null
     private var lastHash = 0L
@@ -121,6 +122,7 @@ internal class LayoutlibSession(
         pressUnseen = false
         ripples.calm(task) { viewRoot() }
         val img = task.render().get(timeoutSec(), TimeUnit.SECONDS).renderedImage.copy
+        chrome?.let { layout -> img?.let { DeviceChromePainter.paint(it, layout, clearCorners = false) } }
         val bitmap = img?.toBitmap()
         val h = bitmap?.let { RenderOutputs.pixelHash(it.pixels) } ?: 0L
         val changed = h != lastHash

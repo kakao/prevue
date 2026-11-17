@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **A preview that fails with "Unexpected Context type when trying to resolve the context's Activity." (`androidx.xr.compose` looking up an Activity) now says it needs one** — the message starts with "This Preview needs an Activity", since previews are drawn without an Activity (Android Studio fails the same way).
+- **A render that fails with an exception now leads with that exception** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.
 - **iPhone Duo folded in landscape hides its status indicator like other iPhones in landscape**, since [safearea.info](https://safearea.info/) reserves only the camera corner there.
 - **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
 - **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
@@ -15,7 +17,7 @@ Only changes users can see go here.
 - **A project whose `ui-tooling` lacks a Compose node's file, line or bounds getter now fails the render with a renderer-pairing message** instead of pointing at an empty or wrong place.
 - **`prevue start` asks for `prevue setup` when the shared toolchain in `~/.prevue/toolchain` is gone**, even if this checkout built Prevue before (a deleted toolchain, or another account using the same checkout), and `health` reports the toolchain as missing — the daemon no longer dies with "JavaFX runtime components are missing".
 - **The live ring around the frame keeps its 2 px width while a device rotates** instead of briefly thickening or thinning with the turn.
-- **The system bars fade in when a fold, rotation or size change settles** instead of popping onto the frame.
+- **A device's status bar, navigation handle and camera are now in the PNG itself** (`focus --device`), so an agent reading the PNG sees the same picture as the viewer; the PNG keeps the screen's size and touch coordinates, is transparent outside the rounded screen corners, and leaves the device body to the viewer.
 - **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
 - **On a narrow browser panel (about 400 px), rotating a tablet no longer swings out past the panel edge**, and the frame now centers over the bottom capsule while the height ruler's number stays clear of the left edge at any badge width.
 - **Picking sizes or devices in quick succession now always lands on the last one** — the viewer sends one size change at a time and drops the ones skipped over, so a busy machine can no longer leave the preview on an earlier pick.
@@ -23,6 +25,7 @@ Only changes users can see go here.
 - **`@PreviewParameter` providers declared inside another class** (`Outer.Inner`) now draw one card per value instead of collapsing into a single card.
 - **`@PreviewParameter` providers written as a Kotlin `object`** now draw one card per value instead of collapsing into a single card.
 - **`@PreviewParameter` providers written as a `companion object`** (`@PreviewParameter(Outer.Companion::class)`) now draw one card per value instead of collapsing into a single card.
+- **Multipreview annotations declared inside another class** (`@Outer.Phones`, or `@Phones` after `import …Outer.Phones`) now expand into one card per `@Preview` instead of the preview not showing up.
 - **Galaxy S26 Ultra and Pixel 10 Pro XL join the device menu** (`--device s26ultra` · `pixel10xl`) with their measured insets, cutout and screen corners in portrait and both landscape directions, from [windowinsets.info](https://windowinsets.info/) (Pixel 10 Pro XL from a real device on Firebase Test Lab, at 1080 × 2404) — on Pixel 10 Pro XL in landscape the status bar's outer item still touches the rounded screen corner.
 - **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
 - **iPhone SE (3rd generation) joins the device menu** (`--device ipse3`) with its home button, thicker top and bottom bezels and split status bar, and its safe area from [safearea.info](https://safearea.info/).

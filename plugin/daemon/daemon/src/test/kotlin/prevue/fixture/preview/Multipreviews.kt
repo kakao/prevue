@@ -34,3 +34,10 @@ annotation class DeviceSizes
 @FontScales
 @DeviceSizes
 annotation class Complete
+
+/** 클래스 안에 선언한 멀티프리뷰 — 클래스 파일 이름이 `Outer$Phones`다. */
+class Outer {
+    @Preview(name = "small phone", widthDp = 320)
+    @Preview(name = "large phone", widthDp = 412)
+    annotation class Phones
+}
