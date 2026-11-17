@@ -58,7 +58,7 @@ internal object PreviewLocator {
         val (args, after) = argsAfter(text, m.range.last + 1)
         val names = binaryNames(raw, head.imports, head.pkg)
         val direct = raw.substringAfterLast('.') == "Preview" || names.any { it in PREVIEW_FQNS }
-        val sets = if (direct) listOf(args) else multi?.let { m -> names.firstNotNullOfOrNull { m.expand(it).ifEmpty { null } } }.orEmpty()
+        val sets = if (direct) listOf(args) else multi?.let { mp -> names.firstNotNullOfOrNull { mp.expand(it).ifEmpty { null } } }.orEmpty()
         if (sets.isEmpty()) return null
         val f = funRe.find(text, after) ?: return null
         if (declBetweenRe.containsMatchIn(text.substring(after, f.range.first))) return null

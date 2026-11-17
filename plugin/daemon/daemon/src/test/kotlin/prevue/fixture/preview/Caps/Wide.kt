@@ -1,4 +1,4 @@
-@file:Suppress("PackageName", "PackageDirectoryMismatch")
+@file:Suppress("PackageName")
 
 package prevue.fixture.preview.Caps
 
