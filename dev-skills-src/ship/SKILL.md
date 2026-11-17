@@ -140,7 +140,7 @@ gh pr checks <N> --watch
 
 초록이면 5단계로 간다. 손으로 머지하지 않는다 — Release 워크플로가 머지한다.
 
-## 5. Release — 검증 · 머지 · 태그 · GitHub Release
+## 5. Release — 머지 · 태그 · GitHub Release
 
 ```sh
 gh workflow run release.yml --ref develop
