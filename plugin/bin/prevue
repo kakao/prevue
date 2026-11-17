@@ -131,6 +131,13 @@ have_sdk() {
 
 # 데몬을 띄울 java · SDK 가 없으면 그 응답을 내고 끝낸다 — 그대로 가면 준비 화면을 연 뒤 python 의 FileNotFoundError 나
 # 데몬 로그의 android.jar 한 줄만 남고, 다른 변형의 데몬까지 내린 뒤다. 떠 있는 데몬을 다시 쓸 때는 부르지 않는다
+# Gradle 을 띄울 JDK(21+)가 없으면 그 응답을 내고 끝낸다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다
+require_java() {
+  have_java && return 0
+  python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"
+  exit 3
+}
+
 require_runtime() {
   local nojdk="" nosdk=""
   have_java || nojdk="$JDK"
@@ -694,8 +701,7 @@ case "$cmd" in
     fi
     HAD=false; baked && HAD=true
     # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
-    # 21+ 가 없으면 Gradle 을 띄우지 않는다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다.
-    have_java || { python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"; exit 3; }
+    require_java
     export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
@@ -901,7 +907,7 @@ case "$cmd" in
         echo '{"ok":false,"needsEscalation":true,"error":"The first start after an update calls Gradle to build the executable — run the same command again outside the sandbox (escalated), just this once"}'
         exit 1
       fi
-      have_java || { python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"; exit 3; }
+      require_java
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
       export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true

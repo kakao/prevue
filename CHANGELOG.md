@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **`prevue setup` (and the build `prevue start` does after an update) no longer runs Gradle when no Java 21 or later is found** — it now says which Java it found and how to install 21+ or point `PREVUE_JDK` at one, instead of failing in Gradle and asking you to download the toolchain again. With `JAVA_HOME` on an older JDK it still builds with Android Studio's JBR or another JDK 21+ on the machine.
+- **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
 - **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
 - **`#N` in `scroll --until` and `touch --at` now picks the Nth list item even when every item root has padding** (`items { Card(Modifier.padding(8.dp)) }`) instead of the Nth on screen; `#N` counts headers and every other `item { }` too, so take N from `matches`.
 - **A project whose `ui-tooling` lacks a Compose node's file, line or bounds getter now fails the render with a renderer-pairing message** instead of pointing at an empty or wrong place.

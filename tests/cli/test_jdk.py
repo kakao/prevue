@@ -80,6 +80,11 @@ class SetupJdk(JdkCase):
 
     def test_21_미만이면_굽기_전에_JDK_를_고치라고_답한다(self):
         old = self.jdk("jdk11", "11.0.18")
+        ran = os.path.join(old, "ran")
+        java = os.path.join(old, "bin", "java")
+        with open(java, "w") as f:
+            f.write('#!/bin/sh\n: > "%s"\n' % ran)
+        os.chmod(java, 0o755)
         env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=old,
                    JAVA_HOME=old, ANDROID_HOME=self.sdk)
         for k in ("PREVUE_JDK_RESOLVED", "PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED"):
@@ -89,7 +94,7 @@ class SetupJdk(JdkCase):
         out = json.loads(p.stdout)
         self.assertEqual((p.returncode, out["missing"], out["jdkVersion"]), (3, ["jdk"], "11"), out)
         self.assertIn("PREVUE_JDK", out["tell"])
-        self.assertNotIn("gradle", p.stderr.lower())
+        self.assertFalse(os.path.exists(ran), "Gradle 래퍼가 java 를 불렀다")
 
 
 class FoundJdk(JdkCase):
