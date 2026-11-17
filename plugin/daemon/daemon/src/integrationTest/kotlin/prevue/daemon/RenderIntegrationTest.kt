@@ -924,19 +924,13 @@ class RenderIntegrationTest {
         }
     }
 
-    /** 한 장만 연 상태의 spec. */
     private fun single(fqn: String): prevue.application.domain.model.PreviewSpec {
         assertTrue(runBlocking { uc.tabs.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
         runBlocking { engine.awaitWrites() }
         return ws.now.current!!
     }
 
-    /**
-     * 엔진을 직접 부를 한 장의 spec — 액터가 그 엔진을 같이 쓰지 않게 비운다.
-     * 한 장짜리를 열면 액터가 인터랙티브로 띄우고, 잠잠해지면 QuietFill 이 같은 엔진으로 자세 · 옆 카드를 그린다.
-     * 테스트가 엔진을 직접 부르는 동안 그 그리기가 다른 스레드에서 겹치면 라이브 세션이 입력을 잃는다 — 포커스를 풀어 멈춘다.
-     */
-    private fun alone(fqn: String): prevue.application.domain.model.PreviewSpec {
+    private fun forDirectEngine(fqn: String): prevue.application.domain.model.PreviewSpec {
         val p = single(fqn)
         runBlocking { uc.boards.unfocus("test") }
         assertFalse(ws.now.interactive, "포커스를 풀어도 인터랙티브다 — QuietFill 이 엔진을 같이 쓴다")
@@ -959,8 +953,8 @@ class RenderIntegrationTest {
     // 자세별 그림은 라이브 옆의 태스크로 그린다. 옆 태스크도 System_Delegate.setNanosTime 으로 시계를 옮기지만, layoutlib 17 의 시각은 세션마다
     // 따로라(직전 setNanosTime 과의 델타 + 그 세션의 코레오그래퍼 시각) 라이브의 애니메이션은 건너뛰지 않아야 한다.
     @Test @Order(28) fun `옆 태스크로 한 장 그려도 라이브의 애니메이션 시각이 건너뛰지 않는다`() {
-        val bar = alone("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
-        val other = alone("com.example.pearl.feature.pearl.AnimationPreviewsKt.TransitionBarPreview")
+        val bar = forDirectEngine("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
+        val other = forDirectEngine("com.example.pearl.feature.pearl.AnimationPreviewsKt.TransitionBarPreview")
         val s = runBlocking { engine.open(bar, interactive = true, ownLoader = false) }
         try {
             assertTrue(s.opened.ok, s.opened.message?.text)
@@ -976,10 +970,9 @@ class RenderIntegrationTest {
         assertAlive()
     }
 
-    // 옆 태스크는 공유 로더로 그리고 바로 놓는다. 놓을 때 지우는 렌더 스레드의 ThreadLocal · Compose 뷰 목록은 로더별이라 라이브(사설 로더)는 그대로여야 한다.
     @Test @Order(29) fun `옆 태스크로 그리고 놓아도 라이브 세션은 끌면 그림이 바뀐다`() {
-        val list = alone("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListPreview")
-        val other = alone("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlEmptyPreview")
+        val list = forDirectEngine("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListPreview")
+        val other = forDirectEngine("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlEmptyPreview")
         val s = runBlocking { engine.open(list, interactive = true, ownLoader = false) }
         try {
             assertTrue(s.opened.ok, s.opened.message?.text)
@@ -988,8 +981,6 @@ class RenderIntegrationTest {
             val (x, y) = (c.left + c.right) / 2 to (c.top + c.bottom) / 2
             val first = s.tick(forceImage = true).image!!
             repeat(3) { aside(other) }
-            // 끌기는 손을 뗀 뒤 관성으로만 그림을 바꾼다. 실제 시계면 부하에 따라 마지막 끌기와 떼기 사이가 40ms를 넘어
-            // Compose 속도 추적이 멈춤으로 보고 관성이 없어진다 — 터치 사이를 걸음 시계 16ms로 밀어 부하와 떼어 놓는다.
             runBlocking {
                 suspend fun step(ms: Long) = s.renderAt(ms, 16).also { assertTrue(it.ok, it.message?.text) }
                 step(16)
