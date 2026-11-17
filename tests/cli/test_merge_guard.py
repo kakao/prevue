@@ -12,13 +12,15 @@ import tempfile
 import unittest
 
 HOOK = os.path.join(os.path.dirname(__file__), "..", "..", "tools", "hooks", "merge-guard.py")
-# 가짜 gh: `pr view <N>` 에 N 이 9 로 끝나면 main, 0 으로 끝나면 실패, 그 밖은 develop 을 답하고 부른 인자를 남긴다
+# 가짜 gh: `pr view <N>` 에 "base head" 를 답하고 부른 인자를 남긴다 — N 이 9 로 끝나거나 1 · 2 면 릴리즈 PR, 8 로 끝나면 main 으로 잘못 연 작업 PR,
+# 0 으로 끝나면 실패, 그 밖은 작업 PR 이다. 1 · 2 는 리다이렉션의 fd 숫자가 PR 번호로 읽히면 통과해 버리게 둔 것이다
 FAKE_GH = """#!/bin/sh
 echo "$*" >> "$GH_LOG"
 case "$3" in
-  *9) echo main ;;
+  *9|1|2) echo "main develop" ;;
+  *8) echo "main worktree-x" ;;
   *0) echo "no pull requests found" >&2; exit 1 ;;
-  *) echo develop ;;
+  *) echo "develop worktree-x" ;;
 esac
 """
 
@@ -86,7 +88,20 @@ class MergeGuard(unittest.TestCase):
 
     def test_플래그의_값을_PR_지정으로_읽지_않는다(self):
         self.assertIsNone(self.asked("gh pr merge --subject 257 -R kakao/prevue 249 --merge"))
-        self.assertEqual(self.gh_calls(), ["pr view 249 --repo kakao/prevue --json baseRefName -q .baseRefName"])
+        self.assertEqual(self.gh_calls(), ["pr view 249 --repo kakao/prevue --json baseRefName,headRefName -q .baseRefName + \" \" + .headRefName"])
+
+    def test_리다이렉션을_PR_지정으로_읽지_않는다(self):
+        for command in ("gh pr merge --squash 2>&1", "gh pr merge --squash --auto 1>/dev/null", "gh pr merge --squash > /tmp/o",
+                        "gh pr merge --squash 2>&1 | tail -5"):
+            self.assertIn("이 브랜치의 PR", self.asked(command), command)
+        self.assertIn("257", self.asked("gh pr merge 257 >/tmp/o 2>&1"))
+
+    def test_main으로_잘못_연_작업_PR은_띄운다(self):
+        self.assertIn("worktree-x → main", self.asked("gh pr merge 248 --merge"))
+
+    def test_명령_앞의_env_command_time은_벗긴다(self):
+        for command in ("env X=1 gh pr merge 257", "command gh pr merge 257", "time gh pr merge 257"):
+            self.assertIn("257", self.asked(command), command)
 
     def test_PR_지정이_없으면_지금_브랜치의_PR을_본다(self):
         self.assertIn("이 브랜치의 PR", self.asked("gh pr merge --squash"))

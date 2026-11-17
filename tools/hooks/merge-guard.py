@@ -2,8 +2,10 @@
 # 에이전트가 치는 `gh pr merge` 를 실행 전에 가로채는 PreToolUse 훅 — develop 머지는 사람이 한다(AGENTS.md "브랜치와 워크트리").
 # 문장만으로는 옛 스킬을 로드한 세션이 머지를 불렀다 — 세션이 무엇을 읽었든 명령이 나가는 순간에 건다.
 #
-#   base 가 main(릴리즈 PR, /ship 이 머지한다)  → 통과
-#   그 밖(작업 PR · base 를 읽지 못함)            → 사람 확인을 띄운다
+#   develop → main(릴리즈 PR, /ship 이 머지한다)  → 통과
+#   그 밖(작업 PR · PR 을 읽지 못함)               → 사람 확인을 띄운다
+#
+# 보는 것은 명령 자리에 놓인 gh 다 — env · command · time 접두는 벗기고, `bash -c '…'` · 백틱 · gh api 는 보지 않는다.
 #
 # 입력은 훅 JSON(stdin)의 tool_input.command · cwd 다. 사람이 터미널에서 직접 치는 머지는 훅을 거치지 않는다.
 import json
@@ -18,13 +20,16 @@ SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "|&"}
 VALUE_FLAGS = {"-b", "--body", "-F", "--body-file", "-t", "--subject", "-A", "--author-email",
                "--match-head-commit", "-R", "--repo"}
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+# 리다이렉션(2>&1 · >파일 · <<EOF)은 렉서가 쪼개기 전에 지운다 — 쪼개지면 fd 숫자가 PR 번호로 읽힌다
+REDIRECT = re.compile(r"(?:(?<=\s)|^)\d*(?:&>>?|>>?|<<?<?)&?\s*[^\s;&|()]*")
+PREFIXES = {"env", "command", "time"}
 FALLBACK = re.compile(r"(^|[;&|(\n])\s*(\S*/)?gh\s+pr\s+merge\b")
 
 
 def merges(command):
     """명령 안에서 실제로 호출되는 gh pr merge 마다 그 인자 목록을 돌려준다. 따옴표 안 언급은 토큰 하나라 잡히지 않는다."""
     try:
-        lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=True)
+        lexer = shlex.shlex(REDIRECT.sub(" ", command).replace("\n", " ; "), posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
         tokens = list(lexer)
     except ValueError:
@@ -35,7 +40,7 @@ def merges(command):
         if token not in SEPARATORS:
             segment.append(token)
             continue
-        while segment and ASSIGNMENT.match(segment[0]):
+        while segment and (ASSIGNMENT.match(segment[0]) or segment[0] in PREFIXES):
             segment.pop(0)
         if len(segment) >= 3 and os.path.basename(segment[0]) == "gh" and segment[1:3] == ["pr", "merge"]:
             found.append(segment[3:])
@@ -61,27 +66,29 @@ def target(args):
     return pr, repo
 
 
-def base_of(pr, repo, cwd):
+def ends_of(pr, repo, cwd):
+    """PR 의 [base, head]. 읽지 못하면 None."""
     cmd = ["gh", "pr", "view"] + ([pr] if pr else []) + (["--repo", repo] if repo else [])
-    cmd += ["--json", "baseRefName", "-q", ".baseRefName"]
+    cmd += ["--json", "baseRefName,headRefName", "-q", ".baseRefName + \" \" + .headRefName"]
     try:
         out = subprocess.run(cmd, cwd=cwd or None, capture_output=True, text=True, timeout=20)
     except (OSError, subprocess.SubprocessError):
         return None
-    return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else None
+    ends = out.stdout.split()
+    return ends if out.returncode == 0 and len(ends) == 2 else None
 
 
 def verdict(command, cwd):
     """통과면 None, 아니면 사람에게 보일 이유."""
     for args in merges(command):
         pr, repo = target(args)
-        base = base_of(pr, repo, cwd)
-        if base == "main":
+        ends = ends_of(pr, repo, cwd)
+        if ends == ["main", "develop"]:
             continue
         name = "PR %s" % pr if pr else "이 브랜치의 PR"
-        if base is None:
-            return "%s의 base 를 읽지 못했다 — develop 머지는 사람이 한다(AGENTS.md). 릴리즈 PR(base main)만 그대로 통과한다." % name
-        return "%s의 base 는 %s 다 — develop 머지는 사람이 한다(AGENTS.md). 사용자가 이 머지를 시켰을 때만 허용한다." % (name, base)
+        if ends is None:
+            return "%s을 읽지 못했다 — develop 머지는 사람이 한다(AGENTS.md). 릴리즈 PR(develop → main)만 그대로 통과한다." % name
+        return "%s은 %s → %s 다 — 릴리즈 PR(develop → main)이 아닌 머지는 사람이 한다(AGENTS.md). 사용자가 이 머지를 시켰을 때만 허용한다." % (name, ends[1], ends[0])
     return None
 
 

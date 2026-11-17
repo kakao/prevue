@@ -75,7 +75,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 - develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 그 병합으로 `dev-skills-src/implement` · `AGENTS.md`가 바뀌었으면 이 스킬을 다시 읽고 남은 단계를 새 판대로 따른다.
 - **CI를 기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
 - **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄운다 — 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지.
-- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다**(불러도 훅 `tools/hooks/merge-guard.py`가 가로챈다). PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
+- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다.** PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
 
 ## CLEAN-UP — 머지된 뒤 이 작업의 것만 치우고 보고한다
 

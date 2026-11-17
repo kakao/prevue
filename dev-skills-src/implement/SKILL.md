@@ -88,7 +88,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
   기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다.
 <!-- /only -->
 - **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄운다 — 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지.
-- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다**(불러도 훅 `tools/hooks/merge-guard.py`가 가로챈다). PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
+- **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다.** PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
 <!-- only:claude -->
 - 이 세션이 살아 있는 동안은 `run_in_background`로 PR이 `MERGED`나 `CLOSED`가 되기를 기다린다 — `MERGED`면 CLEAN-UP으로 이어 가고, `CLOSED`면 멈춰 보고한다.
 <!-- /only -->
