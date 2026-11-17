@@ -63,7 +63,7 @@ class MergeGuard(unittest.TestCase):
 
     def test_릴리즈_PR을_ship의_모양_그대로_머지하면_통과한다(self):
         self.assertIsNone(self.asked("gh pr merge 249 --merge"))
-        self.assertIsNone(self.asked("gh pr checks 249 --watch && gh pr merge 249 --merge"))
+        self.assertIsNone(self.asked("  gh pr merge 249 --merge\n"))
 
     def test_PR을_읽지_못하면_사람_확인을_띄운다(self):
         self.assertIsNotNone(self.asked("gh pr merge 250 --merge"))
@@ -71,13 +71,13 @@ class MergeGuard(unittest.TestCase):
     def test_main으로_잘못_연_작업_PR은_띄운다(self):
         self.assertIsNotNone(self.asked("gh pr merge 248 --merge"))
 
-    def test_머지를_언급만_한_명령은_gh를_부르지_않고_통과한다(self):
-        for command in ("grep -rn 'gh pr merge' dev-skills-src",
-                        'git commit -m "gh pr merge 를 훅이 가로챈다"',
-                        "gh pr create --base develop --body \"$(cat <<'EOF'\ngh pr merge 257 를 부르지 않는다\nEOF\n)\"",
-                        "gh pr view 257 --json state",
+    def test_머지가_없는_명령은_gh를_부르지_않고_통과한다(self):
+        for command in ("gh pr view 257 --json state,mergeable,mergeStateStatus",
+                        "gh pr checks 257 --required --watch",
                         "git merge origin/develop",
-                        "gh pr checks 257 --required --watch"):
+                        "gh pr list --state merged; git log --merges",
+                        "gh pr create --base develop --title x\ngit merge origin/develop",
+                        "ls tools/hooks/merge-guard.py"):
             self.assertIsNone(self.asked(command), command)
         self.assertEqual(self.gh_calls(), [])
 
@@ -87,26 +87,43 @@ class MergeGuard(unittest.TestCase):
                         "gh pr merge --squash",
                         "gh pr merge 249",
                         "gh pr merge 249 --merge --delete-branch",
-                        "gh pr merge --merge 249 257",
+                        "gh pr merge --merge 249",
+                        "gh pr merge 249  --merge",
                         "gh pr merge 249 --merge 2>&1",
                         "gh pr merge --squash 2>&1",
-                        "gh pr merge --squash --auto 1>/dev/null",
                         "gh pr merge 249 --merge > /tmp/o",
                         "gh pr merge &>/dev/null 257",
-                        'gh pr merge --body "see > note" 257',
                         'gh pr merge --body "> note" 257',
-                        'gh pr merge -t "<x>" 257',
                         "gh pr merge --subject 257 -R kakao/prevue 249 --merge",
                         "gh pr list -q '.a > .b' ; gh pr merge 257",
-                        "cd /tmp; GH_PAGER= gh pr merge 249 --merge",
+                        "cd ../other && gh pr merge 249 --merge",
+                        "export GH_REPO=kakao/other; gh pr merge 249 --merge",
+                        "gh pr checks 249 --watch && gh pr merge 249 --merge",
+                        "gh pr merge 249 --merge; gh pr merge 249 --merge",
                         "git push\n/opt/homebrew/bin/gh pr merge 249 --merge",
+                        "gh pr merge 249\n--merge",
+                        "gh pr \\\n merge 257",
+                        "gh --repo kakao/prevue pr merge 249 --merge",
+                        "gh pr -R kakao/prevue merge 249 --merge",
                         "echo $(gh pr merge 257)",
-                        "env X=1 gh pr merge 249 --merge", "env -u X gh pr merge 249 --merge",
-                        "command gh pr merge 249 --merge", "time -p gh pr merge 249 --merge",
-                        "gh pr merge 249 --merge && gh pr merge --squash",
-                        "gh pr merge 257 --body 'unterminated"):
+                        'out="$(gh pr merge 257 --squash 2>&1)"',
+                        'echo "`gh pr merge 257`"',
+                        "bash -c 'gh pr merge 257 --squash'",
+                        "env -u X gh pr merge 249 --merge",
+                        "time -p gh pr merge 249 --merge",
+                        "# 주석\ngh pr merge 257 --squash",
+                        "open https://github.com/kakao/prevue#readme && gh pr merge 257 --squash",
+                        "cat <<'EOF' > n.md\nDon't\nEOF\ngh pr merge 257 --squash\ncat <<'EOF' >> n.md\nwon't\nEOF",
+                        "gh pr merge 257 --body 'unterminated",
+                        "gh pr merge ２４９ --merge"):
             self.assertIsNotNone(self.asked(command), command)
-        self.assertEqual(self.gh_calls(), [VIEW % "249"])   # 끝에서 둘째 사례의 앞 조각 하나뿐이다
+        self.assertEqual(self.gh_calls(), [])
+
+    def test_머지를_언급만_한_명령에도_띄운다(self):
+        # 셸 문법을 풀지 않는 값이다 — 풀어서 언급만 통과시키려던 판은 실행되는 머지를 놓쳤다
+        for command in ("grep -rn 'gh pr merge' dev-skills-src", 'git commit -m "gh pr merge 를 훅이 가로챈다"'):
+            self.assertIsNotNone(self.asked(command), command)
+        self.assertEqual(self.gh_calls(), [])
 
     def test_훅_JSON이_아니면_아무것도_막지_않는다(self):
         env = dict(os.environ, GH_LOG=self.log)
