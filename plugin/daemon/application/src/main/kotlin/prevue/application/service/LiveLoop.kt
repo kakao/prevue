@@ -292,7 +292,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
     companion object {
         const val AGENT_WAIT_MS = 3_000L
         const val SEEK_FRAME_MS = 16L
-        const val CATCH_UP_FRAMES = 30
+        const val CATCH_UP_FRAMES = 15
         private const val CLOSED = "열린 라이브 세션이 없다"
     }
 }
