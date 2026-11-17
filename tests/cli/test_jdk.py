@@ -74,6 +74,29 @@ class DaemonJdk(JdkCase):
         self.assertNotIn("jdkSearched", out)
 
 
+class SetupJdk(JdkCase):
+    """setup 은 21+ 가 없으면 Gradle 을 띄우지 않고 JDK 를 고치라고 답한다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패가
+    "다시 받으라"로 읽혀 같은 실패를 되풀이시켰다(셸 JAVA_HOME 11 실측)."""
+
+    def test_21_미만이면_굽기_전에_JDK_를_고치라고_답한다(self):
+        old = self.jdk("jdk11", "11.0.18")
+        ran = os.path.join(old, "ran")
+        java = os.path.join(old, "bin", "java")
+        with open(java, "w") as f:
+            f.write('#!/bin/sh\n: > "%s"\n' % ran)
+        os.chmod(java, 0o755)
+        env = dict(os.environ, HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"), PREVUE_JDK=old,
+                   JAVA_HOME=old, ANDROID_HOME=self.sdk)
+        for k in ("PREVUE_JDK_RESOLVED", "PREVUE_LANG", "CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED"):
+            env.pop(k, None)
+        p = subprocess.run([str(ROOT / "bin/prevue"), "setup", "--offline"], capture_output=True, text=True,
+                           cwd=self.tmp.name, env=env, timeout=60)
+        out = json.loads(p.stdout)
+        self.assertEqual((p.returncode, out["missing"], out["jdkVersion"]), (3, ["jdk"], "11"), out)
+        self.assertIn("PREVUE_JDK", out["tell"])
+        self.assertFalse(os.path.exists(ran), "Gradle 래퍼가 java 를 불렀다")
+
+
 class FoundJdk(JdkCase):
     """PREVUE_JDK 없이 — 흔한 설치 자리를 찾는다(D-130). PREVUE_JDK_SEARCH 로 자리를 이 테스트의 폴더로 바꿔
     이 머신의 진짜 설치본(AS · Homebrew)을 보지 않는다."""
