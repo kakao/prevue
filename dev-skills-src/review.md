@@ -15,7 +15,7 @@
 sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR이면 --base origin/main
 ```
 
-종료 코드 **0 통과 · 1 위반 · 2 검사를 못 했다.** 위반은 `경로:줄  규칙  조언` 한 줄씩이고, 규칙 갈래는 `slop` · `metric` · `dead` · `layer` · `comment` · `viewer`다. 경고 단계는 없다 — 판정할 것은 위반뿐이다.
+종료 코드 **0 통과 · 1 위반 · 2 검사를 못 했다.** 위반은 `경로:줄  규칙  조언` 한 줄씩이고, 규칙 갈래는 `slop` · `metric` · `dead` · `layer` · `comment` · `viewer`다. 경고 단계는 없다 — 판정할 것은 위반뿐이다. 테스트 소스는 린트가 보지 않고 아래 "테스트 판정"으로 본다.
 
 - **위반은 고칠 것이다.** develop은 통과 상태로만 움직이므로 남은 위반은 이 작업 몫이다. 조언 칸이 고치는 방향이다. `AGENTS.md`대로 판단하지 않고 결과대로 고친다.
 - **거짓 양성으로 보이면 물을 것이다** — "규칙 거짓 양성 의심: <규칙>". 예외 표시를 다는 대신 `tools/lint/`의 규칙과 `tests/lint`의 심은 위반을 함께 고치는 쪽이다.
@@ -47,6 +47,25 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 | `tools/lint/` | `sh tools/lint.sh`(자기 검사 `tests/lint`를 먼저 돈다) |
 | `viewer-src/` · `plugin/viewer/` | `sh tools/gen-viewer.sh --check` · `python3 -m unittest discover -s tests/cli`(마크업 · 사전) · 헤드리스 Chrome(`tests/viewer/`) |
 | `skills-src/` · `dev-skills-src/` | `sh tools/gen-agents.sh --check` · `python3 -m unittest discover -s tests/cli`(스킬의 JSON 예시) — 배포 스킬은 릴리즈 때 `/ship`의 스킬 평가(`tests/evals`)가 잰다 |
+
+## 테스트 판정
+
+지울지는 `review` 스킬의 "테스트 거짓말" 기준으로 가른다. 그 기준에 걸려도 Prevue는 아래 넷을 남긴다(D-186).
+
+- **공개 CLI 계약** — 종료 코드 · JSON 응답의 키 · `help/` 문구. 값을 다시 적는 모양이어도 사용자 에이전트 · 스크립트가 그 값으로 분기한다.
+- **린트의 심은 위반** — `tests/lint`.
+- **소스를 읽어 금지 패턴을 막는 규칙 테스트.**
+- **이유를 든 테스트** — 코드에서 읽히지 않는 이유를 이름이나 본문(`//` 줄 포함)이 들고 있다. 지우면 저장소 안에서 그 이유를 찾을 곳이 없어진다(D-70).
+
+이 넷은 범주 안에서 같은 것을 두 번 확인하는 중복만 지울 후보로 올린다. 가르는 눈금:
+
+- **라우팅 · 메서드 · 매퍼 테스트는 소비자가 그 값으로 분기하는지로 가른다** — 뷰어는 `app.json`의 `icon` · `reveal`로 분기한다(`viewer-src/src/components/ProjectHeader.tsx`).
+- **`ContractTest`와 겹친다고 보기 전에 무엇을 견주는지 본다** — 상태 코드와 응답의 키 · 타입만 견주고 값은 견주지 않는다. 배열 원소와 같은 종류의 SSE 이벤트는 합친 스키마 하나로 보아 일부 원소 · 발행의 키 생략을 못 잡고, 계약 픽스처에 없는 시나리오는 보지 않으며, SSE `state` 이벤트는 빠진 키를 통과시킨다(`fits`). 값의 진위나 그런 키 생략을 확인하는 테스트는 계약과 중복이 아니다.
+- **남긴다** — 기획 NFR의 숫자 기본값(유휴 10분 · 산출물 64MB), 언어를 넘는 계약(`DaemonPaths`의 덤프 이름 ↔ `plugin/cli/prevue_plan.py`), 손으로 짠 `Json` 파서의 왕복, `help/` 문구 계약을 확인하는 마지막 테스트.
+- **"다른 테스트가 확인한다"는 짝 구현을 망가뜨려 보고 말한다** — 정적으로 중복이라 본 것이 망가뜨려 보면 혼자 지키는 경우가 있었다.
+- **개수는 `@Test fun`으로 센다** — `grep -c '@Test'`는 `@TestInstance`까지 센다.
+
+테스트 린트 알림은 없다. 대상 구현의 크기(줄 · 분기)는 리뷰어가 직접 본다 — 얇은 대상 · 테스트 대 구현 비율 · 직렬화 왕복 · 라이브러리 타입 단언 넷을 정리 PR 넷의 판정표로 쟀으나 D-187의 문턱(정밀도 50% 이상 · 발화가 있음)을 넘은 규칙이 없었다.
 
 ## 한쪽 문 신호
 
