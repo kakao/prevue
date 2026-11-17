@@ -116,7 +116,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         for (i in 0 until pieces) {
             if (!s.scroll(x, y, dx / pieces, dy / pieces)) return seq to false
             // 외부: Compose의 휠 스크롤은 프레임 시계로 이어 가는 애니메이션이라 조각 사이에 프레임이 돌아야 움직인다
-            frame(now()) ?: return seq to false
+            frame(now(), SEEK_FRAME_MS) ?: return seq to false
             sample()
             if (rider.stop(s) { catchUp(sample) }) break
         }
@@ -125,11 +125,11 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return seq to ended
     }
 
-    private suspend fun catchUp(each: () -> Unit = {}) {
-        val until = now() + CATCH_UP_MS
+    private fun catchUp(each: () -> Unit) {
         var still = 0
-        while (still < 2 && now() < until) {
-            val f = frame(now()) ?: return
+        repeat(CATCH_UP_FRAMES) {
+            if (still >= 2) return
+            val f = frame(now(), SEEK_FRAME_MS) ?: return
             each()
             still = if (f.changed) 0 else still + 1
         }
@@ -192,10 +192,10 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     private class Ticked(val pacing: Pacing, val step: Pacing.Step, val changed: Boolean)
 
-    private fun frame(t: Long): Ticked? {
+    private fun frame(t: Long, stepMs: Long? = null): Ticked? {
         val s = session ?: return null.also { rest() }
         val p = pacing ?: Pacing(t).also { pacing = it }
-        val f = tick(s) ?: return null
+        val f = tick(s, stepMs) ?: return null
         frameSeq++
         if (f.changed) dirty = true
         f.image?.let { lastImage = it; publish(it, rest = false) }
@@ -204,8 +204,8 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return Ticked(p, step, f.changed)
     }
 
-    private fun tick(s: LiveSession): Frame? = try {
-        s.tick()
+    private fun tick(s: LiveSession, stepMs: Long?): Frame? = try {
+        s.tick(stepMs = stepMs)
     } catch (e: Throwable) {
         if (e is CancellationException) throw e
         log("프레임 루프 틱 실패: $e")
@@ -291,7 +291,8 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     companion object {
         const val AGENT_WAIT_MS = 3_000L
-        const val CATCH_UP_MS = 150L
+        const val SEEK_FRAME_MS = 16L
+        const val CATCH_UP_FRAMES = 15
         private const val CLOSED = "열린 라이브 세션이 없다"
     }
 }

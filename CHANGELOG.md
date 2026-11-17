@@ -33,6 +33,9 @@ Only changes users can see go here.
 - **Notches are drawn as notches** — a camera cutout flush with the screen edge (A07's, iPhone 17e's, and the Tab S11 Ultra's on its long edge) has square outer corners, and the iPhone 17e status bar splits around it.
 - **Switching a device taller than the 1600 dp custom limit to a custom size** (Galaxy Tab S11 Ultra, 1691 dp) clamps it to 1600 dp.
 - Device menu names in the iPhone group drop the repeated "iPhone" (17 · Air · 17 Pro Max · 18 Pro · Duo), with the `--device` names unchanged.
+- **`prevue scroll` lists every item it scrolled past in `passed`, even on a busy machine.**
+- **`prevue scroll` answers `moved: true` when the list rolls by exactly whole items**, so a `--until` search can continue.
+- **`prevue scroll` keeps working after one failed wheel scroll** — the next preview or interactive session scrolls again.
 - iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
 - **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
 - **Android status bar keeps clear of large rounded screen corners** — where a large rounded corner would cut the time or icons (such as Pixel 10 Pro XL in landscape), they move in from the edge instead.

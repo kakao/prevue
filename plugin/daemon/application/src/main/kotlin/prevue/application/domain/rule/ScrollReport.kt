@@ -56,7 +56,7 @@ object ScrollReport {
         return if (s.vertical) pane[0] to pane[1] - s.start else pane[0] - s.start to pane[1]
     }
 
-    private fun viewport(s: ListState, pane: List<Int>): List<Int>? {
+    fun viewport(s: ListState, pane: List<Int>): List<Int>? {
         val (ox, oy) = origin(s, pane) ?: return null
         return if (s.vertical) listOf(ox, oy + s.start, ox + s.width, oy + s.start + s.height)
             else listOf(ox + s.start, oy, ox + s.start + s.width, oy + s.height)

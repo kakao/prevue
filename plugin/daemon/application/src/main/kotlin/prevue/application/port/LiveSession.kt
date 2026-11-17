@@ -17,7 +17,7 @@ interface LiveSession {
     suspend fun touch(type: String, x: Int, y: Int)
     fun type(text: String): String?
     fun scroll(x: Int, y: Int, dx: Float, dy: Float): Boolean
-    fun tick(forceImage: Boolean = false): Frame
+    fun tick(forceImage: Boolean = false, stepMs: Long? = null): Frame
     suspend fun look(semantics: Boolean = false): Look
     fun lists(): List<ListState>
     fun semantics(): List<SemanticNode>

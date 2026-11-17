@@ -150,6 +150,7 @@ internal class RenderEngine(
             is Start.Failed -> return s.out
         }
         live = started.session
+        scrollBroken = null
         val out = if (interactive) renderInteractive(started.timing) else renderLive(started.timing)
         learnFrom(started)
         return out
@@ -305,7 +306,7 @@ internal class RenderEngine(
             return l.type(root, text)
         }
 
-        override fun tick(forceImage: Boolean): Frame = l().frame(forceImage, ripples)
+        override fun tick(forceImage: Boolean, stepMs: Long?): Frame = l().frame(forceImage, ripples, stepMs)
 
         override suspend fun renderAt(ms: Long, frameMs: Long): RenderOutput {
             val l = l()

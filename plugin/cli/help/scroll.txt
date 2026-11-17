@@ -20,7 +20,7 @@ scroll, read the response, decide the next step. If you are looking for somethin
               If not found, it stays scrolled to the cap with found:null · exit 1 — check container.canScrollForward to see if it can scroll further
 
 Response
-  moved      whether node positions inside the scrolled area changed — false means it reached the end or there is nothing scrollable at the wheel position (pick with --at)
+  moved      whether the scrolled area changed — node positions, the list's visible items, or text inside it; false means it reached the end or there is nothing scrollable at the wheel position (pick with --at)
   container  what was scrolled (at · box · axis). For a lazy list, also total (item count) · first · last (visible indices) ·
              canScrollForward · canScrollBackward (whether it can scroll further either way)
   found      only with --until. The target on the screen where it stopped — same shape as an appeared item; put its at straight into touch --at
