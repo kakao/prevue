@@ -33,10 +33,10 @@ class MergeGuard(unittest.TestCase):
         os.chmod(gh, os.stat(gh).st_mode | stat.S_IEXEC)
         self.log = os.path.join(self.dir.name, "log")
 
-    def run_hook(self, command, *flags):
+    def run_hook(self, command):
         env = dict(os.environ, PATH=self.dir.name + os.pathsep + os.environ["PATH"], GH_LOG=self.log)
         event = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": self.dir.name, "tool_input": {"command": command}}
-        return subprocess.run([sys.executable, HOOK, *flags], input=json.dumps(event), env=env,
+        return subprocess.run([sys.executable, HOOK], input=json.dumps(event), env=env,
                               capture_output=True, text=True, timeout=30)
 
     def asked(self, command):
@@ -93,12 +93,6 @@ class MergeGuard(unittest.TestCase):
 
     def test_따옴표가_안_맞는_명령도_머지면_띄운다(self):
         self.assertIsNotNone(self.asked("gh pr merge 257 --body 'unterminated"))
-
-    def test_deny_모드는_이유를_stderr에_내고_2로_막는다(self):
-        out = self.run_hook("gh pr merge 257 --squash", "--deny")
-        self.assertEqual(out.returncode, 2)
-        self.assertIn("develop", out.stderr)
-        self.assertEqual(self.run_hook("gh pr merge 249 --merge", "--deny").returncode, 0)
 
     def test_훅_JSON이_아니면_아무것도_막지_않는다(self):
         env = dict(os.environ, GH_LOG=self.log)

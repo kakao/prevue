@@ -3,9 +3,8 @@
 # 문장만으로는 옛 스킬을 로드한 세션이 머지를 불렀다 — 세션이 무엇을 읽었든 명령이 나가는 순간에 건다.
 #
 #   base 가 main(릴리즈 PR, /ship 이 머지한다)  → 통과
-#   그 밖(작업 PR · base 를 읽지 못함)            → 사람 확인을 띄운다. --deny 면 막는다
+#   그 밖(작업 PR · base 를 읽지 못함)            → 사람 확인을 띄운다
 #
-# --deny 는 확인 창이 없는 에이전트용이다(Codex 의 PreToolUse 는 ask 를 받지 않는다).
 # 입력은 훅 JSON(stdin)의 tool_input.command · cwd 다. 사람이 터미널에서 직접 치는 머지는 훅을 거치지 않는다.
 import json
 import os
@@ -87,7 +86,6 @@ def verdict(command, cwd):
 
 
 def main():
-    deny = "--deny" in sys.argv[1:]
     try:
         event = json.load(sys.stdin)
         command = event["tool_input"]["command"]
@@ -98,9 +96,6 @@ def main():
     reason = verdict(command, event.get("cwd"))
     if reason is None:
         return 0
-    if deny:
-        sys.stderr.write(reason + " 사람이 직접 머지한다.\n")
-        return 2
     json.dump({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
                                       "permissionDecisionReason": reason}}, sys.stdout, ensure_ascii=False)
     return 0
