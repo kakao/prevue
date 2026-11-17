@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 
+VIEW = 'pr view %s --json baseRefName,headRefName -q .baseRefName + " " + .headRefName'
 HOOK = os.path.join(os.path.dirname(__file__), "..", "..", "tools", "hooks", "merge-guard.py")
 # 가짜 gh: `pr view <N>` 에 "base head" 를 답하고 부른 인자를 남긴다 — N 이 9 로 끝나거나 1 · 2 면 릴리즈 PR, 8 로 끝나면 main 으로 잘못 연 작업 PR,
 # 0 으로 끝나면 실패, 그 밖은 작업 PR 이다. 1 · 2 는 리다이렉션의 fd 숫자가 PR 번호로 읽히면 통과해 버리게 둔 것이다
@@ -57,61 +58,55 @@ class MergeGuard(unittest.TestCase):
             return f.read().splitlines()
 
     def test_작업_PR_머지는_사람_확인을_띄운다(self):
-        reason = self.asked("gh pr merge 257 --squash")
-        self.assertIn("develop", reason)
-        self.assertIn("257", reason)
+        self.assertIn("사람이 한다", self.asked("gh pr merge 257 --merge"))
+        self.assertEqual(self.gh_calls(), [VIEW % "257"])
 
-    def test_릴리즈_PR_머지는_그대로_통과한다(self):
+    def test_릴리즈_PR을_ship의_모양_그대로_머지하면_통과한다(self):
         self.assertIsNone(self.asked("gh pr merge 249 --merge"))
+        self.assertIsNone(self.asked("gh pr checks 249 --watch && gh pr merge 249 --merge"))
 
-    def test_base를_읽지_못하면_사람_확인을_띄운다(self):
-        self.assertIn("읽지 못했다", self.asked("gh pr merge 250 --squash"))
+    def test_PR을_읽지_못하면_사람_확인을_띄운다(self):
+        self.assertIsNotNone(self.asked("gh pr merge 250 --merge"))
+
+    def test_main으로_잘못_연_작업_PR은_띄운다(self):
+        self.assertIsNotNone(self.asked("gh pr merge 248 --merge"))
 
     def test_머지를_언급만_한_명령은_gh를_부르지_않고_통과한다(self):
         for command in ("grep -rn 'gh pr merge' dev-skills-src",
                         'git commit -m "gh pr merge 를 훅이 가로챈다"',
                         "gh pr create --base develop --body \"$(cat <<'EOF'\ngh pr merge 257 를 부르지 않는다\nEOF\n)\"",
                         "gh pr view 257 --json state",
+                        "git merge origin/develop",
                         "gh pr checks 257 --required --watch"):
             self.assertIsNone(self.asked(command), command)
         self.assertEqual(self.gh_calls(), [])
 
-    def test_이어_붙인_명령_안의_머지도_잡는다(self):
-        for command in ("gh pr checks 257 --watch && gh pr merge 257 --squash",
-                        "cd /tmp; GH_PAGER= gh pr merge 257",
-                        "git push\n/opt/homebrew/bin/gh pr merge 257",
-                        "echo $(gh pr merge 257)"):
-            self.assertIn("develop", self.asked(command), command)
-
-    def test_한_명령의_머지_가운데_하나라도_작업_PR이면_띄운다(self):
-        self.assertIn("257", self.asked("gh pr merge 249 --merge && gh pr merge 257 --squash"))
-
-    def test_플래그의_값을_PR_지정으로_읽지_않는다(self):
-        self.assertIsNone(self.asked("gh pr merge --subject 257 -R kakao/prevue 249 --merge"))
-        self.assertEqual(self.gh_calls(), ["pr view 249 --repo kakao/prevue --json baseRefName,headRefName -q .baseRefName + \" \" + .headRefName"])
-
-    def test_리다이렉션을_PR_지정으로_읽지_않는다(self):
-        for command in ("gh pr merge --squash 2>&1", "gh pr merge --squash --auto 1>/dev/null", "gh pr merge --squash > /tmp/o",
-                        "gh pr merge --squash 2>&1 | tail -5"):
-            self.assertIn("이 브랜치의 PR", self.asked(command), command)
-        for command in ("gh pr merge 257 >/tmp/o 2>&1", "gh pr merge 2>&1 257", "gh pr merge 257 &>/dev/null",
-                        'gh pr merge --body "see > note" 257', "gh pr list -q '.a > .b' ; gh pr merge 257",
-                        "gh pr merge 257 2>&1|tail -5"):
-            self.assertIn("257", self.asked(command), command)
-
-    def test_main으로_잘못_연_작업_PR은_띄운다(self):
-        self.assertIn("worktree-x → main", self.asked("gh pr merge 248 --merge"))
-
-    def test_명령_앞의_env_command_time은_벗긴다(self):
-        for command in ("env X=1 gh pr merge 257", "command gh pr merge 257", "time gh pr merge 257",
-                        "env -i gh pr merge 257", "time -p gh pr merge 257"):
-            self.assertIn("257", self.asked(command), command)
-
-    def test_PR_지정이_없으면_지금_브랜치의_PR을_본다(self):
-        self.assertIn("이 브랜치의 PR", self.asked("gh pr merge --squash"))
-
-    def test_따옴표가_안_맞는_명령도_머지면_띄운다(self):
-        self.assertIsNotNone(self.asked("gh pr merge 257 --body 'unterminated"))
+    def test_ship의_모양이_아닌_머지는_PR을_조회하지_않고_띄운다(self):
+        # 가짜 gh 는 1 · 2 · 249 에 릴리즈 PR 을 답한다 — 명령에서 PR 을 짐작해 조회하면 통과해 버린다
+        for command in ("gh pr merge 257 --squash",
+                        "gh pr merge --squash",
+                        "gh pr merge 249",
+                        "gh pr merge 249 --merge --delete-branch",
+                        "gh pr merge --merge 249 257",
+                        "gh pr merge 249 --merge 2>&1",
+                        "gh pr merge --squash 2>&1",
+                        "gh pr merge --squash --auto 1>/dev/null",
+                        "gh pr merge 249 --merge > /tmp/o",
+                        "gh pr merge &>/dev/null 257",
+                        'gh pr merge --body "see > note" 257',
+                        'gh pr merge --body "> note" 257',
+                        'gh pr merge -t "<x>" 257',
+                        "gh pr merge --subject 257 -R kakao/prevue 249 --merge",
+                        "gh pr list -q '.a > .b' ; gh pr merge 257",
+                        "cd /tmp; GH_PAGER= gh pr merge 249 --merge",
+                        "git push\n/opt/homebrew/bin/gh pr merge 249 --merge",
+                        "echo $(gh pr merge 257)",
+                        "env X=1 gh pr merge 249 --merge", "env -u X gh pr merge 249 --merge",
+                        "command gh pr merge 249 --merge", "time -p gh pr merge 249 --merge",
+                        "gh pr merge 249 --merge && gh pr merge --squash",
+                        "gh pr merge 257 --body 'unterminated"):
+            self.assertIsNotNone(self.asked(command), command)
+        self.assertEqual(self.gh_calls(), [VIEW % "249"])   # 끝에서 둘째 사례의 앞 조각 하나뿐이다
 
     def test_훅_JSON이_아니면_아무것도_막지_않는다(self):
         env = dict(os.environ, GH_LOG=self.log)
