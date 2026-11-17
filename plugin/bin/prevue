@@ -694,7 +694,9 @@ case "$cmd" in
     fi
     HAD=false; baked && HAD=true
     # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
-    have_java && export JAVA_HOME="$JDK"
+    # 21+ 가 없으면 Gradle 을 띄우지 않는다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다.
+    have_java || { python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"; exit 3; }
+    export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
       if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
@@ -899,8 +901,9 @@ case "$cmd" in
         echo '{"ok":false,"needsEscalation":true,"error":"The first start after an update calls Gradle to build the executable — run the same command again outside the sandbox (escalated), just this once"}'
         exit 1
       fi
+      have_java || { python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"; exit 3; }
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
-      have_java && export JAVA_HOME="$JDK"
+      export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
     baked || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
