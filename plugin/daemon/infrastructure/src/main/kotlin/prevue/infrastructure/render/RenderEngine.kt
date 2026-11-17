@@ -46,6 +46,8 @@ internal class RenderEngine(
     private val renderService: RenderService
     private val baseConfiguration: Configuration
     private val resourceIds: ResourceIds
+    private val sessionSurfaces: SessionSurfaces
+    private val disposal: SessionDisposal
 
     var preloadNext: Boolean = true
     private val loaderCount = MutableStateFlow(LoaderCount(0, 0))
@@ -92,6 +94,8 @@ internal class RenderEngine(
         renderService = surfaces.renderService.value
         baseConfiguration = surfaces.baseConfiguration.value
         resourceIds = ResourceIds(renderer, surfaces)
+        sessionSurfaces = surfaces.session
+        disposal = SessionDisposal(surfaces.session)
         loaders = SharedLoaders(spec, surfaces)
         outDir.mkdirs()
     }
@@ -214,7 +218,7 @@ internal class RenderEngine(
         if (!usePrivate) loaders.current = loader
         task.setTimeout(renderTimeoutSec * 1000)
         task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
-        val session = LayoutlibSession(p, task, disposable, logger) { renderTimeoutSec }
+        val session = LayoutlibSession(p, task, disposable, logger, sessionSurfaces) { renderTimeoutSec }
         val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
         if (counted) countTask()
         resourceIds.registeredByFirstLoader()
@@ -371,7 +375,7 @@ internal class RenderEngine(
     }
 
     private fun dispose(l: LayoutlibSession) {
-        runCatching { SessionDisposal.dispose(l.task) }.onFailure { e -> System.err.println("[prevue] 세션 정리 실패: $e") }
+        runCatching { disposal.dispose(l.task) }.onFailure { e -> System.err.println("[prevue] 세션 정리 실패: $e") }
         runCatching { Disposer.dispose(l.disposable) }.onFailure { e -> System.err.println("[prevue] disposable 정리 실패: $e") }
     }
 

@@ -28,6 +28,7 @@ internal class LayoutlibSession(
     val task: RenderTask,
     val disposable: CheckedDisposable,
     val logger: RenderLogger,
+    private val surfaces: SessionSurfaces,
     private val timeoutSec: () -> Long,
 ) {
     val clock = SessionClock()
@@ -140,9 +141,9 @@ internal class LayoutlibSession(
     }
 
     fun viewRoot(): ViewGroup? {
-        val session = RenderTask::class.java.getDeclaredField("myRenderSession").apply { isAccessible = true }.get(task) ?: return null
-        val impl = session.javaClass.getDeclaredField("mSession").apply { isAccessible = true }.get(session) ?: return null
-        return impl.javaClass.getDeclaredField("mViewRoot").apply { isAccessible = true }.get(impl) as? ViewGroup
+        val session = surfaces.renderSession.value.get(task) ?: return null
+        val impl = surfaces.bridgeImpl.value.get(session) ?: return null
+        return surfaces.viewRoot.value.get(impl) as? ViewGroup
     }
 
     fun rebuildTree(result: RenderResult): String? {
