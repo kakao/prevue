@@ -3,20 +3,19 @@
 # 문장만으로는 옛 스킬을 로드한 세션이 머지를 불렀다 — 세션이 무엇을 읽었든 명령이 나가는 순간에 건다.
 #
 #   명령 전체가 글자 그대로 `gh pr merge <번호> --merge` 이고 그 PR 이 develop → main(릴리즈 PR, /ship 이 머지한다)  → 통과
-#   그 밖에 gh … pr … merge 가 한 줄에 든 모든 명령                                                              → 사람 확인을 띄운다
+#   그 밖에 gh … pr merge 가 든 모든 명령                                                        → 사람 확인을 띄운다
 #
 # 잘못 띄운 확인은 클릭 한 번이고 잘못 통과시킨 것은 머지다 — 그래서 셸 문법(따옴표 · heredoc · 주석 · 치환)을 풀지 않는다.
-# 풀어서 실행될 머지만 고르려던 판은 리뷰마다 놓치는 모양이 나왔다. 그 값으로 머지를 언급만 한 명령(grep · 커밋 메시지 · PR 본문)에도 확인이 뜬다.
-# gh api 로 하는 머지와 스크립트 파일 안의 머지는 보지 않는다. 사람이 터미널에서 직접 치는 머지는 훅을 거치지 않는다.
+# 풀어서 실행될 머지만 고르려던 판은 리뷰마다 놓치는 모양이 나왔다. 그 값으로 `gh pr merge` 를 그대로 적은 언급(grep · 커밋 메시지)에도 확인이 뜬다.
+# gh api 로 하는 머지, pr 과 merge 사이에 옵션을 끼운 머지(gh pr -R … merge), 스크립트 파일 안의 머지는 보지 않는다. 사람이 터미널에서 직접 치는 머지는 훅을 거치지 않는다.
 # 입력은 훅 JSON(stdin)의 tool_input.command · cwd 다.
 import json
 import re
 import subprocess
 import sys
 
-# pr · merge 는 홀로 선 단어만 본다 — 브랜치 이름 · 경로 조각(worktree-…-merge-…)에는 띄우지 않는다
-ALONE = r"(?<![\w./-])%s(?![\w./-])"
-MENTION = re.compile(r"\b(?i:gh)\b[^;|&\n]*" + ALONE % "pr" + r"[^;|&\n]*" + ALONE % "merge")
+# pr 바로 뒤의 merge 만 본다 — PR 본문의 merge 와 브랜치 이름 · 경로 조각(worktree-…-merge-…)에는 띄우지 않는다
+MENTION = re.compile(r"\b(?i:gh)\b[^;|&\n]*(?<![\w./-])['\"]?pr['\"]?\s+\\?['\"]?merge(?![\w./-])")
 RELEASE = re.compile(r"gh pr merge ([0-9]+) --merge")
 HUMAN = "develop 머지는 사람이 한다(AGENTS.md). 사용자가 이 머지를 시켰을 때만 허용한다."
 

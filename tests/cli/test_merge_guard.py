@@ -79,7 +79,9 @@ class MergeGuard(unittest.TestCase):
                         "gh pr create --base develop --title x\ngit merge origin/develop",
                         "ls tools/hooks/merge-guard.py",
                         "gh pr create --base develop --head worktree-retro-merge-guard-review --body-file /tmp/x-merge-guard/body.md",
-                        "gh pr view worktree-pr-merge-fix --json state"):
+                        "gh pr view worktree-pr-merge-fix --json state",
+                        'gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "merge commit으로 머지한다"',
+                        "gh pr edit 260 --title 'pr 의 merge 는 사람이 한다'"):
             self.assertIsNone(self.asked(command), command)
         self.assertEqual(self.gh_calls(), [])
 
@@ -106,7 +108,6 @@ class MergeGuard(unittest.TestCase):
                         "gh pr merge 249\n--merge",
                         "gh pr \\\n merge 257",
                         "gh --repo kakao/prevue pr merge 249 --merge",
-                        "gh pr -R kakao/prevue merge 249 --merge",
                         "echo $(gh pr merge 257)",
                         'out="$(gh pr merge 257 --squash 2>&1)"',
                         'echo "`gh pr merge 257`"',
