@@ -106,7 +106,8 @@ export function deviceTable(specList) {
     const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
-    if (look.status) entry.status = status(look.status, `${where}.look.status`);
+    // 상태바 자리는 데몬만 쓴다(DeviceChrome, D-189) — 여기서는 모양만 검사하고 devices.js 에 싣지 않는다.
+    if (look.status) status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);
     return { order: number(spec.order, `${where}.order`), id: spec.id, entry };
   }).sort((a, b) => a.order - b.order);

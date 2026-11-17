@@ -34,8 +34,7 @@ internal object DeviceChromePainter {
     private val INK_LIGHT = Color.WHITE
 
     fun layoutOf(p: PreviewSpec): ChromeLayout? {
-        val shown = p.systemBars as? SystemBars.Shown ?: return null
-        if (shown.insets == null) return null
+        if (p.systemBars !is SystemBars.Shown) return null
         return p.params[SystemBars.DEVICE_POSTURE]?.let(ScreenSize::postureOf)?.let(DeviceChrome::of)
     }
 
@@ -45,6 +44,11 @@ internal object DeviceChromePainter {
     }
 
     fun paint(image: BufferedImage, layout: ChromeLayout, clearCorners: Boolean) {
+        runCatching { draw(image, layout, clearCorners) }
+            .onFailure { System.err.println("[prevue] 기기 바 · 카메라를 굽지 못해 바 없이 낸다: $it") }
+    }
+
+    private fun draw(image: BufferedImage, layout: ChromeLayout, clearCorners: Boolean) {
         val inks = layout.inkRegions.mapValues { (_, box) -> inkOver(image, layout, box) }
         val g = image.createGraphics()
         try {
@@ -53,11 +57,11 @@ internal object DeviceChromePainter {
             g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
             g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
             g.scale(image.width / layout.widthDp, image.height / layout.heightDp)
+            layout.marks.forEach { mark -> draw(g, mark, inks[mark.band] ?: INK_DARK) }
             layout.camera?.let { cam ->
                 g.color = CAMERA
                 g.fill(ChromeShapes.corners(cam.box.x, cam.box.y, cam.box.w, cam.box.h, cam.corners))
             }
-            layout.marks.forEach { mark -> draw(g, mark, inks[mark.band] ?: INK_DARK) }
             if (clearCorners && image.colorModel.hasAlpha()) clearOutside(g, layout)
         } finally {
             g.dispose()

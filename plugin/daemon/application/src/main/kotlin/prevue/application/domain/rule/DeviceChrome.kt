@@ -21,12 +21,12 @@ object DeviceChrome {
     private const val DUO_BAND = 64.0
 
     fun of(device: ScreenSize.Device): ChromeLayout {
-        val bars = barsOf(device)
+        val camera = ChromeCamera.cutout(device)
+        val bars = barsOf(device, camera?.box)
         val marks = buildList {
             if (bars.statusDp > 0 || bars.side != null) addAll(statusMarks(device, bars))
             if (!bars.duo && bars.navDp > 0) add(handle(bars))
         }
-        val camera = ChromeCamera.cutout(device)
         val regions = buildMap {
             if (marks.any { it.band == InkBand.STATUS }) put(InkBand.STATUS, statusRegion(bars))
             if (marks.any { it.band == InkBand.NAVIGATION }) put(InkBand.NAVIGATION, DpBox(0.0, bars.h - bars.navDp, bars.w, bars.navDp))
@@ -53,10 +53,9 @@ object DeviceChrome {
 
     internal enum class Side { LEFT, RIGHT }
 
-    private fun barsOf(device: ScreenSize.Device): Bars {
+    private fun barsOf(device: ScreenSize.Device, cam: DpBox?): Bars {
         val values = DeviceInsetInputs.of(device).values
         val statusDp = values.statusBars.top
-        val cam = ChromeCamera.cutout(device)?.box
         val topCam = cam?.takeIf { it.y < statusDp }?.let { TopCam(it.x, it.x + it.w, it.y + it.h / 2) }
         val lowCam = cam?.takeIf { device.panel.face.camera.edge == CameraEdge.BOTTOM && it.y + it.h >= device.heightDp - .5 }?.let { it.x to it.x + it.w }
         val duo = device.model.id == DUO_ID
@@ -214,10 +213,8 @@ internal object ChromeCamera {
         return r
     }
 
-    private fun naturalDp(device: ScreenSize.Device): Pair<Double, Double> {
-        val p = device.panel
-        return dp(p.widthPx, p.dpi) to dp(p.heightPx, p.dpi)
-    }
+    private fun naturalDp(device: ScreenSize.Device): Pair<Double, Double> =
+        ScreenSize.Device(device.model, device.folded).let { it.widthDp to it.heightDp }
 
     private fun mirrored(device: ScreenSize.Device): Boolean {
         val (w, h) = naturalDp(device)
@@ -229,6 +226,4 @@ internal object ChromeCamera {
         }
         return angle < 0 || angle == 180
     }
-
-    private fun dp(px: Int, dpi: Int): Double = Math.round(px * 160.0 / dpi * 100) / 100.0
 }

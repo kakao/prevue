@@ -171,9 +171,12 @@ internal abstract class InsetsRenderChecks {
                 assertEquals(0xff050505.toInt(), px(cam.x + cam.w / 2, cam.y + cam.h / 2), "${device.key} PNG 카메라")
                 assertEquals(0x050505, live(cam.x + cam.w / 2, cam.y + cam.h / 2) and 0xffffff, "${device.key} 라이브 카메라")
             }
+            val dark = 0xff000000.toInt()
             chrome.marks.filterIsInstance<ChromeMark.Handle>().forEach { h ->
-                val ink = px(h.box.x + h.box.w / 2, h.box.y + h.box.h / 2)
-                assertTrue(ink == 0xff000000.toInt() || ink == -1, "${device.key} 핸들은 바 글자색으로 채운다: ${Integer.toHexString(ink)}")
+                assertEquals(dark, px(h.box.x + h.box.w / 2, h.box.y + h.box.h / 2), "${device.key} 흰 바탕 위 핸들은 어두운 글자색")
+            }
+            chrome.marks.filterIsInstance<ChromeMark.DuoIndicator>().forEach { d ->
+                assertEquals(dark, px(d.x, d.y + 5), "${device.key} 흰 바탕 위 Duo 상태 표시는 어두운 글자색")
             }
             if (chrome.radius[0] > 0) assertEquals(0, png.getRGB(0, 0) ushr 24, "${device.key} 둥근 화면 모서리 밖은 비어 있다")
             handle.close()
