@@ -8,5 +8,6 @@ failure values on cards and responses
   ANDROID_VIEW   the screen relies on a real device, such as AndroidView. This tool can't fix it — tell the person and stop
   TIMEOUT        waiting or drawing took too long. message says what it couldn't wait for
   EXCEPTION      the render threw. Pass message to the person as is. If it threw because the R class wasn't found, stale.build-files comes with it — the dump is stale, so go to the remedy's warmup
+                 If message starts with "This Preview needs an Activity", a library looked up an Activity from the context. Previews have none, in Android Studio too — tell the person and stop
 
 An image with stale is not an image of the current code. Read stale's reason (compile · resources · build, etc.) and remedy.

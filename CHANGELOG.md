@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **A preview that fails with "Unexpected Context type when trying to resolve the context's Activity." (`androidx.xr.compose` looking up an Activity) now says it needs one** — the message starts with "This Preview needs an Activity", since previews are drawn without an Activity (Android Studio fails the same way).
 - **A render that fails with an exception now leads with that exception** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.
 - **iPhone Duo folded in landscape hides its status indicator like other iPhones in landscape**, since [safearea.info](https://safearea.info/) reserves only the camera corner there.
 - **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
