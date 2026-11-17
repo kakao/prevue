@@ -137,13 +137,16 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 걸어 두면 다음 틱 한 번이 그것을 던진다 — 렌더러가 Error로 죽는 자리다. */
     @Volatile var tickThrows: Throwable? = null
     val ticks = java.util.concurrent.atomic.AtomicInteger()
+    /** 틱마다 넘어온 세션 시각 걸음 — null 이면 실제 시계를 따랐다. */
+    val tickSteps = CopyOnWriteArrayList<Long?>()
 
     inner class Session(override val preview: PreviewSpec, override val opened: RenderOutput) : LiveSession {
         override suspend fun touch(type: String, x: Int, y: Int) { touches += Triple(type, x, y); onTouch(type, x, y) }
         override fun type(text: String): String? = typeError
         override fun scroll(x: Int, y: Int, dx: Float, dy: Float): Boolean { scrolls += listOf(x.toFloat(), y.toFloat(), dx, dy); onScroll(dx, dy); return true }
-        override fun tick(forceImage: Boolean): Frame {
+        override fun tick(forceImage: Boolean, stepMs: Long?): Frame {
             ticks.incrementAndGet()
+            tickSteps += stepMs
             tickThrows?.let { tickThrows = null; throw it }
             return frames.poll() ?: if (moving) Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) else Frame(false, true, null, 0, 0, 0)
         }

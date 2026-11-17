@@ -114,10 +114,10 @@ internal class LayoutlibSession(
         }
     }
 
-    fun frame(forceImage: Boolean, ripples: RippleCalmer): Frame {
+    fun frame(forceImage: Boolean, ripples: RippleCalmer, stepMs: Long? = null): Frame {
         anchor()
         val t0 = System.nanoTime()
-        advanceCallbacks()
+        advanceCallbacks(stepMs?.let { clock.advance(it * 1_000_000) } ?: clock.next())
         pressUnseen = false
         ripples.calm(task) { viewRoot() }
         val img = task.render().get(timeoutSec(), TimeUnit.SECONDS).renderedImage.copy

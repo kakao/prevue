@@ -16,6 +16,10 @@ internal class SessionClock {
 
     fun step(nanos: Long): Long {
         stepped = true
+        return advance(nanos)
+    }
+
+    fun advance(nanos: Long): Long {
         lastReal = System.nanoTime()
         last += maxOf(nanos, MIN_STEP)
         return last
