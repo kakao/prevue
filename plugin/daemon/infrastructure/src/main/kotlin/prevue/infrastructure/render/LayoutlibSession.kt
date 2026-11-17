@@ -17,9 +17,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.delay
-import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SystemBars
+import prevue.application.domain.model.systemBars
 import prevue.application.port.Frame
 import prevue.application.port.RenderOutput
 
@@ -57,7 +58,11 @@ internal class LayoutlibSession(
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
             val insets = preview.appInsets
-            if (insets != null) placeInsets(insets) else LayoutlibBars.insetsOf(preview)?.let(::placeBars)
+            val bars = preview.systemBars as? SystemBars.Shown
+            when {
+                insets != null -> placeInsets(insets)
+                bars != null -> placeBars(bars)
+            }
             barsPlaced = true
         }
         return task.render().get(timeoutSec(), TimeUnit.SECONDS)
@@ -93,11 +98,18 @@ internal class LayoutlibSession(
         (manager.getDeclaredField("sent").apply { isAccessible = true }.get(null) as AtomicBoolean).set(false)
     }
 
-    private fun placeBars(insets: BarInsets) {
+    private fun placeBars(bars: SystemBars.Shown) {
+        val unprepared = runCatching { task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS) }
+            .exceptionOrNull()?.let { "컴포지션을 다시 만들 준비를 하지 못했다: $it" }
         task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
-        var why: String? = "세션의 루트 뷰를 찾지 못했다"
-        viewRoot()?.let { root -> onSession { why = runCatching { LayoutlibBars.measured(root, insets) }.getOrElse(Throwable::toString) } }
-        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+        val root = viewRoot()
+        var placed: Result<Unit> = Result.failure(IllegalStateException("세션의 루트 뷰를 찾지 못했다"))
+        if (root != null) onSession {
+            placed = runCatching { LayoutlibBars.place(root, bars) }
+            if (placed.isSuccess) placedWarning = (unprepared ?: ComposeRestart.withPlacedInsets(root))?.let(ComposeRestart::warning)
+        }
+        placed.exceptionOrNull()?.let { System.err.println("[prevue] 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+        if (root != null) anchor()
     }
 
     fun advanceCallbacks(at: Long = clock.next()) {
