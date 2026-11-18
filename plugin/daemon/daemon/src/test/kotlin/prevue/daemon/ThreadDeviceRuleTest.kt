@@ -53,7 +53,8 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/daemon/fake/Await.kt", DELAY, 2, "$WALL_CLOCK — 기다림 도우미의 폴링 간격"),
             Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
-            Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다", virtualTime = true),
+            Allowed("prevue/application/service/EngineTest.kt", DELAY, 3, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령 · 세션 닫기를 붙잡아 둔다", virtualTime = true),
+            Allowed("prevue/application/service/LiveLoopTest.kt", DELAY, 1, "가상 시간 — runTest 의 시계 위에서 세션 닫기를 붙잡아 둔다", virtualTime = true),
             Allowed("prevue/daemon/fake/LaneSpyTest.kt", DELAY, 1, "가상 시간 — 스파이가 가상 시계의 Delay 를 넘기는지 본다", virtualTime = true),
         )
         const val COLLECT = ".collect"

@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -228,6 +229,15 @@ class LiveLoopTest {
         assertFalse(a.changed())
         assertTrue(a.ensure(card, interactive = false)!!.ok, "다음 조작은 새 세션을 연다")
         assertEquals(3, fake.opened.size)
+    }
+
+    @Test fun `다른 프리뷰로 바꾸면 앞 세션 닫기가 끝난 뒤 새 세션을 연다`() = runTest {
+        val a = actor()
+        val other = PreviewSpec("demo.CardKt.Card1", "Card1", emptyMap(), null, 0)
+        a.ensure(card, interactive = true)
+        fake.onClose = { delay(30) }
+        a.ensure(other, interactive = true)
+        assertEquals(listOf("open ${card.previewId}", "close ${card.previewId}", "open ${other.previewId}"), fake.lifecycle.toList())
     }
 
     @Test fun `세션이 닫히면 기다리던 에이전트는 실패를 받는다`() = runTest {

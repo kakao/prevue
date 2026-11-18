@@ -96,6 +96,17 @@ class EngineTest {
         assertEquals(listOf("Kept"), fake.patched.map { it.first })
     }
 
+    @Test fun `요청자가 취소해도 시작한 명령은 끝까지 돌고 세션은 엔진이 쥔다`() = runBlocking {
+        val gate = CountDownLatch(1).also { fake.showGate = it }
+        val opening = async(Dispatchers.Default) { actor.ensure(card, interactive = true) }
+        assertTrue(fake.showEntered.tryAcquire(5, TimeUnit.SECONDS))
+        opening.cancel()
+        gate.countDown()
+        assertEquals(null, actor.ensure(card, interactive = true), "취소된 요청이 연 세션이 엔진에 남아 있어야 한다")
+        assertEquals(1, fake.opened.size)
+        assertEquals(0, fake.closes.get())
+    }
+
     @Test fun `터치가 대기하는 동안 다음 명령과 프레임은 실행되지 않는다`() = runTest {
         val a = Engine(fake, fake, backgroundScope, dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog {})
         a.ensure(card, interactive = true)
@@ -129,6 +140,15 @@ class EngineTest {
         assertThrows<CancellationException> { runBlocking { pending.await() } }
         assertEquals(0, fake.codeChanges)
         assertEquals(1, fake.closes.get())
+    }
+
+    @Test fun `액터를 취소해도 세션 닫기가 끝날 때까지 기다린다`() = runTest {
+        val job = Job(backgroundScope.coroutineContext[Job])
+        val a = Engine(fake, fake, CoroutineScope(job), dispatchersOn(StandardTestDispatcher(testScheduler)), MonotonicClock.SYSTEM, EngineLog {})
+        a.ensure(card, interactive = true)
+        fake.onClose = { delay(50) }
+        job.cancelAndJoin()
+        assertEquals(1, fake.closes.get(), "취소가 닫기 도중의 대기를 끊었다")
     }
 
     @Test fun `정착 그림이 대기하는 동안 다음 명령은 실행되지 않는다`() = runTest {

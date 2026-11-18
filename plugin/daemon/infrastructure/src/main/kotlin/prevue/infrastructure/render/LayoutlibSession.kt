@@ -12,7 +12,6 @@ import com.android.layoutlib.bridge.impl.RenderAction
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderTask
-import com.intellij.openapi.util.CheckedDisposable
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,7 +26,7 @@ import prevue.application.port.RenderOutput
 internal class LayoutlibSession(
     val preview: PreviewSpec,
     val task: RenderTask,
-    val disposable: CheckedDisposable,
+    val lease: RendererLease,
     val logger: RenderLogger,
     private val surfaces: SessionSurfaces,
     private val timeoutSec: () -> Long,

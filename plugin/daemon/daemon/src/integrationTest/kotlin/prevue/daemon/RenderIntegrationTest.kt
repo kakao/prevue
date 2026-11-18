@@ -409,7 +409,7 @@ class RenderIntegrationTest {
             repeat(20) { session.tick() }
             assertEquals(null, engine.touchModeError)
             assertEquals(null, engine.focusedView())
-        } finally { session.close() }
+        } finally { runBlocking { session.close() } }
     }
 
     // 굴리면 게으른 그리드가 화면 밖 아이템을 미리 짓는다(prefetch) — 배치되지 않은 그 노드가 원점 bounds로 트리에 실리면
@@ -967,7 +967,7 @@ class RenderIntegrationTest {
             assertTrue(before < 0.4, "첫 틱에 막대가 ${before}만큼 찼다 — 건너뜀을 잴 수 없다")
             assertTrue(after - before < 0.4, "옆 그림 한 장 뒤 한 틱에 막대가 $before → $after — 라이브 시계가 건너뛰었다")
         } finally {
-            s.close()
+            runBlocking { s.close() }
         }
         assertAlive()
     }
@@ -996,7 +996,7 @@ class RenderIntegrationTest {
             val now = s.tick(forceImage = true).image!!
             assertFalse(samePixels(first, now), "옆 그림 세 장 뒤 끌어도 그림이 같다 — 라이브 세션이 옆 태스크를 놓을 때 깨졌다")
         } finally {
-            s.close()
+            runBlocking { s.close() }
         }
         assertAlive()
     }
@@ -1140,6 +1140,27 @@ class RenderIntegrationTest {
         assertTrue(renderSpec.projectClassPath.none { it in identities }, "프로젝트 산출물이 라이브러리 캐시 의존에 섞였다")
         val name = preview.fqn.substringBeforeLast('.')
         assertTrue(Class.forName(name, false, shared as ClassLoader).classLoader === shared, "프로젝트 클래스가 호스트로 샜다")
+    }
+
+    @Test @Order(41) fun `만들다 실패한 태스크는 공유 로더를 쥐지 않아 세대를 바꾸면 그 로더가 폐기된다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        val owner = preview.fqn.substringBeforeLast('.')
+        assertTrue(engine.show(preview).ok)
+        engine.preloadNext = false
+        try { engine.patchLiterals(owner, mapOf("Int\$seed" to 1)) } finally { engine.preloadNext = true }
+        engine.codeChanged()
+        try {
+            assertFalse(engine.showAside(preview).ok, "enabled 필드가 없는 클래스에 리터럴을 넣었는데 태스크가 만들어졌다")
+            val surfaces = RendererSurfaces(engine.renderer).opened()
+            val failedOn = surfaces.sharedLoader.value.get(surfaces.manager.value) as com.android.tools.rendering.classloading.ModuleClassLoader
+            engine.dropLiterals(listOf(owner))
+            engine.codeChanged()
+            assertTrue(failedOn.isDisposed, "만들다 실패한 태스크가 공유 로더 참조를 돌려주지 않았다")
+        } finally {
+            engine.dropLiterals(listOf(owner))
+            engine.disposeLive()
+        }
+        assertTrue(engine.show(preview).ok)
     }
 
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =
