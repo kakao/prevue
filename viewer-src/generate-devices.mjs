@@ -42,17 +42,43 @@ function measuredRadius(screen, dpi, ios, where) {
   return found.size ? JSON.parse([...found][0]) : undefined;
 }
 
-function body(raw, where, measured) {
-  keys(raw, ['bezel', 'radius', 'cam', 'btn', 'home'], where, ['bezel', 'cam', 'btn']);
+// 컷아웃 하나는 시스템이 보고하는 배제 상자(box)와 그 안에 그릴 구멍(holes)이다. 상태 줄 · 핸들 · 눈금자 칸은 상자를 피하고, 장면 · 기기 PNG 는 구멍을 그린다.
+// box 는 가장자리 기준이다(w 는 가장자리를 따른 길이, h 는 깊이, y 는 가장자리에서 떨어진 거리, x 는 가장자리를 따른 위치 비율).
+// holes 는 화면 왼쪽 위 기준 자연 방향 dp 의 원이다(cx · cy 중심, d 지름, lens 면 렌즈 테와 유리 반점). 없으면 상자 모양 그대로 그린다.
+// 그릴 모양(cams)은 위 가장자리 기준 상자로 바꿔 둔다 — 장면의 camBox 가 상자와 같은 회전을 쓴다.
+function cutout(raw, where, size) {
+  keys(raw, ['box', 'holes'], where, ['box']);
+  const box = keys(raw.box, ['w', 'h', 'y', 'x', 'notch', 'edge'], `${where}.box`, ['w', 'h', 'y']);
+  for (const [name, value] of Object.entries(box)) if (name !== 'edge') number(value, `${where}.box.${name}`);
+  if (box.w <= 0 || box.h <= 0) throw Error(`${where}.box: 크기가 0 이다 — 카메라가 없는 화면은 cutouts 를 비운다`);
+  if (box.edge !== undefined && (!['right', 'bottom'].includes(box.edge) || box.notch === undefined)) throw Error(`${where}.box.edge: right · bottom 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
+  if (box.notch !== undefined && (box.y !== 0 || box.notch < 0 || box.notch > Math.min(box.w, box.h) / 2)) throw Error(`${where}.box.notch: 가장자리에 붙으려면 y 가 0 이고, 반경은 짧은 변의 절반 이하다`);
+  if (raw.holes === undefined) return { box, draw: [box] };
+  if (!Array.isArray(raw.holes) || !raw.holes.length) throw Error(`${where}.holes: 하나 이상의 목록이 아니다`);
+  const [W, H] = size, x = box.x ?? .5, near = .01;
+  const area = box.edge === 'right' ? { l: W - box.y - box.h, t: x * H - box.w / 2, r: W - box.y, b: x * H + box.w / 2 }
+    : box.edge === 'bottom' ? { l: x * W - box.w / 2, t: H - box.y - box.h, r: x * W + box.w / 2, b: H - box.y }
+    : { l: x * W - box.w / 2, t: box.y, r: x * W + box.w / 2, b: box.y + box.h };
+  const draw = raw.holes.map((hole, i) => {
+    const at = `${where}.holes[${i}]`;
+    keys(hole, ['cx', 'cy', 'd', 'lens'], at, ['cx', 'cy', 'd']);
+    const cx = number(hole.cx, `${at}.cx`), cy = number(hole.cy, `${at}.cy`), d = number(hole.d, `${at}.d`), r = d / 2;
+    if (hole.lens !== undefined && hole.lens !== true) throw Error(`${at}.lens: true 만 받는다`);
+    if (d <= 0 || cx - r < area.l - near || cy - r < area.t - near || cx + r > area.r + near || cy + r > area.b + near) throw Error(`${at}: 구멍이 배제 상자 안에 들지 않는다`);
+    return { w: d, h: d, y: cy - r, x: cx / W, ...hole.lens ? { lens: true } : {} };
+  });
+  return { box, draw };
+}
+
+function body(raw, where, measured, size) {
+  keys(raw, ['bezel', 'radius', 'cutouts', 'btn', 'home'], where, ['bezel', 'cutouts', 'btn']);
   const bezel = typeof raw.bezel === 'object' ? keys(raw.bezel, ['side', 'ends'], `${where}.bezel`) : { side: raw.bezel };
   if (bezel.ends !== undefined && number(bezel.ends, `${where}.bezel.ends`) < number(bezel.side, `${where}.bezel.side`)) throw Error(`${where}.bezel: ends 가 side 보다 얇다`);
   if (raw.home !== undefined && (raw.home !== true || bezel.ends === undefined)) throw Error(`${where}.home: true 만 받고, 홈 버튼 자리인 bezel.ends 가 있어야 한다`);
   if (measured !== undefined && 'radius' in raw) throw Error(`${where}: radius 가 measured 에도 look 에도 있다`);
   if (measured === undefined && !('radius' in raw)) throw Error(`${where}: radius 가 없다`);
-  const cam = keys(raw.cam, ['w', 'h', 'y', 'x', 'notch', 'edge'], `${where}.cam`, ['w', 'h', 'y']);
-  for (const [name, value] of Object.entries(cam)) if (name !== 'edge') number(value, `${where}.cam.${name}`);
-  if (cam.edge !== undefined && (!['right', 'bottom'].includes(cam.edge) || cam.notch === undefined)) throw Error(`${where}.cam.edge: right · bottom 만 받고, 가장자리에 붙는 notch 와 함께 쓴다`);
-  if (cam.notch !== undefined && (cam.y !== 0 || cam.notch < 0 || cam.notch > Math.min(cam.w, cam.h) / 2)) throw Error(`${where}.cam.notch: 가장자리에 붙으려면 y 가 0 이고, 반경은 짧은 변의 절반 이하다`);
+  if (!Array.isArray(raw.cutouts)) throw Error(`${where}.cutouts: 목록이 아니다`);
+  const cutouts = raw.cutouts.map((entry, i) => cutout(entry, `${where}.cutouts[${i}]`, size));
   if (!Array.isArray(raw.btn) || raw.btn.length < 1 || raw.btn.length > 5) throw Error(`${where}.btn: 1개 이상 5개 이하의 목록이 아니다`);
   const btn = raw.btn.map((entry, i) => {
     if (!Array.isArray(entry) || entry.length !== 3) throw Error(`${where}.btn[${i}]: [변, 위치, 길이]가 아니다`);
@@ -61,7 +87,7 @@ function body(raw, where, measured) {
     return { side, at, len };
   });
   while (btn.length < 5) { const last = btn[btn.length - 1]; btn.push({ side: last.side, at: last.at + last.len, len: 0 }); }
-  return { bezel: number(bezel.side, `${where}.bezel`), ...bezel.ends === undefined ? {} : { ends: bezel.ends }, ...raw.home ? { home: true } : {}, radius: measured ?? corners(raw.radius, `${where}.radius`), cam, btn };
+  return { bezel: number(bezel.side, `${where}.bezel`), ...bezel.ends === undefined ? {} : { ends: bezel.ends }, ...raw.home ? { home: true } : {}, radius: measured ?? corners(raw.radius, `${where}.radius`), cuts: cutouts.map(c => c.box), cams: cutouts.flatMap(c => c.draw), btn };
 }
 
 function status(raw, where) {
@@ -105,7 +131,7 @@ export function deviceTable(specList) {
     };
     const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
-    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`)) }]));
+    entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`), [entry[key].w, entry[key].h]) }]));
     // 상태바 자리는 데몬만 쓴다(DeviceChrome, D-189) — 여기서는 모양만 검사하고 devices.js 에 싣지 않는다.
     if (look.status) status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);

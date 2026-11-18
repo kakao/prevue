@@ -188,7 +188,7 @@ internal abstract class InsetsRenderChecks {
             val k = png.width / device.widthDp
             fun px(x: Double, y: Double) = png.getRGB((x * k).toInt(), (y * k).toInt())
             fun live(x: Double, y: Double) = (x * k).toInt().let { fx -> frame.pixels[(y * k).toInt() * frame.width + fx] }
-            chrome.camera?.box?.let { cam ->
+            chrome.cameras.map { it.box }.forEach { cam ->
                 assertEquals(0xff050505.toInt(), px(cam.x + cam.w / 2, cam.y + cam.h / 2), "${device.key} PNG 카메라")
                 assertEquals(0x050505, live(cam.x + cam.w / 2, cam.y + cam.h / 2) and 0xffffff, "${device.key} 라이브 카메라")
             }

@@ -13,6 +13,9 @@ permissions:
 
 jobs:
   unit:
+    permissions:
+      contents: read
+      actions: write
     # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -52,3 +55,13 @@ jobs:
       - name: Daemon unit tests
         working-directory: plugin/daemon
         run: ./gradlew test --no-daemon
+
+      # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
+      # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
+      - name: Cancel the run, this job failed
+        if: ${{ failure() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"

@@ -116,6 +116,9 @@ try {
   const ios = new Set(['ip17','ip17e','ipair','ip17pm','ip18pro','ipse3','duo']), pixel = new Set(['pixel9','pixel10xl','pixelfold','tablet']);
   // Android 장면 카메라의 가운데(dp) — 데몬 evidence 파일(windowinsets.info)의 displayCutout.path 를 자세마다 따로 잰 값이다(Pixel 은 원, Samsung 은 상자의 가운데).
   // 장면은 세로 값 하나를 돌리고 뒤집으므로, 자세별 원자료와 견주면 회전 · 반전까지 잡는다. 없는 자세는 카메라가 없다.
+  // Flip8 커버는 배제 상자 안에 실물 구멍 셋(플래시 · 렌즈 둘)을 그린다 — [cx, cy, 렌즈] dp. 사이 틈은 화면 내용이 보여야 한다.
+  const CUT_HOLES = { 'flip8-cover-portrait': [[206.3, 394.2, false], [271.2, 396.5, true], [351.8, 397.3, true]] };
+  const CUT_GAP = { 'flip8-cover-portrait': [227, 395] };
   const RAW_CAM = {
     'pixel9-open-portrait': [205.52, 32.95], 'pixel9-open-landscape-left': [32.95, 205.90], 'pixel9-open-landscape-right': [890.48, 205.52],
     'pixelfold-cover-portrait': [221.54, 35.28], 'pixelfold-cover-landscape-left': [35.28, 221.54], 'pixelfold-cover-landscape-right': [959.18, 221.54],
@@ -174,11 +177,14 @@ try {
     // 여기서는 PNG 자체를 읽어 장면 카메라 가운데 픽셀이 카메라 색이고, 둥근 화면 모서리 밖이 비었는지 본다.
     const baked = await evaluate(`(async()=>{const st=__store.st.focus,img=new Image();img.src=st.imageUrl;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const g=c.getContext('2d');g.drawImage(img,0,0);
       const px=(x,y)=>[...g.getImageData(Math.min(c.width-1,Math.max(0,Math.round(x))),Math.min(c.height-1,Math.max(0,Math.round(y))),1,1).data];
-      const shot=document.querySelector('#shot').getBoundingClientRect(),k=c.width/shot.width,cam=document.querySelector('#ua .cam'),b=cam&&Number(cam.style.opacity)>0?cam.getBoundingClientRect():null;
-      return {overlay:!!document.querySelector('#sysBars, .sb-status, .sb-handle'),size:[c.width,c.height],want:[st.size.widthPx,st.size.heightPx],corner:px(0,0),cam:b?px(((b.left+b.right)/2-shot.left)*k,((b.top+b.bottom)/2-shot.top)*k):null}})()`);
+      const shot=document.querySelector('#shot').getBoundingClientRect(),k=c.width/shot.width,cams=[...document.querySelectorAll('#ua .cam')].filter(e=>Number(e.style.opacity)>0).map(e=>e.getBoundingClientRect());
+      const gap=${JSON.stringify(CUT_GAP[name] ?? null)};
+      return {overlay:!!document.querySelector('#sysBars, .sb-status, .sb-handle'),size:[c.width,c.height],want:[st.size.widthPx,st.size.heightPx],corner:px(0,0),cams:cams.map(b=>px(((b.left+b.right)/2-shot.left)*k,((b.top+b.bottom)/2-shot.top)*k)),
+        gap:gap&&px(gap[0]*st.pxPerDp,gap[1]*st.pxPerDp)}})()`);
     assert(!baked.overlay, `${name} 뷰어는 기기 바를 덧그리지 않는다`);
     assert.deepEqual(baked.size, baked.want, `${name} 바를 구워도 PNG 크기는 기기 화면 그대로`);
-    if (baked.cam) assert.deepEqual(baked.cam.slice(0, 3), [5, 5, 5], `${name} PNG의 카메라 자리가 카메라 색이다: ${JSON.stringify(baked)}`);
+    baked.cams.forEach(cam => assert.deepEqual(cam.slice(0, 3), [5, 5, 5], `${name} PNG의 카메라 자리가 카메라 색이다: ${JSON.stringify(baked)}`));
+    if (baked.gap) assert.notDeepEqual(baked.gap.slice(0, 3), [5, 5, 5], `${name} PNG의 배제 상자 안 구멍 밖은 화면 내용이다: ${JSON.stringify(baked)}`);
     const overlay = baked;
     const corner = await cornerOf();
     if (corner.radii[0] > 2) assert.equal(baked.corner[3], 0, `${name} PNG의 둥근 화면 모서리 밖은 비어 있다: ${JSON.stringify(baked)}`);
@@ -206,14 +212,18 @@ try {
     if (!ios.has(device)) {
       // 장면 카메라는 원자료 컷아웃 가운데와 ±0.5dp다 — PNG에 구운 카메라도 같은 자리라 위에서 그 픽셀을 본다.
       const bars = await evaluate(`(()=>{const st=__store.st.focus,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp;
-        const c=document.querySelector('#ua .cam'),b=c&&Number(c.style.opacity)>0?c.getBoundingClientRect():null;
-        return {k:s,shot:{l:r.left,t:r.top},cam:b&&{l:b.left,t:b.top,r:b.right,b:b.bottom}}})()`);
-      const { shot, cam } = bars, raw = RAW_CAM[name];
-      if (raw) {
-        assert(cam, `${name} 카메라가 보인다: ${JSON.stringify(bars)}`);
-        const got = [((cam.l + cam.r) / 2 - shot.l) / bars.k, ((cam.t + cam.b) / 2 - shot.t) / bars.k];
-        assert(Math.abs(got[0] - raw[0]) <= .5 && Math.abs(got[1] - raw[1]) <= .5, `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got, raw })}`);
-      } else assert(!cam, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
+        const cams=[...document.querySelectorAll('#ua .cam')].filter(c=>Number(c.style.opacity)>0).map(c=>{const b=c.getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom,lens:c.classList.contains('lens')}});
+        return {k:s,shot:{l:r.left,t:r.top},cams}})()`);
+      const { shot, cams } = bars, raw = RAW_CAM[name], holes = CUT_HOLES[name];
+      const centers = cams.map(cam => [((cam.l + cam.r) / 2 - shot.l) / bars.k, ((cam.t + cam.b) / 2 - shot.t) / bars.k]);
+      const near = (got, want) => Math.abs(got[0] - want[0]) <= .5 && Math.abs(got[1] - want[1]) <= .5;
+      if (holes) {
+        // 시스템 컷아웃(원자료)은 상자 하나지만 장면은 그 안의 실물 구멍을 그린다 — 구멍 자리 · 렌즈 여부가 스펙의 holes 다.
+        assert(centers.length === holes.length && holes.every(([x, y, lens], i) => near(centers[i], [x, y]) && cams[i].lens === lens), `${name} 장면 구멍이 스펙 holes ±0.5dp: ${JSON.stringify({ centers, holes })}`);
+      } else if (raw) {
+        assert(centers.length === 1, `${name} 카메라가 하나 보인다: ${JSON.stringify(bars)}`);
+        assert(near(centers[0], raw), `${name} 장면 카메라가 원자료 컷아웃 가운데 ±0.5dp: ${JSON.stringify({ got: centers[0], raw })}`);
+      } else assert(!cams.length, `${name} 원자료에 컷아웃이 없으면 카메라도 없다: ${JSON.stringify(bars)}`);
     }
     if (device==='duo') {
       const expected = !folded && orientation==='portrait' ? 'top' : folded && orientation==='landscape-left' ? 'left' : 'right';
