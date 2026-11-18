@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderOutputs.Companion.msSince
+import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.ListState
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.PreviewSpec
@@ -46,6 +47,7 @@ internal class RenderEngine(
     private val renderService: RenderService
     private val baseConfiguration: Configuration
     private val resourceIds: ResourceIds
+    private val appTargetSdk = ApkManifest.targetSdk(resourceApk)
     private val sessionSurfaces: SessionSurfaces
     private val disposal: SessionDisposal
 
@@ -188,6 +190,7 @@ internal class RenderEngine(
         val element = elements.element(p)
         val cfg = baseConfiguration.clone()
         Shim.applyTo(element, cfg, p.params["device"])
+        cfg.setEdgeToEdge(p.params[EdgeToEdge.PARAM] == "true" || appTargetSdk >= 35)
         val layouts = elements.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null
@@ -341,7 +344,7 @@ internal class RenderEngine(
             return renderFailed(l, timing, t, FailureKind.EXCEPTION, phrase("render.exception", "why" to e), timedOut = false)
         }
         val renderMs = msSince(t)
-        if (relayout) refreshTree(l, result)
+        if (relayout || LayoutlibBars.fitsContent(l.task, l.preview)) refreshTree(l, result)
         val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
         return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
     }

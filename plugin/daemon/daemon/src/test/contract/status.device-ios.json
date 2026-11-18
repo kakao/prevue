@@ -274,6 +274,7 @@
         "look": "string"
       },
       "choice": "string",
+      "edgeToEdge": "string",
       "shown": "boolean"
     },
     "tabs": [
@@ -509,6 +510,7 @@
     },
     "systemUi": {
       "choice": "annotated",
+      "edgeToEdge": "auto",
       "annotated": false,
       "shown": true,
       "bars": {

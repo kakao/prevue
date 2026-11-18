@@ -37,7 +37,10 @@ data class WorkspaceState(
     fun shownSystemUi(): SystemUiState? {
         val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
         val bars = sized(spec).systemBars as? SystemBars.Shown
-        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, bars, bars != null)
+        return SystemUiState(
+            shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, bars, bars != null,
+            shownOverride()?.edgeToEdge ?: EdgeToEdge.AUTO,
+        )
     }
 
     fun shownDeviceInsets(): DeviceInsetState? = (shownSize() as? ScreenSize.Device)?.takeIf { interactive }?.let(::DeviceInsetState)

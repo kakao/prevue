@@ -68,6 +68,7 @@
           "look": "string"
         },
         "choice": "string",
+        "edgeToEdge": "string",
         "shown": "boolean"
       },
       "treeUrl": "string"
@@ -242,6 +243,7 @@
       "size": null,
       "systemUi": {
         "choice": "on",
+        "edgeToEdge": "auto",
         "annotated": false,
         "shown": true,
         "bars": {

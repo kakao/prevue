@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- Apps targeting SDK below 35 now place content inside the system bars without applying insets twice. Use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
+
 - **`@Preview(showSystemUi = true)` cards now hand the status and navigation bar heights to values read in composition** (`WindowInsets.statusBars.asPaddingValues()`, `getTop()`), in the PNG and the live view alike, so heights and offsets computed from them match a device instead of drawing as if the bars were 0 dp; `systemBarsPadding()` and the other inset modifiers keep the same picture.
 - **A preview that fails with "Unexpected Context type when trying to resolve the context's Activity." (`androidx.xr.compose` looking up an Activity) now says it needs one** — the message starts with "This Preview needs an Activity", since previews are drawn without an Activity (Android Studio fails the same way).
 - **A render that fails with an exception now leads with that exception** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.

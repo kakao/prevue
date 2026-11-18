@@ -12,11 +12,14 @@ import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.InsetEdges
 
 internal object LayoutlibInsets {
-    fun apply(root: ViewGroup, insets: AppInsets) {
+    fun apply(root: ViewGroup, insets: AppInsets?, fitContent: Boolean = false) {
         val layout = find(root) ?: error("layoutlib 의 바 레이아웃을 찾지 못했다")
         val impl = root.parent as? ViewRootImpl ?: error("창의 ViewRootImpl 을 찾지 못했다")
         val density = layout.context.resources.displayMetrics.density
-        layout.setOnApplyWindowInsetsListener { _, original -> overridden(original, insets, density) }
+        layout.setOnApplyWindowInsetsListener { _, original ->
+            val adjusted = insets?.let { overridden(original, it, density) } ?: original
+            if (fitContent) LayoutlibBars.fitContent(layout, adjusted) else adjusted
+        }
         layout.dispatchApplyWindowInsets(windowInsets(impl))
         layout.requestLayout()
     }

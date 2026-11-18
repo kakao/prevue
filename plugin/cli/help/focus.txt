@@ -2,6 +2,7 @@ prevue focus <index> --on|--off
 prevue focus <index> --size original|narrow|foldable|<W>x<H>
 prevue focus <index> --device <device> [--folded] [--orientation portrait|landscape-left|landscape-right]
 prevue focus <index> --system-ui annotated|on|off
+prevue focus <index> --edge-to-edge auto|on
 
 Attaches a task to the card to make it interactive (--on) and back to the board (--off) — also for a card entered by show <FQN>. While it is on, other cards are redrawn on a separate task
 once input has been quiet for a second — until they all are, wait answers complete:false. Turning it off draws whatever is still old.
@@ -35,6 +36,11 @@ A device always shows its system UI and always delivers its system bar and cutou
   status.systemUi.choice records that choice, annotated records the source annotation, and shown reports whether bars are actually displayed.
   With a device selected, the PNG itself carries that device's status bar, navigation handle and camera, and is transparent outside the rounded screen corners — the viewer shows the same picture.
   The device body is not in the PNG, so its size and touch coordinates stay the screen's. status.deviceInsets.values is the app's input.
-Giving only --size, --device or --system-ui turns the card on (--on is the default). Running --on again without these options keeps the choices.
+--edge-to-edge auto follows the targetSdk in the resource app's merged APK manifest: below 35, the app window fits inside the system bars; 35 and above retain edge-to-edge rendering.
+  on models an app that calls enableEdgeToEdge() or setDecorFitsSystemWindows(false) in its Activity, which Preview does not execute.
+  It works with device and non-device sizes, survives saves, and resets on exit or tab change. auto removes only this override.
+  status.systemUi.edgeToEdge reports auto or on. @Preview(apiLevel) selects the simulated platform independently of the app targetSdk.
+
+Giving only --size, --device, --system-ui or --edge-to-edge turns the card on (--on is the default). Running --on again without these options keeps the choices.
 The current size is in status's size (null means as in the source). hingeDp is only where the viewer draws the hinge line —
 the renderer has no fold (FoldingFeature), so hinge-aware layouts aren't verified. Only the width and the window size class change.

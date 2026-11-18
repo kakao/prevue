@@ -8,6 +8,7 @@ import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
@@ -44,7 +45,7 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
 }
 
 internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf(
-    "choice" to choice.key, "annotated" to annotated, "shown" to shown,
+    "choice" to choice.key, "edgeToEdge" to edgeToEdge.key, "annotated" to annotated, "shown" to shown,
     "bars" to bars?.let { b -> mapOf("look" to b.look.key, "insets" to b.insets?.toJson()) },
 )
 
@@ -72,3 +73,5 @@ internal fun Work.toJson(): Map<String, Any?> = when (this) {
     is Work.Compiling -> mapOf("kind" to "compiling", "files" to files.map { it.path }, "by" to by)
     is Work.Rendering -> mapOf("kind" to "rendering", "preview" to preview.toJson(), "by" to by)
 }
+
+internal fun Map<String, Any?>.toEdgeToEdge(): EdgeToEdge? = EdgeToEdge.parse(string("edgeToEdge"))

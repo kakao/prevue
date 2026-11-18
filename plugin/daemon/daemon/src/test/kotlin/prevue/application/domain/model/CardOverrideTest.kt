@@ -7,6 +7,17 @@ import org.junit.jupiter.api.Test
 class CardOverrideTest {
     private fun spec(vararg params: Pair<String, String>) = PreviewSpec("demo.CardsKt.Card0", "demo.CardsKt.Card0", mapOf(*params), null, 0)
 
+    @Test fun `명시적 edge-to-edge는 기기와 시스템 UI 크기 변경 뒤에도 남고 auto만 그 선택을 지운다`() {
+        val on = CardOverride("demo.CardsKt.Card0", edgeToEdge = EdgeToEdge.ON)
+        val device = on.with(ScreenSize.Device(DeviceModel.GALAXY_S26), null)!!
+        assertEquals("true", device.applyTo(spec()).params[EdgeToEdge.PARAM])
+        val original = device.with(ScreenSize.Original, SystemUi.ON)!!
+        assertEquals("true", original.applyTo(spec()).params[EdgeToEdge.PARAM])
+        val auto = original.with(null, null, EdgeToEdge.AUTO)!!
+        assertNull(auto.applyTo(spec()).params[EdgeToEdge.PARAM])
+        assertEquals(SystemUi.ON, auto.systemUi)
+    }
+
     @Test fun `켬은 어노테이션의 dp 크기를 같은 크기의 기기 spec 으로 옮긴다 — 렌더러가 바가 있으면 dp 인자를 건너뛴다`() {
         assertEquals(mapOf("showSystemUi" to "true", "device" to "spec:width=945px,height=2048px,dpi=420"),
             SystemUi.ON.applyTo(spec("widthDp" to "360", "heightDp" to "780")).params)
