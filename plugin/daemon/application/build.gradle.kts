@@ -59,11 +59,17 @@ val deviceTable = tasks.register("deviceTable") {
                 ?.let { c -> obj(c).let { it["pt"] ?: it["dp"] } } ?: look["radius"]
         fun camera(c: Map<String, Any?>) = "CameraSpec(${num(c["w"])}, ${num(c["h"])}, ${num(c["y"])}, ${num(c["x"] ?: 0.5)}, " +
             "${c["notch"]?.let { num(it) } ?: "null"}, CameraEdge.${(c["edge"] ?: "top").toString().uppercase()})"
+        // 컷아웃 하나 = 배제 상자(box) + 그 안에 그릴 구멍(holes, 화면 왼쪽 위 기준 dp) — 구멍이 없으면 상자를 그린다.
+        fun hole(h: Map<String, Any?>) = "CameraHole(${num(h["cx"])}, ${num(h["cy"])}, ${num(h["d"])}, ${h["lens"] == true})"
+        fun cutouts(list: Any?) = (list as List<*>).joinToString(",\n                ", "listOf(", ")") { c ->
+            obj(c).let { e -> "CutoutSpec(${camera(obj(e["box"]))}, " +
+                (e["holes"] as List<*>?).orEmpty().joinToString(",\n                    ", "listOf(\n                    ", "))") { hole(obj(it)) } }
+        }
         // 화면마다 밀도가 다를 수 있고(없으면 기기 dpi), 측정한 자세가 하나뿐인 화면은 돌리지 않는다(fixed).
         fun panel(s: Any?, dpi: Any?, look: Any?) = obj(s).let { p ->
             "Panel(${p["widthPx"]}, ${p["heightPx"]}, ${p["dpi"] ?: dpi}" + (p["hingePx"]?.let { ", hingePx = ${num(it)}" } ?: "") +
                 (if (obj(p["postures"]).size == 1) ", fixed = true" else "") +
-                ",\n            face = PanelFace(${corners(radius(p, obj(look)))}, ${camera(obj(obj(look)["cam"]))}))"
+                ",\n            face = PanelFace(${corners(radius(p, obj(look)))}, ${cutouts(obj(look)["cutouts"])}))"
         }
         fun status(v: Any?) = v?.let { obj(it) }?.let { s ->
             val t = obj(s["time"])

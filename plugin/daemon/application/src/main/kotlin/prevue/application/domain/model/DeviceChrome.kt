@@ -4,7 +4,11 @@ enum class CameraEdge { TOP, RIGHT, BOTTOM }
 
 data class CameraSpec(val w: Double, val h: Double, val y: Double, val x: Double, val notch: Double?, val edge: CameraEdge)
 
-data class PanelFace(val radius: List<Double>, val camera: CameraSpec)
+data class CameraHole(val cx: Double, val cy: Double, val d: Double, val lens: Boolean)
+
+data class CutoutSpec(val box: CameraSpec, val holes: List<CameraHole>)
+
+data class PanelFace(val radius: List<Double>, val cutouts: List<CutoutSpec>)
 
 data class IosStatusLayout(
     val top: Double,
@@ -18,7 +22,7 @@ data class IosStatusLayout(
 
 data class DpBox(val x: Double, val y: Double, val w: Double, val h: Double)
 
-data class CameraCutout(val box: DpBox, val corners: List<Double>)
+data class CameraCutout(val box: DpBox, val corners: List<Double>, val lens: Boolean)
 
 enum class IconSet { IOS_ALL, IOS_LEFT, IOS_RIGHT, ANDROID }
 
@@ -48,7 +52,8 @@ data class ChromeLayout(
     val widthDp: Double,
     val heightDp: Double,
     val radius: List<Double>,
-    val camera: CameraCutout?,
+    val cutouts: List<CameraCutout>,
+    val cameras: List<CameraCutout>,
     val marks: List<ChromeMark>,
     val inkRegions: Map<InkBand, DpBox>,
 )

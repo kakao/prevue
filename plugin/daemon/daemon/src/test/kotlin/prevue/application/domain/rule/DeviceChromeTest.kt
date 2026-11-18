@@ -75,13 +75,33 @@ class DeviceChromeTest {
             assertEquals((want["radius"] as List<*>).map { it.d() }, got.radius, d.key)
             @Suppress("UNCHECKED_CAST")
             val cam = want["camera"] as Map<String, Any?>?
-            val box = got.camera?.box
-            if (cam == null) assertNull(got.camera, d.key)
+            if (cam == null) assertTrue(got.cutouts.isEmpty(), d.key)
             else {
+                val box = got.cutouts.single()
                 val a = listOf(cam["x"].d(), cam["y"].d(), cam["w"].d(), cam["h"].d()) + (cam["corners"] as List<*>).map { it.d() }
-                val b = listOf(box!!.x, box.y, box.w, box.h) + got.camera!!.corners
+                val b = listOf(box.box.x, box.box.y, box.box.w, box.box.h) + box.corners
                 assertTrue(a.zip(b).all { (x, y) -> near(x, y) }, "${d.key} 카메라: 장면 $a · 데몬 $b")
             }
+        }
+    }
+
+    @Test fun `구멍이 없는 컷아웃은 배제 상자 모양 그대로 그린다`() {
+        all.filter { d -> d.panel.face.cutouts.all { it.holes.isEmpty() } }.forEach { d ->
+            val chrome = DeviceChrome.of(d)
+            assertEquals(chrome.cutouts, chrome.cameras, d.key)
+        }
+    }
+
+    @Test fun `Flip8 커버는 배제 상자 안에 실물에서 잰 플래시와 렌즈 둘을 그린다`() {
+        val cover = DeviceChrome.of(ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true))
+        val box = cover.cutouts.single().box
+        val want = listOf(Triple(206.3, 394.2, 29.0), Triple(271.2, 396.5, 76.0), Triple(351.8, 397.3, 76.0))
+        assertEquals(listOf(false, true, true), cover.cameras.map { it.lens })
+        cover.cameras.zip(want).forEach { (got, w) ->
+            val b = got.box
+            assertTrue(near(b.x + b.w / 2, w.first) && near(b.y + b.h / 2, w.second) && near(b.w, w.third) && near(b.h, w.third), "구멍 $b · 잰 값 $w")
+            assertTrue(got.corners.all { near(it, w.third / 2) }, "구멍은 원이다: ${got.corners}")
+            assertTrue(inside(b, box), "구멍 $b 가 배제 상자 $box 안")
         }
     }
 
@@ -133,10 +153,10 @@ class DeviceChromeTest {
                     else -> null
                 }
             }
-            val lowEdge = d.panel.face.camera.edge == prevue.application.domain.model.CameraEdge.BOTTOM
+            val lowEdge = d.panel.face.cutouts.any { it.box.edge == prevue.application.domain.model.CameraEdge.BOTTOM }
             boxes.forEach { b ->
                 val avoids = b.y < d.heightDp / 2 || lowEdge
-                chrome.camera?.takeIf { avoids }?.let { assertTrue(apart(b, it.box), "${d.key} $b 가 카메라 ${it.box} 와 겹치지 않는다") }
+                chrome.cutouts.filter { avoids }.forEach { assertTrue(apart(b, it.box), "${d.key} $b 가 카메라 ${it.box} 와 겹치지 않는다") }
                 corners(b).forEach { (x, y) -> assertTrue(inRound(chrome, x, y), "${d.key} $b 의 꼭짓점이 둥근 화면 모서리 안") }
             }
         }
@@ -165,7 +185,7 @@ class DeviceChromeTest {
             val status = duoStatusBox(chrome)
             if (d.folded && d.widthDp > d.heightDp) {
                 assertNull(status, "${d.key} 커버 가로에는 상태 표시가 없다")
-                assertTrue(inside(chrome.camera!!.box, region), "${d.key} 카메라 ${chrome.camera!!.box} 가 $region 안")
+                assertTrue(inside(chrome.cameras.single().box, region), "${d.key} 카메라 ${chrome.cameras.single().box} 가 $region 안")
             } else assertTrue(status != null && inside(status, region), "${d.key} 상태 표시 $status 가 $region 안")
         }
     }

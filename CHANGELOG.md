@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The Galaxy Z Flip8 cover screen shows its real camera holes** — a flash and two ringed lenses with the screen visible around them, instead of a square notch — while the status, navigation handle and safe area still follow the cutout the device reports.
 - Apps targeting SDK below 35 now place content inside the system bars without applying insets twice. Use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
 
 - Multipreview annotations imported with `import a.b.*` expand into one card per `@Preview`.

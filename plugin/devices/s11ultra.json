@@ -182,14 +182,14 @@
     "tone": "#2b2d31",
     "open": {
       "bezel": 10,
-      "cam": {
+      "cutouts": [{"box": {
         "w": 57.14,
         "h": 16,
         "y": 0,
         "x": 0.5,
         "edge": "right",
         "notch": 4
-      },
+      }}],
       "btn": [
         [
           1,

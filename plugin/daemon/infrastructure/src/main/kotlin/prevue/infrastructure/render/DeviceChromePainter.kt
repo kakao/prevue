@@ -9,6 +9,7 @@ import java.awt.RenderingHints
 import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
 import java.awt.geom.Area
+import java.awt.geom.Ellipse2D
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 import prevue.application.domain.model.BarLook
@@ -30,6 +31,12 @@ internal object DeviceChromePainter {
     private const val SEMIBOLD = 600
     private const val WARM_PX = 8
     private val CAMERA = Color(0x050505)
+    private val LENS_RIM = Color(255, 255, 255, 31)
+    private val LENS_GLASS = Color(255, 255, 255, 46)
+    private const val LENS_INSET = 3.0
+    private const val LENS_RING = 2.0
+    private const val LENS_GLINT = .14
+    private const val LENS_GLINT_SHIFT = .12
     private val INK_DARK = Color.BLACK
     private val INK_LIGHT = Color.WHITE
 
@@ -58,14 +65,32 @@ internal object DeviceChromePainter {
             g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
             g.scale(image.width / layout.widthDp, image.height / layout.heightDp)
             layout.marks.forEach { mark -> draw(g, mark, inks[mark.band] ?: INK_DARK) }
-            layout.camera?.let { cam ->
+            layout.cameras.forEach { cam ->
                 g.color = CAMERA
                 g.fill(ChromeShapes.corners(cam.box.x, cam.box.y, cam.box.w, cam.box.h, cam.corners))
+                if (cam.lens) lens(g, cam.box)
             }
             if (clearCorners && image.colorModel.hasAlpha()) clearOutside(g, layout)
         } finally {
             g.dispose()
         }
+    }
+
+    private fun lens(g: Graphics2D, b: DpBox) {
+        val r = b.w / 2
+        val cx = b.x + r
+        val cy = b.y + r
+        val ring = r - LENS_INSET - LENS_RING / 2
+        val stroke = g.stroke
+        g.color = LENS_RIM
+        g.stroke = BasicStroke(LENS_RING.toFloat())
+        g.draw(Ellipse2D.Double(cx - ring, cy - ring, 2 * ring, 2 * ring))
+        g.stroke = stroke
+        val glint = b.w * LENS_GLINT / 2
+        val gx = cx - b.w * LENS_GLINT_SHIFT
+        val gy = cy - b.w * LENS_GLINT_SHIFT
+        g.color = LENS_GLASS
+        g.fill(Ellipse2D.Double(gx - glint, gy - glint, 2 * glint, 2 * glint))
     }
 
     private fun draw(g: Graphics2D, mark: ChromeMark, ink: Color) {

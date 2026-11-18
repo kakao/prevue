@@ -4,6 +4,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 import prevue.application.domain.model.CameraCutout
+import prevue.application.domain.model.CameraHole
+import prevue.application.domain.model.CameraSpec
 import prevue.application.domain.model.ChromeLayout
 import prevue.application.domain.model.ChromeMark
 import prevue.application.domain.model.DeviceInsetInputs
@@ -21,8 +23,8 @@ object DeviceChrome {
     private const val DUO_BAND = 64.0
 
     fun of(device: ScreenSize.Device): ChromeLayout {
-        val camera = ChromeCamera.cutout(device)
-        val bars = barsOf(device, camera?.box)
+        val cutouts = ChromeCamera.cutouts(device)
+        val bars = barsOf(device, cutouts)
         val marks = buildList {
             if (bars.statusDp > 0 || bars.side != null) addAll(statusMarks(device, bars))
             if (!bars.duo && bars.navDp > 0) add(handle(bars))
@@ -31,7 +33,7 @@ object DeviceChrome {
             if (marks.any { it.band == InkBand.STATUS }) put(InkBand.STATUS, statusRegion(bars))
             if (marks.any { it.band == InkBand.NAVIGATION }) put(InkBand.NAVIGATION, DpBox(0.0, bars.h - bars.navDp, bars.w, bars.navDp))
         }
-        return ChromeLayout(bars.w, bars.h, ChromeCamera.turnedRadius(device), camera, marks, regions)
+        return ChromeLayout(bars.w, bars.h, ChromeCamera.turnedRadius(device), cutouts.map { it.second }, ChromeCamera.cameras(device), marks, regions)
     }
 
     internal data class Bars(
@@ -53,11 +55,12 @@ object DeviceChrome {
 
     internal enum class Side { LEFT, RIGHT }
 
-    private fun barsOf(device: ScreenSize.Device, cam: DpBox?): Bars {
+    private fun barsOf(device: ScreenSize.Device, cutouts: List<Pair<CameraEdge, CameraCutout>>): Bars {
         val values = DeviceInsetInputs.of(device).values
         val statusDp = values.statusBars.top
-        val topCam = cam?.takeIf { it.y < statusDp }?.let { TopCam(it.x, it.x + it.w, it.y + it.h / 2) }
-        val lowCam = cam?.takeIf { device.panel.face.camera.edge == CameraEdge.BOTTOM && it.y + it.h >= device.heightDp - .5 }?.let { it.x to it.x + it.w }
+        val topCam = cutouts.map { it.second.box }.firstOrNull { it.y < statusDp }?.let { TopCam(it.x, it.x + it.w, it.y + it.h / 2) }
+        val lowCam = cutouts.firstOrNull { (edge, c) -> edge == CameraEdge.BOTTOM && c.box.y + c.box.h >= device.heightDp - .5 }
+            ?.second?.box?.let { it.x to it.x + it.w }
         val duo = device.model.id == DUO_ID
         val area = device.insetProfile.safeArea
         val side = if (duo && area != null) when {
@@ -168,21 +171,29 @@ internal object ChromeCamera {
     private const val NEAR = .5
     private const val VISIBLE = .5
 
-    fun cutout(device: ScreenSize.Device): CameraCutout? {
-        val cam = device.panel.face.camera
+    fun cutouts(device: ScreenSize.Device): List<Pair<CameraEdge, CameraCutout>> =
+        device.panel.face.cutouts.mapNotNull { c -> cutout(device, c.box, lens = false)?.let { c.box.edge to it } }
+
+    fun cameras(device: ScreenSize.Device): List<CameraCutout> = device.panel.face.cutouts.flatMap { c ->
+        if (c.holes.isEmpty()) listOfNotNull(cutout(device, c.box, lens = false))
+        else c.holes.mapNotNull { h -> cutout(device, holeSpec(h, naturalDp(device).first), h.lens) }
+    }
+
+    private fun holeSpec(h: CameraHole, width: Double) = CameraSpec(h.d, h.d, h.cy - h.d / 2, h.cx / width, null, CameraEdge.TOP)
+
+    private fun cutout(device: ScreenSize.Device, cam: CameraSpec, lens: Boolean): CameraCutout? {
         if (cam.w <= VISIBLE) return null
         val own = cam.edge.ordinal
         val turns = (own + (if (device.landscape) 1 else 0) + (if (mirrored(device)) 2 else 0)) % 4
-        val placed = placed(device, turns)
+        val placed = placed(device, cam, turns)
         val rad = cam.notch ?: (min(cam.w, cam.h) / 2)
         val sharp = if (cam.notch != null) 0.0 else rad
-        return CameraCutout(placed.box, corners(placed, turns, rad, sharp))
+        return CameraCutout(placed.box, corners(placed, turns, rad, sharp), lens)
     }
 
     private class Placed(val box: DpBox, val frameW: Double, val frameH: Double)
 
-    private fun placed(device: ScreenSize.Device, turns: Int): Placed {
-        val cam = device.panel.face.camera
+    private fun placed(device: ScreenSize.Device, cam: CameraSpec, turns: Int): Placed {
         val (w0, h0) = naturalDp(device)
         val own = cam.edge.ordinal
         var fw = if (own % 2 == 1) h0 else w0
