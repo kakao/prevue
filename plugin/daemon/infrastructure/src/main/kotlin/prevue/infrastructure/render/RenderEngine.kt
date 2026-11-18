@@ -9,13 +9,13 @@ import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.parsers.RenderXmlFileSnapshot
-import com.intellij.openapi.util.CheckedDisposable
-import com.intellij.openapi.util.Disposer
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderOutputs.Companion.msSince
 import prevue.application.domain.model.EdgeToEdge
@@ -205,26 +205,28 @@ internal class RenderEngine(
         val t0 = System.nanoTime()
         val (cfg, xml) = layoutFor(p, ph) ?: return Start.Failed(failedBefore(p, phrase("render.noInstances")))
         val logger = RenderLogger()
-        val disposable = Disposer.newCheckedDisposable()
-        val tb = System.nanoTime()
-        val task = when (val built = buildTask(p, cfg, logger, disposable, usePrivate)) {
-            is Built.Task -> built.task
-            is Built.Failed -> return Start.Failed(built.out)
+        val lease = RendererLease()
+        var handedOver = false
+        try {
+            val tb = System.nanoTime()
+            val task = when (val built = buildTask(p, cfg, logger, lease, usePrivate)) {
+                is Built.Task -> built.task
+                is Built.Failed -> return Start.Failed(built.out)
+            }
+            ph["buildMs"] = msSince(tb)
+            val loader = loaders.track(task, lease)
+            loader?.let(literals::applyTo)?.let { e -> return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e))) }
+            if (!usePrivate) loaders.current = loader
+            task.setTimeout(renderTimeoutSec * 1000)
+            task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
+            val session = LayoutlibSession(p, task, lease, logger, sessionSurfaces) { renderTimeoutSec }
+            val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
+            if (counted) countTask()
+            resourceIds.registeredByFirstLoader()
+            return Start.Ready(session, timing, usePrivate).also { handedOver = true }
+        } finally {
+            if (!handedOver) lease.releaseQuietly()
         }
-        ph["buildMs"] = msSince(tb)
-        val loader = loaders.track(task, disposable)
-        loader?.let(literals::applyTo)?.let { e ->
-            Disposer.dispose(disposable)
-            return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e)))
-        }
-        if (!usePrivate) loaders.current = loader
-        task.setTimeout(renderTimeoutSec * 1000)
-        task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
-        val session = LayoutlibSession(p, task, disposable, logger, sessionSurfaces) { renderTimeoutSec }
-        val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
-        if (counted) countTask()
-        resourceIds.registeredByFirstLoader()
-        return Start.Ready(session, timing, usePrivate)
     }
 
     private sealed interface Built {
@@ -233,15 +235,14 @@ internal class RenderEngine(
     }
 
     private suspend fun buildTask(
-        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, disposable: CheckedDisposable, usePrivate: Boolean,
+        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, lease: RendererLease, usePrivate: Boolean,
     ): Built {
         val before = RenderTiming.failedBeforeRender(true)
         return try {
-            val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
+            val task = lease.build(renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() })
             if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
             else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
         } catch (e: Exception) {
-            Disposer.dispose(disposable)
             Built.Failed(if (hung(p)) lostOutput(p) else outputs.failed(p, FailureKind.EXCEPTION, phrase("render.taskFailed", "why" to e), before))
         }
     }
@@ -319,7 +320,7 @@ internal class RenderEngine(
             return (waiting ?: l.realClockWarning())?.takeIf { out.ok }?.let { out.copy(warnings = out.warnings + it) } ?: out
         }
 
-        override fun close() {
+        override suspend fun close() = withContext(NonCancellable) {
             if (session != null && session === live) disposeLive()
         }
     }
@@ -380,7 +381,7 @@ internal class RenderEngine(
 
     private fun dispose(l: LayoutlibSession) {
         runCatching { disposal.dispose(l.task) }.onFailure { e -> System.err.println("[prevue] 세션 정리 실패: $e") }
-        runCatching { Disposer.dispose(l.disposable) }.onFailure { e -> System.err.println("[prevue] disposable 정리 실패: $e") }
+        l.lease.releaseQuietly()
     }
 
     override fun close() {

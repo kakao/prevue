@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.EngineLog
 import prevue.application.port.LiveSession
@@ -51,7 +53,7 @@ class Engine(
                 }
             } finally {
                 inbox.cancel()
-                loop.close()
+                withContext(NonCancellable) { loop.close() }
             }
         }
     }

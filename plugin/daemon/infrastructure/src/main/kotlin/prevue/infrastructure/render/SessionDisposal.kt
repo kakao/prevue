@@ -6,8 +6,6 @@ import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
 import com.android.tools.rendering.classloading.ModuleClassLoaderManager
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.util.Disposer
 import java.lang.ref.Reference
 import java.lang.reflect.Modifier
 import java.util.concurrent.CompletableFuture
@@ -30,7 +28,7 @@ internal class SessionDisposal(private val surfaces: SessionSurfaces) {
                 .onFailure { if (inflated || generateSequence(it) { e -> e.cause }.none { e -> e is NullPointerException }) throw it }
             onRenderThread { dropThreadLocals(loader); dropComposeViews(loader) }
         } finally {
-            (surfaces.layoutlibCallback.value.get(task) as? Disposable)?.let { Disposer.dispose(it) }
+            RendererLease.releaseCallback(surfaces.layoutlibCallback.value.get(task))
         }
     }
 

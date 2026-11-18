@@ -2,9 +2,6 @@ package prevue.infrastructure.render
 
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.util.CheckedDisposable
-import com.intellij.openapi.util.Disposer
 import java.io.File
 import java.util.zip.ZipFile
 import kotlin.concurrent.withLock
@@ -81,10 +78,10 @@ internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: Renderer
         }
     }
 
-    fun track(task: RenderTask, disposable: CheckedDisposable): ClassLoader? {
+    fun track(task: RenderTask, lease: RendererLease): ClassLoader? {
         val loader = task.classLoader
+        lease.onRelease { try { task.releaseRender() } finally { released(loader) } }
         if (loader is ModuleClassLoader) active[loader] = (active[loader] ?: 0) + 1
-        Disposer.register(disposable, Disposable { try { task.releaseRender() } finally { released(loader) } })
         return loader
     }
 

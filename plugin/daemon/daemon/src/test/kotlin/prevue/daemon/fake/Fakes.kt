@@ -107,8 +107,13 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 열린 세션들. 닫히면 [closes]가 오른다. */
     val opened = CopyOnWriteArrayList<PreviewSpec>()
     val closes = java.util.concurrent.atomic.AtomicInteger()
+    /** 세션을 열고 닫은 순서 — 닫기는 [onClose]가 끝난 뒤에 적힌다. */
+    val lifecycle = CopyOnWriteArrayList<String>()
+    /** 세션의 [LiveSession.close]가 끝나기 전에 부른다 — 렌더러가 자원을 놓는 동안의 대기 자리다. */
+    @Volatile var onClose: suspend () -> Unit = {}
     override suspend fun open(p: PreviewSpec, interactive: Boolean, ownLoader: Boolean): LiveSession {
         opened += p
+        lifecycle += "open ${p.previewId}"
         return Session(p, render(p, ownLoader))
     }
 
@@ -159,7 +164,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         override fun lists(): List<prevue.application.domain.model.ListState> { probes.incrementAndGet(); return liveTree.states }
         override fun semantics(): List<prevue.application.domain.model.SemanticNode> { probes.incrementAndGet(); return liveTree.semantics }
         override suspend fun renderAt(ms: Long, frameMs: Long): RenderOutput = rerender(preview)
-        override fun close() { closes.incrementAndGet() }
+        override suspend fun close() {
+            onClose()
+            lifecycle += "close ${preview.previewId}"
+            closes.incrementAndGet()
+        }
     }
 
     private fun rerender(p: PreviewSpec): RenderOutput { rerenders.incrementAndGet(); return output(p) }
