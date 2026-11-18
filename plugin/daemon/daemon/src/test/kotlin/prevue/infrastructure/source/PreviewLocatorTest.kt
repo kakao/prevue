@@ -175,6 +175,16 @@ class PreviewLocatorTest {
         return PreviewLocator.fromFile(file, MultiPreview(classPath)).map { it.params["name"] }
     }
 
+    @Test fun `L 로 끝나는 멀티프리뷰 이름은 직접 사용과 재귀 확장에서 보존한다`() {
+        val expected = listOf(mapOf("name" to "small phone", "widthDp" to "320"), mapOf("name" to "large phone", "widthDp" to "412"))
+        for (annotation in listOf("PhonesL", "WrappedPhones")) {
+            val file = File(workDir.value, "$annotation.kt").apply {
+                writeText("package prevue.fixture.preview\n@$annotation\nfun A() {}")
+            }
+            assertEquals(expected, PreviewLocator.fromFile(file, MultiPreview(classPath)).map { it.params }, annotation)
+        }
+    }
+
     @Test fun `클래스 안에 선언한 멀티프리뷰를 푼다 — 같은 패키지 · 바깥 임포트 · 안쪽 임포트 · 별칭 · 완전한 이름`() {
         val phones = listOf("small phone", "large phone")
         assertEquals(phones, namesOf("package prevue.fixture.preview\n@Outer.Phones\nfun A() {}"))
@@ -182,6 +192,18 @@ class PreviewLocatorTest {
         assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Outer.Phones\n@Phones\nfun A() {}"))
         assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Outer.Phones as Ph\n@Ph\nfun A() {}"))
         assertEquals(phones, namesOf("package demo.ui\n@prevue.fixture.preview.Outer.Phones\nfun A() {}"))
+    }
+
+    @Test fun `별표 임포트의 최상위와 중첩 멀티프리뷰를 푼다`() {
+        val phones = listOf("small phone", "large phone")
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.*\n@PhonesL\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\nimport prevue.fixture.preview.*\n@Outer.Phones\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\n@Wide\nfun A() {}"))
+    }
+
+    @Test fun `별표 임포트가 있어도 명시 임포트와 같은 패키지의 이름을 먼저 푼다`() {
+        assertEquals(listOf("Tall"), namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\nimport prevue.fixture.preview.Tall as Wide\n@Wide\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package prevue.fixture.preview.Caps\nimport prevue.fixture.preview.*\n@Wide\nfun A() {}"))
     }
 
     @Test fun `대문자 세그먼트가 있는 패키지의 최상위 멀티프리뷰는 중첩으로 읽지 않는다`() {

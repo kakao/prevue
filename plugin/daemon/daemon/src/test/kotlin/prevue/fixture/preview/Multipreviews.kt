@@ -29,6 +29,16 @@ annotation class FontScales
 @Preview(name = "tablet", device = "spec:width=1280dp,height=800dp,dpi=480")
 annotation class DeviceSizes
 
+@Preview(name = "small phone", widthDp = 320)
+@Preview(name = "large phone", widthDp = 412)
+annotation class PhonesL
+
+@PhonesL
+annotation class WrappedPhones
+
+@Preview(name = "local wide")
+annotation class Wide
+
 /** JetNews `@CompletePreviews` — `@Preview`와 다른 멀티프리뷰를 함께 단다. */
 @Preview(name = "dark theme", uiMode = UI_MODE_NIGHT_YES)
 @FontScales

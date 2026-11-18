@@ -6,7 +6,7 @@ import prevue.application.domain.model.PreviewSpec
 internal object PreviewLocator {
     private val pkgRe = Regex("""^\s*package\s+([\w.]+)""", RegexOption.MULTILINE)
     private val jvmNameRe = Regex("""@file:JvmName\("([^"]+)"\)""")
-    private val importRe = Regex("""^\s*import\s+([\w.]+)(?:\s+as\s+(\w+))?""", RegexOption.MULTILINE)
+    private val importRe = Regex("""^\s*import\s+([\w.]+\*?)(?:\s+as\s+(\w+))?""", RegexOption.MULTILINE)
     private val annoRe = Regex("""@(?:file:)?([\w.]+)""")
     private val funRe = Regex("""\bfun\s+(?:<[^>]*>\s*)?(\w+)\s*\(""")
     private val declBetweenRe = Regex("""\b(class|object|interface|val|var)\b""")
@@ -17,7 +17,7 @@ internal object PreviewLocator {
         "Configuration.UI_MODE_TYPE_NORMAL" to 1, "UI_MODE_TYPE_NORMAL" to 1,
     )
 
-    private class Head(val pkg: String, val classFqn: String, val imports: Map<String, String>)
+    private class Head(val pkg: String, val classFqn: String, val imports: Map<String, String>, val starImports: List<String>)
 
     private class Found(val name: String, val direct: Boolean, val sets: List<Map<String, String>>, val methodParams: List<Map<String, String>>)
 
@@ -46,17 +46,19 @@ internal object PreviewLocator {
         val facade = jvmNameRe.find(text)?.groupValues?.get(1)
             ?: (file.nameWithoutExtension.replaceFirstChar(Char::uppercase) + "Kt")
         val imports = HashMap<String, String>()
+        val starImports = ArrayList<String>()
         for (m in importRe.findAll(text)) {
             val fqn = m.groupValues[1]
-            imports[m.groupValues[2].ifEmpty { fqn.substringAfterLast('.') }] = fqn
+            if (fqn.endsWith(".*")) starImports += fqn.removeSuffix(".*")
+            else imports[m.groupValues[2].ifEmpty { fqn.substringAfterLast('.') }] = fqn
         }
-        return Head(pkg, "${if (pkg.isEmpty()) "" else "$pkg."}$facade", imports)
+        return Head(pkg, "${if (pkg.isEmpty()) "" else "$pkg."}$facade", imports, starImports)
     }
 
     private fun found(text: String, m: MatchResult, head: Head, multi: MultiPreview?): Found? {
         val raw = m.groupValues[1]
         val (args, after) = argsAfter(text, m.range.last + 1)
-        val names = binaryNames(raw, head.imports, head.pkg)
+        val names = binaryNames(raw, head.imports, head.pkg, head.starImports)
         val direct = raw.substringAfterLast('.') == "Preview" || names.any { it in PREVIEW_FQNS }
         val sets = if (direct) listOf(args) else multi?.let { mp -> names.firstNotNullOfOrNull { mp.expand(it).ifEmpty { null } } }.orEmpty()
         if (sets.isEmpty()) return null
@@ -109,12 +111,12 @@ internal object PreviewLocator {
         return out
     }
 
-    private fun binaryNames(name: String, imports: Map<String, String>, pkg: String): List<String> {
+    private fun binaryNames(name: String, imports: Map<String, String>, pkg: String, starImports: List<String> = emptyList()): List<String> {
         val head = name.substringBefore('.')
         val rest = if (name.contains('.')) "$" + name.substringAfter('.').replace('.', '$') else ""
         imports[head]?.let { imported -> return nestingSplits(imported).map { it + rest } }
         if (name.contains('.') && head.firstOrNull()?.isUpperCase() != true) return nestingSplits(name)
-        return listOf((if (pkg.isEmpty()) "" else "$pkg.") + head + rest)
+        return listOf((if (pkg.isEmpty()) "" else "$pkg.") + head + rest) + starImports.flatMap { nestingSplits("$it.$name") }
     }
 
     private fun nestingSplits(fqn: String): List<String> {
