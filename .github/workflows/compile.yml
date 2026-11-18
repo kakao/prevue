@@ -14,6 +14,9 @@ permissions:
 
 jobs:
   compile:
+    permissions:
+      contents: read
+      actions: write
     # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -111,3 +114,13 @@ jobs:
           test "$RC" = "3" || { echo "::error::status without a daemon exited $RC, not 3"; exit 1; }
           # 3 also comes out when python3 is missing — on that path it did not see "no daemon".
           case "$OUT" in *'"python3"'*) echo "::error::status ended with 3 at the python3 check, not at the daemon: $OUT"; exit 1;; esac
+
+      # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
+      # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
+      - name: Cancel the run, this job failed
+        if: ${{ failure() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"

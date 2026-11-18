@@ -3,6 +3,7 @@ package prevue.infrastructure.render
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.ViewRootImpl
@@ -71,7 +72,7 @@ internal class LayoutlibSession(
     private fun placeInsets(insets: AppInsets) {
         task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
         task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
-        val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
+        val root = viewRoot() ?: return
         onSession {
             LayoutlibInsets.apply(root, insets, fitContent = LayoutlibBars.fitsContent(task, preview))
             LayoutlibBars.hideDeviceBars(root, preview.systemBars)
@@ -159,9 +160,9 @@ internal class LayoutlibSession(
     }
 
     fun viewRoot(): ViewGroup? {
-        val session = surfaces.renderSession.value.get(task) ?: return null
-        val impl = surfaces.bridgeImpl.value.get(session) ?: return null
-        return surfaces.viewRoot.value.get(impl) as? ViewGroup
+        val session = surfaces.renderSession.value.get(task) as? RenderSession ?: return null
+        val content = session.rootViews?.firstOrNull()?.viewObject as? View ?: return null
+        return content.rootView as? ViewGroup
     }
 
     fun rebuildTree(result: RenderResult): String? {

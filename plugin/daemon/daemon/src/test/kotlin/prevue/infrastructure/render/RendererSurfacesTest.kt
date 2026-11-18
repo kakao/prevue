@@ -10,9 +10,6 @@ class RendererSurfacesTest {
     @Suppress("unused")
     private class RenamedTask(private val myRenderSession: Any? = null, private val myLayoutlibCallback: Any? = null)
 
-    @Suppress("unused")
-    private class RenamedSessionImpl(private val mRootView: Any? = null)
-
     @Test fun `열리지 않는 표면을 모두 이름으로 돌려준다`() {
         val surfaces = listOf(
             Surface("Shaped.kept") { RendererSurfaces.field(Shaped::class.java, "kept") },
@@ -32,14 +29,13 @@ class RendererSurfacesTest {
         assertEquals(emptyList<String>(), RendererSurfaces.unopened(SessionSurfaces().all()))
     }
 
-    @Test fun `세션 정리와 세션 루트의 표면이 바뀌면 이름으로 잡힌다`() {
+    @Test fun `세션 정리의 표면이 바뀌면 이름으로 잡힌다`() {
         val surfaces = SessionSurfaces(
             task = RenamedTask::class.java,
-            sessionImpl = RenamedSessionImpl::class.java,
             cleanerName = "com.android.tools.rendering.RenamedSessionCleaner",
         )
         assertEquals(
-            listOf("RenderTask.myModuleClassLoaderReference", "RenderSessionCleaner.dispose", "RenderSessionImpl.mViewRoot"),
+            listOf("RenderTask.myModuleClassLoaderReference", "RenderSessionCleaner.dispose"),
             RendererSurfaces.unopened(surfaces.all()),
         )
     }

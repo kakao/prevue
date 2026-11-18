@@ -37,8 +37,11 @@ function camBox(W0, H0, rot, cam, s, mirrored = false) {
   const corners = [rad, rad, rad, rad], near = .5 * s, onL = b.left <= near, onT = b.top <= near, onR = b.left + b.width >= fw - near, onB = b.top + b.height >= fh - near;
   for (const k of [[0, 1], [1, 2], [2, 3], [3, 0]][turns]) corners[k] = rad * (1 - flat);
   [onL || onT, onT || onR, onR || onB, onB || onL].forEach((on, k) => { if (on) corners[k] = rad * (1 - flat); });
-  return { ...b, corners: corners.map(v => v + "px").join(" "), on: cam.w * s > .5 };
+  return { ...b, corners: corners.map(v => v + "px").join(" "), on: cam.w * s > .5, lens: cam.lens ? s : 0 };
 }
+// 렌즈 구멍(lens) — 안쪽으로 3dp 들어간 2dp 테와 왼쪽 위의 유리 반점(지름의 14%, 가운데에서 지름의 12% 비킴). 데몬 DeviceChromePainter 와 같은 자리다.
+const LENS = { inset: 3, ring: 2, glintAt: "31%", glint: "14%" };
+const CAM_MAX = Math.max(1, ...Object.values(DEVICES).flatMap(d => Object.values(d.look).map(l => l.cams.length)));
 
 export function createResizeScene(root, hooks) {
   // 시제품에서 확정한 기하와 곡선을 유지하고, 그림 도착은 실제 디코드가 알린다.
@@ -204,14 +207,17 @@ export function createResizeScene(root, hooks) {
   const camLook = (a, b, k, m) => {
     const swap = a.edge !== b.edge, grow = swap ? (k < .5 ? 1 - 2 * k : 2 * k - 1) : 1, from = swap && k < .5 ? a : b;
     return { w: swap ? from.w * grow : m(a.w, b.w), h: m(a.h, b.h), y: m(a.y, b.y), x: swap ? from.x ?? .5 : m(a.x ?? .5, b.x ?? .5),
-      rad: m(camRad(a), camRad(b)), flat: m(camFlat(a), camFlat(b)), edge: from.edge };
+      rad: m(camRad(a), camRad(b)), flat: m(camFlat(a), camFlat(b)), edge: from.edge, lens: (from.w > 0 ? from : a).lens };
   };
+  // 그릴 모양 목록 — 짝이 없는 쪽은 같은 자리의 크기 0 으로 채워 제자리에서 줄거나 자란다(버튼 목록과 같다).
+  const camsLook = (A, B, k, m) => Array.from({ length: Math.max(A.length, B.length) }, (_, i) =>
+    camLook(A[i] ?? { ...B[i], w: 0, h: 0 }, B[i] ?? { ...A[i], w: 0, h: 0 }, k, m));
   function lookAt(now) {
     const A = look.a, B = look.b;
     if (!B) return DEVICES.s26.look.open;
     const k = easeOut(clamp((now - look.t0) / look.dur, 0, 1)), m = (x, y) => lerp(x, y, k);
     return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(Number(A.home) || 0, Number(B.home) || 0), radius: B.radius.map((r, i) => m(A.radius[i], r)),
-      cam: camLook(A.cam, B.cam, k, m),
+      cams: camsLook(A.cams, B.cams, k, m),
       btn: B.btn.map((b, i) => { const a = A.btn[i];
         return a.side === b.side ? { side: b.side, at: m(a.at, b.at), len: m(a.len, b.len) }
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };
@@ -222,7 +228,18 @@ export function createResizeScene(root, hooks) {
     const e = endsOf(lk) * P.shellK, hd = e * HOME_K, b = camBox(W0, H0, rot, { w: hd, h: hd, y: H0 + (e - hd) / 2 }, s, mirrored);
     return { ...b, on: b.on && hk > .01 };
   };
-  const putCam = (el, b, dx, dy, op) => Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
+  const putCam = (el, b, dx, dy, op) => {
+    Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
+    el.classList.toggle("lens", !!b.lens);
+    if (b.lens) for (const [k, v] of [["--lens-inset", LENS.inset * b.lens + "px"], ["--lens-ring", LENS.ring * b.lens + "px"], ["--lens-glint-at", LENS.glintAt], ["--lens-glint", LENS.glint]]) el.style.setProperty(k, v);
+  };
+  // 그릴 모양마다 .cam 하나 — 첫 .cam(마크업)을 기기 표의 가장 긴 목록만큼 복제해 둔다. 남는 것은 숨긴다.
+  const camsIn = el => {
+    const first = el.querySelector(".cam"), list = [first];
+    while (list.length < CAM_MAX) { const c = first.cloneNode(); list[list.length - 1].after(c); list.push(c); }
+    return list;
+  };
+  const putCams = (els, boxes, dx, dy, op) => els.forEach((el, i) => boxes[i] ? putCam(el, boxes[i], dx, dy, op) : (el.style.opacity = 0));
 
   function snapTo(sel) {
     const st = resolve(sel), f = fit(st);
@@ -369,14 +386,14 @@ export function createResizeScene(root, hooks) {
   const rig = { on: false };
   function rigCamera(folded, scale) {
     const panel = rig.d[folded ? "cover" : "open"], tall = tallOf(rig.d);
-    return camBox(panel.w, panel.h, tall, rig.d.look[folded ? "cover" : "open"].cam, scale, tall);
+    return rig.d.look[folded ? "cover" : "open"].cams.map(c => camBox(panel.w, panel.h, tall, c, scale, tall));
   }
   // 접기 장면의 두 판은 두께 있는 상자다(앞면 · 뒷면 · 옆면 띠). 원근은 .lift 한 겹에만 두고 그 아래는 preserve-3d 라
   // 판의 조상에 overflow · filter · mask · opacity 를 두지 않는다 — 두면 납작해진다. 흐림 · 자르기는 면 안에서만 한다.
   const rigEl = $("rig"), q = (root, s) => root.querySelector(s);
   const RG = { lift: q(rigEl, ".lift"), space: q(rigEl, ".space"), plate: q(rigEl, ".plate"), spine: q(rigEl, ".spine"),
     crease: q(rigEl, ".crease"), tTop: q(rigEl, ".r-top"), tBot: q(rigEl, ".r-bot") };
-  const faceOf = el => ({ el, cam: q(el, ".cam"), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
+  const faceOf = el => ({ el, cam: q(el, ".cam"), cams: camsIn(el), old: q(el, ".old"), veil: q(el, ".veil"), neu: q(el, ".neu"), cast: q(el, ".cast") });
   const sideOf = el => {
     const gloss = document.createElement("div"), rim = document.createElement("div"), home = document.createElement("div");
     gloss.className = "gloss"; rim.className = "rim"; home.className = "home"; el.prepend(gloss, rim); el.append(home);
@@ -731,9 +748,9 @@ export function createResizeScene(root, hooks) {
     smear(RG.F.inner, th <= 90 ? sn : 0, u);
     smear(RG.F.outer, th > 90 ? sn : 0, u);
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
-    putCam(RG.F.outer.cam, rigCamera(true, s), 0, 0, 1);
-    putCam(RG.F.inner.cam, oc, 0, 0, 1);
-    putCam(RG.F.base.cam, oc, -sh, 0, 1);
+    putCams(RG.F.outer.cams, rigCamera(true, s), 0, 0, 1);
+    putCams(RG.F.inner.cams, oc, 0, 0, 1);
+    putCams(RG.F.base.cams, oc, -sh, 0, 1);
     // 홈 버튼은 화면 밖 아래 베젤에 있어 화면(.clip)이 아니라 몸체 면에 둔다 — 자리는 카메라와 같은 화면 기준에 면 안의 화면 자리만 더한다.
     const home = folded => { const panel = d[folded ? "cover" : "open"], hk = Number(d.look[folded ? "cover" : "open"].home) || 0;
       return [homeBox(lk, panel.w, panel.h, tallOf(d), s, tallOf(d), hk), hk]; };
@@ -770,7 +787,7 @@ export function createResizeScene(root, hooks) {
     Object.assign(RG.tBot.style, { left: px(tx), top: px(T0 + Bv), width: px(u), height: px(tv), opacity: tk });
   }
 
-  const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cam: q(el, ".cam"), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
+  const unitOf = el => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll(".btn")], cams: camsIn(el), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q(el, ".l0"), l1: q(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
   const UA = unitOf($("ua")), UB = unitOf($("ub"));
 
   function drawContent(U, rect, s, layers, now) {
@@ -841,8 +858,7 @@ export function createResizeScene(root, hooks) {
         e.style.top = 2 * y + rect.h - parseFloat(e.style.top) - parseFloat(e.style.height) + "px";
       }
     });
-    const camera = camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, lk.cam, s, ol.mirrored);
-    putCam(U.cam, camera, 0, 0, ol.shell);
+    putCams(U.cams, lk.cams.map(c => camBox((ol.rot ? rect.h : rect.w) / s, H0, ol.rot, c, s, ol.mirrored)), 0, 0, ol.shell);
     const hk = Number(lk.home) || 0;
     putCam(U.home, homeBox(lk, (ol.rot ? rect.h : rect.w) / s, H0, ol.rot, s, ol.mirrored, hk), L, y, ol.shell * hk);
     const c = ol.crease, hz = ol.rot !== !!ol.tall;
@@ -964,11 +980,12 @@ export function createResizeScene(root, hooks) {
       : tall ? screen(x + inset, y + inset, W - 2 * inset, H / 2 - inset - .4) + screen(x + inset, y + H / 2 + .4, W - 2 * inset, H / 2 - inset - .4)
       : screen(x + inset, y + inset, W / 2 - inset - .4, H - 2 * inset) + screen(x + W / 2 + .4, y + inset, W / 2 - inset - .4, H - 2 * inset);
     let cam = "";
-    if (lk.cam.w > 0) {
-      const cx = x + W * (lk.cam.x ?? .5), cy = y + inset + 1.1;
-      cam = lk.cam.edge === "right"
-        ? `<rect x="${f(x + W - inset - 1.7)}" y="${f(y + H * (lk.cam.x ?? .5) - 1.8)}" width="1.2" height="3.6" rx=".6" fill="currentColor"/>`
-        : lk.cam.w > lk.cam.h * 3
+    const cut = lk.cuts[0];
+    if (cut) {
+      const cx = x + W * (cut.x ?? .5), cy = y + inset + 1.1;
+      cam = cut.edge === "right"
+        ? `<rect x="${f(x + W - inset - 1.7)}" y="${f(y + H * (cut.x ?? .5) - 1.8)}" width="1.2" height="3.6" rx=".6" fill="currentColor"/>`
+        : cut.w > cut.h * 3
         ? `<rect x="${f(cx - 1.8)}" y="${f(cy - .6)}" width="3.6" height="1.2" rx=".6" fill="currentColor"/>`
         : `<circle cx="${f(cx)}" cy="${f(cy)}" r=".75" fill="currentColor"/>`;
     }

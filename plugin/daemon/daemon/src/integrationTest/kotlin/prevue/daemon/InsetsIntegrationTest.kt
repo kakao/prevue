@@ -188,7 +188,7 @@ internal abstract class InsetsRenderChecks {
             val k = png.width / device.widthDp
             fun px(x: Double, y: Double) = png.getRGB((x * k).toInt(), (y * k).toInt())
             fun live(x: Double, y: Double) = (x * k).toInt().let { fx -> frame.pixels[(y * k).toInt() * frame.width + fx] }
-            chrome.camera?.box?.let { cam ->
+            chrome.cameras.map { it.box }.forEach { cam ->
                 assertEquals(0xff050505.toInt(), px(cam.x + cam.w / 2, cam.y + cam.h / 2), "${device.key} PNG 카메라")
                 assertEquals(0x050505, live(cam.x + cam.w / 2, cam.y + cam.h / 2) and 0xffffff, "${device.key} 라이브 카메라")
             }
@@ -305,6 +305,19 @@ internal abstract class InsetsRenderChecks {
                 handle.close()
             }
         }
+    }
+
+    @Test fun `공개 API로 얻은 세션 루트는 창에 붙은 맨 위 뷰다`() = runBlocking {
+        val handle = engine.open(preview, interactive = true, ownLoader = false)
+        assertTrue(handle.opened.ok, handle.opened.message?.text)
+        val session = session()
+        session.onSession {
+            val root = session.viewRoot()!!
+            assertTrue(root.viewRootImpl != null)
+            assertFalse(root.parent is View)
+            assertTrue(layout(root) != null)
+        }
+        handle.close()
     }
 
     @Test fun `인셋을 적용할 레이아웃이 없으면 실패하고 앱 렌더 실패는 성공 그림을 내지 않는다`() = runBlocking {

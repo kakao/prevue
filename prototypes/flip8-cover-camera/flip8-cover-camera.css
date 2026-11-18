@@ -1,0 +1,24 @@
+/* Flip8 커버 카메라 시안 — 값은 뷰어 토큰(plugin/viewer/tokens.css)만 쓴다. */
+.fcc-sheet { display: grid; gap: var(--space-24); padding: var(--space-24); background: var(--surface); color: var(--on-surface); }
+.fcc-sheet h2 { margin: 0; font: var(--type-title-medium); }
+.fcc-note { margin: 0; max-width: 80ch; color: var(--on-surface-variant); font: var(--type-body-small); }
+.fcc-grid { display: flex; flex-wrap: wrap; gap: var(--space-24); align-items: start; }
+.fcc-col { display: grid; gap: var(--space-8); margin: 0; }
+.fcc-col figcaption { display: grid; gap: var(--space-4); }
+.fcc-col b { font: var(--type-title-small); }
+.fcc-tag { color: var(--on-surface-variant); font: var(--type-code-small); }
+.fcc-svg { display: block; font-family: var(--font-sans); }
+
+.fcc-body { fill: var(--device-body); }
+.fcc-screen { fill: var(--device-veil); }
+.fcc-ink { fill: var(--device-shade); fill-opacity: .85; }
+.fcc-ink-soft { fill: var(--device-shade); fill-opacity: .5; }
+.fcc-call { fill: var(--success); }
+.fcc-cam { fill: var(--device-camera); }
+/* 렌즈 링 — 실물의 금속 테를 흉내 낸 안쪽 고리(B만) */
+.fcc-ring { fill: none; stroke: var(--device-rim); }
+.fcc-glass { fill: var(--device-gloss); }
+.fcc-handle { fill: var(--device-shade); fill-opacity: .7; }
+/* 시스템이 보고하는 배제 상자(인셋 · safe area · 핸들 자리가 따른다) — 그리지 않고 표시로만 */
+.fcc-box { fill: none; stroke: var(--inset-cutout); stroke-dasharray: 4 3; }
+.fcc-box-label { fill: var(--inset-cutout); font: var(--type-code-small); }
