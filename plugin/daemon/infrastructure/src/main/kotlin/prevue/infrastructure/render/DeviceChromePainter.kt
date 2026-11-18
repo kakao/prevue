@@ -38,10 +38,9 @@ internal class DeviceChromePainter(private val android: TimeGlyphs) {
         private const val LENS_GLINT_SHIFT = .12
         private val INK_DARK = Color.BLACK
         private val INK_LIGHT = Color.WHITE
-        private const val ROBOTO = "RobotoStatic-Regular.ttf"
 
         fun of(fonts: File): DeviceChromePainter = DeviceChromePainter(
-            runCatching { TimeGlyphs.medium(File(fonts, ROBOTO)) }
+            runCatching { TimeGlyphs.medium(fonts) }
                 .onFailure { System.err.println("[prevue] 기기 바 시각에 쓸 Roboto를 읽지 못해 iOS 글자로 그린다: $it") }
                 .getOrDefault(TimeGlyphs.ios),
         )

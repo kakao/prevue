@@ -18,6 +18,7 @@ internal class TimeGlyphs private constructor(val outline: Shape, val advance: D
         private const val IOS_DOT = 152f
         private const val MEDIUM_GAIN = 28f
         private const val MEDIUM_TRACK = 10.5
+        private const val ROBOTO = "RobotoStatic-Regular.ttf"
         private const val IOS_DOTS = "M798 -530 L798 -529 M798 -172 L798 -171"
 
         val ios: TimeGlyphs = of(
@@ -47,8 +48,8 @@ internal class TimeGlyphs private constructor(val outline: Shape, val advance: D
             IOS_ADVANCE,
         )
 
-        fun medium(regular: File): TimeGlyphs {
-            val font = Font.createFont(Font.TRUETYPE_FONT, regular).deriveFont(EM.toFloat())
+        fun medium(fonts: File): TimeGlyphs {
+            val font = Font.createFont(Font.TRUETYPE_FONT, File(fonts, ROBOTO)).deriveFont(EM.toFloat())
             val glyphs = font.createGlyphVector(FontRenderContext(null, true, true), TEXT)
             for (i in 0..glyphs.numGlyphs) {
                 val at = glyphs.getGlyphPosition(i)

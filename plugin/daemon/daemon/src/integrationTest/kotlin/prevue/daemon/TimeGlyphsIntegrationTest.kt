@@ -10,7 +10,7 @@ import prevue.infrastructure.render.TimeGlyphs
 
 @EnabledIf("prevue.daemon.TimeGlyphsIntegrationTest#available")
 class TimeGlyphsIntegrationTest {
-    private val medium = TimeGlyphs.medium(File(PearlFixture.layoutlib()!!, "data/fonts/RobotoStatic-Regular.ttf"))
+    private val medium = TimeGlyphs.medium(File(PearlFixture.layoutlib()!!, "data/fonts"))
 
     @Test fun `layoutlib 의 Roboto 400 으로 만든 시각은 Roboto Medium 굵기 · 폭이다`() {
         val stem = Area(medium.outline).apply { intersect(Area(Rectangle2D.Double(1.5, -.2, 1.0, .001))) }.bounds2D.width

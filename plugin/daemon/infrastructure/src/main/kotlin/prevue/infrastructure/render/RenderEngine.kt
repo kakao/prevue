@@ -53,8 +53,9 @@ internal class RenderEngine(
     override val loaderGen: Int get() = loaderCount.value.gen
     override val tasksOnLoader: Int get() = loaderCount.value.tasks
 
+    private val fonts = File(layoutlibDir, "data/fonts")
     private val artifacts = RenderArtifactStore(outDir, dispatchers)
-    private val chrome = DeviceChromePainter.of(File(layoutlibDir, "data/fonts"))
+    private val chrome = DeviceChromePainter.of(fonts)
     private val outputs = RenderOutputs(artifacts, chrome) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
     override var outMaxBytes: Long by artifacts::maxBytes
     override val outBytes: Long get() = artifacts.bytes
@@ -85,7 +86,7 @@ internal class RenderEngine(
     init {
         val t = System.nanoTime()
         renderer = RenderEnvironmentBootstrapper(
-            File(layoutlibDir, "data/fonts").absolutePath, resourceApk.absolutePath, spec.namespace,
+            fonts.absolutePath, resourceApk.absolutePath, spec.namespace,
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
