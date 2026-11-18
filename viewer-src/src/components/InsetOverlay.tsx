@@ -12,14 +12,22 @@ const INSET_KINDS = ['statusBars', 'navigationBars', 'captionBar', 'displayCutou
 const EDGES = ['top', 'right', 'bottom', 'left'] as const;
 type Edge = typeof EDGES[number];
 type Rect = { x: number; y: number; w: number; h: number };
-type Plan = { w: number; h: number; insets: DeviceInsets; safe: Rect };
+type Widest = { kind: typeof INSET_KINDS[number]; value: number };
+type Plan = { w: number; h: number; insets: DeviceInsets; widest: Record<Edge, Widest>; safe: Rect };
 
-/** 그릴 것 — 꺼져 있거나 기기가 아니면 null. safe 는 변마다 다섯 종류의 최댓값을 뺀 안쪽(safeDrawing)이다. */
+/**
+ * 그릴 것 — 꺼져 있거나 기기가 아니면 null. widest 는 변마다 다섯 종류의 최댓값과 그 값을 낸 종류(같으면 INSET_KINDS 순서의 앞 종류)다.
+ * safe 는 그 값을 뺀 안쪽(safeDrawing)이고, 배지도 같은 값을 적어 둘이 어긋나지 않는다.
+ */
 function insetPlanOf(on: boolean, insets: DeviceInsets | null | undefined, size: Size | null): Plan | null {
   if (!on || !insets || size?.kind !== 'device') return null;
   const w = size.widthDp, h = size.heightDp;
-  const m = Object.fromEntries(EDGES.map(e => [e, Math.max(0, ...INSET_KINDS.map(k => insets.values[k][e]))])) as Record<Edge, number>;
-  return { w, h, insets, safe: { x: m.left, y: m.top, w: Math.max(0, w - m.left - m.right), h: Math.max(0, h - m.top - m.bottom) } };
+  const widest = Object.fromEntries(EDGES.map(e => {
+    const kind = INSET_KINDS.reduce((a, k) => insets.values[k][e] > insets.values[a][e] ? k : a);
+    return [e, { kind, value: Math.max(0, insets.values[kind][e]) }];
+  })) as Record<Edge, Widest>;
+  const m = Object.fromEntries(EDGES.map(e => [e, widest[e].value])) as Record<Edge, number>;
+  return { w, h, insets, widest, safe: { x: m.left, y: m.top, w: Math.max(0, w - m.left - m.right), h: Math.max(0, h - m.top - m.bottom) } };
 }
 
 function usePlan(deviceInsets: DeviceInsets | null, size: Size | null) {
@@ -62,18 +70,20 @@ const dpText = (v: number) => String(Math.round(v * 100) / 100);
 
 /**
  * 몸체 밖의 치수 하나 — 위 · 아래 변의 띠는 오른쪽에, 왼쪽 · 오른쪽 변의 띠는 아래에 선다.
- * 같은 변에 걸린 종류는 종류 순서대로 바깥으로 한 칸(lane)씩 물러나, 값이 같아도 다르게 보여도 배지가 겹치지 않는다.
+ * 변마다 SAFE AREA 를 정하는 값(Plan.widest) 하나만 적고 그 값을 낸 종류의 색을 쓴다.
+ * 종류마다 달면 펀치홀 위쪽처럼 statusBars 와 displayCutout 이 비슷한 숫자로 나란히 떠 같은 것을 두 번 잰 것처럼 보인다. 어디가 무엇에 가려졌는지는 띠가 보여 준다.
  * from · to 는 그 축에서 화면 길이에 대한 비율이다.
  */
-type Mark = { kind: string; edge: Edge; value: number; lane: number; side: 'right' | 'bottom'; from: number; to: number };
+type Mark = { kind: string; edge: Edge; value: number; side: 'right' | 'bottom'; from: number; to: number };
 
-function marksOf({ w, h, insets }: Plan): Mark[] {
-  return EDGES.flatMap(edge => INSET_KINDS.filter(k => insets.values[k][edge] > 0).map((kind, lane) => {
-    const v = insets.values[kind][edge];
+function marksOf({ w, h, widest }: Plan): Mark[] {
+  return EDGES.flatMap(edge => {
+    const { kind, value: v } = widest[edge];
+    if (!(v > 0)) return [];
     const along = edge === 'top' || edge === 'bottom' ? h : w;
     const [from, to] = edge === 'top' || edge === 'left' ? [0, v / along] : [1 - v / along, 1];
-    return { kind, edge, value: v, lane, side: edge === 'top' || edge === 'bottom' ? 'right' : 'bottom', from, to } as Mark;
-  }));
+    return [{ kind, edge, value: v, side: edge === 'top' || edge === 'bottom' ? 'right' : 'bottom', from, to } as Mark];
+  });
 }
 
 const pct = (r: number) => `${r * 100}%`;
@@ -89,7 +99,7 @@ export function InsetMarks({ deviceInsets, size, host }: { deviceInsets: DeviceI
     {marksOf(plan).map(m => {
       const span: CSSProperties = m.side === 'right' ? { top: pct(m.from), height: pct(m.to - m.from) } : { left: pct(m.from), width: pct(m.to - m.from) };
       return <div key={`${m.kind} ${m.edge}`} className="im-dim" data-kind={m.kind} data-edge={m.edge} data-side={m.side}
-        style={{ ...span, '--lane': m.lane } as CSSProperties}>
+        style={span}>
         <i className="im-ext im-from" /><i className="im-ext im-to" />
         <span className="im-badge">{dpText(m.value)}</span>
       </div>;

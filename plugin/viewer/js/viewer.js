@@ -4155,16 +4155,23 @@ var ka = [
 ];
 function ja(e, t, n) {
 	if (!e || !t || n?.kind !== "device") return null;
-	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Aa.map((e) => [e, Math.max(0, ...ka.map((n) => t.values[n][e]))]));
+	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Aa.map((e) => {
+		let n = ka.reduce((n, r) => t.values[r][e] > t.values[n][e] ? r : n);
+		return [e, {
+			kind: n,
+			value: Math.max(0, t.values[n][e])
+		}];
+	})), o = Object.fromEntries(Aa.map((e) => [e, a[e].value]));
 	return {
 		w: r,
 		h: i,
 		insets: t,
+		widest: a,
 		safe: {
-			x: a.left,
-			y: a.top,
-			w: Math.max(0, r - a.left - a.right),
-			h: Math.max(0, i - a.top - a.bottom)
+			x: o.left,
+			y: o.top,
+			w: Math.max(0, r - o.left - o.right),
+			h: Math.max(0, i - o.top - o.bottom)
 		}
 	};
 }
@@ -4276,19 +4283,20 @@ function Pa({ deviceInsets: e, size: t, host: n }) {
 	}), fa);
 }
 var Fa = (e) => String(Math.round(e * 100) / 100);
-function Ia({ w: e, h: t, insets: n }) {
-	return Aa.flatMap((r) => ka.filter((e) => n.values[e][r] > 0).map((i, a) => {
-		let o = n.values[i][r], s = r === "top" || r === "bottom" ? t : e, [c, l] = r === "top" || r === "left" ? [0, o / s] : [1 - o / s, 1];
-		return {
+function Ia({ w: e, h: t, widest: n }) {
+	return Aa.flatMap((r) => {
+		let { kind: i, value: a } = n[r];
+		if (!(a > 0)) return [];
+		let o = r === "top" || r === "bottom" ? t : e, [s, c] = r === "top" || r === "left" ? [0, a / o] : [1 - a / o, 1];
+		return [{
 			kind: i,
 			edge: r,
-			value: o,
-			lane: a,
+			value: a,
 			side: r === "top" || r === "bottom" ? "right" : "bottom",
-			from: c,
-			to: l
-		};
-	}));
+			from: s,
+			to: c
+		}];
+	});
 }
 var La = (e) => `${e * 100}%`;
 function Ra({ deviceInsets: e, size: t, host: n }) {
@@ -4310,10 +4318,7 @@ function Ra({ deviceInsets: e, size: t, host: n }) {
 			"data-kind": e.kind,
 			"data-edge": e.edge,
 			"data-side": e.side,
-			style: {
-				...t,
-				"--lane": e.lane
-			},
+			style: t,
 			children: [
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-from" }),
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-to" }),
