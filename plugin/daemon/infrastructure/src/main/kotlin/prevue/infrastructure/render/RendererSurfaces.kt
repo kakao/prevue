@@ -1,8 +1,6 @@
 package prevue.infrastructure.render
 
 import com.android.ide.common.rendering.api.RenderSession
-import com.android.layoutlib.bridge.BridgeRenderSession
-import com.android.layoutlib.bridge.impl.RenderSessionImpl
 import com.android.tools.configurations.Configuration
 import com.android.tools.render.Renderer
 import com.android.tools.render.StandaloneRenderModelModule
@@ -63,7 +61,6 @@ internal class RendererSurfaces(renderer: Renderer) {
 
 internal class SessionSurfaces(
     task: Class<*> = RenderTask::class.java,
-    sessionImpl: Class<*> = RenderSessionImpl::class.java,
     cleanerName: String = "com.android.tools.rendering.RenderSessionCleaner",
 ) {
     val renderSession = Surface("RenderTask.myRenderSession") { RendererSurfaces.field(task, "myRenderSession") }
@@ -72,8 +69,6 @@ internal class SessionSurfaces(
     val cleaner = Surface<Method>("RenderSessionCleaner.dispose") {
         Class.forName(cleanerName, true, task.classLoader).getMethod("dispose", RenderSession::class.java, ModuleClassLoader::class.java)
     }
-    val bridgeImpl = Surface("BridgeRenderSession.mSession") { RendererSurfaces.field(BridgeRenderSession::class.java, "mSession") }
-    val viewRoot = Surface("RenderSessionImpl.mViewRoot") { RendererSurfaces.field(sessionImpl, "mViewRoot") }
 
-    fun all(): List<Surface<*>> = listOf(renderSession, loaderReference, layoutlibCallback, cleaner, bridgeImpl, viewRoot)
+    fun all(): List<Surface<*>> = listOf(renderSession, loaderReference, layoutlibCallback, cleaner)
 }
