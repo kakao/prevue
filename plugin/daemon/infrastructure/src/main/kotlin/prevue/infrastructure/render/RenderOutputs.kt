@@ -29,6 +29,7 @@ internal enum class TreeOut {
 
 internal class RenderOutputs(
     private val artifacts: RenderArtifactStore,
+    private val chrome: DeviceChromePainter,
     private val onBlank: (PreviewSpec, RenderVerdict.Blank, ClassLoader?) -> Unit = { _, _, _ -> },
 ) {
     var afterBuild = false
@@ -62,7 +63,7 @@ internal class RenderOutputs(
         val copy = img.copy
         ph["copyMs"] = msSince(t)
         t = System.nanoTime()
-        DeviceChromePainter.layoutOf(p)?.let { chrome -> copy?.let { DeviceChromePainter.paint(it, chrome, clearCorners = true) } }
+        DeviceChromePainter.layoutOf(p)?.let { layout -> copy?.let { chrome.paint(it, layout, clearCorners = true) } }
         ph["chromeMs"] = msSince(t)
         val status = result.renderResult?.status?.toString() ?: "null"
         t = System.nanoTime()

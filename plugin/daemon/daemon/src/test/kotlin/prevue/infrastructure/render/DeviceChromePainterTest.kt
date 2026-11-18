@@ -1,7 +1,10 @@
 package prevue.infrastructure.render
 
 import java.awt.Color
+import java.awt.geom.Area
+import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
+import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -21,7 +24,7 @@ class DeviceChromePainterTest {
         val device = ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true)
         val image = BufferedImage(device.widthPx, device.heightPx, BufferedImage.TYPE_INT_ARGB)
         image.createGraphics().apply { color = Color.WHITE; fillRect(0, 0, image.width, image.height); dispose() }
-        DeviceChromePainter.paint(image, DeviceChrome.of(device), clearCorners = false)
+        DeviceChromePainter(TimeGlyphs.ios).paint(image, DeviceChrome.of(device), clearCorners = false)
         val k = image.width / device.widthDp
         return { x, y -> image.getRGB((x * k).toInt(), (y * k).toInt()) }
     }
@@ -50,11 +53,11 @@ class DeviceChromePainterTest {
 
     private class Ink(val count: Int, val x0: Double, val x1: Double, val y0: Double, val y1: Double)
 
-    private fun inkOf(time: ChromeMark.Time): Ink {
+    private fun inkOf(time: ChromeMark.Time, painter: DeviceChromePainter = DeviceChromePainter(TimeGlyphs.ios)): Ink {
         val image = BufferedImage((wDp * density).toInt(), (hDp * density).toInt(), BufferedImage.TYPE_INT_RGB)
         image.createGraphics().apply { color = Color.WHITE; fillRect(0, 0, image.width, image.height); dispose() }
         val layout = ChromeLayout(wDp, hDp, listOf(0.0, 0.0, 0.0, 0.0), emptyList(), emptyList(), listOf(time), mapOf(InkBand.STATUS to DpBox(0.0, 0.0, wDp, hDp)))
-        DeviceChromePainter.paint(image, layout, clearCorners = false)
+        painter.paint(image, layout, clearCorners = false)
         var count = 0
         var x0 = Int.MAX_VALUE
         var x1 = -1
@@ -72,12 +75,10 @@ class DeviceChromePainterTest {
 
     @Test
     fun `시각 잉크는 윤곽 글자 폭 안에 들고 middleBaseline 이면 세로 가운데가 y에 온다`() {
-        for ((weight, glyphs) in listOf(600 to ChromeShapes.iosTime, 500 to ChromeShapes.androidTime)) {
-            val ink = inkOf(centered(weight))
-            val advance = glyphs.advance * 17.0
-            assertTrue(ink.x1 - ink.x0 in advance * .85..advance, "weight $weight: 잉크 폭 ${ink.x1 - ink.x0} · 글자 폭 $advance")
-            assertEquals(30.0, (ink.y0 + ink.y1) / 2, 1.0, "weight $weight: 세로 가운데")
-        }
+        val ink = inkOf(centered(600))
+        val advance = TimeGlyphs.ios.advance * 17.0
+        assertTrue(ink.x1 - ink.x0 in advance * .85..advance, "잉크 폭 ${ink.x1 - ink.x0} · 글자 폭 $advance")
+        assertEquals(30.0, (ink.y0 + ink.y1) / 2, 1.0)
     }
 
     @Test
@@ -99,11 +100,16 @@ class DeviceChromePainterTest {
     }
 
     @Test
-    fun `iOS 세미볼드 윤곽은 같은 크기의 안드로이드 미디엄보다 획이 굵다`() {
-        val ios = inkOf(centered(600))
-        val android = inkOf(centered(500))
-        val iosDensity = ios.count / ((ios.x1 - ios.x0) * (ios.y1 - ios.y0))
-        val androidDensity = android.count / ((android.x1 - android.x0) * (android.y1 - android.y0))
-        assertTrue(iosDensity > androidDensity, "iOS $iosDensity · 안드로이드 $androidDensity")
+    fun `iOS 시각 1의 줄기는 시뮬레이터에서 잰 SF 세미볼드 굵기다`() {
+        val stem = Area(TimeGlyphs.ios.outline).apply { intersect(Area(Rectangle2D.Double(1.7, -.2, 1.0, .001))) }.bounds2D.width
+        assertEquals(.126, stem, .006)
+    }
+
+    @Test
+    fun `Roboto를 못 읽으면 Android 시각도 iOS 글자로 그려 바에서 빠지지 않는다`() {
+        val fallback = DeviceChromePainter.of(File("없는-글꼴-폴더"))
+        val android = inkOf(ChromeMark.Time(20.0, 30.0, 14.0, 500, centered = false, middleBaseline = true), fallback)
+        val ios = inkOf(ChromeMark.Time(20.0, 30.0, 14.0, 600, centered = false, middleBaseline = true))
+        assertEquals(ios.count, android.count)
     }
 }

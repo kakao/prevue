@@ -10,6 +10,7 @@ import java.awt.geom.Area
 import java.awt.geom.Ellipse2D
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
+import java.io.File
 import prevue.application.domain.model.BarLook
 import prevue.application.domain.model.ChromeLayout
 import prevue.application.domain.model.DeviceModel
@@ -23,23 +24,32 @@ import prevue.application.domain.model.SystemBars
 import prevue.application.domain.model.systemBars
 import prevue.application.domain.rule.DeviceChrome
 
-internal object DeviceChromePainter {
-    private const val LIGHT_ABOVE = .6
-    private const val SEMIBOLD = 600
-    private const val WARM_PX = 8
-    private val CAMERA = Color(0x050505)
-    private val LENS_RIM = Color(255, 255, 255, 31)
-    private val LENS_GLASS = Color(255, 255, 255, 46)
-    private const val LENS_INSET = 3.0
-    private const val LENS_RING = 2.0
-    private const val LENS_GLINT = .14
-    private const val LENS_GLINT_SHIFT = .12
-    private val INK_DARK = Color.BLACK
-    private val INK_LIGHT = Color.WHITE
+internal class DeviceChromePainter(private val android: TimeGlyphs) {
+    companion object {
+        private const val LIGHT_ABOVE = .6
+        private const val SEMIBOLD = 600
+        private const val WARM_PX = 8
+        private val CAMERA = Color(0x050505)
+        private val LENS_RIM = Color(255, 255, 255, 31)
+        private val LENS_GLASS = Color(255, 255, 255, 46)
+        private const val LENS_INSET = 3.0
+        private const val LENS_RING = 2.0
+        private const val LENS_GLINT = .14
+        private const val LENS_GLINT_SHIFT = .12
+        private val INK_DARK = Color.BLACK
+        private val INK_LIGHT = Color.WHITE
+        private const val ROBOTO = "RobotoStatic-Regular.ttf"
 
-    fun layoutOf(p: PreviewSpec): ChromeLayout? {
-        if (p.systemBars !is SystemBars.Shown) return null
-        return p.params[SystemBars.DEVICE_POSTURE]?.let(ScreenSize::postureOf)?.let(DeviceChrome::of)
+        fun of(fonts: File): DeviceChromePainter = DeviceChromePainter(
+            runCatching { TimeGlyphs.medium(File(fonts, ROBOTO)) }
+                .onFailure { System.err.println("[prevue] 기기 바 시각에 쓸 Roboto를 읽지 못해 iOS 글자로 그린다: $it") }
+                .getOrDefault(TimeGlyphs.ios),
+        )
+
+        fun layoutOf(p: PreviewSpec): ChromeLayout? {
+            if (p.systemBars !is SystemBars.Shown) return null
+            return p.params[SystemBars.DEVICE_POSTURE]?.let(ScreenSize::postureOf)?.let(DeviceChrome::of)
+        }
     }
 
     fun warm() {
@@ -120,9 +130,9 @@ internal object DeviceChromePainter {
     }
 
     private fun text(g: Graphics2D, t: ChromeMark.Time) {
-        val glyphs = if (t.weight >= SEMIBOLD) ChromeShapes.iosTime else ChromeShapes.androidTime
+        val glyphs = if (t.weight >= SEMIBOLD) TimeGlyphs.ios else android
         val x = if (t.centered) t.x - glyphs.advance * t.size / 2 else t.x
-        val y = if (t.middleBaseline) t.y + glyphs.height * t.size / 2 else t.y
+        val y = if (t.middleBaseline) t.y + glyphs.middle * t.size else t.y
         g.fill(AffineTransform(t.size, 0.0, 0.0, t.size, x, y).createTransformedShape(glyphs.outline))
     }
 

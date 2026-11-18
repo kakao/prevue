@@ -1,18 +1,12 @@
 package prevue.infrastructure.render
 
-import java.awt.BasicStroke
-import java.awt.geom.AffineTransform
-import java.awt.geom.Area
 import java.awt.geom.Path2D
-import java.awt.geom.Rectangle2D
 import java.awt.geom.RoundRectangle2D
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-
-internal class TimeGlyphs(val outline: java.awt.Shape, val advance: Double, val height: Double)
 
 internal class Piece(val shape: java.awt.Shape, val fill: Boolean, val stroke: Float = 0f, val opacity: Float = 1f)
 
@@ -22,8 +16,6 @@ internal object ChromeShapes {
     private const val WIFI_Y = 12.6
     private const val WIFI_HALF = 41.0
     private const val ROUND = .5
-    private const val EM = 1000.0
-    private const val MITER = 4f
 
     val signal: List<Piece> = listOf(4.67, 7.0, 9.67, 12.33).mapIndexed { i, h -> Piece(round(i * 5.33, 12.33 - h, 3.33, h, 1.0), fill = true) }
 
@@ -64,32 +56,6 @@ internal object ChromeShapes {
         beads.forEach { (x, y) -> add(Piece(dot(x, y, 1.6), fill = true, opacity = .35f)) }
     }
 
-    val iosTime = timeGlyphs(
-        advance = 1920, height = 705,
-        strokes = listOf(
-            126f to "M290 -642 C385 -642 450 -570 450 -485 C450 -398 385 -327 290 -327 C195 -327 130 -398 130 -485 C130 -570 195 -642 290 -642 Z",
-            126f to "M290 -642 C385 -642 450 -570 450 -485 C450 -200 378 -63 268 -63 C195 -63 145 -97 125 -150",
-            134f to "M1320 0 L1320 -705",
-            112f to "M1330 -745 L950 -212 L1470 -212",
-            134f to "M1810 0 L1810 -705",
-            112f to "M1815 -715 L1592 -545",
-        ),
-        dots = 158f to "M715 -430 L715 -429 M715 -82 L715 -81",
-    )
-
-    val androidTime = timeGlyphs(
-        advance = 1860, height = 711,
-        strokes = listOf(
-            114f to "M282 -654 C373 -654 438 -585 438 -501 C438 -417 373 -348 282 -348 C191 -348 126 -417 126 -501 C126 -585 191 -654 282 -654 Z",
-            114f to "M282 -654 C373 -654 438 -585 438 -501 C438 -175 360 -57 235 -57 L165 -57",
-            116f to "M1280 0 L1280 -711",
-            102f to "M1290 -750 L910 -232 L1422 -232",
-            116f to "M1760 0 L1760 -711",
-            102f to "M1767 -718 L1540 -603",
-        ),
-        dots = 140f to "M690 -455 L690 -454 M690 -70 L690 -69",
-    )
-
     fun round(x: Double, y: Double, w: Double, h: Double, r: Double) = RoundRectangle2D.Double(x, y, w, h, r * 2, r * 2)
 
     fun corners(x: Double, y: Double, w: Double, h: Double, r: List<Double>): Path2D.Double = Path2D.Double().apply {
@@ -104,28 +70,6 @@ internal object ChromeShapes {
         lineTo(x, y + r[0])
         curveTo(x, y + r[0] * (1 - k), x + r[0] * (1 - k), y, x + r[0], y)
         closePath()
-    }
-
-    private fun timeGlyphs(advance: Int, height: Int, strokes: List<Pair<Float, String>>, dots: Pair<Float, String>): TimeGlyphs {
-        val outline = Area()
-        strokes.forEach { (width, path) ->
-            outline.add(Area(BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, MITER).createStrokedShape(pathOf(path))))
-        }
-        outline.add(Area(BasicStroke(dots.first, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND).createStrokedShape(pathOf(dots.second))))
-        outline.intersect(Area(Rectangle2D.Double(-EM, -height.toDouble(), EM * 4, EM * 2)))
-        return TimeGlyphs(AffineTransform.getScaleInstance(1 / EM, 1 / EM).createTransformedShape(outline), advance / EM, height / EM)
-    }
-
-    private fun pathOf(path: String): Path2D.Double = Path2D.Double(Path2D.WIND_NON_ZERO).apply {
-        Regex("([MLCZ])([^MLCZ]*)").findAll(path).forEach { m ->
-            val n = m.groupValues[2].trim().split(Regex("\\s+")).filter(String::isNotEmpty).map(String::toDouble)
-            when (m.groupValues[1]) {
-                "M" -> moveTo(n[0], n[1])
-                "L" -> lineTo(n[0], n[1])
-                "C" -> curveTo(n[0], n[1], n[2], n[3], n[4], n[5])
-                "Z" -> closePath()
-            }
-        }
     }
 
     private fun dot(cx: Double, cy: Double, r: Double) = java.awt.geom.Ellipse2D.Double(cx - r, cy - r, r * 2, r * 2)
