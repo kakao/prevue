@@ -11,7 +11,7 @@ import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.concurrent.Executor
+import java.util.concurrent.locks.Lock
 import prevue.application.domain.model.phrase
 
 internal class Surface<T>(val label: String, val needs: Surface<*>? = null, open: () -> T) {
@@ -29,19 +29,11 @@ internal class RendererSurfaces(renderer: Renderer) {
     val createClassLoader = Surface("ModuleClassLoaderManager.createClassLoader", manager) {
         managerClass().getDeclaredMethod("createClassLoader", ClassLoader::class.java).apply { isAccessible = true }
     }
-    val preloader = Surface("ModuleClassLoaderManager.preloader", manager) { field(managerClass(), "preloader") }
-    val preloadExecutor = Surface("ModuleClassLoaderManager.preloaderExecutor", manager) {
-        field(managerClass(), "preloaderExecutor").get(manager.value) as Executor
+    val sharedLoader = Surface("ModuleClassLoaderManager.currentSharedClassLoader", manager) {
+        field(managerClass(), "currentSharedClassLoader")
     }
-    val sharedClassLoaders = Surface("ModuleClassLoaderManager.sharedClassLoaders", manager) { field(managerClass(), "sharedClassLoaders").get(manager.value) }
-    val invalidateAll = Surface("Cache.invalidateAll", manager) {
-        Class.forName("com.google.common.cache.Cache", true, managerClass().classLoader).getMethod("invalidateAll")
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    val composeClasses = Surface("ComposeClassesKt.COMPOSE_CLASSES", manager) {
-        Class.forName("com.android.tools.render.ComposeClassesKt", true, managerClass().classLoader)
-            .getMethod("getCOMPOSE_CLASSES").invoke(null) as Collection<String>
+    val sharedLock = Surface("ModuleClassLoaderManager.sharedClassLoadersLock", manager) {
+        field(managerClass(), "sharedClassLoadersLock").get(manager.value) as Lock
     }
     val dependencies = Surface("StandaloneRenderModelModule.dependencies") { field(StandaloneRenderModelModule::class.java, "dependencies") }
     val noDependencies = Surface("StandaloneModuleDependencies(List)") {
@@ -53,8 +45,7 @@ internal class RendererSurfaces(renderer: Renderer) {
     private fun managerClass(): Class<*> = manager.value.javaClass
 
     fun all(): List<Surface<*>> = listOf(
-        renderService, baseConfiguration, manager, createClassLoader, preloader, preloadExecutor,
-        sharedClassLoaders, invalidateAll, composeClasses, dependencies, noDependencies,
+        renderService, baseConfiguration, manager, createClassLoader, sharedLoader, sharedLock, dependencies, noDependencies,
     ) + session.all()
 
     fun opened(): RendererSurfaces = apply {

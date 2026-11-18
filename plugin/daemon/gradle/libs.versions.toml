@@ -1,8 +1,8 @@
 [versions]
-# 렌더러는 alpha이고 릴리스마다 내부가 바뀐다. 자신이 빌드된 layoutlib과만 동작하므로 넷을 함께 올린다.
-renderer = "0.0.1-alpha16"
-layoutlib = "17.0.0"
-layoutlib-data = "17.0.1"
+# 렌더러의 이미지 복사 · 콜백 큐 계약을 함께 검증한 조합으로 넷을 맞춘다.
+renderer = "0.0.1-alpha17"
+layoutlib = "17.0.3"
+layoutlib-data = "17.0.3"
 # 대상 저장소와 같은 버전이어야 산출물이 호환된다. 렌더러 jar도 이 버전의 메타데이터다.
 kotlin = "2.4.10"
 coroutines = "1.8.0"

@@ -83,6 +83,7 @@ import prevue.daemon.fake.realDispatchers
 class RenderIntegrationTest {
     private val out = Files.createTempDirectory("prevue-slow").toFile()
     private lateinit var engine: RenderEngine
+    private lateinit var renderSpec: ClasspathSpec
     private lateinit var uc: TestGraph
     private lateinit var ws: Workspace
     private lateinit var repo: File
@@ -101,6 +102,7 @@ class RenderIntegrationTest {
         repo = home.repoRoot
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
+        renderSpec = spec
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
@@ -1103,6 +1105,41 @@ class RenderIntegrationTest {
             runBlocking { uc.boards.focus(index, on = false, by = "test") }
         }
         assertAlive()
+    }
+
+    @Test @Order(39) fun `세대를 교체해도 살아 있는 공유 세션은 해제할 때까지 로더를 쥔다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        assertTrue(engine.show(preview).ok)
+        val surfaces = RendererSurfaces(engine.renderer).opened()
+        fun shared() = surfaces.sharedLoader.value.get(surfaces.manager.value) as com.android.tools.rendering.classloading.ModuleClassLoader
+        val previous = shared()
+        engine.codeChanged()
+        assertFalse(previous.isDisposed, "살아 있는 세션의 로더가 먼저 폐기됐다")
+        assertTrue(engine.showAside(preview, tree = true).ok)
+        val replacement = shared()
+        assertTrue(previous !== replacement, "세대가 바뀌었는데 같은 로더를 받았다")
+        assertFalse(previous.isDisposed, "옆 태스크가 라이브 세션의 로더를 폐기했다")
+        engine.disposeLive()
+        assertTrue(previous.isDisposed, "마지막 세션을 해제해도 옛 공유 로더가 남았다")
+        assertFalse(replacement.isDisposed, "현재 세대 로더까지 폐기됐다")
+        engine.buildChanged()
+        assertTrue(replacement.isDisposed, "외부 빌드 뒤 사용하지 않는 옛 로더가 남았다")
+        assertTrue(engine.show(preview).ok)
+        assertTrue(shared() !== replacement)
+    }
+
+    @Test @Order(40) fun `렌더에 쓴 프로젝트 클래스 경로는 라이브러리 바이트 캐시 의존에서 빠진다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        assertTrue(engine.show(preview).ok)
+        val surfaces = RendererSurfaces(engine.renderer).opened()
+        val shared = surfaces.sharedLoader.value.get(surfaces.manager.value)
+        val loader = RendererSurfaces.field(shared.javaClass, "loader").get(shared)
+        val state = RendererSurfaces.field(loader.javaClass, "state").get(loader)
+        val identities = state.javaClass.getMethod("getLibraryIdentities").invoke(state) as Map<*, *>
+        assertTrue(identities.isNotEmpty(), "라이브러리 캐시가 비어 검증하지 못했다")
+        assertTrue(renderSpec.projectClassPath.none { it in identities }, "프로젝트 산출물이 라이브러리 캐시 의존에 섞였다")
+        val name = preview.fqn.substringBeforeLast('.')
+        assertTrue(Class.forName(name, false, shared as ClassLoader).classLoader === shared, "프로젝트 클래스가 호스트로 샜다")
     }
 
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =

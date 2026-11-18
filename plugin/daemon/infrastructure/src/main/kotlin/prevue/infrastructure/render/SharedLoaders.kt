@@ -2,14 +2,25 @@ package prevue.infrastructure.render
 
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
-import com.android.tools.rendering.classloading.Preloader
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.CheckedDisposable
+import com.intellij.openapi.util.Disposer
 import java.io.File
-import java.util.concurrent.Executor
 import java.util.zip.ZipFile
+import kotlin.concurrent.withLock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import prevue.application.port.PrevueDispatchers
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.application.domain.model.PreviewSpec
 
-internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: RendererSurfaces) {
+internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: RendererSurfaces, dispatchers: PrevueDispatchers) : AutoCloseable {
     data class Preloaded(val held: Int, val used: Int, val projectHeld: List<String>)
 
     var currentEmpty = true
@@ -18,31 +29,33 @@ internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: Renderer
     private var next: ModuleClassLoader? = null
     private val learned = LinkedHashSet<String>()
     private val projectSeen = HashSet<String>()
-    private val topUps = ArrayList<Preloader<*>>()
+    private val preloads = CoroutineScope(SupervisorJob() + dispatchers.io.limitedParallelism(1))
+    private val topUps = ArrayList<Job>()
+    private val active = HashMap<ModuleClassLoader, Int>()
+    private val retired = LinkedHashSet<ModuleClassLoader>()
 
     private val manager: Any = surfaces.manager.value
     private val createLoader = surfaces.createClassLoader.value
-    private val preloaderField = surfaces.preloader.value
-    private val preloadExecutor: Executor = surfaces.preloadExecutor.value
-    private val sharedCache: Any = surfaces.sharedClassLoaders.value
-    private val invalidateAll = surfaces.invalidateAll.value
-    private val composeClasses: Collection<String> = surfaces.composeClasses.value
+    private val sharedLoader = surfaces.sharedLoader.value
+    private val sharedLock = surfaces.sharedLock.value
 
-    private val projectJarClasses: Set<String> by lazy {
+    private var projectJarClasses: Set<String>? = null
+
+    private fun projectClasses(): Set<String> = projectJarClasses ?: run {
         spec.projectClassPath.filter { it !in spec.rClassJars }.map(::File)
             .filter { it.isFile && it.name.endsWith(".jar") }
-            .flatMapTo(HashSet(), ::classNamesIn)
+            .flatMapTo(HashSet(), ::classNamesIn).also { projectJarClasses = it }
     }
     private val projectDirs: List<File> by lazy { spec.projectClassPath.map(::File).filterNot { it.isFile } }
 
     private fun isProjectClass(name: String): Boolean =
-        name in projectJarClasses || projectDirs.any { File(it, name.replace('.', '/') + ".class").exists() }
+        name in projectClasses() || projectDirs.any { File(it, name.replace('.', '/') + ".class").exists() }
 
-    fun armNext() {
-        val loader = createLoader.invoke(manager, null) as ModuleClassLoader
-        next = loader
+    private fun armNext() {
         stopTopUps()
-        preloaderField.set(manager, Preloader(loader, preloadExecutor, LinkedHashSet(composeClasses).apply { addAll(learned) }))
+        next?.dispose()
+        next = createLoader.invoke(manager, null) as ModuleClassLoader
+        preload(learned.toList())
     }
 
     fun claimedForNewGeneration() {
@@ -52,10 +65,34 @@ internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: Renderer
 
     fun learnFrom(task: RenderTask) {
         val loaded = task.classLoader as? ModuleClassLoader ?: return
+        if (loaded === next) return
+        preload(loaded.nonProjectLoadedClasses.filter(::learnLibraryClass))
+    }
+
+    private fun preload(names: Collection<String>) {
         val waiting = next ?: return
-        if (loaded === waiting) return
-        val fresh = loaded.nonProjectLoadedClasses.filterTo(ArrayList(), ::learnLibraryClass)
-        if (fresh.isNotEmpty()) topUps += Preloader(waiting, preloadExecutor, fresh)
+        if (names.isEmpty()) return
+        topUps += preloads.launch {
+            for (name in names) {
+                ensureActive()
+                runCatching { Class.forName(name, false, waiting) }
+                    .onFailure { System.err.println("[prevue] 라이브러리 선로딩 실패: $name — $it") }
+            }
+        }
+    }
+
+    fun track(task: RenderTask, disposable: CheckedDisposable): ClassLoader? {
+        val loader = task.classLoader
+        if (loader is ModuleClassLoader) active[loader] = (active[loader] ?: 0) + 1
+        Disposer.register(disposable, Disposable { try { task.releaseRender() } finally { released(loader) } })
+        return loader
+    }
+
+    private fun released(loader: ClassLoader?) {
+        if (loader !is ModuleClassLoader) return
+        val remaining = (active[loader] ?: 1) - 1
+        if (remaining > 0) active[loader] = remaining else active.remove(loader)
+        disposeRetired()
     }
 
     private fun learnLibraryClass(name: String): Boolean {
@@ -95,23 +132,44 @@ internal class SharedLoaders(private val spec: ClasspathSpec, surfaces: Renderer
 
     fun codeChanged() {
         stopTopUps()
-        invalidateAll.invoke(sharedCache)
+        sharedLock.withLock {
+            (sharedLoader.get(manager) as? ModuleClassLoader)?.let { retired += it }
+            sharedLoader.set(manager, next)
+            next = null
+        }
         currentEmpty = true
         current = null
+        disposeRetired()
     }
 
-    suspend fun <T> withPreloaderParked(park: Boolean, block: suspend () -> T): T {
-        val parked = if (park) preloaderField.get(manager).also { preloaderField.set(manager, null) } else null
-        try {
-            return block()
-        } finally {
-            if (parked != null) preloaderField.set(manager, parked)
-        }
+    fun buildChanged() {
+        stopTopUps()
+        next?.dispose()
+        next = null
+        learned.clear()
+        projectSeen.clear()
+        projectJarClasses = null
+        codeChanged()
+    }
+
+    private fun disposeRetired() {
+        val unused = retired.filter { it !in active }
+        unused.forEach { it.dispose() }
+        retired.removeAll(unused.toSet())
     }
 
     private fun stopTopUps() {
         topUps.forEach { it.cancel() }
+        runBlocking { topUps.joinAll() }
         topUps.clear()
+    }
+
+    override fun close() {
+        stopTopUps()
+        preloads.cancel()
+        next?.dispose()
+        next = null
+        disposeRetired()
     }
 
     private companion object {
