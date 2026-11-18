@@ -66,7 +66,7 @@ python3 ~/.claude/skills/review/scripts/review_tier.py --range origin/develop..H
 
 사람이 PR 뒤에 하던 화면 확인을 에이전트가 먼저 한다. REVIEW가 끝난 끝 커밋으로 돈다 — 리뷰 수정마다 다시 돌지 않으려는 순서다.
 
-- **해당 없음** — 제품 입력이 develop과 같으면 "QA 해당 없음 — 제품 입력이 develop과 같다"로 적고 PR로 간다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
+- **해당 없음** — 둘 중 하나면 그 이유를 "QA 해당 없음 — <이유>"로 적고 PR로 간다. 제품 입력이 develop과 같거나, 성공 기준에 뷰어 · CLI로 볼 것이 없다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
 
   ```sh
   P="$(sed -n 's/^INPUTS="\(.*\)"$/\1/p' tools/check-local.sh)"; test -n "$P"   # 실패하면 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
