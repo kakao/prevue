@@ -69,7 +69,8 @@ python3 ~/.claude/skills/review/scripts/review_tier.py --range origin/develop..H
 - **해당 없음** — 제품 입력이 develop과 같으면 "QA 해당 없음 — 제품 입력이 develop과 같다"로 적고 PR로 간다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
 
   ```sh
-  git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin plugin/daemon plugin/devices plugin/viewer plugin/cli plugin/skills viewer-src   # 0이면 해당 없음
+  P="$(sed -n 's/^INPUTS="\(.*\)"$/\1/p' tools/check-local.sh)"; test -n "$P"   # 실패하면 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
+  git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P      # 0이면 해당 없음
   ```
 
 - **빌드하고 띄운다** — `AGENTS.md`의 워크트리 프리뷰 규칙대로 이 워크트리를 빌드하고 그 `plugin/bin/prevue`를 쓴다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `AGENTS.md` "승인이 필요한 것"이다. 같은 대상을 다른 데몬이 보고 있으면 `AGENTS.md` "개발 위생"대로 띄운다.
