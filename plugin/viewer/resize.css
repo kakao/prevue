@@ -129,8 +129,8 @@ body.resizing-ui main { padding-bottom: 0; }
   --im-cap: calc(var(--space-8) / var(--z, 1)); --im-hair: calc(1px / var(--z, 1)); }
 .inset-marks[hidden] { display: none; }
 .im-dim { position: absolute; color: var(--on-surface-variant); }
-.im-dim[data-side="right"] { left: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); width: 0; border-left: var(--im-hair) solid currentColor; }
-.im-dim[data-side="bottom"] { top: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); height: 0; border-top: var(--im-hair) solid currentColor; }
+.im-dim[data-side="right"] { left: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + .5 * var(--im-lane-w)) / var(--z, 1)); width: 0; border-left: var(--im-hair) solid currentColor; }
+.im-dim[data-side="bottom"] { top: calc(100% + var(--im-bezel, 0px) + (var(--im-gap) + .5 * var(--im-lane-h)) / var(--z, 1)); height: 0; border-top: var(--im-hair) solid currentColor; }
 .im-dim::before, .im-dim::after { content: ""; position: absolute; background: currentColor; }
 .im-dim[data-side="right"]::before, .im-dim[data-side="right"]::after { left: calc(var(--im-cap) / -2); width: var(--im-cap); height: var(--im-hair); }
 .im-dim[data-side="right"]::before { top: 0; }
@@ -140,10 +140,10 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-dim[data-side="bottom"]::after { right: 0; }
 /* 끝에서 화면 가장자리까지의 점선 — 치수가 띠의 어디서 어디까지인지 잇는다 */
 .im-ext { position: absolute; color: var(--outline-variant); }
-.im-dim[data-side="right"] .im-ext { right: 0; width: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-w)) / var(--z, 1)); border-top: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="right"] .im-ext { right: 0; width: calc(var(--im-bezel, 0px) + (var(--im-gap) + .5 * var(--im-lane-w)) / var(--z, 1)); border-top: var(--im-hair) dashed currentColor; }
 .im-dim[data-side="right"] .im-from { top: 0; }
 .im-dim[data-side="right"] .im-to { bottom: 0; }
-.im-dim[data-side="bottom"] .im-ext { bottom: 0; height: calc(var(--im-bezel, 0px) + (var(--im-gap) + (var(--lane) + .5) * var(--im-lane-h)) / var(--z, 1)); border-left: var(--im-hair) dashed currentColor; }
+.im-dim[data-side="bottom"] .im-ext { bottom: 0; height: calc(var(--im-bezel, 0px) + (var(--im-gap) + .5 * var(--im-lane-h)) / var(--z, 1)); border-left: var(--im-hair) dashed currentColor; }
 .im-dim[data-side="bottom"] .im-from { left: 0; }
 .im-dim[data-side="bottom"] .im-to { right: 0; }
 .im-badge, .im-safe { position: absolute; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); white-space: nowrap; }

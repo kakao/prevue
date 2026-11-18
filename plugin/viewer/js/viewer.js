@@ -4277,18 +4277,19 @@ function Pa({ deviceInsets: e, size: t, host: n }) {
 }
 var Fa = (e) => String(Math.round(e * 100) / 100);
 function Ia({ w: e, h: t, insets: n }) {
-	return Aa.flatMap((r) => ka.filter((e) => n.values[e][r] > 0).map((i, a) => {
-		let o = n.values[i][r], s = r === "top" || r === "bottom" ? t : e, [c, l] = r === "top" || r === "left" ? [0, o / s] : [1 - o / s, 1];
-		return {
+	return Aa.flatMap((r) => {
+		let i = ka.reduce((e, t) => n.values[t][r] > n.values[e][r] ? t : e), a = n.values[i][r];
+		if (!(a > 0)) return [];
+		let o = r === "top" || r === "bottom" ? t : e, [s, c] = r === "top" || r === "left" ? [0, a / o] : [1 - a / o, 1];
+		return [{
 			kind: i,
 			edge: r,
-			value: o,
-			lane: a,
+			value: a,
 			side: r === "top" || r === "bottom" ? "right" : "bottom",
-			from: c,
-			to: l
-		};
-	}));
+			from: s,
+			to: c
+		}];
+	});
 }
 var La = (e) => `${e * 100}%`;
 function Ra({ deviceInsets: e, size: t, host: n }) {
@@ -4310,10 +4311,7 @@ function Ra({ deviceInsets: e, size: t, host: n }) {
 			"data-kind": e.kind,
 			"data-edge": e.edge,
 			"data-side": e.side,
-			style: {
-				...t,
-				"--lane": e.lane
-			},
+			style: t,
 			children: [
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-from" }),
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-to" }),

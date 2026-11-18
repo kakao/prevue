@@ -63,24 +63,31 @@ try {
   };
   const atNode = bounds => evaluate(`(()=>{const b=${JSON.stringify(bounds)},img=document.querySelector('#shot'),r=img.getBoundingClientRect(),k=r.width/Number(img.dataset.fullW);return {x:r.x+(b[0]+b[2])/2*k,y:r.y+(b[1]+b[3])/2*k}})()`);
   // 띠 · 면 · 치수선의 화면 사각형을 #shot 사각형과 인셋 × pxPerDp ÷ PNG px 로 낸 기대값에 견준다. 오버레이가 쓰는 dp 뷰박스 · 비율과 다른 길(PNG px)로 잰다.
-  // 치수선은 몸체 밖(위 · 아래 변은 오른쪽, 왼쪽 · 오른쪽 변은 아래)에 서고, 배지 글은 그 값, 배지끼리 · 조작 독과 겹치지 않고 창 안에 든다.
+  // 치수선은 변마다 하나로 몸체 밖(위 · 아래 변은 오른쪽, 왼쪽 · 오른쪽 변은 아래)에 서고, 배지 글은 그 변의 최댓값, 배지끼리 · 조작 독과 겹치지 않고 창 안에 든다.
   const insetGeometry = `(()=>{const st=__store.st.focus,v=st.deviceInsets.values,r=document.querySelector('#shot').getBoundingClientRect(),s=r.width/st.size.widthPx*st.pxPerDp,E=['top','right','bottom','left'],out=[];
     const dp=x=>String(Math.round(x*100)/100);
     const box=(e,t)=>({top:[r.left,r.top,r.width,t],bottom:[r.left,r.bottom-t,r.width,t],left:[r.left,r.top,t,r.height],right:[r.right-t,r.top,t,r.height]})[e];
     const near=(el,exp,tag)=>{const b=el.getBoundingClientRect(),got=[b.left,b.top,b.width,b.height];if(got.some((g,i)=>exp[i]!==null&&Math.abs(g-exp[i])>1))out.push({tag,got,exp})};
     const body=document.querySelector('#ua .shell').getBoundingClientRect();
+    for(const k of Object.keys(v))for(const e of E){const el=document.querySelector('#insetOverlay [data-kind="'+k+'"] [data-edge="'+e+'"] .io-fill');
+      if(!(v[k][e]>0)){if(el)out.push(k+' '+e+' 0인데 띠');continue}
+      if(!el){out.push(k+' '+e+' 띠 없음');continue}
+      near(el,box(e,v[k][e]*s),k+' '+e)}
+    // 치수는 변마다 하나 — SAFE AREA 를 정하는 그 변의 최댓값이고, 같으면 종류 순서의 앞 종류다.
+    const K=['statusBars','navigationBars','captionBar','displayCutout','systemOverlays'];
+    const m=Object.fromEntries(E.map(e=>[e,Math.max(0,...K.map(k=>v[k][e]))]));
     let marks=0;
-    for(const k of Object.keys(v))for(const e of E){const el=document.querySelector('#insetOverlay [data-kind="'+k+'"] [data-edge="'+e+'"] .io-fill'),dim=document.querySelector('#insetMarks .im-dim[data-kind="'+k+'"][data-edge="'+e+'"]');
-      if(!(v[k][e]>0)){if(el||dim)out.push(k+' '+e+' 0인데 띠 · 치수');continue}
-      if(!el||!dim){out.push(k+' '+e+' 띠 · 치수 없음');continue}
+    for(const e of E){const dims=document.querySelectorAll('#insetMarks .im-dim[data-edge="'+e+'"]');
+      if(!(m[e]>0)){if(dims.length)out.push(e+' 0인데 치수');continue}
+      if(dims.length!==1){out.push({tag:e+' 치수 수',got:dims.length});continue}
       marks++;
-      near(el,box(e,v[k][e]*s),k+' '+e);
-      const b=box(e,v[k][e]*s),d=dim.getBoundingClientRect(),badge=dim.querySelector('.im-badge').textContent;
-      if(badge!==dp(v[k][e]))out.push({tag:k+' '+e+' 배지',badge,want:dp(v[k][e])});
-      if(e==='top'||e==='bottom'){if(Math.abs(d.top-b[1])>1||Math.abs(d.height-b[3])>1||!(d.left>body.right))out.push({tag:k+' '+e+' 치수선',got:[d.left,d.top,d.height],exp:[body.right,b[1],b[3]]})}
-      else if(Math.abs(d.left-b[0])>1||Math.abs(d.width-b[2])>1||!(d.top>body.bottom))out.push({tag:k+' '+e+' 치수선',got:[d.left,d.top,d.width],exp:[b[0],body.bottom,b[2]]})}
+      const dim=dims[0],want=K.find(k=>v[k][e]===m[e]);
+      if(dim.dataset.kind!==want)out.push({tag:e+' 치수 종류',got:dim.dataset.kind,want});
+      const b=box(e,m[e]*s),d=dim.getBoundingClientRect(),badge=dim.querySelector('.im-badge').textContent;
+      if(badge!==dp(m[e]))out.push({tag:e+' 배지',badge,want:dp(m[e])});
+      if(e==='top'||e==='bottom'){if(Math.abs(d.top-b[1])>1||Math.abs(d.height-b[3])>1||!(d.left>body.right))out.push({tag:e+' 치수선',got:[d.left,d.top,d.height],exp:[body.right,b[1],b[3]]})}
+      else if(Math.abs(d.left-b[0])>1||Math.abs(d.width-b[2])>1||!(d.top>body.bottom))out.push({tag:e+' 치수선',got:[d.left,d.top,d.width],exp:[b[0],body.bottom,b[2]]})}
     if(document.querySelectorAll('#insetMarks .im-dim').length!==marks)out.push('남는 치수');
-    const m=Object.fromEntries(E.map(e=>[e,Math.max(0,...Object.values(v).map(x=>x[e]))]));
     near(document.querySelector('#insetOverlay .io-safe'),[r.left+m.left*s,r.top+m.top*s,r.width-(m.left+m.right)*s,r.height-(m.top+m.bottom)*s],'safeDrawing');
     const safe=document.querySelector('#insetMarks .im-safe'),sw=st.size.widthDp-m.left-m.right,sh=st.size.heightDp-m.top-m.bottom;
     if(!safe||safe.querySelector('b').textContent!=='SAFE AREA'||safe.querySelector('span').textContent!==dp(sw)+' × '+dp(sh))out.push({tag:'SAFE AREA',got:safe?.textContent,want:dp(sw)+' × '+dp(sh)});
@@ -296,9 +303,11 @@ try {
   await ready();
   await check(`!document.querySelector('#resizeScene').classList.contains('preparing')`, '복구된 렌더로 그림과 입력을 다시 준비');
   // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 배지 · 치수선 · SAFE AREA 를 본다.
-  await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;fake.focus.deviceInsets.values.captionBar.top=20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
+  // captionBar.top 은 statusBars.top 보다 크게 둬 위 변의 배지가 다른 종류로 넘어가는지도 본다.
+  await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;const fv=fake.focus.deviceInsets.values;fv.captionBar.top=Math.max(...Object.values(fv).map(x=>x.top))+20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
   await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
-  await check(`(${insetGeometry}).length===0 && !!document.querySelector('#insetMarks .im-dim[data-kind="systemOverlays"][data-edge="right"]')`, 'captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA');
+  await check(`(${insetGeometry}).length===0 && document.querySelector('#insetMarks .im-dim[data-edge="right"]')?.dataset.kind==='systemOverlays'`, 'captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA');
+  await check(`document.querySelector('#insetMarks .im-dim[data-edge="top"]')?.dataset.kind==='captionBar'`, '위 변 배지가 가장 큰 captionBar 로 넘어감');
   // 재생한 상태는 version 을 앞질렀다 — 데몬의 다음 상태가 버려지지 않게 되돌린 뒤 실제 이벤트를 다시 받는다.
   await evaluate(`const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false`);
   await until(`!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);

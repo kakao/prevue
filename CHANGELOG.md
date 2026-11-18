@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The inset overlay now shows one dp badge per edge** — the value that sets SAFE AREA on that edge, colored by the inset it comes from — instead of one badge per inset kind, so a punch-hole phone's top edge no longer shows the status bar and the cutout as two near-identical numbers; the colored bands still show every inset.
 - Apps targeting SDK below 35 now place content inside the system bars without applying insets twice. Use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
 
 - Multipreview annotations imported with `import a.b.*` expand into one card per `@Preview`.
