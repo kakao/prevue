@@ -4155,16 +4155,23 @@ var ka = [
 ];
 function ja(e, t, n) {
 	if (!e || !t || n?.kind !== "device") return null;
-	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Aa.map((e) => [e, Math.max(0, ...ka.map((n) => t.values[n][e]))]));
+	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Aa.map((e) => {
+		let n = ka.reduce((n, r) => t.values[r][e] > t.values[n][e] ? r : n);
+		return [e, {
+			kind: n,
+			value: Math.max(0, t.values[n][e])
+		}];
+	})), o = Object.fromEntries(Aa.map((e) => [e, a[e].value]));
 	return {
 		w: r,
 		h: i,
 		insets: t,
+		widest: a,
 		safe: {
-			x: a.left,
-			y: a.top,
-			w: Math.max(0, r - a.left - a.right),
-			h: Math.max(0, i - a.top - a.bottom)
+			x: o.left,
+			y: o.top,
+			w: Math.max(0, r - o.left - o.right),
+			h: Math.max(0, i - o.top - o.bottom)
 		}
 	};
 }
@@ -4276,9 +4283,9 @@ function Pa({ deviceInsets: e, size: t, host: n }) {
 	}), fa);
 }
 var Fa = (e) => String(Math.round(e * 100) / 100);
-function Ia({ w: e, h: t, insets: n }) {
+function Ia({ w: e, h: t, widest: n }) {
 	return Aa.flatMap((r) => {
-		let i = ka.reduce((e, t) => n.values[t][r] > n.values[e][r] ? t : e), a = n.values[i][r];
+		let { kind: i, value: a } = n[r];
 		if (!(a > 0)) return [];
 		let o = r === "top" || r === "bottom" ? t : e, [s, c] = r === "top" || r === "left" ? [0, a / o] : [1 - a / o, 1];
 		return [{
