@@ -9,7 +9,6 @@ import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.parsers.RenderXmlFileSnapshot
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.CheckedDisposable
 import com.intellij.openapi.util.Disposer
 import java.io.File
@@ -213,9 +212,7 @@ internal class RenderEngine(
             is Built.Failed -> return Start.Failed(built.out)
         }
         ph["buildMs"] = msSince(tb)
-        val loader: ClassLoader? = task.classLoader
-        loaders.acquired(loader)
-        Disposer.register(disposable, Disposable { try { task.releaseRender() } finally { loaders.released(loader) } })
+        val loader = loaders.track(task, disposable)
         loader?.let(literals::applyTo)?.let { e ->
             Disposer.dispose(disposable)
             return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e)))
