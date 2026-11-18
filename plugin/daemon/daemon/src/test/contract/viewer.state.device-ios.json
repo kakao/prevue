@@ -236,6 +236,7 @@
           "look": "string"
         },
         "choice": "string",
+        "edgeToEdge": "string",
         "shown": "boolean"
       },
       "treeUrl": "string"
@@ -457,6 +458,7 @@
       },
       "systemUi": {
         "choice": "annotated",
+        "edgeToEdge": "auto",
         "annotated": false,
         "shown": true,
         "bars": {

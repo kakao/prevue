@@ -74,10 +74,11 @@ internal class LayoutlibSession(
         task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
         val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
         onSession {
-            LayoutlibInsets.apply(root, insets)
-            if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
-            placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning)
+            LayoutlibInsets.apply(root, insets, fitContent = LayoutlibBars.fitsContent(task, preview))
+            LayoutlibBars.hideDeviceBars(root, preview.systemBars)
         }
+        if (LayoutlibBars.fitsContent(task, preview)) task.layout().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+        onSession { placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning) }
         anchor()
     }
 
@@ -106,8 +107,11 @@ internal class LayoutlibSession(
         val root = viewRoot()
         var placed: Result<Unit> = Result.failure(IllegalStateException("세션의 루트 뷰를 찾지 못했다"))
         if (root != null) onSession {
-            placed = runCatching { LayoutlibBars.place(root, bars) }
-            if (placed.isSuccess) placedWarning = (unprepared ?: ComposeRestart.withPlacedInsets(root))?.let(ComposeRestart::warning)
+            placed = runCatching { LayoutlibBars.place(root, bars, fitContent = !task.context.configuration.isEdgeToEdge) }
+        }
+        if (root != null && placed.isSuccess) {
+            if (LayoutlibBars.fitsContent(task, preview)) task.layout().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+            onSession { placedWarning = (unprepared ?: ComposeRestart.withPlacedInsets(root))?.let(ComposeRestart::warning) }
         }
         placed.exceptionOrNull()?.let { System.err.println("[prevue] 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
         if (root != null) anchor()

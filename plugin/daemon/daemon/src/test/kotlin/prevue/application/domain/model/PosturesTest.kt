@@ -10,6 +10,19 @@ import prevue.application.domain.model.DeviceOrientation.LANDSCAPE_RIGHT
 import prevue.application.domain.model.DeviceOrientation.PORTRAIT
 
 class PosturesTest {
+    @Test fun `명시적 edge-to-edge는 미리 그리는 모든 기기와 크기의 spec에도 남는다`() {
+        val original = PreviewSpec("demo.PreviewKt.Card", "card", emptyMap(), null, 0)
+        val chosen = CardOverride(original.previewId, edgeToEdge = EdgeToEdge.ON).base(original)
+        val postures = Postures(chosen, 1)
+        val s26 = ScreenSize.Device(DeviceModel.GALAXY_S26)
+        for (size in Postures.plan(s26)) {
+            assertEquals("true", postures.specOf(size).params[EdgeToEdge.PARAM], size.key)
+        }
+        val reset = CardOverride(original.previewId, edgeToEdge = EdgeToEdge.ON).with(null, null, EdgeToEdge.AUTO)
+        assertNull(reset)
+        assertNull(Postures(original, 2).specOf(s26).params[EdgeToEdge.PARAM])
+    }
+
     private val heldTurn = mapOf(
         (true to PORTRAIT) to LANDSCAPE_LEFT, (true to LANDSCAPE_RIGHT) to PORTRAIT, (true to LANDSCAPE_LEFT) to PORTRAIT,
         (false to LANDSCAPE_LEFT) to PORTRAIT, (false to PORTRAIT) to LANDSCAPE_RIGHT, (false to LANDSCAPE_RIGHT) to PORTRAIT,
