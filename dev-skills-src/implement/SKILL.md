@@ -7,7 +7,7 @@ description: Prevue 저장소의 코드를 바꾸는 작업을 그 작업의 워
 
 규칙(브랜치 · 워크트리 · 머지 · 지우면 안 되는 것)은 `AGENTS.md` "브랜치와 워크트리"가 갖는다. 여기는 순서 · 멈추는 곳 · 판단할 것만 갖는다.
 
-RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
+RESUME → PLAN → DEVELOP → REVIEW → QA → PR → CLEAN-UP
 
 - **사람이 하는 일은 둘이다** — PLAN의 합의와 머지. 그 사이는 묻지 않고 간다.
 - **따로 멈추는 곳은 넷이다** — 대상 저장소의 Gradle 실행(`AGENTS.md` "승인이 필요한 것"), 합의한 성공 기준을 못 맞추거나 범위를 바꿔야 할 때, `review` 스킬이 있는데 리뷰어를 띄울 수 없을 때, PR의 CI가 실패했을 때. 멈추면 무엇이 왜 어긋났는지 보고한다.
@@ -21,8 +21,8 @@ RESUME → PLAN → DEVELOP → REVIEW → PR → CLEAN-UP
 |---|---|
 | 베이스 체크아웃 | 멈춘다 — 아무것도 만들지 않고, 작업 워크트리 안에서 다시 부르라고 알린다 |
 | 이 브랜치의 PR이 `MERGED` | CLEAN-UP |
-| 열린 PR이 있다 | 로컬에 PR head 뒤 커밋이 있으면 REVIEW(수정 확인)를 거쳐 PR의 밀기부터, 없으면 PR의 CI 보기부터 |
-| `origin/develop` 위에 커밋이 있다 | REVIEW — 개발이 덜 끝났으면 DEVELOP |
+| 열린 PR이 있다 | 로컬에 PR head 뒤 커밋이 있으면 REVIEW(수정 확인)와 QA를 거쳐 PR의 밀기부터, 없으면 PR의 CI 보기부터 |
+| `origin/develop` 위에 커밋이 있다 | REVIEW(그 뒤 QA) — 개발이 덜 끝났으면 DEVELOP |
 | 커밋이 없다 | 합의한 계획이 대화에 있으면 DEVELOP, 없으면 PLAN |
 
 ## PLAN — 읽기만 하고 합의한다
@@ -77,17 +77,37 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 - **물을 것** — 계획 · 범위 · 공개 계약(CLI 출력 · 매니페스트) · 결정(`D-<n>`)을 건드리면 멈추고 묻는다. 나머지는 리뷰어 추천안으로 처리하고 질문과 고른 것을 PR 본문에 적는다.
 - **머지 위험 줄**은 PR 본문에 옮긴다.
 
+## QA — 리뷰가 끝난 끝 커밋을 실제 화면에서 본다
+
+사람이 PR 뒤에 하던 화면 확인을 에이전트가 먼저 한다. REVIEW가 끝난 끝 커밋으로 돈다 — 리뷰 수정마다 다시 돌지 않으려는 순서다. 짠 에이전트가 계획 맥락을 쥔 채 직접 하고 서브에이전트로 떼지 않는다. 통합 테스트는 CI가 맡으므로 QA에서 돌리지 않는다 — 로컬에서 또 돌리면 CI와 자원이 겹친다.
+
+- **해당 없음** — 둘 중 하나면 그 이유를 "QA 해당 없음 — <이유>"로 적고 PR로 간다. 제품 입력이 develop과 같거나, 성공 기준에 뷰어 · CLI로 볼 것이 없다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
+
+  ```sh
+  # sh로 감싼다 — zsh는 $P를 단어로 나누지 않아 plugin/bin만 보고 "해당 없음"으로 잘못 건너뛴다
+  sh -c 'P="$(sed -n "s/^INPUTS=\"\(.*\)\"\$/\1/p" tools/check-local.sh)"; test -n "$P" || exit 2; git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P'
+  # 0 해당 없음 · 1 제품 입력이 바뀌었다 · 2 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
+  ```
+
+- **빌드하고 띄운다** — `AGENTS.md`의 워크트리 프리뷰 규칙대로 이 워크트리를 빌드하고 그 `plugin/bin/prevue`를 쓴다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `AGENTS.md` "승인이 필요한 것"이다. 같은 대상을 다른 데몬이 보고 있으면 `AGENTS.md` "개발 위생"대로 띄운다.
+- **성공 기준 중 뷰어 · CLI로 봐야 하는 것을 직접 확인한다.** CLI는 그 `prevue` 명령의 응답 · 종료 코드 · PNG로 본다. 뷰어는 Chrome으로 본다 — `tests/viewer/*.mjs`처럼 CDP로 몰아 스크린샷 · DOM · 진행 중인 애니메이션(`getAnimations()`) · 모션 줄이기(`Emulation.setEmulatedMedia`)를 보고, 프레임 간격은 `tools/scroll-jank.mjs --headed --trace`로 잰다. 모션은 시작 · 중간 · 끝 프레임을 찍어 본다. 기준마다 무엇을 해서 무엇을 봤는지 증거를 남긴다(그림은 `.cache/` 아래).
+<!-- only:claude -->
+  Chrome 확장 도구(`mcp__claude-in-chrome__*`)가 있으면 그것으로 뷰어를 조작하고 봐도 된다.
+<!-- /only -->
+- **"사람 확인 전"은 에이전트가 할 수 없는 것만**, 이유와 함께 남긴다 — 실제 화면에서 느끼는 부드러움처럼 찍거나 잴 수 없는 것.
+- **결함이 나오면** 고친다 → `check-local.sh` → REVIEW 수정 확인(분류기에 `--range <QA를 돈 커밋>..HEAD --recheck`, 직전 결과 자리에 QA 결함) → 새 끝 커밋으로 QA를 다시 한다. PR에 올라가는 끝 커밋은 QA를 거친 커밋이다. 고쳐도 성공 기준을 못 맞추면 멈춘다.
+
 ## PR — 올리고, 머지는 사람이 한다
 
-`check-local.sh`를 통과한 커밋을 밀고 `gh pr create --base develop`으로 연다(열린 PR이 있으면 밀기만 한다). 본문: 무엇을 · 왜, 성공 기준과 검증(여기가 원 기록이다), 리뷰 등급과 결과(고치지 않은 지적 · 추천안으로 처리한 물을 것 · 머지 위험, 건너뛰었으면 "독립 리뷰 없음"), 남은 사람 확인. 끝에 세션의 PR 서명 줄.
+`check-local.sh`와 QA를 거친 커밋을 밀고 `gh pr create --base develop`으로 연다(열린 PR이 있으면 밀기만 한다). 본문: 무엇을 · 왜, 성공 기준과 검증(여기가 원 기록이다), 리뷰 등급과 결과(고치지 않은 지적 · 추천안으로 처리한 물을 것 · 머지 위험, 건너뛰었으면 "독립 리뷰 없음"), QA 결과(해당 없음이면 그렇다고), 남은 사람 확인. 끝에 세션의 PR 서명 줄.
 
-- 사람 눈이 필요한 확인(모션 · Safari)은 "사람 확인 전"으로 적어 두고 막지 않는다.
-- develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다.
+- QA에서 에이전트가 할 수 없었던 확인은 이유와 함께 "사람 확인 전"으로 적어 두고 막지 않는다.
+- develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 병합이 제품 입력(QA의 경로)을 바꿨으면 밀기 전에 QA를 다시 한다.
 - **CI를 기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
 <!-- only:claude -->
   기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다.
 <!-- /only -->
-- **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄운다 — 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지.
+- **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 REVIEW를 수정 확인으로 띄우고(분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지) QA를 거쳐 민다.
 - **초록이면 멈춘다 — `gh pr merge`를 부르지 않는다.** PR 본문의 검증 기록에 CI 실행 링크를 채우고, 보고에 PR 링크와 "머지한 뒤 `/implement`로 다시 부르면 이어 간다"를 싣는다.
 <!-- only:claude -->
 - 이 세션이 살아 있는 동안은 `run_in_background`로 PR이 `MERGED`나 `CLOSED`가 되기를 기다린다 — `MERGED`면 CLEAN-UP으로 이어 가고, `CLOSED`면 멈춰 보고한다.
@@ -97,4 +117,4 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 
 PR이 `MERGED`일 때만 한다. `plugin/bin/prevue stop --mine`으로 데몬을 멈추고, 원격 작업 브랜치가 남아 있으면 지운다. 다른 워크트리는 머지됐어도 건드리지 않는다. 워크트리와 로컬 브랜치는 만든 쪽이 지운다. 그 뒤 `retro` 스킬을 **남기기**로 로드한다(없으면 건너뛴다) — 규약은 `dev-skills-src/retro.md`다.
 
-끝으로 바뀐 것 · PR 링크 · 머지 커밋 · 성공 기준별 검증 · 리뷰 결과 · 회고 노트 · 남은 사람 확인 · "워크트리 정리 남음 — <워크트리 경로>"를 한 덩어리로 보고한다. 건너뛰거나 멈춘 단계는 그대로 말한다.
+끝으로 바뀐 것 · PR 링크 · 머지 커밋 · 성공 기준별 검증 · 리뷰 결과 · QA 결과 · 회고 노트 · 남은 사람 확인 · "워크트리 정리 남음 — <워크트리 경로>"를 한 덩어리로 보고한다. 건너뛰거나 멈춘 단계는 그대로 말한다.
