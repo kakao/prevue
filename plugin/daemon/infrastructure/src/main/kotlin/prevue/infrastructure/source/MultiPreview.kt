@@ -42,7 +42,7 @@ internal class MultiPreview(classPath: List<String>) {
         for (a in parsed(fqn).classAnns) {
             val own = previews(a)
             // 멀티프리뷰가 다시 멀티프리뷰를 달 수 있다. 같은 규칙으로 한 겹 더 푼다.
-            out += own ?: expand(a.type.trim('L', ';').replace('/', '.'), depth + 1)
+            out += own ?: expand(a.type.removePrefix("L").removeSuffix(";").replace('/', '.'), depth + 1)
         }
         return out
     }
