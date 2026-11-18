@@ -23,6 +23,7 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/daemon/PrevueDaemon.kt", "Thread", 2, "종료 훅과 감시견 — JVM 은 종료 훅에 Thread 만 받고, 감시견은 코루틴이 멈춰도 돌아야 한다"),
             Allowed("prevue/daemon/PrevueDaemon.kt", "runBlocking", 4, "블로킹 입구 — run · close 둘 · 감시견"),
             Allowed("$RENDER/RenderArtifactStore.kt", "runBlocking", 1, "close 입구 — 데몬 정리가 레인에 남은 쓰기를 기다린다"),
+            Allowed("$RENDER/SharedLoaders.kt", "runBlocking", 1, "블로킹 경계 — 선로딩 종료를 기다린 뒤 로더를 넘기거나 폐기한다"),
             Allowed("$RENDER/LazyListReflection.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/SemanticsTree.kt", "ClassValue", 3, CLASS_LIFETIME),
             Allowed("$RENDER/ModifierChain.kt", "ClassValue", 2, CLASS_LIFETIME),
@@ -30,8 +31,6 @@ class ThreadDeviceRuleTest {
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
             Allowed("$RENDER/LayoutlibSession.kt", "AtomicBoolean", 2, "렌더러 API — 정리된 공유 로더의 Compose 알림 예약 필드 둘을 복구한다"),
-            Allowed("$RENDER/RendererSurfaces.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
-            Allowed("$RENDER/SharedLoaders.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
         )
         val testRoots = listOf(File("src/test/kotlin"), File("src/integrationTest/kotlin"))
         const val SLEEP = "Thread.sleep"

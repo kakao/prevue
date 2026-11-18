@@ -96,7 +96,7 @@ internal class RenderEngine(
         resourceIds = ResourceIds(renderer, surfaces)
         sessionSurfaces = surfaces.session
         disposal = SessionDisposal(surfaces.session)
-        loaders = SharedLoaders(spec, surfaces)
+        loaders = SharedLoaders(spec, surfaces, dispatchers)
         outDir.mkdirs()
     }
 
@@ -120,8 +120,8 @@ internal class RenderEngine(
     override fun dropLiterals(owners: Collection<String>) = literals.drop(owners)
 
     override fun buildChanged() {
-        if (preloadNext) loaders.armNext()
-        codeChanged()
+        elements.codeChanged()
+        loaders.buildChanged()
         outputs.afterBuild = true
         forgetShapes()
     }
@@ -149,7 +149,7 @@ internal class RenderEngine(
         disposeLive()
         ph["disposeMs"] = msSince(t)
         val own = interactive || ownLoader
-        val started = when (val s = start(p, ph, usePrivate = own || !preloadNext, park = own && preloadNext, counted = !own)) {
+        val started = when (val s = start(p, ph, usePrivate = own || !preloadNext, counted = !own)) {
             is Start.Ready -> s
             is Start.Failed -> return s.out
         }
@@ -163,7 +163,7 @@ internal class RenderEngine(
     override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput {
         if (lostThread != null) return lostOutput(p)
         val usePrivate = !preloadNext || live?.task?.classLoader?.let { it === loaders.current } == true
-        val started = when (val s = start(p, mutableMapOf(), usePrivate, park = usePrivate && preloadNext, counted = true)) {
+        val started = when (val s = start(p, mutableMapOf(), usePrivate, counted = true)) {
             is Start.Ready -> s
             is Start.Failed -> return s.out
         }
@@ -199,19 +199,20 @@ internal class RenderEngine(
         class Failed(val out: RenderOutput) : Start
     }
 
-    private suspend fun start(p: PreviewSpec, ph: MutableMap<String, Long>, usePrivate: Boolean, park: Boolean, counted: Boolean): Start {
+    private suspend fun start(p: PreviewSpec, ph: MutableMap<String, Long>, usePrivate: Boolean, counted: Boolean): Start {
         val t0 = System.nanoTime()
         val (cfg, xml) = layoutFor(p, ph) ?: return Start.Failed(failedBefore(p, phrase("render.noInstances")))
         val logger = RenderLogger()
         val disposable = Disposer.newCheckedDisposable()
         val tb = System.nanoTime()
-        val task = when (val built = buildTask(p, cfg, logger, disposable, usePrivate, park)) {
+        val task = when (val built = buildTask(p, cfg, logger, disposable, usePrivate)) {
             is Built.Task -> built.task
             is Built.Failed -> return Start.Failed(built.out)
         }
         ph["buildMs"] = msSince(tb)
-        Disposer.register(disposable, Disposable { task.releaseRender() })
         val loader: ClassLoader? = task.classLoader
+        loaders.acquired(loader)
+        Disposer.register(disposable, Disposable { try { task.releaseRender() } finally { loaders.released(loader) } })
         loader?.let(literals::applyTo)?.let { e ->
             Disposer.dispose(disposable)
             return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e)))
@@ -232,18 +233,16 @@ internal class RenderEngine(
     }
 
     private suspend fun buildTask(
-        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, disposable: CheckedDisposable, usePrivate: Boolean, park: Boolean,
+        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, disposable: CheckedDisposable, usePrivate: Boolean,
     ): Built {
         val before = RenderTiming.failedBeforeRender(true)
-        return loaders.withPreloaderParked(park) {
-            try {
-                val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
-                if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
-                else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
-            } catch (e: Exception) {
-                Disposer.dispose(disposable)
-                Built.Failed(if (hung(p)) lostOutput(p) else outputs.failed(p, FailureKind.EXCEPTION, phrase("render.taskFailed", "why" to e), before))
-            }
+        return try {
+            val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
+            if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
+            else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
+        } catch (e: Exception) {
+            Disposer.dispose(disposable)
+            Built.Failed(if (hung(p)) lostOutput(p) else outputs.failed(p, FailureKind.EXCEPTION, phrase("render.taskFailed", "why" to e), before))
         }
     }
 
@@ -340,10 +339,14 @@ internal class RenderEngine(
         } catch (e: Exception) {
             return renderFailed(l, timing, t, FailureKind.EXCEPTION, phrase("render.exception", "why" to e), timedOut = false)
         }
-        val renderMs = msSince(t)
-        if (relayout) refreshTree(l, result)
-        val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
-        return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
+        try {
+            val renderMs = msSince(t)
+            if (relayout) refreshTree(l, result)
+            val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
+            return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
+        } finally {
+            result.dispose()
+        }
     }
 
     private suspend fun renderFailed(
@@ -382,7 +385,7 @@ internal class RenderEngine(
 
     override fun close() {
         try { disposeLive() } finally {
-            try { artifacts.close() } finally { if (lostThread == null) renderer.close() }
+            try { artifacts.close() } finally { if (lostThread == null) { loaders.close(); renderer.close() } }
         }
     }
 

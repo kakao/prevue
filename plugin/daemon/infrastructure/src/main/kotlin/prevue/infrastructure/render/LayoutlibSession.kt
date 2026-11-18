@@ -71,7 +71,7 @@ internal class LayoutlibSession(
 
     private fun placeInsets(insets: AppInsets) {
         task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
-        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
         val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
         onSession {
             LayoutlibInsets.apply(root, insets)
@@ -102,7 +102,7 @@ internal class LayoutlibSession(
     private fun placeBars(bars: SystemBars.Shown) {
         val unprepared = runCatching { task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS) }
             .exceptionOrNull()?.let { "컴포지션을 다시 만들 준비를 하지 못했다: $it" }
-        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
         val root = viewRoot()
         var placed: Result<Unit> = Result.failure(IllegalStateException("세션의 루트 뷰를 찾지 못했다"))
         if (root != null) onSession {
@@ -133,7 +133,8 @@ internal class LayoutlibSession(
         advanceCallbacks(stepMs?.let { clock.advance(it * 1_000_000) } ?: clock.next())
         pressUnseen = false
         ripples.calm(task) { viewRoot() }
-        val img = task.render().get(timeoutSec(), TimeUnit.SECONDS).renderedImage.copy
+        val result = task.render().get(timeoutSec(), TimeUnit.SECONDS)
+        val img = try { result.renderedImage.copy } finally { result.dispose() }
         chrome?.let { layout -> img?.let { DeviceChromePainter.paint(it, layout, clearCorners = false) } }
         val bitmap = img?.toBitmap()
         val h = bitmap?.let { RenderOutputs.pixelHash(it.pixels) } ?: 0L
