@@ -91,7 +91,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 - **`plugin/daemon/daemon/src/bridge/`** — `kotlin-compiler-embeddable`에 `compileOnly`로 묶이고, 실행 때는 격리 클래스로더에 공유 툴체인의 컴파일러 jar와 함께 올라가 데몬이 리플렉션으로 부른다. 이름 · 시그니처가 어긋나면 컴파일이 아니라 실행 때 드러난다.
 - **대상 앱 클래스패스 · Compose 판** — 렌더 결과는 대상의 클래스패스 덤프에 달렸고, 대상 저장소의 Gradle 실행은 승인이 필요해 리뷰에서 돌릴 수 없다(`AGENTS.md` "승인이 필요한 것").
 - **CLI**(`plugin/cli/`의 파이썬 · `plugin/bin/prevue`의 bash와 인라인 `python3`) — 정적 검사(타입 · shellcheck)가 없다. 호출처 누락 · 키 이름 오타는 `tests/cli`에 없는 경로면 빌드로도 잡히지 않는다.
-- **생성물** — 위 "저장소"의 생성물은 diff에 보여도 판정 대상은 원본이다. 원본과 생성물이 함께 바뀌었으면 원본을 읽는다.
+- **생성물** — `AGENTS.md` "저장소" 절의 생성물은 diff에 보여도 판정 대상은 원본이다. 원본과 생성물이 함께 바뀌었으면 원본을 읽는다.
 - **버전 핀** — `plugin/daemon/`의 빌드 파일 · 버전 카탈로그는 layoutlib · 컴파일러 판과 맞물린다. 핀을 바꾼 diff는 "빌드 실패 시 볼 곳"에 적는다.
 
 ## 외부 근거 도구
@@ -107,7 +107,7 @@ android --no-metrics docs fetch "<kb:// url>"   # 그 문서 전문
 
 `review` 스킬의 분류기(`scripts/review_tier.py`)가 이 블록을 읽는다. 형식과 규칙 순서는 그 스크립트 머리말이 갖는다.
 
-- **건너뛰기는 경로로 박는다** — Prevue에서는 `*.md`가 곧 동작이다(`skills-src/*/SKILL.md` · `dev-skills-src/` · `AGENTS.md`). 사람용 요약(README 두 벌 · CHANGELOG)과 그림(`assets/`) · 이슈 양식만 건너뛴다.
+- **건너뛰기는 경로로 박는다** — Prevue에서는 `*.md`가 곧 동작이다(`skills-src/*/SKILL.md` · `dev-skills-src/` · `AGENTS.md`). 사람용 요약(README 두 벌)과 그림(`assets/`) · 이슈 양식만 건너뛴다. `CHANGELOG.md`는 건너뛰지 않는다 — `.github/workflows/release.yml`이 GitHub Release 본문을 여기서 뽑고 `tools/sync-version.sh`가 판 제목을 검사한다.
 - **가벼운 파일은 두지 않는다** — `plugin/daemon/`의 빌드 파일은 버전 핀을 갖고, 그것을 가볍다고 내리면 위험한 diff가 medium으로 빠진다.
 - **xhigh는 diff 안에서 맞는지 따질 수 있는 한쪽 문만** — 매니페스트 · `plugin/VERSION` · 워크플로 · CLI 계약(입구와 `help/`). JSON 응답의 키(데몬 · `plugin/cli/`가 만든다) · 배포 스킬 본문 · 사용자 기기 저장 형식은 high로 보고 머지 위험 줄로 사람 리뷰에 넘긴다.
 - 레거시 진입점은 아직 없다.
@@ -115,7 +115,7 @@ android --no-metrics docs fetch "<kb:// url>"   # 그 문서 전문
 ```json review-tier
 {
   "test_dirs": ["test", "integrationTest", "tests"],
-  "skip": ["README.md", "README.ko.md", "CHANGELOG.md", "assets/*", ".github/ISSUE_TEMPLATE/*"],
+  "skip": ["README.md", "README.ko.md", "assets/*", ".github/ISSUE_TEMPLATE/*"],
   "light": [],
   "one_way": {
     "배포 매니페스트 · 버전": [".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json", "plugin/.claude-plugin/plugin.json", "plugin/.codex-plugin/*", "plugin/VERSION"],
