@@ -2,11 +2,13 @@ package prevue.application.service
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import prevue.application.domain.model.Bitmap
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
@@ -56,7 +58,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
     suspend fun open(p: PreviewSpec, interactive: Boolean, ownLoader: Boolean = false): RenderOutput {
         close()
         val s = sessions.open(p, interactive, ownLoader)
-        if (!s.opened.ok) { s.close(); return s.opened }
+        if (!s.opened.ok) { closeQuietly(s); return s.opened }
         session = s
         dirty = false
         lastShot = null
@@ -66,13 +68,17 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     suspend fun ensure(p: PreviewSpec, interactive: Boolean): RenderOutput? = if (session?.preview == p) null else open(p, interactive)
 
-    fun close() {
+    suspend fun close() {
         val s = session ?: return
         session = null
         _latest.value = null
         _screen.value = null
         rest()
         fail(IllegalStateException(CLOSED))
+        closeQuietly(s)
+    }
+
+    private suspend fun closeQuietly(s: LiveSession) = withContext(NonCancellable) {
         runCatching { s.close() }.onFailure { log("세션을 닫지 못했다: $it") }
     }
 
@@ -82,7 +88,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         try {
             return if (s.opened.ok) s.renderAt(ms) else s.opened
         } finally {
-            s.close()
+            closeQuietly(s)
         }
     }
 
@@ -125,7 +131,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return seq to ended
     }
 
-    private fun catchUp(each: () -> Unit) {
+    private suspend fun catchUp(each: () -> Unit) {
         var still = 0
         repeat(CATCH_UP_FRAMES) {
             if (still >= 2) return
@@ -192,7 +198,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     private class Ticked(val pacing: Pacing, val step: Pacing.Step, val changed: Boolean)
 
-    private fun frame(t: Long, stepMs: Long? = null): Ticked? {
+    private suspend fun frame(t: Long, stepMs: Long? = null): Ticked? {
         val s = session ?: return null.also { rest() }
         val p = pacing ?: Pacing(t).also { pacing = it }
         val f = tick(s, stepMs) ?: return null
@@ -204,7 +210,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return Ticked(p, step, f.changed)
     }
 
-    private fun tick(s: LiveSession, stepMs: Long?): Frame? = try {
+    private suspend fun tick(s: LiveSession, stepMs: Long?): Frame? = try {
         s.tick(stepMs = stepMs)
     } catch (e: Throwable) {
         if (e is CancellationException) throw e

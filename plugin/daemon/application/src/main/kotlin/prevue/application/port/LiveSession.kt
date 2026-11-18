@@ -22,7 +22,7 @@ interface LiveSession {
     fun lists(): List<ListState>
     fun semantics(): List<SemanticNode>
     suspend fun renderAt(ms: Long, frameMs: Long = 16): RenderOutput
-    fun close()
+    suspend fun close()
 
     class Look(val out: RenderOutput, val tree: LiveTree)
 }
