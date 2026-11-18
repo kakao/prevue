@@ -3,10 +3,8 @@ package prevue.infrastructure.render
 import java.awt.AlphaComposite
 import java.awt.BasicStroke
 import java.awt.Color
-import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
-import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
 import java.awt.geom.Area
 import java.awt.geom.Ellipse2D
@@ -26,7 +24,6 @@ import prevue.application.domain.model.systemBars
 import prevue.application.domain.rule.DeviceChrome
 
 internal object DeviceChromePainter {
-    private const val TIME_TEXT = "9:41"
     private const val LIGHT_ABOVE = .6
     private const val SEMIBOLD = 600
     private const val WARM_PX = 8
@@ -125,14 +122,10 @@ internal object DeviceChromePainter {
     }
 
     private fun text(g: Graphics2D, t: ChromeMark.Time) {
-        val weight = if (t.weight >= SEMIBOLD) TextAttribute.WEIGHT_SEMIBOLD else TextAttribute.WEIGHT_MEDIUM
-        val font = Font(mapOf(TextAttribute.FAMILY to Font.SANS_SERIF, TextAttribute.WEIGHT to weight, TextAttribute.SIZE to t.size.toFloat()))
-        val glyphs = font.createGlyphVector(g.fontRenderContext, TIME_TEXT)
-        val bounds = glyphs.logicalBounds
-        val line = font.getLineMetrics(TIME_TEXT, g.fontRenderContext)
-        val x = if (t.centered) t.x - bounds.width / 2 else t.x
-        val y = if (t.middleBaseline) t.y + (line.ascent - line.descent) / 2 else t.y
-        g.fill(glyphs.getOutline(x.toFloat(), y.toFloat()))
+        val glyphs = if (t.weight >= SEMIBOLD) ChromeShapes.iosTime else ChromeShapes.androidTime
+        val x = if (t.centered) t.x - glyphs.advance * t.size / 2 else t.x
+        val y = if (t.middleBaseline) t.y + glyphs.height * t.size / 2 else t.y
+        g.fill(AffineTransform(t.size, 0.0, 0.0, t.size, x, y).createTransformedShape(glyphs.outline))
     }
 
     private fun clearOutside(g: Graphics2D, layout: ChromeLayout) {
