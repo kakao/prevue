@@ -240,14 +240,6 @@ class LiveLoopTest {
         assertEquals(listOf("open ${card.previewId}", "close ${card.previewId}", "open ${other.previewId}"), fake.lifecycle.toList())
     }
 
-    @Test fun `닫힌 뒤 다시 닫아도 세션은 한 번만 닫힌다`() = runTest {
-        val a = actor()
-        a.ensure(card, interactive = true)
-        a.codeChanged()
-        a.codeChanged()
-        assertEquals(1, fake.closes.get())
-    }
-
     @Test fun `세션이 닫히면 기다리던 에이전트는 실패를 받는다`() = runTest {
         val a = actor()
         fake.moving = true

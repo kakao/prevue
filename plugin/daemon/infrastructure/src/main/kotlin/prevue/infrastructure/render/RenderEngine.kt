@@ -12,10 +12,8 @@ import com.android.tools.rendering.parsers.RenderXmlFileSnapshot
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderOutputs.Companion.msSince
 import prevue.application.domain.model.EdgeToEdge
@@ -320,7 +318,7 @@ internal class RenderEngine(
             return (waiting ?: l.realClockWarning())?.takeIf { out.ok }?.let { out.copy(warnings = out.warnings + it) } ?: out
         }
 
-        override suspend fun close() = withContext(NonCancellable) {
+        override suspend fun close() {
             if (session != null && session === live) disposeLive()
         }
     }

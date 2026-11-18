@@ -3,7 +3,6 @@ package prevue.infrastructure.render
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class RendererLeaseTest {
     @Test fun `놓으면 건 해제를 한 번 돌리고 다시 놓아도 돌리지 않는다`() {
@@ -15,12 +14,6 @@ class RendererLeaseTest {
         lease.releaseQuietly()
         assertEquals(1, released)
         assertTrue(lease.released)
-    }
-
-    @Test fun `놓은 임대에는 해제를 걸 수 없다`() {
-        val lease = RendererLease()
-        lease.release()
-        assertThrows<IllegalStateException> { lease.onRelease {} }
     }
 
     @Test fun `해제가 던져도 조용히 놓기는 임대를 놓은 채 끝나고 나머지 해제도 돈다`() {

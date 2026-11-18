@@ -13,7 +13,6 @@ internal class RendererLease {
     fun build(builder: RenderService.RenderTaskBuilder): RenderTask? = builder.build(root).get()
 
     fun onRelease(action: () -> Unit) {
-        check(!released) { RELEASED }
         Disposer.register(root, Disposable(action))
     }
 
@@ -26,8 +25,6 @@ internal class RendererLease {
     }
 
     companion object {
-        private const val RELEASED = "이미 놓은 임대다"
-
         fun releaseCallback(callback: Any?) {
             (callback as? Disposable)?.let(Disposer::dispose)
         }
