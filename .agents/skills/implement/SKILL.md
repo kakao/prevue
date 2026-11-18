@@ -69,7 +69,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 
 ## QA — 리뷰가 끝난 끝 커밋을 실제 화면에서 본다
 
-사람이 PR 뒤에 하던 화면 확인을 에이전트가 먼저 한다. REVIEW가 끝난 끝 커밋으로 돈다 — 리뷰 수정마다 다시 돌지 않으려는 순서다.
+사람이 PR 뒤에 하던 화면 확인을 에이전트가 먼저 한다. REVIEW가 끝난 끝 커밋으로 돈다 — 리뷰 수정마다 다시 돌지 않으려는 순서다. 짠 에이전트가 계획 맥락을 쥔 채 직접 하고 서브에이전트로 떼지 않는다. 통합 테스트는 CI가 맡으므로 QA에서 돌리지 않는다 — 로컬에서 또 돌리면 CI와 자원이 겹친다.
 
 - **해당 없음** — 둘 중 하나면 그 이유를 "QA 해당 없음 — <이유>"로 적고 PR로 간다. 제품 입력이 develop과 같거나, 성공 기준에 뷰어 · CLI로 볼 것이 없다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
 
