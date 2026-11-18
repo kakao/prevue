@@ -53,8 +53,10 @@ internal class RenderEngine(
     override val loaderGen: Int get() = loaderCount.value.gen
     override val tasksOnLoader: Int get() = loaderCount.value.tasks
 
+    private val fonts = File(layoutlibDir, "data/fonts")
     private val artifacts = RenderArtifactStore(outDir, dispatchers)
-    private val outputs = RenderOutputs(artifacts) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
+    private val chrome = DeviceChromePainter.of(fonts)
+    private val outputs = RenderOutputs(artifacts, chrome) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
     override var outMaxBytes: Long by artifacts::maxBytes
     override val outBytes: Long get() = artifacts.bytes
     override fun protect(keep: () -> Set<String>) = artifacts.protect(keep)
@@ -84,7 +86,7 @@ internal class RenderEngine(
     init {
         val t = System.nanoTime()
         renderer = RenderEnvironmentBootstrapper(
-            File(layoutlibDir, "data/fonts").absolutePath, resourceApk.absolutePath, spec.namespace,
+            fonts.absolutePath, resourceApk.absolutePath, spec.namespace,
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
@@ -217,7 +219,7 @@ internal class RenderEngine(
             if (!usePrivate) loaders.current = loader
             task.setTimeout(renderTimeoutSec * 1000)
             task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
-            val session = LayoutlibSession(p, task, lease, logger, sessionSurfaces) { renderTimeoutSec }
+            val session = LayoutlibSession(p, task, lease, logger, sessionSurfaces, chrome) { renderTimeoutSec }
             val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
             if (counted) countTask()
             resourceIds.registeredByFirstLoader()

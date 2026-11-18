@@ -20,7 +20,7 @@ class BuildOutputRetentionTest {
             store.write("card", BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB), mapOf("success" to true), false).await()
             val image = store.imageFile("card").readBytes()
             val tree = store.treeFile("card").readBytes()
-            val outputs = RenderOutputs(store).apply { afterBuild = true }
+            val outputs = RenderOutputs(store, DeviceChromePainter(TimeGlyphs.ios)).apply { afterBuild = true }
             val failed = outputs.failed(preview, FailureKind.NOT_FOUND, Verbatim("missing"), RenderTiming.failedBeforeRender(true))
             failed.written.await()
             assertNull(failed.image)
@@ -33,7 +33,7 @@ class BuildOutputRetentionTest {
     @Test fun `빌드 중에도 다른 렌더 오류는 정상 실패 산출물로 남긴다`() = runBlocking {
         RenderArtifactStore(directory.toFile(), realDispatchers).use { store ->
             store.write("card", BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB), emptyMap(), false).await()
-            val outputs = RenderOutputs(store).apply { afterBuild = true }
+            val outputs = RenderOutputs(store, DeviceChromePainter(TimeGlyphs.ios)).apply { afterBuild = true }
             val failed = outputs.failed(preview, FailureKind.EXCEPTION, Verbatim("actual"), RenderTiming.failedBeforeRender(true))
             failed.written.await()
             assertFalse(store.imageFile("card").exists())

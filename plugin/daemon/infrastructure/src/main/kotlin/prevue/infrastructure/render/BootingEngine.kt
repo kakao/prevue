@@ -33,7 +33,7 @@ internal class BootingEngine(
     }
 
     init {
-        scope.launch(dispatchers.io + CoroutineName("prevue-chrome-warm")) { DeviceChromePainter.warm() }
+        scope.launch(dispatchers.io + CoroutineName("prevue-chrome-warm")) { DeviceChromePainter(TimeGlyphs.ios).warm() }
     }
 
     private val ready: RenderEngine get() = booted.getCompleted().engine
