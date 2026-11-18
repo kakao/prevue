@@ -2,7 +2,8 @@ package prevue.infrastructure.render
 
 import java.awt.Color
 import java.awt.image.BufferedImage
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.ChromeLayout
 import prevue.application.domain.model.ChromeMark
@@ -70,7 +71,7 @@ class DeviceChromePainterTest {
     private fun centered(weight: Int) = ChromeMark.Time(100.0, 30.0, 17.0, weight, centered = true, middleBaseline = true)
 
     @Test
-    fun `시각은 시스템 글꼴이 아니라 고정 윤곽으로 그려 잉크 폭이 윤곽의 글자 폭을 따른다`() {
+    fun `시각 잉크는 윤곽 글자 폭 안에 들고 middleBaseline 이면 세로 가운데가 y에 온다`() {
         for ((weight, glyphs) in listOf(600 to ChromeShapes.iosTime, 500 to ChromeShapes.androidTime)) {
             val ink = inkOf(centered(weight))
             val advance = glyphs.advance * 17.0

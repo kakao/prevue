@@ -109,12 +109,11 @@ internal object ChromeShapes {
     }
 
     private fun pathOf(path: String): Path2D.Double = Path2D.Double(Path2D.WIND_NON_ZERO).apply {
-        Regex("([MLQCZ])([^MLQCZ]*)").findAll(path).forEach { m ->
+        Regex("([MLCZ])([^MLCZ]*)").findAll(path).forEach { m ->
             val n = m.groupValues[2].trim().split(Regex("\\s+")).filter(String::isNotEmpty).map(String::toDouble)
             when (m.groupValues[1]) {
                 "M" -> moveTo(n[0], n[1])
                 "L" -> lineTo(n[0], n[1])
-                "Q" -> quadTo(n[0], n[1], n[2], n[3])
                 "C" -> curveTo(n[0], n[1], n[2], n[3], n[4], n[5])
                 "Z" -> closePath()
             }
