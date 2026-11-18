@@ -99,11 +99,11 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
 
 ## PR — 올리고, 머지는 사람이 한다
 
-`check-local.sh`와 QA를 거친 커밋을 밀고 `gh pr create --base develop`으로 연다 — 드래프트로 만들지 않는다. 본문은 `dev-skills-src/pr-template.md`의 구성과 문체로 쓴다(검증이 원 기록이다: 확인한 것 · 확인하지 못한 것 · 꼭 봐 주세요). QA 결과와 "사람 확인 전"은 검증에, 리뷰 결과는 "꼭 봐 주세요"에 사람 말로 담는다(건너뛰었으면 "독립 리뷰 없음"). 끝에 세션의 PR 서명 줄.
+`check-local.sh`와 QA를 거친 커밋을 밀고 `gh pr create --base develop`으로 연다 — 드래프트로 만들지 않는다. 본문은 `dev-skills-src/pr-template.md`의 구성과 문체로 쓴다(검증이 원 기록이다: 확인한 것 · 확인하지 못한 것 · 꼭 봐 주세요). QA 결과는 "확인한 것"에, "사람 확인 전"은 "확인하지 못한 것"에, 리뷰 결과는 "꼭 봐 주세요"에 사람 말로 담는다(건너뛰었으면 "독립 리뷰 없음"). 끝에 세션의 PR 서명 줄.
 
 - **PR을 연 뒤 커밋을 올리면**(수정 · 추가 QA · 구조 변경) 밀고 나서 본문 전체를 현재 상태로 다시 쓴다 — `gh pr edit --body-file`. 갱신 코멘트를 따로 남기지 않는다.
 
-- QA에서 에이전트가 할 수 없었던 확인은 이유와 함께 "사람 확인 전"으로 적어 두고 막지 않는다.
+- QA에서 에이전트가 할 수 없었던 확인은 이유와 함께 "확인하지 못한 것"에 "사람 확인 전"으로 적어 두고 막지 않는다.
 - develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 `check-local.sh`를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 병합이 제품 입력(QA의 경로)을 바꿨으면 밀기 전에 QA를 다시 한다.
 - **CI를 기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
 <!-- only:claude -->
