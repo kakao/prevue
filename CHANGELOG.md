@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- Apps targeting SDK below 35 now place content inside the system bars without applying insets twice. Use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
+
 - Multipreview annotations imported with `import a.b.*` expand into one card per `@Preview`.
 - Multipreview annotations ending in `L` expand correctly when included in another multipreview annotation.
 - **`@Preview(showSystemUi = true)` cards now hand the status and navigation bar heights to values read in composition** (`WindowInsets.statusBars.asPaddingValues()`, `getTop()`), in the PNG and the live view alike, so heights and offsets computed from them match a device instead of drawing as if the bars were 0 dp; `systemBarsPadding()` and the other inset modifiers keep the same picture.

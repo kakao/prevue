@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewRootImpl
 import android.view.WindowInsets
+import android.widget.RelativeLayout
 import com.android.ide.common.rendering.api.SessionParams
 import com.android.layoutlib.bridge.impl.Layout
 import com.android.layoutlib.bridge.util.InsetUtil
@@ -35,16 +36,16 @@ internal object LayoutlibBars {
         }
     }
 
-    fun insetsOf(p: PreviewSpec): BarInsets? = (p.systemBars as? SystemBars.Shown)?.insets
+    fun fitsContent(task: RenderTask, p: PreviewSpec): Boolean = p.systemBars is SystemBars.Shown && !task.context.configuration.isEdgeToEdge
 
     // 외부: layoutlib 17 은 창을 붙일 때 바 높이를 프레임워크 dimen 으로 InsetsFrameProvider 에 한 번 넣고, 바 뷰의 보임과 상관없이 그 inset 을 앱에 준다
-    fun place(root: ViewGroup, bars: SystemBars.Shown) {
+    fun place(root: ViewGroup, bars: SystemBars.Shown, fitContent: Boolean = false) {
         val layout = find(root) ?: error("layoutlib 의 바 레이아웃을 찾지 못했다")
         val impl = root.parent as? ViewRootImpl ?: error("창의 ViewRootImpl 을 찾지 못했다")
-        bars.insets?.let { resize(layout, it); hideBars(root) }
+        bars.insets?.let { resize(layout, it) }
+        hideDeviceBars(root, bars)
         InsetUtil.setupSysUiInsets(layout.context, impl.insetsController, layout.insetsFrameProviders)
-        layout.dispatchApplyWindowInsets(windowInsets(impl))
-        layout.requestLayout()
+        LayoutlibInsets.apply(root, null, fitContent)
     }
 
     private fun resize(layout: Layout, insets: BarInsets) {
@@ -64,9 +65,19 @@ internal object LayoutlibBars {
     private val BAR_TYPES: Int
         get() = WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars() or WindowInsets.Type.tappableElement()
 
-    // 외부: DecorView 부터 다시 나눠 주면 DecorView 가 inset 을 먹고 앱을 edge-to-edge 밖으로 민다 — 바 레이아웃부터 나눠 준다
-    private fun windowInsets(impl: ViewRootImpl): WindowInsets =
-        ViewRootImpl::class.java.getDeclaredMethod("getWindowInsets", java.lang.Boolean.TYPE).apply { isAccessible = true }.invoke(impl, true) as WindowInsets
+    // 외부: layoutlib 17 은 앱 targetSdk 대신 시뮬 API 35 로 edge-to-edge 를 강제하므로 앱 창의 배치와 소비를 함께 맞춘다
+    fun fitContent(layout: Layout, original: WindowInsets): WindowInsets {
+        val edges = original.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+        val content = layout.contentRoot
+        val params = content.layoutParams as RelativeLayout.LayoutParams
+        if (params.leftMargin != edges.left || params.topMargin != edges.top || params.rightMargin != edges.right || params.bottomMargin != edges.bottom ||
+            params.rules.any { it != 0 }) {
+            content.layoutParams = RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                setMargins(edges.left, edges.top, edges.right, edges.bottom)
+            }
+        }
+        return original.inset(edges.left, edges.top, edges.right, edges.bottom)
+    }
 
     private fun find(v: View): Layout? {
         if (v is Layout) return v
@@ -74,7 +85,11 @@ internal object LayoutlibBars {
         return null
     }
 
-    fun hideBars(v: View) {
+    fun hideDeviceBars(root: View, bars: SystemBars) {
+        if (bars is SystemBars.Shown && bars.insets != null) hideBars(root)
+    }
+
+    private fun hideBars(v: View) {
         val name = v.javaClass.name
         if (name.startsWith(BAR_VIEWS) || name == CUTOUT_VIEW) {
             v.visibility = View.INVISIBLE

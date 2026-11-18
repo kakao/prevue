@@ -264,6 +264,7 @@ export type ContractState = {
 "look": string;
 };
 "choice": string;
+"edgeToEdge": string;
 "shown": boolean;
 };
 "treeUrl": string;

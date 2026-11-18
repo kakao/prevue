@@ -15,6 +15,7 @@ import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.CardAdjustment
+import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.CardOverride
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
@@ -131,16 +132,16 @@ class Boards(
     }
 
     suspend fun focus(
-        index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null,
+        index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null,
     ): FocusResult = ws.exclusive { ed ->
         val b = ws.now.board
-        val adjusts = size != null || systemUi != null
-        if (on && adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by))
-        else switchFocus(ed, index, on, by, CardAdjustment(size, systemUi))
+        val adjusts = size != null || systemUi != null || edgeToEdge != null
+        if (on && adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
+        else switchFocus(ed, index, on, by, CardAdjustment(size, systemUi, edgeToEdge))
     }
 
-    private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String): ShowResult =
-        liveService.overrideWithin(ed, size, systemUi, by) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
+    private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge?): ShowResult =
+        liveService.overrideWithin(ed, size, systemUi, by, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
     suspend fun unfocus(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
@@ -167,7 +168,7 @@ class Boards(
         val b = boardWith(index)
         val id = b.cards[index].spec.previewId
         val kept = ws.now.cardOverride?.takeIf { ws.now.interactive && it.previewId == id }
-        val next = (kept ?: CardOverride(id)).with(adjustment.size, adjustment.systemUi)
+        val next = (kept ?: CardOverride(id)).with(adjustment.size, adjustment.systemUi, adjustment.edgeToEdge)
         ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, cardOverride = next) }
         return attach(ed, b.cards[index].spec, by, since)
     }

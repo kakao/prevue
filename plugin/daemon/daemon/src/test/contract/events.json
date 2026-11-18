@@ -296,6 +296,7 @@
               "|": "string"
             },
             "choice": "string",
+            "edgeToEdge": "string",
             "shown": "string"
           },
           "treeUrl": "string",
@@ -733,6 +734,7 @@
               "|": "null"
             },
             "choice": "string",
+            "edgeToEdge": "string",
             "shown": "boolean"
           },
           "treeUrl": "string",
