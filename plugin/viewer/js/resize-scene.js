@@ -170,19 +170,9 @@ export function createResizeScene(root, hooks) {
     return { W, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
-  // 위 · 아래 가장자리에 카메라가 붙은 자세는 위 띠의 상태 줄과 카메라 인셋 치수선이 오른쪽에 두 칸으로 서 둘째 배지가 한 칸(LANE_W) 더 나간다 — 폭이 모자란 넓은 기기(Tab)는 양옆을 그만큼씩 비워 창 밖으로 안 나가게 한다(틀은 가운데에 둔다).
-  const LANE_W = 64;
-  const laneRoomOf = st => {
-    if (!shelled(st) || st.w <= st.h) return 0;
-    const panel = DEVICES[st.dev][st.folded ? "cover" : "open"];
-    return lookOf(st).cuts.some(c => { const b = camBox(panel.w, panel.h, st.rot, c, 1, st.mirrored);
-      return b.top < 1 || b.top + b.height > (st.rot ? panel.w : panel.h) - 1; }) ? LANE_W : 0;
-  };
   function fit(st) {
     const r = room(), each = (x, maxW) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
-    let s = Math.min(each(ORIGINAL, r.maxW), each(st, r.maxW));
-    const lane = laneRoomOf(st);
-    if (lane && (r.maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane) s = Math.min(each(ORIGINAL, r.maxW - 2 * lane), each(st, r.maxW - 2 * lane));
+    const s = Math.min(each(ORIGINAL, r.maxW), each(st, r.maxW));
     const h = st.h * s, ph = padsOf(st)[1] * s;
     return { s, w: st.w * s, h, cx: r.cx, y: r.top + ph / 2 + Math.max(0, (r.maxH - h - ph) / 2) };
   }
