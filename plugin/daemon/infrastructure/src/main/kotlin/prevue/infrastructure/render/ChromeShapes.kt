@@ -4,6 +4,7 @@ import java.awt.BasicStroke
 import java.awt.geom.AffineTransform
 import java.awt.geom.Area
 import java.awt.geom.Path2D
+import java.awt.geom.Rectangle2D
 import java.awt.geom.RoundRectangle2D
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -23,7 +24,6 @@ internal object ChromeShapes {
     private const val ROUND = .5
     private const val EM = 1000.0
     private const val MITER = 4f
-    private const val DOT = 1.3f
 
     val signal: List<Piece> = listOf(4.67, 7.0, 9.67, 12.33).mapIndexed { i, h -> Piece(round(i * 5.33, 12.33 - h, 3.33, h, 1.0), fill = true) }
 
@@ -65,25 +65,29 @@ internal object ChromeShapes {
     }
 
     val iosTime = timeGlyphs(
-        stroke = 118f, advance = 1990, height = 705,
-        lines = """
-            M300 -646 C408 -646 496 -571 496 -478 C496 -385 408 -309 300 -309 C192 -309 104 -385 104 -478 C104 -571 192 -646 300 -646 Z
-            M496 -478 C496 -190 410 -59 285 -59 C205 -59 150 -95 125 -150
-            M1385 0 L1385 -705 M1368 -676 L1012 -205 L1530 -205
-            M1840 0 L1840 -705 M1640 -560 L1825 -652
-        """,
-        dots = "M770 -470 L770 -469 M770 -125 L770 -124",
+        advance = 1920, height = 705,
+        strokes = listOf(
+            112f to "M290 -649 C385 -649 454 -574 454 -485 C454 -393 385 -320 290 -320 C195 -320 126 -393 126 -485 C126 -574 195 -649 290 -649 Z",
+            112f to "M290 -649 C385 -649 454 -574 454 -485 C454 -195 378 -56 268 -56 C195 -56 145 -90 125 -146",
+            118f to "M1320 0 L1320 -705",
+            100f to "M1330 -740 L955 -215 L1465 -215",
+            118f to "M1810 0 L1810 -705",
+            100f to "M1815 -712 L1598 -548",
+        ),
+        dots = 145f to "M715 -430 L715 -429 M715 -80 L715 -79",
     )
 
     val androidTime = timeGlyphs(
-        stroke = 100f, advance = 1976, height = 711,
-        lines = """
-            M281 -661 C381 -661 462 -582 462 -485 C462 -387 381 -308 281 -308 C181 -308 100 -387 100 -485 C100 -582 181 -661 281 -661 Z
-            M462 -485 C462 -170 370 -50 240 -50 L165 -50
-            M1257 0 L1257 -711 M1242 -684 L900 -240 L1395 -240
-            M1749 0 L1749 -711 M1535 -600 L1733 -660
-        """,
-        dots = "M706 -460 L706 -459 M706 -63 L706 -62",
+        advance = 1860, height = 711,
+        strokes = listOf(
+            96f to "M282 -663 C373 -663 444 -592 444 -501 C444 -410 373 -339 282 -339 C191 -339 120 -410 120 -501 C120 -592 191 -663 282 -663 Z",
+            96f to "M282 -663 C373 -663 444 -592 444 -501 C444 -170 360 -48 235 -48 L170 -48",
+            100f to "M1280 0 L1280 -711",
+            88f to "M1290 -745 L917 -235 L1417 -235",
+            100f to "M1760 0 L1760 -711",
+            88f to "M1767 -715 L1545 -605",
+        ),
+        dots = 125f to "M690 -455 L690 -454 M690 -63 L690 -62",
     )
 
     fun round(x: Double, y: Double, w: Double, h: Double, r: Double) = RoundRectangle2D.Double(x, y, w, h, r * 2, r * 2)
@@ -102,9 +106,13 @@ internal object ChromeShapes {
         closePath()
     }
 
-    private fun timeGlyphs(stroke: Float, advance: Int, height: Int, lines: String, dots: String): TimeGlyphs {
-        val outline = Area(BasicStroke(stroke, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, MITER).createStrokedShape(pathOf(lines)))
-        outline.add(Area(BasicStroke(stroke * DOT, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND).createStrokedShape(pathOf(dots))))
+    private fun timeGlyphs(advance: Int, height: Int, strokes: List<Pair<Float, String>>, dots: Pair<Float, String>): TimeGlyphs {
+        val outline = Area()
+        strokes.forEach { (width, path) ->
+            outline.add(Area(BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, MITER).createStrokedShape(pathOf(path))))
+        }
+        outline.add(Area(BasicStroke(dots.first, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND).createStrokedShape(pathOf(dots.second))))
+        outline.intersect(Area(Rectangle2D.Double(-EM, -height.toDouble(), EM * 4, EM * 2)))
         return TimeGlyphs(AffineTransform.getScaleInstance(1 / EM, 1 / EM).createTransformedShape(outline), advance / EM, height / EM)
     }
 
