@@ -38,6 +38,71 @@ jobs:
     needs: [lint, compile]
     uses: ./.github/workflows/integration.yml
 
+  # Fail fast. The verdict below needs every job to finish, so one quick failure (a toolchain download that hit a rate
+  # limit failed in 25s) still waited for the slowest job (up to 15 minutes of lint). Each of these starts the moment its
+  # job fails and cancels the run, which turns ci-success red right away (it runs on cancel via always()). Skipped and
+  # cancelled jobs do not trigger it — failure() is false for them — so it cannot loop. continue-on-error: the token of a
+  # fork PR is read-only and cannot cancel; there the run just finishes as before.
+  abort-on-lint-failure:
+    if: ${{ failure() }}
+    needs: [lint]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the run, lint failed
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"
+
+  abort-on-compile-failure:
+    if: ${{ failure() }}
+    needs: [compile]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the run, compile failed
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"
+
+  abort-on-unit-failure:
+    if: ${{ failure() }}
+    needs: [unit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the run, unit failed
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"
+
+  abort-on-integration-failure:
+    if: ${{ failure() }}
+    needs: [integration]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the run, integration failed
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"
+
   # The verdict. The required check of both rulesets (develop and main) is this name (ci-success). Checks of called
   # workflows are named "caller job / called job", so the results are gathered into this one job. Fails when any of them
   # failed, was cancelled or was skipped. always(), not !cancelled(): a job that never starts reports as skipped, and a
