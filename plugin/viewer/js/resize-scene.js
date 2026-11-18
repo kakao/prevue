@@ -176,7 +176,7 @@ export function createResizeScene(root, hooks) {
     if (!shelled(st) || st.w <= st.h) return 0;
     const panel = DEVICES[st.dev][st.folded ? "cover" : "open"];
     return lookOf(st).cuts.some(c => { const b = camBox(panel.w, panel.h, st.rot, c, 1, st.mirrored);
-      return b.on && (b.top < 1 || b.top + b.height > (st.rot ? panel.w : panel.h) - 1); }) ? LANE_W : 0;
+      return b.top < 1 || b.top + b.height > (st.rot ? panel.w : panel.h) - 1; }) ? LANE_W : 0;
   };
   function fit(st) {
     const r = room(), each = (x, maxW) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
@@ -227,7 +227,7 @@ export function createResizeScene(root, hooks) {
     if (!B) return DEVICES.s26.look.open;
     const k = easeOut(clamp((now - look.t0) / look.dur, 0, 1)), m = (x, y) => lerp(x, y, k);
     return { tone: B.tone, bezel: m(A.bezel, B.bezel), ends: m(endsOf(A), endsOf(B)), home: m(Number(A.home) || 0, Number(B.home) || 0), radius: B.radius.map((r, i) => m(A.radius[i], r)),
-      cuts: B.cuts, cams: camsLook(A.cams, B.cams, k, m),
+      cams: camsLook(A.cams, B.cams, k, m),
       btn: B.btn.map((b, i) => { const a = A.btn[i];
         return a.side === b.side ? { side: b.side, at: m(a.at, b.at), len: m(a.len, b.len) }
                                  : k < .5 ? { side: a.side, at: a.at, len: a.len * (1 - 2 * k) } : { side: b.side, at: b.at, len: b.len * (2 * k - 1) }; }) };

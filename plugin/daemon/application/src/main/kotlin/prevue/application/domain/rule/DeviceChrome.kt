@@ -169,20 +169,18 @@ internal object StatusRows {
 
 internal object ChromeCamera {
     private const val NEAR = .5
-    private const val VISIBLE = .5
 
     fun cutouts(device: ScreenSize.Device): List<Pair<CameraEdge, CameraCutout>> =
-        device.panel.face.cutouts.mapNotNull { c -> cutout(device, c.box, lens = false)?.let { c.box.edge to it } }
+        device.panel.face.cutouts.map { c -> c.box.edge to cutout(device, c.box, lens = false) }
 
     fun cameras(device: ScreenSize.Device): List<CameraCutout> = device.panel.face.cutouts.flatMap { c ->
-        if (c.holes.isEmpty()) listOfNotNull(cutout(device, c.box, lens = false))
-        else c.holes.mapNotNull { h -> cutout(device, holeSpec(h, naturalDp(device).first), h.lens) }
+        if (c.holes.isEmpty()) listOf(cutout(device, c.box, lens = false))
+        else c.holes.map { h -> cutout(device, holeSpec(h, naturalDp(device).first), h.lens) }
     }
 
     private fun holeSpec(h: CameraHole, width: Double) = CameraSpec(h.d, h.d, h.cy - h.d / 2, h.cx / width, null, CameraEdge.TOP)
 
-    private fun cutout(device: ScreenSize.Device, cam: CameraSpec, lens: Boolean): CameraCutout? {
-        if (cam.w <= VISIBLE) return null
+    private fun cutout(device: ScreenSize.Device, cam: CameraSpec, lens: Boolean): CameraCutout {
         val own = cam.edge.ordinal
         val turns = (own + (if (device.landscape) 1 else 0) + (if (mirrored(device)) 2 else 0)) % 4
         val placed = placed(device, cam, turns)

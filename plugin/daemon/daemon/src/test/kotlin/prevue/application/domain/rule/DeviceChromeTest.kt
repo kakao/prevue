@@ -156,7 +156,7 @@ class DeviceChromeTest {
             val lowEdge = d.panel.face.cutouts.any { it.box.edge == prevue.application.domain.model.CameraEdge.BOTTOM }
             boxes.forEach { b ->
                 val avoids = b.y < d.heightDp / 2 || lowEdge
-                chrome.cutouts.filter { avoids }.forEach { assertTrue(apart(b, it.box), "${d.key} $b 가 카메라 ${it.box} 와 겹치지 않는다") }
+                if (avoids) chrome.cutouts.forEach { assertTrue(apart(b, it.box), "${d.key} $b 가 카메라 ${it.box} 와 겹치지 않는다") }
                 corners(b).forEach { (x, y) -> assertTrue(inRound(chrome, x, y), "${d.key} $b 의 꼭짓점이 둥근 화면 모서리 안") }
             }
         }
