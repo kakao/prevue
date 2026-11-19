@@ -92,6 +92,19 @@ try {
   await until(`!window.__before && ${rendered}`);
   console.log(`통과 ${++checked}: 숨어 있던 탭이 다시 보이면 새 데몬의 보드로 다시 연다`);
 
+  // 다시 시작 중 새 데몬이 끝내 안 뜨면 끊김으로 넘어가고, 헤더 진행 막대는 걷힌다(60초 대기 뒤)
+  await evaluate('window.__before = true');
+  const lostWarm = await run(['warmup', file, ...extra]);
+  assert(lostWarm.ok, `warmup: ${JSON.stringify(lostWarm)}`);
+  await until(`window.__before && document.querySelector('#bar').classList.contains('busy')`, 10000);
+  console.log(`통과 ${++checked}: 다시 시작 중에는 헤더 진행 막대가 켜져 있다`);
+  await until(`window.__before && document.querySelector('#statusText').textContent === 'Disconnected'`, 90000);
+  await check(`!document.querySelector('#bar').classList.contains('busy')`, '다시 시작 뒤 끊김으로 넘어가면 헤더 진행 막대가 걷힌다');
+
+  await run(lostWarm.next.replace(/^prevue /, '').split(' '));
+  await send('Page.navigate', { url: viewer });
+  await until(rendered);
+
   // 일부러 내리지 않은 끊김은 지금처럼 바로 끊김이다
   await evaluate('window.__before = true');
   await fetch(new URL('/shutdown', viewer), { method: 'POST', body: '{}' });

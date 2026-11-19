@@ -1,14 +1,14 @@
 // 한 장 화면 — 기기를 쥔 작업 공간(D-57). 가리키기 · 인터랙티브(FR-18) · 확대 · 뒤로 가기. 터치 · 휠을 보내는 것은 input.ts 다.
 // 마크업은 React 의 Workspace 가 그리고, 여기서는 그 요소를 받아 스트림 · 좌표 · 틀 모프처럼 잰 뒤에만 정해지는 것을 다룬다.
-import { get, post, reportStreamWidth, viewerStream } from '../../legacy/js/api.js';
-import { flash, setStatus, setSummary } from '../../legacy/js/capsule.js';
-import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, reduced, swapImage, transition } from '../../legacy/js/motion.js';
-import { stuckHead } from '../../legacy/js/board.js';
-import { cardOf, store } from '../../legacy/js/store.js';
-import { phrase } from '../../legacy/js/strings.js';
-import type { Focus, ViewerState } from '../state';
-import { drag, press, pressing, release, wheel } from './input';
-import { byPick, clearPick, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
+import { get, post, reportStreamWidth, viewerStream } from '../runtime/api';
+import { flash, setStatus, setSummary } from '../runtime/capsule';
+import { frameMorph, freeze, hold, MORPH_LEAD, motionMs, radiiOf, reduced, swapImage, transition, type Radii } from '../runtime/motion';
+import { stuckHead } from '../runtime/board';
+import { store } from '../runtime/store';
+import { phrase } from '../runtime/strings';
+import { findCard, type Focus, type ViewerState } from '../state';
+import { drag, dropPress, letGo, press, pressing, release, wheel } from './input';
+import { byPick, clearPick, containScale, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
 import { createResizeController } from './resize';
 import { zoomView } from './view';
 
@@ -27,7 +27,7 @@ export function findWorkspaceParts(): WorkspaceParts {
 }
 
 /** 모프의 출발점 · 도착점 — 그리기 전에 잰다. */
-export type Frame = { el: HTMLElement; rect: DOMRect; radius: number; shadow: string; url: string; ratio: number };
+export type Frame = { el: HTMLElement; rect: DOMRect; radius: Radii; shadow: string; url: string; ratio: number };
 type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLElement[]; entering?: boolean; ready?: boolean; landed?: boolean; lead?: number; giveUp?: number };
 
 export type Workspace = ReturnType<typeof createWorkspace>;
@@ -73,7 +73,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if ((shot.getAttribute('src') || '').startsWith('data:')) return;
     if (!shot.naturalWidth || (streaming() && fullW)) return;
     fullW = shot.naturalWidth; fullH = shot.naturalHeight;
-    shot.dataset.fullW = String(fullW);
+    shot.dataset.fullW = String(fullW); shot.dataset.fullH = String(fullH);
   }
   /** 원래 크기로 맞춤 자리를 잡는다 — 받은 그림이 작아도 같은 자리. 가로 넘침은 CSS max-width 가 자른다. */
   function sizeShot(maxH: number) {
@@ -121,11 +121,12 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
 
   function render(f: Focus | null) {
     const interactive = !!(f && f.interactive);
+    if (!interactive) dropPress();
     panel.hidden = !f;
     if (!f) closeZoomMenu();
     stage.classList.toggle('live', interactive);
     ppd = f ? f.pxPerDp || null : null;
-    if (!f || f.previewId !== zoomFor) { resizeUI.disable(); zoomFor = f ? f.previewId : null; fullW = fullH = 0; delete shot.dataset.fullW; shot.style.width = ''; setZoom(1, 0, 0, false); }
+    if (!f || f.previewId !== zoomFor) { resizeUI.disable(); zoomFor = f ? f.previewId : null; fullW = fullH = 0; delete shot.dataset.fullW; delete shot.dataset.fullH; shot.style.width = ''; setZoom(1, 0, 0, false); }
     if (!f) {
       if (flight?.entering) stopFlight();
       resizeUI.disable();
@@ -142,7 +143,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (resizeUI.update(f, st.error)) return;
     setZoom(zoom.z, zoom.x, zoom.y, false);
     // 인터랙티브면 MJPEG 스트림, 아니면 마지막 PNG. 스트림 주소는 태스크가 걸린 뒤에만 온다 — 그 전에는 카드의 마지막 그림이다.
-    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : (st.board && cardOf(st.board.focus)?.imageUrl) || '') : f.imageUrl;
+    const want = interactive ? (f.streamUrl ? viewerStream(f.streamUrl) : findCard(st.board, st.board?.focus)?.imageUrl || '') : f.imageUrl;
     if (shot.dataset.url !== want) { if (want.startsWith('/stream')) sentW = 0; swapImage(shot, want); }
   }
 
@@ -185,7 +186,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     const same = sameRatio(src.ratio, to.width / to.height), cs = getComputedStyle(stage);
     focusView.classList.add('morph-hold');
     decorations(false, 0);
-    const m = frameMorph({ from: src.rect, to: () => stage.getBoundingClientRect(), radius: [src.radius, parseFloat(cs.borderTopLeftRadius) || 0],
+    const m = frameMorph({ from: src.rect, to: () => stage.getBoundingClientRect(), radius: [src.radius, radiiOf(cs)],
       shadow: [src.shadow, cs.boxShadow], a: src.url, b: same ? null : '', swapAt: 0, swapMs: 250 });
     const f: Flight = flight = { m, same, hidden: [], entering: true, ready: !resizeUI.preparing(), landed: false };
     f.lead = window.setTimeout(() => { if (flight === f) decorations(true, motionMs('--duration-short4')); }, MORPH_LEAD);
@@ -334,7 +335,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
    */
   const zoom = { z: 1, x: 0, y: 0 };
   let zoomFor: string | null = null, spaceHeld = false, panned = false, ppd: number | null = null;
-  function layoutScale() { const n = fullW || shot.naturalWidth; return n ? shot.offsetWidth / n : 1; }
+  function layoutScale() { return containScale(shot.offsetWidth, shot.offsetHeight, shot) || 1; }
   /**
    * 실제 크기(1dp = 1 CSS px)의 z. z 는 맞춤 대비 배율이고, 맞춤에서 1dp 는 layoutScale × pxPerDp CSS px 다.
    * 밀도를 모르는 기기(id:)면 null — 배율은 맞춤 기준으로 보이고 `실제 크기`는 메뉴에서 빠진다.
@@ -450,7 +451,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (!spaceHeld) { spaceHeld = true; stage.classList.add('grab'); }
   });
   addEventListener('keyup', e => { if (e.code === 'Space') { spaceHeld = false; stage.classList.remove('grab'); } });
-  addEventListener('blur', () => { spaceHeld = false; stage.classList.remove('grab'); });
+  addEventListener('blur', () => { spaceHeld = false; stage.classList.remove('grab'); letGo(); });
 
   const resizeUI = createResizeController({
     root: scene, geometry, shot, stage, wrap, zoomState: () => zoom,
@@ -460,9 +461,9 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       if (on) closeZoomMenu();
     },
     firstFrame,
-    originalSize() { const c = store.st?.board && cardOf(store.st.board.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
+    originalSize() { const c = findCard(store.st?.board, store.st?.board?.focus); return c ? { w: c.widthDp, h: c.heightDp } : null; },
     dimensions(w, h) {
-      if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); sentW = 0; reportViewport(); }
+      if (w && h) { fullW = w; fullH = h; shot.dataset.fullW = String(w); shot.dataset.fullH = String(h); sentW = 0; reportViewport(); }
       return { w: fullW, h: fullH };
     },
     layout(r) {
@@ -470,7 +471,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       stage.style.top = r.y + 'px';
       stage.style.width = r.w + 'px';
       stage.style.height = r.h + 'px';
-      stage.style.borderRadius = r.radius + 'px';
+      stage.style.borderRadius = r.radius.map(v => v + 'px').join(' ');
       Object.assign(insetMarks.style, { left: stage.style.left, top: stage.style.top, width: stage.style.width, height: stage.style.height });
       insetMarks.style.setProperty('--im-bezel', r.bezel + 'px');
       showZoom();
@@ -511,7 +512,7 @@ function still(img: HTMLImageElement | null) {
 export function frameOf(el: HTMLElement | null): Frame | null {
   if (!el) return null;
   const img = el.querySelector('img'), cs = getComputedStyle(el), url = img ? img.getAttribute('src') || '' : '';
-  return { el, rect: el.getBoundingClientRect(), radius: parseFloat(cs.borderTopLeftRadius) || 0, shadow: cs.boxShadow,
+  return { el, rect: el.getBoundingClientRect(), radius: radiiOf(cs), shadow: cs.boxShadow,
     url: !img ? '' : url.startsWith('/stream') ? img.dataset.still || '' : img.currentSrc || url, ratio: ratioOf(img) || ratioOf(still(img)) };
 }
 

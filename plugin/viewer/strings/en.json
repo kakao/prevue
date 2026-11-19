@@ -159,6 +159,7 @@
   "rail.open.label": "Open a Preview file",
   "rail.open.tip": "Open file (/ · ⌘K)",
   "rail.title": "Open files",
+  "rail.toggle": "Show open files",
   "render.androidView": "AndroidView and native views can't be drawn headless",
   "render.classMissing": "Couldn't find the Preview class: {class}. The compile output is missing or the FQN is wrong",
   "render.classMissing.reload": "Couldn't find the Preview class: {class}. The compile output is missing or the FQN is wrong. Recompile that file with `prevue reload {file}`. If the compile fails, its error is the answer",
@@ -168,6 +169,7 @@
   "render.literalsNotApplied": "Couldn't carry the values from the literal fast path into the new loader. Compile the file where only literals changed with `prevue reload <file>` to catch up: {why}",
   "render.methodMissing": "The Preview class {class} has no {method}. The compile output is out of date or the FQN is wrong",
   "render.methodMissing.reload": "The Preview class {class} has no {method}, so an older compile of that file was drawn. Recompile that file with `prevue reload {file}`. If the compile fails, its error is the answer",
+  "render.needsActivity": "This Preview needs an Activity — a library (such as androidx.xr.compose) looks up an Activity from the context, but previews are drawn without one (Android Studio fails the same way). This tool can't fix it",
   "render.noInstances": "No Preview instances came out. The @PreviewParameter provider returned nothing",
   "render.nothingShown": "No Preview to show",
   "render.taskFailed": "Failed while creating the RenderTask: {why}",
@@ -294,5 +296,10 @@
   "posture.landscape-right": "Landscape right",
   "insetOverlay.label": "Show inset areas",
   "insetOverlay.now": "Show inset areas — {value}",
-  "insetOverlay.safeArea": "SAFE AREA"
+  "insetOverlay.safeArea": "SAFE AREA",
+  "insetOverlay.kind.statusBars": "STATUS",
+  "insetOverlay.kind.navigationBars": "NAV",
+  "insetOverlay.kind.captionBar": "CAPTION",
+  "insetOverlay.kind.displayCutout": "CUTOUT",
+  "insetOverlay.kind.systemOverlays": "OVERLAY"
 }

@@ -18,7 +18,7 @@ import prevue.application.port.PrevueDispatchers
 /**
  * 통합 테스트의 대상 `fixtures/pearl`. 덤프는 이 체크아웃의 `bin/prevue warmup`이 뜬다 — 덤프 자리가 체크아웃 경로로 정해져 워크트리마다
  * 제 것이 있어야 하고, 픽스처를 고치면 다시 떠야 한다. 늘 부른다: Gradle이 증분이라 이미 떴으면 몇 초다.
- * 픽스처는 공개 Maven만 쓰는 저장소의 일부라 대상 저장소의 Gradle 승인 규칙 밖이다(AGENTS.md) — 그 전제가 깨지는 머신이면 뜨지 않는다.
+ * 픽스처는 공개 Maven만 쓰는 저장소의 일부라 대상 저장소의 Gradle 승인 규칙 밖이다(implement의 멈춤 목록) — 그 전제가 깨지는 머신이면 뜨지 않는다.
  */
 object PearlFixture {
     private val HOME = System.getProperty("user.home")
@@ -36,6 +36,11 @@ object PearlFixture {
     val scroll: File get() = kotlin("feature/pearl", "ScrollPreviews.kt")
     /** `scroll --until`의 네 모양 — 카드 순서대로 LazyColumn(100칸) · LazyRow · Column · Row. */
     val until: File get() = kotlin("feature/pearl", "ScrollUntilPreviews.kt")
+    /** 중첩 클래스 제공자(`Providers.Fruits`) 하나 — 카드 셋. */
+    val nestedProvider: File get() = kotlin("feature/pearl", "NestedProviderPreviews.kt")
+    val objectProvider: File get() = kotlin("feature/pearl", "ObjectProviderPreviews.kt")
+    /** companion object 제공자(값 셋)와 기본값 생성자 인자 제공자(값 둘) — 카드 다섯. */
+    val companionProvider: File get() = kotlin("feature/pearl", "CompanionProviderPreviews.kt")
     val strings: File get() = File(main("feature/pearl"), "res/values/strings.xml")
     /** [board]의 카드 수. 멀티 프리뷰 · `@PreviewParameter` 펼치기가 줄면 여기서 잡힌다. */
     const val BOARD_CARDS = 30

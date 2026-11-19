@@ -1,8 +1,9 @@
-prevue start --classpath <dump json> [--resources-from <provider dump json>] [--show <file|FQN>[#index]] [--no-watch] [--no-open] [--fg]
+prevue start --classpath <dump json> [--resources-from <provider dump json>] [--show <file|FQN>[#index]] [--no-watch] [--idle <minutes>] [--no-open] [--fg]
 
 Starts the daemon and opens the viewer in the browser. Don't assemble it yourself — run the next of a health or show (exit 3) response as is.
 While starting fresh it opens the preparation screen first. When the first actual preview is ready it moves to the board, or to file search if no file was given.
 If a viewer was attached to a daemon warmup stopped, it opens no preparation screen and answers reattached:true — the tab the person was viewing reattaches to the new daemon and redraws in place. Don't give the address again.
 If the same app's daemon is running it doesn't start a new one; it switches the board to the --show target. For another app it starts one more on the next port.
 With --show it answers after the whole board is drawn, in show's shape. A cold start takes 3~4 seconds to the first PNG.
+--idle sets how long the daemon stays up without use before it shuts itself down: minutes, with or without m (5, 5m). The default is 60, 0 keeps it up. It only applies to a daemon this start launches — a running daemon keeps its own; to change it, prevue stop and start again. A daemon started any other way — by show itself, from the next of health, or by a warmup restart — uses 60.
 The first time after a plugin update it first builds this version's executable (once, about 10 seconds, no approval).

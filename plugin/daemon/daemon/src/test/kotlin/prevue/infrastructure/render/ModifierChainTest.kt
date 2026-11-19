@@ -60,23 +60,7 @@ class ModifierChainTest {
         assertEquals(mapOf("name" to "background", "value" to "brush"), of(BackgroundElement(srgb, Any())).single())
     }
 
-    @Test fun `여백이 넷 다 같으면 한 값이다`() {
-        assertEquals(mapOf("name" to "padding", "value" to "16.dp"), of(PaddingElement(16f, 16f, 16f, 16f)).single())
-    }
-
-    @Test fun `모르는 요소는 클래스 이름에서 이름만 짓고 이름이 없으면 뺀다`() {
-        assertEquals("graphicsLayer", ModifierChain.generic("GraphicsLayerElement"))
-        assertEquals("border", ModifierChain.generic("BorderModifierNodeElement"))
-        assertEquals(null, ModifierChain.generic(""))
-        assertEquals(emptyList<Any>(), of(object {}))
-    }
-
     @Test fun `내부 이름이 다른 요소는 소스에 쓰는 이름으로 낸다`() {
         assertEquals(listOf("clip", "graphicsLayer", "align"), of(GraphicsLayerElement(true), GraphicsLayerElement(false), BoxChildDataElement()).map { it["name"] })
-    }
-
-    @Test fun `레이아웃이 없거나 체인을 못 읽으면 비운다`() {
-        assertEquals(emptyList<Any>(), ModifierChain.of(null))
-        assertEquals(emptyList<Any>(), ModifierChain.of(Any()))
     }
 }

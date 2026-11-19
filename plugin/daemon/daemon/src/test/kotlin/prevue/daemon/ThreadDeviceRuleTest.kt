@@ -23,15 +23,14 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/daemon/PrevueDaemon.kt", "Thread", 2, "종료 훅과 감시견 — JVM 은 종료 훅에 Thread 만 받고, 감시견은 코루틴이 멈춰도 돌아야 한다"),
             Allowed("prevue/daemon/PrevueDaemon.kt", "runBlocking", 4, "블로킹 입구 — run · close 둘 · 감시견"),
             Allowed("$RENDER/RenderArtifactStore.kt", "runBlocking", 1, "close 입구 — 데몬 정리가 레인에 남은 쓰기를 기다린다"),
+            Allowed("$RENDER/SharedLoaders.kt", "runBlocking", 1, "블로킹 경계 — 선로딩 종료를 기다린 뒤 로더를 넘기거나 폐기한다"),
             Allowed("$RENDER/LazyListReflection.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/SemanticsTree.kt", "ClassValue", 3, CLASS_LIFETIME),
             Allowed("$RENDER/ModifierChain.kt", "ClassValue", 2, CLASS_LIFETIME),
-            Allowed("$RENDER/SessionDisposal.kt", "CompletableFuture", 1, RENDERER_API),
+            Allowed("$RENDER/Shim.java", "CompletableFuture", 1, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
             Allowed("$RENDER/LayoutlibSession.kt", "AtomicBoolean", 2, "렌더러 API — 정리된 공유 로더의 Compose 알림 예약 필드 둘을 복구한다"),
-            Allowed("$RENDER/RendererSurfaces.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
-            Allowed("$RENDER/SharedLoaders.kt", "Executor", 1, "렌더러 API — 렌더러가 띄운 프리로더 Executor 를 넘겨받는다"),
         )
         val testRoots = listOf(File("src/test/kotlin"), File("src/integrationTest/kotlin"))
         const val SLEEP = "Thread.sleep"
@@ -45,6 +44,7 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/application/service/ResourcePatchesTest.kt", SLEEP, 1, "$WALL_CLOCK — 다시 나타남 유예가 벽시계다"),
             Allowed("prevue/application/service/UseCaseTest.kt", SLEEP, 3, "부정 확인 — 보드 채우기는 끝을 알리지 않아 일어나지 않음을 볼 신호가 없다"),
             Allowed("prevue/application/service/BoardAsideFillTest.kt", SLEEP, 1, "부정 확인 — 잠잠함을 기다리는 옆 채우기는 끝을 알리지 않는다"),
+            Allowed("prevue/infrastructure/render/SessionClockTest.kt", SLEEP, 2, "$WALL_CLOCK — 세션 시계가 System.nanoTime 의 경과를 따른다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", SLEEP, 5, "$WALL_CLOCK — 정착 간격 · 휠 칸 간격 · 전환 도중의 탭 · GC · 정착 기록의 수집"),
         )
         const val DELAY = "delay"
@@ -53,7 +53,8 @@ class ThreadDeviceRuleTest {
             Allowed("prevue/daemon/fake/Await.kt", DELAY, 2, "$WALL_CLOCK — 기다림 도우미의 폴링 간격"),
             Allowed("prevue/infrastructure/controller/http/ServerTest.kt", DELAY, 1, "부정 확인 — 멈춘 서버가 진행 중인 요청을 기다리는 동안 끝나지 않음을 볼 신호가 없다"),
             Allowed("prevue/daemon/RenderIntegrationTest.kt", DELAY, 8, "$WALL_CLOCK — 라이브 루프의 틱이 입력 사이에 돈다(끌기 간격 · 누름 유지 · 휠 칸 간격)"),
-            Allowed("prevue/application/service/EngineTest.kt", DELAY, 2, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령을 붙잡아 둔다", virtualTime = true),
+            Allowed("prevue/application/service/EngineTest.kt", DELAY, 3, "가상 시간 — runTest 의 시계 위에서 대기 중인 명령 · 세션 닫기를 붙잡아 둔다", virtualTime = true),
+            Allowed("prevue/application/service/LiveLoopTest.kt", DELAY, 1, "가상 시간 — runTest 의 시계 위에서 세션 닫기를 붙잡아 둔다", virtualTime = true),
             Allowed("prevue/daemon/fake/LaneSpyTest.kt", DELAY, 1, "가상 시간 — 스파이가 가상 시계의 Delay 를 넘기는지 본다", virtualTime = true),
         )
         const val COLLECT = ".collect"

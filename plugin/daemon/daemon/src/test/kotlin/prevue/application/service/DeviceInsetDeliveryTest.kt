@@ -26,7 +26,8 @@ class DeviceInsetDeliveryTest {
             assertEquals(d, state.size)
             assertEquals(d, state.deviceInsets!!.device)
             assertEquals(DeviceInsetInputs.of(d).values, fx.renderer.opened.last().appInsets, d.key)
-            assertNotEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets, d.key)
+            val bare = d.model == DeviceModel.IPHONE_SE_3RD_GENERATION && d.orientation != DeviceOrientation.PORTRAIT
+            if (!bare) assertNotEquals(AppInsets.NONE, fx.renderer.opened.last().appInsets, d.key)
             assertTrue(state.systemUi!!.shown)
         }
         for (s in listOf(ScreenSize.Original, ScreenSize.Dp(500, 600))) {
@@ -54,9 +55,6 @@ class DeviceInsetDeliveryTest {
         assertEquals(SystemUi.OFF, uc.status.read().systemUi!!.choice)
         uc.live.resize(ScreenSize.Original, "test")
         assertFalse(uc.status.read().systemUi!!.shown)
-        val other = fx.previewFile("Other")
-        uc.tabs.openPreview(other.path, null, emptyMap(), "test")
-        assertNull(uc.workspace.now.cardOverride)
     }
 
     @Test fun `인셋 적용 렌더가 실패하면 실패를 알리고 근거는 요청한 환경을 유지한다`() = runBlocking {

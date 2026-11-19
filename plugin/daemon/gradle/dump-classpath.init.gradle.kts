@@ -13,9 +13,9 @@ fun dict(m: Map<String, String>) = m.entries.joinToString(",\n    ", "{\n    ", 
 // KMP 모듈은 commonMain 과 중간 소스 세트를 Android 컴파일에 함께 넣는다 — 그 목록은 AGP 가 아니라 KMP 플러그인만 안다(옛 조합은
 // AGP 소스에 commonMain 이 없다). 타입에 기대지 않으려고 리플렉션으로 읽고, KMP 가 아니거나 Android 타깃이 없으면 null.
 // 컴파일은 새 플러그인이면 main, 옛 조합이면 앱이 실제로 고른 라이브러리 변형(그래프 밖이면 변형 이름, 없으면 debug 계열 첫째)이다.
-// 확장은 프로젝트가 평가될 때 모아 두고 목록은 실행 때 읽는다 — configure-on-demand 저장소에서는 덤프 태스크가 설정될 때
-// 의존 모듈이 아직 평가 전이라 확장이 없고(DroidKaigi 2025 실측: 0개), 실행 때 Project 를 만지는 것은 Gradle 9 가 막는다.
-class KotlinModule(val ext: Any, val buildDir: DirectoryProperty)
+// 확장은 프로젝트가 평가될 때 모아 두고 목록은 실행 때 읽는다 — 실행 때 Project 를 만지는 것은 Gradle 9 가 막는다.
+// configure-on-demand 저장소에서는 앱이 닿는 모듈을 앞당겨 평가한다(아래 evaluateProjectDepsFirst).
+class KotlinModule(val ext: Any, val buildDir: DirectoryProperty, val treePath: String?)
 val kotlinModules = java.util.concurrent.ConcurrentHashMap<String, KotlinModule>()
 
 // 이 스크립트는 composite 의 빌드마다 따로 돌아 kotlinModules 도 빌드마다 따로다 — 루트 덤프가 included build(thunderbird
@@ -43,6 +43,11 @@ fun kmpCall(o: Any, n: String): Any? = o.javaClass.methods.first { it.name == n 
 fun <T> orders(xs: List<T>): List<List<T>> =
     if (xs.size <= 1) listOf(xs) else xs.indices.flatMap { i -> orders(xs.filterIndexed { j, _ -> j != i }).map { listOf(xs[i]) + it } }
 
+// 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
+fun currentBuildKey(id: ProjectComponentIdentifier): String? = buildTreePath(id) ?: id.projectPath.takeIf {
+    runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
+}
+
 // 같은 라이브러리에 이르는 길이 여럿이면 앱에서 가장 가까운 길의 변형을 쓴다. 프로젝트 노드만 따라간다 — 외부 모듈 아래로는 프로젝트가 없다.
 fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponentResult): Map<String, java.util.function.Predicate<String>> {
     val out = mutableMapOf<String, java.util.function.Predicate<String>>()
@@ -54,10 +59,7 @@ fun pickedLibraryVariants(root: org.gradle.api.artifacts.result.ResolvedComponen
         val attrs = d.resolvedVariant.attributes
         val values = attrs.keySet().associate { k -> k.name to attrs.getAttribute(k).let { v -> (v as? Named)?.name ?: v.toString() } }
         val buildType = values["com.android.build.api.attributes.BuildTypeAttr"]
-        // 빌드 트리 경로가 없는 옛 Gradle 에서 included build 의 projectPath 는 루트 빌드의 같은 경로와 겹친다 — 지금 빌드 것만 받는다
-        val key = buildTreePath(id) ?: id.projectPath.takeIf {
-            runCatching { id.build.javaClass.getMethod("isCurrentBuild").invoke(id.build) as Boolean }.getOrDefault(false)
-        }
+        val key = currentBuildKey(id)
         if (buildType != null && key != null && key !in out) {
             val flavors = values.filterKeys { it.startsWith("com.android.build.api.attributes.ProductFlavor:") }.values.toList()
             val names = orders(flavors).map { (it + buildType).joinToString("").lowercase() }.toSet()
@@ -93,7 +95,8 @@ fun kmpCompileTaskName(m: KotlinModule?, variant: String): String? =
 
 // 새 모양 KMP 모듈은 android 확장이 없어 자기 덤프가 없다 — 그 모듈을 담은 앱의 덤프로 그린다(D-38). 실패 문구에 그 앱들과
 // debug 계열 변형을 실어 CLI 가 Gradle 을 한 번 더 불러 앱을 뜨게 한다. 앱을 다른 곳에서 알 길이 없는 새 클론의 첫 warmup 이 이 길이다.
-// 프로젝트 의존을 따라가므로 평가된 프로젝트만 본다 — configure-on-demand 저장소에서는 앱이 평가 전이라 비어 있을 수 있다.
+// 프로젝트 의존을 따라가므로 평가된 프로젝트만 본다 — configure-on-demand 저장소에서는 앱이 평가 전이라 비어 있을 수 있다
+// (의존 쪽만 앞당겨 평가하므로 이 모듈을 쓰는 앱은 평가되지 않는다).
 // 테스트 구성(testImplementation · androidTestImplementation · commonTestImplementation …)만 뺀다 — 플레이버 이름에 든 test(latest)는 남긴다
 val declaresDependency = Regex("(?i).*(implementation|api|runtimeOnly)$")
 fun isTestConfiguration(name: String) = name.startsWith("test") || name.contains("Test")
@@ -150,21 +153,55 @@ fun registerKmpCompileClasspath(q: Project, variant: String) {
     }
 }
 
-/** 대상이 프로젝트 의존으로 닿는 KMP 모듈의 경로 → 결과 맵의 키. */
-fun kmpModulesReached(p: Project, variant: String): Map<String, String> = runCatching {
+// 대상이 프로젝트 의존으로 닿는 KMP 모듈의 경로 → 결과 맵의 키. 닿는 모듈이 모두 평가돼 있어야 한다(evaluateProjectDepsFirst).
+// 여기서 놓친 모듈은 실행 때 해석 결과와 맞춰 보아 멈춘다(unseenKmpModules) — 빈 결과로 앱 클래스패스를 대신 쓰게 두지 않는다.
+fun kmpModulesReached(p: Project, variant: String): Map<String, String> {
     val reached = linkedSetOf<String>()
     val todo = ArrayDeque(listOf(p.path))
     while (todo.isNotEmpty()) {
         val q = p.rootProject.findProject(todo.removeFirst()) ?: continue
         for (d in declaredProjectDeps(q) { feedsAndroidCompile(it, variant) }) if (d != p.path && reached.add(d)) todo.add(d)
     }
-    reached.mapNotNull { path ->
+    return reached.mapNotNull { path ->
         val q = p.rootProject.findProject(path) ?: return@mapNotNull null
         if (kmpCompileTask(variant) !in q.tasks.names) return@mapNotNull null
         kmpAndroidCompilation(kotlinModules[path], variant) ?: return@mapNotNull null
         path to (buildTreePath(q) ?: q.path) + "@" + variant
     }.toMap()
-}.getOrDefault(emptyMap())
+}
+
+// 앱 런타임 해석 결과에 든 이 빌드의 KMP 모듈(Android 컴파일이 있는 것) 중 컴파일 클래스패스를 못 모은 것. kotlin 확장만 있는
+// Android 모듈은 컴파일이 없어 빠지고, included build 모듈은 이 빌드의 kotlinModules 에 없어 빠진다(그 클래스패스는 모으지 않는다).
+fun unseenKmpModules(root: org.gradle.api.artifacts.result.ResolvedComponentResult, variant: String): List<String> {
+    val kmp = kotlinModules.values.filter { it.treePath != null && kmpAndroidCompilation(it, variant) != null }.associateBy { it.treePath!! }
+    if (kmp.isEmpty()) return emptyList()
+    val seen = mutableSetOf(root)
+    val todo = ArrayDeque(listOf(root))
+    val unseen = sortedSetOf<String>()
+    while (todo.isNotEmpty()) for (d in todo.removeFirst().dependencies) {
+        if (d !is org.gradle.api.artifacts.result.ResolvedDependencyResult) continue
+        val id = d.selected.id as? ProjectComponentIdentifier ?: continue
+        if (!seen.add(d.selected)) continue
+        todo.add(d.selected)
+        val tree = currentBuildKey(id) ?: continue
+        if (tree in kmp && kmpCompileByPath["$tree@$variant"] == null) unseen.add(tree)
+    }
+    return unseen.toList()
+}
+
+// configure-on-demand 는 요청받은 프로젝트만 평가해, 덤프 태스크가 설정될 때 앱이 닿는 모듈이 평가 전이다 — 그 확장도
+// 클래스패스 태스크도 없어 KMP 모듈이 모두 빠졌다(#210). 평가가 끝나는 프로젝트마다 직속 프로젝트 의존을 먼저 평가해
+// 앱에서 닿는 모듈 전부를 설정 단계 안에 평가한다. 태스크 경로로만 걸면 Gradle 이 그래프를 짜는 중에 늦게 평가하다 죽는다
+// (실측: ClassLoaderScope must be locked). COD 가 아니면 평가 순서를 건드리지 않는다.
+fun evaluateProjectDepsFirst(p: Project) {
+    if (!p.gradle.startParameter.isConfigureOnDemand || p.gradle.parent != null) return
+    targets.map { it.variant }.distinct()
+        .flatMap { v -> declaredProjectDeps(p) { feedsAndroidCompile(it, v) } }.distinct()
+        .forEach { d ->
+            // 순환하는 의존은 앞당기지 못한다 — 놓친 모듈은 unseenKmpModules 가 멈춰 알린다
+            try { p.evaluationDependsOn(d) } catch (_: org.gradle.api.CircularReferenceException) {}
+        }
+}
 
 // 대상은 0부터 번호 붙은 prevue.project.N · prevue.variant.N · prevue.out.N. 라이브러리 모듈과 리소스를 빌릴 앱을 Gradle 한 번에 뜬다 —
 // 모듈 덤프의 태스크는 앱 덤프의 부분집합이라 고정비(기동 · 설정)만 한 번 빠진다. 값을 한 속성에 이어 붙이지 않는다 — 출력 경로에는 어떤 글자든 온다.
@@ -237,12 +274,13 @@ fun countOutcomes() = runCatching {
 gradle.afterProject {
     // init script는 build-logic 같은 included build에도 적용되므로, 대상이 아니면 조용히 건너뛴다.
     val p = this
+    evaluateProjectDepsFirst(p)
     p.extensions.findByName("kotlin")?.let { ext ->
-        val m = KotlinModule(ext, p.layout.buildDirectory)
+        val m = KotlinModule(ext, p.layout.buildDirectory, buildTreePath(p) ?: p.path.takeIf { p.gradle.parent == null })
         kotlinModules[p.path] = m
         kmpRootsByDir[p.projectDir.absolutePath] = java.util.function.BiFunction { v, picked -> kmpAndroidRoots(m, v, picked) }
         targets.map { it.variant }.distinct().forEach { registerKmpCompileClasspath(p, it) }
-        (buildTreePath(p) ?: p.path.takeIf { p.gradle.parent == null })?.let { kmpDirByTreePath[it] = p.projectDir.absolutePath }
+        m.treePath?.let { kmpDirByTreePath[it] = p.projectDir.absolutePath }
     }
     val t = targets.firstOrNull { it.path == p.path } ?: return@afterProject
     registerDump(p, t.path, t.variant, t.out)
@@ -479,6 +517,13 @@ fun registerDump(p: Project, targetPath: String, variant: String, outPath: Strin
             val projectClassPath = classPath.filter { it.startsWith(repoRoot) }
             val compileClassPath = compileJarsSnapshot?.files.orEmpty().map { it.absolutePath }
             val kmpModuleCompileClassPaths = kmpModules.mapNotNull { (path, key) -> kmpCompileByPath[key]?.let { path to it } }.toMap()
+            // 못 모은 것을 "KMP 모듈이 없다"로 내면 CLI 가 앱 compileClassPath 로 대신 컴파일해 첫 저장이 unresolved reference 로 죽는다
+            resolvedRoot?.orNull?.let { unseenKmpModules(it, variant) }?.takeIf { it.isNotEmpty() }?.let { unseen ->
+                error(
+                    "$targetPath reaches KMP modules whose compile classpath wasn't collected: ${unseen.joinToString(", ")}\n" +
+                        "  saving their files would compile against the app's classpath and fail. Stopping instead of writing a dump without them."
+                )
+            }
 
             // 클래스패스가 없는 것을 가리키면 그 모듈을 쓰는 프리뷰가 전부 ClassNotFoundException 으로 죽는다.
             // 덤프가 ok 를 내고 렌더에서야 드러나는 일을 여기서 끊는다.

@@ -83,6 +83,7 @@ import prevue.daemon.fake.realDispatchers
 class RenderIntegrationTest {
     private val out = Files.createTempDirectory("prevue-slow").toFile()
     private lateinit var engine: RenderEngine
+    private lateinit var renderSpec: ClasspathSpec
     private lateinit var uc: TestGraph
     private lateinit var ws: Workspace
     private lateinit var repo: File
@@ -101,6 +102,7 @@ class RenderIntegrationTest {
         repo = home.repoRoot
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
+        renderSpec = spec
         engine = RenderEngine(spec, PearlFixture.layoutlib()!!, out, realDispatchers)
         compiler = PearlFixture.hotCompiler(home, File(out, "overlay"))
         val module = ModuleInfo(home.repoRoot.absolutePath, home.project, home.variant, home.kotlinModuleName, spec.borrowedFrom, null)
@@ -163,23 +165,18 @@ class RenderIntegrationTest {
         assertTrue(differs > withBars.width, "상태바 줄이 바 없는 그림과 같다 — 렌더러가 데코를 다시 껐다(${differs}px)")
     }
 
-    @Test @Order(34) fun `기기를 고르면 바 뷰는 숨고 위쪽 안전 영역 머리가 그 기기의 출처 값만큼 밀린다`() = runBlocking {
+    @Test @Order(34) fun `기기를 고르면 위쪽 안전 영역 머리가 그 기기의 출처 값만큼 밀린다 — 바 뷰가 숨는지는 InsetsIntegrationTest 가 본다`() = runBlocking {
         val phone = ws.now.board!!.cards.first { it.spec.previewId == "PearlPhonePreview" }.spec
         for (device in listOf(ScreenSize.Device(DeviceModel.GALAXY_S26), ScreenSize.Device(DeviceModel.IPHONE_17))) {
             val spec = device.applyTo(phone).copy(previewId = "PearlPhonePreview@${device.key}")
             val insets = (spec.systemBars as SystemBars.Shown).insets!!
             val out = engine.written(engine.show(spec))
             assertTrue(out.ok, out.message?.text)
-            val k = device.model.dpi / 160.0
+            val k = device.dpi / 160.0
             val row = PearlFixture.lineOf(screenFile, HEADER_ROW)
             val header = PearlFixture.tree(out.tree!!).nodes.first { it.file == "PearlScreen.kt" && it.line == row }
             val expected = Math.round(insets.statusDp * k) + Math.round(HEADER_PADDING_DP * k)
             assertTrue(kotlin.math.abs(header.top - expected) <= 1, "${device.key} 머리 top ${header.top}px — 기대 ${expected}px")
-            val img = ImageIO.read(out.image!!)
-            val (x0, x1, y0, y1) = listOf(8 * k, 80 * k, 4 * k, insets.statusDp * k - 4).map { it.toInt() }
-            val ground = img.getRGB(x0, y0)
-            val marks = (y0 until y1).sumOf { y -> (x0 until x1).count { x -> img.getRGB(x, y) != ground } }
-            assertEquals(0, marks, "${device.key} 상태바 시각 자리에 layoutlib 바가 남았다")
         }
     }
 
@@ -412,7 +409,7 @@ class RenderIntegrationTest {
             repeat(20) { session.tick() }
             assertEquals(null, engine.touchModeError)
             assertEquals(null, engine.focusedView())
-        } finally { session.close() }
+        } finally { runBlocking { session.close() } }
     }
 
     // 굴리면 게으른 그리드가 화면 밖 아이템을 미리 짓는다(prefetch) — 배치되지 않은 그 노드가 원점 bounds로 트리에 실리면
@@ -720,6 +717,24 @@ class RenderIntegrationTest {
         }
     }
 
+    // 트리 노드는 Modifier.padding 을 뺀 크기라, 아이템 루트마다 패딩이 있으면 어느 칸에도 크기가 같은 노드가 없어 #N 이 읽는 순서로 떨어졌다.
+    @Test @Order(20) fun `아이템 루트마다 패딩이 있어도 #N 은 목록 순번이다`() {
+        openApp()
+        val card = "DrinkCard(drink, ambient = ambient, onClick = { onDrinkClick(drink) })"
+        val padded = "DrinkCard(drink, Modifier.padding(6.dp), ambient = ambient, onClick = { onDrinkClick(drink) })"
+        val at = "PearlScreen.kt:" + PearlFixture.lineOf(screenFile, card)
+        save(screenFile, card, padded)
+        try {
+            settled("list", "카드 패딩 저장")
+            scrollUntil(at, 30)
+            val t = runBlocking { uc.live.touchAt("$at#30", "tap", "test", settle = true) }
+            assertTrue(t is TouchResult.Settled && t.aim!!.index == 30, "패딩 카드에서 #30 이 목록 순번이 아니다 — $t")
+            backToList(settled("detail", "#30 누름"), "#30")
+        } finally {
+            save(screenFile, padded, card)
+        }
+    }
+
     // FR-5. 공유 로더에서는 Compose 디스패처가 앞 태스크가 버린 세션에 걸려 시계를 밀어도 막대가 0 그대로였다(데모 take8, API 셋 모두).
     // delay는 실제 시계라 밀지 못한다 — 그림 대신 경고로 알린다.
     @Test @Order(21) fun `render --at 은 애니메이션 API마다 그 시점의 프레임을 그리고 delay 는 경고한다`() {
@@ -911,11 +926,19 @@ class RenderIntegrationTest {
         }
     }
 
-    /** 한 장만 연 상태의 spec — 엔진을 직접 부르기 전에 액터의 루프와 보드 채우기를 비운다. */
     private fun single(fqn: String): prevue.application.domain.model.PreviewSpec {
         assertTrue(runBlocking { uc.tabs.openPreview(fqn, null, emptyMap(), "test") }.ok, fqn)
         runBlocking { engine.awaitWrites() }
         return ws.now.current!!
+    }
+
+    private fun forDirectEngine(fqn: String): prevue.application.domain.model.PreviewSpec {
+        val p = single(fqn)
+        runBlocking { uc.boards.unfocus("test") }
+        assertFalse(ws.now.interactive, "포커스를 풀어도 인터랙티브다 — QuietFill 이 엔진을 같이 쓴다")
+        ws.awaitBoardFilled(timeoutMs = 60_000)
+        runBlocking { engine.awaitWrites() }
+        return p
     }
 
     private fun redShare(img: prevue.application.domain.model.Bitmap): Double {
@@ -929,10 +952,11 @@ class RenderIntegrationTest {
         return out
     }
 
-    // 자세별 그림은 라이브 옆의 태스크로 그린다. layoutlib 시계(System_Delegate)는 전역이라, 옆 그림이 시계를 옮기면 라이브의 애니메이션이 건너뛴다.
+    // 자세별 그림은 라이브 옆의 태스크로 그린다. 옆 태스크도 System_Delegate.setNanosTime 으로 시계를 옮기지만, layoutlib 17 의 시각은 세션마다
+    // 따로라(직전 setNanosTime 과의 델타 + 그 세션의 코레오그래퍼 시각) 라이브의 애니메이션은 건너뛰지 않아야 한다.
     @Test @Order(28) fun `옆 태스크로 한 장 그려도 라이브의 애니메이션 시각이 건너뛰지 않는다`() {
-        val bar = single("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
-        val other = single("com.example.pearl.feature.pearl.AnimationPreviewsKt.TransitionBarPreview")
+        val bar = forDirectEngine("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
+        val other = forDirectEngine("com.example.pearl.feature.pearl.AnimationPreviewsKt.TransitionBarPreview")
         val s = runBlocking { engine.open(bar, interactive = true, ownLoader = false) }
         try {
             assertTrue(s.opened.ok, s.opened.message?.text)
@@ -943,15 +967,14 @@ class RenderIntegrationTest {
             assertTrue(before < 0.4, "첫 틱에 막대가 ${before}만큼 찼다 — 건너뜀을 잴 수 없다")
             assertTrue(after - before < 0.4, "옆 그림 한 장 뒤 한 틱에 막대가 $before → $after — 라이브 시계가 건너뛰었다")
         } finally {
-            s.close()
+            runBlocking { s.close() }
         }
         assertAlive()
     }
 
-    // 옆 태스크는 공유 로더로 그리고 바로 놓는다. 놓을 때 지우는 렌더 스레드의 ThreadLocal · Compose 뷰 목록은 로더별이라 라이브(사설 로더)는 그대로여야 한다.
     @Test @Order(29) fun `옆 태스크로 그리고 놓아도 라이브 세션은 끌면 그림이 바뀐다`() {
-        val list = single("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListPreview")
-        val other = single("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlEmptyPreview")
+        val list = forDirectEngine("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlListPreview")
+        val other = forDirectEngine("com.example.pearl.feature.pearl.PearlPreviewsKt.PearlEmptyPreview")
         val s = runBlocking { engine.open(list, interactive = true, ownLoader = false) }
         try {
             assertTrue(s.opened.ok, s.opened.message?.text)
@@ -960,8 +983,7 @@ class RenderIntegrationTest {
             val (x, y) = (c.left + c.right) / 2 to (c.top + c.bottom) / 2
             val first = s.tick(forceImage = true).image!!
             repeat(3) { aside(other) }
-            // 끌기는 손을 뗀 뒤 관성으로만 그림을 바꾼다. 실제 시계면 부하에 따라 마지막 끌기와 떼기 사이가 40ms를 넘어
-            // Compose 속도 추적이 멈춤으로 보고 관성이 없어진다 — 터치 사이를 걸음 시계 16ms로 밀어 부하와 떼어 놓는다.
+            // 외부: Compose 속도 추적은 터치 사이가 40ms를 넘으면 멈춤으로 보고 관성을 버린다 — 걸음 시계로 부하와 떼어 놓는다
             runBlocking {
                 suspend fun step(ms: Long) = s.renderAt(ms, 16).also { assertTrue(it.ok, it.message?.text) }
                 step(16)
@@ -974,7 +996,7 @@ class RenderIntegrationTest {
             val now = s.tick(forceImage = true).image!!
             assertFalse(samePixels(first, now), "옆 그림 세 장 뒤 끌어도 그림이 같다 — 라이브 세션이 옆 태스크를 놓을 때 깨졌다")
         } finally {
-            s.close()
+            runBlocking { s.close() }
         }
         assertAlive()
     }
@@ -1019,6 +1041,54 @@ class RenderIntegrationTest {
         assertAlive()
     }
 
+    // render --at 은 버리는 세션에서 걸음 시계(1µs 틱)로 그린다. 그 뒤의 조작이 같은 시계를 물려받으면 애니메이션이 멈춘 채로 정착한다.
+    @Test @Order(37) fun `render --at 뒤 조작은 실제 시계로 애니메이션을 끝까지 돌린다`() {
+        single("com.example.pearl.feature.pearl.AnimationPreviewsKt.AnimatableBarPreview")
+        val at = runBlocking { uc.live.renderAt(300, "test") }
+        assertTrue(at.ok, at.shot.out.message?.text)
+        val t = runBlocking { uc.live.touch("tap", 1, 1, "test", settle = true) }
+        val shot = (t as TouchResult.Settled).result
+        assertTrue(shot.ok, shot.shot.out.message?.text)
+        runBlocking { engine.awaitWrites() }
+        val img = ImageIO.read(shot.shot.out.image!!)
+        val y = img.height / 2
+        val red = (0 until img.width).count { x -> img.getRGB(x, y).let { (it shr 16 and 0xff) > 200 && (it shr 8 and 0xff) < 80 } }.toDouble() / img.width
+        assertEquals(1.0, red, 0.05, "render --at 뒤 터치로 정착한 막대가 $red 만큼만 찼다 — 걸음 시계가 남아 실제 시간을 따르지 않는다")
+        assertAlive()
+    }
+
+    @Test @Order(36) fun `중첩 클래스 제공자도 값 개수만큼 카드가 된다`() {
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.nestedProvider.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        assertEquals(3, ws.now.board!!.cards.size, "제공자 값(사과 · 배 · 귤)마다 카드 한 장")
+        assertAlive()
+    }
+
+    @Test @Order(37) fun `object 제공자도 값마다 카드가 되고 각자 그려진다`() {
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.objectProvider.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        val cards = ws.now.board!!.cards
+        assertEquals(3, cards.size, "제공자 값(봄 · 여름이 오면 · 가을 그리고 겨울)마다 카드 한 장")
+        val outs = cards.map { (it.result as? CardResult.Drawn)?.shot?.out }
+        assertTrue(outs.all { it?.ok == true }, "카드마다 렌더 성공 — ${outs.map { it?.status }}")
+        val pixels = outs.map { out -> ImageIO.read(out!!.image!!).let { img -> img.getRGB(0, 0, img.width, img.height, null, 0, img.width).toList() } }
+        assertEquals(3, pixels.toSet().size, "값마다 다른 그림")
+        assertAlive()
+    }
+
+    @Test @Order(38) fun `companion object 제공자와 기본값 생성자 인자 제공자도 값마다 카드가 되고 각자 그려진다`() {
+        assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.companionProvider.path, null, emptyMap(), "test") }.ok)
+        ws.awaitBoardFilled(timeoutMs = 120_000)
+        val cards = ws.now.board!!.cards
+        val perPreview = cards.groupingBy { it.spec.fqn.substringAfterLast('.') }.eachCount()
+        assertEquals(mapOf("CompanionProviderPreview" to 3, "DefaultArgProviderPreview" to 2), perPreview, "제공자 값마다 카드 한 장")
+        val outs = cards.map { (it.result as? CardResult.Drawn)?.shot?.out }
+        assertTrue(outs.all { it?.ok == true }, "카드마다 렌더 성공 — ${outs.map { it?.status }}")
+        val pixels = outs.map { out -> ImageIO.read(out!!.image!!).let { img -> img.getRGB(0, 0, img.width, img.height, null, 0, img.width).toList() } }
+        assertEquals(5, pixels.toSet().size, "값마다 다른 그림")
+        assertAlive()
+    }
+
     // 내용 크기로 감싸는 컴포넌트도 기기를 고르면 그 기기 화면 크기로 그린다 — 작게 그리면 뷰어가 틀에 맞춰 늘려 글자가 찌그러졌다.
     @Test @Order(31) fun `내용 크기 컴포넌트도 기기를 고르면 기기 화면 크기로 그린다`() {
         assertTrue(runBlocking { uc.tabs.openPreview(PearlFixture.board!!.path, null, emptyMap(), "test") }.ok)
@@ -1035,6 +1105,62 @@ class RenderIntegrationTest {
             runBlocking { uc.boards.focus(index, on = false, by = "test") }
         }
         assertAlive()
+    }
+
+    @Test @Order(39) fun `세대를 교체해도 살아 있는 공유 세션은 해제할 때까지 로더를 쥔다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        assertTrue(engine.show(preview).ok)
+        val surfaces = RendererSurfaces(engine.renderer).opened()
+        fun shared() = surfaces.sharedLoader.value.get(surfaces.manager.value) as com.android.tools.rendering.classloading.ModuleClassLoader
+        val previous = shared()
+        engine.codeChanged()
+        assertFalse(previous.isDisposed, "살아 있는 세션의 로더가 먼저 폐기됐다")
+        assertTrue(engine.showAside(preview, tree = true).ok)
+        val replacement = shared()
+        assertTrue(previous !== replacement, "세대가 바뀌었는데 같은 로더를 받았다")
+        assertFalse(previous.isDisposed, "옆 태스크가 라이브 세션의 로더를 폐기했다")
+        engine.disposeLive()
+        assertTrue(previous.isDisposed, "마지막 세션을 해제해도 옛 공유 로더가 남았다")
+        assertFalse(replacement.isDisposed, "현재 세대 로더까지 폐기됐다")
+        engine.buildChanged()
+        assertTrue(replacement.isDisposed, "외부 빌드 뒤 사용하지 않는 옛 로더가 남았다")
+        assertTrue(engine.show(preview).ok)
+        assertTrue(shared() !== replacement)
+    }
+
+    @Test @Order(40) fun `렌더에 쓴 프로젝트 클래스 경로는 라이브러리 바이트 캐시 의존에서 빠진다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        assertTrue(engine.show(preview).ok)
+        val surfaces = RendererSurfaces(engine.renderer).opened()
+        val shared = surfaces.sharedLoader.value.get(surfaces.manager.value)
+        val loader = RendererSurfaces.field(shared.javaClass, "loader").get(shared)
+        val state = RendererSurfaces.field(loader.javaClass, "state").get(loader)
+        val identities = state.javaClass.getMethod("getLibraryIdentities").invoke(state) as Map<*, *>
+        assertTrue(identities.isNotEmpty(), "라이브러리 캐시가 비어 검증하지 못했다")
+        assertTrue(renderSpec.projectClassPath.none { it in identities }, "프로젝트 산출물이 라이브러리 캐시 의존에 섞였다")
+        val name = preview.fqn.substringBeforeLast('.')
+        assertTrue(Class.forName(name, false, shared as ClassLoader).classLoader === shared, "프로젝트 클래스가 호스트로 샜다")
+    }
+
+    @Test @Order(41) fun `만들다 실패한 태스크는 공유 로더를 쥐지 않아 세대를 바꾸면 그 로더가 폐기된다`() = runBlocking {
+        val preview = ws.now.board!!.focusCard.spec
+        val owner = preview.fqn.substringBeforeLast('.')
+        assertTrue(engine.show(preview).ok)
+        engine.preloadNext = false
+        try { engine.patchLiterals(owner, mapOf("Int\$seed" to 1)) } finally { engine.preloadNext = true }
+        engine.codeChanged()
+        try {
+            assertFalse(engine.showAside(preview).ok, "enabled 필드가 없는 클래스에 리터럴을 넣었는데 태스크가 만들어졌다")
+            val surfaces = RendererSurfaces(engine.renderer).opened()
+            val failedOn = surfaces.sharedLoader.value.get(surfaces.manager.value) as com.android.tools.rendering.classloading.ModuleClassLoader
+            engine.dropLiterals(listOf(owner))
+            engine.codeChanged()
+            assertTrue(failedOn.isDisposed, "만들다 실패한 태스크가 공유 로더 참조를 돌려주지 않았다")
+        } finally {
+            engine.dropLiterals(listOf(owner))
+            engine.disposeLive()
+        }
+        assertTrue(engine.show(preview).ok)
     }
 
     private fun samePixels(a: java.awt.image.BufferedImage, b: java.awt.image.BufferedImage): Boolean =

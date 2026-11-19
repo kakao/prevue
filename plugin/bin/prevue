@@ -140,6 +140,13 @@ require_runtime() {
   exit 3
 }
 
+# Gradle 을 띄울 JDK(21+)가 없으면 그 응답을 내고 끝낸다 — 셸의 JAVA_HOME 으로 뜬 Gradle 의 실패는 "다시 받으라"로 읽혀 같은 실패를 되풀이시킨다
+require_java() {
+  have_java && return 0
+  python3 "$PLAN_PY" runtime-missing "$JDK" "$JDK_FOUND" "" "$JDK_FROM"
+  exit 3
+}
+
 usage() {
   # 명령 목록 · 명령별 설명은 cli/help 가 갖는다 — 여기와 두 곳에 적으면 어긋난다
   cat "$ROOT/cli/help/index.txt" >&2
@@ -226,18 +233,34 @@ shared_toolchain() {
     && [ -d "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/$mv" ]
 }
 
+# 이 체크아웃이 구워 둔 실행 환경이 지금도 쓸 수 있는가. prevue-env 는 체크아웃에 남아도 그것이 가리키는 공유 툴체인은
+# 홈에 있어 따로 사라진다(~/.prevue/toolchain 을 지웠거나 같은 체크아웃을 다른 계정이 쓸 때) — 파일만 보면 없는 jar 로
+# 데몬을 띄워 JVM 이 엉뚱한 "JavaFX 런타임 구성요소 누락"을 내며 죽는다. 서브셸에서 읽어 PREVUE_* 가 새지 않게 한다.
+baked() {
+  [ -s "$ENV_FILE" ] || return 1
+  ( . "$ENV_FILE" 2>/dev/null && [ -d "${PREVUE_LAYOUTLIB:-}" ] && [ -d "${PREVUE_COMPILER:-}" ] && [ -d "${PREVUE_LIB:-}" ] )
+}
+
 # warmup 이 Gradle 을 부를 JDK — 모듈의 최신 산출물을 구운 데몬(로그, 내려간 것도) → Prevue 가 지난번에 쓴 JDK → gradle_jdk_of 순(cli/jdk_rule.py).
 # 누가 빌드했는지(AS·터미널·Prevue)는 따지지 않는다 — 가장 최신 산출물을 재사용하는 JDK 가 답이다(이슈 #4).
 # ps 는 떠 있는지를 출처 문구에 적는 데만 쓴다. LC_ALL=C — 한국어 로캘에서는 lstart 가 "2026년 9월 28일 월요일 …"로 찍혀 못 읽는다(실측).
 gradle_version_of() {  # <repo>
   sed -nE 's/.*gradle-([0-9][0-9.]*)-(bin|all)\.zip.*/\1/p' "$1/gradle/wrapper/gradle-wrapper.properties" 2>/dev/null | head -1
 }
+# JDK 탓으로 실패한 JDK 는 건너뛴다(D-188) — 종료 2 는 답이 없는데 실패 기록이 있다는 뜻이라 gradle_jdk_of 의 답도 jdk_rule 이 거른다.
+# 거르지 않으면 AS 가 동기화한 저장소에서는 프로젝트 설정 · JAVA_HOME 이 실패한 그 JDK 를 다시 준다.
 gradle_jdk_pick() {  # <repo> [<모듈 디렉터리>] -> "<경로>\t<출처>"
-  local v
+  local v rc=0 proj
+  proj="$HOME/.prevue/projects/$(repo_key "$1")"
   v="$(LC_ALL=C ps -axo pid=,lstart=,command= 2>/dev/null \
        | python3 "$ROOT/cli/jdk_rule.py" "$(gradle_version_of "$1")" \
-           "$HOME/.prevue/projects/$(repo_key "$1")/gradle-jdk" "$1" "${GRADLE_USER_HOME:-$HOME/.gradle}" "${2:-}" 2>/dev/null)"
+           "$proj/gradle-jdk" "$1" "${GRADLE_USER_HOME:-$HOME/.gradle}" "${2:-}" 2>/dev/null)" || rc=$?
   [ -n "$v" ] && { printf '%s' "$v"; return; }
+  if [ "$rc" = 2 ]; then
+    v="$(gradle_jdk_of "$1")"
+    printf '%s' "$(python3 "$ROOT/cli/jdk_rule.py" fallback "$1" "$proj/warmup-runs.jsonl" "$v" 2>/dev/null || printf '%s' "$v")"
+    return
+  fi
   gradle_jdk_of "$1"
 }
 
@@ -473,7 +496,7 @@ plan_json() {  # <파일|""> <variant|""> <projdir|""> [module]
     module="$(python3 "$PLAN_PY" module "$repo" "$file" plan)" || { echo "$module"; return 2; }
   fi
   # build/ 가 비어도 받아 둔 렌더러·컴파일러가 있으면 있는 것이다 — 이 버전의 jar 는 start 가 굽는다(판올림 뒤 한 번, 승인 없음).
-  [ -s "$ENV_FILE" ] || shared_toolchain || toolchain=false
+  baked || shared_toolchain || toolchain=false
   python3 "$PLAN_PY" plan "$repo" "$module" "$variant" "$file" "$toolchain" \
     "$(gradle_jdk_pick "$repo" "$(module_dir "$repo" "$module")")" "$HOME/.prevue/projects"
 }
@@ -494,7 +517,7 @@ health_json() {  # <파일>
       blocked=true; viewer="$(viewer_at "$seat")"
     fi
   fi
-  local unbaked=false; [ -s "$ENV_FILE" ] || unbaked=true
+  local unbaked=false; baked || unbaked=true
   local nojdk="" nosdk=""; have_java || nojdk="$JDK"; have_sdk || nosdk="$SDK"
   python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
 }
@@ -591,6 +614,15 @@ elif [ -n "${PREVUE_LANG:-}" ] && ! lang_tag "$PREVUE_LANG"; then
   PREVUE_LANG=""
 fi
 export PREVUE_LANG="${PREVUE_LANG:-}"
+# 틀린 --idle 은 JVM 이 사용법으로 끝나는데, 띄운 뒤에 알면 30초를 기다리고 종료 3 이 났다(실측) — 띄우기 전에 거른다.
+IDLE_NEXT=0
+[ "$cmd" = start ] && for a in "$@"; do
+  if [ "$IDLE_NEXT" = 1 ]; then printf '%s' "$a" | grep -Eq '^[0-9]{1,9}m?$' || IDLE_NEXT=2; [ "$IDLE_NEXT" = 2 ] && break; IDLE_NEXT=0; fi
+  [ "$a" = --idle ] && IDLE_NEXT=1
+done
+if [ "$IDLE_NEXT" != 0 ]; then
+  echo '{"ok":false,"error":"--idle takes minutes without use before the daemon shuts down, such as 60 or 60m (0 keeps it up)"}'; exit 2
+fi
 
 # 그리고 대개는 아무도 --port 를 안 쓴다. 이 호출이 **어느 저장소를 말하는지**를 먼저 정하고,
 # 자리는 그 저장소에서 계산한다(port_of). 에이전트가 포트를 기억할 일이 없어지고,
@@ -676,9 +708,10 @@ case "$cmd" in
         | python3 "$PLAN_PY" runnable
       exit 2
     fi
-    HAD=false; [ -s "$ENV_FILE" ] && HAD=true
+    HAD=false; baked && HAD=true
     # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
-    have_java && export JAVA_HOME="$JDK"
+    require_java
+    export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
       # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
       if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
@@ -687,7 +720,7 @@ case "$cmd" in
     elif ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q) >&2; then
       echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
     fi
-    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE is missing\"}"; exit 1; }
+    baked || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE or the toolchain it points to is missing\"}"; exit 1; }
     echo "{\"ok\":true,\"toolchain\":true,\"alreadyHad\":$HAD}"
     ;;
   warmup)
@@ -759,8 +792,12 @@ case "$cmd" in
       (cd "$ROOTDIR" && JAVA_HOME="${GRADLE_JDK:-${JAVA_HOME:-}}" ./gradlew --init-script "$ROOT/daemon/gradle/dump-classpath.init.gradle.kts" \
         "${props[@]}" -Dprevue.timing="$timing" "${tasks[@]}" --no-configuration-cache \
         -Dorg.gradle.isolated-projects=false -q) 2>"$GRADLE_ERR" >&2 || rc=$?
-      ms="$(python3 "$PLAN_PY" gradle-run "$timing" "$t0" "$(now_ms)" "$rc" "$RUNS" "$GRADLE_JDK" "$@" 2>/dev/null)"
+      ms="$(python3 "$PLAN_PY" gradle-run "$timing" "$t0" "$(now_ms)" "$rc" "$RUNS" "$GRADLE_JDK" "$GRADLE_ERR" "$ROOTDIR" "$@" 2>/dev/null)"
       rm -f "$timing"
+      # 다시 고르는 것은 다음 warmup 이다 — 같은 호출 안에서 다시 뜨면 Gradle 을 한 번 더 부르고 변형 · KMP 다시 뜨기 갈래와 엮인다
+      if [ "$rc" != 0 ] && tail -1 "$RUNS" 2>/dev/null | grep -q '"jdkFailed": true'; then
+        echo "prevue: Gradle failed with a JDK error on $GRADLE_JDK — the next warmup picks a JDK of another version" >&2
+      fi
       GRADLE_CALLS=$((GRADLE_CALLS + 1)); GRADLE_MS=$((GRADLE_MS + ${ms:-0}))
       return $rc
     }
@@ -873,17 +910,18 @@ case "$cmd" in
       *) ARGS+=("$1"); shift;; esac; done
     # 판올림하면 플러그인 디렉터리가 새로 생겨 build/ 가 빈다. 받아 둔 툴체인으로 굽는 것은 승인이 없으니 여기서 한다 —
     # health 가 build 로 에이전트를 보내면 스킬 읽기·setup·health 재확인으로 모델 호출이 셋 더 들었다(Codex 실측).
-    if [ ! -s "$ENV_FILE" ] && shared_toolchain; then
+    if ! baked && shared_toolchain; then
       # 굽기는 Gradle 이라 ~/.gradle 에 쓴다 — 샌드박스 안이면 이번 한 번만 권한 상승으로 다시 치게 한다.
       if [ "${CODEX_SANDBOX:-}" = seatbelt ]; then
         echo '{"ok":false,"needsEscalation":true,"error":"The first start after an update calls Gradle to build the executable — run the same command again outside the sandbox (escalated), just this once"}'
         exit 1
       fi
+      require_java
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
-      have_java && export JAVA_HOME="$JDK"
+      export JAVA_HOME="$JDK"
       (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
     fi
-    [ -s "$ENV_FILE" ] || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
+    baked || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
     . "$ENV_FILE"
 
     # 자리는 전역에서 정했다(--classpath 의 덤프 경로에 저장소 키가, 덤프에 모듈이 들어 있다).
@@ -1079,17 +1117,18 @@ except OSError:
     post /card "{\"index\":$I,\"force\":$F,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
   focus)
     # 크기 · 기기 · 시스템 UI는 켜진 카드에만 — 이미 켜져 있으면 그것만 바꾸고 인터랙티브는 그대로다
-    I="${1:-}"; [ -n "$I" ] || usage; shift; ON=true; SZ=null; DEV=null; FOLD=false; LAND=false; SUI=null; ORI=null
+    I="${1:-}"; [ -n "$I" ] || usage; shift; ON=true; SZ=null; DEV=null; FOLD=false; LAND=false; SUI=null; ORI=null; E2E=null
     while [ $# -gt 0 ]; do case "$1" in
       --on) ON=true; shift;; --off) ON=false; shift;;
       --size) [ $# -ge 2 ] || usage; SZ=$(jstr "$2"); shift 2;;
       --orientation) [ $# -ge 2 ] || usage; ORI=$(jstr "$2"); shift 2;;
       --system-ui) [ $# -ge 2 ] || usage; SUI=$(jstr "$2"); shift 2;;
+      --edge-to-edge) [ $# -ge 2 ] || usage; E2E=$(jstr "$2"); shift 2;;
       --device) [ $# -ge 2 ] || usage; DEV=$(jstr "$2"); shift 2;;
       --folded) FOLD=true; shift;; --landscape) LAND=true; shift;;
       *) usage;;
     esac; done
-    post /focus "{\"index\":$I,\"interactive\":$ON,\"size\":$SZ,\"device\":$DEV,\"folded\":$FOLD,\"landscape\":$LAND,\"systemUi\":$SUI,\"orientation\":$ORI,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
+    post /focus "{\"index\":$I,\"interactive\":$ON,\"size\":$SZ,\"device\":$DEV,\"folded\":$FOLD,\"landscape\":$LAND,\"systemUi\":$SUI,\"edgeToEdge\":$E2E,\"orientation\":$ORI,\"by\":\"${PREVUE_BY:-cli}\"}" ;;
   reload)
     FILES=(); for f in "$@"; do [ "$f" = "${f#/}" ] && f="$(cd "$(dirname "$f")" && pwd)/$(basename "$f")"; FILES+=("$f"); done
     J=$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' ${FILES[@]+"${FILES[@]}"})
@@ -1157,13 +1196,14 @@ except OSError:
     # 툴체인은 플러그인 버전과 무관해 홈에 둔다 — 지울 때 어디를 지워야 하는지 여기서 보인다.
     . "$ENV_FILE" 2>/dev/null || true
     python3 - "$ROOT" "${PREVUE_LAYOUTLIB:-}" "${PREVUE_COMPILER:-}" "${PREVUE_LIB:-}" "$HOME/.prevue" <<'PY'
-import json, os, subprocess, sys
+import json, os, sys
 root, layoutlib, compiler, lib, prevuehome = sys.argv[1:6]
+sys.path.insert(0, os.path.join(root, "cli"))
+import toolchain_libs
 
 def size(p):
     if not p or not os.path.exists(p): return None
-    out = subprocess.run(["du", "-sk", p], capture_output=True, text=True).stdout.split()
-    return round(int(out[0]) / 1024) if out else None
+    return toolchain_libs.size_mb(p)
 
 items = [
     ("plugin", root, "The plugin itself. Installed fresh for each version — so only our own files live here"),
@@ -1177,7 +1217,16 @@ out = {"ok": True, "paths": [
     {"what": w, "path": p or None, "mb": size(p), "note": n} for w, p, n in items
 ]}
 out["toolchainRoot"] = os.path.join(prevuehome, "toolchain")
-out["note"] = "toolchainRoot, projects and aot can be deleted — the next run recreates them"
+# 판올림마다 lib 사본이 하나씩 남는다 — 이 체크아웃 것만 보이면 나머지는 지울 길을 모른다.
+cmdlines = toolchain_libs.running_cmdlines()
+home = os.environ.get("HOME", os.path.expanduser("~"))
+installed = toolchain_libs.installed_libs(home, toolchain_libs.plugin_caches(home))
+out["libCopies"] = toolchain_libs.copies(out["toolchainRoot"], lib, installed, cmdlines)
+out["libCopiesNote"] = ("Each plugin update that changes dependencies leaves an older lib copy behind. Copies with deletable true are used by "
+                        "no installed plugin, this plugin or a running daemon, so they can be deleted"
+                        if cmdlines is not None else
+                        "Couldn't list running processes, so no copy is marked deletable — run prevue paths outside the sandbox")
+out["note"] = "toolchainRoot, projects and aot can be deleted — prevue setup downloads the toolchain again and health says what else to recreate"
 print(json.dumps(out, ensure_ascii=False))
 PY
     ;;

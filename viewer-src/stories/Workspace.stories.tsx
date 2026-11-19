@@ -14,6 +14,6 @@ export const Device: Story = { render: () => { const Live = () => { useLiveScene
 // 메뉴를 연 뒤 — 크기 · 기기 목록이 버튼 위로 열린다. 고르면 닫히고, 고른 것의 조작은 독 가운데에 뜬다.
 export const MenuOpen: Story = { ...Device, play: () => { document.getElementById('pnSum')!.click(); } };
 // 기기를 고른 뒤 — 독 가운데에 그 기기의 자세(돌리기 · 접기 · 힌지 선)가 뜬다.
-export const DeviceDock: Story = { ...Device, play: () => { document.querySelector<HTMLElement>('#pnPick [data-sel="ipduo"]')!.click(); } };
+export const DeviceDock: Story = { ...Device, play: () => { document.querySelector<HTMLElement>('#pnPick [data-sel="duo"]')!.click(); } };
 // 커스텀을 고른 뒤 — 독 가운데에 폭 · 높이 슬라이더가 뜬다.
 export const CustomDock: Story = { ...Device, play: () => { document.querySelector<HTMLElement>('#pnPick [data-sel="custom"]')!.click(); } };

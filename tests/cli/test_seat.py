@@ -125,6 +125,8 @@ class FocusOptions(DaemonSeat):
              {"device": "duo", "folded": True, "orientation": "landscape-right", "systemUi": None, "landscape": False}),
             (["--device", "tablet", "--landscape"], {"landscape": True, "orientation": None}),
             (["--system-ui", "off"], {"systemUi": "off"}),
+            (["--edge-to-edge", "on"], {"edgeToEdge": "on"}),
+            (["--edge-to-edge", "auto"], {"edgeToEdge": "auto"}),
         ]
         for args, expected in cases:
             with self.subTest(args=args):

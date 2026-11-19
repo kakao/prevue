@@ -1,9 +1,9 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
-import { fetchPreviewFiles, post } from '../../legacy/js/api.js';
-import { applyReveal, cancelReveal, reveal } from '../../legacy/js/board.js';
-import { flash } from '../../legacy/js/capsule.js';
+import { fetchPreviewFiles, post } from '../runtime/api';
+import { applyReveal, cancelReveal, reveal } from '../runtime/board';
+import { flash } from '../runtime/capsule';
 import type { Connection } from '../session';
-import { store } from '../../legacy/js/store.js';
+import { store } from '../runtime/store';
 import { hideReactKeys, useHost } from '../host';
 import { matchFile, type FileEntry, type FileMatch, type PreviewFile } from '../match';
 import { useMessages, type Messages } from '../messages';

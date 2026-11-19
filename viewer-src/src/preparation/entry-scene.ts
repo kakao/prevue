@@ -1,4 +1,4 @@
-import { daemonText, phrase } from '../../legacy/js/strings.js';
+import { daemonText, phrase } from '../runtime/strings';
 import { mountScene, type SceneRequest } from './scene';
 
 // js/preparation-scene.js — 준비 페이지와 뷰어가 함께 쓰고, 브라우저 검사가 이 주소를 직접 import 한다(tests/viewer/preparation.mjs).

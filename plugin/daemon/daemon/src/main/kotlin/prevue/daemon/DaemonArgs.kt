@@ -20,13 +20,17 @@ class DaemonArgs private constructor(private val a: Map<String, String>) {
     val extraWatch: List<File> = a[REPEATABLE]?.split(File.pathSeparator)?.map(::File).orEmpty()
     val resourcesFrom: File? = a["--resources-from"]?.let(::File)
     val root: String? = a["--root"]
+    val idleMinutes: Long = a["--idle"]?.let(::minutes) ?: PrevueDaemon.DEFAULT_IDLE_MIN
 
     private fun required(key: String) = File(a[key] ?: throw UsageException())
+
+    private fun minutes(v: String): Long = MINUTES.matchEntire(v)?.groupValues?.get(1)?.toLongOrNull() ?: throw UsageException()
 
     companion object {
         const val DEFAULT_PORT = 8791
         private val FLAGS = setOf("--no-watch", "--no-preload")
         private const val REPEATABLE = "--watch"
+        private val MINUTES = Regex("""(\d{1,9})m?""")
 
         fun parse(argv: Array<String>): DaemonArgs = DaemonArgs(options(argv))
 

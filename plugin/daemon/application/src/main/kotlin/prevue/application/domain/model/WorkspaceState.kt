@@ -37,7 +37,10 @@ data class WorkspaceState(
     fun shownSystemUi(): SystemUiState? {
         val spec = board?.takeIf { interactive }?.focusCard?.spec ?: return null
         val bars = sized(spec).systemBars as? SystemBars.Shown
-        return SystemUiState(shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, bars, bars != null)
+        return SystemUiState(
+            shownOverride()?.systemUi ?: SystemUi.ANNOTATED, spec.systemBars is SystemBars.Shown, bars, bars != null,
+            shownOverride()?.edgeToEdge ?: EdgeToEdge.AUTO,
+        )
     }
 
     fun shownDeviceInsets(): DeviceInsetState? = (shownSize() as? ScreenSize.Device)?.takeIf { interactive }?.let(::DeviceInsetState)
@@ -51,9 +54,9 @@ data class WorkspaceState(
     private fun overrideOf(p: PreviewSpec): CardOverride? = cardOverride?.takeIf { it.previewId == p.previewId }
 
     fun livePostures(): Postures? {
-        val (base, size) = shownTarget() ?: return null
+        val (base, _) = shownTarget() ?: return null
         return postures?.takeIf {
-            it.covers(size) && it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars
+            it.spec.previewId == base.previewId && it.spec.systemBars == base.systemBars
         }
     }
 
@@ -74,8 +77,12 @@ data class WorkspaceState(
 
     fun withFill(fill: BoardFill): WorkspaceState = copy(boardFill = fill)
 
-    fun withPosture(round: Long, d: ScreenSize, shot: Shot): WorkspaceState =
-        postures?.takeIf { it.round == round }?.let { copy(postures = it.copy(shots = it.shots + (d to shot))) } ?: this
+    fun withPosture(round: Long, d: ScreenSize, shot: Shot): WorkspaceState = withPostures(round) { ps, shown -> ps.with(shown, d, shot) }
+
+    fun withMiss(round: Long, d: ScreenSize): WorkspaceState = withPostures(round) { ps, shown -> ps.missed(shown, d) }
+
+    private fun withPostures(round: Long, edit: (Postures, ScreenSize) -> Postures): WorkspaceState =
+        postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = edit(ps, it.second)) } } ?: this
 
     fun withCreated(added: List<String>, gone: Set<String>): WorkspaceState = copy(newFiles = (newFiles + added) - gone)
 }

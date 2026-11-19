@@ -2,11 +2,13 @@ package prevue.application.service
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import prevue.application.domain.model.Bitmap
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.port.Frame
@@ -56,7 +58,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
     suspend fun open(p: PreviewSpec, interactive: Boolean, ownLoader: Boolean = false): RenderOutput {
         close()
         val s = sessions.open(p, interactive, ownLoader)
-        if (!s.opened.ok) { s.close(); return s.opened }
+        if (!s.opened.ok) { closeQuietly(s); return s.opened }
         session = s
         dirty = false
         lastShot = null
@@ -66,13 +68,17 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     suspend fun ensure(p: PreviewSpec, interactive: Boolean): RenderOutput? = if (session?.preview == p) null else open(p, interactive)
 
-    fun close() {
+    suspend fun close() {
         val s = session ?: return
         session = null
         _latest.value = null
         _screen.value = null
         rest()
         fail(IllegalStateException(CLOSED))
+        closeQuietly(s)
+    }
+
+    private suspend fun closeQuietly(s: LiveSession) = withContext(NonCancellable) {
         runCatching { s.close() }.onFailure { log("세션을 닫지 못했다: $it") }
     }
 
@@ -82,7 +88,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         try {
             return if (s.opened.ok) s.renderAt(ms) else s.opened
         } finally {
-            s.close()
+            closeQuietly(s)
         }
     }
 
@@ -116,7 +122,7 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         for (i in 0 until pieces) {
             if (!s.scroll(x, y, dx / pieces, dy / pieces)) return seq to false
             // 외부: Compose의 휠 스크롤은 프레임 시계로 이어 가는 애니메이션이라 조각 사이에 프레임이 돌아야 움직인다
-            frame(now()) ?: return seq to false
+            frame(now(), SEEK_FRAME_MS) ?: return seq to false
             sample()
             if (rider.stop(s) { catchUp(sample) }) break
         }
@@ -125,11 +131,11 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return seq to ended
     }
 
-    private suspend fun catchUp(each: () -> Unit = {}) {
-        val until = now() + CATCH_UP_MS
+    private suspend fun catchUp(each: () -> Unit) {
         var still = 0
-        while (still < 2 && now() < until) {
-            val f = frame(now()) ?: return
+        repeat(CATCH_UP_FRAMES) {
+            if (still >= 2) return
+            val f = frame(now(), SEEK_FRAME_MS) ?: return
             each()
             still = if (f.changed) 0 else still + 1
         }
@@ -192,10 +198,10 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     private class Ticked(val pacing: Pacing, val step: Pacing.Step, val changed: Boolean)
 
-    private fun frame(t: Long): Ticked? {
+    private suspend fun frame(t: Long, stepMs: Long? = null): Ticked? {
         val s = session ?: return null.also { rest() }
         val p = pacing ?: Pacing(t).also { pacing = it }
-        val f = tick(s) ?: return null
+        val f = tick(s, stepMs) ?: return null
         frameSeq++
         if (f.changed) dirty = true
         f.image?.let { lastImage = it; publish(it, rest = false) }
@@ -204,8 +210,8 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
         return Ticked(p, step, f.changed)
     }
 
-    private fun tick(s: LiveSession): Frame? = try {
-        s.tick()
+    private suspend fun tick(s: LiveSession, stepMs: Long?): Frame? = try {
+        s.tick(stepMs = stepMs)
     } catch (e: Throwable) {
         if (e is CancellationException) throw e
         log("프레임 루프 틱 실패: $e")
@@ -291,7 +297,8 @@ class LiveLoop(private val sessions: LiveSessionFactory, private val now: () -> 
 
     companion object {
         const val AGENT_WAIT_MS = 3_000L
-        const val CATCH_UP_MS = 150L
+        const val SEEK_FRAME_MS = 16L
+        const val CATCH_UP_FRAMES = 15
         private const val CLOSED = "열린 라이브 세션이 없다"
     }
 }

@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { get } from '../legacy/js/api.js';
+import { get } from './runtime/api';
 import { BuildNotice } from './components/BuildNotice';
 import { FileRail, type RailHosts } from './components/FileRail';
 import { ProjectHeader, type AppInfo } from './components/ProjectHeader';
@@ -30,10 +30,10 @@ export function findHosts(): Hosts {
   const $ = (id: string) => document.getElementById(id)!;
   return {
     bar: $('bar'), brand: $('brand'), app: $('app'), status: $('status'), helpButton: $('helpBtn'),
-    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen') },
+    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen'), toggle: $('railToggle'), scrim: $('railScrim') },
     stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
     quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
-    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), bars: $('sysBars'), inset: $('insetOverlay'), insetMarks: $('insetMarks'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
+    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), inset: $('insetOverlay'), insetMarks: $('insetMarks'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
   };
 }
 

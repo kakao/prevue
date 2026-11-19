@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useSyncExternalStore } from 'react';
-import { capsuleContent, dismissOnce, subscribeCapsule, type CapsuleContent } from '../../legacy/js/capsule.js';
+import { capsuleContent, dismissOnce, subscribeCapsule, type CapsuleContent } from '../runtime/capsule';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 

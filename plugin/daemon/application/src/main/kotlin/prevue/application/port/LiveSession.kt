@@ -17,12 +17,12 @@ interface LiveSession {
     suspend fun touch(type: String, x: Int, y: Int)
     fun type(text: String): String?
     fun scroll(x: Int, y: Int, dx: Float, dy: Float): Boolean
-    fun tick(forceImage: Boolean = false): Frame
+    fun tick(forceImage: Boolean = false, stepMs: Long? = null): Frame
     suspend fun look(semantics: Boolean = false): Look
     fun lists(): List<ListState>
     fun semantics(): List<SemanticNode>
     suspend fun renderAt(ms: Long, frameMs: Long = 16): RenderOutput
-    fun close()
+    suspend fun close()
 
     class Look(val out: RenderOutput, val tree: LiveTree)
 }

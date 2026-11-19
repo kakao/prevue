@@ -37,6 +37,9 @@ sealed interface ScreenSize {
 
         init {
             require(!folded || model.cover != null) { "${model.label}은 접히지 않는다" }
+            require(!model.panel(folded).fixed || orientation == model.panel(folded).orientation) {
+                "${model.label}${if (folded) " 커버" else ""}는 ${model.panel(folded).orientation.key}로만 둔다 — 돌린 자세의 측정이 없다"
+            }
         }
 
         val panel: Panel get() = model.panel(folded)
@@ -46,10 +49,11 @@ sealed interface ScreenSize {
         val widthDp: Double get() = dp(widthPx)
         val heightDp: Double get() = dp(heightPx)
         val hingeDp: Double? get() = panel.hingePx?.let { dp(it) }
+        val dpi: Int get() = panel.dpi
         val heldDegrees: Int get() = orientation.degrees - panel.orientation.degrees
         val folding: Device?
             get() = model.cover?.let {
-                DeviceOrientation.entries.map { Device(model, !folded, it) }.firstOrNull { it.heldDegrees == heldDegrees }
+                model.postures.filter { it.folded != folded }.firstOrNull { it.heldDegrees == heldDegrees }
                     ?: Device(model, !folded, DeviceOrientation.PORTRAIT)
             }
         val insetProfile: DeviceInsetProfile get() = DeviceInsets.of(this)
@@ -58,12 +62,12 @@ sealed interface ScreenSize {
         ).joinToString("-")
 
         override fun applyTo(p: PreviewSpec): PreviewSpec {
-            val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, model.dpi)) + (SystemBars.DEVICE_POSTURE to key)
+            val rest = p.params - "widthDp" - "heightDp" + ("device" to deviceSpec(widthPx, heightPx, dpi)) + (SystemBars.DEVICE_POSTURE to key)
             if (p.systemBars is SystemBars.Shown) return p.copy(params = rest)
             return p.copy(params = rest + ("widthDp" to "${widthDp.roundToInt()}") + ("heightDp" to "${heightDp.roundToInt()}"))
         }
 
-        private fun dp(px: Number): Double = Math.round(px.toDouble() * 160.0 / model.dpi * 100) / 100.0
+        private fun dp(px: Number): Double = Math.round(px.toDouble() * 160.0 / dpi * 100) / 100.0
     }
 
     companion object {
@@ -127,7 +131,14 @@ enum class DeviceOrientation(val key: String, val degrees: Int) {
     }
 }
 
-data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Double? = null) {
+data class Panel(
+    val widthPx: Int,
+    val heightPx: Int,
+    val dpi: Int,
+    val hingePx: Double? = null,
+    val fixed: Boolean = false,
+    val face: PanelFace,
+) {
     val orientation: DeviceOrientation
         get() = if (widthPx > heightPx) DeviceOrientation.LANDSCAPE_LEFT else DeviceOrientation.PORTRAIT
 
@@ -138,23 +149,9 @@ data class Panel(val widthPx: Int, val heightPx: Int, val hingePx: Double? = nul
     }
 }
 
-enum class DeviceModel(val id: String, val label: String, val dpi: Int, val open: Panel, val cover: Panel?, val look: BarLook) {
-    GALAXY_S26("s26", "Galaxy S26", 480, Panel(1080, 2340), null, BarLook.ONE_UI),
-    PIXEL_9("pixel9", "Pixel 9", 420, Panel(1080, 2424), null, BarLook.PIXEL),
-    IPHONE_17("ip17", "iPhone 17", 480, Panel(1206, 2622), null, BarLook.IOS),
-    IPHONE_AIR("ipair", "iPhone Air", 480, Panel(1260, 2736), null, BarLook.IOS),
-    IPHONE_17_PRO_MAX("ip17pm", "iPhone 17 Pro Max", 480, Panel(1320, 2868), null, BarLook.IOS),
-    IPHONE_DUO("duo", "iPhone Duo", 480, Panel(2853, 2007, 1426.5), Panel(1398, 2034), BarLook.IOS),
-    GALAXY_Z_FOLD8("fold8", "Galaxy Z Fold8", 420, Panel(2448, 1848, 1224.0), Panel(1248, 1972), BarLook.ONE_UI),
-    GALAXY_Z_FOLD8_ULTRA("ultra", "Galaxy Z Fold8 Ultra", 480, Panel(2256, 2504, 1128.0), Panel(1080, 2520), BarLook.ONE_UI),
-    PIXEL_9_PRO_FOLD("pixelfold", "Pixel 9 Pro Fold", 390, Panel(2076, 2152, 1038.0), Panel(1080, 2424), BarLook.PIXEL),
-    PIXEL_TABLET("tablet", "Pixel Tablet", 320, Panel(2560, 1600), null, BarLook.PIXEL),
-    ;
+internal fun DeviceModel.panelOf(folded: Boolean): Panel = if (folded) requireNotNull(cover) { "${label}은 접히지 않는다" } else open
 
-    fun panel(folded: Boolean): Panel = if (folded) requireNotNull(cover) { "${label}은 접히지 않는다" } else open
-
-    val postures: List<ScreenSize.Device>
-        get() = DeviceOrientation.entries.flatMap { orientation ->
-            listOfNotNull(ScreenSize.Device(this, false, orientation), if (cover != null) ScreenSize.Device(this, true, orientation) else null)
-        }
+internal fun DeviceModel.posturesOf(): List<ScreenSize.Device> = DeviceOrientation.entries.flatMap { orientation ->
+    listOfNotNull(false, true.takeIf { cover != null }).filter { folded -> panel(folded).let { !it.fixed || it.orientation == orientation } }
+        .map { folded -> ScreenSize.Device(this, folded, orientation) }
 }

@@ -62,11 +62,13 @@ class KmpRenderIntegrationTest {
     // 덤프만 빈 자리를 Kotlin/Native 자리로 받는다 — 머신에 이미 같은 판이 있어도 받으려 들면 여기에 생긴다
     private val konan = File(out, "konan").apply { mkdirs() }
     private val noKonan = mapOf("KONAN_DATA_DIR" to konan.path)
+    // 앱 덤프는 configure-on-demand 를 켜고 뜬다 — 앱이 먼저 평가돼 의존 모듈이 평가 전이어도 KMP 모듈 컴파일 클래스패스가 실려야
+    // 저장(6번)이 그 모듈의 의존으로 컴파일한다(#210). 끈 덤프는 12번이 본다
+    private val configureOnDemand = noKonan + ("GRADLE_OPTS" to "-Dorg.gradle.configureondemand=true")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @BeforeAll fun up() {
-        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = noKonan)
-        app = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
+        app = appDump(configureOnDemand)
         val home = app.dependency(":feature:pearl")
         val (spec, onApp) = ClasspathSpec.forRender(home, app, File(out, "overlay"))
         assertTrue(onApp, "앱 덤프가 :feature:pearl를 담지 않는다")
@@ -166,6 +168,18 @@ class KmpRenderIntegrationTest {
     @Test @Order(11) fun `included build 안 KMP 모듈도 commonMain을 감시 루트로 싣는다`() {
         val roots = app.dependency(PearlKmpFixture.INCLUDED).sourceRoots
         assertTrue(PearlKmpFixture.includedCommon.canonicalFile in roots.map { it.canonicalFile }, "${PearlKmpFixture.INCLUDED} 감시 루트 — $roots")
+    }
+
+    // :core:designsystem · :core:model 은 앱이 직접 쓰지 않는다 — 한 단계 건너 닿는 모듈까지 평가돼야 실린다
+    @Test @Order(12) fun `configure-on-demand를 켜든 끄든 앱 덤프가 닿는 KMP 모듈 컴파일 클래스패스를 모두 싣는다`() {
+        val reached = setOf(":core:model", ":core:designsystem", ":core:ui", ":feature:pearl", ":feature:search")
+        assertEquals(reached, app.moduleCompileClassPaths.keys, "configure-on-demand 켬")
+        assertEquals(reached, appDump(noKonan).moduleCompileClassPaths.keys, "configure-on-demand 끔")
+    }
+
+    private fun appDump(env: Map<String, String>): ClasspathSpec {
+        val json = PearlFixture.warmupJson(PearlKmpFixture.app, "--variant", "debug", env = env)
+        return ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("앱 덤프를 뜨지 못했다: $json")))
     }
 
     private fun open(file: File) {

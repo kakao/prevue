@@ -1,0 +1,77 @@
+{
+  "id": "ipair",
+  "label": "iPhone Air",
+  "order": 40,
+  "measured": {
+    "dpi": 480,
+    "screens": {
+      "open": {
+        "widthPx": 1260,
+        "heightPx": 2736,
+        "postures": {
+          "portrait": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "1260x2736",
+              "orientation": "portrait",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"top": 68, "bottom": 34},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 420, "height": 810}
+          },
+          "landscape-left": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2736x1260",
+              "orientation": "landscape-right",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 68, "right": 68, "bottom": 20},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 776, "height": 400}
+          },
+          "landscape-right": {
+            "source": "site",
+            "url": "https://safearea.info/iphone-air.md",
+            "conditions": {
+              "sdk": "27.1",
+              "scale": "3",
+              "unit": "pt",
+              "resolutionPx": "2736x1260",
+              "orientation": "landscape-left",
+              "sourceSha256": "7fed673516bf0f56b2287a2d5fe02fae4ae0cf13dddb09ea690f4ed5f4f22a61",
+              "checkedAt": "2026-11-10",
+              "ios": "27.0 (24A434)",
+              "displayZoom": "off"
+            },
+            "safeArea": {"left": 68, "right": 68, "bottom": 20},
+            "cornerRadius": {"pt": 62},
+            "safeAreaSize": {"width": 776, "height": 400}
+          }
+        }
+      }
+    }
+  },
+  "look": {
+    "bar": "ios",
+    "short": "Air",
+    "tone": "#46484c",
+    "open": {"bezel": 4, "cutouts": [{"box": {"w": 125.33, "h": 36.67, "y": 20}}], "btn": [[-1, 155, 32], [-1, 215, 62], [-1, 292, 62], [1, 245, 104]]},
+    "status": {"top": 31.33, "right": 385.33, "scale": 1.12, "time": {"cx": 76.33, "base": 45.33, "size": 17.7}}
+  }
+}

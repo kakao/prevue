@@ -1,4 +1,4 @@
-import { phrase } from '../../legacy/js/strings.js';
+import { phrase } from '../runtime/strings';
 import { createScene } from './entry-scene';
 import type { Scene } from './scene';
 

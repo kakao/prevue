@@ -1,14 +1,18 @@
-export function createMessages(dict) {
-  function phrase(key, args = {}) {
-    const text = (args.n === 1 && dict[key + '.one']) || dict[key];
-    if (text == null) { console.error('prevue: 사전에 없는 키', key); return key; }
-    return text.replace(/\{(\w+)\}/g, (match, name) => name in args ? String(args[name]) : match);
-  }
-  function daemonText(value) {
-    if (value == null) return '';
-    if (typeof value !== 'object') return String(value);
-    const args = Object.fromEntries(Object.entries(value.a || {}).map(([key, arg]) => [key, typeof arg === 'object' && arg !== null ? daemonText(arg) : arg]));
-    return phrase(value.t, args);
-  }
-  return { phrase, daemonText };
+// src/runtime/messages.ts
+function e(e) {
+	function t(t, n = {}) {
+		let r = n.n === 1 && e[t + ".one"] || e[t];
+		return r == null ? (console.error("prevue: 사전에 없는 키", t), t) : r.replace(/\{(\w+)\}/g, (e, t) => t in n ? String(n[t]) : e);
+	}
+	function n(e) {
+		if (e == null) return "";
+		if (typeof e != "object") return String(e);
+		let r = Object.fromEntries(Object.entries(e.a || {}).map(([e, t]) => [e, typeof t == "object" && t ? n(t) : t]));
+		return t(e.t, r);
+	}
+	return {
+		phrase: t,
+		daemonText: n
+	};
 }
+export { e as createMessages };

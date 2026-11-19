@@ -4,15 +4,11 @@ import com.android.resources.ResourceFolderType
 import com.android.tools.configurations.Configuration
 import com.android.tools.render.RenderEnvironmentBootstrapper
 import com.android.tools.render.Renderer
-import com.android.tools.render.compose.ComposeScreenshot
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.parsers.RenderXmlFileSnapshot
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.util.CheckedDisposable
-import com.intellij.openapi.util.Disposer
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -20,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.RenderOutputs.Companion.msSince
+import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.ListState
 import prevue.application.domain.model.LiveTree
 import prevue.application.domain.model.PreviewSpec
@@ -47,21 +44,26 @@ internal class RenderEngine(
     private val renderService: RenderService
     private val baseConfiguration: Configuration
     private val resourceIds: ResourceIds
+    private val appTargetSdk = ApkManifest.targetSdk(resourceApk)
+    private val sessionSurfaces: SessionSurfaces
+    private val disposal: SessionDisposal
 
     var preloadNext: Boolean = true
     private val loaderCount = MutableStateFlow(LoaderCount(0, 0))
     override val loaderGen: Int get() = loaderCount.value.gen
     override val tasksOnLoader: Int get() = loaderCount.value.tasks
 
+    private val fonts = File(layoutlibDir, "data/fonts")
     private val artifacts = RenderArtifactStore(outDir, dispatchers)
-    private val outputs = RenderOutputs(artifacts) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
+    private val chrome = DeviceChromePainter.of(fonts)
+    private val outputs = RenderOutputs(artifacts, chrome) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
     override var outMaxBytes: Long by artifacts::maxBytes
     override val outBytes: Long get() = artifacts.bytes
     override fun protect(keep: () -> Set<String>) = artifacts.protect(keep)
 
     private val loaders: SharedLoaders
     private val literals = LiteralLedger()
-    private val shapes = PreviewShapes()
+    private val elements by lazy { PreviewElements(renderer.module, spec.renderOverlay) { loaders.current } }
 
     private var live: LayoutlibSession? = null
     var renderTimeoutSec: Long = 30
@@ -84,7 +86,7 @@ internal class RenderEngine(
     init {
         val t = System.nanoTime()
         renderer = RenderEnvironmentBootstrapper(
-            File(layoutlibDir, "data/fonts").absolutePath, resourceApk.absolutePath, spec.namespace,
+            fonts.absolutePath, resourceApk.absolutePath, spec.namespace,
             spec.classPath, spec.projectClassPath, layoutlibDir.absolutePath, spec.resourceDirs, spec.rClassJars,
         ).bootstrap()
         bootstrapMs = msSince(t)
@@ -93,13 +95,15 @@ internal class RenderEngine(
         renderService = surfaces.renderService.value
         baseConfiguration = surfaces.baseConfiguration.value
         resourceIds = ResourceIds(renderer, surfaces)
-        loaders = SharedLoaders(spec, surfaces)
+        sessionSurfaces = surfaces.session
+        disposal = SessionDisposal(surfaces.session)
+        loaders = SharedLoaders(spec, surfaces, dispatchers)
         outDir.mkdirs()
     }
 
     internal fun preloaded(): SharedLoaders.Preloaded = loaders.preloaded(live?.task?.classLoader)
 
-    override fun codeChanged() { shapes.recount(); loaders.codeChanged(); outputs.afterBuild = false }
+    override fun codeChanged() { elements.codeChanged(); loaders.codeChanged(); outputs.afterBuild = false }
 
     override fun patchLiterals(owner: String, values: Map<String, Any>): Boolean {
         if (!preloadNext) { literals.record(owner, values); return true }
@@ -117,28 +121,20 @@ internal class RenderEngine(
     override fun dropLiterals(owners: Collection<String>) = literals.drop(owners)
 
     override fun buildChanged() {
-        if (preloadNext) loaders.armNext()
-        codeChanged()
+        elements.codeChanged()
+        loaders.buildChanged()
         outputs.afterBuild = true
         forgetShapes()
     }
 
-    override fun forgetShapes() = shapes.forgetAll()
+    override fun forgetShapes() = elements.forgetAll()
 
     override suspend fun awaitWrites() = artifacts.awaitWrites()
     override fun discard(out: RenderOutput) = RenderOutputs.discard(out)
     override fun lost(out: RenderOutput): Boolean = RenderOutputs.lost(out)
     override suspend fun written(out: RenderOutput): RenderOutput = out.copy(phases = out.phases + out.written.await())
 
-    override fun instances(p: PreviewSpec): List<String?> {
-        if (p.methodParams.isEmpty()) return listOf(null)
-        return shapes.instances(p) {
-            val n = runCatching { screenshot(p).toPreviewElement(renderer.module).resolveXmlLayouts().count() }.getOrElse { 1 }.coerceAtLeast(1)
-            ProviderValues.labels(renderer.module, p.methodParams.first()["provider"], n)
-        }
-    }
-
-    private fun screenshot(p: PreviewSpec) = ComposeScreenshot(p.fqn, p.methodParams, p.params, p.previewId, "")
+    override fun instances(p: PreviewSpec): List<String?> = elements.instances(p)
 
     override suspend fun show(p: PreviewSpec, ownLoader: Boolean): RenderOutput = render(p, interactive = false, ownLoader)
 
@@ -154,11 +150,12 @@ internal class RenderEngine(
         disposeLive()
         ph["disposeMs"] = msSince(t)
         val own = interactive || ownLoader
-        val started = when (val s = start(p, ph, usePrivate = own || !preloadNext, park = own && preloadNext, counted = !own)) {
+        val started = when (val s = start(p, ph, usePrivate = own || !preloadNext, counted = !own)) {
             is Start.Ready -> s
             is Start.Failed -> return s.out
         }
         live = started.session
+        scrollBroken = null
         val out = if (interactive) renderInteractive(started.timing) else renderLive(started.timing)
         learnFrom(started)
         return out
@@ -167,7 +164,7 @@ internal class RenderEngine(
     override suspend fun showAside(p: PreviewSpec, tree: Boolean): RenderOutput {
         if (lostThread != null) return lostOutput(p)
         val usePrivate = !preloadNext || live?.task?.classLoader?.let { it === loaders.current } == true
-        val started = when (val s = start(p, mutableMapOf(), usePrivate, park = usePrivate && preloadNext, counted = true)) {
+        val started = when (val s = start(p, mutableMapOf(), usePrivate, counted = true)) {
             is Start.Ready -> s
             is Start.Failed -> return s.out
         }
@@ -189,10 +186,11 @@ internal class RenderEngine(
 
     private fun layoutFor(p: PreviewSpec, ph: MutableMap<String, Long>): Pair<Configuration, String>? {
         val t = System.nanoTime()
-        val element = screenshot(p).toPreviewElement(renderer.module)
+        val element = elements.element(p)
         val cfg = baseConfiguration.clone()
-        Shim.applyTo(element, cfg)
-        val layouts = shapes.layouts(p) { element.resolveXmlLayouts().toList() }
+        Shim.applyTo(element, cfg, p.params["device"])
+        cfg.setEdgeToEdge(p.params[EdgeToEdge.PARAM] == "true" || appTargetSdk >= 35)
+        val layouts = elements.layouts(p) { element.resolveXmlLayouts().toList() }
         ph["elementMs"] = msSince(t)
         if (layouts.isEmpty()) return null
         return cfg to layouts[p.paramIndex.coerceIn(0, layouts.size - 1)]
@@ -203,31 +201,32 @@ internal class RenderEngine(
         class Failed(val out: RenderOutput) : Start
     }
 
-    private suspend fun start(p: PreviewSpec, ph: MutableMap<String, Long>, usePrivate: Boolean, park: Boolean, counted: Boolean): Start {
+    private suspend fun start(p: PreviewSpec, ph: MutableMap<String, Long>, usePrivate: Boolean, counted: Boolean): Start {
         val t0 = System.nanoTime()
         val (cfg, xml) = layoutFor(p, ph) ?: return Start.Failed(failedBefore(p, phrase("render.noInstances")))
         val logger = RenderLogger()
-        val disposable = Disposer.newCheckedDisposable()
-        val tb = System.nanoTime()
-        val task = when (val built = buildTask(p, cfg, logger, disposable, usePrivate, park)) {
-            is Built.Task -> built.task
-            is Built.Failed -> return Start.Failed(built.out)
+        val lease = RendererLease()
+        var handedOver = false
+        try {
+            val tb = System.nanoTime()
+            val task = when (val built = buildTask(p, cfg, logger, lease, usePrivate)) {
+                is Built.Task -> built.task
+                is Built.Failed -> return Start.Failed(built.out)
+            }
+            ph["buildMs"] = msSince(tb)
+            val loader = loaders.track(task, lease)
+            loader?.let(literals::applyTo)?.let { e -> return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e))) }
+            if (!usePrivate) loaders.current = loader
+            task.setTimeout(renderTimeoutSec * 1000)
+            task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
+            val session = LayoutlibSession(p, task, lease, logger, sessionSurfaces, chrome) { renderTimeoutSec }
+            val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
+            if (counted) countTask()
+            resourceIds.registeredByFirstLoader()
+            return Start.Ready(session, timing, usePrivate).also { handedOver = true }
+        } finally {
+            if (!handedOver) lease.releaseQuietly()
         }
-        ph["buildMs"] = msSince(tb)
-        Disposer.register(disposable, Disposable { task.releaseRender() })
-        val loader: ClassLoader? = task.classLoader
-        loader?.let(literals::applyTo)?.let { e ->
-            Disposer.dispose(disposable)
-            return Start.Failed(failedBefore(p, phrase("render.literalsNotApplied", "why" to e)))
-        }
-        if (!usePrivate) loaders.current = loader
-        task.setTimeout(renderTimeoutSec * 1000)
-        task.setXmlFile(RenderXmlFileSnapshot(renderer.project, "layout.xml", ResourceFolderType.LAYOUT, xml))
-        val session = LayoutlibSession(p, task, disposable, logger) { renderTimeoutSec }
-        val timing = RenderTiming(msSince(t0), 0, loaders.currentEmpty || usePrivate, ph)
-        if (counted) countTask()
-        resourceIds.registeredByFirstLoader()
-        return Start.Ready(session, timing, usePrivate)
     }
 
     private sealed interface Built {
@@ -236,18 +235,15 @@ internal class RenderEngine(
     }
 
     private suspend fun buildTask(
-        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, disposable: CheckedDisposable, usePrivate: Boolean, park: Boolean,
+        p: PreviewSpec, cfg: Configuration, logger: RenderLogger, lease: RendererLease, usePrivate: Boolean,
     ): Built {
         val before = RenderTiming.failedBeforeRender(true)
-        return loaders.withPreloaderParked(park) {
-            try {
-                val task = renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() }.build(disposable).get()
-                if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
-                else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
-            } catch (e: Exception) {
-                Disposer.dispose(disposable)
-                Built.Failed(if (hung(p)) lostOutput(p) else outputs.failed(p, FailureKind.EXCEPTION, phrase("render.taskFailed", "why" to e), before))
-            }
+        return try {
+            val task = lease.build(renderService.taskBuilder(renderer.module, cfg, logger).apply { if (usePrivate) usePrivateClassLoader() })
+            if (task != null) Built.Task(LayoutlibBars.decorated(task, p))
+            else Built.Failed(failedBefore(p, phrase("render.taskNotCreated", "why" to logger.messages.joinToString { it.html })))
+        } catch (e: Exception) {
+            Built.Failed(if (hung(p)) lostOutput(p) else outputs.failed(p, FailureKind.EXCEPTION, phrase("render.taskFailed", "why" to e), before))
         }
     }
 
@@ -314,7 +310,7 @@ internal class RenderEngine(
             return l.type(root, text)
         }
 
-        override fun tick(forceImage: Boolean): Frame = l().frame(forceImage, ripples)
+        override fun tick(forceImage: Boolean, stepMs: Long?): Frame = l().frame(forceImage, ripples, stepMs)
 
         override suspend fun renderAt(ms: Long, frameMs: Long): RenderOutput {
             val l = l()
@@ -324,7 +320,7 @@ internal class RenderEngine(
             return (waiting ?: l.realClockWarning())?.takeIf { out.ok }?.let { out.copy(warnings = out.warnings + it) } ?: out
         }
 
-        override fun close() {
+        override suspend fun close() {
             if (session != null && session === live) disposeLive()
         }
     }
@@ -344,10 +340,14 @@ internal class RenderEngine(
         } catch (e: Exception) {
             return renderFailed(l, timing, t, FailureKind.EXCEPTION, phrase("render.exception", "why" to e), timedOut = false)
         }
-        val renderMs = msSince(t)
-        if (relayout) refreshTree(l, result)
-        val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
-        return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
+        try {
+            val renderMs = msSince(t)
+            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview)) refreshTree(l, result)
+            val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
+            return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
+        } finally {
+            result.dispose()
+        }
     }
 
     private suspend fun renderFailed(
@@ -380,13 +380,13 @@ internal class RenderEngine(
     }
 
     private fun dispose(l: LayoutlibSession) {
-        runCatching { SessionDisposal.dispose(l.task) }.onFailure { e -> System.err.println("[prevue] 세션 정리 실패: $e") }
-        runCatching { Disposer.dispose(l.disposable) }.onFailure { e -> System.err.println("[prevue] disposable 정리 실패: $e") }
+        runCatching { disposal.dispose(l.task) }.onFailure { e -> System.err.println("[prevue] 세션 정리 실패: $e") }
+        l.lease.releaseQuietly()
     }
 
     override fun close() {
         try { disposeLive() } finally {
-            try { artifacts.close() } finally { if (lostThread == null) renderer.close() }
+            try { artifacts.close() } finally { if (lostThread == null) { loaders.close(); renderer.close() } }
         }
     }
 

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect } from 'react';
 import type { Connection } from '../session';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
@@ -19,8 +19,6 @@ export function StatusPill({ state, connection = null, host, bar }: {
 }) {
   const { phrase, daemonText } = useMessages();
   const { element, place } = useHost(host);
-  const restarted = useRef(false);
-  if (connection === 'restarting') restarted.current = true;
 
   const head = state?.timing.find(p => p.head);
   const over = !!state?.timing.some(p => p.over);
@@ -30,7 +28,7 @@ export function StatusPill({ state, connection = null, host, bar }: {
   let text = !state ? '' : state.busy ? daemonText(state.boardNote) : head ? head.text : '';
   if (connection === 'restarting') { pill = 'busy'; text = phrase('status.restarting'); }
   if (connection === 'lost') { pill = 'error'; text = phrase('status.lost.short'); }
-  const busy = restarted.current || !!state?.busy;
+  const busy = connection === 'restarting' || (connection !== 'lost' && !!state?.busy);
 
   useLayoutEffect(() => {
     if (!element || (!state && !connection)) return;

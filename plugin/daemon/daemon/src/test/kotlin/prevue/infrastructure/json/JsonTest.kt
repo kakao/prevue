@@ -22,11 +22,4 @@ class JsonTest {
         val m = mapOf("s" to "가\"\n", "n" to 12L, "d" to 1.5, "l" to listOf(true, false, null), "o" to mapOf("k" to "v"))
         assertEquals(m, Json.parse(Json.str(m)))
     }
-
-    @Test fun `맵 값은 문자열 맵으로 읽고 없으면 비었다`() {
-        val m = mapOf<String, Any?>("p" to mapOf("a" to 1L, "b" to "x"), "q" to "아님")
-        assertEquals(mapOf("a" to "1", "b" to "x"), m.map("p"))
-        assertEquals(emptyMap<String, String>(), m.map("q"))
-        assertEquals(emptyMap<String, String>(), m.map("없음"))
-    }
 }

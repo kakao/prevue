@@ -3,6 +3,7 @@ package prevue.infrastructure.render
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.ViewRootImpl
@@ -12,25 +13,28 @@ import com.android.layoutlib.bridge.impl.RenderAction
 import com.android.tools.rendering.RenderLogger
 import com.android.tools.rendering.RenderResult
 import com.android.tools.rendering.RenderTask
-import com.intellij.openapi.util.CheckedDisposable
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.delay
-import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.PreviewSpec
+import prevue.application.domain.model.SystemBars
+import prevue.application.domain.model.systemBars
 import prevue.application.port.Frame
 import prevue.application.port.RenderOutput
 
 internal class LayoutlibSession(
     val preview: PreviewSpec,
     val task: RenderTask,
-    val disposable: CheckedDisposable,
+    val lease: RendererLease,
     val logger: RenderLogger,
+    private val surfaces: SessionSurfaces,
+    private val painter: DeviceChromePainter,
     private val timeoutSec: () -> Long,
 ) {
     val clock = SessionClock()
+    private val chrome = DeviceChromePainter.layoutOf(preview)
     private var barsPlaced = false
     private var placedWarning: String? = null
     private var lastHash = 0L
@@ -56,7 +60,11 @@ internal class LayoutlibSession(
     fun renderPlaced(): RenderResult {
         if (!barsPlaced) {
             val insets = preview.appInsets
-            if (insets != null) placeInsets(insets) else LayoutlibBars.insetsOf(preview)?.let(::placeBars)
+            val bars = preview.systemBars as? SystemBars.Shown
+            when {
+                insets != null -> placeInsets(insets)
+                bars != null -> placeBars(bars)
+            }
             barsPlaced = true
         }
         return task.render().get(timeoutSec(), TimeUnit.SECONDS)
@@ -64,13 +72,14 @@ internal class LayoutlibSession(
 
     private fun placeInsets(insets: AppInsets) {
         task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS)
-        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
-        val root = viewRoot() ?: error("세션의 루트 뷰를 찾지 못했다")
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+        val root = viewRoot() ?: return
         onSession {
-            LayoutlibInsets.apply(root, insets)
-            if (LayoutlibBars.insetsOf(preview) != null) LayoutlibBars.hideBars(root)
-            placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning)
+            LayoutlibInsets.apply(root, insets, fitContent = LayoutlibBars.fitsContent(task, preview))
+            LayoutlibBars.hideDeviceBars(root, preview.systemBars)
         }
+        if (LayoutlibBars.fitsContent(task, preview)) task.layout().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+        onSession { placedWarning = ComposeRestart.withPlacedInsets(root)?.let(ComposeRestart::warning) }
         anchor()
     }
 
@@ -92,11 +101,21 @@ internal class LayoutlibSession(
         (manager.getDeclaredField("sent").apply { isAccessible = true }.get(null) as AtomicBoolean).set(false)
     }
 
-    private fun placeBars(insets: BarInsets) {
-        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)
-        var why: String? = "세션의 루트 뷰를 찾지 못했다"
-        viewRoot()?.let { root -> onSession { why = runCatching { LayoutlibBars.measured(root, insets) }.getOrElse(Throwable::toString) } }
-        why?.let { System.err.println("[prevue] 기기 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+    private fun placeBars(bars: SystemBars.Shown) {
+        val unprepared = runCatching { task.runAsyncRenderAction(Callable { prepareInsetRuntime() }).get(timeoutSec(), TimeUnit.SECONDS) }
+            .exceptionOrNull()?.let { "컴포지션을 다시 만들 준비를 하지 못했다: $it" }
+        task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+        val root = viewRoot()
+        var placed: Result<Unit> = Result.failure(IllegalStateException("세션의 루트 뷰를 찾지 못했다"))
+        if (root != null) onSession {
+            placed = runCatching { LayoutlibBars.place(root, bars, fitContent = !task.context.configuration.isEdgeToEdge) }
+        }
+        if (root != null && placed.isSuccess) {
+            if (LayoutlibBars.fitsContent(task, preview)) task.layout().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+            onSession { placedWarning = (unprepared ?: ComposeRestart.withPlacedInsets(root))?.let(ComposeRestart::warning) }
+        }
+        placed.exceptionOrNull()?.let { System.err.println("[prevue] 바 inset 을 넣지 못했다 — layoutlib 공통 바로 그린다: $it") }
+        if (root != null) anchor()
     }
 
     fun advanceCallbacks(at: Long = clock.next()) {
@@ -113,13 +132,15 @@ internal class LayoutlibSession(
         }
     }
 
-    fun frame(forceImage: Boolean, ripples: RippleCalmer): Frame {
+    fun frame(forceImage: Boolean, ripples: RippleCalmer, stepMs: Long? = null): Frame {
         anchor()
         val t0 = System.nanoTime()
-        advanceCallbacks()
+        advanceCallbacks(stepMs?.let { clock.advance(it * 1_000_000) } ?: clock.next())
         pressUnseen = false
         ripples.calm(task) { viewRoot() }
-        val img = task.render().get(timeoutSec(), TimeUnit.SECONDS).renderedImage.copy
+        val result = task.render().get(timeoutSec(), TimeUnit.SECONDS)
+        val img = try { result.renderedImage.copy } finally { result.dispose() }
+        chrome?.let { layout -> img?.let { painter.paint(it, layout, clearCorners = false) } }
         val bitmap = img?.toBitmap()
         val h = bitmap?.let { RenderOutputs.pixelHash(it.pixels) } ?: 0L
         val changed = h != lastHash
@@ -140,9 +161,9 @@ internal class LayoutlibSession(
     }
 
     fun viewRoot(): ViewGroup? {
-        val session = RenderTask::class.java.getDeclaredField("myRenderSession").apply { isAccessible = true }.get(task) ?: return null
-        val impl = session.javaClass.getDeclaredField("mSession").apply { isAccessible = true }.get(session) ?: return null
-        return impl.javaClass.getDeclaredField("mViewRoot").apply { isAccessible = true }.get(impl) as? ViewGroup
+        val session = surfaces.renderSession.value.get(task) as? RenderSession ?: return null
+        val content = session.rootViews?.firstOrNull()?.viewObject as? View ?: return null
+        return content.rootView as? ViewGroup
     }
 
     fun rebuildTree(result: RenderResult): String? {

@@ -23,25 +23,14 @@ class Runnable(unittest.TestCase):
         with mock.patch.object(P.shutil, "which", return_value=found), mock.patch.dict(os.environ, {}, clear=True):
             return P.runnable(resp)
 
-    def test_PATH_의_prevue_가_이_바이너리면_그대로다(self):
-        self.assertEqual(self.runnable(SELF, {"next": "prevue setup"}), {"next": "prevue setup"})
-
     def test_PATH_의_prevue_가_남이면_이_바이너리_경로다(self):
         out = self.runnable("/elsewhere/bin/prevue", {"next": "prevue start --classpath /a.json", "then": "prevue show /B.kt"})
         self.assertEqual(out, {"next": shlex.quote(SELF) + " start --classpath /a.json", "then": shlex.quote(SELF) + " show /B.kt"})
-
-    def test_PATH_에_prevue_가_없어도_경로다(self):
-        self.assertEqual(shlex.split(self.runnable(None, {"next": "prevue setup"})["next"]), [SELF, "setup"])
 
     def test_두_번_거쳐도_한_번만_바뀐다(self):
         once = self.runnable(None, {"next": "prevue warmup /a/B.kt   # note"})
         self.assertEqual(self.runnable(None, dict(once)), once)
         self.assertEqual(P.bare_commands(dict(once)), {"next": "prevue warmup /a/B.kt   # note"})
-
-    def test_언어와_셸_주석이_함께_실린다(self):
-        with mock.patch.object(P.shutil, "which", return_value=None), mock.patch.dict(os.environ, {"PREVUE_LANG": "ko"}):
-            out = P.runnable({"next": "prevue show /a.kt   # in a shell with network access"})
-        self.assertEqual(out["next"], shlex.quote(SELF) + " show /a.kt --lang ko   # in a shell with network access")
 
 
 

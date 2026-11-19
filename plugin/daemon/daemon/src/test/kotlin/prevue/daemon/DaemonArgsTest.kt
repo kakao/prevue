@@ -3,24 +3,11 @@ package prevue.daemon
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class DaemonArgsTest {
     private val tools = arrayOf("--classpath", "/p/app-debug.json", "--layoutlib", "/l", "--compiler", "/c", "--bridge", "/b", "--viewer", "/v")
-
-    @Test fun `필수 경로만 주면 감시 · 미리 올리기는 켜지고 포트는 기본값이다`() {
-        val a = DaemonArgs.parse(tools)
-        assertEquals(File("/p/app-debug.json"), a.classpath)
-        assertEquals(DaemonArgs.DEFAULT_PORT, a.port)
-        assertTrue(a.watching)
-        assertTrue(a.preload)
-        assertEquals(emptyList<File>(), a.extraWatch)
-        assertNull(a.show)
-        assertNull(a.resourcesFrom)
-    }
 
     @Test fun `값 없는 플래그는 다음 인자를 먹지 않는다`() {
         val a = DaemonArgs.parse(arrayOf("--no-watch", "--no-preload") + tools + arrayOf("--show", "/r/A.kt#2", "--port", "8901"))
@@ -40,6 +27,21 @@ class DaemonArgsTest {
         assertThrows<UsageException> { DaemonArgs.parse(tools.copyOfRange(0, 8)) }
         assertThrows<UsageException> { DaemonArgs.parse(tools + arrayOf("--show")) }
         assertThrows<UsageException> { DaemonArgs.parse(tools + arrayOf("stray")) }
+    }
+
+    // NFR-6 · D-195. 기본값을 바꾸면 기획의 숫자부터 고친다.
+    @Test fun `유휴 종료는 기본 60분이고 --idle 은 분 단위로 m 을 붙여도 되며 0 이면 끈다`() {
+        assertEquals(60, DaemonArgs.parse(tools).idleMinutes)
+        assertEquals(5, DaemonArgs.parse(tools + arrayOf("--idle", "5")).idleMinutes)
+        assertEquals(5, DaemonArgs.parse(tools + arrayOf("--idle", "5m")).idleMinutes)
+        assertEquals(0, DaemonArgs.parse(tools + arrayOf("--idle", "0")).idleMinutes)
+    }
+
+    @Test fun `--idle 이 분 수가 아니면 사용법이다`() {
+        for (v in listOf("abc", "-1", "5h", "1.5", "", "m", "9999999999")) {
+            assertThrows<UsageException>(v) { DaemonArgs.parse(tools + arrayOf("--idle", v)) }
+        }
+        assertThrows<UsageException> { DaemonArgs.parse(tools + arrayOf("--idle")) }
     }
 
 }

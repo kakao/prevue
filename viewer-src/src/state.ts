@@ -31,7 +31,7 @@ export type Board = Omit<ContractBoard, 'groups'> & {
 };
 /**
  * 한 장의 시스템 UI — choice 는 고른 값, annotated 는 소스의 showSystemUi, shown 은 지금 바를 그리는가. 인터랙티브가 아니면 null.
- * bars 는 그리는 바 — insets 가 없으면(aosp) 렌더러의 Preview 기본 바, 있으면(기기의 ios · pixel · oneui) 그 높이로 뷰어가 덧그리는 바다.
+ * bars 는 그리는 바 — insets 가 없으면(aosp) 렌더러의 Preview 기본 바, 있으면(기기의 ios · pixel · oneui) 그 높이로 데몬이 PNG에 굽는 바다.
  */
 export type BarInsets = { statusDp: number; navDp: number; source: string; kind: string; sourceUrl: string };
 export type SystemUi = { choice: string; annotated: boolean; shown: boolean; bars?: { look: string; insets: BarInsets | null } | null };
@@ -64,3 +64,9 @@ export type ViewerState = Omit<ContractState, 'screen' | 'header' | 'board' | 'f
 
 /** 지금 보는 파일 — 활성 탭, 탭이 없으면 보드의 파일. 빠른 열기와 카드의 Preview 점프가 "지금 탭이면 데몬에 묻지 않는다"를 가른다. */
 export const activeKey = (st: ViewerState | null) => { const t = (st?.tabs || []).find(t => t.active); return t ? t.key : st?.board?.file ?? null; };
+
+export function findCard(board: Board | null | undefined, index: number | null | undefined): Card | null {
+  if (!board || index == null) return null;
+  for (const group of board.groups) for (const card of group.cards) if (card.index === index) return card;
+  return null;
+}

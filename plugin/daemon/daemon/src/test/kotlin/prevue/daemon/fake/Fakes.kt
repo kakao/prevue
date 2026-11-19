@@ -66,6 +66,8 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val showEntered = Semaphore(0)
     /** 걸어 두면 다음 [show] 한 번이 그것을 던진다 — 렌더러가 결과 없이 죽는 자리다. */
     @Volatile var showThrows: Throwable? = null
+    /** 걸어 두면 그것이 예외를 돌려주는 [show]마다 그 예외를 던진다 — 순서와 상관없이 고른 카드만 죽는다. */
+    @Volatile var showThrowsIf: ((PreviewSpec) -> Throwable?)? = null
     /** 걸어 두면 [codeChanged]가 멈춘다 — 컴파일 성공과 세대 올리기 사이의 자리다. */
     @Volatile var codeGate: CountDownLatch? = null
     val codeEntered = Semaphore(0)
@@ -87,10 +89,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         asideEntered.release()
         gate?.let { check(it.await(5, TimeUnit.SECONDS)) { "asideGate가 안 풀렸다" } }
         asideThrows?.let { check(!it(p)) { "옆 태스크 예외 — ${p.previewId}" } }
-        return asideFails?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
+        return asideFails?.takeIf { asideFailsIf(p) }?.let { output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) } ?: output(p)
     }
-    /** 걸어 두면 옆 태스크가 그 문구의 렌더 예외로 실패한다. */
+    /** 걸어 두면 옆 태스크가 그 문구의 렌더 예외로 실패한다. [asideFailsIf]로 실패할 태스크를 고른다. */
     @Volatile var asideFails: String? = null
+    @Volatile var asideFailsIf: (PreviewSpec) -> Boolean = { true }
     /** 걸어 두면 맞는 옆 태스크가 결과 대신 예외를 던진다. */
     @Volatile var asideThrows: ((PreviewSpec) -> Boolean)? = null
 
@@ -104,8 +107,13 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 열린 세션들. 닫히면 [closes]가 오른다. */
     val opened = CopyOnWriteArrayList<PreviewSpec>()
     val closes = java.util.concurrent.atomic.AtomicInteger()
+    /** 세션을 열고 닫은 순서 — 닫기는 [onClose]가 끝난 뒤에 적힌다. */
+    val lifecycle = CopyOnWriteArrayList<String>()
+    /** 세션의 [LiveSession.close]가 끝나기 전에 부른다 — 렌더러가 자원을 놓는 동안의 대기 자리다. */
+    @Volatile var onClose: suspend () -> Unit = {}
     override suspend fun open(p: PreviewSpec, interactive: Boolean, ownLoader: Boolean): LiveSession {
         opened += p
+        lifecycle += "open ${p.previewId}"
         return Session(p, render(p, ownLoader))
     }
 
@@ -115,6 +123,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         showEntered.release()
         showGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "showGate가 안 풀렸다" } }
         showThrows?.let { showThrows = null; throw it }
+        showThrowsIf?.invoke(p)?.let { throw it }
         if (shown.size > holdAfter) check(hold.await(5, TimeUnit.SECONDS)) { "hold가 안 풀렸다" }
         exceptions.poll()?.let { return output(p).copy(ok = false, failure = FailureKind.EXCEPTION, message = Verbatim(it)) }
         failures.poll()?.let { return output(p).copy(ok = false, failure = it, message = Verbatim("가짜 $it")) }
@@ -133,13 +142,16 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 걸어 두면 다음 틱 한 번이 그것을 던진다 — 렌더러가 Error로 죽는 자리다. */
     @Volatile var tickThrows: Throwable? = null
     val ticks = java.util.concurrent.atomic.AtomicInteger()
+    /** 틱마다 넘어온 세션 시각 걸음 — null 이면 실제 시계를 따랐다. */
+    val tickSteps = CopyOnWriteArrayList<Long?>()
 
     inner class Session(override val preview: PreviewSpec, override val opened: RenderOutput) : LiveSession {
         override suspend fun touch(type: String, x: Int, y: Int) { touches += Triple(type, x, y); onTouch(type, x, y) }
-        override fun type(text: String): String? = typeError ?: run { typed += text; null }
+        override fun type(text: String): String? = typeError
         override fun scroll(x: Int, y: Int, dx: Float, dy: Float): Boolean { scrolls += listOf(x.toFloat(), y.toFloat(), dx, dy); onScroll(dx, dy); return true }
-        override fun tick(forceImage: Boolean): Frame {
+        override fun tick(forceImage: Boolean, stepMs: Long?): Frame {
             ticks.incrementAndGet()
+            tickSteps += stepMs
             tickThrows?.let { tickThrows = null; throw it }
             return frames.poll() ?: if (moving) Frame(true, false, Bitmap(1, 1, IntArray(1)), 0, 0, 0) else Frame(false, true, null, 0, 0, 0)
         }
@@ -152,7 +164,11 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         override fun lists(): List<prevue.application.domain.model.ListState> { probes.incrementAndGet(); return liveTree.states }
         override fun semantics(): List<prevue.application.domain.model.SemanticNode> { probes.incrementAndGet(); return liveTree.semantics }
         override suspend fun renderAt(ms: Long, frameMs: Long): RenderOutput = rerender(preview)
-        override fun close() { closes.incrementAndGet() }
+        override suspend fun close() {
+            onClose()
+            lifecycle += "close ${preview.previewId}"
+            closes.incrementAndGet()
+        }
     }
 
     private fun rerender(p: PreviewSpec): RenderOutput { rerenders.incrementAndGet(); return output(p) }
@@ -169,8 +185,7 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     val scrolls = CopyOnWriteArrayList<List<Float>>()
     @Volatile var onScroll: (Float, Float) -> Unit = { _, _ -> }
     val touches = CopyOnWriteArrayList<Triple<String, Int, Int>>()
-    /** 넣은 글자. [typeError]를 걸면 넣지 못한 이유로 돌려준다 — 포커스된 필드가 없는 자리다. */
-    val typed = CopyOnWriteArrayList<String>()
+    /** [typeError]를 걸면 넣지 못한 이유로 돌려준다 — 포커스된 필드가 없는 자리다. */
     @Volatile var typeError: String? = null
 
     override fun codeChanged() {
@@ -179,13 +194,12 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
         codeEntered.release()
         codeGate?.let { check(it.await(5, TimeUnit.SECONDS)) { "codeGate가 안 풀렸다" } }
     }
-    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [patchOk]를 끄면 넣기가 실패한다 — 공유 로더가 없는 자리다. */
+    /** D-67. 넣은 리터럴 값(클래스, 값들)과 뺀 클래스들. [refuses]에 든 클래스는 넣기가 실패한다 — 공유 로더가 없는 자리다. */
     val patched = CopyOnWriteArrayList<Pair<String, Map<String, Any>>>()
     val dropped = CopyOnWriteArrayList<String>()
-    @Volatile var patchOk = true
     @Volatile var refuses: Set<String> = emptySet()
     override fun patchLiterals(owner: String, values: Map<String, Any>): Boolean {
-        val ok = patchOk && owner !in refuses
+        val ok = owner !in refuses
         if (ok) patched += owner to values
         return ok
     }
@@ -204,7 +218,14 @@ class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSess
     /** 걸어 두면 [previewId]의 다음 쓰기 한 번이 그 자리에서 멈춘다 — 렌더는 끝났고 PNG가 디스크로 가는 중인 순간이다. */
     @Volatile var writeHold: Pair<String, CountDownLatch>? = null
     val writeEntered = Semaphore(0)
+    /** 걸어 두면 그 previewId의 다음 쓰기 한 번이 취소될 때까지 멈춘다 — 데몬이 끝나며 쓰기를 거두는 자리다. */
+    @Volatile var writeParks: String? = null
     override suspend fun written(out: RenderOutput): RenderOutput {
+        if (writeParks == out.preview.previewId) {
+            writeParks = null
+            writeEntered.release()
+            kotlinx.coroutines.awaitCancellation()
+        }
         val (id, gate) = writeHold?.takeIf { it.first == out.preview.previewId } ?: return out
         writeHold = null
         writeEntered.release()

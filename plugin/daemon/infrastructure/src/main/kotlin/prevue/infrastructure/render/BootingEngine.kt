@@ -32,6 +32,10 @@ internal class BootingEngine(
         boot().let { Booted(it, ResourceOverlay.install(it.renderer)) }
     }
 
+    init {
+        scope.launch(dispatchers.io + CoroutineName("prevue-chrome-warm")) { DeviceChromePainter(TimeGlyphs.ios).warm() }
+    }
+
     private val ready: RenderEngine get() = booted.getCompleted().engine
 
     suspend fun await(): RenderEngine = booted.await().engine

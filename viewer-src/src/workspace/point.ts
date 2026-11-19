@@ -1,11 +1,11 @@
 // 가리키기(FR-20·21) — 트리 평탄화 · 히트테스트 · 그림 위 표시 · 데몬에 보내기 · 후보 고르기 · 카드. 보드와 한 장이 함께 쓴다.
 // 가리킨 결과는 그림 밖 옆에 뜬 카드가 말한다(D-162) — 캡슐은 오류 · 알림만. 카드 · 팝오버의 안은 React 의 PointOverlay · ChoicePopover 가 그린다.
-import { fetchPreviewFiles, get, post } from '../../legacy/js/api.js';
-import { applyReveal, cancelReveal, reveal, setCursor, trees } from '../../legacy/js/board.js';
-import { flash } from '../../legacy/js/capsule.js';
-import { cardOf, store } from '../../legacy/js/store.js';
-import { daemonText, phrase } from '../../legacy/js/strings.js';
-import { activeKey, type Message } from '../state';
+import { fetchPreviewFiles, get, post } from '../runtime/api';
+import { applyReveal, cancelReveal, reveal, setCursor, trees } from '../runtime/board';
+import { flash } from '../runtime/capsule';
+import { store } from '../runtime/store';
+import { daemonText, phrase } from '../runtime/strings';
+import { activeKey, findCard, type Message } from '../state';
 import { boxOf, indexOf, originOf, previewsOf, treeOf, type PreviewFiles, type PreviewIndex, type TreeHit } from './card';
 import { pointView, type CardModifier, type CardPreview, type CardRow, type PointCardData, type PointNode, type PointSay } from './view';
 
@@ -54,9 +54,19 @@ export const byPick = (a: Hit, b: Hit) => a.area - b.area || b.chain.length - a.
 export function narrow(list: Hit[]) { return store.projectFiles.size ? list.filter(n => store.projectFiles.has(n.fileName)) : list; }
 export function hitIn(list: Hit[], x: number, y: number) { return list.find(n => { const [l, t, r, b] = n.bounds; return x >= l && x < r && y >= t && y < b; }); }
 /** 표시 배율. 보드 카드는 폭을 잘라 보이므로 PNG 좌표와 화면 좌표가 다르다 — 가리키기·터치 둘 다 여기를 지난다. */
-// 인터랙티브 스트림은 보이는 크기로 줄여 오므로 좌표의 기준은 원래 크기(data-full-w)다. 없으면 받은 그림의 크기.
+// 인터랙티브 스트림은 보이는 크기로 줄여 오므로 좌표의 기준은 원래 크기(data-full-w · data-full-h)다. 없으면 받은 그림의 크기.
 const natW = (img: HTMLImageElement) => +(img.dataset.fullW ?? 0) || img.naturalWidth;
-export function scaleOf(img: HTMLImageElement) { return natW(img) ? img.getBoundingClientRect().width / natW(img) : 1; }
+const natH = (img: HTMLImageElement) => +(img.dataset.fullH ?? 0) || img.naturalHeight;
+/**
+ * 상자(w × h)에 비율을 지켜 담은 그림의 배율 — 작업 공간의 #shot 은 틀과 비율이 다르면 늘리지 않고 왼쪽 위에 붙여 담는다(resize.css).
+ * 그림은 상자의 왼쪽 위에서 시작하므로 좌표의 원점은 상자와 같고 배율만 두 축 중 작은 쪽이다. 크기를 모르면 0.
+ */
+export function containScale(w: number, h: number, img: HTMLImageElement) {
+  const nw = natW(img), nh = natH(img);
+  if (!nw || !nh) return 0;
+  return Math.min(w / nw, h / nh);
+}
+export function scaleOf(img: HTMLImageElement) { const r = img.getBoundingClientRect(); return containScale(r.width, r.height, img) || 1; }
 export function posIn(e: MouseEvent, img: HTMLImageElement): [number, number] {
   const r = img.getBoundingClientRect(), s = scaleOf(img) || 1;
   return [Math.round((e.clientX - r.left) / s), Math.round((e.clientY - r.top) / s)];
@@ -303,7 +313,7 @@ type TreeReply = { composeViewInfo?: TreeNode[] };
 export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts, signal: AbortSignal) {
   let list: Hit[] | null = null, over = false;
   const load = async () => {
-    const c = store.st && store.st.board && cardOf(i);
+    const c = findCard(store.st?.board, i);
     if (!c || !c.ok || !c.treeUrl) return null;
     const hit = trees.get(c.treeUrl) as Hit[] | undefined;
     if (hit) { list = hit; return list; }
@@ -328,7 +338,7 @@ export function pointCard(i: number, { stage, img, box, pick, marks }: CardParts
     if (!l) return;
     const n = hitIn(l, ...posIn(e, img));
     if (!n) { if (spot?.img === img) clearPick(); return; }   // 그림의 빈 곳 — 한 장의 ⌥+클릭과 같다
-    const c = cardOf(i)!, full = natW(img);
+    const c = findCard(store.st?.board, i)!, full = natW(img);
     pointAt({
       list: l, img, hover: box, pick, marks, host: document.getElementById('boardView')!, scale: () => scaleOf(img), previewId: c.previewId,
       dpPerPx: c.widthDp && full ? c.widthDp / full : null, seen: { file: store.st?.board?.file ?? null, fn: stage.closest<HTMLElement>('.card')?.dataset.fn ?? null },

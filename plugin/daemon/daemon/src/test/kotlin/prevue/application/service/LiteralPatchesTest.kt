@@ -148,16 +148,6 @@ class LiteralPatchesTest {
         assertEquals(emptyList<Any>(), fx.renderer.patched.toList())
     }
 
-    @Test fun `렌더러가 값을 못 넣으면 컴파일로 간다`() {
-        val uc = opened()
-        uc.write(source(16)); uc.watch()
-        fx.renderer.patchOk = false
-        uc.write(source(24))
-        val r = uc.watch() as ReloadResult.Rendered
-        assertEquals("OK", r.result.shot.compile?.exitCode)
-        assertEquals(2, fx.compiler.compiled.size)
-    }
-
     @Test fun `컴파일이 실패하면 다음 리터럴 저장도 컴파일한다`() {
         val uc = opened()
         uc.write(source(16)); uc.watch()

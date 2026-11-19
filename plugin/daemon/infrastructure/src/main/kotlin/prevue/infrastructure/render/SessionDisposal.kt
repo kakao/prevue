@@ -6,44 +6,28 @@ import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
 import com.android.tools.rendering.classloading.ModuleClassLoader
 import com.android.tools.rendering.classloading.ModuleClassLoaderManager
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.util.Disposer
 import java.lang.ref.Reference
 import java.lang.reflect.Modifier
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-internal object SessionDisposal {
-    private const val COMPOSE_VIEW = "androidx.compose.ui.platform.AndroidComposeView"
-    private const val CLEAN_SEC = 5L
-    private const val RENDER_THREAD_SEC = 2L
-
-    private val sessionField by lazy { taskField("myRenderSession") }
-    private val loaderRefField by lazy { taskField("myModuleClassLoaderReference") }
-    private val callbackField by lazy { taskField("myLayoutlibCallback") }
-    private val cleanSession by lazy {
-        Class.forName("com.android.tools.rendering.RenderSessionCleaner", true, RenderTask::class.java.classLoader)
-            .getMethod("dispose", RenderSession::class.java, ModuleClassLoader::class.java)
-    }
+internal class SessionDisposal(private val surfaces: SessionSurfaces) {
     private val threadLocalsField by lazy { Thread::class.java.getDeclaredField("threadLocals").apply { isAccessible = true } }
     private val entryValueField by lazy {
         Class.forName("java.lang.ThreadLocal\$ThreadLocalMap\$Entry").getDeclaredField("value").apply { isAccessible = true }
     }
 
-    private fun taskField(name: String) = RenderTask::class.java.getDeclaredField(name).apply { isAccessible = true }
-
     fun dispose(task: RenderTask) {
         try {
-            val session = sessionField.get(task) as? RenderSession ?: return
-            val loader = (loaderRefField.get(task) as ModuleClassLoaderManager.Reference<*>).classLoader
+            val session = surfaces.renderSession.value.get(task) as? RenderSession ?: return
+            val loader = (surfaces.loaderReference.value.get(task) as ModuleClassLoaderManager.Reference<*>).classLoader
             val inflated = session.rootViews != null
-            sessionField.set(task, null)
+            surfaces.renderSession.value.set(task, null)
             session.releaseRender()
-            runCatching { (cleanSession.invoke(null, session, loader) as CompletableFuture<*>).get(CLEAN_SEC, TimeUnit.SECONDS) }
+            runCatching { Shim.disposeSession(session, loader).get(CLEAN_SEC, TimeUnit.SECONDS) }
                 .onFailure { if (inflated || generateSequence(it) { e -> e.cause }.none { e -> e is NullPointerException }) throw it }
             onRenderThread { dropThreadLocals(loader); dropComposeViews(loader) }
         } finally {
-            (callbackField.get(task) as? Disposable)?.let { Disposer.dispose(it) }
+            RendererLease.releaseCallback(surfaces.layoutlibCallback.value.get(task))
         }
     }
 
@@ -68,5 +52,11 @@ internal object SessionDisposal {
     private fun onRenderThread(block: () -> Unit) {
         RenderService.getRenderAsyncActionExecutor().runAsyncAction(RenderAsyncActionExecutor.RenderingTopic.CLEAN, Runnable(block))
             .get(RENDER_THREAD_SEC, TimeUnit.SECONDS)
+    }
+
+    private companion object {
+        const val COMPOSE_VIEW = "androidx.compose.ui.platform.AndroidComposeView"
+        const val CLEAN_SEC = 5L
+        const val RENDER_THREAD_SEC = 2L
     }
 }

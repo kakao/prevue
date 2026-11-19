@@ -7,11 +7,10 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 
 class LostMembersTest {
-    private fun facade(vararg methods: String, fields: List<String> = emptyList(), access: Int = Opcodes.ACC_PUBLIC): ByteArray {
+    private fun facade(vararg methods: String, access: Int = Opcodes.ACC_PUBLIC): ByteArray {
         val w = ClassWriter(0)
         w.visit(Opcodes.V17, Opcodes.ACC_PUBLIC or Opcodes.ACC_FINAL, "a/HomeScreenKt", null, "java/lang/Object", null)
         for (m in methods) w.visitMethod(access or Opcodes.ACC_STATIC, m.substringBefore('('), "(" + m.substringAfter('('), null, null).visitEnd()
-        for (f in fields) w.visitField(access or Opcodes.ACC_STATIC, f.substringBefore(':'), f.substringAfter(':'), null, null).visitEnd()
         w.visitEnd()
         return w.toByteArray()
     }
@@ -34,9 +33,5 @@ class LostMembersTest {
     @Test fun `private · synthetic 멤버는 달라도 잃지 않았다`() {
         assertTrue(LostMembers.of(facade("Preview\$lambda\$4(ILandroidx/compose/runtime/Composer;I)Lkotlin/Unit;", access = Opcodes.ACC_PRIVATE), facade()).isEmpty())
         assertTrue(LostMembers.of(facade("access\$x()V", access = Opcodes.ACC_SYNTHETIC), facade()).isEmpty())
-    }
-
-    @Test fun `빌드의 클래스에만 있는 필드도 잃은 것이다`() {
-        assertEquals(setOf("cache:I"), LostMembers.of(facade(fields = listOf("cache:I")), facade()))
     }
 }

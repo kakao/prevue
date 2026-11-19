@@ -1,11 +1,11 @@
 // View(D-41). 데몬의 ViewerViewModel 이 보낸 상태를 받아 화면 전환을 고르고 그리게 한다. 사람의 조작은 컴포넌트가 의도로 보낸다.
 // 문장 · 이름표 · 모드 · 풀패스는 데몬이 정한다 — 여기 두면 `prevue status`를 읽는 에이전트에게는 안 간다.
-import { connect, fetchProjectFiles } from '../legacy/js/api.js';
-import { applyReveal, cardAt, cardStage, clearTrees, returnCard, ringCard } from '../legacy/js/board.js';
-import { flash, renderError, setStatus } from '../legacy/js/capsule.js';
-import { transition, transitioning } from '../legacy/js/motion.js';
-import { store } from '../legacy/js/store.js';
-import { daemonText, phrase } from '../legacy/js/strings.js';
+import { connect, fetchProjectFiles } from './runtime/api';
+import { applyReveal, cardAt, cardStage, clearTrees, returnCard, ringCard } from './runtime/board';
+import { flash, renderError, setStatus } from './runtime/capsule';
+import { transition, transitioning } from './runtime/motion';
+import { store } from './runtime/store';
+import { daemonText, phrase } from './runtime/strings';
 import type { Preparation } from './preparation/PreparationScreen';
 import type { ViewerState } from './state';
 import { frameOf, type Workspace } from './workspace/focus';

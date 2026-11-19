@@ -3,10 +3,59 @@
 Only changes users can see go here.
 
 > **A release is merging `develop` into `main`.** Each change goes under `[Unreleased]` in the PR that makes it (parallel PRs don't conflict — the file uses `merge=union`). Don't edit `plugin.json` by hand.
-> To release, a version commit on `develop` bumps `plugin/VERSION` and `tools/sync-version.sh` carries it to both `plugin.json` files, the badges in both READMEs (English · Korean), and the heading in this file. Then one `develop` → `main` PR runs the "빌드 검증" (build check) workflow.
+> To release, a version commit on `develop` bumps `plugin/VERSION` and `tools/sync-version.sh` carries it to both `plugin.json` files, the badges in both READMEs (English · Korean), and the heading in this file. Then one `develop` → `main` PR runs the `Verify` workflow.
 > The marketplace reads the plugin from `main`, so merging is shipping, and `version` in `plugin.json` is the switch ([docs](https://code.claude.com/docs/en/plugins-reference): *"users only receive updates when you bump it"*). Tags and GitHub Releases are created afterwards by running the release workflow by hand.
 
 ## [Unreleased]
+
+## [0.23.0] — 2026-11-19
+
+**Eight more devices, and the system UI is in the PNG.** Galaxy Z Flip8, Galaxy S26 Ultra, Pixel 10 Pro XL, iPhone 18 Pro, iPhone SE, Galaxy A07 5G, iPhone 17e and Galaxy Tab S11 Ultra join the device menu, and the status bar, navigation handle and camera an agent reads in the PNG now match what you see. The viewer keeps up with slow frames and narrow windows.
+
+### Devices
+
+- **Eight devices join the device menu** — Galaxy Z Flip8 (`flip8`), S26 Ultra (`s26ultra`), A07 5G (`a07`), Tab S11 Ultra (`s11ultra`), Pixel 10 Pro XL (`pixel10xl`), iPhone 18 Pro (`ip18pro`), iPhone 17e (`ip17e`) and iPhone SE 3rd generation (`ipse3`), with insets from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
+- **Galaxy Z Flip8 folds like a clamshell**, and its cover screen shows its real camera holes; the cover is measured in portrait only, so `--folded --landscape` is an error.
+- **Foldables fold as two solid slabs**, with each half's thickness, a spine at the hinge and shading that follows the fold.
+- **The device menu is grouped by product line** — Galaxy, Pixel and iPhone.
+- **The "9:41" in status bars looks like the device** — the iOS Simulator's semibold clock on iPhones, Roboto Medium on Android.
+- **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device between the renderer's density steps draws at exactly its dpi.
+
+### Insets and system UI
+
+- **A device's status bar, navigation handle and camera are in the PNG** (`focus --device`), so an agent sees what the viewer shows.
+- **Show inset areas labels each badge with its kind** (`STATUS`, `NAV`, `CAPTION`, `CUTOUT`, `OVERLAY`) and bolds the one that sets SAFE AREA.
+- **`@Preview(showSystemUi = true)` hands the bar heights to insets read in composition** (`WindowInsets.statusBars.asPaddingValues()`, `getTop()`), in the PNG and the live view.
+- **Apps targeting SDK below 35 no longer apply system bar insets twice** — use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
+
+### Previews and the viewer
+
+- **More `@PreviewParameter` providers and multipreview annotations draw one card per value** — providers nested in a class or written as an `object` or `companion object`, and multipreview annotations declared inside another class.
+- **Dragging an interactive preview keeps up with your hand when frames are slow.**
+- **In windows 640 px wide or narrower, the file rail opens over the board**, so a group keeps two or more cards per row.
+- **Switching devices and size-bar cells is quicker** — pictures already drawn are kept until you save, and the blur clears in a fifth of a second.
+
+### Agents
+
+- **The daemon stays up for an hour without use instead of 10 minutes** — set it with `prevue start --idle <minutes>` (`--idle 10` for the old behavior, `0` to never stop), which replaces the `PREVUE_IDLE_MIN` environment variable. Suggested by @easternkite.
+- **`prevue paths` lists the old copies of Prevue's components** (about 118 MB each under `~/.prevue/toolchain/lib-*`) and marks the ones safe to delete.
+- **`prevue scroll` answers right on a busy machine** — `passed` lists every item, whole-item scrolls answer `moved: true`, and one failed wheel scroll no longer stops the next.
+- **`#N` in `scroll --until` and `touch --at` counts list items even when every item root has padding**, and counts headers too, so take N from `matches`.
+
+### Fixes
+
+- **KMP library modules in repositories with `org.gradle.configureondemand=true`** no longer fail on save with "unresolved reference" ([#210](https://github.com/kakao/prevue/issues/210)) — warm up once more. Reported by @DXMHXR.
+- **`prevue setup` needs Java 21 or later and says so** instead of "Cannot build from the downloaded components — they need to be downloaded again" — install 21+ or point `PREVUE_JDK` at one.
+- **A warmup that fails because of the JDK** (such as "Inconsistent JVM-target compatibility detected") picks another installed Java next time.
+- **`prevue start` asks for `prevue setup` when `~/.prevue/toolchain` is gone** instead of the daemon dying with "JavaFX runtime components are missing".
+- **Render failures lead with the real exception** (such as `java.lang.NoSuchMethodError`) instead of "View layout failed" or the blank-success warning "Compose 노드 없음 — 렌더는 성공했지만 Preview가 그린 노드가 없다".
+- **A preview that needs an Activity says "This Preview needs an Activity"** instead of "Unexpected Context type when trying to resolve the context's Activity.".
+- Also: a `ui-tooling` missing a node's file, line or bounds getter fails with a renderer-pairing message, Android status bars keep clear of large rounded corners, iPhone frames use the corner radius from safearea.info, iPhone Duo folded in landscape hides its status indicator, Pixel and iPhone menu names drop the repeated product name, multipreview annotations imported with `*` or ending in `L` expand, a picture whose shape differs from its frame keeps its proportions, the placeholder grows into the frame, a failed size-bar cell is retried once, quick size picks land on the last one, a rotating tablet stays inside a narrow panel, the live ring keeps its width while rotating, the header progress bar clears on disconnect, and ⌘-Tab while holding the mouse lifts the finger in the app.
+
+### Thanks
+
+- @DXMHXR for reporting KMP library modules failing on save with `configureondemand` ([#210](https://github.com/kakao/prevue/issues/210))
+- @easternkite for the idea of letting you set how long the daemon stays up without use
 
 ## [0.22.1] — 2026-11-13
 

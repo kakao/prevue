@@ -8,6 +8,7 @@ import prevue.application.domain.model.Settled
 import prevue.application.domain.model.ShowResult
 import prevue.application.domain.model.StaleReason
 import prevue.application.domain.model.SystemUi
+import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.BarInsets
 import prevue.application.domain.model.SystemUiState
 import prevue.application.domain.model.Status
@@ -37,14 +38,14 @@ internal fun ScreenSize.toJson(): Map<String, Any?>? = when (this) {
     is ScreenSize.Dp -> mapOf("kind" to if (preset != null) "preset" else "custom", "preset" to preset, "widthDp" to widthDp, "heightDp" to heightDp)
     is ScreenSize.Device -> mapOf(
         "kind" to "device", "device" to model.id, "name" to model.label, "folded" to folded, "landscape" to landscape,
-        "widthDp" to widthDp, "heightDp" to heightDp, "hingeDp" to hingeDp, "dpi" to model.dpi,
+        "widthDp" to widthDp, "heightDp" to heightDp, "hingeDp" to hingeDp, "dpi" to dpi,
         "orientation" to orientation.key, "widthPx" to widthPx, "heightPx" to heightPx,
         "insetProfile" to insetProfile.toJson(),
     )
 }
 
 internal fun SystemUiState.toJson(): Map<String, Any?> = mapOf(
-    "choice" to choice.key, "annotated" to annotated, "shown" to shown,
+    "choice" to choice.key, "edgeToEdge" to edgeToEdge.key, "annotated" to annotated, "shown" to shown,
     "bars" to bars?.let { b -> mapOf("look" to b.look.key, "insets" to b.insets?.toJson()) },
 )
 
@@ -72,3 +73,5 @@ internal fun Work.toJson(): Map<String, Any?> = when (this) {
     is Work.Compiling -> mapOf("kind" to "compiling", "files" to files.map { it.path }, "by" to by)
     is Work.Rendering -> mapOf("kind" to "rendering", "preview" to preview.toJson(), "by" to by)
 }
+
+internal fun Map<String, Any?>.toEdgeToEdge(): EdgeToEdge? = EdgeToEdge.parse(string("edgeToEdge"))

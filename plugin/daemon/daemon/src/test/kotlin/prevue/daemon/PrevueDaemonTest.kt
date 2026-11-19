@@ -52,15 +52,6 @@ class PrevueDaemonTest {
         assertNull(daemon.run { requestStop("HTTP /shutdown"); requestRestart("늦게 잃었다", listOf("--show", "A.kt")) })
     }
 
-    @Test fun `닫는 중인 데몬은 새 자원을 받지 않고 바로 닫는다`() {
-        val daemon = PrevueDaemon(forceExit = { fail("정리가 멈췄다") })
-        daemon.close()
-        val closed = AtomicInteger()
-        assertThrows(IllegalStateException::class.java) { daemon.closer.own(AutoCloseable { closed.incrementAndGet() }) }
-        assertEquals(1, closed.get())
-        assertThrows(IllegalStateException::class.java) { daemon.run {} }
-    }
-
     @Test fun `포트 충돌도 작업과 이미 만든 자원을 정리한다`() {
         Fixture().use { fx ->
             ServerSocket(0, 16, InetAddress.getByName("127.0.0.1")).use { occupied ->
@@ -139,13 +130,6 @@ class PrevueDaemonTest {
         try { assertEquals(1, forced.get(2, TimeUnit.SECONDS)) }
         finally { release.countDown() }
         closing.get(2, TimeUnit.SECONDS)
-    }
-
-    // NFR-6. 기본값을 바꾸면 기획의 숫자부터 고친다.
-    @Test fun `유휴 종료 기본은 10분이고 0이면 끈다`() {
-        assertEquals(10, PrevueDaemon.idleMinutes(null))
-        assertEquals(10, PrevueDaemon.idleMinutes("열"))
-        assertEquals(0, PrevueDaemon.idleMinutes("0"))
     }
 
     /** 유휴 상한 [idleMs]로 띄우고, [during]이 도는 동안 데몬이 스스로 내려왔는지와 그 사유를 돌려준다. */

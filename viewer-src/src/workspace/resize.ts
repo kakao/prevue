@@ -1,19 +1,20 @@
 // 크기 · 기기 · 자세 바꾸기(D-99). 틀 · 그림의 전환은 번들 밖의 resize-scene.js 가 갖고, 여기서는 상태를 장면에 넘기고
 // 스트림 <img>(#shot)를 새 크기의 첫 장에 붙인다. 장면 · 조작 독의 마크업은 React 가 한 번 그린 껍데기다.
-import { post, viewerStream } from '../../legacy/js/api.js';
-import { flash } from '../../legacy/js/capsule.js';
-import { motionMs, motionToken, reduced } from '../../legacy/js/motion.js';
+import { post, viewerStream } from '../runtime/api';
+import { flash } from '../runtime/capsule';
+import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
-import { phrase } from '../../legacy/js/strings.js';
+import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
-import { loadingView } from './view';
+import { marksBelow } from './insets';
+import { insetOverlayView, loadingView } from './view';
 
 type AnySize = Focus['postures'][number]['size'] | Size | null;
 type Zoom = { z: number; x: number; y: number };
 
 export const sizeKey = (size: AnySize) => {
   if (!size) return 'original';
-  if (size.kind === 'device') return `${size.device === 'duo' ? 'ipduo' : size.device}:${size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}${size.orientation === 'landscape-right' ? ':right' : ''}`;
+  if (size.kind === 'device') return `${size.device}:${size.folded ? 'cover' : 'open'}${size.landscape ? ':rot' : ''}${size.orientation === 'landscape-right' ? ':right' : ''}`;
   return size.preset || `custom:${size.widthDp}x${size.heightDp}`;
 };
 
@@ -51,17 +52,34 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
   let original: { w: number; h: number; img: SceneImage | null } | null = null, shown = false, pending = false;
   let preparing = false, arrival: Animation | null = null;
   const decoded = new Map<string, Promise<HTMLImageElement>>(), edges = new Map<string, string>();
+  // 데몬은 크기 요청을 병렬로 받아 처리를 끝낸 순서대로 넣는다 — 연타의 앞 요청이 늦게 끝나면 그 크기에 멈춘다.
+  // 그래서 한 번에 하나만 보내고, 기다리는 동안 온 것은 가장 최근 것만 남긴다. 밀려난 요청은 실패가 아니다(true).
+  let sending = false, queued: { body: object; settle(ok: boolean): void } | null = null;
+  const requestSize = (body: object) => new Promise<boolean>(settle => {
+    if (sending) { queued?.settle(true); queued = { body, settle }; } else sendSize(body, settle);
+  });
+  function sendSize(body: object, settle: (ok: boolean) => void) {
+    sending = true;
+    // 장면이 실패를 알아야 끌던 틀을 지금 크기로 되돌린다 — 성공 여부로 답한다
+    post('/viewer/resize', body).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; })
+      .catch(e => { flash(phrase('resize.failed', { why: (e as Error).message })); return false; })
+      .then(ok => {
+        settle(ok);
+        const next = queued; queued = null; sending = false;
+        if (next) sendSize(next.body, next.settle);
+      });
+  }
   const edgeOfUrl = (img: HTMLImageElement) => { if (!edges.has(img.src)) edges.set(img.src, edgeOf(img, img.naturalWidth, img.naturalHeight)); return edges.get(img.src)!; };
   const scene = createResizeScene(root, {
     request: sel => {
       if (preparing) return Promise.resolve(false);
       const [dev, state, ...turns] = sel.split(':'), device = scene.devices.has(dev);
-      const body = device ? { device: dev === 'ipduo' ? 'duo' : dev, folded: state === 'cover', orientation: turns.includes('right') ? 'landscape-right' : (scene.sizeOf(sel)!.w > scene.sizeOf(sel)!.h ? 'landscape-left' : 'portrait') }
+      const body = device ? { device: dev, folded: state === 'cover', orientation: turns.includes('right') ? 'landscape-right' : (scene.sizeOf(sel)!.w > scene.sizeOf(sel)!.h ? 'landscape-left' : 'portrait') }
         : { size: sel.startsWith('custom:') ? sel.slice(7) : sel };
-      // 장면이 실패를 알아야 끌던 틀을 지금 크기로 되돌린다 — 성공 여부로 답한다
-      return post('/viewer/resize', body).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; })
-        .catch(e => { flash(phrase('resize.failed', { why: (e as Error).message })); return false; });
+      return requestSize(body);
     },
+    insetOn: () => insetOverlayView.get().on,
+    insetBelow: () => marksBelow(current?.deviceInsets),
     layout: (rect, moving) => {
       if (!active) return;
       // 확대의 기준점은 틀의 왼쪽 위다. 접기 · 돌리기 · 크기로 틀이 옮겨 가면 기준점이 따라 뛰어 화면이 튀었다 —
@@ -78,6 +96,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       root.classList.toggle('await-live', !shown);
     },
   });
+  insetOverlayView.subscribe(() => { if (active) scene.relayout(true); });
   function prepare(on: boolean, failed = false) {
     preparing = on;
     root.classList.toggle('preparing', on);
@@ -109,7 +128,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     }
     return decoded.get(url)!;
   }
-  // 디코드한 그림은 지금 상태가 가리키는 것(라이브 첫 장 + 미리 그린 자세, 최대 10장)만 붙든다 — 개수로 밀어내면 쓰는 그림이 빠진다.
+  // 디코드한 그림은 지금 상태가 가리키는 것(라이브 첫 장 + 데몬이 지금 칸에 싣는 미리 그린 그림 — 막대 칸과 지금 기기의 다른 자세)만 붙든다. 장 수는 막대 칸 수를 따라가므로 개수로 밀어내지 않는다 — 밀어내면 쓰는 그림이 빠진다.
   function prune(f: Focus) {
     const keep = new Set([f.imageUrl, ...(f.postures || []).map(p => p.imageUrl)]);
     for (const url of decoded.keys()) if (!keep.has(url)) decoded.delete(url);
@@ -142,12 +161,15 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     if (sized) { snapshot(); pending = true; shown = false; stage.classList.add('resize-hidden'); }
     const previous = current;
     current = f; key = next;
+    // 같은 크기에서 인셋 값만 바뀌어 몸체 아래 배지 줄이 생기거나 사라지면 장면이 자리를 다시 맞춘다.
+    const relayout = !sized && !!previous && marksBelow(previous.deviceInsets) !== marksBelow(f.deviceInsets);
     if (previous && !sized && f.imageUrl !== previous.imageUrl) scene.clearImages();
     for (const p of f.postures || []) {
       const gen = epoch;
       load(p.imageUrl).then(img => { if (active && gen === epoch && current?.postures?.some(x => x.imageUrl === p.imageUrl)) scene.image(sizeKey(p.size), spec(img, p.size)); }).catch(() => {});
     }
     if (original) scene.update(target(f), !previous);
+    if (relayout && insetOverlayView.get().on) scene.relayout(true);
     if (error) {
       shown = false; loading = stream = null;
       shot.onload = null; shot.removeAttribute('src');

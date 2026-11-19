@@ -15,7 +15,7 @@ class SystemUiJsonTest {
         val bars = SystemBars.Shown(BarLook.ONE_UI, BarInsets(37.0, 15.0, InsetSource.SAMSUNG_RTL, "https://example.test/s26"))
         assertEquals(
             mapOf(
-                "choice" to "on", "annotated" to false, "shown" to true,
+                "choice" to "on", "edgeToEdge" to "auto", "annotated" to false, "shown" to true,
                 "bars" to mapOf(
                     "look" to "oneui",
                     "insets" to mapOf("statusDp" to 37.0, "navDp" to 15.0, "source" to "windowinsets.info", "kind" to "samsung-rtl", "sourceUrl" to "https://example.test/s26"),

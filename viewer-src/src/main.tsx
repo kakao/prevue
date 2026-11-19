@@ -1,6 +1,6 @@
-import { boardMarks, moveCursor } from '../legacy/js/board.js';
-import { daemonText, phrase } from '../legacy/js/strings.js';
-import { jumpTab, stepTab, tabCount } from './components/FileRail';
+import { boardMarks, moveCursor } from './runtime/board';
+import { daemonText, phrase } from './runtime/strings';
+import { closeRailDrawer, jumpTab, stepTab, tabCount } from './components/FileRail';
 import type { PointActions } from './components/PointOverlay';
 import { closeDirPop } from './components/ProjectHeader';
 import type { WorkspaceActions } from './components/Workspace';
@@ -9,7 +9,7 @@ import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
 import { drawScreens, startViewer } from './session';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
-import { store } from '../legacy/js/store.js';
+import { store } from './runtime/store';
 import type { ViewerState } from './state';
 import { createViewerRoot, findHosts } from './ViewerRoot';
 import { createWorkspace, enterFocus, exitFocus, findWorkspaceParts, pickSystemUi } from './workspace/focus';
@@ -42,6 +42,7 @@ installShortcuts(shortcuts, actions, {
   closeZoomMenu: workspace.closeZoomMenu,
   closeDeviceMenu: workspace.closeDeviceMenu,
   closeDirPop,
+  closeRailDrawer,
   closeCard,
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,

@@ -1,4 +1,5 @@
-import type { ReactNode, Ref } from 'react';
+import { Fragment, type ReactNode, type Ref } from 'react';
+import { DEVICE_MENU } from '../../legacy/js/devices.js';
 import { useMessages } from '../messages';
 
 // 한 장의 정적 껍데기 — 장면 · 무대 · 조작 독의 칸. 번들 밖의 resize-scene.js 와 workspace/focus.ts 가 이 요소들을 쥐고 계속 고친다.
@@ -17,7 +18,7 @@ function useT() {
 /** 기기 한 대의 층 — 몸체 · 윤곽 · 화면(두 그림 사이의 베일) · 치수 눈금. 크기를 바꿀 때 #ua · #ub 가 엇갈린다. */
 const Unit = ({ id, hidden }: { id: string; hidden?: boolean }) => <div className="unit" id={id} hidden={hidden}>
   <div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" />
-  <div className="shell" /><div className="outline" />
+  <div className="shell" /><div className="home" /><div className="outline" />
   <div className="stage"><img className="ly l0" alt="" /><div className="veil" /><img className="ly l1" alt="" /><div className="crease" /><div className="cam" /></div>
   <div className="tick t-top" /><div className="tick t-bot" />
 </div>;
@@ -32,38 +33,27 @@ export function Ruler() {
   </div>;
 }
 
-/** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig(책처럼) · #duo(조개처럼)가 맡는다. */
+/** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig 가 두께 있는 두 판으로 접는다. */
 export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode }) {
   return <div className="resize-scene" id="resizeScene" hidden><div className="resize-geometry" id="resizeGeometry">
     <Unit id="ua" /><Unit id="ub" hidden />
     <Ruler />
     {marks}
-    <div className="duo" id="duo" hidden>
-      <div className="duo-base"><div className="duo-band" /><div className="duo-scr"><img className="ly" alt="" /><div className="cam" /></div></div>
-      <div className="btn" /><div className="btn" />
-      <svg className="duo-edge" aria-hidden="true">
-        {/* 세 색은 resize.css 의 그림 블록이 준다 — 크롬의 JSX style 에는 그림 토큰을 쓰지 않는다. */}
-        <defs><path id="duoSide" /><path id="duoHinge" /><linearGradient id="duoSheen" gradientUnits="userSpaceOnUse"><stop offset="0" /><stop offset=".4" /><stop offset="1" /></linearGradient></defs>
-        <use className="outl" href="#duoSide" /><use className="houtl" href="#duoHinge" /><use className="rim" href="#duoSide" /><use className="rimhi" href="#duoSide" /><use className="body" href="#duoSide" />
-        <use className="sheen" href="#duoSide" stroke="url(#duoSheen)" /><use className="hinge" href="#duoHinge" /><use className="hsheen" href="#duoHinge" stroke="url(#duoSheen)" /><use className="ring" href="#duoSide" /><use className="ring hr" href="#duoHinge" />
-      </svg>
-      <div className="duo-flap"><div className="duo-face" /><div className="duo-dark" /></div>
-    </div>
     <div className="rig" id="rig" hidden>
-      <div className="lift">
+      <div className="lift"><div className="space">
         <div className="plate" />
-        <div className="base">
-          <div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cast" /><div className="cam" /></div>
-          <div className="edge bez" /><div className="edge ring" />
+        <div className="slab base">
+          <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cast" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
+          <div className="face rear"><div className="lit" /></div>
         </div>
-        <div className="leaf">
-          <div className="clip face inner"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="shade" /><div className="sheen" /><div className="cam" /></div>
-          <div className="clip face outer"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="shade" /><div className="sheen" /><div className="cam" /></div>
-          <div className="edge bez" /><div className="edge ring" />
+        <div className="slab leaf">
+          <div className="face front"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
+          <div className="face rear"><div className="clip"><img className="ly old" alt="" /><div className="veil" /><img className="ly neu" alt="" /><div className="cam" /></div><div className="lit" /><div className="edge ring" /></div>
         </div>
+        <div className="spine" />
         <div className="crease" />
         <div className="tick r-top" /><div className="tick r-bot" />
-      </div>
+      </div></div>
     </div>
   </div></div>;
 }
@@ -71,10 +61,7 @@ export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode })
 /** 첫 장 대기 표시의 바깥 요소 — 안과 hidden · failed 는 WorkspaceLoading 이 맞춘다. */
 export const loadingHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="workspace-loading" id="workspaceLoading" role="status" hidden ref={ref}>{children}</div>;
-/** 기기별 바를 덧그리는 층 — 그림 위, 가리키기 표시 아래. 안과 hidden 은 SystemBarsOverlay 가 맞춘다. */
-export const systemBarsHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
-  <div className="sys-bars" id="sysBars" aria-hidden="true" hidden ref={ref}>{children}</div>;
-/** 인셋 영역을 덧그리는 층 — 바 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
+/** 인셋 영역을 덧그리는 층 — 그림 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
 export const insetOverlayHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="inset-overlay" id="insetOverlay" aria-hidden="true" hidden ref={ref}>{children}</div>;
 /** 인셋 표지 — 화면과 같은 상자에 서되 #stage 밖이라 잘리지 않아, 기기 몸체 바깥에 dp 배지 · 치수선을 둔다. 상자는 workspace/focus.ts 의 layout 이, 안과 hidden 은 InsetMarks 가 맞춘다. */
@@ -92,20 +79,19 @@ export const zoomHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
  * 정지 그림 · 스트림을 보이는 무대. 그림의 src 는 JSX 가 갖지 않는다 — focus.ts 가 크로스페이드 · 스트림 붙이기로 갈아 끼운다.
  * #shot 은 늘 붙어 있다 — 다시 붙이면 MJPEG 연결이 새로 열리고, WebKit 은 옛 연결을 닫지 않는다.
  */
-export function PreviewStage({ loading = loadingHost(), bars = systemBarsHost(), inset = insetOverlayHost() }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode }) {
+export function PreviewStage({ loading = loadingHost(), inset = insetOverlayHost() }: { loading?: ReactNode; inset?: ReactNode }) {
   return <div className="stage" id="stage">
     <img id="shot" alt="preview" />
     {loading}
     {/* 그림 위 표시 — 구조 테두리(#marks) · 손 아래 옅은 바탕(#box) · 고른 노드(#pickBox). workspace/point.ts 가 그린다. 카드는 그림 밖 #focusView 에 뜬다. */}
-    {bars}
     {inset}
     <div className="marks" id="marks" aria-hidden="true" /><div className="box" id="box" /><div className="box pick" id="pickBox" hidden />
   </div>;
 }
 
 /** 무대 — 장면(기기 틀)과 캔버스. 조작 중에는 workspace/resize.ts 가 캔버스(#stage)를 장면의 틀 안으로 옮긴다. */
-export function WorkspaceStage({ loading, bars, inset, marks }: { loading?: ReactNode; bars?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
-  return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} bars={bars} inset={inset} /></div>;
+export function WorkspaceStage({ loading, inset, marks }: { loading?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
+  return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} inset={inset} /></div>;
 }
 
 /** 커스텀일 때만 조작 독 가운데에 뜬다. 끄는 동안은 틀만 따라오고 놓을 때 한 번 그린다(D-99). 눈금 위치 · 값은 resize-scene.js 가 잡는다. */
@@ -140,10 +126,10 @@ export function SizePicker() {
     </section>
     <section className="pn-sec"><h4 className="pn-h" {...t.text('panel.device')} />
       <div className="pn-list">
-        <h5 className="pn-g">Android</h5>
-        {['s26', 'pixel9', 'fold8', 'ultra', 'pixelfold', 'tablet'].map(sel => pick(sel))}
-        <h5 className="pn-g">iPhone</h5>
-        {['ip17', 'ipair', 'ip17pm', 'ipduo'].map(sel => pick(sel))}
+        {DEVICE_MENU.map(({ group, ids }) => <Fragment key={group}>
+          <h5 className="pn-g">{group}</h5>
+          {ids.map(sel => pick(sel))}
+        </Fragment>)}
       </div>
     </section>
   </div>;

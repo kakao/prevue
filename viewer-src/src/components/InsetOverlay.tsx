@@ -2,24 +2,25 @@ import { useLayoutEffect, useSyncExternalStore, type CSSProperties } from 'react
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { DeviceInsets, Size } from '../state';
+import { EDGES, INSET_KINDS, sideOf, type Edge, type Kind, type Side } from '../workspace/insets';
 import { insetOverlayView, loadingView } from '../workspace/view';
 import { insetMarksHost, insetOverlayHost } from './WorkspaceShell';
 
 // 인셋 영역 보기 — 기기가 Composable에 전달한 인셋을 그림 위에 덧그린다. 뷰어만의 표시라 PNG · CLI · 데몬은 모른다(D-172와 같은 자리).
 // 띠 · SAFE AREA 면은 화면 안(#insetOverlay), 값은 기기 몸체 밖(#insetMarks)의 dp 배지 · 치수선이 적는다. 전체 폭 · 높이는 장면의 치수 눈금(#ruler)이 이미 적는다.
 // 둥근 모서리 · 카메라 구멍은 인셋 값에 없어 그리지 않는다.
-const INSET_KINDS = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
-const EDGES = ['top', 'right', 'bottom', 'left'] as const;
-type Edge = typeof EDGES[number];
 type Rect = { x: number; y: number; w: number; h: number };
-type Plan = { w: number; h: number; insets: DeviceInsets; safe: Rect };
+type Plan = { w: number; h: number; insets: DeviceInsets; widest: Record<Edge, number>; safe: Rect };
 
-/** 그릴 것 — 꺼져 있거나 기기가 아니면 null. safe 는 변마다 다섯 종류의 최댓값을 뺀 안쪽(safeDrawing)이다. */
+/**
+ * 그릴 것 — 꺼져 있거나 기기가 아니면 null. widest 는 변마다 다섯 종류의 최댓값이다.
+ * safe 는 그 값을 뺀 안쪽(safeDrawing)이고, 굵은 배지도 같은 값을 적어 둘이 어긋나지 않는다.
+ */
 function insetPlanOf(on: boolean, insets: DeviceInsets | null | undefined, size: Size | null): Plan | null {
   if (!on || !insets || size?.kind !== 'device') return null;
   const w = size.widthDp, h = size.heightDp;
-  const m = Object.fromEntries(EDGES.map(e => [e, Math.max(0, ...INSET_KINDS.map(k => insets.values[k][e]))])) as Record<Edge, number>;
-  return { w, h, insets, safe: { x: m.left, y: m.top, w: Math.max(0, w - m.left - m.right), h: Math.max(0, h - m.top - m.bottom) } };
+  const widest = Object.fromEntries(EDGES.map(e => [e, Math.max(0, ...INSET_KINDS.map(k => insets.values[k][e]))])) as Record<Edge, number>;
+  return { w, h, insets, widest, safe: { x: widest.left, y: widest.top, w: Math.max(0, w - widest.left - widest.right), h: Math.max(0, h - widest.top - widest.bottom) } };
 }
 
 function usePlan(deviceInsets: DeviceInsets | null, size: Size | null) {
@@ -61,19 +62,27 @@ export function InsetOverlay({ deviceInsets, size, host }: { deviceInsets: Devic
 const dpText = (v: number) => String(Math.round(v * 100) / 100);
 
 /**
- * 몸체 밖의 치수 하나 — 위 · 아래 변의 띠는 오른쪽에, 왼쪽 · 오른쪽 변의 띠는 아래에 선다.
- * 같은 변에 걸린 종류는 종류 순서대로 바깥으로 한 칸(lane)씩 물러나, 값이 같아도 다르게 보여도 배지가 겹치지 않는다.
+ * 몸체 밖의 치수 하나 — 변마다 값이 있는 종류를 레이블과 함께 단다. 어느 쪽에 서는지는 sideOf(workspace/insets.ts)가 정한다.
+ * 한쪽에 컷아웃 아닌 종류가 둘 이상이면 그쪽은 최댓값 하나만 적는다.
+ * bold 는 그 변의 SAFE AREA 를 정하는 값(Plan.widest)과 같은 배지다 — 같은 값이면 둘 다 굵다.
  * from · to 는 그 축에서 화면 길이에 대한 비율이다.
  */
-type Mark = { kind: string; edge: Edge; value: number; lane: number; side: 'right' | 'bottom'; from: number; to: number };
+type Mark = { kind: Kind; edge: Edge; value: number; side: Side; bold: boolean; from: number; to: number };
 
-function marksOf({ w, h, insets }: Plan): Mark[] {
-  return EDGES.flatMap(edge => INSET_KINDS.filter(k => insets.values[k][edge] > 0).map((kind, lane) => {
-    const v = insets.values[kind][edge];
-    const along = edge === 'top' || edge === 'bottom' ? h : w;
-    const [from, to] = edge === 'top' || edge === 'left' ? [0, v / along] : [1 - v / along, 1];
-    return { kind, edge, value: v, lane, side: edge === 'top' || edge === 'bottom' ? 'right' : 'bottom', from, to } as Mark;
-  }));
+function marksOf({ w, h, insets, widest }: Plan): Mark[] {
+  return EDGES.flatMap(edge => {
+    const vertical = edge === 'top' || edge === 'bottom';
+    const along = vertical ? h : w;
+    const others = INSET_KINDS.filter(k => k !== 'displayCutout')
+      .reduce((a, k) => insets.values[k][edge] > insets.values[a][edge] ? k : a);
+    const picks: [Kind, Side][] = [[others, sideOf(others, edge)], ['displayCutout', sideOf('displayCutout', edge)]];
+    return picks.flatMap(([kind, side]) => {
+      const value = Math.max(0, insets.values[kind][edge]);
+      if (!(value > 0)) return [];
+      const [from, to] = edge === 'top' || edge === 'left' ? [0, value / along] : [1 - value / along, 1];
+      return [{ kind, edge, value, side, bold: value === widest[edge], from, to }];
+    });
+  });
 }
 
 const pct = (r: number) => `${r * 100}%`;
@@ -87,11 +96,11 @@ export function InsetMarks({ deviceInsets, size, host }: { deviceInsets: DeviceI
   const { w, h, safe } = plan;
   const body = <>
     {marksOf(plan).map(m => {
-      const span: CSSProperties = m.side === 'right' ? { top: pct(m.from), height: pct(m.to - m.from) } : { left: pct(m.from), width: pct(m.to - m.from) };
-      return <div key={`${m.kind} ${m.edge}`} className="im-dim" data-kind={m.kind} data-edge={m.edge} data-side={m.side}
-        style={{ ...span, '--lane': m.lane } as CSSProperties}>
+      const span: CSSProperties = m.side === 'right' || m.side === 'left' ? { top: pct(m.from), height: pct(m.to - m.from) } : { left: pct(m.from), width: pct(m.to - m.from) };
+      return <div key={`${m.kind} ${m.edge}`} className="im-dim" data-kind={m.kind} data-edge={m.edge} data-side={m.side} data-bold={m.bold}
+        style={span}>
         <i className="im-ext im-from" /><i className="im-ext im-to" />
-        <span className="im-badge">{dpText(m.value)}</span>
+        <span className="im-badge"><em className="im-label">{phrase(`insetOverlay.kind.${m.kind}`)}</em><span className="im-val">{dpText(m.value)}</span></span>
       </div>;
     })}
     <div className="im-safe" data-kind="safeDrawing"

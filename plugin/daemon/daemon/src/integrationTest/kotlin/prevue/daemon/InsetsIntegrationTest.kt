@@ -24,17 +24,20 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.condition.EnabledIf
 import prevue.application.domain.model.AppInsets
 import prevue.application.domain.model.CardOverride
+import prevue.application.domain.model.ChromeMark
 import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.InsetEdges
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ViewNode
+import prevue.application.domain.rule.DeviceChrome
 import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.render.ApkWithAssets
+import prevue.infrastructure.render.DeviceChromePainter
 import prevue.infrastructure.render.LayoutlibSession
 import prevue.infrastructure.render.LayoutlibInsets
 import prevue.infrastructure.render.RenderEngine
@@ -74,6 +77,27 @@ internal abstract class InsetsRenderChecks {
         PearlFixture.stopGradle(fixtureDir)
     }
 
+    @Test fun `기기 없는 showSystemUi 카드는 첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기가 상태바 높이이고 inset 패딩과 같다`() = runBlocking {
+        val common = preview.copy(params = mapOf("showSystemUi" to "true"))
+        for (interactive in listOf(false, true)) {
+            val handle = engine.open(common, interactive, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            val raw = reads(handle)
+            val status = raw.getValue("status").split(",").map(String::toInt)
+            val nav = raw.getValue("nav").split(",").map(String::toInt)
+            val bars = decorations(session())
+            val statusBar = checkNotNull(bars.firstOrNull { it.startsWith("com.android.layoutlib.bridge.bars.StatusBar:") }) { bars.toString() }
+                .substringAfter(':').split(",").map(String::toInt)
+            assertEquals(statusBar[3] - statusBar[1], status[1], bars.toString())
+            assertTrue(nav[3] > 0, raw.toString())
+            assertEquals("0,${status[1]},0,${nav[3]}", raw.getValue("system"))
+            assertIgnoringVisibility(raw)
+            bounds(handle, status[1], nav[3])
+            assertTrue(bars.any { it.endsWith(",${View.VISIBLE}") })
+            handle.close()
+        }
+    }
+
     @Test fun `첫 정지 그림과 첫 라이브 그림에서 컴포지션 읽기와 중첩 패딩이 전달값을 사용한다`() = runBlocking {
         for (interactive in listOf(false, true)) {
             val sized = CardOverride(preview.previewId, ScreenSize.Device(DeviceModel.GALAXY_S26), SystemUi.ON)
@@ -103,8 +127,8 @@ internal abstract class InsetsRenderChecks {
             assertEquals(bars, decorations(session()))
             assertEquals(0, off.semantics().first { it.semantics.contentDescription?.startsWith("status=") == true }.top)
             val offImage = ImageIO.read(engine.written(off.opened).image!!)
-            assertEquals(0xffffff, onImage.getRGB(1000, 1) and 0xffffff)
-            assertEquals(onImage.getRGB(1000, 1), offImage.getRGB(1000, 1))
+            assertEquals(0xffffff, onImage.getRGB(540, 1) and 0xffffff)
+            assertEquals(onImage.getRGB(540, 1), offImage.getRGB(540, 1))
             assertNotEquals(onImage.getRGB(500, paddedTop + 1), offImage.getRGB(500, paddedTop + 1))
             for (y in bare[1] until bare[3]) for (x in bare[0] until bare[2]) assertEquals(onImage.getRGB(x, y), offImage.getRGB(x, y))
             off.close()
@@ -149,6 +173,47 @@ internal abstract class InsetsRenderChecks {
         }
     }
 
+    @Test fun `기기 PNG와 라이브 프레임에 그 기기의 바와 카메라를 굽고 크기는 화면 그대로다`() = runBlocking {
+        val postures = listOf(
+            ScreenSize.Device(DeviceModel.IPHONE_17), ScreenSize.Device(DeviceModel.IPHONE_DUO), ScreenSize.Device(DeviceModel.PIXEL_9),
+            ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true), ScreenSize.Device(DeviceModel.GALAXY_S26, landscape = true),
+        )
+        for (device in postures) {
+            val chrome = DeviceChrome.of(device)
+            val handle = engine.open(CardOverride(preview.previewId, device).applyTo(preview), interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, "${device.key}: ${handle.opened.message}")
+            val png = ImageIO.read(engine.written(handle.opened).image!!)
+            val frame = handle.tick(forceImage = true).image!!
+            assertEquals(listOf(device.widthPx, device.heightPx), listOf(png.width, png.height), "${device.key} PNG 크기는 기기 화면")
+            val k = png.width / device.widthDp
+            fun px(x: Double, y: Double) = png.getRGB((x * k).toInt(), (y * k).toInt())
+            fun live(x: Double, y: Double) = (x * k).toInt().let { fx -> frame.pixels[(y * k).toInt() * frame.width + fx] }
+            chrome.cameras.map { it.box }.forEach { cam ->
+                assertEquals(0xff050505.toInt(), px(cam.x + cam.w / 2, cam.y + cam.h / 2), "${device.key} PNG 카메라")
+                assertEquals(0x050505, live(cam.x + cam.w / 2, cam.y + cam.h / 2) and 0xffffff, "${device.key} 라이브 카메라")
+            }
+            val dark = 0xff000000.toInt()
+            chrome.marks.filterIsInstance<ChromeMark.Handle>().forEach { h ->
+                assertEquals(dark, px(h.box.x + h.box.w / 2, h.box.y + h.box.h / 2), "${device.key} 흰 바탕 위 핸들은 어두운 글자색")
+            }
+            chrome.marks.filterIsInstance<ChromeMark.DuoIndicator>().forEach { d ->
+                assertEquals(dark, px(d.x, d.y + 5), "${device.key} 흰 바탕 위 Duo 상태 표시는 어두운 글자색")
+            }
+            if (chrome.radius[0] > 0) assertEquals(0, png.getRGB(0, 0) ushr 24, "${device.key} 둥근 화면 모서리 밖은 비어 있다")
+            handle.close()
+        }
+    }
+
+    @Test fun `기기 없는 크기의 PNG에는 아무것도 굽지 않는다`() = runBlocking {
+        for (spec in listOf(ScreenSize.Dp(360, 780).applyTo(preview), preview.copy(params = mapOf("showSystemUi" to "true")))) {
+            assertNull(DeviceChromePainter.layoutOf(spec), spec.params.toString())
+            val handle = engine.open(spec, interactive = false, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            assertEquals(0xff, ImageIO.read(engine.written(handle.opened).image!!).getRGB(0, 0) ushr 24, "모서리를 비우지 않는다")
+            handle.close()
+        }
+    }
+
     @Test fun `기기 없는 크기는 렌더러 바를 그대로 그린다`() = runBlocking {
         val handle = engine.open(ScreenSize.Dp(360, 780).applyTo(preview), interactive = true, ownLoader = false)
         assertTrue(handle.opened.ok, handle.opened.message?.text)
@@ -173,6 +238,44 @@ internal abstract class InsetsRenderChecks {
         off.close()
     }
 
+    @Test fun `렌더러 단계에 없는 dpi도 요청한 밀도로 그린다`() = runBlocking {
+        for (dpi in listOf(450, 390)) {
+            val spec = preview.copy(params = preview.params + ("device" to "spec:width=1080px,height=2340px,dpi=$dpi"))
+            val handle = engine.open(spec, interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            assertEquals(dpi / 160f, session().viewRoot()!!.context.resources.displayMetrics.density, "dpi=$dpi")
+            handle.close()
+        }
+    }
+
+    @Test fun `바를 숨긴 단계 밖 dpi 기기도 스펙의 dp 크기로 그린다`() = runBlocking {
+        val hidden = preview.copy(params = emptyMap())
+        for (model in listOf(DeviceModel.PIXEL_9_PRO_FOLD)) {
+            val device = ScreenSize.Device(model)
+            val handle = engine.open(device.applyTo(hidden), interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            val root = session().viewRoot()!!
+            val density = root.context.resources.displayMetrics.density
+            assertEquals(device.dpi / 160f, density, model.id)
+            assertEquals(device.widthDp, root.width / density.toDouble(), 1.0, "${model.id} 폭 dp")
+            assertEquals(device.heightDp, root.height / density.toDouble(), 1.0, "${model.id} 높이 dp")
+            handle.close()
+        }
+    }
+
+    @Test fun `직접 쓴 widthDp와 단계 밖 dpi도 요청한 dp 크기로 그린다`() = runBlocking {
+        for (dpi in listOf(450, 390)) {
+            val spec = preview.copy(params = mapOf("device" to "spec:width=1080px,height=2340px,dpi=$dpi", "widthDp" to "360", "heightDp" to "780"))
+            val handle = engine.open(spec, interactive = true, ownLoader = false)
+            assertTrue(handle.opened.ok, handle.opened.message?.text)
+            val root = session().viewRoot()!!
+            val density = root.context.resources.displayMetrics.density
+            assertEquals(dpi / 160f, density, "dpi=$dpi")
+            assertEquals("360x780", "${(root.width / density).roundToInt()}x${(root.height / density).roundToInt()}", "dpi=$dpi")
+            handle.close()
+        }
+    }
+
     @Test fun `마흔두 자세는 그 자세의 인셋을 전달하고 렌더러 바를 숨긴다`() = runBlocking {
         for (device in DeviceModel.entries.flatMap { it.postures }) {
             var shownBars: List<String>? = null
@@ -182,6 +285,7 @@ internal abstract class InsetsRenderChecks {
                 assertTrue(handle.opened.ok, "${device.key} $choice: ${handle.opened.message}")
                 val values = reads(handle)
                 val density = session().viewRoot()!!.context.resources.displayMetrics.density
+                assertEquals(device.dpi / 160f, density, "${device.key} 렌더 밀도는 스펙 dpi 그대로")
                 fun pixels(edges: InsetEdges) = listOf(edges.left, edges.top, edges.right, edges.bottom)
                     .joinToString(",") { (it * density).roundToInt().toString() }
                 val expected = spec.appInsets!!
@@ -201,6 +305,19 @@ internal abstract class InsetsRenderChecks {
                 handle.close()
             }
         }
+    }
+
+    @Test fun `공개 API로 얻은 세션 루트는 창에 붙은 맨 위 뷰다`() = runBlocking {
+        val handle = engine.open(preview, interactive = true, ownLoader = false)
+        assertTrue(handle.opened.ok, handle.opened.message?.text)
+        val session = session()
+        session.onSession {
+            val root = session.viewRoot()!!
+            assertTrue(root.viewRootImpl != null)
+            assertFalse(root.parent is View)
+            assertTrue(layout(root) != null)
+        }
+        handle.close()
     }
 
     @Test fun `인셋을 적용할 레이아웃이 없으면 실패하고 앱 렌더 실패는 성공 그림을 내지 않는다`() = runBlocking {
@@ -241,7 +358,7 @@ internal abstract class InsetsRenderChecks {
             }
             val (on, off) = grids
             val area = device.insetProfile.safeArea!!
-            val density = device.model.dpi / 160.0
+            val density = device.dpi / 160.0
             val titleGap = (24 * density).roundToInt()
             assertEquals((area.top * density).roundToInt() + titleGap, titles[0].top, device.key)
             assertEquals(titleGap, titles[1].top, device.key)
@@ -270,7 +387,7 @@ internal abstract class InsetsRenderChecks {
                 handle.close()
             }
             val area = device.insetProfile.safeArea!!
-            val density = device.model.dpi / 160.0
+            val density = device.dpi / 160.0
             val (on, off) = buttons
             assertEquals((area.right * density).roundToInt(), off.right - on.right, device.key)
             assertEquals((area.bottom * density).roundToInt(), off.bottom - on.bottom, device.key)

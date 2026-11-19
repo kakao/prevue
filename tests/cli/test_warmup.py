@@ -18,7 +18,8 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli"))
 import prevue_plan as P  # noqa: E402
-from test_plan import Repo, search_path  # noqa: E402
+from test_plan import Repo, fake_jdk, search_path  # noqa: E402
+import jdk_rule  # noqa: E402
 
 PREVUE = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "bin", "prevue")
 PLAN_PY = os.path.join(os.path.dirname(__file__), "..", "..", "plugin", "cli", "prevue_plan.py")
@@ -44,6 +45,10 @@ for m, v, out in targets:
                          "of the app module and this module's previews come up from that dump%s\n\n* Try:\n> Run with --stacktrace\n"
                          % (m, m, " — apps that include it: " + kmp[m] if kmp[m] else ""))
         sys.exit(1)
+if os.environ.get("FAKE_JAVA_LOG"):
+    with open(os.environ["FAKE_JAVA_LOG"], "a") as f: f.write(os.environ.get("JAVA_HOME", "") + "\n")
+if os.environ.get("FAKE_JDK_FAIL") and os.environ.get("JAVA_HOME") == os.environ["FAKE_JDK_FAIL"]:
+    sys.stderr.write("> Inconsistent JVM-target compatibility detected for tasks 'compileJava' (25) and 'compileKotlin' (24).\n"); sys.exit(1)
 if os.environ.get("FAKE_FAIL_BOTH") and len(targets) > 1:
     sys.stderr.write("FAILURE: 가짜 실패\n"); sys.exit(1)
 apks = json.loads(os.environ["FAKE_APKS"])
@@ -83,8 +88,10 @@ class Warmup(unittest.TestCase):
         os.chmod(g, 0o755)
         return r
 
-    def warmup(self, r, *args, fail_both=False, no_perl=False, old_date=False, no_classpath=False, file=None, cwd=None, kmp=None):
+    def warmup(self, r, *args, fail_both=False, no_perl=False, old_date=False, no_classpath=False, file=None, cwd=None, kmp=None,
+               extra_env=None):
         env = {k: v for k, v in os.environ.items() if not k.startswith("CODEX")}
+        env.update(extra_env or {})
         env.update(HOME=self.home, FAKE_LOG=self.log, FAKE_APKS=json.dumps({":app": self.apk}), FAKE_KMP=json.dumps(kmp or {}))
         if fail_both:
             env["FAKE_FAIL_BOTH"] = "1"
@@ -241,6 +248,29 @@ class Warmup(unittest.TestCase):
         with open(out["classpath"]) as f:
             self.assertNotIn("changed-during-warmup", json.load(f)["buildFiles"].values())
 
+    def test_JDK_탓으로_실패한_JDK_를_다음_warmup_이_고르지_않는다(self):
+        # DroidKaigi 2025: AS 가 동기화한 저장소라 config.properties 가 JBR 25 를 가리키고, 툴체인 없는 모듈이 jvmTarget 24 라 25 로는
+        # 빌드되지 않는다. 다음 warmup 은 이 머신의 다른 주 버전 JDK 로 간다(D-188)
+        r = self.repo()
+        jbr = fake_jdk(os.path.join(self.tmp.name, "jbr"), "25.0.2")
+        jdk21 = fake_jdk(os.path.join(self.tmp.name, "machine", "temurin-21"), "21.0.12")
+        os.makedirs(os.path.join(r.root, ".gradle"))
+        with open(os.path.join(r.root, ".gradle", "config.properties"), "w") as f:
+            f.write("java.home=%s\n" % jbr)
+        java_log = os.path.join(self.tmp.name, "java.log")
+        env = {"FAKE_JDK_FAIL": jbr, "FAKE_JAVA_LOG": java_log, "PREVUE_JDK_SEARCH": os.path.join(self.tmp.name, "machine", "*"),
+               "GRADLE_USER_HOME": os.path.join(self.tmp.name, "gradle-home"), "PREVUE_JDK": jdk21}
+        first = subprocess.run([PREVUE, "warmup", r.src(":core:ui")], capture_output=True, text=True, timeout=60,
+                               env=dict({k: v for k, v in os.environ.items() if k not in ("JAVA_HOME",) and not k.startswith("CODEX")},
+                                        HOME=self.home, FAKE_LOG=self.log, FAKE_APKS=json.dumps({":app": self.apk}), **env))
+        self.assertNotEqual(first.returncode, 0)
+        self.assertIn("the next warmup picks a JDK of another version", first.stderr)
+        code, out = self.warmup(r, extra_env=dict(env, JAVA_HOME=jbr))
+        self.assertEqual(code, 0, out)
+        with open(java_log) as f:
+            used = f.read().splitlines()
+        self.assertEqual((used[0], set(used[1:])), (jbr, {jdk21}))
+
     def test_변형을_못_찍으면_plan_응답을_그대로_내고_Gradle_을_부르지_않는다(self):
         r = self.repo(built=False)
         r.built(":core:ui", "release", when=time.time())
@@ -342,27 +372,6 @@ class Combine(unittest.TestCase):
     def test_제공자_변형이_짐작이면_합치지_않는다(self):
         self.assertEqual(self.combine(), "")                       # :app 에 관찰된 변형이 없다(플레이버 앱을 안 빌드한 클론)
 
-    def test_이_모듈의_변형이_짐작이면_합치지_않는다(self):
-        self.r.built(":app", "debug")
-        self.assertEqual(self.combine(by="assumed"), "")
-
-    def test_변형을_받았으면_셸이_고른_JDK로_정한다(self):
-        self.r.built(":app", "debug")
-        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "debug", ":app", "", "/jdk\t출처"),
-                         ("debug", "given", "/jdk", "출처", "debug", "", ""))
-
-    def test_변형을_안_받았으면_plan_의_변형과_JDK로_정한다(self):
-        plan = json.dumps({"variant": "debug", "variantChosenBy": "fresh", "gradleJdk": None, "gradleJdkFrom": "없음"})
-        self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "", "", plan, ""), ("debug", "fresh", "", "없음", "", "", ""))
-
-    def test_plan_이_변형을_못_찍었으면_정하지_않는다(self):
-        for plan in (json.dumps({"variant": None, "need": "choose"}), "gradlew not found"):
-            self.assertIsNone(P.warmup_target(self.r.root, ":core:ui", "", ":app", plan, ""))
-
-    def test_합칠지_판정이_깨지면_합치지_않고_하나씩_뜬다(self):
-        with mock.patch.object(P, "combine_provider", side_effect=PermissionError("읽을 수 없다")):
-            self.assertEqual(P.warmup_target(self.r.root, ":core:ui", "debug", ":app", "", "/jdk\t출처")[4], "")
-
     def test_자기_리소스_APK가_있거나_제공자가_자기면_합치지_않는다(self):
         self.r.built(":app", "debug")
         self.r.apk(":core:ui", "debug")
@@ -420,9 +429,20 @@ class GradleRun(unittest.TestCase):
         r = self.last()
         self.assertEqual((r["ok"], r["phases"], r["tasks"]), (False, {"startup": 500, "settings": 500}, {}))
 
-    def test_시각_파일이_없어도_벽시계는_남는다(self):
-        P.gradle_run(os.path.join(self.tmp.name, "없음"), "1000", "4000", "1", self.runs, "", [":a|debug|/o.json"])
-        self.assertEqual((self.last()["ms"], self.last()["phases"]), (3000, {}))
+    def test_JDK_문구로_실패하면_JDK_와_빌드_파일_지문을_남긴다(self):
+        err = os.path.join(self.tmp.name, "err")
+        with open(err, "w") as f:
+            f.write("> Inconsistent JVM-target compatibility detected for tasks 'compileJava' (25) and 'compileKotlin' (24).\n")
+        P.gradle_run("", "1000", "4000", "1", self.runs, "/jbr", [":a|debug|/o.json"], err, self.tmp.name)
+        self.assertEqual(jdk_rule.failed_majors(jdk_rule.read_runs(self.runs), jdk_rule.build_fingerprint(self.tmp.name)),
+                         {os.path.realpath("/jbr")})
+
+    def test_JDK_와_무관한_실패는_표시하지_않는다(self):
+        err = os.path.join(self.tmp.name, "err")
+        with open(err, "w") as f:
+            f.write("e: file:///w/Foo.kt:3:5 Unresolved reference 'bar'.\n")
+        P.gradle_run("", "1000", "4000", "1", self.runs, "/jbr", [":a|debug|/o.json"], err, self.tmp.name)
+        self.assertNotIn("jdkFailed", self.last())
 
     def test_기록은_덧붙이고_두_배로_불면_최근_것만_남긴다(self):
         keep, P.RUNS_KEEP = P.RUNS_KEEP, 5

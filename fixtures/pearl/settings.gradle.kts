@@ -22,6 +22,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "Pearl"
 include(":app")
+include(":legacy")
 include(":core:model")
 include(":core:designsystem")
 include(":core:ui")

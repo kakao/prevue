@@ -1,80 +1,117 @@
-# 릴리즈 기록 — 릴리즈 PR(develop → main)을 머지한 뒤 main 에서 손으로 돌려 태그와 GitHub Release 를 남긴다.
-# 버전의 원천은 plugin/VERSION 하나다 — develop 에 직접 미는 버전 커밋(/ship)에서 VERSION 을 올리고 tools/sync-version.sh 로 옮긴다.
-# main 은 배포본이다 — 마켓플레이스 둘의 플러그인 소스가 main 브랜치를 가리켜 머지가 곧 배포다. 그래서 검증은 머지 전에
-# 릴리즈 PR 의 빌드 검증(build.yml)과 /ship(버전 · 태그 · 동기화)이 끝냈다. 이것은 기록이라 늦거나 실패해도 설치하는 사람에게 영향이 없다.
-# PR 이 돌리지 않는 파일로 따로 둔다 — 같은 파일이면 PR 체크에 "건너뜀"으로 늘 보인다.
-name: 릴리즈
+# Release record — runs when the release PR (develop → main) is merged, by hand or by /ship; leaves the tag and the
+# GitHub Release.
+# main is what users install: both marketplaces read the plugin from the main branch, so the merge itself is the shipping
+# moment and this is only a record — a late or failed run does not affect anyone installing.
+# Verification finished before the merge: the main ruleset requires Verify's verdict (ci-success) and the skill evaluation
+# certificate (the "스킬 평가" status, posted by /ship) on the release PR, a merge commit, and a PR head that contains main —
+# so the merged tree is exactly the verified develop tree. This run checks that once more before it tags.
+# The version's single source is plugin/VERSION; tools/sync-version.sh carries it over in the version commit (/ship).
+#
+#   (merge into main)                                            tags and releases
+#   gh workflow run release.yml --ref main                       run again — does nothing when the tag exists
+#   gh workflow run release.yml --ref <branch> -f dry_run=true     print what would happen; never tags or releases
+name: Release
 
 on:
-  # plugin/VERSION 의 태그가 이미 있으면 아무것도 하지 않는다.
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print what would happen, without tagging or releasing.
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   publish:
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: write     # 태그를 민다
+      contents: write     # pushes the tag, creates the Release
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
 
     steps:
-      - name: 저장소를 받는다
+      - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # 같은 태그가 이미 있는지 봐야 한다
+          fetch-depth: 0    # needs the tags and both parents of the merge commit
 
-      - name: 태그할 버전을 읽는다
+      - name: Decide
+        id: decide
         run: |
           set -eu
-          NEXT="$(tr -d ' \t\r\n' < plugin/VERSION)"
-          echo "NEXT=$NEXT" >> "$GITHUB_ENV"
-          if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
-            echo "v$NEXT 은 이미 태그됐다 — 할 일이 없다"; echo "RELEASE=0" >> "$GITHUB_ENV"; exit 0
-          fi
-          # main 은 검증을 통과한 릴리즈 PR 로만 움직인다. 그래도 동기화가 빠진 트리에 태그를 달지 않는다.
-          sh tools/sync-version.sh --check
-          echo "RELEASE=1" >> "$GITHUB_ENV"
+          DRY=0
+          if [ "${DRY_RUN:-false}" = true ] || [ "$GITHUB_REF" != refs/heads/main ]; then DRY=1; fi
+          # In a dry run every stop is reported and the run goes on, so one run shows all of them.
+          stop() { if [ "$DRY" = 1 ]; then echo "::warning::would stop — $1"; else echo "::error::$1"; exit 1; fi; }
 
-      - name: 태그를 민다
-        if: ${{ env.RELEASE == '1' }}
+          NEXT="$(tr -d ' \t\r\n' < plugin/VERSION)"
+          if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
+            echo "v$NEXT is already tagged — nothing to do"
+            # A release merge carries a new version. A tag elsewhere means main moved without one, and nothing records it.
+            TAGGED="$(git rev-list -n 1 "v$NEXT")"
+            if [ "$TAGGED" != "$GITHUB_SHA" ] && [ "$TAGGED" != "$(git rev-parse -q --verify HEAD^2 || true)" ]; then
+              echo "::warning::main moved to $GITHUB_SHA but plugin/VERSION is still $NEXT (tagged at $TAGGED) — this merge has no release record"
+            fi
+            { echo "next=$NEXT"; echo "publish=false"; } >> "$GITHUB_OUTPUT"
+            echo "## v$NEXT — already tagged" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          sh tools/sync-version.sh --check || stop "versions are out of sync — the version commit missed tools/sync-version.sh"
+          # A release merge has develop's head as its second parent and the same tree — anything else did not come
+          # through a verified release PR, so it gets no tag.
+          if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+            stop "$GITHUB_SHA is not a merge commit — main moved without a release PR"
+          elif [ "$(git rev-parse 'HEAD^{tree}')" != "$(git rev-parse 'HEAD^2^{tree}')" ]; then
+            stop "merge commit $GITHUB_SHA differs from its PR head — the merged tree was not the verified one"
+          fi
+
+          PUBLISH=true
+          if [ "$DRY" = 1 ]; then PUBLISH=false; fi
+          { echo "next=$NEXT"; echo "publish=$PUBLISH"; } >> "$GITHUB_OUTPUT"
+          {
+            echo "## v$NEXT"; echo
+            if [ "$DRY" = 1 ]; then echo "Dry run ($GITHUB_REF) — would tag $GITHUB_SHA as v$NEXT and release it."
+            else echo "Tag $GITHUB_SHA as v$NEXT and release it."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push the tag
+        if: ${{ steps.decide.outputs.publish == 'true' }}
+        env:
+          NEXT: ${{ steps.decide.outputs.next }}
         run: |
           set -eu
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$NEXT" -m "v$NEXT"
+          git tag -a "v$NEXT" -m "v$NEXT" "$GITHUB_SHA"
           git push origin "refs/tags/v$NEXT"
 
-      # Release 를 만들면 저장소를 Watch → Releases 로 둔 사람에게 메일이 간다. GitHub 은 기본으로 실패만 알린다.
-      # 태그는 이미 나갔으므로 여기서 실패해도 되돌리지 않는다 — 실패 메일이 이 단계를 가리킨다.
-      - name: GitHub Release 를 만든다
-        if: ${{ env.RELEASE == '1' }}
+      # Creating a Release mails everyone who watches the repository for Releases. GitHub only reports failures by default.
+      # The tag is already out, so a failure here is not rolled back — the failure mail points at this step.
+      - name: Create the GitHub Release
+        if: ${{ steps.decide.outputs.publish == 'true' }}
         env:
+          NEXT: ${{ steps.decide.outputs.next }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
-          # 본문을 awk 로 JSON 문자열로 감싼다 — sync-version.sh 와 같은 POSIX 도구만 쓴다.
+          # Wrap the body as a JSON string with awk — the same POSIX tools sync-version.sh uses.
           BODY="$(awk -v v="## [$NEXT]" 'index($0,v)==1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md \
             | awk 'BEGIN { ORS = "" } { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); gsub(/\t/, "\\t"); gsub(/\r/, ""); if (NR > 1) print "\\n"; print }')"
           printf '{"tag_name":"v%s","name":"v%s","body":"%s"}' "$NEXT" "$NEXT" "$BODY" > release.json
           CODE="$(curl -sS -o release.out -w '%{http_code}' -X POST \
             -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
             --data @release.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases")"
-          [ "$CODE" = 201 ] || { echo "::error::v$NEXT 태그는 나갔고 Release 만 못 만들었다($CODE)"; cat release.out; exit 1; }
-          echo "Release v$NEXT 를 만들었다"
-
-      - name: 무엇을 했는지 적는다
-        if: ${{ always() }}
-        run: |
-          set -eu
+          [ "$CODE" = 201 ] || { echo "::error::tag v$NEXT is out but the Release could not be created ($CODE)"; cat release.out; exit 1; }
+          echo "Created Release v$NEXT"
           {
-            if [ "${RELEASE:-}" = 1 ]; then
-              echo "## v$NEXT"; echo
-              awk -v v="## [$NEXT]" 'index($0,v)==1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md
-            else
-              echo "## v${NEXT:-?} — 태그하지 않았다"
-            fi
+            echo; awk -v v="## [$NEXT]" 'index($0,v)==1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md
           } >> "$GITHUB_STEP_SUMMARY"

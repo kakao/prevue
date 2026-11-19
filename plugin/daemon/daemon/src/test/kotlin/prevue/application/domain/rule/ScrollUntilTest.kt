@@ -2,9 +2,7 @@ package prevue.application.domain.rule
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.LazyItem
 import prevue.application.domain.model.LazyList
@@ -42,20 +40,6 @@ class ScrollUntilTest {
         assertEquals(ScrollUntil.Target.Text("87번"), ScrollUntil.parse("87번"))
         assertEquals(ScrollUntil.Target.Text("시간: 12"), ScrollUntil.parse("시간: 12"))
         assertNull(ScrollUntil.parse(" "))
-    }
-
-    @Test fun `글자는 시맨틱 text 나 contentDescription 에 들어 있으면 맞다`() {
-        assertTrue(ScrollUntil.says(Semantics(text = "87번 피카츄"), "87번"))
-        assertTrue(ScrollUntil.says(Semantics(contentDescription = "87번"), "87번"))
-        assertFalse(ScrollUntil.says(Semantics(text = "86번"), "87번"))
-        assertFalse(ScrollUntil.says(null, "87번"))
-    }
-
-    @Test fun `다 보임은 1, 뷰포트보다 큰 대상은 보일 수 있는 만큼이다`() {
-        assertTrue(ScrollUntil.whole(1.0, 200, 1000))
-        assertFalse(ScrollUntil.whole(0.9, 200, 1000))
-        assertTrue(ScrollUntil.whole(0.5, 2000, 1000))
-        assertFalse(ScrollUntil.whole(0.4, 2000, 1000))
     }
 
     @Test fun `게으른 목록의 글자 대상은 들어오면 가깝고 다 보이면 멈춘다`() = runTest {

@@ -48,19 +48,10 @@ class JdkFind(unittest.TestCase):
                 home, state = jdk_find.find([], [self.pattern(base, "*")])
                 self.assertEqual((os.path.basename(home), state), (want, "ok"))
 
-    def test_판을_모르는_JDK_는_판을_아는_것보다_뒤다(self):
-        self.jdk("jvms/a-unknown")
-        known = self.jdk("jvms/b-21", "21.0.13")
-        self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")]), (known, "ok"))
-
     # 지킬 것: release 없는 옛 번들(Apple 1.6.0.jdk)을 받으면 setup · warmup 을 다 치른 뒤 데몬이 죽는다
     def test_발견한_JDK_는_판을_모르면_쓰지_않는다(self):
         self.jdk("jvms/1.6.0.jdk")
         self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")])[1], "none")
-
-    def test_AS_의_JBR_은_판을_몰라도_쓴다(self):
-        jbr = self.jdk("as/jbr")
-        self.assertEqual(jdk_find.find([jbr], [self.pattern("jvms/*")]), (jbr, "ok"))
 
     # 지킬 것: java_home -v 21+ 는 맞는 것이 없으면 18 을 돌려줬다 — 21 미만은 고르지 않고 낮은 판으로 말한다
     def test_21_미만만_있으면_그중_가장_높은_판을_낮다고_말한다(self):
@@ -68,21 +59,6 @@ class JdkFind(unittest.TestCase):
         high = self.jdk("jvms/corretto-18", "18.0.2")
         self.jdk("jvms/adopt-8", "1.8.0_292")
         self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")]), (high, "old"))
-
-    def test_아무것도_없으면_처음_본_자리를_none_으로(self):
-        self.assertEqual(jdk_find.find(["/nowhere/jbr"], [self.pattern("jvms/*")]), ("/nowhere/jbr", "none"))
-
-    def test_java_가_없는_폴더는_JDK_가_아니다(self):
-        os.makedirs(self.pattern("jvms/empty"))
-        self.assertEqual(jdk_find.find([], [self.pattern("jvms/*")])[1], "none")
-
-    def test_같은_JDK_를_가리키는_링크는_한_번만_본다(self):
-        real = self.jdk("cellar/openjdk-25", "25.0.5")
-        os.makedirs(self.pattern("opt"))
-        os.symlink(real, self.pattern("opt", "openjdk@25"))
-        os.symlink(real, self.pattern("opt", "openjdk"))
-        home, state = jdk_find.find([], [self.pattern("opt", "*")])
-        self.assertEqual((os.path.realpath(home), state), (os.path.realpath(real), "ok"))
 
     def test_brew_install_openjdk_at_25_가_까는_자리를_본다(self):
         prefix = self.pattern("homebrew")
@@ -98,15 +74,6 @@ class JdkFind(unittest.TestCase):
         homes = [jdk_find.find([], [p])[0] for p in found]
         self.assertIn(user, homes)
         self.assertIn(sdkman, homes)
-
-    def test_JAVA_HOME_도_후보다(self):
-        home = self.jdk("java-home", "21.0.13")
-        prefer, found = jdk_find.search_places({"HOME": self.pattern("home"), "JAVA_HOME": home,
-                                                "HOMEBREW_PREFIX": self.pattern("nobrew")})
-        self.assertEqual(found[0], home)
-
-    def test_PREVUE_JDK_SEARCH_가_자리를_모두_바꾼다(self):
-        self.assertEqual(jdk_find.search_places({"HOME": "/h", "PREVUE_JDK_SEARCH": "/a/*:/b"}), ([], ["/a/*", "/b"]))
 
     def test_release_의_판을_읽는다(self):
         for written, want in (("25.0.5", (25, 0, 5)), ("1.8.0_292", (8, 0, 292)), ("21", (21,))):

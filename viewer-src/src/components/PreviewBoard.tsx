@@ -1,6 +1,6 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { boardMarks, clearTrees, onRelayout, setCursor, subscribeBoard, syncBoard, type BoardMarks } from '../../legacy/js/board.js';
-import { swapImage } from '../../legacy/js/motion.js';
+import { boardMarks, clearTrees, onRelayout, setCursor, subscribeBoard, syncBoard, type BoardMarks } from '../runtime/board';
+import { swapImage } from '../runtime/motion';
 import { useHost } from '../host';
 import { useMessages, type Messages } from '../messages';
 import type { Board, Card } from '../state';

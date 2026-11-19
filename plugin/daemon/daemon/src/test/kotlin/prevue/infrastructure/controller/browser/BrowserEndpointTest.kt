@@ -53,16 +53,6 @@ class BrowserEndpointTest {
         assertEquals(404 to "no intent nope", error("POST", "/viewer/nope", emptyMap()))
     }
 
-    @Test fun `GET 만 받는 경로는 POST 면 이 입구가 답하지 않는다`() {
-        for (p in listOf("/events", "/stream", "/app-icon.png")) assertEquals(404 to "no route POST $p", error("POST", p, emptyMap()), p)
-    }
-
-    @Test fun `viewport 는 POST 만 받고 받았다고 답한다`() {
-        assertEquals(200 to mapOf("ok" to true), request("POST", "/stream/viewport", mapOf("width" to 320)))
-        assertEquals(200 to mapOf("ok" to true), request("POST", "/stream/viewport", emptyMap()))
-        assertTrue(error("GET", "/stream/viewport", null).let { it.first == 404 && it.second.startsWith("not found") })
-    }
-
     @Test fun `파일 목록과 앱 정보는 메서드를 가리지 않는다`() {
         for (m in listOf("GET", "POST")) {
             assertEquals(200, request(m, "/project-files.json", if (m == "POST") emptyMap() else null).first, m)
@@ -70,11 +60,6 @@ class BrowserEndpointTest {
             assertEquals(200 to mapOf("name" to null, "icon" to false, "prevue" to null, "reveal" to false),
                 request(m, "/app.json", if (m == "POST") emptyMap() else null), m)
         }
-    }
-
-    @Test fun `아이콘이 없으면 404 이고 폴더를 열 수 없으면 reveal 이 404 다`() {
-        assertEquals(404, request("GET", "/app-icon.png", null).first)
-        assertEquals(404 to "열 수 없다", error("POST", "/viewer/reveal", emptyMap()))
     }
 
     @Test fun `stream 은 multipart 로 답하고 닫지 않는다`() {

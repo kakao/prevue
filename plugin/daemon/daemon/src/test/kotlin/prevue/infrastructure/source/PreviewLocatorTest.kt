@@ -152,6 +152,70 @@ class PreviewLocatorTest {
         }
     }
 
+    @Test fun `중첩 클래스 제공자는 binary name 으로 푼다`() {
+        val imports = mapOf("Outer" to "demo.data.Outer", "Deep" to "demo.data.Outer.Deep", "Other" to "demo.data.Other")
+        fun name(p: String) = PreviewLocator.methodParams("@PreviewParameter($p::class) x: X", imports, "demo.ui").single()["provider"]
+        assertEquals("demo.ui.Local\$Inner", name("Local.Inner"))
+        assertEquals("demo.data.Outer\$Inner", name("Outer.Inner"))
+        assertEquals("demo.data.Outer\$Deep", name("Deep"))
+        assertEquals("demo.data.Outer\$Mid\$Inner", name("demo.data.Outer.Mid.Inner"))
+        assertEquals("demo.data.Other", name("Other"))
+        assertEquals("demo.ui.Plain", name("Plain"))
+        assertEquals("demo.ui.lower", name("lower"))
+        assertEquals("demo.data.Other", name("Other"))
+        fun at(pkg: String, p: String, imp: Map<String, String> = emptyMap()) =
+            PreviewLocator.methodParams("@PreviewParameter($p::class) x: X", imp, pkg).single()["provider"]
+        assertEquals("com.Foo.ui.Plain", at("com.Foo.ui", "Plain"))
+        assertEquals("Plain\$Inner", at("", "Plain.Inner"))
+        assertEquals("demo.Fruits", at("demo.ui", "fruits", mapOf("fruits" to "demo.Fruits")))
+    }
+
+    private fun namesOf(source: String): List<String?> {
+        val file = File(workDir.value, "nested/Nested.kt").apply { parentFile.mkdirs(); writeText(source.trimIndent()) }
+        return PreviewLocator.fromFile(file, MultiPreview(classPath)).map { it.params["name"] }
+    }
+
+    @Test fun `L 로 끝나는 멀티프리뷰 이름은 직접 사용과 재귀 확장에서 보존한다`() {
+        val expected = listOf(mapOf("name" to "small phone", "widthDp" to "320"), mapOf("name" to "large phone", "widthDp" to "412"))
+        for (annotation in listOf("PhonesL", "WrappedPhones")) {
+            val file = File(workDir.value, "$annotation.kt").apply {
+                writeText("package prevue.fixture.preview\n@$annotation\nfun A() {}")
+            }
+            assertEquals(expected, PreviewLocator.fromFile(file, MultiPreview(classPath)).map { it.params }, annotation)
+        }
+    }
+
+    @Test fun `클래스 안에 선언한 멀티프리뷰를 푼다 — 같은 패키지 · 바깥 임포트 · 안쪽 임포트 · 별칭 · 완전한 이름`() {
+        val phones = listOf("small phone", "large phone")
+        assertEquals(phones, namesOf("package prevue.fixture.preview\n@Outer.Phones\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Outer\n@Outer.Phones\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Outer.Phones\n@Phones\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Outer.Phones as Ph\n@Ph\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\n@prevue.fixture.preview.Outer.Phones\nfun A() {}"))
+    }
+
+    @Test fun `별표 임포트의 최상위와 중첩 멀티프리뷰를 푼다`() {
+        val phones = listOf("small phone", "large phone")
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.*\n@PhonesL\nfun A() {}"))
+        assertEquals(phones, namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\nimport prevue.fixture.preview.*\n@Outer.Phones\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\n@Wide\nfun A() {}"))
+    }
+
+    @Test fun `별표 임포트가 있어도 명시 임포트와 같은 패키지의 이름을 먼저 푼다`() {
+        assertEquals(listOf("Tall"), namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.*\nimport prevue.fixture.preview.Tall as Wide\n@Wide\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package prevue.fixture.preview.Caps\nimport prevue.fixture.preview.*\n@Wide\nfun A() {}"))
+    }
+
+    @Test fun `대문자 세그먼트가 있는 패키지의 최상위 멀티프리뷰는 중첩으로 읽지 않는다`() {
+        assertEquals(listOf("wide"), namesOf("package demo.ui\nimport prevue.fixture.preview.Caps.Wide\n@Wide\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package demo.ui\n@prevue.fixture.preview.Caps.Wide\nfun A() {}"))
+        assertEquals(listOf("wide"), namesOf("package prevue.fixture.preview.Caps\n@Wide\nfun A() {}"))
+    }
+
+    @Test fun `이름이 점으로 시작하는 골뱅이 글자는 어노테이션으로 읽지 않고 지나간다`() {
+        assertEquals(listOf("Tall"), namesOf("package prevue.fixture.preview\n// mail@.example\n@Tall\nfun A() {}"))
+    }
+
     @Test fun `파일 이름이 파사드가 되고 패키지가 없으면 앞에 붙이지 않는다`() {
         val dir = Files.createTempDirectory("prevue-src").toFile()
         val file = File(dir, "screens.kt").apply { writeText("@Preview\nfun A() {}\n") }

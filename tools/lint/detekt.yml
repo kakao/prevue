@@ -166,6 +166,14 @@ style:
       - { value: 'prevue.infrastructure.controller.*', reason: '기술 폴더는 입구를 모른다 — 입구가 서비스를 거쳐 포트를 부른다' }
       - { value: 'prevue.infrastructure.bindings.*', reason: '기술 폴더는 조립을 모른다 — 조립이 기술을 짓는다' }
       - { value: 'prevue.application.service.*', reason: '기술 폴더는 포트를 구현한다 — 서비스를 모른다' }
+  # 렌더러의 Disposable 수명(IntelliJ Disposer)은 렌더러 연결 파일 하나에만 둔다 — 세션 수명은 엔진 레인이 갖는다.
+  # 렌더러 API 가 com.intellij 를 쓰는 자리는 Disposable 뿐이라 패키지째 막는다 — 별표 import 도 잡힌다.
+  ForbiddenImport/renderer:
+    active: true
+    includes: ['**/prevue/**']
+    excludes: ['**/prevue/infrastructure/render/RendererLease.kt']
+    forbiddenImports:
+      - { value: 'com.intellij.*', reason: 'Disposable · Disposer 는 render/RendererLease 만 쓴다 — 임대(RendererLease)로 놓는다' }
   ForbiddenImport/json:
     active: true
     includes: ['**/prevue/infrastructure/json/**']

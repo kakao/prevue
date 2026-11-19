@@ -70,8 +70,19 @@ internal object ViewInfoJson {
     fun toolingMismatch(roots: List<ViewInfo>): String? {
         val adapter = adapter(roots) ?: return null
         val getter = runCatching { adapter.javaClass.getMethod(TREE_GETTER) }.getOrNull()
-        return "ComposeViewAdapter.$TREE_GETTER".takeUnless { getter != null && List::class.java.isAssignableFrom(getter.returnType) }
+        if (getter == null || !List::class.java.isAssignableFrom(getter.returnType)) return "ComposeViewAdapter.$TREE_GETTER"
+        val first = runCatching { getter.invoke(adapter) as? List<*> }.getOrNull()?.firstOrNull() ?: return null
+        return missingPositionGetter(first)
     }
+
+    private fun missingPositionGetter(node: Any): String? {
+        missingGetter(node, NODE_GETTERS)?.let { return it }
+        val bounds = runCatching { node.javaClass.getMethod("getBounds").invoke(node) }.getOrNull() ?: return null
+        return missingGetter(bounds, EDGES)
+    }
+
+    private fun missingGetter(o: Any, names: List<String>): String? =
+        names.firstOrNull { n -> runCatching { o.javaClass.getMethod(n) }.isFailure }?.let { "${o.javaClass.simpleName}.$it" }
 
     private fun findAdapter(vi: ViewInfo): Any? {
         vi.viewObject?.takeIf { it.javaClass.name == ADAPTER }?.let { return it }
@@ -80,6 +91,8 @@ internal object ViewInfoJson {
 
     private const val ADAPTER = "androidx.compose.ui.tooling.ComposeViewAdapter"
     private const val TREE_GETTER = "getViewInfos${'$'}ui_tooling"
+    private val NODE_GETTERS = listOf("getFileName", "getLineNumber", "getBounds", "getChildren")
+    private val EDGES = listOf("getLeft", "getTop", "getRight", "getBottom")
 
     /**
      * ComposeViewAdapter가 들고 있는 viewInfos를 리플렉션으로 읽는다.
@@ -121,7 +134,7 @@ internal object ViewInfoJson {
         }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
 
-    private fun box(bounds: Any?): List<Int> = listOf("getLeft", "getTop", "getRight", "getBottom").map { n ->
+    private fun box(bounds: Any?): List<Int> = EDGES.map { n ->
         (bounds?.let { r -> runCatching { r.javaClass.getMethod(n).invoke(r) }.getOrNull() } as? Number)?.toInt() ?: 0
     }
 

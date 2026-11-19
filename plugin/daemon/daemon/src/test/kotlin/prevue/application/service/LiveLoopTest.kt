@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -182,6 +183,32 @@ class LiveLoopTest {
         assertTrue(a.settled(seq).settled)
     }
 
+    @Test fun `휠로 굴리는 동안의 프레임은 실제 시계가 아니라 세션 시각 16ms 걸음으로 돈다`() = runTest {
+        val a = actor()
+        a.ensure(card, interactive = false)
+        changed(5)
+        fake.tickSteps.clear()
+        a.seek(5, 6, 0f, 800f, pieces = 4, object : Scrolling.Rider {
+            override fun frame(s: LiveSession) = Unit
+            override suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit) = false
+        })
+        assertEquals(listOf<Long?>(16L), fake.tickSteps.distinct(), "느린 프레임 하나가 밀린 휠 애니메이션을 한꺼번에 흘려 지나간 칸을 건너뛰지 않는다")
+    }
+
+    @Test fun `끝나지 않는 애니메이션이어도 따라잡기는 정한 프레임 수에서 멈춘다`() = runTest {
+        val a = actor()
+        a.ensure(card, interactive = false)
+        fake.moving = true
+        val before = fake.ticks.get()
+        val (_, ok) = a.seek(5, 6, 0f, 800f, pieces = 1, object : Scrolling.Rider {
+            override fun frame(s: LiveSession) = Unit
+            override suspend fun stop(s: LiveSession, catchUp: suspend () -> Unit) = false
+        })
+        fake.moving = false
+        assertTrue(ok)
+        assertEquals(1 + LiveLoop.CATCH_UP_FRAMES, fake.ticks.get() - before)
+    }
+
     @Test fun `뷰어 화면은 바뀐 그림을 내고 잠잠해지면 같은 그림을 쉰 그림으로 낸다`() = runTest {
         val a = actor()
         val img = Bitmap(1, 1, IntArray(1))
@@ -202,6 +229,15 @@ class LiveLoopTest {
         assertFalse(a.changed())
         assertTrue(a.ensure(card, interactive = false)!!.ok, "다음 조작은 새 세션을 연다")
         assertEquals(3, fake.opened.size)
+    }
+
+    @Test fun `다른 프리뷰로 바꾸면 앞 세션 닫기가 끝난 뒤 새 세션을 연다`() = runTest {
+        val a = actor()
+        val other = PreviewSpec("demo.CardKt.Card1", "Card1", emptyMap(), null, 0)
+        a.ensure(card, interactive = true)
+        fake.onClose = { delay(30) }
+        a.ensure(other, interactive = true)
+        assertEquals(listOf("open ${card.previewId}", "close ${card.previewId}", "open ${other.previewId}"), fake.lifecycle.toList())
     }
 
     @Test fun `세션이 닫히면 기다리던 에이전트는 실패를 받는다`() = runTest {

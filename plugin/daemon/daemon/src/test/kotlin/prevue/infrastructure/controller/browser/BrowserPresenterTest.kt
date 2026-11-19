@@ -47,17 +47,6 @@ class BrowserPresenterTest {
         return now()
     }
 
-    @Test fun `보드를 열면 보드 화면이고 카드 이름표와 크기가 정해진다`() {
-        val s = opened()
-        assertEquals(BrowserState.Screen.BOARD, s.screen)
-        val cards = s.board!!.groups.flatMap { it.cards }
-        assertEquals(3, cards.size)
-        // 함수마다 한 장이어도 묶음이다(D-62) — 함수 이름은 머리가 갖고, name= 이 없는 장의 이름표는 비어 있다.
-        assertEquals(listOf("Card0", "Card1", "Card2"), s.board!!.groups.map { it.name })
-        assertEquals(listOf("", "", ""), cards.map { it.label })
-        assertEquals("3 previews · Cards.kt", s.boardNote?.text)
-    }
-
     // 먼저 열면 구독 순간의 마지막 프레임이 직전 프리뷰의 것이고, 그것을 바로잡을 첫 틱이 이미 지나가 남의 그림에 눌러앉는다(실측).
     @Test fun `스트림 주소는 태스크가 걸린 뒤에만 낸다`() {
         opened()
@@ -330,10 +319,10 @@ class BrowserPresenterTest {
 
     @Test fun `렌더가 실패하면 보드 한 줄이 그 실패를 말하고 다음 성공이 걷는다`() {
         opened()
-        fx.renderer.exceptions += "View layout failed\njava.lang.IllegalStateException: boom"
+        fx.renderer.exceptions += "java.lang.IllegalStateException: boom\nView layout failed"
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         val failed = now()
-        assertTrue(failed.boardNote!!.text.endsWith("View layout failed"), failed.boardNote?.text)
+        assertTrue(failed.boardNote!!.text.endsWith("java.lang.IllegalStateException: boom"), failed.boardNote?.text)
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "watch") }; uc.workspace.awaitBoardFilled()
         assertEquals("3 previews · Cards.kt", awaitState { !it.busy }.boardNote?.text)
     }

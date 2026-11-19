@@ -1,0 +1,67 @@
+# Called by Verify (build.yml) — unit tests of the CLI verdicts and of the daemon.
+name: Verify — unit tests
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: sh
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    permissions:
+      contents: read
+      actions: write
+    # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # The CLI runs on macOS's default python3 (3.9) — checking with the runner's newer python lets 3.10+ syntax through.
+      - name: Set python3 to 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      # CLI verdicts (prevue_plan.py · jdk_rule.py · daemon_records.py) and agent response size (NFR-17 · NFR-18).
+      - name: CLI verdict unit tests
+        run: python3 -m unittest discover -s tests/cli
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
+
+      # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
+      # A cache is only visible from the ref that made it — a PR run's cache hits from that PR's next run on.
+      - name: Gradle home cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-unit-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-unit-${{ runner.os }}-
+
+      # Session · Server tests on fake ports. These rules can silently regress while the picture still looks fine.
+      - name: Daemon unit tests
+        working-directory: plugin/daemon
+        run: ./gradlew test --no-daemon
+
+      # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
+      # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
+      - name: Cancel the run, this job failed
+        if: ${{ failure() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"

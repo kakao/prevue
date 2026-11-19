@@ -1,0 +1,19 @@
+# 기기 스펙
+
+기기 한 대가 JSON 파일 하나다(D-183). 데몬은 빌드할 때 여기서 `DeviceModel`과 인셋 표를 만들고(`daemon/application/build.gradle.kts`의 `deviceTable`), 원 측정 검산은 `DeviceSpecTest`가 한다.
+
+- `id` · `label` · `order` — CLI 이름, 화면 이름, 메뉴 순서. `label`의 첫 단어(Galaxy · Pixel · iPhone)가 메뉴의 묶음이고, 묶음은 그 안의 가장 앞 `order` 순이다. enum 상수 이름은 `label`에서 나온다(`Galaxy Z Fold8` → `GALAXY_Z_FOLD8`).
+- `measured` — 사이트 값이다. 손으로 고치지 않는다(D-175).
+  - `dpi`, `screens.open` · `screens.cover`(접히는 기기만): `widthPx` · `heightPx` · `hingePx`. 화면마다 밀도가 다르면 그 화면에 `dpi`를 둔다(Galaxy Z Flip8 커버 380 · 펼침 480) — 없으면 기기 `dpi`이고, 렌더 밀도 · dp 환산 · status의 `dpi`가 화면을 따른다.
+  - `postures.<portrait | landscape-left | landscape-right>` — 손에 든 방향이다. iOS의 Apple 방향 이름은 반대라 `conditions.orientation`에 원문 그대로 둔다. 측정이 없는 자세는 적지 않는다. 자세가 하나뿐인 화면은 그 자세로만 둔다 — 데몬은 돌린 요청을 거절하고 뷰어는 돌리기를 숨긴다(Flip8 커버).
+  - 자세마다 `source`(`samsung-rtl` · `firebase-test-lab` · `emulator` · `site`) · `url` · `capturedAt` · `conditions` · `safeArea`(dp).
+  - 자세마다 `cornerRadius`(화면 모서리 반경)가 있으면 사이트 값이다. Android는 원 측정의 `roundedCorners`를 `{"px", "dp"}`로(네 모서리가 다르면 둘 다 `[좌상, 우상, 우하, 좌하]` 목록으로), iOS는 safearea.info의 그 자세 `conditions` 그대로의 값(Display Zoom 끔 · Duo는 SDK와 자세)을 `{"pt"}`로 적는다(pt = dp). 한 화면의 자세가 전부 갖거나 전부 갖지 않고 값이 같아야 하며, 있으면 `look`의 `radius`를 두지 않는다 — 측정이 없는 기기(tablet)만 `look.radius`다. 검산은 px ÷ 밀도 = dp이고 뷰어 생성기가 한다.
+  - Android는 `insets`(`statusBars` · `navigationBars` · `captionBar` · `displayCutout`)를 원 측정의 `dp`와 `px` 두 벌로 적는다. 검산은 px ÷ 밀도 = dp, `safeArea` = 변마다 그 넷의 max다.
+  - iOS는 사이트의 `safeAreaSize`(pt)를 적는다. 검산은 화면 크기 − `safeArea` = `safeAreaSize`다.
+- `look` — 사이트에 없는 그림 값이다. 뷰어 빌드(`viewer-src/generate-devices.mjs`)가 이것과 `measured`의 크기로 `viewer-src/legacy/js/devices.js`를 만든다(커밋하는 생성물, `sh tools/gen-viewer.sh --check`가 어긋남을 막는다). 빠진 필드 · 모르는 필드는 생성이 실패한다. 데몬 빌드(`deviceTable`)도 `bar` · 화면마다의 `cutouts` · `radius`(측정이 없을 때) · `status`를 읽어 기기 PNG에 바 · 카메라를 굽고 둥근 모서리 밖을 비운다(D-189, 자리는 `DeviceChrome`).
+  - 데몬이 굽는 자리 중 눈대중인 것 — iPhone SE 3세대 상태바(`status`)는 시뮬레이터가 없어 눈대중한 근사다(사람 확인 전). 아래 변에 붙은 배제 상자(`edge: "bottom"`, Flip8 커버) 옆의 내비 핸들은 남은 띠 중 넓은 쪽 가운데에 둔다 — 사이트에 핸들 자리가 없다. 돌린 자세에서 아래로 온 위 카메라는 베젤 쪽이라 핸들이 비키지 않는다.
+  - `bar`(시스템 바 모양: `aosp` · `oneui` · `pixel` · `ios`) — 데몬도 쓴다.
+  - `short`(메뉴 칸 이름 · 닫힌 독 버튼 이름 — 묶음 머리 아래에서 읽히므로 묶음 이름으로 시작하지 않는다: Pixel 9 → `9`. 독 폭 상한이 있어 짧게 둔다) · `tone`(몸체 색 hex) · `open` · `cover`(접히는 기기만): `bezel`(숫자 하나, 또는 위·아래 짧은 두 변이 더 두꺼우면 `{"side", "ends"}`) · `home`(`true`면 자연 방향의 아래쪽 `bezel.ends` 가운데에 홈 버튼을 그린다) · `radius`(dp, 측정이 없을 때만) · `cutouts`(컷아웃 목록, 카메라 없는 화면은 `[]`) — 항목 하나가 시스템이 보고하는 컷아웃 하나이고 `box`(배제 상자)와 `holes`(그릴 구멍)를 따로 갖는다. 상태 줄 · 내비 핸들 · 눈금자 칸은 상자를 피하고, 장면과 기기 PNG는 구멍을 그린다. `holes`가 없으면 상자 모양 그대로 그린다. `holes`는 `[{cx, cy, d, lens}]` — 화면 왼쪽 위 기준 자연 방향 dp의 원(중심 · 지름)이고 상자 안에 들어야 한다. `lens: true`면 렌즈 테와 유리 반점을 더한다(Flip8 커버: 실물 사진을 펴서 잰 플래시 · 렌즈 둘, ±2dp). `box`는 `w` `h` `y`, 가장자리를 따른 위치 비율 `x`; 가장자리에 붙은 노치는 `y` 0에 안쪽 모서리 반경 `notch`(dp, 눈대중)를 더하고, 오른쪽 긴 변에 붙으면 `edge: "right"`(`x`는 위에서), 아래 변에 붙으면 `edge: "bottom"`(`x`는 왼쪽에서) — `w`는 변을 따른 길이, `h`는 깊이. 옆 변에도 닿은 꼭짓점은 각진다(Flip8 커버의 오른쪽 아래 컷아웃) · `btn`(`[변, 위치, 길이]` 1~5개).
+  - `thickness` · `hinge`(접히는 기기만) — 접기 장면의 판. `thickness`는 펼친 판 하나의 두께(dp), `hinge`는 `{"axis", "gap"}`이다 — `axis`는 힌지가 가르는 변(`width`는 책형, `height`는 조개형 — 접기 장면을 90° 돌려 그린다), `gap`은 다 접혔을 때 두 화면 사이 틈(dp), `blur`(`true`만)는 접히는 판의 화면에 각도를 따라 짙어지는 겹 흐림과 그늘을 준다(iPhone Duo). 둘 다 실물 mm를 dp로 옮긴 어림값이다.
+  - `status`(iOS 홑 기기만) — 상태바 아이콘 묶음 자리: `top` · `right` · `scale` · `time`. `left`가 있으면 홈 버튼 기기의 갈린 상태바다 — 신호 · Wi-Fi는 `left`, 배터리는 `right`, 시각은 가운데.
+  - 화면 크기(dp)는 `measured`의 px ÷ `dpi` × 160이다 — 따로 적지 않는다.

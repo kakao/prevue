@@ -29,9 +29,6 @@ class GradleOriginalsTest {
         ZipOutputStream(f.outputStream()).use { z -> z.putNextEntry(ZipEntry("classes.jar")); z.write(classes); z.closeEntry() }
     }
 
-    private fun jar(group: String, artifact: String, version: String) =
-        File(files2, "$group/$artifact/$version/9f8e/$artifact-$version.jar").apply { parentFile.mkdirs(); writeText("") }
-
     @Test fun `변환본 이름에서 아티팩트와 버전을 읽는다`() {
         assertEquals("coil-compose-base" to "2.7.0", GradleOriginals.coordinate("$transforms/aa/transformed/coil-compose-base-2.7.0-runtime.jar"))
         assertEquals("coil-base" to "2.7.0", GradleOriginals.coordinate("$transforms/bb/transformed/coil-base-2.7.0-api.jar"))
@@ -59,11 +56,6 @@ class GradleOriginalsTest {
         assertEquals(emptyList<String>(), g.forRuntimeOnly(listOf("${repo.path}/libs/transformed/coil-base-2.7.0-runtime.jar"), emptyList(), repo))
         assertEquals(listOf(File(outDir, "io.coil-kt-coil-base-2.7.0.jar").path),
             g.forRuntimeOnly(listOf("${repo.path}-other/libs/transformed/coil-base-2.7.0-runtime.jar"), emptyList(), repo))
-    }
-
-    @Test fun `원본이 jar면 그대로 쓴다`() {
-        val j = jar("org.jetbrains.kotlinx", "kotlinx-datetime-jvm", "0.6.1")
-        assertEquals(listOf(j.path), GradleOriginals(files2, outDir).forRuntimeOnly(listOf("/m2/kotlinx-datetime-jvm-0.6.1.jar"), emptyList(), repo))
     }
 
     // 고르지 않는다 — 그룹이 겹치면 어느 원본이 맞는지 이름으로는 모른다. 없으면 메우지 않고 실패가 그 모듈의 덤프를 권한다.

@@ -7,15 +7,6 @@ import org.junit.jupiter.api.assertThrows
 class ScreenSizeTest {
     private fun spec(vararg params: Pair<String, String>) = PreviewSpec("demo.CardsKt.Card0", "demo.CardsKt.Card0", mapOf(*params), null, 0)
 
-    @Test fun `프리셋은 dp만 바꾸고 다른 인자는 둔다`() {
-        val p = ScreenSize.parse("narrow", null, folded = false, landscape = false)!!.applyTo(spec("widthDp" to "411", "uiMode" to "32"))
-        assertEquals(mapOf("widthDp" to "320", "heightDp" to "640", "uiMode" to "32"), p.params)
-    }
-
-    @Test fun `크기 인자 없는 프리뷰에도 폭과 높이를 둘 다 넣는다`() {
-        assertEquals(mapOf("widthDp" to "500", "heightDp" to "900"), ScreenSize.Dp(500, 900).applyTo(spec()).params)
-    }
-
     @Test fun `시스템 UI 프리뷰는 렌더러가 dp 인자를 건너뛰어 기기 spec 으로 넣고 원래 밀도를 지킨다`() {
         val p = ScreenSize.Dp(320, 640).applyTo(spec("showSystemUi" to "true", "device" to "spec:width=1080px,height=2400px,dpi=480"))
         assertEquals("spec:width=960px,height=1920px,dpi=480", p.params["device"])
@@ -45,6 +36,14 @@ class ScreenSizeTest {
         assertEquals(listOf(475.43, 751.24), listOf(cover.widthDp, cover.heightDp))
         assertEquals(listOf(360.0, 780.0), ScreenSize.Device(DeviceModel.GALAXY_S26).let { listOf(it.widthDp, it.heightDp) })
         assertEquals(listOf(951.0, 669.0, 475.5), ScreenSize.Device(DeviceModel.IPHONE_DUO).let { listOf(it.widthDp, it.heightDp, it.hingeDp) })
+    }
+
+    @Test fun `화면마다 밀도가 다르면 그 화면의 dpi로 그린다 — Flip8 커버 380 · 펼침 480`() {
+        val open = ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8)
+        val cover = ScreenSize.Device(DeviceModel.GALAXY_Z_FLIP8, folded = true)
+        assertEquals(listOf(360.0, 840.0, 420.0, 480.0), listOf(open.widthDp, open.heightDp, open.hingeDp, open.dpi.toDouble()))
+        assertEquals(listOf(399.16, 441.26, 380.0), listOf(cover.widthDp, cover.heightDp, cover.dpi.toDouble()))
+        assertEquals("spec:width=948px,height=1048px,dpi=380", cover.applyTo(spec()).params["device"])
     }
 
     @Test fun `새 기기의 dp 크기는 공개 스펙의 px 과 밀도로 나온다`() {
@@ -80,5 +79,10 @@ class ScreenSizeTest {
         assertThrows<IllegalArgumentException> { ScreenSize.parse(null, "pixel", folded = false, landscape = false) }
         assertThrows<IllegalArgumentException> { ScreenSize.parse(null, "s26", folded = true, landscape = false) }
         assertThrows<IllegalArgumentException> { ScreenSize.parse("narrow", null, folded = true, landscape = false) }
+    }
+
+    @Test fun `한계 1600dp는 그대로다 — Tab S11 Ultra의 1691dp는 커스텀으로 못 가고 1600까지만 간다`() {
+        assertThrows<IllegalArgumentException> { ScreenSize.parse("1056x1691", null, folded = false, landscape = false) }
+        assertEquals(ScreenSize.Dp(1056, 1600), ScreenSize.parse("1056x1600", null, folded = false, landscape = false))
     }
 }

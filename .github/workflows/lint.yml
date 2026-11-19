@@ -1,0 +1,101 @@
+# Called by Verify (build.yml) — checks that read code without running it: generated files · copies · viewer types · Kotlin
+# lint. Uses no daemon build output, so it runs beside the build.
+name: Verify — static checks
+
+on:
+  workflow_call:
+
+# Scripts that run under the user's /bin/sh are checked with sh, not bash.
+defaults:
+  run:
+    shell: sh
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    permissions:
+      contents: read
+      actions: write
+    # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # the lint diffs against the base branch to find new comments and touched functions
+
+      # The two skill sets (plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/) and CLAUDE.md are
+      # generated from their sources. Catches commits that edited one side by hand.
+      - name: Check that both skill sets and CLAUDE.md are generated from source
+        run: sh tools/gen-agents.sh --check
+
+      # Installs receive plugin/ only (D-123) — its LICENSE · NOTICE.md are copies of the root originals.
+      - name: Check that the plugin's notice copies match the originals
+        run: sh tools/plugin-copies.sh --check
+
+      - name: Set up Node for viewer development
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: viewer-src/.node-version
+          cache: npm
+          cache-dependency-path: viewer-src/package-lock.json
+
+      - name: Install viewer development dependencies
+        working-directory: viewer-src
+        run: npm ci --no-audit --no-fund
+
+      - name: Check viewer generated files and contract types
+        run: sh tools/gen-viewer.sh --check
+
+      - name: Check viewer types and the Storybook build
+        working-directory: viewer-src
+        run: |
+          set -eu
+          npm run typecheck
+          npm run build-storybook
+
+      # The CLI runs on macOS's default python3 (3.9) — checking with the runner's newer python lets 3.10+ syntax through.
+      - name: Set python3 to 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
+
+      # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
+      # A cache is only visible from the ref that made it — a PR run's cache hits from that PR's next run on.
+      - name: Gradle home cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-lint-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'tools/lint/detekt.init.gradle.kts') }}
+          restore-keys: gradle-lint-${{ runner.os }}-
+
+      # Slop rules · detekt metrics · new comments (D-70). Clean if every work PR ran it locally — this is the net for skipped runs.
+      # The base is the branch the PR targets. Run by hand (workflow_dispatch), it compares with main.
+      - name: Kotlin lint
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -eu
+          sh tools/lint.sh --base "origin/$BASE_REF"
+
+      # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
+      # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
+      - name: Cancel the run, this job failed
+        if: ${{ failure() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run cancel "${{ github.run_id }}"

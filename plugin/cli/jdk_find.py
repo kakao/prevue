@@ -64,18 +64,24 @@ def search_places(env):
     return prefer, found
 
 
-def find(prefer, patterns):
-    """(home, 상태) — ok 쓸 수 있다 · old 21 미만만 있다(그중 가장 높은 판) · none 아무것도 없다(home 은 처음 본 자리)."""
-    for home in prefer:
-        v = version(home)
-        if has_java(home) and (v is None or usable(v)):
-            return home, "ok"
+def installed(prefer, patterns):
+    """[(home, 판)] — 자리마다 java 가 있는 JDK. 링크로 같은 곳을 가리키면 하나만."""
     seen, homes = set(), []
     for home in list(prefer) + [h for p in patterns for h in sorted(glob.glob(p))]:
         real = os.path.realpath(home)
         if real not in seen and has_java(home):
             seen.add(real)
             homes.append((home, version(home)))
+    return homes
+
+
+def find(prefer, patterns):
+    """(home, 상태) — ok 쓸 수 있다 · old 21 미만만 있다(그중 가장 높은 판) · none 아무것도 없다(home 은 처음 본 자리)."""
+    for home in prefer:
+        v = version(home)
+        if has_java(home) and (v is None or usable(v)):
+            return home, "ok"
+    homes = installed(prefer, patterns)
     ok = [h for h in homes if usable(h[1])]
     if ok:
         return min(ok, key=lambda h: rank(h[1]))[0], "ok"

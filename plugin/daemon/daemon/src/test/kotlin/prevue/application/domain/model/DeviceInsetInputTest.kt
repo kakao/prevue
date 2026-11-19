@@ -6,10 +6,11 @@ import org.junit.jupiter.api.assertThrows
 import prevue.application.domain.model.DeviceOrientation.*
 
 class DeviceInsetInputTest {
-    @Test fun `42자세 모두 사이트 자료에서 인셋을 받고 systemOverlays는 영이다`() {
+    @Test fun `모든 자세가 사이트 자료에서 인셋을 받고 systemOverlays는 영이다 — 인셋이 실제로 0인 SE 가로만 비어 있다`() {
         DeviceModel.entries.flatMap { it.postures }.forEach { device ->
             val input = DeviceInsetInputs.of(device)
-            assertNotEquals(AppInsets.NONE, input.values, device.key)
+            val bare = device.model == DeviceModel.IPHONE_SE_3RD_GENERATION && device.orientation != PORTRAIT
+            if (bare) assertEquals(AppInsets.NONE, input.values, device.key) else assertNotEquals(AppInsets.NONE, input.values, device.key)
             assertEquals(InsetEdges(), input.values.systemOverlays, device.key)
             assertEquals(ScreenSize.postureOf(input.basisPosture)!!.insetProfile.evidence, input.evidence, device.key)
             val source = PreviewSpec("demo.Card", "demo.Card", emptyMap(), null, 0)
