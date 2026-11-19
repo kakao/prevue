@@ -1,6 +1,6 @@
 # Prevue 리뷰 규약
 
-`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement`의 리뷰 맡기기(`implement/tools/review.md`)가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
+`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement`의 리뷰 맡기기(`dev-skills-src/implement/tools/review.md`)가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
 
 ## 코딩 표준
 

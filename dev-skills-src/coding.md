@@ -1,6 +1,6 @@
 # Prevue 코드 규칙
 
-코드를 고칠 때 지키는 이 저장소의 규칙이다. 세션 규칙(`AGENTS.md`)이 이 문서를 가리키고, `implement`가 만들 때 따르며, 리뷰 규약(`dev-skills-src/review.md`)이 코딩 표준으로 읽는다. 판정은 `sh tools/lint.sh`가 한다 — 판단하지 않고 결과대로 고친다.
+코드를 고칠 때 지키는 이 저장소의 규칙이다. 세션 규칙(`AGENTS.md`)이 이 문서를 가리키고, `implement`가 만들 때 따르며, 리뷰 규약(`dev-skills-src/review.md`)이 코딩 표준으로 읽는다. 린트 결과는 판단하지 않고 결과대로 고친다.
 
 ## 뷰어 값
 
