@@ -166,9 +166,9 @@ export function createResizeScene(root, hooks) {
   const CHIP_HALF = 56, RIGHT_NEED = 48 + CHIP_HALF + PLATE_EDGE;
   const clock = { t: 0 };
   const badge = { w: BADGE_W };
-  function room() {
+  function room(st) {
     const W = root.clientWidth, k = clamp((W - NARROW) / (WIDE - NARROW), 0, 1);
-    const side = Math.max(lerp(P.gap + RULER_RAIL + Math.ceil(badge.w / 2) + PLATE_EDGE, RULER_SIDE, k), hooks.insetOn?.() ? RIGHT_NEED : 0);
+    const side = Math.max(lerp(P.gap + RULER_RAIL + Math.ceil(badge.w / 2) + PLATE_EDGE, RULER_SIDE, k), st && shelled(st) && hooks.insetOn?.() ? RIGHT_NEED : 0);
     return { W, side, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
@@ -187,7 +187,7 @@ export function createResizeScene(root, hooks) {
     return { w: edges.includes("w") ? Math.max(0, LANE_W - side) : 0, h: edges.includes("h") ? LANE_H : 0 };
   };
   function fit(st) {
-    const r = room(), lane = cutLaneOf(st, r.side), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
+    const r = room(st), lane = cutLaneOf(st, r.side), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
     const both = (maxW, maxH) => Math.min(each(ORIGINAL, maxW, maxH), each(st, maxW, maxH));
     let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
     if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;

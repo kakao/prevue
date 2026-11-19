@@ -358,7 +358,7 @@ try {
   await until(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='false'`);
   await pause(800);
   const narrowOff = await stageW();
-  assert(narrowOff >= narrowOn - 0.5, `오버레이를 끄면 줄이지 않는다: 켬 ${narrowOn} · 끔 ${narrowOff}`);
+  assert(narrowOff > narrowOn + 1, `오버레이를 끄면 배지 자리를 비우려던 축소가 풀려 더 넓다: 켬 ${narrowOn} · 끔 ${narrowOff}`);
   await evaluate(`document.querySelector('#insetBtn').click()`);
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
   await pause(600);
