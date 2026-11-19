@@ -18,7 +18,7 @@ import prevue.application.port.PrevueDispatchers
 /**
  * 통합 테스트의 대상 `fixtures/pearl`. 덤프는 이 체크아웃의 `bin/prevue warmup`이 뜬다 — 덤프 자리가 체크아웃 경로로 정해져 워크트리마다
  * 제 것이 있어야 하고, 픽스처를 고치면 다시 떠야 한다. 늘 부른다: Gradle이 증분이라 이미 떴으면 몇 초다.
- * 픽스처는 공개 Maven만 쓰는 저장소의 일부라 대상 저장소의 Gradle 승인 규칙 밖이다(AGENTS.md) — 그 전제가 깨지는 머신이면 뜨지 않는다.
+ * 픽스처는 공개 Maven만 쓰는 저장소의 일부라 대상 저장소의 Gradle 승인 규칙 밖이다(implement의 멈춤 목록) — 그 전제가 깨지는 머신이면 뜨지 않는다.
  */
 object PearlFixture {
     private val HOME = System.getProperty("user.home")

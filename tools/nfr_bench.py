@@ -14,6 +14,7 @@ NFR-6 스트림: 앞 단계의 데몬을 내린 뒤 `fixtures/pearl` 데몬을 �
 격리: 대상 저장소는 읽기만 한다. 저장은 `.cache/spike/nfr/` 복사본에 하고 `--watch` 로 감시한다. `--resource-at` 만 예외다 —
 values 는 그래프의 진짜 `res/values` 만 감시해(D-68) 그 파일(`--values`)을 고치고 끝에 되돌린다(개인 체크아웃 nowinandroid 만). 덤프를 `.cache/nfr/.prevue/projects/<키>/`
 로 복사해 띄워 산출물 · 오버레이가 그 아래에 생긴다 — 같은 대상을 보는 다른 워크트리의 데몬과 PNG 를 나눠 쓰지 않는다.
+이 격리를 따르지 않고 데몬을 띄울 때는 dev-skills-src/implement/tools/screen.md 의 개발 위생을 따른다.
 기본 대상은 nowinandroid(`ForYouScreen.kt` 620줄 · 25장 ↔ `core:ui` `NewsResourceCard.kt`). 덤프는 미리 떠 둔 것을 쓰고 Gradle 은 부르지 않는다.
 """
 
