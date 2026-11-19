@@ -296,5 +296,10 @@
   "posture.landscape-right": "Landscape right",
   "insetOverlay.label": "Show inset areas",
   "insetOverlay.now": "Show inset areas — {value}",
-  "insetOverlay.safeArea": "SAFE AREA"
+  "insetOverlay.safeArea": "SAFE AREA",
+  "insetOverlay.kind.statusBars": "STATUS",
+  "insetOverlay.kind.navigationBars": "NAV",
+  "insetOverlay.kind.captionBar": "CAPTION",
+  "insetOverlay.kind.displayCutout": "CUTOUT",
+  "insetOverlay.kind.systemOverlays": "OVERLAY"
 }

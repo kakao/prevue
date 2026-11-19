@@ -293,5 +293,10 @@
   "posture.landscape-right": "가로 오른쪽",
   "insetOverlay.label": "인셋 영역 보기",
   "insetOverlay.now": "인셋 영역 보기 — {value}",
-  "insetOverlay.safeArea": "SAFE AREA"
+  "insetOverlay.safeArea": "SAFE AREA",
+  "insetOverlay.kind.statusBars": "STATUS",
+  "insetOverlay.kind.navigationBars": "NAV",
+  "insetOverlay.kind.captionBar": "CAPTION",
+  "insetOverlay.kind.displayCutout": "CUTOUT",
+  "insetOverlay.kind.systemOverlays": "OVERLAY"
 }

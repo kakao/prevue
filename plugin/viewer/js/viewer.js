@@ -4283,19 +4283,23 @@ function Pa({ deviceInsets: e, size: t, host: n }) {
 	}), fa);
 }
 var Fa = (e) => String(Math.round(e * 100) / 100);
-function Ia({ w: e, h: t, widest: n }) {
-	return Aa.flatMap((r) => {
-		let { kind: i, value: a } = n[r];
-		if (!(a > 0)) return [];
-		let o = r === "top" || r === "bottom" ? t : e, [s, c] = r === "top" || r === "left" ? [0, a / o] : [1 - a / o, 1];
-		return [{
-			kind: i,
-			edge: r,
-			value: a,
-			side: r === "top" || r === "bottom" ? "right" : "bottom",
-			from: s,
-			to: c
-		}];
+function Ia({ w: e, h: t, insets: n, widest: r }) {
+	return Aa.flatMap((i) => {
+		let a = i === "top" || i === "bottom", o = a ? t : e;
+		return [[ka.filter((e) => e !== "displayCutout").reduce((e, t) => n.values[t][i] > n.values[e][i] ? t : e), a ? "right" : "bottom"], ["displayCutout", a ? "left" : "top"]].flatMap(([e, t]) => {
+			let a = Math.max(0, n.values[e][i]);
+			if (!(a > 0)) return [];
+			let [s, c] = i === "top" || i === "left" ? [0, a / o] : [1 - a / o, 1];
+			return [{
+				kind: e,
+				edge: i,
+				value: a,
+				side: t,
+				bold: a === r[i].value,
+				from: s,
+				to: c
+			}];
+		});
 	});
 }
 var La = (e) => `${e * 100}%`;
@@ -4306,7 +4310,7 @@ function Ra({ deviceInsets: e, size: t, host: n }) {
 	}, [i, c]), !c) return a(null, pa);
 	let { w: l, h: u, safe: d } = c;
 	return a(/* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [Ia(c).map((e) => {
-		let t = e.side === "right" ? {
+		let t = e.side === "right" || e.side === "left" ? {
 			top: La(e.from),
 			height: La(e.to - e.from)
 		} : {
@@ -4318,13 +4322,20 @@ function Ra({ deviceInsets: e, size: t, host: n }) {
 			"data-kind": e.kind,
 			"data-edge": e.edge,
 			"data-side": e.side,
+			"data-bold": e.bold,
 			style: t,
 			children: [
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-from" }),
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-to" }),
-				/* @__PURE__ */ (0, z.jsx)("span", {
+				/* @__PURE__ */ (0, z.jsxs)("span", {
 					className: "im-badge",
-					children: Fa(e.value)
+					children: [/* @__PURE__ */ (0, z.jsx)("em", {
+						className: "im-label",
+						children: r(`insetOverlay.kind.${e.kind}`)
+					}), /* @__PURE__ */ (0, z.jsx)("span", {
+						className: "im-val",
+						children: Fa(e.value)
+					})]
 				})
 			]
 		}, `${e.kind} ${e.edge}`);

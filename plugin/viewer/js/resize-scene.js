@@ -170,11 +170,25 @@ export function createResizeScene(root, hooks) {
     return { W, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
+  // 컷아웃 배지는 눈금(#ruler) 바깥에 선다 — 컷아웃이 위 · 아래 변이면 높이 눈금 왼쪽에 LANE_W, 왼쪽 · 오른쪽 변이면 폭 눈금 위에 LANE_H 가 더 든다.
+  // 어느 변인지는 카메라 구멍이 가장 가까운 변으로 정하고, 자리가 모자랄 때만 틀을 줄인다(틀은 가운데에 둔다).
+  const LANE_W = 84, LANE_H = 32;
+  const cutLaneOf = st => {
+    if (!shelled(st)) return { w: 0, h: 0 };
+    const panel = DEVICES[st.dev][st.folded ? "cover" : "open"], fw = st.rot ? panel.h : panel.w, fh = st.rot ? panel.w : panel.h;
+    const near = lookOf(st).cuts.map(c => camBox(panel.w, panel.h, st.rot, c, 1, st.mirrored)).filter(b => b.on)
+      .map(b => Math.min(b.top, fh - b.top - b.height) <= Math.min(b.left, fw - b.left - b.width) ? "w" : "h");
+    return { w: near.includes("w") ? LANE_W : 0, h: near.includes("h") ? LANE_H : 0 };
+  };
   function fit(st) {
-    const r = room(), each = (x, maxW) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
-    const s = Math.min(each(ORIGINAL, r.maxW), each(st, r.maxW));
+    const r = room(), lane = cutLaneOf(st), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
+    const both = (maxW, maxH) => Math.min(each(ORIGINAL, maxW, maxH), each(st, maxW, maxH));
+    let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
+    if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;
+    if (lane.h && (maxH - (st.h + padsOf(st)[1]) * s) / 2 < lane.h) { maxH -= lane.h; up = lane.h; }
+    s = both(maxW, maxH);
     const h = st.h * s, ph = padsOf(st)[1] * s;
-    return { s, w: st.w * s, h, cx: r.cx, y: r.top + ph / 2 + Math.max(0, (r.maxH - h - ph) / 2) };
+    return { s, w: st.w * s, h, cx: r.cx, y: r.top + up + ph / 2 + Math.max(0, (maxH - h - ph) / 2) };
   }
   let cur = null;
   let tr = null;
