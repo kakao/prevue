@@ -7,7 +7,7 @@ import { stuckHead } from '../runtime/board';
 import { store } from '../runtime/store';
 import { phrase } from '../runtime/strings';
 import { findCard, type Focus, type ViewerState } from '../state';
-import { drag, press, pressing, release, wheel } from './input';
+import { drag, dropPress, letGo, press, pressing, release, wheel } from './input';
 import { byPick, clearPick, containScale, flatten, hitIn, hover, leave, narrow, outline, pointAt, pointedImage, posIn, type Hit, type TreeNode } from './point';
 import { createResizeController } from './resize';
 import { zoomView } from './view';
@@ -121,6 +121,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
 
   function render(f: Focus | null) {
     const interactive = !!(f && f.interactive);
+    if (!interactive) dropPress();
     panel.hidden = !f;
     if (!f) closeZoomMenu();
     stage.classList.toggle('live', interactive);
@@ -450,7 +451,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (!spaceHeld) { spaceHeld = true; stage.classList.add('grab'); }
   });
   addEventListener('keyup', e => { if (e.code === 'Space') { spaceHeld = false; stage.classList.remove('grab'); } });
-  addEventListener('blur', () => { spaceHeld = false; stage.classList.remove('grab'); });
+  addEventListener('blur', () => { spaceHeld = false; stage.classList.remove('grab'); letGo(); });
 
   const resizeUI = createResizeController({
     root: scene, geometry, shot, stage, wrap, zoomState: () => zoom,
