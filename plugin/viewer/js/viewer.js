@@ -1274,7 +1274,7 @@ function tn(e, t, n) {
 }
 var Y = null, nn = () => !!Y;
 function rn(e, t) {
-	Y && tn("release", ...Y), Y = [e, t], tn("press", e, t);
+	sn(), Y = [e, t], tn("press", e, t);
 }
 function an(e, t) {
 	Y && Math.abs(e - Y[0]) + Math.abs(t - Y[1]) > 6 && (Y = [e, t], dn(e, t));

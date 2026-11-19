@@ -17,11 +17,7 @@ function touch(type: string, x: number, y: number) { touchChain = touchChain.the
 // 데몬은 손가락이 닿은 채로 남아 다음 제스처가 통째로 어긋난다. 창의 이벤트를 그림 px 로 바꿔 넘기는 것은 focus.ts 다.
 let dragging: Point | null = null;
 export const pressing = () => !!dragging;
-export function press(x: number, y: number) {
-  if (dragging) touch('release', ...dragging);      // 뗌을 못 받은 누름이 남았다 — 데몬에 손가락 둘이 닿지 않게 먼저 뗀다
-  dragging = [x, y];
-  touch('press', x, y);
-}
+export function press(x: number, y: number) { letGo(); dragging = [x, y]; touch('press', x, y); }
 export function drag(x: number, y: number) {
   if (!dragging) return;
   if (Math.abs(x - dragging[0]) + Math.abs(y - dragging[1]) > 6) { dragging = [x, y]; queueDrag(x, y); }
