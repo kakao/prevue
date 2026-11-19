@@ -71,6 +71,17 @@ class Copies(unittest.TestCase):
         got = T.installed_libs(home, [cache, os.path.join(home, ".codex", "plugins", "cache")])
         self.assertEqual(got, {os.path.realpath(os.path.join(home, ".prevue", "toolchain", n)) for n in ("lib-1", "lib-2", "lib-3")})
 
+    def test_a_live_process_holding_a_copy_marks_it_running(self):
+        jar = os.path.join(self.lib("lib-bbbb2222"), "kotlin-stdlib.jar")
+        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "-cp", jar])
+        self.addCleanup(p.wait)
+        self.addCleanup(p.kill)
+        if os.environ.get("CODEX_SANDBOX"):
+            self.skipTest("the Codex sandbox blocks ps")
+        cmdlines = T.running_cmdlines()
+        self.assertIsNotNone(cmdlines)
+        self.assertEqual(self.copies(None, set(), cmdlines)["lib-bbbb2222"], (["running daemon"], False))
+
     def test_process_names_that_arent_utf8_dont_break_the_listing(self):
         ps = subprocess.CompletedProcess([], 0, stdout=b"python3 x\xffy\njava -cp /t/lib-1/a.jar\n")
         with mock.patch.object(T.subprocess, "run", return_value=ps):

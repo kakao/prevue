@@ -29,7 +29,7 @@ def size_mb(path):
 def running_cmdlines():
     """떠 있는 프로세스의 명령줄. 못 읽으면 None."""
     try:
-        p = subprocess.run(["ps", "-axww", "-o", "command="], capture_output=True, timeout=10)
+        p = subprocess.run(["ps", "-A", "-ww", "-o", "command="], capture_output=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return None
     return p.stdout.decode("utf-8", "replace").splitlines() if p.returncode == 0 else None
