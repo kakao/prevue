@@ -614,6 +614,15 @@ elif [ -n "${PREVUE_LANG:-}" ] && ! lang_tag "$PREVUE_LANG"; then
   PREVUE_LANG=""
 fi
 export PREVUE_LANG="${PREVUE_LANG:-}"
+# 틀린 --idle 은 JVM 이 사용법으로 끝나는데, 띄운 뒤에 알면 30초를 기다리고 종료 3 이 났다(실측) — 띄우기 전에 거른다.
+IDLE_NEXT=0
+[ "$cmd" = start ] && for a in "$@"; do
+  if [ "$IDLE_NEXT" = 1 ]; then printf '%s' "$a" | grep -Eq '^[0-9]{1,9}m?$' || IDLE_NEXT=2; [ "$IDLE_NEXT" = 2 ] && break; IDLE_NEXT=0; fi
+  [ "$a" = --idle ] && IDLE_NEXT=1
+done
+if [ "$IDLE_NEXT" != 0 ]; then
+  echo '{"ok":false,"error":"--idle takes minutes without use before the daemon shuts down, such as 60 or 60m (0 keeps it up)"}'; exit 2
+fi
 
 # 그리고 대개는 아무도 --port 를 안 쓴다. 이 호출이 **어느 저장소를 말하는지**를 먼저 정하고,
 # 자리는 그 저장소에서 계산한다(port_of). 에이전트가 포트를 기억할 일이 없어지고,

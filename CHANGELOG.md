@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **The daemon now shuts itself down after an hour without use instead of 10 minutes**, and `prevue start --idle <minutes>` sets it (`5` or `5m`; `0` keeps it up). The undocumented `PREVUE_IDLE_MIN` environment variable is gone — to get the old behavior back, start with `--idle 10`.
+- **The daemon now shuts itself down after an hour without use**, and `prevue start --idle <minutes>` sets it for the daemon that start launches (`5` or `5m`; `0` keeps it up) — it replaces the `PREVUE_IDLE_MIN` environment variable.
 - **`prevue paths` lists the old copies of Prevue's components that pile up after updates** (about 118 MB each under `~/.prevue/toolchain/lib-*`) and marks the ones no installed plugin, this plugin or a running preview uses as deletable.
 - **The header progress bar clears when the viewer disconnects** — it no longer keeps running after "Restarting" turns into "Disconnected", or after the daemon dies while it was still drawing.
 - **Holding the mouse down on a live preview and then switching windows (⌘-Tab) now lifts the finger in the app**, so the next press starts a fresh gesture instead of landing while the app still thinks the first one is held; leaving or turning off interaction mid-press no longer sends a stray release afterwards either.
