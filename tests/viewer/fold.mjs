@@ -107,13 +107,17 @@ try {
     for (const type of ['mousePressed','mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...at, button: 'left', clickCount: 1 });
   };
   await evaluate(`window.box=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};
+    // 렌즈 유리 반점이 카메라 가운데에서 화면으로 얼마나 비켰나 — 반점 자리에 탐침을 꽂아 장면 회전 · 판 접힘 · 뒷면 뒤집기를 다 거친 화면 좌표로 잰다.
+    window.glints=sel=>[...document.querySelectorAll(sel)].flatMap(f=>[...f.querySelectorAll('.cam.lens')]).filter(c=>Number(c.style.opacity)>0).map(c=>{
+      const g=getComputedStyle(c,'::after'),at=(x,y)=>{const p=document.createElement('i');p.style.cssText='position:absolute;width:0;height:0;left:'+x+';top:'+y;c.append(p);const r=p.getBoundingClientRect();p.remove();return [r.x,r.y]};
+      const a=at('calc('+g.left+' + '+g.width+' / 2)','calc('+g.top+' + '+g.height+' / 2)'),o=at('50%','50%');return {dx:a[0]-o[0],dy:a[1]-o[1]}});
     window.snapshot=()=>({body:box(document.querySelector('#ua .stage')),shell:box(document.querySelector('#ua .shell')),
       radii:(c=>['borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius'].map(k=>parseFloat(c[k])))(getComputedStyle(document.querySelector('#ua .shell'))),
       ticks:[...document.querySelectorAll('#ua .tick')].filter(e=>Number(e.style.opacity)>0).map(box),cam:box(document.querySelector('#ua .cam')),
       cameraOn:Number(document.querySelector('#ua .cam').style.opacity)>0,
       homes:[...document.querySelectorAll('#ua .home')].filter(e=>Number(e.style.opacity)>0).map(box),
       buttons:[...document.querySelectorAll('#ua .btn')].filter(e=>Number(e.style.opacity)>0).map(box),
-      content:box(document.querySelector('#ua .l0')),layout,src:document.querySelector('#ua .l0').src});
+      content:box(document.querySelector('#ua .l0')),layout,src:document.querySelector('#ua .l0').src,glints:glints('#ua')});
     window.reset=st=>{scene.enable(false);scene.setOriginal(360,740,spec(360,740));scene.enable(true);scene.image(st.sel,spec(st.w,st.h));scene.update(st,true);step(time+2000)};
     window.probe=(el,x,y)=>{const p=document.createElement('i');p.style.cssText='position:absolute;width:0;height:0;left:'+x+'%;top:'+y+'%';el.append(p);return p};
     // 이음매 — 책등의 양끝(.3px 겹침 안쪽)이 두 판 뒷면의 힌지 쪽 변 가운데에 붙는다. 앞 화면은 회전축이 틈의 절반만큼 떠 있어 접는 동안 벌어지는 게 맞다.
@@ -135,7 +139,8 @@ try {
       const cam=box(face.querySelector('.cam')),content=box(face.querySelector(window.atStart||window.cached?'.old':'.neu'));
       // 펼친 화면의 홈 버튼은 힌지에 걸치면 두 판이 반씩 그린다 — 보이는 면의 것을 합친 상자 하나로 잰다.
       const homes=(back?['.leaf .rear']:['.base .front','.leaf .front']).map(f=>el.querySelector(f+' > .home')).filter(e=>Number(e.style.opacity)>0).map(box).reduce((a,b)=>[a.length?union(a[0],b):b],[]);
-      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,homes,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
+      const glint=glints(theta>90?'#rig .leaf .rear':'#rig .base .front, #rig .leaf .front');
+      return {error,spine:spine.style.display!=='none',body,cam,content,over,theta,homes,glint,buttons:[...el.querySelectorAll('.btn')].filter(e=>Number(e.style.opacity)>0).map(box),angle:el.style.transform,leaf};
     };`);
   // 착지 — 접기의 마지막 프레임과 멈춘 첫 프레임을 화면째 찍어 몸체의 테 · 빛 · 그림자를 견준다. 화면 안과 그 둘레 3px(링 자리)는
   // 그림이 달라 빼고, 외곽선 · 단추 · 힌지 눈금의 2px 띠도 뺀다 — 접기 층은 합성기가 소수점 자리에서 다시 표본해 1px 짜리 선이 반 픽셀 번진다.
@@ -182,6 +187,8 @@ try {
       await evaluate(`window.states=${JSON.stringify({[from.sel]:from,[to.sel]:to})}`);
       const refs={};
       for(const st of [from,to]) refs[st.sel]=await evaluate(`reset(${JSON.stringify(st)});snapshot()`);
+      // 멈춘 몸체의 반점은 데몬 PNG(DeviceChromePainter)처럼 화면 왼쪽 위 대각선에 있다.
+      for(const st of [from,to]) assert(refs[st.sel].glints.every(g=>g.dx<0&&Math.abs(g.dx-g.dy)<=.2),`${st.sel}: 멈춘 반점이 왼쪽 위 ${JSON.stringify(refs[st.sel].glints)}`);
       for (const arrival of ['late','during','cached']) {
           const cached=arrival==='cached';
           await evaluate(`reset(${JSON.stringify(from)});window.cached=${cached};requests=[];${cached?`scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));`:''}`);
@@ -214,6 +221,11 @@ try {
             const boxes=[frame.body,...frame.buttons];
             assert(boxes.every(b=>b.x>=0&&b.y>=0&&b.x+b.w<=1440&&b.y+b.h<=900),`${name}: 모션 중 몸체와 단추가 창 안`);
           }
+          // 접는 내내 반점은 화면 기준 왼쪽 위에 머문다 — 면이 모로 서는 90° 근처는 x 가 0으로 줄어 빼고 본다.
+          const lit=frames.filter(f=>Math.abs(f.theta-90)>5).flatMap(f=>f.glint.map(g=>({...g,theta:f.theta})));
+          if(kin(device)==='flip8') assert(lit.length>=20,`${name}: 반점이 보이는 프레임`);
+          const stray=lit.find(g=>!(g.dx<0&&g.dy<0));
+          assert(!stray,`${name}: 접는 동안 반점이 화면 왼쪽 위 ${JSON.stringify(stray)}`);
           const changing = new Set(frames.map(f=>f.leaf));
           assert(changing.size>=10,`${name}: 접는 장의 실제 변형`);
           assert(frames.filter(f=>f.theta>=30&&f.theta<=150).every(f=>f.spine),`${name}: 30~150°에서 책등이 보인다`);
