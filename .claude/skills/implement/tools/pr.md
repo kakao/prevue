@@ -12,11 +12,11 @@
 
 ## develop 따라가기
 
-develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 검증 돌리기를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 병합이 제품 입력(화면 확인의 경로)을 바꿨으면 밀기 전에 화면 확인을 다시 한다.
+develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 검증 돌리기를 다시 통과시켜 민다 — 리베이스 · 강제 푸시를 하지 않는다. 병합이 제품 입력(화면 확인의 경로)을 바꿨으면 화면 확인을 다시 할지 판단한다 — 이 작업이 바꾼 보이는 동작과 병합이 들여온 변경이 겹치면 다시 본다.
 
 ## CI
 
 - **기다린다** — `gh pr checks <N> --required --watch`. 종료 0이면 초록이다. "no required checks reported"로 끝나면 실패가 아니다 — `ci-success`는 앞 job이 다 끝나야 생긴다. 몇 분 뒤 다시 친다(종료 코드는 실패와 같아 메시지로 가른다).
   기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다.
-- **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 리뷰를 수정 확인으로 맡긴다(분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지).
+- **실패하면 멈춰** 어느 job · 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지) 보고한다. 다시 불려 고쳤으면 수정 확인을 맡길지 고친 것에 따라 정한다([review.md](review.md) "고칠 것"). 맡기면 분류기에 `--range <실패한 head>..HEAD --recheck`, 직전 결과 자리에 CI 실패 요지를 넘긴다.
 - **초록이면** PR 본문의 "확인한 것"에 CI 실행 링크를 채운다. `gh pr merge`는 부르지 않는다 — 머지는 사람이 한다.
