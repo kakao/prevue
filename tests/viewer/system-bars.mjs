@@ -328,17 +328,29 @@ try {
   await evaluate(`const recovered=structuredClone(__stable);recovered.version+=2;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:recovered})}))`);
   await ready();
   await check(`!document.querySelector('#resizeScene').classList.contains('preparing')`, '복구된 렌더로 그림과 입력을 다시 준비');
+  // 재생한 상태는 version 을 앞질렀다 — 데몬의 다음 상태가 버려지지 않게 되돌린 뒤 실제 이벤트를 다시 받는다.
+  const release = () => evaluate(`{const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false}`);
+  await release();
   // 실제 자료의 captionBar · systemOverlays 는 모두 0 이라 가짜 값을 재생해 띠 · 배지 · 치수선 · SAFE AREA 를 본다.
   // captionBar.top 은 statusBars.top 보다 크게 둬 위 변의 배지가 다른 종류로 넘어가는지도 본다.
-  await evaluate(`const fake=structuredClone(__store.st);fake.version+=1;const fv=fake.focus.deviceInsets.values;fv.captionBar.top=Math.max(...Object.values(fv).map(x=>x.top))+20;fake.focus.deviceInsets.values.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))`);
-  await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
-  await check(`(${insetGeometry}).length===0 && document.querySelector('#insetMarks .im-dim[data-edge="right"]')?.dataset.kind==='systemOverlays'`, 'captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA');
-  await check(`(d=>d?.dataset.kind==='captionBar' && d.dataset.bold==='true' && d.querySelector('.im-label').textContent==='CAPTION')(document.querySelector('#insetMarks .im-dim[data-edge="top"][data-side="right"]'))`, '위 변 오른쪽 배지가 가장 큰 captionBar 로 넘어가 굵다');
-  await check(`document.querySelectorAll('#insetMarks .im-dim[data-edge="top"]:not([data-kind="displayCutout"])').length===1`, '한쪽에 컷아웃 아닌 종류가 둘이어도 최댓값 하나만');
-  // 재생한 상태는 version 을 앞질렀다 — 데몬의 다음 상태가 버려지지 않게 되돌린 뒤 실제 이벤트를 다시 받는다.
-  await evaluate(`const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false`);
-  await until(`!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
-  await ready();
+  // 오른쪽 변 배지는 몸체 아래에 선다 — 창 높이를 채우는 Pixel 9 세로에서 조작 독에 가리지 않는지 보고, 채우지 않는 Duo 커버 세로로 끝낸다.
+  for (const [device, folded] of [['pixel9', false], ['duo', true]]) {
+    const name = `${device}-${folded ? 'cover' : 'open'}-portrait 가짜 인셋`;
+    await post('/viewer/resize', { device, folded, orientation: 'portrait' });
+    await until(`__store.st.focus.size?.device===${JSON.stringify(device)} && __store.st.focus.size.folded===${folded} && __store.st.focus.size.orientation==='portrait'`);
+    await ready();
+    await evaluate(`{window.__stable=structuredClone(__store.st);window.__replaying=true;const fake=structuredClone(__stable);fake.version+=1;const fv=fake.focus.deviceInsets.values;fv.captionBar.top=Math.max(...Object.values(fv).map(x=>x.top))+20;fv.systemOverlays.right=96;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:fake})}))}`);
+    await until(`!!document.querySelector('#insetOverlay [data-kind="captionBar"] [data-edge="top"]') && !!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
+    await ready();
+    const fakeMiss = await evaluate(insetGeometry);
+    assert.deepEqual(fakeMiss, [], `${name} 띠 · 배지 · 치수선 · SAFE AREA · 조작 독 비킴: ${JSON.stringify(fakeMiss)}`);
+    await check(`document.querySelector('#insetMarks .im-dim[data-edge="right"]')?.dataset.kind==='systemOverlays'`, `${name} captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA`);
+    await check(`(d=>d?.dataset.kind==='captionBar' && d.dataset.bold==='true' && d.querySelector('.im-label').textContent==='CAPTION')(document.querySelector('#insetMarks .im-dim[data-edge="top"][data-side="right"]'))`, `${name} 위 변 오른쪽 배지가 가장 큰 captionBar 로 넘어가 굵다`);
+    await check(`document.querySelectorAll('#insetMarks .im-dim[data-edge="top"]:not([data-kind="displayCutout"])').length===1`, `${name} 한쪽에 컷아웃 아닌 종류가 둘이어도 최댓값 하나만`);
+    await release();
+    await until(`!document.querySelector('#insetOverlay [data-kind="systemOverlays"] [data-edge="right"]')`);
+    await ready();
+  }
   // 수명 — 소스 저장(다시 그리기)에도 남고, 인터랙티브를 나갔다 오면 꺼진다. 탭 전환도 한 장을 떠나 보드로 가므로 같은 길이다.
   const version = await evaluate(`__store.st.version`);
   const file = await evaluate('__store.st.board.file');
