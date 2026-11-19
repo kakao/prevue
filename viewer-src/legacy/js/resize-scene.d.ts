@@ -13,10 +13,13 @@ export type ResizeScene = {
   closeMenu(): boolean;
   sizeOf(sel: string): { w: number; h: number } | null;
   sliderOff(on: boolean): void;
-  relayout(): void;
+  /** force 면 창 크기가 그대로여도 다시 맞춘다(오버레이 켬 · 끔처럼 자리가 달라질 때). */
+  relayout(force?: boolean): void;
   moving(): boolean;
 };
 export function createResizeScene(root: HTMLElement, hooks: {
   request(sel: string): Promise<boolean>;
   layout(rect: SceneRect, moving: boolean): void;
+  /** 인셋 영역 보기가 켜졌는지 — 켜졌을 때만 배지가 설 자리를 비운다. */
+  insetOn?(): boolean;
 }): ResizeScene;

@@ -168,19 +168,39 @@ export function createResizeScene(root, hooks) {
   // 좁을수록 양옆을 높이 자와 그 숫자가 들어갈 만큼만 비운다(자 간격은 껍데기가 없는 틀의 P.gap — 껍데기가 있으면 옆 bezel 이 더 메운다). 틀은 판 가운데(아래 캡슐과 같은 가운데)에 두므로 오른쪽도 왼쪽과 같은 폭을 비운다.
   // 그 폭은 배지의 실제 폭에서 나온다(자 간격 + 눈금 22 + 배지 반폭 + 판 끝 틈) — 배지가 커지면 같이 는다.
   const NARROW = 400, WIDE = 800, RULER_RAIL = 22, PLATE_EDGE = 10, BADGE_W = 45;
+  // 인셋 배지 — 오른쪽 배지는 몸체에서 48(resize.css 의 --im-off-x) 떨어진 선 가운데에 서고, 레이블이 붙어 가장 긴 배지의 반폭이 CHIP_HALF 다. 켜졌을 때만 양옆을 그만큼 비운다.
+  const CHIP_HALF = 56, RIGHT_NEED = 48 + CHIP_HALF + PLATE_EDGE;
   const clock = { t: 0 };
   const badge = { w: BADGE_W };
-  function room() {
+  function room(st) {
     const W = root.clientWidth, k = clamp((W - NARROW) / (WIDE - NARROW), 0, 1);
-    const side = lerp(P.gap + RULER_RAIL + Math.ceil(badge.w / 2) + PLATE_EDGE, RULER_SIDE, k);
-    return { W, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
+    const side = Math.max(lerp(P.gap + RULER_RAIL + Math.ceil(badge.w / 2) + PLATE_EDGE, RULER_SIDE, k), st && shelled(st) && hooks.insetOn?.() ? RIGHT_NEED : 0);
+    return { W, side, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
   }
   // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
+  // 컷아웃 배지는 눈금(#ruler) 바깥에 선다 — 컷아웃이 위 · 아래 변이면 높이 눈금 왼쪽에, 왼쪽 · 오른쪽 변이면 폭 눈금 위에 자리가 더 든다.
+  // 어느 변인지는 스펙의 측정 자세(panel.cutIn)에서 오고, 오버레이가 켜졌는지는 hooks.insetOn 이 답한다(꺼졌으면 배지가 없어 줄이지 않는다). 자리가 모자랄 때만 틀을 줄이고, 틀은 가운데에 둔다.
+  // 폭은 몸체에서 배지 가운데까지(resize.css 의 --im-off-left 112 · --im-off-x 48) + 가장 긴 배지 반폭 + 판 끝 틈이고, 양옆 기본 폭(side)이 이미 비워 둔 만큼은 뺀다.
+  const LANE_W = 112 + CHIP_HALF + PLATE_EDGE, LANE_H = 32;
+  const cutEdgesOf = st => {
+    const cutIn = DEVICES[st.dev][st.folded ? "cover" : "open"].cutIn, name = st.right ? "landscape-right" : st.w > st.h ? "landscape-left" : "portrait";
+    // 측정하지 않은 가로 자세는 맞은편 가로(좌우만 바뀐다)의 변을 쓴다.
+    return cutIn[name] ?? cutIn[name === "landscape-right" ? "landscape-left" : "landscape-right"] ?? "";
+  };
+  const cutLaneOf = (st, side) => {
+    if (!shelled(st) || !hooks.insetOn?.()) return { w: 0, h: 0 };
+    const edges = cutEdgesOf(st);
+    return { w: edges.includes("w") ? Math.max(0, LANE_W - side) : 0, h: edges.includes("h") ? LANE_H : 0 };
+  };
   function fit(st) {
-    const r = room(), each = (x, maxW) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), r.maxH / (x.h + ph), 2); };
-    const s = Math.min(each(ORIGINAL, r.maxW), each(st, r.maxW));
+    const r = room(st), lane = cutLaneOf(st, r.side), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
+    const both = (maxW, maxH) => Math.min(each(ORIGINAL, maxW, maxH), each(st, maxW, maxH));
+    let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
+    if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;
+    if (lane.h && (maxH - (st.h + padsOf(st)[1]) * s) / 2 < lane.h) { maxH -= lane.h; up = lane.h; }
+    s = both(maxW, maxH);
     const h = st.h * s, ph = padsOf(st)[1] * s;
-    return { s, w: st.w * s, h, cx: r.cx, y: r.top + ph / 2 + Math.max(0, (r.maxH - h - ph) / 2) };
+    return { s, w: st.w * s, h, cx: r.cx, y: r.top + up + ph / 2 + Math.max(0, (maxH - h - ph) / 2) };
   }
   let cur = null;
   let tr = null;
@@ -1278,9 +1298,9 @@ export function createResizeScene(root, hooks) {
     ROWS[n].focus(); pick(ROWS[n].dataset.sel, true);
   });
   paintHinge();
-  function relayout() {
+  function relayout(force = false) {
     const size = `${root.clientWidth}:${root.clientHeight}:${badge.w}`;
-    if (size === roomSize) return;
+    if (size === roomSize && !force) return;
     roomSize = size;
     if (cur && !rig.on && !spin.on) setFrame(fit(cur), performance.now(), tr?.kind === "size" ? springOf(P.frameDur, P.frameBounce) : null);
     wake();

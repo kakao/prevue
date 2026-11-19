@@ -1737,11 +1737,15 @@ function vr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 			} : { size: e.startsWith("custom:") ? e.slice(7) : e };
 			return O(i);
 		},
+		insetOn: () => Cn.get().on,
 		layout: (t, n) => {
 			if (!f) return;
 			let i = c();
 			d && i.z !== 1 && (i.x += (1 - i.z) * (d.cx - d.w / 2 - (t.cx - t.w / 2)), i.y += (1 - i.z) * (d.y - t.y)), d = t, a(t), se(), r.classList.toggle("resize-hidden", n || !b && !S), e.classList.toggle("await-live", !b);
 		}
+	});
+	Cn.subscribe(() => {
+		f && M.relayout(!0);
 	});
 	function N(t, r = !1) {
 		S = t, e.classList.toggle("preparing", t), n.setAttribute("aria-busy", String(t && !r)), xn.set({
@@ -4159,23 +4163,17 @@ var ja = [
 ];
 function Na(e, t, n) {
 	if (!e || !t || n?.kind !== "device") return null;
-	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Ma.map((e) => {
-		let n = ja.reduce((n, r) => t.values[r][e] > t.values[n][e] ? r : n);
-		return [e, {
-			kind: n,
-			value: Math.max(0, t.values[n][e])
-		}];
-	})), o = Object.fromEntries(Ma.map((e) => [e, a[e].value]));
+	let r = n.widthDp, i = n.heightDp, a = Object.fromEntries(Ma.map((e) => [e, Math.max(0, ...ja.map((n) => t.values[n][e]))]));
 	return {
 		w: r,
 		h: i,
 		insets: t,
 		widest: a,
 		safe: {
-			x: o.left,
-			y: o.top,
-			w: Math.max(0, r - o.left - o.right),
-			h: Math.max(0, i - o.top - o.bottom)
+			x: a.left,
+			y: a.top,
+			w: Math.max(0, r - a.left - a.right),
+			h: Math.max(0, i - a.top - a.bottom)
 		}
 	};
 }
@@ -4287,19 +4285,23 @@ function Ia({ deviceInsets: e, size: t, host: n }) {
 	}), ma);
 }
 var La = (e) => String(Math.round(e * 100) / 100);
-function Ra({ w: e, h: t, widest: n }) {
-	return Ma.flatMap((r) => {
-		let { kind: i, value: a } = n[r];
-		if (!(a > 0)) return [];
-		let o = r === "top" || r === "bottom" ? t : e, [s, c] = r === "top" || r === "left" ? [0, a / o] : [1 - a / o, 1];
-		return [{
-			kind: i,
-			edge: r,
-			value: a,
-			side: r === "top" || r === "bottom" ? "right" : "bottom",
-			from: s,
-			to: c
-		}];
+function Ra({ w: e, h: t, insets: n, widest: r }) {
+	return Ma.flatMap((i) => {
+		let a = i === "top" || i === "bottom", o = a ? t : e;
+		return [[ja.filter((e) => e !== "displayCutout").reduce((e, t) => n.values[t][i] > n.values[e][i] ? t : e), a ? "right" : "bottom"], ["displayCutout", a ? "left" : "top"]].flatMap(([e, t]) => {
+			let a = Math.max(0, n.values[e][i]);
+			if (!(a > 0)) return [];
+			let [s, c] = i === "top" || i === "left" ? [0, a / o] : [1 - a / o, 1];
+			return [{
+				kind: e,
+				edge: i,
+				value: a,
+				side: t,
+				bold: a === r[i],
+				from: s,
+				to: c
+			}];
+		});
 	});
 }
 var za = (e) => `${e * 100}%`;
@@ -4310,7 +4312,7 @@ function Ba({ deviceInsets: e, size: t, host: n }) {
 	}, [i, c]), !c) return a(null, ha);
 	let { w: l, h: u, safe: d } = c;
 	return a(/* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [Ra(c).map((e) => {
-		let t = e.side === "right" ? {
+		let t = e.side === "right" || e.side === "left" ? {
 			top: za(e.from),
 			height: za(e.to - e.from)
 		} : {
@@ -4322,13 +4324,20 @@ function Ba({ deviceInsets: e, size: t, host: n }) {
 			"data-kind": e.kind,
 			"data-edge": e.edge,
 			"data-side": e.side,
+			"data-bold": e.bold,
 			style: t,
 			children: [
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-from" }),
 				/* @__PURE__ */ (0, z.jsx)("i", { className: "im-ext im-to" }),
-				/* @__PURE__ */ (0, z.jsx)("span", {
+				/* @__PURE__ */ (0, z.jsxs)("span", {
 					className: "im-badge",
-					children: La(e.value)
+					children: [/* @__PURE__ */ (0, z.jsx)("em", {
+						className: "im-label",
+						children: r(`insetOverlay.kind.${e.kind}`)
+					}), /* @__PURE__ */ (0, z.jsx)("span", {
+						className: "im-val",
+						children: La(e.value)
+					})]
 				})
 			]
 		}, `${e.kind} ${e.edge}`);
