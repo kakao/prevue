@@ -1,14 +1,11 @@
 package prevue.infrastructure.render
 
-import com.android.ide.common.rendering.api.RenderSession
 import com.android.tools.configurations.Configuration
 import com.android.tools.render.Renderer
 import com.android.tools.render.StandaloneRenderModelModule
 import com.android.tools.rendering.RenderService
 import com.android.tools.rendering.RenderTask
-import com.android.tools.rendering.classloading.ModuleClassLoader
 import java.lang.reflect.Field
-import java.lang.reflect.Method
 import java.util.concurrent.locks.Lock
 import prevue.application.domain.model.phrase
 
@@ -34,16 +31,13 @@ internal class RendererSurfaces(renderer: Renderer) {
         field(managerClass(), "sharedClassLoadersLock").get(manager.value) as Lock
     }
     val dependencies = Surface("StandaloneRenderModelModule.dependencies") { field(StandaloneRenderModelModule::class.java, "dependencies") }
-    val noDependencies = Surface("StandaloneModuleDependencies(List)") {
-        Class.forName("com.android.tools.render.StandaloneModuleDependencies").getConstructor(List::class.java).newInstance(emptyList<String>())
-    }
 
     val session = SessionSurfaces()
 
     private fun managerClass(): Class<*> = manager.value.javaClass
 
     fun all(): List<Surface<*>> = listOf(
-        renderService, baseConfiguration, manager, createClassLoader, sharedLoader, sharedLock, dependencies, noDependencies,
+        renderService, baseConfiguration, manager, createClassLoader, sharedLoader, sharedLock, dependencies,
     ) + session.all()
 
     fun opened(): RendererSurfaces = apply {
@@ -59,16 +53,10 @@ internal class RendererSurfaces(renderer: Renderer) {
     }
 }
 
-internal class SessionSurfaces(
-    task: Class<*> = RenderTask::class.java,
-    cleanerName: String = "com.android.tools.rendering.RenderSessionCleaner",
-) {
+internal class SessionSurfaces(task: Class<*> = RenderTask::class.java) {
     val renderSession = Surface("RenderTask.myRenderSession") { RendererSurfaces.field(task, "myRenderSession") }
     val loaderReference = Surface("RenderTask.myModuleClassLoaderReference") { RendererSurfaces.field(task, "myModuleClassLoaderReference") }
     val layoutlibCallback = Surface("RenderTask.myLayoutlibCallback") { RendererSurfaces.field(task, "myLayoutlibCallback") }
-    val cleaner = Surface<Method>("RenderSessionCleaner.dispose") {
-        Class.forName(cleanerName, true, task.classLoader).getMethod("dispose", RenderSession::class.java, ModuleClassLoader::class.java)
-    }
 
-    fun all(): List<Surface<*>> = listOf(renderSession, loaderReference, layoutlibCallback, cleaner)
+    fun all(): List<Surface<*>> = listOf(renderSession, loaderReference, layoutlibCallback)
 }
