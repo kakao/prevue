@@ -8,9 +8,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -98,7 +103,9 @@ fun PearlApp(modifier: Modifier = Modifier, drinks: List<Drink> = menu, ambient:
     LaunchedEffect(kind) { grid.scrollToItem(0) }
 
     BoxWithConstraints(modifier.fillMaxSize().background(PearlColors.canvas).onGloballyPositioned { origin = it.boundsInRoot() }) {
-        val inset = 96.dp
+        // 컷아웃 띠가 내비게이션 바보다 두꺼운 자세(Flip8 커버)에서만 알약이 올라간 만큼 목록 끝도 올린다
+        val cutoutExtra = with(LocalDensity.current) { (WindowInsets.safeDrawing.getBottom(this) - WindowInsets.navigationBars.getBottom(this)).coerceAtLeast(0).toDp() }
+        val inset = 96.dp + cutoutExtra
         if (selected == null || open.value < 0.999f) {
             CompositionLocalProvider(LocalCardBounds provides { id, r -> cards[id] = r }, LocalCupBounds provides { id, r -> cups[id] = r }) {
                 Box(Modifier.fillMaxSize().graphicsLayer { alpha = tabIn.value; translationY = (1f - tabIn.value) * 18.dp.toPx() }) {
@@ -122,7 +129,7 @@ fun PearlApp(modifier: Modifier = Modifier, drinks: List<Drink> = menu, ambient:
             PillNavBar(
                 tabNames.mapIndexed { i, n -> NavItem(PearlNav[i], stringResource(n)) },
                 selected = tab,
-                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 20.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)).padding(bottom = 20.dp),
             ) {
                 if (it != tab) { tab = it; scope.launch { tabIn.snapTo(0f); tabIn.animateTo(1f, tween(320)) } }
             }
