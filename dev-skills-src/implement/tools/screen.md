@@ -14,7 +14,12 @@ sh -c 'P="$(sed -n "s/^INPUTS=\"\(.*\)\"\$/\1/p" tools/check-local.sh)"; test -n
 
 ## 빌드하고 띄운다
 
-`AGENTS.md`의 워크트리 프리뷰 규칙대로 이 워크트리를 빌드하고 그 `plugin/bin/prevue`를 쓴다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `AGENTS.md` "승인이 필요한 것"이다. 같은 대상을 다른 데몬이 보고 있으면 `AGENTS.md` "개발 위생"대로 띄운다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
+이 워크트리를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다. CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `implement`의 멈춤 목록(대상 저장소의 Gradle)이다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
+
+개발 위생이다 — 제품 제약이 아니다.
+
+- 검증장은 저장소 안 픽스처 `fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`와, `tools/`의 측정 · 촬영 스크립트가 쓰는 저장소 밖 공개 앱 체크아웃(nowinandroid · kotlinconf-app 등)이다. 검증장에 실험 산출물을 남기지 않는다 — 소스를 고쳐 봐야 하면 `.cache/spike/src/` 복사본을 `--watch`로 감시한다. 저장소 밖 체크아웃은 고쳤다 되돌린다.
+- 같은 대상 체크아웃을 다른 워크트리의 데몬이 이미 보고 있으면(`prevue status`의 `daemons`) `--no-watch`로 띄우고 `reload`로 잰다. 산출물 디렉터리가 대상 경로마다 하나라 저장 한 번에 두 데몬이 같은 PNG를 쓰다 깨진다 — 남의 세션 데몬도 깨운다.
 
 ## 본다
 

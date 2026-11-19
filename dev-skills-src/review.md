@@ -1,12 +1,12 @@
 # Prevue 리뷰 규약
 
-`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. 세션 규칙(`AGENTS.md`의 "리뷰" 절)이 이 문서를 리뷰 규약으로 선언하고, `implement`의 리뷰 맡기기(`dev-skills-src/implement/tools/review.md`)가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
+`review` 스킬이 Prevue diff를 판정할 때 읽는 이 저장소의 사실이다. 리뷰하는 법 · 관점 · 고칠 것/물을 것 기준 · 출력 형식은 `review` 스킬이 갖고, 여기에는 Prevue에만 해당하는 것만 둔다. `implement`의 리뷰 맡기기(`dev-skills-src/implement/tools/review.md`)가 등급을 고를 때 아래 `json review-tier` 블록을 넘긴다.
 
 ## 코딩 표준
 
-`AGENTS.md`와 `dev-skills-src/coding.md`를 끝까지 읽고 diff의 신규 · 수정 줄에 댄다 — `AGENTS.md`의 "규칙" · "저장소" 절과 `coding.md` 전체가 코딩 표준이다.
+`dev-skills-src/coding.md`를 끝까지 읽고 diff의 신규 · 수정 줄에 댄다 — `coding.md` 전체가 코딩 표준이다.
 
-- **생성물만 바뀌고 원본이 그대로면 고칠 것이다** — 무엇이 생성물이고 원본인지는 `AGENTS.md` "저장소" 절이 갖는다.
+- **생성물만 바뀌고 원본이 그대로면 고칠 것이다** — 무엇이 생성물이고 원본인지는 생성 스크립트 머리말(`tools/gen-agents.sh` · `tools/gen-viewer.sh` · `tools/plugin-copies.sh`)이 갖고, CI가 각각의 `--check`로 막는다.
 - **결정(`D-<n>`)을 뒤집으면 물을 것이다** — 결정을 뒤집는 일은 사람이 정한다.
 
 반복 리뷰 지적 — 리뷰가 통과시킨 뒤 사람이 잡은 모양이다.
@@ -89,9 +89,9 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 ## 빌드 사각지대
 
 - **`plugin/daemon/daemon/src/bridge/`** — `kotlin-compiler-embeddable`에 `compileOnly`로 묶이고, 실행 때는 격리 클래스로더에 공유 툴체인의 컴파일러 jar와 함께 올라가 데몬이 리플렉션으로 부른다. 이름 · 시그니처가 어긋나면 컴파일이 아니라 실행 때 드러난다.
-- **대상 앱 클래스패스 · Compose 판** — 렌더 결과는 대상의 클래스패스 덤프에 달렸고, 대상 저장소의 Gradle 실행은 승인이 필요해 리뷰에서 돌릴 수 없다(`AGENTS.md` "승인이 필요한 것").
+- **대상 앱 클래스패스 · Compose 판** — 렌더 결과는 대상의 클래스패스 덤프에 달렸고, 대상 저장소의 Gradle 실행은 승인이 필요해 리뷰에서 돌릴 수 없다(`implement`의 멈춤 목록).
 - **CLI**(`plugin/cli/`의 파이썬 · `plugin/bin/prevue`의 bash와 인라인 `python3`) — 정적 검사(타입 · shellcheck)가 없다. 호출처 누락 · 키 이름 오타는 `tests/cli`에 없는 경로면 빌드로도 잡히지 않는다.
-- **생성물** — `AGENTS.md` "저장소" 절의 생성물은 diff에 보여도 판정 대상은 원본이다. 원본과 생성물이 함께 바뀌었으면 원본을 읽는다.
+- **생성물** — 생성 스크립트가 만든 생성물은 diff에 보여도 판정 대상은 원본이다. 원본과 생성물이 함께 바뀌었으면 원본을 읽는다.
 - **버전 핀** — `plugin/daemon/`의 빌드 파일 · 버전 카탈로그는 layoutlib · 컴파일러 판과 맞물린다. 핀을 바꾼 diff는 "빌드 실패 시 볼 곳"에 적는다.
 
 ## 외부 근거 도구
