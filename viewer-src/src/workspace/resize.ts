@@ -6,6 +6,7 @@ import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
 import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
+import { marksBelow } from './insets';
 import { insetOverlayView, loadingView } from './view';
 
 type AnySize = Focus['postures'][number]['size'] | Size | null;
@@ -78,6 +79,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       return requestSize(body);
     },
     insetOn: () => insetOverlayView.get().on,
+    insetBelow: () => marksBelow(current?.deviceInsets),
     layout: (rect, moving) => {
       if (!active) return;
       // 확대의 기준점은 틀의 왼쪽 위다. 접기 · 돌리기 · 크기로 틀이 옮겨 가면 기준점이 따라 뛰어 화면이 튀었다 —
@@ -159,12 +161,15 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     if (sized) { snapshot(); pending = true; shown = false; stage.classList.add('resize-hidden'); }
     const previous = current;
     current = f; key = next;
+    // 같은 크기에서 인셋 값만 바뀌어 몸체 아래 배지 줄이 생기거나 사라지면 장면이 자리를 다시 맞춘다.
+    const relayout = !sized && !!previous && marksBelow(previous.deviceInsets) !== marksBelow(f.deviceInsets);
     if (previous && !sized && f.imageUrl !== previous.imageUrl) scene.clearImages();
     for (const p of f.postures || []) {
       const gen = epoch;
       load(p.imageUrl).then(img => { if (active && gen === epoch && current?.postures?.some(x => x.imageUrl === p.imageUrl)) scene.image(sizeKey(p.size), spec(img, p.size)); }).catch(() => {});
     }
     if (original) scene.update(target(f), !previous);
+    if (relayout && insetOverlayView.get().on) scene.relayout(true);
     if (error) {
       shown = false; loading = stream = null;
       shot.onload = null; shot.removeAttribute('src');

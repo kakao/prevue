@@ -22,4 +22,6 @@ export function createResizeScene(root: HTMLElement, hooks: {
   layout(rect: SceneRect, moving: boolean): void;
   /** 인셋 영역 보기가 켜졌는지 — 켜졌을 때만 배지가 설 자리를 비운다. */
   insetOn?(): boolean;
+  /** 몸체 아래 줄(왼쪽 · 오른쪽 변의 컷아웃 아닌 종류)에 배지가 서는지 — 설 때만 조작 독 위로 자리를 비운다. */
+  insetBelow?(): boolean;
 }): ResizeScene;

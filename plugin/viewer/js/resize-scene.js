@@ -182,6 +182,10 @@ export function createResizeScene(root, hooks) {
   // 어느 변인지는 스펙의 측정 자세(panel.cutIn)에서 오고, 오버레이가 켜졌는지는 hooks.insetOn 이 답한다(꺼졌으면 배지가 없어 줄이지 않는다). 자리가 모자랄 때만 틀을 줄이고, 틀은 가운데에 둔다.
   // 폭은 몸체에서 배지 가운데까지(resize.css 의 --im-off-left 112 · --im-off-x 48) + 가장 긴 배지 반폭 + 판 끝 틈이고, 양옆 기본 폭(side)이 이미 비워 둔 만큼은 뺀다.
   const LANE_W = 112 + CHIP_HALF + PLATE_EDGE, LANE_H = 32;
+  // 왼쪽 · 오른쪽 변의 컷아웃 아닌 배지는 몸체 아래(resize.css 의 --im-off-y 28) 선 가운데에 선다. CAPSULE_ROOM 은 조작 독 몫이라 창 높이를 채우는 기기에서 그 배지가 독 뒤로 들어갔다 —
+  // 그 줄에 배지가 있을 때만(hooks.insetBelow) 선까지 거리 + 배지 반높이만큼 아래를 더 비운다.
+  const BELOW_H = 28 + 12;
+  const belowOf = st => shelled(st) && hooks.insetOn?.() && hooks.insetBelow?.() ? BELOW_H : 0;
   const cutEdgesOf = st => {
     const cutIn = DEVICES[st.dev][st.folded ? "cover" : "open"].cutIn, name = st.right ? "landscape-right" : st.w > st.h ? "landscape-left" : "portrait";
     // 측정하지 않은 가로 자세는 맞은편 가로(좌우만 바뀐다)의 변을 쓴다.
@@ -196,8 +200,11 @@ export function createResizeScene(root, hooks) {
     const r = room(st), lane = cutLaneOf(st, r.side), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
     const both = (maxW, maxH) => Math.min(each(ORIGINAL, maxW, maxH), each(st, maxW, maxH));
     let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
+    // 위 · 아래 줄은 같이 비운다 — 한쪽만 비우면 틀이 줄어든 높이의 가운데로 옮겨 가 맞은편 여백이 그 절반만큼 준다.
+    const freeH = (maxH - (st.h + padsOf(st)[1]) * s) / 2, below = belowOf(st), short = freeH < Math.max(lane.h, below);
     if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;
-    if (lane.h && (maxH - (st.h + padsOf(st)[1]) * s) / 2 < lane.h) { maxH -= lane.h; up = lane.h; }
+    if (lane.h && short) { maxH -= lane.h; up = lane.h; }
+    if (below && short) maxH -= below;
     s = both(maxW, maxH);
     const h = st.h * s, ph = padsOf(st)[1] * s;
     return { s, w: st.w * s, h, cx: r.cx, y: r.top + up + ph / 2 + Math.max(0, (maxH - h - ph) / 2) };
