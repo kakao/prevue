@@ -89,7 +89,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range origin/develop..HE
   # 0 해당 없음 · 1 제품 입력이 바뀌었다 · 2 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
   ```
 
-- **빌드하고 띄운다** — `AGENTS.md`의 워크트리 프리뷰 규칙대로 이 워크트리를 빌드하고 그 `plugin/bin/prevue`를 쓴다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `AGENTS.md` "승인이 필요한 것"이다. 같은 대상을 다른 데몬이 보고 있으면 `AGENTS.md` "개발 위생"대로 띄운다.
+- **빌드하고 띄운다** — `AGENTS.md`의 워크트리 프리뷰 규칙대로 이 워크트리를 빌드하고 그 `plugin/bin/prevue`를 쓴다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `AGENTS.md` "승인이 필요한 것"이다. 같은 대상을 다른 데몬이 보고 있으면 `AGENTS.md` "개발 위생"대로 띄운다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
 - **성공 기준 중 뷰어 · CLI로 봐야 하는 것을 직접 확인한다.** CLI는 그 `prevue` 명령의 응답 · 종료 코드 · PNG로 본다. 뷰어는 Chrome으로 본다 — `tests/viewer/*.mjs`처럼 CDP로 몰아 스크린샷 · DOM · 진행 중인 애니메이션(`getAnimations()`) · 모션 줄이기(`Emulation.setEmulatedMedia`)를 보고, 프레임 간격은 `tools/scroll-jank.mjs --headed --trace`로 잰다. 모션은 시작 · 중간 · 끝 프레임을 찍어 본다. 기준마다 무엇을 해서 무엇을 봤는지 증거를 남긴다(그림은 `.cache/` 아래).
 <!-- only:claude -->
   Chrome 확장 도구(`mcp__claude-in-chrome__*`)가 있으면 그것으로 뷰어를 조작하고 봐도 된다.
