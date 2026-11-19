@@ -1,6 +1,6 @@
 #!/bin/sh
-# 리뷰 · PR 전에 내 자리에서 도는 검사 다섯 — 생성물(스킬 두 벌 · CLAUDE.md) · 고지 사본 · CLI 판정 · 데몬 단위 테스트 · 린트.
-# CI(Verify)가 같은 다섯을 다시 돌지만 10~15분이 걸려, 리뷰어와 CI에 넘기기 전에 여기서 먼저 잡는다.
+# 리뷰 · PR 전에 내 자리에서 도는 검사 여섯 — 생성물(스킬 두 벌 · CLAUDE.md) · 고지 사본 · 뷰어 생성물 · CLI 판정 · 데몬 단위 테스트 · 린트.
+# CI(Verify)가 같은 여섯을 다시 돌지만 10~15분이 걸려, 리뷰어와 CI에 넘기기 전에 여기서 먼저 잡는다.
 # 통합 테스트 전체와 빌드 · CLI 계약은 CI 몫이라 여기 없다.
 #
 #   sh tools/check-local.sh
@@ -33,6 +33,10 @@ run() {
 
 run "생성물(gen-agents)" sh tools/gen-agents.sh --check
 run "고지 사본(plugin-copies)" sh tools/plugin-copies.sh --check
+
+# 뷰어 생성물 · viewer.state 계약 타입(contract-state.ts)이 원본과 맞는지 — 키만 더하고 생성을 빠뜨리면 CI 에서야 걸린다.
+# viewer-src/node_modules 가 없으면(새 워크트리) 실패한다 — 린트와 같이 통과로 치지 않는다
+run "뷰어 생성물(gen-viewer)" sh tools/gen-viewer.sh --check
 
 # CI 는 python 3.9 로 돈다 — 있으면 그것으로 돌려 3.9 에서만 깨지는 문법을 밀기 전에 잡는다
 PY="$(command -v python3.9 || command -v python3)"

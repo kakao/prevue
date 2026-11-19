@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -70,6 +71,10 @@ else:
 ''')
         cli.chmod(0o755)
         self.addCleanup(self.stop_servers)
+        # 기본 포트(8791)에 뷰어가 붙은 실제 데몬이 있으면 run 이 다시 붙기를 8초 기다려 시한을 넘는다 — 아무도 듣지 않는 포트를 넘긴다.
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            self.port = str(probe.getsockname()[1])
 
     def stop_servers(self):
         for file in self.home.glob("preparations/*/server.json"):
@@ -79,7 +84,7 @@ else:
                 pass
 
     def launch(self, *args, **env):
-        process = subprocess.Popen([sys.executable, str(self.script), "run", "warmup", "8791", *args],
+        process = subprocess.Popen([sys.executable, str(self.script), "run", "warmup", self.port, *args],
                                    env=dict(self.env, **env), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.addCleanup(lambda: process.poll() is None and process.kill())
         return process

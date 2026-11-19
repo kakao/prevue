@@ -39,8 +39,14 @@ function camBox(W0, H0, rot, cam, s, mirrored = false) {
   [onL || onT, onT || onR, onR || onB, onB || onL].forEach((on, k) => { if (on) corners[k] = rad * (1 - flat); });
   return { ...b, corners: corners.map(v => v + "px").join(" "), on: cam.w * s > .5, lens: cam.lens ? s : 0 };
 }
-// 렌즈 구멍(lens) — 안쪽으로 3dp 들어간 2dp 테와 왼쪽 위의 유리 반점(지름의 14%, 가운데에서 지름의 12% 비킴). 데몬 DeviceChromePainter 와 같은 자리다.
-const LENS = { inset: 3, ring: 2, glintAt: "31%", glint: "14%" };
+// 렌즈 구멍(lens) — 안쪽으로 3dp 들어간 2dp 테와 화면 기준 왼쪽 위의 유리 반점(지름의 14%, 가운데에서 지름의 12%씩 비킴). 데몬 DeviceChromePainter 와 같은 자리다.
+const LENS = { inset: 3, ring: 2, shift: .12, glint: .14 };
+// 반점은 빛이 만든 것이라 화면에 고정이다 — 장면이 turn 도 돌면(접기 장면의 turnRig) 카메라 안에서 그만큼 거꾸로 돌려 둔다.
+const glintAt = turn => {
+  const a = turn * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), x = -LENS.shift, y = -LENS.shift;
+  const at = v => (.5 + v - LENS.glint / 2) * 100 + "%";
+  return [at(x * c + y * s), at(-x * s + y * c)];
+};
 const CAM_MAX = Math.max(1, ...Object.values(DEVICES).flatMap(d => Object.values(d.look).map(l => l.cams.length)));
 
 export function createResizeScene(root, hooks) {
@@ -248,10 +254,12 @@ export function createResizeScene(root, hooks) {
     const e = endsOf(lk) * P.shellK, hd = e * HOME_K, b = camBox(W0, H0, rot, { w: hd, h: hd, y: H0 + (e - hd) / 2 }, s, mirrored);
     return { ...b, on: b.on && hk > .01 };
   };
-  const putCam = (el, b, dx, dy, op) => {
+  const putCam = (el, b, dx, dy, op, turn = 0) => {
     Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
     el.classList.toggle("lens", !!b.lens);
-    if (b.lens) for (const [k, v] of [["--lens-inset", LENS.inset * b.lens + "px"], ["--lens-ring", LENS.ring * b.lens + "px"], ["--lens-glint-at", LENS.glintAt], ["--lens-glint", LENS.glint]]) el.style.setProperty(k, v);
+    if (!b.lens) return;
+    const [gx, gy] = glintAt(turn);
+    for (const [k, v] of [["--lens-inset", LENS.inset * b.lens + "px"], ["--lens-ring", LENS.ring * b.lens + "px"], ["--lens-glint-x", gx], ["--lens-glint-y", gy], ["--lens-glint", LENS.glint * 100 + "%"]]) el.style.setProperty(k, v);
   };
   // 그릴 모양마다 .cam 하나 — 첫 .cam(마크업)을 기기 표의 가장 긴 목록만큼 복제해 둔다. 남는 것은 숨긴다.
   const camsIn = el => {
@@ -259,7 +267,7 @@ export function createResizeScene(root, hooks) {
     while (list.length < CAM_MAX) { const c = first.cloneNode(); list[list.length - 1].after(c); list.push(c); }
     return list;
   };
-  const putCams = (els, boxes, dx, dy, op) => els.forEach((el, i) => boxes[i] ? putCam(el, boxes[i], dx, dy, op) : (el.style.opacity = 0));
+  const putCams = (els, boxes, dx, dy, op, turn = 0) => els.forEach((el, i) => boxes[i] ? putCam(el, boxes[i], dx, dy, op, turn) : (el.style.opacity = 0));
 
   function snapTo(sel) {
     const st = resolve(sel), f = fit(st);
@@ -768,9 +776,9 @@ export function createResizeScene(root, hooks) {
     smear(RG.F.inner, th <= 90 ? sn : 0, u);
     smear(RG.F.outer, th > 90 ? sn : 0, u);
     const oc = rigCamera(false, s), sh = d.open.hinge * s;
-    putCams(RG.F.outer.cams, rigCamera(true, s), 0, 0, 1);
-    putCams(RG.F.inner.cams, oc, 0, 0, 1);
-    putCams(RG.F.base.cams, oc, -sh, 0, 1);
+    putCams(RG.F.outer.cams, rigCamera(true, s), 0, 0, 1, angle);
+    putCams(RG.F.inner.cams, oc, 0, 0, 1, angle);
+    putCams(RG.F.base.cams, oc, -sh, 0, 1, angle);
     // 홈 버튼은 화면 밖 아래 베젤에 있어 화면(.clip)이 아니라 몸체 면에 둔다 — 자리는 카메라와 같은 화면 기준에 면 안의 화면 자리만 더한다.
     const home = folded => { const panel = d[folded ? "cover" : "open"], hk = Number(d.look[folded ? "cover" : "open"].home) || 0;
       return [homeBox(lk, panel.w, panel.h, tallOf(d), s, tallOf(d), hk), hk]; };

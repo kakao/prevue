@@ -168,8 +168,8 @@ body.resizing-ui main { padding-bottom: 0; }
 .im-safe { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-8); border-radius: var(--corner-small);
   background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elevation-2); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
 .im-safe b { font-weight: var(--weight-medium); color: var(--success); }
-/* 그림 시작 — 렌즈 구멍의 안쪽 테와 유리 반점. 자리 · 굵기는 resize-scene.js 의 LENS 가 장면 배율로 넣는다(데몬 PNG 와 같은 자리) */
+/* 그림 시작 — 렌즈 구멍의 안쪽 테와 유리 반점. 자리 · 굵기는 resize-scene.js 의 LENS 가 장면 배율 · 회전으로 넣는다(데몬 PNG 와 같은 화면 기준 자리) */
 .resize-scene .cam.lens::before, .resize-scene .cam.lens::after { content: ""; position: absolute; border-radius: 50%; }
 .resize-scene .cam.lens::before { inset: var(--lens-inset); border: var(--lens-ring) solid var(--device-rim); }
-.resize-scene .cam.lens::after { left: var(--lens-glint-at); top: var(--lens-glint-at); width: var(--lens-glint); height: var(--lens-glint); background: var(--device-gloss); }
+.resize-scene .cam.lens::after { left: var(--lens-glint-x); top: var(--lens-glint-y); width: var(--lens-glint); height: var(--lens-glint); background: var(--device-gloss); }
 /* 그림 끝 */

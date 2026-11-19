@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **The header progress bar clears when the viewer disconnects** — it no longer keeps running after "Restarting" turns into "Disconnected", or after the daemon dies while it was still drawing.
+- **Holding the mouse down on a live preview and then switching windows (⌘-Tab) now lifts the finger in the app**, so the next press starts a fresh gesture instead of landing while the app still thinks the first one is held; leaving or turning off interaction mid-press no longer sends a stray release afterwards either.
 - **The "9:41" time in device status bars now looks like the device** — iPhones match the iOS Simulator's semibold clock and Android devices use Roboto Medium — instead of a thin system fallback font, and it draws the same on every machine.
 - **The inset overlay now labels each dp badge with its inset kind** (`STATUS`, `NAV`, `CAPTION`, `CUTOUT`, `OVERLAY`) and splits them across the device — the cutout sits outside the size rulers (left of the height ruler on top and bottom edges, above the width ruler on left and right edges), the other kinds keep one badge per edge on the right and bottom. The badge that sets SAFE AREA on an edge is bold, so a Galaxy Z Flip8 cover shows `CUTOUT 88` and `NAV 48` instead of a bare 88, and a punch-hole phone's top edge shows `STATUS` and `CUTOUT` apart. The device shrinks only when a cutout badge would not fit the window.
 - **The Galaxy Z Flip8 cover screen shows its real camera holes** — a flash and two ringed lenses with the screen visible around them, instead of a square notch — while the status, navigation handle and safe area still follow the cutout the device reports.

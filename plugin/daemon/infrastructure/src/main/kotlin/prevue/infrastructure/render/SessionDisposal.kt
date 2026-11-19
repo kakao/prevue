@@ -8,7 +8,6 @@ import com.android.tools.rendering.classloading.ModuleClassLoader
 import com.android.tools.rendering.classloading.ModuleClassLoaderManager
 import java.lang.ref.Reference
 import java.lang.reflect.Modifier
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 internal class SessionDisposal(private val surfaces: SessionSurfaces) {
@@ -24,7 +23,7 @@ internal class SessionDisposal(private val surfaces: SessionSurfaces) {
             val inflated = session.rootViews != null
             surfaces.renderSession.value.set(task, null)
             session.releaseRender()
-            runCatching { (surfaces.cleaner.value.invoke(null, session, loader) as CompletableFuture<*>).get(CLEAN_SEC, TimeUnit.SECONDS) }
+            runCatching { Shim.disposeSession(session, loader).get(CLEAN_SEC, TimeUnit.SECONDS) }
                 .onFailure { if (inflated || generateSequence(it) { e -> e.cause }.none { e -> e is NullPointerException }) throw it }
             onRenderThread { dropThreadLocals(loader); dropComposeViews(loader) }
         } finally {
