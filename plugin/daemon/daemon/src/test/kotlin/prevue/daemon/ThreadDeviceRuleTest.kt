@@ -27,7 +27,7 @@ class ThreadDeviceRuleTest {
             Allowed("$RENDER/LazyListReflection.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/SemanticsTree.kt", "ClassValue", 3, CLASS_LIFETIME),
             Allowed("$RENDER/ModifierChain.kt", "ClassValue", 2, CLASS_LIFETIME),
-            Allowed("$RENDER/SessionDisposal.kt", "CompletableFuture", 1, RENDERER_API),
+            Allowed("$RENDER/Shim.java", "CompletableFuture", 1, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
             Allowed("$RENDER/LayoutlibSession.kt", "AtomicBoolean", 2, "렌더러 API — 정리된 공유 로더의 Compose 알림 예약 필드 둘을 복구한다"),

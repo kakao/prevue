@@ -1,13 +1,20 @@
 package prevue.infrastructure.render;
 
+import com.android.ide.common.rendering.api.RenderSession;
 import com.android.tools.configurations.Configuration;
 import com.android.tools.preview.ConfigurablePreviewElement;
 import com.android.tools.preview.PreviewConfigurationKt;
+import com.android.tools.render.StandaloneModuleDependencies;
+import com.android.tools.rendering.RenderSessionCleaner;
+import com.android.tools.rendering.classloading.ModuleClassLoader;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import kotlin.jvm.functions.Function1;
 
 /**
- * 렌더러 singlejar에 .kotlin_module이 없어 Kotlin이 최상위 함수 applyTo를 보지 못한다.
- * Java는 메타데이터 없이 파일 파사드를 부를 수 있어 여기로 우회한다.
+ * 렌더러 singlejar에 .kotlin_module이 없어 Kotlin이 최상위 함수(applyTo · RenderSessionCleaner.dispose)를 보지 못하고,
+ * Kotlin internal 클래스(StandaloneModuleDependencies)는 K2가 억제 주석으로만 열어 주며 그 동작을 보장하지 않는다.
+ * Java는 둘 다 바이트코드의 public 그대로 부르므로 여기로 우회한다 — 렌더러 판이 바뀌면 리플렉션과 달리 컴파일 오류로 드러난다.
  */
 final class Shim {
     private Shim() {}
@@ -50,5 +57,13 @@ final class Shim {
     static void applyTo(ConfigurablePreviewElement element, Configuration configuration, String deviceParam) {
         PreviewConfigurationKt.applyTo(element, configuration, (Function1) DEFAULT_DEVICE_PROVIDER);
         keepDensity(configuration, deviceParam);
+    }
+
+    static CompletableFuture<Void> disposeSession(RenderSession session, ModuleClassLoader loader) {
+        return RenderSessionCleaner.dispose(session, loader);
+    }
+
+    static Object noModuleDependencies() {
+        return new StandaloneModuleDependencies(Collections.emptyList());
     }
 }

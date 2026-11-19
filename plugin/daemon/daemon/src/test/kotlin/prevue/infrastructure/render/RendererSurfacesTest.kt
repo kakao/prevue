@@ -30,13 +30,9 @@ class RendererSurfacesTest {
     }
 
     @Test fun `세션 정리의 표면이 바뀌면 이름으로 잡힌다`() {
-        val surfaces = SessionSurfaces(
-            task = RenamedTask::class.java,
-            cleanerName = "com.android.tools.rendering.RenamedSessionCleaner",
-        )
         assertEquals(
-            listOf("RenderTask.myModuleClassLoaderReference", "RenderSessionCleaner.dispose"),
-            RendererSurfaces.unopened(surfaces.all()),
+            listOf("RenderTask.myModuleClassLoaderReference"),
+            RendererSurfaces.unopened(SessionSurfaces(task = RenamedTask::class.java).all()),
         )
     }
 }
