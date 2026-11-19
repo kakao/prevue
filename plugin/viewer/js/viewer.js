@@ -2973,25 +2973,23 @@ function Ni({ rows: e, host: t }) {
 }
 // src/components/StatusPill.tsx
 function Pi({ state: e, connection: t = null, host: n, bar: r }) {
-	let { phrase: i, daemonText: a } = s(), { element: c, place: l } = o(n), u = (0, R.useRef)(!1);
-	t === "restarting" && (u.current = !0);
-	let d = e?.timing.find((e) => e.head), f = !!e?.timing.some((e) => e.over), p = !!e && (!!e.error || e.stale.length > 0 || !!e.board?.groups.some((e) => e.failed)), m = e ? e.busy ? "busy" : p ? "error" : f ? "over" : d ? "idle" : "none" : "none", h = e ? e.busy ? a(e.boardNote) : d ? d.text : "" : "";
-	t === "restarting" && (m = "busy", h = i("status.restarting")), t === "lost" && (m = "error", h = i("status.lost.short"));
-	let g = u.current || !!e?.busy;
+	let { phrase: i, daemonText: a } = s(), { element: c, place: l } = o(n), u = e?.timing.find((e) => e.head), d = !!e?.timing.some((e) => e.over), f = !!e && (!!e.error || e.stale.length > 0 || !!e.board?.groups.some((e) => e.failed)), p = e ? e.busy ? "busy" : f ? "error" : d ? "over" : u ? "idle" : "none" : "none", m = e ? e.busy ? a(e.boardNote) : u ? u.text : "" : "";
+	t === "restarting" && (p = "busy", m = i("status.restarting")), t === "lost" && (p = "error", m = i("status.lost.short"));
+	let h = t === "restarting" || t !== "lost" && !!e?.busy;
 	return (0, R.useLayoutEffect)(() => {
-		c && (e || t) && (c.dataset.state = m);
+		c && (e || t) && (c.dataset.state = p);
 	}, [
 		c,
 		e,
 		t,
-		m
+		p
 	]), (0, R.useLayoutEffect)(() => {
-		r && (e || t) && r.classList.toggle("busy", g);
+		r && (e || t) && r.classList.toggle("busy", h);
 	}, [
 		r,
 		e,
 		t,
-		g
+		h
 	]), l(/* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [
 		/* @__PURE__ */ (0, z.jsxs)("span", {
 			className: "st-ic",
@@ -3045,7 +3043,7 @@ function Pi({ state: e, connection: t = null, host: n, bar: r }) {
 		/* @__PURE__ */ (0, z.jsx)("span", {
 			className: "st-text",
 			id: "statusText",
-			children: h
+			children: m
 		}),
 		/* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "pop",
