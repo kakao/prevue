@@ -5,6 +5,8 @@
 #   AGENTS.md        → CLAUDE.md                          세션 규칙 — Codex 는 원본을, Claude Code 는 생성물을 읽는다
 # 손으로 두 벌을 고치면 공통 내용이 조용히 어긋난다. 원본은 여기 하나고, 나머지는 생성물이다.
 #
+# 스킬 폴더 아래의 .md 는 SKILL.md 든 하위 문서(implement/tools/*.md)든 모두 두 벌로 만든다 — 하위 문서에도 에이전트별 구간이 있다.
+#
 # 원본에서 한 에이전트에만 줄 구간은 제 줄에 놓인 표시로 감싼다.
 #   <!-- only:claude -->  …  <!-- /only -->
 #   <!-- only:codex -->   …  <!-- /only -->
@@ -53,22 +55,29 @@ out_dir() {
 }
 SRCS="skills-src dev-skills-src"
 
+# docs <디렉터리> — 그 아래 스킬 폴더들의 .md 를 상대 경로로. 바로 아래의 .md(review.md 같은 규약 문서)는 스킬이 아니다.
+# 파이프 대신 명령 치환으로 받는다 — while 서브셸에서는 DIFF=1 이 사라져 점검이 조용히 통과한다.
+docs() {
+  [ -d "$1" ] || return 0
+  (cd "$1" && find . -mindepth 2 -type f -name '*.md' | sed 's|^\./||' | sort)
+}
+
 if [ "${1:-}" = "--check" ]; then
   T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
   DIFF=0
   for R in $SRCS; do
     for A in claude codex; do
-      for S in "$R"/*/SKILL.md; do
-        N="$(basename "$(dirname "$S")")"
-        gen "$A" "$S" "$T/$A-$N.md"
-        O="$(out_dir "$R" "$A")/$N/SKILL.md"
+      D="$(out_dir "$R" "$A")"
+      for F in $(docs "$R"); do
+        # 임시 파일은 원본 경로째 둔다 — 스킬 이름만으로 지으면 하위 문서끼리 겹친다.
+        mkdir -p "$(dirname "$T/$A/$R/$F")"
+        gen "$A" "$R/$F" "$T/$A/$R/$F"
         # cmp(diffutils)는 CI 이미지에 없을 수 있다 — coreutils 의 cksum 으로 견준다.
-        [ -f "$O" ] && [ "$(cksum < "$T/$A-$N.md")" = "$(cksum < "$O")" ] || { echo "$O 가 $R/$N 에서 만든 것과 다르다"; DIFF=1; }
+        [ -f "$D/$F" ] && [ "$(cksum < "$T/$A/$R/$F")" = "$(cksum < "$D/$F")" ] || { echo "$D/$F 가 $R/$F 에서 만든 것과 다르다"; DIFF=1; }
       done
-      # 원본에 없는 스킬이 생성물에만 남아 있으면 그것도 어긋난 것이다.
-      for O in "$(out_dir "$R" "$A")"/*/SKILL.md; do
-        [ -f "$O" ] || continue
-        [ -f "$R/$(basename "$(dirname "$O")")/SKILL.md" ] || { echo "$O 는 원본에 없다"; DIFF=1; }
+      # 원본에 없는 문서가 생성물에만 남아 있으면 그것도 어긋난 것이다.
+      for F in $(docs "$D"); do
+        [ -f "$R/$F" ] || { echo "$D/$F 는 원본에 없다"; DIFF=1; }
       done
     done
   done
@@ -86,10 +95,9 @@ fi
 for R in $SRCS; do
   for A in claude codex; do
     D="$(out_dir "$R" "$A")"
-    for S in "$R"/*/SKILL.md; do
-      N="$(basename "$(dirname "$S")")"
-      mkdir -p "$D/$N"
-      gen "$A" "$S" "$D/$N/SKILL.md"
+    for F in $(docs "$R"); do
+      mkdir -p "$(dirname "$D/$F")"
+      gen "$A" "$R/$F" "$D/$F"
     done
   done
 done
