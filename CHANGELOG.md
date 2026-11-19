@@ -8,59 +8,54 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- **The daemon now shuts itself down after an hour without use**, and `prevue start --idle <minutes>` sets it for the daemon that start launches (`5` or `5m`; `0` keeps it up) — it replaces the `PREVUE_IDLE_MIN` environment variable.
-- **`prevue paths` lists the old copies of Prevue's components that pile up after updates** (about 118 MB each under `~/.prevue/toolchain/lib-*`) and marks the ones no installed plugin, this plugin or a running preview uses as deletable.
-- **The header progress bar clears when the viewer disconnects** — it no longer keeps running after "Restarting" turns into "Disconnected", or after the daemon dies while it was still drawing.
-- **Holding the mouse down on a live preview and then switching windows (⌘-Tab) now lifts the finger in the app**, so the next press starts a fresh gesture instead of landing while the app still thinks the first one is held; leaving or turning off interaction mid-press no longer sends a stray release afterwards either.
-- **The "9:41" time in device status bars now looks like the device** — iPhones match the iOS Simulator's semibold clock and Android devices use Roboto Medium — instead of a thin system fallback font, and it draws the same on every machine.
-- **The inset overlay now labels each dp badge with its inset kind** (`STATUS`, `NAV`, `CAPTION`, `CUTOUT`, `OVERLAY`) and splits them across the device — the cutout sits outside the size rulers (left of the height ruler on top and bottom edges, above the width ruler on left and right edges), the other kinds keep one badge per edge on the right and bottom. The badge that sets SAFE AREA on an edge is bold, so a Galaxy Z Flip8 cover shows `CUTOUT 88` and `NAV 48` instead of a bare 88, and a punch-hole phone's top edge shows `STATUS` and `CUTOUT` apart. The device shrinks only when a cutout badge would not fit the window.
-- **The Galaxy Z Flip8 cover screen shows its real camera holes** — a flash and two ringed lenses with the screen visible around them, instead of a square notch — while the status, navigation handle and safe area still follow the cutout the device reports.
-- Apps targeting SDK below 35 now place content inside the system bars without applying insets twice. Use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
+## [0.23.0] — 2026-11-19
 
-- Multipreview annotations imported with `import a.b.*` expand into one card per `@Preview`.
-- Multipreview annotations ending in `L` expand correctly when included in another multipreview annotation.
-- **`@Preview(showSystemUi = true)` cards now hand the status and navigation bar heights to values read in composition** (`WindowInsets.statusBars.asPaddingValues()`, `getTop()`), in the PNG and the live view alike, so heights and offsets computed from them match a device instead of drawing as if the bars were 0 dp; `systemBarsPadding()` and the other inset modifiers keep the same picture.
-- **A preview that fails with "Unexpected Context type when trying to resolve the context's Activity." (`androidx.xr.compose` looking up an Activity) now says it needs one** — the message starts with "This Preview needs an Activity", since previews are drawn without an Activity (Android Studio fails the same way).
-- **A render that fails with an exception now leads with that exception** (for example `java.lang.NoSuchMethodError: …`) in the viewer's one-line failure note and the message, instead of a generic renderer line like "View layout failed" when the same preview is drawn again.
-- **iPhone Duo folded in landscape hides its status indicator like other iPhones in landscape**, since [safearea.info](https://safearea.info/) reserves only the camera corner there.
-- **`prevue setup` (and the first `prevue start` after an update) no longer runs Gradle without Java 21 or later** or answers "Cannot build from the downloaded components — they need to be downloaded again" — it says which Java it found and how to install 21+ or point `PREVUE_JDK` at one.
-- **A warmup that fails because of the JDK (a JVM target mismatch such as "Inconsistent JVM-target compatibility detected") no longer picks the same JDK next time** — the next warmup skips that Java version and falls back to another one installed on the machine, and tries it again once the root build files (for example the Kotlin version) change.
-- **`#N` in `scroll --until` and `touch --at` now picks the Nth list item even when every item root has padding** (`items { Card(Modifier.padding(8.dp)) }`) instead of the Nth on screen; `#N` counts headers and every other `item { }` too, so take N from `matches`.
-- **A project whose `ui-tooling` lacks a Compose node's file, line or bounds getter now fails the render with a renderer-pairing message** instead of pointing at an empty or wrong place.
-- **`prevue start` asks for `prevue setup` when the shared toolchain in `~/.prevue/toolchain` is gone**, even if this checkout built Prevue before (a deleted toolchain, or another account using the same checkout), and `health` reports the toolchain as missing — the daemon no longer dies with "JavaFX runtime components are missing".
-- **The live ring around the frame keeps its 2 px width while a device rotates** instead of briefly thickening or thinning with the turn.
-- **A device's status bar, navigation handle and camera are now in the PNG itself** (`focus --device`), so an agent reading the PNG sees the same picture as the viewer; the PNG keeps the screen's size and touch coordinates, is transparent outside the rounded screen corners, and leaves the device body to the viewer.
-- **Switching devices blurs the screen for a fifth of a second instead of half a second or more** — a pre-drawn device sharpens as soon as its picture swaps in rather than waiting for the frame to stop, and one that renders within a quarter second only blurs lightly; slower renders still hide behind the full blur.
-- **On a narrow browser panel (about 400 px), rotating a tablet no longer swings out past the panel edge**, and the frame now centers over the bottom capsule while the height ruler's number stays clear of the left edge at any badge width.
-- **Picking sizes or devices in quick succession now always lands on the last one** — the viewer sends one size change at a time and drops the ones skipped over, so a busy machine can no longer leave the preview on an earlier pick.
-- **The device menu is grouped by product line** — Galaxy, Pixel and iPhone instead of Android and iPhone — and Pixel entries drop the repeated name (`9`, `10 Pro XL`, `Tablet`; the full name stays in the tooltip).
-- **`@PreviewParameter` providers declared inside another class** (`Outer.Inner`) now draw one card per value instead of collapsing into a single card.
-- **`@PreviewParameter` providers written as a Kotlin `object`** now draw one card per value instead of collapsing into a single card.
-- **`@PreviewParameter` providers written as a `companion object`** (`@PreviewParameter(Outer.Companion::class)`) now draw one card per value instead of collapsing into a single card.
-- **Multipreview annotations declared inside another class** (`@Outer.Phones`, or `@Phones` after `import …Outer.Phones`) now expand into one card per `@Preview` instead of the preview not showing up.
-- **Galaxy S26 Ultra and Pixel 10 Pro XL join the device menu** (`--device s26ultra` · `pixel10xl`) with their measured insets, cutout and screen corners in portrait and both landscape directions, from [windowinsets.info](https://windowinsets.info/) (Pixel 10 Pro XL from a real device on Firebase Test Lab, at 1080 × 2404) — on Pixel 10 Pro XL in landscape the status bar's outer item still touches the rounded screen corner.
-- **iPhone 18 Pro joins the device menu** (`--device ip18pro`) with its safe area, Dynamic Island and screen corners in portrait and both landscape directions, from [safearea.info](https://safearea.info/).
-- **iPhone SE (3rd generation) joins the device menu** (`--device ipse3`) with its home button, thicker top and bottom bezels and split status bar, and its safe area from [safearea.info](https://safearea.info/).
-- **Galaxy A07 5G, iPhone 17e and Galaxy Tab S11 Ultra join the device menu** (`--device a07`, `ip17e`, `s11ultra`) with their safe areas in portrait and both landscape directions, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
-- **Notches are drawn as notches** — a camera cutout flush with the screen edge (A07's, iPhone 17e's, and the Tab S11 Ultra's on its long edge) has square outer corners, and the iPhone 17e status bar splits around it.
-- **Switching a device taller than the 1600 dp custom limit to a custom size** (Galaxy Tab S11 Ultra, 1691 dp) clamps it to 1600 dp.
-- Device menu names in the iPhone group drop the repeated "iPhone" (17 · Air · 17 Pro Max · 18 Pro · Duo), with the `--device` names unchanged.
-- **`prevue scroll` lists every item it scrolled past in `passed`, even on a busy machine.**
-- **`prevue scroll` answers `moved: true` when the list rolls by exactly whole items**, so a `--until` search can continue.
-- **`prevue scroll` keeps working after one failed wheel scroll** — the next preview or interactive session scrolls again.
-- iPhone device frames now use the screen corner radius measured on [safearea.info](https://safearea.info/) — 62 pt on iPhone 17, iPhone Air and iPhone 17 Pro Max, 59 pt on both iPhone Duo screens.
-- **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device whose dpi falls between the renderer's density steps (such as 450) is drawn at exactly that dpi.
-- **Android status bar keeps clear of large rounded screen corners** — where a large rounded corner would cut the time or icons (such as Pixel 10 Pro XL in landscape), they move in from the edge instead.
-- **Foldables fold as two solid slabs** — Galaxy Z Fold8, Z Fold8 Ultra, Pixel 9 Pro Fold and iPhone Duo now show each half's thickness, a spine at the hinge and shading that follows the fold angle, and land on the resting device with the same light, shadow and hinge marks in every orientation; every fold takes 1 second (Galaxy and Pixel folds took 0.6 s).
-- **Galaxy Z Flip8 joins the device menu** (`--device flip8`) — it folds top over bottom like a clamshell, and its cover screen renders at its own 380 dpi (399 × 441 dp) with the bottom-right camera cutout and its uneven screen corners, from [windowinsets.info](https://windowinsets.info/); the cover is measured in portrait only, so the viewer hides the turn control there and `--folded --landscape` is an error.
-- **KMP library modules in repositories with `org.gradle.configureondemand=true`** no longer fail on save with "unresolved reference" ([#210](https://github.com/kakao/prevue/issues/210)) — warm up once more; a dump that would miss a KMP module's compile classpath now stops with the module names instead. Reported by @DXMHXR.
-- **A size-bar cell or posture that fails to pre-render is retried once in the background** after the other cells, instead of staying empty until the next save or size change.
-- **Dragging in an interactive preview keeps up with your hand when frames are slow** — drags that wait while a frame draws (about 90 ms each when a list is pulled past its end) are merged into the latest position, so the picture catches up within about 0.2 s of release instead of about 4 s.
-- **A preview that draws nothing because a call fails to link while it is laid out** (such as a `NoSuchMethodError` after a save) is reported as a render failure with that error instead of a blank success with the warning "Compose 노드 없음 — 렌더는 성공했지만 Preview가 그린 노드가 없다".
-- **Switching cells in the size bar keeps the pictures already drawn for the other cells** until you save, so after moving to another device only that device's own postures are drawn again.
-- **In windows 640 px wide or narrower, the open-files rail no longer pushes the board aside** — it opens over the board from a new button at the left of the header, so a group of previews keeps two or more cards per row even at 360 px, and the board margin narrows to 12 px with the stale-image banner text on the same line.
-- A picture whose shape differs from the size frame keeps its proportions in the top-left corner of the frame instead of being stretched to fill it, and pointing at it lines up with what you see.
-- Picking a size that has no picture yet while the frame is still moving, or whose picture is smaller than the frame, now grows the blurred placeholder into the frame instead of jumping to fill it in one frame.
+**Eight more devices, and the system UI is in the PNG.** Galaxy Z Flip8, Galaxy S26 Ultra, Pixel 10 Pro XL, iPhone 18 Pro, iPhone SE, Galaxy A07 5G, iPhone 17e and Galaxy Tab S11 Ultra join the device menu, and the status bar, navigation handle and camera an agent reads in the PNG now match what you see. The viewer keeps up with slow frames and narrow windows.
+
+### Devices
+
+- **Eight devices join the device menu** — Galaxy Z Flip8 (`flip8`), S26 Ultra (`s26ultra`), A07 5G (`a07`), Tab S11 Ultra (`s11ultra`), Pixel 10 Pro XL (`pixel10xl`), iPhone 18 Pro (`ip18pro`), iPhone 17e (`ip17e`) and iPhone SE 3rd generation (`ipse3`), with insets from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
+- **Galaxy Z Flip8 folds like a clamshell**, and its cover screen shows its real camera holes; the cover is measured in portrait only, so `--folded --landscape` is an error.
+- **Foldables fold as two solid slabs**, with each half's thickness, a spine at the hinge and shading that follows the fold.
+- **The device menu is grouped by product line** — Galaxy, Pixel and iPhone.
+- **The "9:41" in status bars looks like the device** — the iOS Simulator's semibold clock on iPhones, Roboto Medium on Android.
+- **Pixel 9 Pro Fold renders at its real 390 dpi**, and any `spec:` device between the renderer's density steps draws at exactly its dpi.
+
+### Insets and system UI
+
+- **A device's status bar, navigation handle and camera are in the PNG** (`focus --device`), so an agent sees what the viewer shows.
+- **Show inset areas labels each badge with its kind** (`STATUS`, `NAV`, `CAPTION`, `CUTOUT`, `OVERLAY`) and bolds the one that sets SAFE AREA.
+- **`@Preview(showSystemUi = true)` hands the bar heights to insets read in composition** (`WindowInsets.statusBars.asPaddingValues()`, `getTop()`), in the PNG and the live view.
+- **Apps targeting SDK below 35 no longer apply system bar insets twice** — use `focus --edge-to-edge on` for apps that enable edge-to-edge in their Activity.
+
+### Previews and the viewer
+
+- **More `@PreviewParameter` providers and multipreview annotations draw one card per value** — providers nested in a class or written as an `object` or `companion object`, and multipreview annotations declared inside another class.
+- **Dragging an interactive preview keeps up with your hand when frames are slow.**
+- **In windows 640 px wide or narrower, the file rail opens over the board**, so a group keeps two or more cards per row.
+- **Switching devices and size-bar cells is quicker** — pictures already drawn are kept until you save, and the blur clears in a fifth of a second.
+
+### Agents
+
+- **The daemon stays up for an hour without use instead of 10 minutes** — set it with `prevue start --idle <minutes>` (`--idle 10` for the old behavior, `0` to never stop), which replaces the `PREVUE_IDLE_MIN` environment variable. Suggested by @easternkite.
+- **`prevue paths` lists the old copies of Prevue's components** (about 118 MB each under `~/.prevue/toolchain/lib-*`) and marks the ones safe to delete.
+- **`prevue scroll` answers right on a busy machine** — `passed` lists every item, whole-item scrolls answer `moved: true`, and one failed wheel scroll no longer stops the next.
+- **`#N` in `scroll --until` and `touch --at` counts list items even when every item root has padding**, and counts headers too, so take N from `matches`.
+
+### Fixes
+
+- **KMP library modules in repositories with `org.gradle.configureondemand=true`** no longer fail on save with "unresolved reference" ([#210](https://github.com/kakao/prevue/issues/210)) — warm up once more. Reported by @DXMHXR.
+- **`prevue setup` needs Java 21 or later and says so** instead of "Cannot build from the downloaded components — they need to be downloaded again" — install 21+ or point `PREVUE_JDK` at one.
+- **A warmup that fails because of the JDK** (such as "Inconsistent JVM-target compatibility detected") picks another installed Java next time.
+- **`prevue start` asks for `prevue setup` when `~/.prevue/toolchain` is gone** instead of the daemon dying with "JavaFX runtime components are missing".
+- **Render failures lead with the real exception** (such as `java.lang.NoSuchMethodError`) instead of "View layout failed" or the blank-success warning "Compose 노드 없음 — 렌더는 성공했지만 Preview가 그린 노드가 없다".
+- **A preview that needs an Activity says "This Preview needs an Activity"** instead of "Unexpected Context type when trying to resolve the context's Activity.".
+- Also: a `ui-tooling` missing a node's file, line or bounds getter fails with a renderer-pairing message, Android status bars keep clear of large rounded corners, iPhone frames use the corner radius from safearea.info, iPhone Duo folded in landscape hides its status indicator, Pixel and iPhone menu names drop the repeated product name, multipreview annotations imported with `*` or ending in `L` expand, a picture whose shape differs from its frame keeps its proportions, the placeholder grows into the frame, a failed size-bar cell is retried once, quick size picks land on the last one, a rotating tablet stays inside a narrow panel, the live ring keeps its width while rotating, the header progress bar clears on disconnect, and ⌘-Tab while holding the mouse lifts the finger in the app.
+
+### Thanks
+
+- @DXMHXR for reporting KMP library modules failing on save with `configureondemand` ([#210](https://github.com/kakao/prevue/issues/210))
+- @easternkite for the idea of letting you set how long the daemon stays up without use
 
 ## [0.22.1] — 2026-11-13
 
