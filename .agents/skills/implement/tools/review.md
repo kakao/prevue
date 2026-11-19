@@ -10,6 +10,7 @@ python3 ~/.codex/skills/review/scripts/review_tier.py --range <merge-base SHA>..
 
 - **`test -f`가 실패하면** `review` 스킬이 없는 환경이다 — 건너뛰고 "독립 리뷰 없음"을 적는다. **있는데 리뷰어를 띄울 수 없으면 멈춘다** — 자기 diff를 다시 읽는 것으로 대신하지 않는다.
 - 출력 첫 줄이 등급이고 나머지가 근거다. `skip`이면 띄우지 않는다 — 첫 리뷰에서 `skip`이면 승인 진입 조건의 리뷰는 해당 없음이다. 종료 코드 2면 `high`로 띄우고 stderr를 넘긴다. 수정 확인이면 `--recheck`를 붙인다.
+- **첫 리뷰 뒤에 주석 · 공백 · 문구만 고쳤으면 분류기도 돌리지 않는다** — 분류기는 범위 전체를 보므로 그 수정만 가려내지 못한다.
 
 리뷰어 정의는 `~/.codex/agents/reviewer-<등급>.toml`이다.
 
