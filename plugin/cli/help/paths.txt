@@ -2,5 +2,5 @@ prevue paths
 
 Where the toolchain, dumps and outputs are, and how much space they use.
   libCopies  every third-party jar copy in the toolchain (~/.prevue/toolchain/lib-<hash>). A plugin update that changes dependencies
-             leaves the old copy behind. usedBy says who uses one (this plugin · a running daemon); deletable true means neither does,
-             so it can be deleted — a checkout that still needs it rebuilds it at its next start
+             leaves the old copy behind. usedBy says who uses one (this plugin · an installed plugin · a running daemon); deletable true
+             means none of them does, so it can be deleted

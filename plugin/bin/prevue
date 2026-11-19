@@ -1210,9 +1210,11 @@ out = {"ok": True, "paths": [
 out["toolchainRoot"] = os.path.join(prevuehome, "toolchain")
 # 판올림마다 lib 사본이 하나씩 남는다 — 이 체크아웃 것만 보이면 나머지는 지울 길을 모른다.
 cmdlines = toolchain_libs.running_cmdlines()
-out["libCopies"] = toolchain_libs.copies(out["toolchainRoot"], lib, cmdlines)
+home = os.environ.get("HOME", os.path.expanduser("~"))
+installed = toolchain_libs.installed_libs(home, toolchain_libs.plugin_caches(home))
+out["libCopies"] = toolchain_libs.copies(out["toolchainRoot"], lib, installed, cmdlines)
 out["libCopiesNote"] = ("Each plugin update that changes dependencies leaves an older lib copy behind. Copies with deletable true are used by "
-                        "neither this plugin nor a running daemon — delete them; a checkout that still needs one rebuilds it at its next start"
+                        "no installed plugin, this plugin or a running daemon, so they can be deleted"
                         if cmdlines is not None else
                         "Couldn't list running processes, so no copy is marked deletable — run prevue paths outside the sandbox")
 out["note"] = "toolchainRoot, projects and aot can be deleted — prevue setup downloads the toolchain again and health says what else to recreate"

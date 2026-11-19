@@ -71,6 +71,20 @@ class Baked(Case):
                 _, out = self.prevue("health", f)
                 self.assertEqual("toolchain" in out["missing"], missing)
 
+    def test_paths_keeps_every_lib_copy_a_plugin_install_points_at(self):
+        installs = ((".claude", "0.22.1", "daemon/daemon/build", "lib-22222222"),
+                    (".codex", "0.20.1", "build", "lib-20202020"))
+        for cfg, version, spot, name in installs:
+            d = os.path.join(self.home, cfg, "plugins", "cache", "prevue", "prevue", version, spot)
+            os.makedirs(d)
+            with open(os.path.join(d, "prevue-env"), "w") as f:
+                f.write('PREVUE_LIB="$HOME/.prevue/toolchain/%s"\n' % name)
+        self.toolchain(LIB, ".prevue/toolchain/lib-22222222", ".prevue/toolchain/lib-20202020", ".prevue/toolchain/lib-99999999")
+        code, out = self.prevue("paths", CLAUDE_CONFIG_DIR="", CODEX_HOME="")
+        got = {os.path.basename(c["path"]): c["usedBy"] for c in out["libCopies"]}
+        self.assertEqual((code, got), (0, {"lib-1": ["this plugin"], "lib-22222222": ["installed plugin"],
+                                           "lib-20202020": ["installed plugin"], "lib-99999999": []}))
+
 
 if __name__ == "__main__":
     unittest.main()
