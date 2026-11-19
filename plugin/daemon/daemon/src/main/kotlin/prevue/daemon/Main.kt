@@ -19,6 +19,7 @@ private fun usage(): Nothing {
         prevue.daemon.MainKt --classpath <module-classpath.json> --layoutlib <layoutlib-data dir> --compiler <compiler jars dir>
                           --bridge <bridge classes dir> --viewer <viewer dir> [--out <dir>] [--overlay <dir>] [--port ${DaemonArgs.DEFAULT_PORT}]
                           [--android-jar <path>] [--show <file|FQN>[#index]] [--no-watch] [--watch <extra dir>]... [--no-preload]
+                          [--idle <분>[m]]   쓰지 않은 지 그만큼 지나면 내린다(기본 ${PrevueDaemon.DEFAULT_IDLE_MIN}, 0 은 끄기)
                           [--resources-from <app-classpath.json>]   라이브러리 모듈용: 앱 모듈의 리소스 APK와 R.jar를 빌려 쓴다
                           [--root <prevue 체크아웃>]   status 에 싣는다 — CLI 는 자기 체크아웃이 띄운 데몬만 쓴다
         """.trimIndent(),
@@ -34,9 +35,8 @@ private class Boot(val argv: List<String>, val args: DaemonArgs, val startedNs: 
 
 fun main(argv: Array<String>) {
     val args = try { DaemonArgs.parse(argv) } catch (e: UsageException) { usage() }
-    val idleMin = PrevueDaemon.idleMinutes(System.getenv("PREVUE_IDLE_MIN"))
     Respawn.writePid()
-    val daemon = PrevueDaemon(idleTimeoutMs = idleMin * 60_000, log = ::log)
+    val daemon = PrevueDaemon(idleTimeoutMs = args.idleMinutes * 60_000, log = ::log)
     val boot = Boot(argv.toList(), args, System.nanoTime())
     runDaemon(daemon, boot)?.let { respawn(it) }
     kotlin.system.exitProcess(0)

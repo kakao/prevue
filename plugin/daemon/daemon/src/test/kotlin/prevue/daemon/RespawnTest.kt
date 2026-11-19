@@ -30,6 +30,12 @@ class RespawnTest {
         assertEquals(base, Respawn.args(base, null, hang))
     }
 
+    // D-195 — 렌더 스레드를 잃고 다시 떠도 처음 준 유휴 상한을 쓴다.
+    @Test fun `다시 띄울 때 보드 말고 처음 받은 인자는 그대로 둔다`() {
+        val argv = base + listOf("--idle", "5m", "--show", hang.path)
+        assertEquals(base + listOf("--idle", "5m", "--show", screen.path), Respawn.args(argv, screen, hang))
+    }
+
     @Test fun `1분 안에 또 잃으면 다시 띄우지 않는다`() {
         assertTrue(Respawn.allowed(emptyMap(), 1_000_000))
         assertFalse(Respawn.allowed(mapOf("PREVUE_RESPAWNED_AT" to "990000"), 1_000_000))

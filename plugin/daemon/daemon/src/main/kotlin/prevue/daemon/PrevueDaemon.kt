@@ -40,9 +40,7 @@ class PrevueDaemon(
     init { require(shutdownTimeoutMs > 0 && idleCheckMs > 0) }
 
     companion object {
-        /** NFR-6. 다시 띄우는 값(첫 그림까지 4초대)이 RSS를 잡아 두는 값보다 싸다. `PREVUE_IDLE_MIN`으로 바꾸고 `0`이면 끈다. */
-        const val DEFAULT_IDLE_MIN = 10L
-        fun idleMinutes(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_IDLE_MIN
+        const val DEFAULT_IDLE_MIN = 60L
         val realDispatchers = PrevueDispatchers(Dispatchers.IO, Dispatchers.Default)
     }
 

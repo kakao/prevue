@@ -132,13 +132,6 @@ class PrevueDaemonTest {
         closing.get(2, TimeUnit.SECONDS)
     }
 
-    // NFR-6. 기본값을 바꾸면 기획의 숫자부터 고친다.
-    @Test fun `유휴 종료 기본은 10분이고 0이면 끈다`() {
-        assertEquals(10, PrevueDaemon.idleMinutes(null))
-        assertEquals(10, PrevueDaemon.idleMinutes("열"))
-        assertEquals(0, PrevueDaemon.idleMinutes("0"))
-    }
-
     /** 유휴 상한 [idleMs]로 띄우고, [during]이 도는 동안 데몬이 스스로 내려왔는지와 그 사유를 돌려준다. */
     private fun idleRun(idleMs: Long, lastRender: () -> Long, during: (port: Int) -> Unit): String? = Fixture().use { fx ->
         val logs = CopyOnWriteArrayList<String>()
