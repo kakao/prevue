@@ -17,7 +17,11 @@ function touch(type: string, x: number, y: number) { touchChain = touchChain.the
 // 데몬은 손가락이 닿은 채로 남아 다음 제스처가 통째로 어긋난다. 창의 이벤트를 그림 px 로 바꿔 넘기는 것은 focus.ts 다.
 let dragging: Point | null = null;
 export const pressing = () => !!dragging;
-export function press(x: number, y: number) { dragging = [x, y]; touch('press', x, y); }
+export function press(x: number, y: number) {
+  if (dragging) touch('release', ...dragging);      // 뗌을 못 받은 누름이 남았다 — 데몬에 손가락 둘이 닿지 않게 먼저 뗀다
+  dragging = [x, y];
+  touch('press', x, y);
+}
 export function drag(x: number, y: number) {
   if (!dragging) return;
   if (Math.abs(x - dragging[0]) + Math.abs(y - dragging[1]) > 6) { dragging = [x, y]; queueDrag(x, y); }
@@ -27,6 +31,10 @@ export function release(x: number, y: number) {
   dragging = null;
   touch('release', x, y);
 }
+// 창이 포커스를 잃으면(⌘-Tab) mouseup 이 오지 않는다. 세션은 그대로라 마지막으로 보낸 자리에서 뗀다.
+export function letGo() { if (dragging) release(...dragging); }
+// 조작이 꺼지거나 포커스가 닫히면 데몬이 세션을 새로 그려 손가락은 이미 없다 — 지금 보내면 누른 적 없는 새 세션에 떨어진다.
+export function dropPress() { dragging = null; latestDrag = null; }
 
 // 드래그 좌표는 체인에 하나만 대기시키고, 그 차례가 오면 그때의 최신 좌표를 보낸다 — 네트워크가 마우스보다 느려도 밀리지 않는다.
 // requestAnimationFrame에 기대지 않는다. 탭이 뒤에 있으면 rAF가 멈춰 드래그가 통째로 사라진다.
