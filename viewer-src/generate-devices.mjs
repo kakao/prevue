@@ -123,8 +123,14 @@ export function deviceTable(specList) {
     // 화면마다 밀도가 다를 수 있다(Galaxy Z Flip8 커버 380 · 펼침 480) — 화면의 dpi 가 없으면 기기 dpi 다.
     const dpiOf = key => screens[key].dpi === undefined ? number(m.dpi, `${where}.measured.dpi`) : number(screens[key].dpi, `${where}.measured.screens.${key}.dpi`);
     // 측정한 자세가 하나뿐인 화면은 그 자세로만 둔다 — 돌리기를 끈다(fixed).
+    // 컷아웃 인셋이 선 변 — 자세마다 w(위 · 아래)와 h(왼쪽 · 오른쪽)를 적는다. 인셋 배지가 눈금 바깥에 설 자리를 장면이 미리 비운다.
+    // 측정 자세는 displayCutout 이고, 측정이 없는 iOS 는 데몬(DeviceInsetInput.iosAppInsets)처럼 safeArea 에서 아래를 뺀 값이 컷아웃이다.
+    const cutIn = screen => Object.fromEntries(Object.entries(screen.postures).map(([name, posture]) => {
+      const edges = posture.insets ? posture.insets.displayCutout?.dp ?? {} : { ...posture.safeArea, bottom: 0 };
+      return [name, `${edges.top || edges.bottom ? 'w' : ''}${edges.left || edges.right ? 'h' : ''}`];
+    }));
     const panel = key => {
-      const s = screens[key], dpi = dpiOf(key), out = { w: dp(s.widthPx, dpi), h: dp(s.heightPx, dpi) };
+      const s = screens[key], dpi = dpiOf(key), out = { w: dp(s.widthPx, dpi), h: dp(s.heightPx, dpi), cutIn: cutIn(s) };
       if (s.hingePx !== undefined) out.hinge = dp(s.hingePx, dpi);
       if (Object.keys(s.postures).length === 1) out.fixed = true;
       return out;

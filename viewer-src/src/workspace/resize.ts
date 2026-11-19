@@ -6,7 +6,7 @@ import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
 import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
-import { loadingView } from './view';
+import { insetOverlayView, loadingView } from './view';
 
 type AnySize = Focus['postures'][number]['size'] | Size | null;
 type Zoom = { z: number; x: number; y: number };
@@ -77,6 +77,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
         : { size: sel.startsWith('custom:') ? sel.slice(7) : sel };
       return requestSize(body);
     },
+    insetOn: () => insetOverlayView.get().on,
     layout: (rect, moving) => {
       if (!active) return;
       // 확대의 기준점은 틀의 왼쪽 위다. 접기 · 돌리기 · 크기로 틀이 옮겨 가면 기준점이 따라 뛰어 화면이 튀었다 —
@@ -93,6 +94,7 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
       root.classList.toggle('await-live', !shown);
     },
   });
+  insetOverlayView.subscribe(() => { if (active) scene.relayout(true); });
   function prepare(on: boolean, failed = false) {
     preparing = on;
     root.classList.toggle('preparing', on);

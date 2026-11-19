@@ -13,22 +13,17 @@ const EDGES = ['top', 'right', 'bottom', 'left'] as const;
 type Edge = typeof EDGES[number];
 type Rect = { x: number; y: number; w: number; h: number };
 type Kind = typeof INSET_KINDS[number];
-type Widest = { kind: Kind; value: number };
-type Plan = { w: number; h: number; insets: DeviceInsets; widest: Record<Edge, Widest>; safe: Rect };
+type Plan = { w: number; h: number; insets: DeviceInsets; widest: Record<Edge, number>; safe: Rect };
 
 /**
- * 그릴 것 — 꺼져 있거나 기기가 아니면 null. widest 는 변마다 다섯 종류의 최댓값과 그 값을 낸 종류(같으면 INSET_KINDS 순서의 앞 종류)다.
+ * 그릴 것 — 꺼져 있거나 기기가 아니면 null. widest 는 변마다 다섯 종류의 최댓값이다.
  * safe 는 그 값을 뺀 안쪽(safeDrawing)이고, 굵은 배지도 같은 값을 적어 둘이 어긋나지 않는다.
  */
 function insetPlanOf(on: boolean, insets: DeviceInsets | null | undefined, size: Size | null): Plan | null {
   if (!on || !insets || size?.kind !== 'device') return null;
   const w = size.widthDp, h = size.heightDp;
-  const widest = Object.fromEntries(EDGES.map(e => {
-    const kind = INSET_KINDS.reduce((a, k) => insets.values[k][e] > insets.values[a][e] ? k : a);
-    return [e, { kind, value: Math.max(0, insets.values[kind][e]) }];
-  })) as Record<Edge, Widest>;
-  const m = Object.fromEntries(EDGES.map(e => [e, widest[e].value])) as Record<Edge, number>;
-  return { w, h, insets, widest, safe: { x: m.left, y: m.top, w: Math.max(0, w - m.left - m.right), h: Math.max(0, h - m.top - m.bottom) } };
+  const widest = Object.fromEntries(EDGES.map(e => [e, Math.max(0, ...INSET_KINDS.map(k => insets.values[k][e]))])) as Record<Edge, number>;
+  return { w, h, insets, widest, safe: { x: widest.left, y: widest.top, w: Math.max(0, w - widest.left - widest.right), h: Math.max(0, h - widest.top - widest.bottom) } };
 }
 
 function usePlan(deviceInsets: DeviceInsets | null, size: Size | null) {
@@ -89,7 +84,7 @@ function marksOf({ w, h, insets, widest }: Plan): Mark[] {
       const value = Math.max(0, insets.values[kind][edge]);
       if (!(value > 0)) return [];
       const [from, to] = edge === 'top' || edge === 'left' ? [0, value / along] : [1 - value / along, 1];
-      return [{ kind, edge, value, side, bold: value === widest[edge].value, from, to }];
+      return [{ kind, edge, value, side, bold: value === widest[edge], from, to }];
     });
   });
 }

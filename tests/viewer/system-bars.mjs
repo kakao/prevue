@@ -104,7 +104,7 @@ try {
     else{const c=safe.getBoundingClientRect(),cx=r.left+(m.left*s+r.width-m.right*s)/2,cy=r.top+(m.top*s+r.height-m.bottom*s)/2;if(Math.abs(c.left+c.width/2-cx)>1||Math.abs(c.top+c.height/2-cy)>1)out.push({tag:'SAFE AREA 자리',got:[c.left+c.width/2,c.top+c.height/2],exp:[cx,cy]})}
     const badges=[...document.querySelectorAll('#insetMarks .im-badge')].map(x=>{const b=x.getBoundingClientRect();return {text:x.textContent,left:b.left,top:b.top,right:b.right,bottom:b.bottom}});
     const dock=document.querySelector('#panel').getBoundingClientRect();
-    badges.forEach((a,i)=>{if(a.left<0||a.top<0||a.right>innerWidth||a.bottom>innerHeight)out.push({tag:'배지가 창 밖',a});if(a.left<dock.right&&dock.left<a.right&&a.top<dock.bottom&&dock.top<a.bottom)out.push({tag:'배지가 조작 독 아래',a});badges.slice(i+1).forEach(b=>{if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)out.push({tag:'배지 겹침',a,b})})});
+    const rulerBoxes=shown?[rh,rw]:[];badges.forEach((a,i)=>{rulerBoxes.forEach(q=>{if(a.left<q.right&&q.left<a.right&&a.top<q.bottom&&q.top<a.bottom)out.push({tag:'배지가 눈금과 겹침',a})});if(a.left<0||a.top<0||a.right>innerWidth||a.bottom>innerHeight)out.push({tag:'배지가 창 밖',a});if(a.left<dock.right&&dock.left<a.right&&a.top<dock.bottom&&dock.top<a.bottom)out.push({tag:'배지가 조작 독 아래',a});badges.slice(i+1).forEach(b=>{if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)out.push({tag:'배지 겹침',a,b})})});
     return out})()`;
   const evidence = '.cache/system-bars';
   await mkdir(evidence, { recursive: true });
@@ -191,7 +191,7 @@ try {
     const insetMiss = await evaluate(insetGeometry);
     assert.deepEqual(insetMiss, [], `${name} 인셋 띠 · safeDrawing 선이 전달한 인셋과 화면 좌표로 맞는다: ${JSON.stringify(insetMiss)}`);
     // 종류가 갈라 서는 자세 — 값이 크게 다른 Flip8 커버 아래 변, 상태바와 컷아웃이 비슷한 Fold8 커버 위 변. 굵은 배지(*)가 SAFE AREA 를 정한다.
-    const SPLIT = { 'flip8-cover-portrait': ['bottom:CUTOUT 88*@left', 'bottom:NAV 48@right'], 'fold8-cover-portrait': ['top:STATUS 41.9*@right', 'top:CUTOUT 39.62@left'], 'fold8-cover-landscape-left': [], 'fold8-cover-landscape-right': [] };
+    const SPLIT = { 'flip8-cover-portrait': ['bottom:CUTOUT 88*@left', 'bottom:NAV 48@right'], 'fold8-cover-portrait': ['top:STATUS 41.9*@right', 'top:CUTOUT 39.62@left'], 'fold8-cover-landscape-left': ['left:CUTOUT 39.62*@top', 'top:STATUS 30.1*@right', 'bottom:NAV 14.86*@right'] };
     if (SPLIT[name]) {
       const got = await evaluate(`[...document.querySelectorAll('#insetMarks .im-dim')].map(d=>d.dataset.edge+':'+d.querySelector('.im-label').textContent+' '+d.querySelector('.im-val').textContent+(d.dataset.bold==='true'?'*':'')+'@'+d.dataset.side)`);
       for (const w of SPLIT[name]) assert(got.includes(w), `${name} 배지 ${w} 가 서야 한다: ${JSON.stringify(got)}`);
@@ -346,6 +346,22 @@ try {
   await until(`__store.st.version>${version}`);
   await ready();
   await check(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='true' && !document.querySelector('#insetOverlay').hidden && (${insetGeometry}).length===0`, '소스를 다시 그려도 켜 둔 채 유지');
+  // 좁은 창 — 컷아웃 배지가 눈금 바깥에서 창 안에 들고, 오버레이를 끄면 배지 자리를 비우려던 축소가 풀린다(켠 쪽이 더 작거나 같다).
+  const stageW = () => evaluate(`document.querySelector('#stage').getBoundingClientRect().width`);
+  await send('Emulation.setDeviceMetricsOverride', { width: 520, height: 1100, deviceScaleFactor: 1, mobile: false });
+  await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`);
+  await pause(600);
+  const narrowOn = await stageW();
+  const narrowMiss = await evaluate(insetGeometry);
+  assert.deepEqual(narrowMiss, [], `좁은 창(520)에서도 배지가 눈금 · 창 · 독과 겹치지 않는다: ${JSON.stringify(narrowMiss)}`);
+  await evaluate(`document.querySelector('#insetBtn').click()`);
+  await until(`document.querySelector('#insetBtn').getAttribute('aria-pressed')==='false'`);
+  await pause(800);
+  const narrowOff = await stageW();
+  assert(narrowOff >= narrowOn - 0.5, `오버레이를 끄면 줄이지 않는다: 켬 ${narrowOn} · 끔 ${narrowOff}`);
+  await evaluate(`document.querySelector('#insetBtn').click()`);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
+  await pause(600);
   await toBoard(viewer);
   await until(`__store.st.screen==='board'`);
   await post('/viewer/focus', { index: 0 });

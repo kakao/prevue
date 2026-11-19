@@ -7,7 +7,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 360,
-      "h": 780
+      "h": 780,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -69,7 +74,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 384,
-      "h": 832
+      "h": 832,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -131,7 +141,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 384,
-      "h": 853.33
+      "h": 853.33,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -195,7 +210,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 411.43,
-      "h": 923.43
+      "h": 923.43,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -257,7 +277,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 443.08,
-      "h": 986.26
+      "h": 986.26,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -319,7 +344,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 402,
-      "h": 874
+      "h": 874,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -381,7 +411,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 390,
-      "h": 844
+      "h": 844,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -445,7 +480,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 420,
-      "h": 912
+      "h": 912,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -507,7 +547,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 440,
-      "h": 956
+      "h": 956,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -569,7 +614,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 402,
-      "h": 874
+      "h": 874,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "look": {
       "open": {
@@ -631,7 +681,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 375,
-      "h": 667
+      "h": 667,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "",
+        "landscape-right": ""
+      }
     },
     "look": {
       "open": {
@@ -683,11 +738,21 @@ export const DEVICES = {
     "fold": true,
     "cover": {
       "w": 466,
-      "h": 678
+      "h": 678,
+      "cutIn": {
+        "portrait": "h",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "open": {
       "w": 951,
       "h": 669,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      },
       "hinge": 475.5
     },
     "look": {
@@ -797,11 +862,20 @@ export const DEVICES = {
     "fold": true,
     "cover": {
       "w": 475.43,
-      "h": 751.24
+      "h": 751.24,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "open": {
       "w": 932.57,
       "h": 704,
+      "cutIn": {
+        "portrait": "",
+        "landscape-left": ""
+      },
       "hinge": 466.29
     },
     "look": {
@@ -908,11 +982,21 @@ export const DEVICES = {
     "fold": true,
     "cover": {
       "w": 360,
-      "h": 840
+      "h": 840,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "open": {
       "w": 752,
       "h": 834.67,
+      "cutIn": {
+        "portrait": "",
+        "landscape-left": "",
+        "landscape-right": ""
+      },
       "hinge": 376
     },
     "look": {
@@ -1020,11 +1104,19 @@ export const DEVICES = {
     "cover": {
       "w": 399.16,
       "h": 441.26,
+      "cutIn": {
+        "portrait": "w"
+      },
       "fixed": true
     },
     "open": {
       "w": 360,
       "h": 840,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      },
       "hinge": 420
     },
     "look": {
@@ -1161,11 +1253,21 @@ export const DEVICES = {
     "fold": true,
     "cover": {
       "w": 443.08,
-      "h": 994.46
+      "h": 994.46,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "h",
+        "landscape-right": "h"
+      }
     },
     "open": {
       "w": 851.69,
       "h": 882.87,
+      "cutIn": {
+        "portrait": "w",
+        "landscape-left": "w",
+        "landscape-right": "w"
+      },
       "hinge": 425.85
     },
     "look": {
@@ -1286,7 +1388,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 1280,
-      "h": 800
+      "h": 800,
+      "cutIn": {
+        "portrait": "",
+        "landscape-left": "",
+        "landscape-right": ""
+      }
     },
     "look": {
       "open": {
@@ -1336,7 +1443,12 @@ export const DEVICES = {
     "fold": false,
     "open": {
       "w": 1056,
-      "h": 1691.43
+      "h": 1691.43,
+      "cutIn": {
+        "portrait": "h",
+        "landscape-left": "w",
+        "landscape-right": "w"
+      }
     },
     "look": {
       "open": {
