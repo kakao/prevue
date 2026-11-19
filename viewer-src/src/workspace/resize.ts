@@ -6,7 +6,8 @@ import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
 import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
-import { insetOverlayView, loadingView, marksBelow } from './view';
+import { marksBelow } from './insets';
+import { insetOverlayView, loadingView } from './view';
 
 type AnySize = Focus['postures'][number]['size'] | Size | null;
 type Zoom = { z: number; x: number; y: number };

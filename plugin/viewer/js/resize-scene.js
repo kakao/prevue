@@ -200,10 +200,11 @@ export function createResizeScene(root, hooks) {
     const r = room(st), lane = cutLaneOf(st, r.side), each = (x, maxW, maxH) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
     const both = (maxW, maxH) => Math.min(each(ORIGINAL, maxW, maxH), each(st, maxW, maxH));
     let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
-    const freeH = (maxH - (st.h + padsOf(st)[1]) * s) / 2, below = belowOf(st);
+    // 위 · 아래 줄은 같이 비운다 — 한쪽만 비우면 틀이 줄어든 높이의 가운데로 옮겨 가 맞은편 여백이 그 절반만큼 준다.
+    const freeH = (maxH - (st.h + padsOf(st)[1]) * s) / 2, below = belowOf(st), short = freeH < Math.max(lane.h, below);
     if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;
-    if (lane.h && freeH < lane.h) { maxH -= lane.h; up = lane.h; }
-    if (below && freeH < below) maxH -= below;
+    if (lane.h && short) { maxH -= lane.h; up = lane.h; }
+    if (below && short) maxH -= below;
     s = both(maxW, maxH);
     const h = st.h * s, ph = padsOf(st)[1] * s;
     return { s, w: st.w * s, h, cx: r.cx, y: r.top + up + ph / 2 + Math.max(0, (maxH - h - ph) / 2) };

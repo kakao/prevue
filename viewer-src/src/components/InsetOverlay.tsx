@@ -2,17 +2,14 @@ import { useLayoutEffect, useSyncExternalStore, type CSSProperties } from 'react
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import type { DeviceInsets, Size } from '../state';
+import { EDGES, INSET_KINDS, sideOf, type Edge, type Kind, type Side } from '../workspace/insets';
 import { insetOverlayView, loadingView } from '../workspace/view';
 import { insetMarksHost, insetOverlayHost } from './WorkspaceShell';
 
 // 인셋 영역 보기 — 기기가 Composable에 전달한 인셋을 그림 위에 덧그린다. 뷰어만의 표시라 PNG · CLI · 데몬은 모른다(D-172와 같은 자리).
 // 띠 · SAFE AREA 면은 화면 안(#insetOverlay), 값은 기기 몸체 밖(#insetMarks)의 dp 배지 · 치수선이 적는다. 전체 폭 · 높이는 장면의 치수 눈금(#ruler)이 이미 적는다.
 // 둥근 모서리 · 카메라 구멍은 인셋 값에 없어 그리지 않는다.
-const INSET_KINDS = ['statusBars', 'navigationBars', 'captionBar', 'displayCutout', 'systemOverlays'] as const;
-const EDGES = ['top', 'right', 'bottom', 'left'] as const;
-type Edge = typeof EDGES[number];
 type Rect = { x: number; y: number; w: number; h: number };
-type Kind = typeof INSET_KINDS[number];
 type Plan = { w: number; h: number; insets: DeviceInsets; widest: Record<Edge, number>; safe: Rect };
 
 /**
@@ -65,12 +62,11 @@ export function InsetOverlay({ deviceInsets, size, host }: { deviceInsets: Devic
 const dpText = (v: number) => String(Math.round(v * 100) / 100);
 
 /**
- * 몸체 밖의 치수 하나 — 변마다 값이 있는 종류를 레이블과 함께 단다. 컷아웃은 눈금(#ruler) 바깥 — 위 · 아래 변의 띠는 왼쪽에, 왼쪽 · 오른쪽 변의 띠는 위에 서고,
- * 나머지 종류는 위 · 아래 변의 띠는 오른쪽에, 왼쪽 · 오른쪽 변의 띠는 아래에 선다. 한쪽에 컷아웃 아닌 종류가 둘 이상이면 그쪽은 최댓값 하나만 적는다.
+ * 몸체 밖의 치수 하나 — 변마다 값이 있는 종류를 레이블과 함께 단다. 어느 쪽에 서는지는 sideOf(workspace/insets.ts)가 정한다.
+ * 한쪽에 컷아웃 아닌 종류가 둘 이상이면 그쪽은 최댓값 하나만 적는다.
  * bold 는 그 변의 SAFE AREA 를 정하는 값(Plan.widest)과 같은 배지다 — 같은 값이면 둘 다 굵다.
  * from · to 는 그 축에서 화면 길이에 대한 비율이다.
  */
-type Side = 'right' | 'bottom' | 'left' | 'top';
 type Mark = { kind: Kind; edge: Edge; value: number; side: Side; bold: boolean; from: number; to: number };
 
 function marksOf({ w, h, insets, widest }: Plan): Mark[] {
@@ -79,7 +75,7 @@ function marksOf({ w, h, insets, widest }: Plan): Mark[] {
     const along = vertical ? h : w;
     const others = INSET_KINDS.filter(k => k !== 'displayCutout')
       .reduce((a, k) => insets.values[k][edge] > insets.values[a][edge] ? k : a);
-    const picks: [Kind, Side][] = [[others, vertical ? 'right' : 'bottom'], ['displayCutout', vertical ? 'left' : 'top']];
+    const picks: [Kind, Side][] = [[others, sideOf(others, edge)], ['displayCutout', sideOf('displayCutout', edge)]];
     return picks.flatMap(([kind, side]) => {
       const value = Math.max(0, insets.values[kind][edge]);
       if (!(value > 0)) return [];

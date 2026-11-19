@@ -344,7 +344,7 @@ try {
     await ready();
     const fakeMiss = await evaluate(insetGeometry);
     assert.deepEqual(fakeMiss, [], `${name} 띠 · 배지 · 치수선 · SAFE AREA · 조작 독 비킴: ${JSON.stringify(fakeMiss)}`);
-    await check(`document.querySelector('#insetMarks .im-dim[data-edge="right"]')?.dataset.kind==='systemOverlays'`, `${name} captionBar · systemOverlays 띠 · 배지 · 치수선 · SAFE AREA`);
+    await check(`document.querySelector('#insetMarks .im-dim[data-edge="right"]')?.dataset.kind==='systemOverlays'`, `${name} 오른쪽 변 배지가 systemOverlays`);
     await check(`(d=>d?.dataset.kind==='captionBar' && d.dataset.bold==='true' && d.querySelector('.im-label').textContent==='CAPTION')(document.querySelector('#insetMarks .im-dim[data-edge="top"][data-side="right"]'))`, `${name} 위 변 오른쪽 배지가 가장 큰 captionBar 로 넘어가 굵다`);
     await check(`document.querySelectorAll('#insetMarks .im-dim[data-edge="top"]:not([data-kind="displayCutout"])').length===1`, `${name} 한쪽에 컷아웃 아닌 종류가 둘이어도 최댓값 하나만`);
     await release();

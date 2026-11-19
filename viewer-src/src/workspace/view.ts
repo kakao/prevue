@@ -1,4 +1,3 @@
-import type { DeviceInsets } from '../state';
 // 한 장 · 가리키기의 브라우저 쪽 표시 상태 — 데몬 상태가 아니라 뷰어가 재고 정한 것(배율 · 첫 장 대기 · 가리킨 카드).
 // 정하는 쪽(focus.ts · resize.ts · point.ts)이 여기 쓰고 React 컴포넌트가 구독한다. Storybook 은 이 저장소에 값을 넣어 그린다.
 export type Store<T> = { get(): T; set(next: Partial<T>): void; subscribe(listener: () => void): () => void };
@@ -54,6 +53,3 @@ export const pointView = createStore<PointView>({ host: null, shot: null, card: 
 /** 인셋 영역 보기 — 뷰어만의 표시라 데몬에 묻지 않는다. 같은 카드의 인터랙티브 동안 남고, 그 밖으로 나가면 session.ts 가 끈다. */
 export type InsetOverlayView = { on: boolean };
 export const insetOverlayView = createStore<InsetOverlayView>({ on: false });
-/** 몸체 아래 줄에 배지가 서는지 — InsetMarks 는 왼쪽 · 오른쪽 변의 컷아웃 아닌 종류를 몸체 아래에 단다. 장면이 그 줄의 자리를 비울지 묻는다. */
-export const marksBelow = (insets: DeviceInsets | null | undefined) =>
-  !!insets && Object.entries(insets.values).some(([kind, v]) => kind !== 'displayCutout' && (v.left > 0 || v.right > 0));
