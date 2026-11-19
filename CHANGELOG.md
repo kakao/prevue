@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **`prevue paths` lists the old copies of Prevue's components that pile up after updates** (about 118 MB each under `~/.prevue/toolchain/lib-*`) and marks the ones no installed plugin, this plugin or a running preview uses as deletable.
 - **The header progress bar clears when the viewer disconnects** — it no longer keeps running after "Restarting" turns into "Disconnected", or after the daemon dies while it was still drawing.
 - **Holding the mouse down on a live preview and then switching windows (⌘-Tab) now lifts the finger in the app**, so the next press starts a fresh gesture instead of landing while the app still thinks the first one is held; leaving or turning off interaction mid-press no longer sends a stray release afterwards either.
 - **The "9:41" time in device status bars now looks like the device** — iPhones match the iOS Simulator's semibold clock and Android devices use Roboto Medium — instead of a thin system fallback font, and it draws the same on every machine.
