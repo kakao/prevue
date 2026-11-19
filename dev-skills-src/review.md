@@ -68,7 +68,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 
 - **라우팅 · 메서드 · 매퍼 테스트는 소비자가 그 값으로 분기하는지로 가른다** — 뷰어는 `app.json`의 `icon` · `reveal`로 분기한다(`viewer-src/src/components/ProjectHeader.tsx`).
 - **`ContractTest`와 겹친다고 보기 전에 무엇을 견주는지 본다** — 상태 코드와 응답의 키 · 타입만 견주고 값은 견주지 않는다. 배열 원소와 같은 종류의 SSE 이벤트는 합친 스키마 하나로 보아 일부 원소 · 발행의 키 생략을 못 잡고, 계약 픽스처에 없는 시나리오는 보지 않으며, SSE `state` 이벤트는 빠진 키를 통과시킨다(`fits`). 값의 진위나 그런 키 생략을 확인하는 테스트는 계약과 중복이 아니다.
-- **남긴다** — 기획 NFR의 숫자 기본값(유휴 10분 · 산출물 64MB), 언어를 넘는 계약(`DaemonPaths`의 덤프 이름 ↔ `plugin/cli/prevue_plan.py`), 손으로 짠 `Json` 파서의 왕복, `help/` 문구 계약을 확인하는 마지막 테스트.
+- **남긴다** — 기획 NFR의 숫자 기본값(유휴 1시간 · 산출물 64MB), 언어를 넘는 계약(`DaemonPaths`의 덤프 이름 ↔ `plugin/cli/prevue_plan.py`), 손으로 짠 `Json` 파서의 왕복, `help/` 문구 계약을 확인하는 마지막 테스트.
 - **"다른 테스트가 확인한다"는 짝 구현을 망가뜨려 보고 말한다** — 정적으로 중복이라 본 것이 망가뜨려 보면 혼자 지키는 경우가 있었다.
 - **개수는 `@Test fun`으로 센다** — `grep -c '@Test'`는 `@TestInstance`까지 센다.
 

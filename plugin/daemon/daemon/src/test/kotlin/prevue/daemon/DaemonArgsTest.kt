@@ -29,4 +29,19 @@ class DaemonArgsTest {
         assertThrows<UsageException> { DaemonArgs.parse(tools + arrayOf("stray")) }
     }
 
+    // NFR-6 · D-195. 기본값을 바꾸면 기획의 숫자부터 고친다.
+    @Test fun `유휴 종료는 기본 60분이고 --idle 은 분 단위로 m 을 붙여도 되며 0 이면 끈다`() {
+        assertEquals(60, DaemonArgs.parse(tools).idleMinutes)
+        assertEquals(5, DaemonArgs.parse(tools + arrayOf("--idle", "5")).idleMinutes)
+        assertEquals(5, DaemonArgs.parse(tools + arrayOf("--idle", "5m")).idleMinutes)
+        assertEquals(0, DaemonArgs.parse(tools + arrayOf("--idle", "0")).idleMinutes)
+    }
+
+    @Test fun `--idle 이 분 수가 아니면 사용법이다`() {
+        for (v in listOf("abc", "-1", "5h", "1.5", "", "m", "9999999999")) {
+            assertThrows<UsageException>(v) { DaemonArgs.parse(tools + arrayOf("--idle", v)) }
+        }
+        assertThrows<UsageException> { DaemonArgs.parse(tools + arrayOf("--idle")) }
+    }
+
 }

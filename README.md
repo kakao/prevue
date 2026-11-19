@@ -187,7 +187,7 @@ Top, the same work in Android Studio and in Prevue. Bottom, how fast each kind o
 - **Setup** — Apple Silicon, 14 cores · 36GB RAM · nowinandroid `ForYouScreen.kt` (25 Previews). Android Studio 2026.1.3 was measured on 2026-09-22 and Prevue (develop `feb5c6e`) on 2026-10-23. Prevue values are medians
 - **Hot Swap** — From save until all 25 show the new picture. The first one appears at 0.9 seconds
 - **First Preview** — Android Studio from opening the project, Prevue from starting the daemon, until the first render finishes
-- **Memory** — Android Studio is the IDE plus the Gradle daemon at one moment; Prevue is the memory use of its one daemon after 10 saves. Going back and forth between modules for a long time, it peaked at 1.6GB, and it shuts itself down after 10 minutes without use
+- **Memory** — Android Studio is the IDE plus the Gradle daemon at one moment; Prevue is the memory use of its one daemon after 10 saves. Going back and forth between modules for a long time, it peaked at 1.6GB, and it shuts itself down after an hour without use (`prevue start --idle <minutes>` changes this)
 - **Disk** — The Android Studio app bundle vs `~/.prevue/toolchain`. With JDK 25 or later Prevue also keeps a class cache of about 200MB in `~/.prevue/aot` that makes the daemon start faster
 - **How fast Prevue redraws** — Literal and resource-value saves skip compilation. Switching modules and changing devices are measured until the new picture is ready. Interactive is the frame rate on the viewer stream while dragging a feed
 
