@@ -54,6 +54,8 @@ export function transition(update: () => void, done?: (() => void) | null, { wor
     root.classList.toggle("vt-workspace", workspace);
     const vt = document.startViewTransition(update);
     active = vt;
+    // 다음 전환이 이 전환을 건너뛰면 ready 가 AbortError 로 거절된다 — 받지 않으면 unhandledrejection 이 남는다
+    vt.ready.catch(() => {});
     vt.updateCallbackDone.catch(() => {}).finally(() => { running = false; done && done(); });
     vt.finished.catch(() => {}).finally(() => {
       if (active !== vt) return;

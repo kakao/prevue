@@ -36,7 +36,7 @@ function s(e, t, { workspace: n = !1, image: i = null } = {}) {
 	function l() {
 		o?.skipTransition(), s.classList.toggle("vt-workspace", n);
 		let r = document.startViewTransition(e);
-		o = r, r.updateCallbackDone.catch(() => {}).finally(() => {
+		o = r, r.ready.catch(() => {}), r.updateCallbackDone.catch(() => {}).finally(() => {
 			a = !1, t && t();
 		}), r.finished.catch(() => {}).finally(() => {
 			o === r && (o = null, s.classList.remove("vt-workspace"));
