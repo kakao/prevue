@@ -342,7 +342,15 @@ internal class RenderEngine(
         }
         try {
             val renderMs = msSince(t)
-            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview)) refreshTree(l, result)
+            val adapter = ViewInfoJson.adapter(result.rootViews)
+            val hasCurrentAdapter = adapter != null && adapter === outputs.lastAdapter
+            if (TreeRefreshPolicy.shouldRefresh(
+                    relayout = relayout,
+                    fitsContent = LayoutlibBars.fitsContent(l.task, l.preview),
+                    hasCurrentAdapter = hasCurrentAdapter,
+                )) {
+                refreshTree(l, result)
+            }
             val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
             return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
         } finally {
