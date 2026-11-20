@@ -76,6 +76,9 @@ class CiWait(unittest.TestCase):
                 os.environ[k] = v
 
     def run_with(self, script, *args):
+        for stale in ("seen.json", "calls"):
+            if os.path.exists(os.path.join(self.tmp.name, stale)):
+                os.remove(os.path.join(self.tmp.name, stale))
         with open(os.path.join(self.tmp.name, "script.json"), "w") as f:
             json.dump(script, f)
         out, err = io.StringIO(), io.StringIO()
@@ -148,12 +151,15 @@ class CiWait(unittest.TestCase):
         self.assertEqual([c for c in self.calls() if c.startswith("api ")],
                          ["api --allow-escape-sequences repos/{owner}/{repo}/actions/jobs/5/logs"])
 
-    def test_필수_체크가_아직_없으면_초록으로_치지_않는다(self):
-        code, _ = self.run_with({"pr view": [{"out": OPEN}], "run list": [{"out": RUN}],
-                                 "run watch": [{"code": 1}],
-                                 "pr checks": [{"code": 1, "err": "no required checks reported"}],
-                                 "run view": [{"out": dict(JOBS, jobs=[])}]})
-        self.assertEqual(code, 1)
+    # 지킬 것: watch 가 run 이 끝나기 전에 비정상 종료해도 도는 CI 를 "실패"(1)로 보고하지 않는다
+    def test_필수_체크가_아직_없거나_대기_중이면_실패가_아니라_4(self):
+        for checks in ({"code": 1, "err": "no required checks reported"},
+                       {"code": 8, "out": [dict(FAIL[0], bucket="pending")]}):
+            with self.subTest(checks=checks):
+                code, out = self.run_with({"pr view": [{"out": OPEN}], "run list": [{"out": RUN}],
+                                           "run watch": [{"code": 1}], "pr checks": [checks]})
+                self.assertEqual(code, 4)
+                self.assertIn("판정이 아직 없다", out)
 
     def test_기다리는_사이_head_가_바뀌면_새_head_를_다시_기다린다(self):
         new = dict(OPEN, headRefOid="b" * 40)

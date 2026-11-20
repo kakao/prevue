@@ -7,9 +7,9 @@
           · 3 상한 안에 run 이 생기지 않았다 · 4 도구 오류(gh 실패 · PR 이 열려 있지 않다)
 
 왜 스크립트인가: `gh pr checks --required --watch` 는 ci-success 가 생기기 전이면 "no required checks reported"로
-곧바로 끝나고, 충돌한 PR 은 pull_request CI 가 아예 뜨지 않으며, `gh run view --log-failed` 는 run 이 도는 중이면
-막힌다. 그래서 충돌 확인 → head 의 run 찾기 → run 이 끝날 때까지 watch → 필수 체크 판정 → jobs 로그 API 로 실패
-로그 읽기를 여기서 묶는다. 일시 실패인지 · 다시 돌릴지는 부른 쪽이 판단한다 — 여기서 재실행하지 않는다.
+곧바로 끝나고, 충돌한 PR 은 pull_request CI 가 아예 뜨지 않는다. 그래서 충돌 확인 → head 의 run 찾기 → run 이
+끝날 때까지 watch → 필수 체크 판정 → 실패 로그 요지를 여기서 묶는다. 로그는 jobs 로그 API 로 원인 job 만 받아 첫
+##[error] 앞부분을 자른다 — `--log-failed` 는 run 전체를 쏟아 원인 줄이 정리 단계 출력에 묻힌다. 일시 실패인지 · 다시 돌릴지는 부른 쪽이 판단한다 — 여기서 재실행하지 않는다.
 """
 
 import argparse
@@ -21,14 +21,16 @@ import time
 
 WORKFLOW = "build.yml"
 REQUIRED = "ci-success"
-# ci-success · fail-fast 취소 스텝은 다른 job 의 실패를 옮길 뿐이라 원인 로그가 아니다
-ECHO_JOBS = re.compile(r"^(ci-success|abort-on-.*)$")
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 STAMP = re.compile(r"^\d{4}-\d\d-\d\dT[\d:.]+Z ")
 LOG_LINES = 40
 
 
 class GhError(Exception):
+    pass
+
+
+class Conflict(Exception):
     pass
 
 
@@ -49,6 +51,8 @@ def pr_state(pr, poll):
         st = gh_json("pr", "view", str(pr), "--json", "state,mergeable,headRefOid")
         if st["state"] != "OPEN":
             raise GhError(f"PR #{pr} 이 열려 있지 않다({st['state']})")
+        if st["mergeable"] == "CONFLICTING":
+            raise Conflict
         if st["mergeable"] != "UNKNOWN":
             return st
         time.sleep(poll)
@@ -68,8 +72,7 @@ def find_run(pr, sha, timeout, poll):
                        "--limit", "1", "--json", "databaseId")
         if runs:
             return runs[0]["databaseId"]
-        if pr_state(pr, poll)["mergeable"] == "CONFLICTING":
-            return "conflict"
+        pr_state(pr, poll)
         if time.monotonic() >= deadline:
             return None
         time.sleep(poll)
@@ -85,11 +88,12 @@ def report_failure(run):
     view = gh_json("run", "view", str(run), "--json", "attempt,url,jobs")
     print(f"CI 실패 — run {run} attempt {view['attempt']} · {view['url']}")
     failed = [j for j in view["jobs"] if j.get("conclusion") == "failure"]
-    causes = [j for j in failed if not ECHO_JOBS.match(j["name"])] or failed
+    # ci-success 는 다른 job 의 실패를 옮길 뿐이라 원인 로그가 아니다
+    causes = [j for j in failed if j["name"] != REQUIRED] or failed
     for job in causes:
         steps = [s["name"] for s in job.get("steps", []) if s.get("conclusion") == "failure"]
         print(f"\n## {job['name']} — 실패 스텝: {', '.join(steps) or '(모름)'}")
-        # gh run view --log-failed 는 run 이 끝나야 읽힌다 — jobs 로그 API 는 job 만 끝나면 읽힌다
+        # 원인 job 의 로그만 받는다 — --log-failed 는 실패 job 전부를 한 덩어리로 쏟는다
         log = gh("api", "--allow-escape-sequences", f"repos/{{owner}}/{{repo}}/actions/jobs/{job['databaseId']}/logs",
                  check=False)
         if log.returncode != 0:
@@ -101,13 +105,8 @@ def report_failure(run):
 
 def wait(pr, timeout, poll):
     while True:
-        st = pr_state(pr, poll)
-        if st["mergeable"] == "CONFLICTING":
-            return conflict(pr)
-        sha = st["headRefOid"]
+        sha = pr_state(pr, poll)["headRefOid"]
         run = find_run(pr, sha, timeout, poll)
-        if run == "conflict":
-            return conflict(pr)
         if run is None:
             print(f"run 없음 — {timeout}초 안에 head {sha[:8]} 의 {WORKFLOW} run 이 생기지 않았다.")
             return 3
@@ -121,9 +120,13 @@ def wait(pr, timeout, poll):
         out = gh("pr", "checks", str(pr), "--required", "--json", "name,bucket,link", check=False).stdout
         checks = json.loads(out) if out.strip() else []
         verdict = next((c for c in checks if c["name"] == REQUIRED), None)
-        if verdict and verdict["bucket"] == "pass":
+        bucket = verdict["bucket"] if verdict else None
+        if bucket == "pass":
             print(f"초록 — {REQUIRED} 통과 · run {run} · {verdict['link']}")
             return 0
+        if bucket in (None, "pending"):
+            # watch 가 run 이 끝나기 전에 비정상 종료했다 — 도는 CI 를 실패로 보고하지 않는다
+            raise GhError(f"run {run} 을 기다렸지만 {REQUIRED} 판정이 아직 없다({bucket or '체크 없음'})")
         return report_failure(run)
 
 
@@ -135,7 +138,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     try:
         return wait(a.pr, a.appear_timeout, a.poll)
-    except (GhError, json.JSONDecodeError, KeyError) as e:
+    except Conflict:
+        return conflict(a.pr)
+    except (GhError, OSError, json.JSONDecodeError, KeyError) as e:
         print(f"도구 오류 — {e}", file=sys.stderr)
         return 4
 
