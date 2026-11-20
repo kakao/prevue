@@ -9,7 +9,8 @@
 왜 스크립트인가: `gh pr checks --required --watch` 는 ci-success 가 생기기 전이면 "no required checks reported"로
 곧바로 끝나고, 충돌한 PR 은 pull_request CI 가 아예 뜨지 않는다. 그래서 충돌 확인 → head 의 run 찾기 → run 이
 끝날 때까지 watch → 필수 체크 판정 → 실패 로그 요지를 여기서 묶는다. 로그는 jobs 로그 API 로 원인 job 만 받아 첫
-##[error] 앞부분을 자른다 — `--log-failed` 는 run 전체를 쏟아 원인 줄이 정리 단계 출력에 묻힌다. 일시 실패인지 · 다시 돌릴지는 부른 쪽이 판단한다 — 여기서 재실행하지 않는다.
+##[error] 앞부분을 자른다 — `--log-failed` 는 실패 job 전부(실패를 옮기기만 하는 ci-success 포함)를 한 덩어리로
+쏟아 원인 job 이 섞인다. 일시 실패인지 · 다시 돌릴지는 부른 쪽이 판단한다 — 여기서 재실행하지 않는다.
 """
 
 import argparse
