@@ -8,13 +8,14 @@
 
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
 import unittest
 
 from test_daemon_records import free_port
-from test_plan import Case
+from test_plan import Case, fake_jdk
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 LAYOUTLIB, COMPILER, LIB = ".prevue/toolchain/layoutlib-1", ".prevue/toolchain/compiler-1", ".prevue/toolchain/lib-1"
@@ -40,7 +41,8 @@ class Baked(Case):
         os.makedirs(self.home)
 
     def prevue(self, *args, **extra):
-        env = {k: v for k, v in os.environ.items() if k not in ("PREVUE_PORT", "PREVUE_PREPARATION")}
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("PREVUE_PORT", "PREVUE_PREPARATION", "PREVUE_JDK", "PREVUE_JDK_RESOLVED", "CODEX_SANDBOX")}
         env.update(HOME=self.home, PREVUE_HOME=os.path.join(self.home, ".prevue"),
                    GRADLE_USER_HOME=os.path.join(self.home, ".gradle"), NO_OPEN="1", **extra)
         p = subprocess.run([os.path.join(self.plugin, "bin", "prevue")] + list(args), cwd=self.tmp.name, env=env,
@@ -62,6 +64,41 @@ class Baked(Case):
                                 PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
         self.assertEqual((code, out["missing"]), (3, ["toolchain"]))
         self.assertFalse(os.path.exists(os.path.join(self.home, ".prevue", "daemons")))
+
+    def shared_toolchain(self):
+        """이 플러그인 버전의 공유 툴체인(컴파일러 · layoutlib · Metro 캐시)을 HOME 에 둔다 — 판올림 뒤 build/ 만 빈 상태."""
+        with open(os.path.join(self.plugin, "daemon", "gradle", "libs.versions.toml")) as f:
+            v = dict(re.findall(r'^(kotlin|layoutlib-data|metro) *= *"([^"]+)"', f.read(), re.M))
+        self.toolchain(".prevue/toolchain/compiler-" + v["kotlin"], ".prevue/toolchain/layoutlib-" + v["layoutlib-data"],
+                       ".gradle/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/" + v["metro"])
+
+    def traced(self, path):
+        """부르면 흔적 파일을 남기는 실행 파일. 흔적 경로를 돌려준다."""
+        trace = path + ".ran"
+        with open(path, "w") as f:
+            f.write('#!/bin/sh\n: > "%s"\n' % trace)
+        os.chmod(path, 0o755)
+        return trace
+
+    def bake_start(self, jdk_version):
+        """안 구워졌고 공유 툴체인은 있을 때의 start — prevue_prepare.py 가 PREVUE_PREPARATION 으로 다시 부르는 안쪽 start 다."""
+        self.shared_toolchain()
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-" + jdk_version), jdk_version)
+        gradle_ran = self.traced(os.path.join(self.plugin, "daemon", "gradlew"))
+        code, out = self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
+                                PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
+        return code, out, os.path.exists(gradle_ran)
+
+    def test_start_bake_without_21_jdk_answers_jdk_before_gradle(self):
+        code, out, gradle = self.bake_start("11.0.18")
+        self.assertEqual((code, out.get("missing"), out.get("jdkVersion")), (3, ["jdk"], "11"), out)
+        self.assertFalse(gradle, "굽기가 Gradle 래퍼를 불렀다")
+
+    def test_start_bake_with_21_jdk_calls_gradle(self):
+        # 위 테스트가 정말 굽기 갈래에서 멈췄다는 대조군 — 가짜 래퍼는 아무것도 굽지 않으니 끝은 툴체인 없음이다
+        code, out, gradle = self.bake_start("21.0.12")
+        self.assertTrue(gradle, "21+ JDK 인데 굽기가 Gradle 래퍼를 부르지 않았다")
+        self.assertEqual((code, out.get("missing")), (3, ["toolchain"]), out)
 
     def test_health_counts_the_toolchain_by_its_directories_not_the_env_file(self):
         f = self.file()

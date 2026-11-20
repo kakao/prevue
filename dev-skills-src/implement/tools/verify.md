@@ -4,4 +4,5 @@
 
 - **고치는 동안은 실패한 검사만** 그 검사의 명령(요약 줄의 이름과 스크립트 본문에서 찾는다)으로 다시 돌린다.
 - **리뷰를 맡기기 전에는 전체를** 깨끗한 작업 트리에서 다시 돌린다. 검사는 커밋이 아니라 작업 트리를 읽으므로, 요약이 "작업 트리 깨끗"이라고 찍은 결과만 그 커밋의 것이다.
+- **데몬 빌드(Gradle)는 JDK 21 이상이 필요하다** — Metro의 Gradle 플러그인 때문이다. `check-local.sh` · `lint.sh`는 셸 `JAVA_HOME`이 17이어도 21+를 스스로 고른다. `./gradlew`를 직접 칠 때는 한 명령 안에서 같은 JDK를 준다 — `(G="$(python3 tools/lint/gradle_jdk.py)" && cd plugin/daemon && JAVA_HOME="${G:-${JAVA_HOME:-}}" ./gradlew …)`. 에이전트 셸은 호출 사이에 환경 변수를 넘기지 않는다.
 - **린트는 `dev-skills-src/coding.md`대로 고친다** — 위반 해석은 `dev-skills-src/review.md` "린트"다.
