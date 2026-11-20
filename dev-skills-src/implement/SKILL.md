@@ -22,7 +22,7 @@ description: Prevue 저장소의 변경 작업 하나를 작업 워크트리에�
 - 합의한 성공 기준을 맞출 수 없거나, 범위를 바꿔야 할 때
 - `review` 스킬이 있는데 리뷰어를 띄울 수 없을 때
 - 대상 저장소의 Gradle을 돌려야 할 때(클래스패스 덤프) — 남의 빌드를 돌리는 일이라 알리고 승인받는다. 저장소 안 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`, 공개 Maven만)는 도구의 일부라 승인 없이 돌린다
-- PR의 CI가 실패했을 때
+- PR의 CI가 실패했을 때 — 외부 다운로드 일시 실패를 한 번 다시 돌리는 것은 빼고([tools/pr.md](tools/pr.md) "CI")
 
 ## 시작
 
