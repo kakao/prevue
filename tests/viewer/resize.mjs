@@ -106,6 +106,27 @@ try {
   await check(`document.querySelector('#pnSum .nm').textContent==='@Preview' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#pnBody').inert && getComputedStyle(document.querySelector('#pnBody')).visibility==='hidden'`, "메뉴 버튼은 고른 것의 이름 · 메뉴는 닫혀 있다");
   await openMenu();
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='true' && document.querySelector('#pnBody').getBoundingClientRect().bottom<=document.querySelector('#pnSum').getBoundingClientRect().top`, "메뉴는 독 위로 열린다");
+  // 고른 칸도 호버에 반응한다 — 고름 바탕 위에 호버 바탕이 한 겹 얹혀 쉴 때보다 진하고, 고르지 않은 칸의 호버와도 다르다.
+  // 겹친 진하기는 두 알파의 합성(1-(1-a)(1-b))으로 비교한다. 전환(--duration-short4)이 끝나기를 기다린 뒤 잰다.
+  {
+    const hoverAt = async selector => {
+      const at = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+      await send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at }); await pause(300);
+      return evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
+        const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
+        const layers=[s.backgroundColor,...(s.backgroundImage.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1)];
+        return {hover:el.matches(':hover'),color:s.backgroundColor,image:s.backgroundImage,a:1-layers.reduce((k,c)=>k*(1-alpha(c)),1)}})()`);
+    };
+    const on = `#pnPick .pn-it[aria-checked="true"]`, off = `#pnPick .pn-it[aria-checked="false"]`;
+    const rest = await evaluate(`(()=>{const s=getComputedStyle(document.querySelector(${JSON.stringify(on)}));return {color:s.backgroundColor,image:s.backgroundImage}})()`);
+    const onHover = await hoverAt(on), offHover = await hoverAt(off);
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 1 }); await pause(300);
+    const restAlpha = await evaluate(`(()=>{const m=getComputedStyle(document.querySelector(${JSON.stringify(on)})).backgroundColor.match(/rgba?\\(([^)]+)\\)/);const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1})()`);
+    assert(onHover.hover && offHover.hover, "호버 이동이 칸에 닿는다");
+    assert(rest.image === "none" && onHover.color === rest.color && onHover.image.includes("gradient") && onHover.a > restAlpha + 0.05, `고른 칸 호버는 고름 바탕 위에 한 겹 더 진하다: 쉼 ${restAlpha} → 호버 ${onHover.a} (${onHover.image})`);
+    assert(offHover.image === "none" && Math.abs(offHover.a - onHover.a) > 0.05, `고른 칸 호버와 고르지 않은 칸 호버는 다르다: ${onHover.a} · ${offHover.a}`);
+    console.log(`통과 ${++checked}: 고른 칸도 호버에 반응한다(쉼 ${restAlpha.toFixed(3)} → 호버 ${onHover.a.toFixed(3)}, 고르지 않은 칸 호버 ${offHover.a.toFixed(3)})`);
+  }
   // 기기 묶음은 제품 라인(label 첫 단어)이고, 칸 이름은 그 묶음 이름을 되풀이하지 않는다 — 전체 이름은 툴팁이다.
   await check(`(()=>{let g=null,ok=true;const seen=new Set();for(const el of document.querySelectorAll('#pnPick .pn-sec:last-child :is(.pn-g,.pn-it)')){if(el.matches('.pn-g')){g=el.textContent;ok&&=!seen.has(g);seen.add(g)}else ok&&=!!g&&el.title.startsWith(g+' ')&&!el.querySelector('.nm').textContent.startsWith(g)}return ok&&[...seen].join()==='Galaxy,Pixel,iPhone'})()`, "기기 메뉴는 Galaxy · Pixel · iPhone 묶음 · 칸 이름에 묶음 이름이 없다");
   await evaluate(`window.__signals={busy:0,liveOff:0};new MutationObserver(()=>{if(document.querySelector('#bar').classList.contains('busy'))__signals.busy++;if(!document.querySelector('#stage').classList.contains('live'))__signals.liveOff++}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','data-state']})`);
