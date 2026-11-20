@@ -49,16 +49,21 @@ try {
   const check = (ok, name, detail) => { assert(ok, `${name} — ${JSON.stringify(detail)}`); checked++; console.log(`통과 ${checked}: ${name}`, detail ?? ""); };
   const move = (x, y) => send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   // 호버를 보낸 뒤 첫 프레임에서 잰다 — 전환이 돌면 이 순간의 값은 끝값에 못 미친다.
+  const measure = `(() => {
+    const go = document.querySelector('#cards .card .go'), t = go.querySelector('.go-t'), gs = getComputedStyle(go), ts = getComputedStyle(t);
+    return { hovered: go.closest('.card').matches(':hover'), padLeft: parseFloat(gs.paddingLeft), marginLeft: parseFloat(ts.marginLeft),
+      textW: t.getBoundingClientRect().width, opacity: parseFloat(ts.opacity) };
+  })()`;
+  const idle = `document.querySelector('#cards .card .go').getAnimations({ subtree: true }).length === 0`;
+  // 첫 프레임 값과, 전환이 다 끝난 뒤 다시 잰 끝값을 함께 돌려준다.
   const hover = async () => {
     const at = await evaluate(`(() => { const r = document.querySelector('#cards .card .cstage').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
     await move(at.x, at.y);
-    return evaluate(`new Promise(done => requestAnimationFrame(() => {
-      const go = document.querySelector('#cards .card .go'), t = go.querySelector('.go-t'), gs = getComputedStyle(go), ts = getComputedStyle(t);
-      done({ hovered: go.closest('.card').matches(':hover'), padLeft: parseFloat(gs.paddingLeft), textW: t.getBoundingClientRect().width,
-        maxWidth: ts.maxWidth, goProps: gs.transitionProperty, textProps: ts.transitionProperty });
-    }))`);
+    const first = await evaluate(`new Promise(done => requestAnimationFrame(() => done(${measure})))`);
+    await until(idle);
+    return { first, end: await evaluate(measure) };
   };
-  const settled = `(() => { const go = document.querySelector('#cards .card .go'); return !go.closest('.card').matches(':hover') && go.getAnimations({ subtree: true }).length === 0; })()`;
+  const settled = `!document.querySelector('#cards .card .go').closest('.card').matches(':hover') && ${idle}`;
 
   await send("Page.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1400, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -69,17 +74,16 @@ try {
   await until(settled);
 
   const reduced = await hover();
-  check(reduced.hovered, "움직임을 줄여도 카드 호버가 잡힌다", reduced);
-  check(reduced.maxWidth === "80px" && reduced.textW > 0 && reduced.padLeft > 4, "움직임을 줄이면 호버 첫 프레임에 이미 다 펼쳐져 있다", reduced);
-  check(!/padding|max-width|margin|all/.test(reduced.goProps + reduced.textProps) && /opacity/.test(reduced.textProps), "움직임을 줄이면 펼침 전환은 빠지고 페이드만 남는다", reduced);
-  const end = reduced.textW;
+  check(reduced.first.hovered && reduced.end.textW > 0, "움직임을 줄여도 카드 호버가 잡히고 글자가 펼쳐진다", reduced);
+  check(["padLeft", "marginLeft", "textW"].every(k => reduced.first[k] === reduced.end[k]), "움직임을 줄이면 호버 첫 프레임에 이미 끝까지 펼쳐져 있다", reduced);
+  check(reduced.first.opacity < 1 && reduced.end.opacity === 1, "움직임을 줄여도 글자의 페이드는 남는다", reduced);
 
   await move(1, 1);
   await until(settled);
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   await pause(100);
   const normal = await hover();
-  check(normal.hovered && normal.textW < end && /max-width/.test(normal.textProps) && /padding/.test(normal.goProps), "기본 설정에서는 펼침 전환이 그대로 돈다", { ...normal, end });
+  check(normal.first.hovered && normal.first.textW < normal.end.textW && normal.first.padLeft < normal.end.padLeft, "기본 설정에서는 펼침 전환이 그대로 돈다", normal);
   await move(1, 1);
   console.log(`▶ 펼침 움직임 검사 ${checked}개 통과`);
 } finally {
