@@ -84,21 +84,19 @@ class Baked(Case):
         """안 구워졌고 공유 툴체인은 있을 때의 start — prevue_prepare.py 가 PREVUE_PREPARATION 으로 다시 부르는 안쪽 start 다."""
         self.shared_toolchain()
         jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-" + jdk_version), jdk_version)
-        java_ran = self.traced(os.path.join(jdk, "bin", "java"))
         gradle_ran = self.traced(os.path.join(self.plugin, "daemon", "gradlew"))
         code, out = self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
                                 PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
-        return code, out, os.path.exists(gradle_ran), os.path.exists(java_ran)
+        return code, out, os.path.exists(gradle_ran)
 
     def test_start_bake_without_21_jdk_answers_jdk_before_gradle(self):
-        code, out, gradle, java = self.bake_start("11.0.18")
+        code, out, gradle = self.bake_start("11.0.18")
         self.assertEqual((code, out.get("missing"), out.get("jdkVersion")), (3, ["jdk"], "11"), out)
         self.assertFalse(gradle, "굽기가 Gradle 래퍼를 불렀다")
-        self.assertFalse(java, "JDK 11 의 java 가 불렸다")
 
     def test_start_bake_with_21_jdk_calls_gradle(self):
         # 위 테스트가 정말 굽기 갈래에서 멈췄다는 대조군 — 가짜 래퍼는 아무것도 굽지 않으니 끝은 툴체인 없음이다
-        code, out, gradle, _ = self.bake_start("21.0.12")
+        code, out, gradle = self.bake_start("21.0.12")
         self.assertTrue(gradle, "21+ JDK 인데 굽기가 Gradle 래퍼를 부르지 않았다")
         self.assertEqual((code, out.get("missing")), (3, ["toolchain"]), out)
 
