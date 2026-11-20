@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- The size and device you already picked in the dock menu now responds to hover too.
+
 ## [0.23.0] — 2026-11-19
 
 **Eight more devices, and the system UI is in the PNG.** Galaxy Z Flip8, Galaxy S26 Ultra, Pixel 10 Pro XL, iPhone 18 Pro, iPhone SE, Galaxy A07 5G, iPhone 17e and Galaxy Tab S11 Ultra join the device menu, and the status bar, navigation handle and camera an agent reads in the PNG now match what you see. The viewer keeps up with slow frames and narrow windows.
