@@ -146,7 +146,12 @@ def detekt_findings(gradle_args):
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN)
     if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS + (SEED_REPORT,)):
         tail = "\n".join((r.stdout + r.stderr).strip().splitlines()[-15:])
-        hint = "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다" if "--offline" in gradle_args else ""
+        if "requires at least JVM runtime version 21" in r.stdout + r.stderr:
+            hint = "\n데몬 빌드는 JDK 21 이상이 필요하다 — PREVUE_JDK 나 JAVA_HOME 이 가리키는 JDK 를 21+ 로 바꾼다"
+        elif "--offline" in gradle_args:
+            hint = "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다"
+        else:
+            hint = ""
         raise Unrunnable("detekt 를 못 돌렸다 (%s)\n%s%s" % (" ".join(cmd), tail, hint))
     found = [f for report in DETEKT_REPORTS for f in report_findings(report)]
     check_no_stray_seeds(found)
