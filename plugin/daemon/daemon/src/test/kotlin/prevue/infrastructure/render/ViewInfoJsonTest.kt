@@ -82,7 +82,7 @@ class ViewInfoJsonTest {
         return out
     }
 
-    @Test fun `출처는 노드 자신이 아니라 위치가 있는 첫 안쪽 노드의 패키지다 — 모르면 싣지 않는다`() {
+    @Test fun `출처는 안쪽 노드 중 부른 자리와 다른 패키지, 없으면 첫 안쪽 노드의 패키지다 — 모르면 싣지 않는다`() {
         val origins = originsOf(
             "new ViewInfo(\"Screen\", 2," +
                 " new ViewInfo(\"Row\", 2, new ViewInfo(\"rowLayout\", 1))," +
@@ -90,7 +90,9 @@ class ViewInfoJsonTest {
                 " new ViewInfo(\"Image\", 2, new ViewInfo(\"imageBody\", 3))," +
                 " new ViewInfo(\"Stripped\", 2, new ViewInfo(\"noSource\", null))," +
                 " new ViewInfo(\"Unknown\", 2, new ViewInfo(\"elsewhere\", 9))," +
-                " new ViewInfo(\"Leaf\", 2))",
+                " new ViewInfo(\"Leaf\", 2)," +
+                " new ViewInfo(\"Constraint\", 2, new ViewInfo(\"callerLambda\", 2), new ViewInfo(\"libraryBody\", 3))," +
+                " new ViewInfo(\"Wrapped\", 2, new ViewInfo(\"group\", null, new ViewInfo(\"wrappedBody\", 3))))",
         )
         assertEquals("project", origins["Screen"])
         assertEquals("compose", origins["Row"])
@@ -99,6 +101,8 @@ class ViewInfoJsonTest {
         assertEquals(null, origins["Stripped"])
         assertEquals(null, origins["Unknown"])
         assertEquals(null, origins["Leaf"])
+        assertEquals("library", origins["Constraint"])
+        assertEquals("library", origins["Wrapped"])   // 위치 없는 그룹은 건너 안쪽의 첫 위치를 본다   // 부른 쪽 콘텐츠 람다가 먼저 와도 부른 자리와 다른 패키지를 고른다
     }
 
     @Test fun `ui-tooling 판이 트리 접근자를 갖지 않으면 그 이름을 판 짝 실패로 낸다`() {

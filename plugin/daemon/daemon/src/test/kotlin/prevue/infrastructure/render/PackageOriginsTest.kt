@@ -42,6 +42,15 @@ class PackageOriginsTest {
         assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.compose.foundation.layout")))
     }
 
+    @Test fun `앱의 R jar 는 라이브러리 패키지마다 R 을 싣는다 — 프로젝트 출력으로 보지 않는다`() {
+        val rJar = jar("R.jar", "androidx/constraintlayout/compose/R.class", "com/example/a/R.class")
+        val project = classes("app-classes", "com/example/a/A.class")
+        val library = jar("constraintlayout-compose.jar", "androidx/constraintlayout/compose/ConstraintLayoutKt.class")
+        val origins = PackageOrigins(listOf(project), listOf(rJar, project, library))
+        assertEquals(ComposableOrigin.LIBRARY, origins.of(hash("androidx.constraintlayout.compose")))
+        assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.a")))
+    }
+
     @Test fun `저장으로 생긴 새 프로젝트 패키지는 처음 모를 때 프로젝트 출력을 다시 읽어 찾는다`() {
         val project = classes("app-classes", "com/example/a/A.class")
         val origins = PackageOrigins(listOf(project), listOf(project))

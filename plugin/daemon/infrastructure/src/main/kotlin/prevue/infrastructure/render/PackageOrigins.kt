@@ -8,7 +8,7 @@ import prevue.infrastructure.dump.ClasspathSpec
 internal enum class ComposableOrigin(val json: String) { COMPOSE("compose"), PROJECT("project"), LIBRARY("library") }
 
 internal class PackageOrigins(private val projectPath: List<String>, private val libraryPath: List<String>) {
-    constructor(spec: ClasspathSpec) : this(spec.projectClassPath, spec.classPath)
+    constructor(spec: ClasspathSpec) : this(spec.projectClassPath - spec.rClassJars.toSet() - listOfNotNull(spec.renderOverlay?.absolutePath), spec.classPath)
 
     private var projectTable: Map<Int, String>? = null
     private val library: Map<Int, String> by lazy { hashes(libraryPath.filter { it !in projectPath }) }

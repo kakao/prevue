@@ -89,6 +89,7 @@ internal object ViewInfoJson {
         return vi.children.orEmpty().firstNotNullOfOrNull { findAdapter(it) }
     }
 
+    private const val LOCATION_DEPTH = 4
     private const val ADAPTER = "androidx.compose.ui.tooling.ComposeViewAdapter"
     private const val TREE_GETTER = "getViewInfos${'$'}ui_tooling"
     private val NODE_GETTERS = listOf("getFileName", "getLineNumber", "getBounds", "getChildren")
@@ -128,15 +129,26 @@ internal object ViewInfoJson {
             put("name", call("getName")?.toString() ?: "")
             put("fileName", call("getFileName")?.toString() ?: "")
             put("lineNumber", call("getLineNumber") ?: -1)
-            putAll(originOf(raw, origins))
+            putAll(originOf(o, raw, origins))
             put("bounds", box)
             if (layout != null) put("modifiers", ModifierChain.of(layout))
             put("children", children.map { it.json })
         }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
 
-    private fun originOf(children: List<*>, origins: (Int) -> ComposableOrigin?): Map<String, String> =
-        children.firstNotNullOfOrNull(::packageHash)?.let(origins)?.let { mapOf("origin" to it.json) }.orEmpty()
+    private fun originOf(node: Any, children: List<*>, origins: (Int) -> ComposableOrigin?): Map<String, String> {
+        val caller = packageHash(node)
+        val inner = located(children, LOCATION_DEPTH)
+        val defined = inner.firstOrNull { it != caller } ?: inner.firstOrNull()
+        return defined?.let(origins)?.let { mapOf("origin" to it.json) }.orEmpty()
+    }
+
+    private fun located(children: List<*>, depth: Int): List<Int> = children.flatMap { c ->
+        packageHash(c)?.let(::listOf) ?: if (depth > 1) located(childrenOf(c), depth - 1) else emptyList()
+    }
+
+    private fun childrenOf(node: Any?): List<*> =
+        runCatching { node?.javaClass?.getMethod("getChildren")?.invoke(node) as? List<*> }.getOrNull().orEmpty()
 
     private fun packageHash(child: Any?): Int? = runCatching {
         val location = child?.javaClass?.getMethod("getLocation")?.invoke(child) ?: return null
