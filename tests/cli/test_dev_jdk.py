@@ -35,10 +35,11 @@ class DevJdk(unittest.TestCase):
         self.assertEqual(home, found)
         self.assertIn("17.0.14", note)
 
-    def test_PREVUE_JDK_가_있으면_그것을_쓴다(self):
-        self.jdk("jvms/openjdk-25", "25.0.5")
-        old = self.jdk("jbr-17", "17.0.14")
-        self.assertEqual(dev_jdk.choose(dict(self.env, JAVA_HOME=old, PREVUE_JDK="/picked")), ("/picked", None))
+    def test_JAVA_HOME_이_없으면_없다고_알린다(self):
+        found = self.jdk("jvms/openjdk-25", "25.0.5")
+        home, note = dev_jdk.choose(self.env)
+        self.assertEqual(home, found)
+        self.assertIn("JAVA_HOME 이 없어", note)
 
     def test_21_이상이_없으면_무엇을_깔지_말하고_2_로_끝난다(self):
         old = self.jdk("jvms/jbr-17", "17.0.14")
