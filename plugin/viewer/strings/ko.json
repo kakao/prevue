@@ -80,7 +80,7 @@
   "panel.size": "크기",
   "point.card.blocked": "복사할 수 없음",
   "point.card.close": "닫기",
-  "point.card.compose.title": "Compose 컴포저블 — androidx.compose 에 정의돼 있습니다",
+  "point.card.compose.title": "Compose · Jetpack 컴포저블 — androidx 에 정의돼 있습니다",
   "point.card.jump": "Preview로 가기 — {name}",
   "point.card.kind.click": "클릭",
   "point.card.kind.color": "배경",
@@ -301,5 +301,5 @@
   "insetOverlay.kind.systemOverlays": "OVERLAY",
   "point.card.compose": "Compose",
   "point.card.library": "외부 라이브러리",
-  "point.card.library.title": "외부 라이브러리의 컴포저블 — 프로젝트와 Compose 밖에 정의돼 있습니다"
+  "point.card.library.title": "외부 라이브러리의 컴포저블 — 프로젝트와 androidx 밖에 정의돼 있습니다"
 }

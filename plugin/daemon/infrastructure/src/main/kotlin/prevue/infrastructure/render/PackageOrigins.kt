@@ -43,6 +43,6 @@ internal class PackageOrigins(private val projectPath: List<String>, private val
     }.getOrDefault(emptyList()).distinct()
 
     companion object {
-        private const val COMPOSE_PREFIX = "androidx.compose."
+        private const val COMPOSE_PREFIX = "androidx."
     }
 }

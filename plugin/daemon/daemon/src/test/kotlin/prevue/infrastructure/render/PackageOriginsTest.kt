@@ -22,13 +22,15 @@ class PackageOriginsTest {
 
     private fun hash(pkg: String) = kotlin.math.abs(pkg.hashCode())
 
-    @Test fun `androidx compose 는 Compose, 프로젝트 출력은 프로젝트, 나머지 클래스패스는 외부 라이브러리, 모르는 해시는 없음`() {
+    @Test fun `androidx(Compose 본체와 Jetpack) 는 Compose, 프로젝트 출력은 프로젝트, 나머지 클래스패스는 외부 라이브러리, 모르는 해시는 없음`() {
         val project = classes("app-classes", "com/example/pearl/core/ui/CupKt.class")
         val compose = jar("foundation-layout.jar", "androidx/compose/foundation/layout/RowKt.class")
+        val navigation = jar("navigation-compose.jar", "androidx/navigation/compose/NavHostKt.class")
         val coil = jar("coil.jar", "coil3/compose/AsyncImageKt.class")
-        val origins = PackageOrigins(listOf(project), listOf(project, compose, coil))
+        val origins = PackageOrigins(listOf(project), listOf(project, compose, navigation, coil))
 
         assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.compose.foundation.layout")))
+        assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.navigation.compose")))   // Google Jetpack 은 Compose 본체 밖이어도 Compose 다
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.pearl.core.ui")))
         assertEquals(ComposableOrigin.LIBRARY, origins.of(hash("coil3.compose")))
         assertEquals(null, origins.of(hash("org.nowhere")))
@@ -43,11 +45,11 @@ class PackageOriginsTest {
     }
 
     @Test fun `앱의 R jar 는 라이브러리 패키지마다 R 을 싣는다 — 프로젝트 출력으로 보지 않는다`() {
-        val rJar = jar("R.jar", "androidx/constraintlayout/compose/R.class", "com/example/a/R.class")
+        val rJar = jar("R.jar", "coil3/compose/R.class", "com/example/a/R.class")
         val project = classes("app-classes", "com/example/a/A.class")
-        val library = jar("constraintlayout-compose.jar", "androidx/constraintlayout/compose/ConstraintLayoutKt.class")
+        val library = jar("coil.jar", "coil3/compose/AsyncImageKt.class")
         val origins = PackageOrigins(listOf(project), listOf(rJar, project, library))
-        assertEquals(ComposableOrigin.LIBRARY, origins.of(hash("androidx.constraintlayout.compose")))
+        assertEquals(ComposableOrigin.LIBRARY, origins.of(hash("coil3.compose")))
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.a")))
     }
 
