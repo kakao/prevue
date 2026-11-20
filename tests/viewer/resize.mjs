@@ -109,10 +109,11 @@ try {
   // 고른 칸도 호버에 반응한다 — 고름 바탕 위에 호버 바탕이 한 겹 얹혀 쉴 때보다 진하고, 고르지 않은 칸의 호버와도 다르다.
   // 겹친 진하기는 두 알파의 합성(1-(1-a)(1-b))으로 비교한다. 전환(--duration-short4)이 끝나기를 기다린 뒤 잰다.
   {
-    // 바탕의 진하기 — 바탕색과 그 위 첫 겹(있으면)의 알파를 합성한다. 겹을 무엇으로 그리는지는 보지 않는다
+    // 바탕의 진하기 — 바탕색과 그 위에 칠한 겹(그림 · 안쪽 그림자, 있으면 첫 색)의 알파를 합성한다. 겹을 무엇으로 그리는지는 묻지 않는다
     const shadeOf = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
       const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
-      const layers=[s.backgroundColor,...(s.backgroundImage.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1)];
+      const first=v=>(v.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1);
+      const layers=[s.backgroundColor,...first(s.backgroundImage),...(s.boxShadow.includes('inset')?first(s.boxShadow):[])];
       return {hover:el.matches(':hover'),a:1-layers.reduce((k,c)=>k*(1-alpha(c)),1)}})()`);
     const hoverAt = async selector => {
       const at = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
