@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: cache-warm-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false   # a merge during a run must not cancel it — back-to-back merges left develop's cache half-filled
 
 jobs:
   lint:

@@ -9,6 +9,7 @@ import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
 import prevue.application.port.RenderOutput
+import prevue.infrastructure.dump.ClasspathSpec
 
 internal data class RenderTiming(
     val taskMs: Long,
@@ -30,8 +31,10 @@ internal enum class TreeOut {
 internal class RenderOutputs(
     private val artifacts: RenderArtifactStore,
     private val chrome: DeviceChromePainter,
+    spec: ClasspathSpec? = null,
     private val onBlank: (PreviewSpec, RenderVerdict.Blank, ClassLoader?) -> Unit = { _, _, _ -> },
 ) {
+    private val origins: (Int) -> ComposableOrigin? = spec?.let(::PackageOrigins)?.let { it::of } ?: { null }
     var afterBuild = false
     var lastCompose: List<Map<String, Any?>> = emptyList()
     var lastAdapter: Any? = null
@@ -46,7 +49,7 @@ internal class RenderOutputs(
     ): RenderOutput {
         val ph = timing.phases
         var t = System.nanoTime()
-        val compose = if (tree.written) ViewInfoJson.compose(result.rootViews) else emptyList()
+        val compose = if (tree.written) ViewInfoJson.compose(result.rootViews, origins) else emptyList()
         val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), tree.written && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
