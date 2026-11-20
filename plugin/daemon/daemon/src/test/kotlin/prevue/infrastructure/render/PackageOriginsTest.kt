@@ -51,11 +51,12 @@ class PackageOriginsTest {
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.a")))
     }
 
-    @Test fun `저장으로 생긴 새 프로젝트 패키지는 처음 모를 때 프로젝트 출력을 다시 읽어 찾는다`() {
+    @Test fun `저장이 오버레이에 새 패키지를 컴파일하면 처음 모를 때 프로젝트 경로를 다시 읽어 프로젝트로 찾는다`() {
+        val overlay = classes("overlay", "com/example/a/A.class")
         val project = classes("app-classes", "com/example/a/A.class")
-        val origins = PackageOrigins(listOf(project), listOf(project))
+        val origins = PackageOrigins(listOf(overlay, project), listOf(overlay, project))
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.a")))
-        File(project, "com/example/b/B.class").apply { parentFile.mkdirs(); writeText("") }
+        File(overlay, "com/example/b/B.class").apply { parentFile.mkdirs(); writeText("") }
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.b")))
     }
 }
