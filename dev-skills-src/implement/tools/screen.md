@@ -14,7 +14,7 @@ sh -c 'P="$(sed -n "s/^INPUTS=\"\(.*\)\"\$/\1/p" tools/check-local.sh)"; test -n
 
 ## 빌드하고 띄운다
 
-이 워크트리를 `(JAVA_HOME="$(python3 tools/dev_jdk.py)" && export JAVA_HOME && cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고(데몬 빌드는 JDK 21+ — `tools/dev_jdk.py`가 고른다) 그 `plugin/bin/prevue`를 쓴다. CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `implement`의 멈춤 목록(대상 저장소의 Gradle)이다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
+이 워크트리를 `plugin/bin/prevue setup --offline`으로 빌드하고 그 `plugin/bin/prevue`를 쓴다 — 받아 둔 것만으로 `installPrevue`를 돌리고, Gradle을 띄울 JDK 21+(Metro)를 셸의 `JAVA_HOME`과 상관없이 스스로 찾는다. 모자라다고 `prevue setup`을 권하면 새로 받는 일이다. CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `implement`의 멈춤 목록(대상 저장소의 Gradle)이다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
 
 개발 위생이다 — 제품 제약이 아니다.
 

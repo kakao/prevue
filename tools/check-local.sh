@@ -51,8 +51,9 @@ INPUTS="plugin/daemon plugin/devices plugin/viewer plugin/cli plugin/skills view
 if git diff --quiet "$BASE" -- $INPUTS && [ -z "$(git status --porcelain -- $INPUTS)" ]; then
   note "건너뜀  데몬 단위 테스트 — 그 입력($INPUTS)이 develop 과 같다"
 else
-  # 데몬 빌드는 JDK 21+ 여야 한다 — 셸 JAVA_HOME 이 17 이면 tools/dev_jdk.py 가 21+ 를 골라 준다
-  if (JAVA_HOME="$(python3 tools/dev_jdk.py)" && export JAVA_HOME && cd plugin/daemon && ./gradlew --offline test) > "$OUT" 2>&1; then
+  # Gradle 은 JDK 21+ 에서만 뜬다(Metro) — 셸의 JAVA_HOME 이 17 이어도 그대로 돌게 데몬과 같은 길로 고른다(못 찾으면 셸 그대로)
+  GRADLE_JDK="$(python3 tools/lint/gradle_jdk.py)"
+  if (cd plugin/daemon && JAVA_HOME="${GRADLE_JDK:-${JAVA_HOME:-}}" ./gradlew --offline test) > "$OUT" 2>&1; then
     TESTS="$(cat plugin/daemon/*/build/test-results/test/*.xml 2>/dev/null \
       | sed -n 's/.*<testsuite [^>]* tests="\([0-9]*\)".*/\1/p' | awk '{ n += $1 } END { print n + 0 }')"
     note "통과  데몬 단위 테스트 — tests=$TESTS"

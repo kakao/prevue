@@ -23,7 +23,4 @@ if ! OUT="$(cd "$ROOT" && "$PY" -m unittest discover -s tests/lint 2>&1)"; then
   exit 2
 fi
 
-# detekt 는 데몬 빌드(Gradle)로 돌아 JDK 21+ 가 필요하다 — 셸 JAVA_HOME 이 17 이면 21+ 를 골라 주고, 없으면 무엇을 깔지 말하고 멈춘다
-JAVA_HOME="$(python3 "$ROOT/tools/dev_jdk.py")" || exit 2
-export JAVA_HOME
 exec python3 "$ROOT/tools/lint/lint.py" "$@"

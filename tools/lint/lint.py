@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gradle_jdk  # noqa: E402
 import kotlin_source  # noqa: E402
 import slop  # noqa: E402
 import viewer  # noqa: E402
@@ -143,21 +144,23 @@ def detekt_findings(gradle_args):
     cmd = ["./gradlew", "-q", "--init-script", INIT_SCRIPT, "-Pprevue.lintBuildDir=" + LINT_BUILD,
            "-Pprevue.layerSeeds=" + os.path.abspath(LAYER_SEEDS),
            "--project-cache-dir", LINT_BUILD + "/.gradle"] + gradle_args + ["detektMain", "detektBridge", SEED_TASK]
-    r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN)
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=PLUGIN, env=gradle_jdk.gradle_env(os.environ))
     if r.returncode != 0 or not all(os.path.exists(p) for p in DETEKT_REPORTS + (SEED_REPORT,)):
         tail = "\n".join((r.stdout + r.stderr).strip().splitlines()[-15:])
-        if "requires at least JVM runtime version 21" in r.stdout + r.stderr:
-            hint = "\n데몬 빌드는 JDK 21 이상이 필요하다 — PREVUE_JDK 나 JAVA_HOME 이 가리키는 JDK 를 21+ 로 바꾼다"
-        elif "--offline" in gradle_args:
-            hint = "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다"
-        else:
-            hint = ""
-        raise Unrunnable("detekt 를 못 돌렸다 (%s)\n%s%s" % (" ".join(cmd), tail, hint))
+        raise Unrunnable("detekt 를 못 돌렸다 (%s)\n%s%s" % (" ".join(cmd), tail, detekt_hint(r.stdout + r.stderr, "--offline" in gradle_args)))
     found = [f for report in DETEKT_REPORTS for f in report_findings(report)]
     check_no_stray_seeds(found)
     seeded = [f for f in report_findings(SEED_REPORT) if f.source.startswith(LAYER_RULES)]
     check_seeds(seed_expectations(), seeded)
     return found
+
+
+def detekt_hint(output, offline):
+    """실패 원인이 JDK 판이면 그것을 짚는다 — 다시 받으라고 하면 같은 JDK 로 같은 실패를 되풀이한다."""
+    if "requires at least JVM runtime version" in output:
+        return ("\nGradle 이 JDK %d 미만에서 떴다 — JDK %d+ 를 깔거나 PREVUE_JDK 로 준다"
+                "(Android Studio 의 JBR · Homebrew · JavaVirtualMachines · SDKMAN 에 있으면 스스로 찾는다)" % (gradle_jdk.GRADLE_MIN, gradle_jdk.GRADLE_MIN))
+    return "\n이 머신에 detekt 가 아직 없으면 한 번 sh tools/lint.sh --online 으로 받는다" if offline else ""
 
 
 def check_no_stray_seeds(found):
