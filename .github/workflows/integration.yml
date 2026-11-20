@@ -7,7 +7,7 @@ on:
   workflow_call:
     inputs:
       save-cache:
-        description: "Save the Gradle home cache (the cache-warm run on develop · main). Verify only reads it."
+        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
         type: boolean
         default: false
 

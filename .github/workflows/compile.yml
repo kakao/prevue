@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       save-cache:
-        description: "Save the Gradle home cache (the cache-warm run on develop · main). Verify only reads it."
+        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
         type: boolean
         default: false
 
@@ -43,7 +43,7 @@ jobs:
           java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
 
       # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
-      # A PR's own cache is visible to that PR alone, so Verify only reads — cache-warm.yml saves on develop · main.
+      # A PR's own cache is visible to that PR alone, so Verify only reads — cache-warm.yml saves on develop.
       - name: Gradle home cache
         id: gradle-cache
         uses: actions/cache/restore@v4
@@ -134,7 +134,7 @@ jobs:
       # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
       # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
       - name: Cancel the run, this job failed
-        if: ${{ failure() }}
+        if: ${{ failure() && !inputs.save-cache }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

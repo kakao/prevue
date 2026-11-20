@@ -1,12 +1,13 @@
-# Fills the Gradle caches that Verify only reads. A PR can read the caches of its base branch and the default branch, so
-# develop (work PRs) and main (the release PR, whose base is the default branch) are warmed on every push. The jobs are the
-# Verify jobs themselves — what they download is what Verify needs, and the cache is saved only when the whole job passed.
-# Run it by hand (workflow_dispatch) to rebuild a cache that was evicted (10GB per repository, unused for 7 days).
+# Fills the Gradle caches that Verify only reads. A work PR reads the caches of its base branch, so develop is warmed on every
+# push; the release PR (develop → main) runs cold. The jobs are the Verify jobs themselves — what they download is what
+# Verify needs, and a job saves its cache only when it passed. Unlike Verify there is no fail-fast: a failed job must not
+# stop the others from saving. A failed job is rerun with `gh run rerun --failed`. Once this file is on main,
+# workflow_dispatch rebuilds a cache that was evicted (10GB per repository, unused for 7 days).
 name: Cache warm
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +15,7 @@ permissions:
 
 concurrency:
   group: cache-warm-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false   # a merge during a run must not cancel it — back-to-back merges left develop's cache half-filled
 
 jobs:
   lint:
@@ -34,7 +35,6 @@ jobs:
       actions: write
 
   unit:
-    needs: [lint, compile]
     uses: ./.github/workflows/unit.yml
     with:
       save-cache: true
@@ -43,7 +43,6 @@ jobs:
       actions: write
 
   integration:
-    needs: [lint, compile]
     uses: ./.github/workflows/integration.yml
     with:
       save-cache: true
