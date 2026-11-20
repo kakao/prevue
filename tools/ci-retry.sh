@@ -5,7 +5,7 @@
 #
 # 다시 도는 때 — 로그에 서버 429 · 5xx 응답이 있거나, Gradle이 내려받기(Could not GET · HEAD · resolve)에서 시간 초과 ·
 # 연결 끊김을 보고했을 때. 테스트나 빌드 자체의 실패, 테스트 출력에 찍힌 시간 초과는 다시 돌지 않는다.
-# 종료 코드는 마지막 실행의 것이다. 쉬는 시간은 RETRY_DELAY(초, 기본 30).
+# 종료 코드는 마지막 실행의 것이다. 쉬는 시간은 RETRY_DELAY(초, 기본 60).
 set -u
 
 [ "$#" -gt 0 ] || { echo "usage: sh tools/ci-retry.sh <command...>" >&2; exit 2; }
@@ -31,7 +31,7 @@ RC=$?
 
 download_flaked || exit "$RC"
 
-DELAY="${RETRY_DELAY:-30}"
+DELAY="${RETRY_DELAY:-60}"
 echo "::warning::the download failed (exit $RC) — retrying once after ${DELAY}s"
 sleep "$DELAY"
 run "$@"
