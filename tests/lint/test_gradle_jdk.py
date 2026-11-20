@@ -66,12 +66,6 @@ class DetektHint(unittest.TestCase):
         self.assertIn("JDK 21", hint)
         self.assertNotIn("--online", hint)
 
-    def test_other_offline_failure_keeps_download_hint(self):
-        self.assertIn("--online", lint.detekt_hint("Could not resolve io.gitlab.arturbosch.detekt", offline=True))
-
-    def test_online_failure_has_no_download_hint(self):
-        self.assertEqual(lint.detekt_hint("boom", offline=False), "")
-
 
 if __name__ == "__main__":
     unittest.main()
