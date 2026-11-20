@@ -8,8 +8,6 @@ on:
   push:
     branches: [develop, main]
   workflow_dispatch:
-  pull_request:   # TEMP — 검증용, 최종 커밋에서 뺀다
-    paths: ['.github/workflows/cache-warm.yml']
 
 permissions:
   contents: read
