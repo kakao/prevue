@@ -193,7 +193,7 @@ function showCard(n: Hit): Say {
   let said: PointSay = { msg: null, ref: `${n.fileName}:${n.lineNumber}` };
   const card = (): PointCardData => ({
     node: n, say: said, box: boxOf(n, s.dpPerPx), tree, modifiers: n.mods,
-    previews: previewsOf(n.name, previewIndex, s.seen), origin: originOf(n.name, previewIndex),
+    previews: previewsOf(n.name, previewIndex, s.seen), origin: originOf(n, previewIndex),
   });
   const draw = () => { if (spot?.hit === n) pointView.set({ host: s.host, shot: s.shot, card: card() }); };
   draw();

@@ -8,7 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
-- Pointing at a composable defined inside another function or a class now shows its module on the card's chip instead of `Compose`.
+- **The pointing card's source chip tells where a composable comes from** — the Jetpack Compose mark with `Compose`, a book with `Library` for other libraries, or the module that defines your own composable (including one defined inside a function or class); when the source can't be told, there's no chip.
 
 ## [0.23.0] — 2026-11-19
 

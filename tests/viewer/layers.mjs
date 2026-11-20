@@ -19,11 +19,12 @@ const FILE = state.board.file;
 const CARD = `${REPO}/core/ui/src/main/kotlin/demo/ui/DrinkCard.kt`;
 const BADGES = `${REPO}/app/src/main/kotlin/demo/Badges.kt`;
 // 그림(480×1040px = 360×780dp)의 트리. 체인은 레이아웃 노드에 붙는다 — Text 는 같은 자리의 Compose 안 노드(Text.kt)가 갖는다.
-const node = (name, fileName, lineNumber, bounds, children = [], modifiers) => ({ name, fileName, lineNumber, bounds, ...(modifiers && { modifiers }), children });
+// origin 은 데몬이 안쪽 노드의 패키지로 가린 출처다 — 없으면 출처를 모르는 노드다.
+const node = (name, fileName, lineNumber, bounds, children = [], modifiers, origin) => ({ name, fileName, lineNumber, bounds, ...(modifiers && { modifiers }), ...(origin && { origin }), children });
 const tree = { composeViewInfo: [node('PearlScreen', 'Cards.kt', 5, [0, 0, 480, 1040], [
-  node('Title', 'Cards.kt', 20, [24, 8, 300, 40]),
-  node('Text', 'Cards.kt', 12, [24, 120, 456, 180], [node('', 'Text.kt', 90, [24, 120, 456, 180], [], [{ name: 'padding', value: '16.dp' }, { name: 'background', value: '#0E6B4F', color: '#0E6B4FFF' }])]),
-  node('Label', 'Cards.kt', 14, [24, 200, 456, 230]),
+  node('Title', 'Cards.kt', 20, [24, 8, 300, 40], [], undefined, 'library'),
+  node('Text', 'Cards.kt', 12, [24, 120, 456, 180], [node('', 'Text.kt', 90, [24, 120, 456, 180], [], [{ name: 'padding', value: '16.dp' }, { name: 'background', value: '#0E6B4F', color: '#0E6B4FFF' }])], undefined, 'compose'),
+  node('Label', 'Cards.kt', 14, [24, 200, 456, 230], [], undefined, 'project'),
   node('DrinkCard', 'DrinkCard.kt', 31, [24, 260, 240, 400]),
 ], [{ name: 'fillMaxSize', sizes: ['width', 'height'] }])] };
 const projectFiles = { 'Cards.kt': [FILE], 'DrinkCard.kt': [CARD, `${REPO}/feature/pearl/src/main/kotlin/demo/pearl/DrinkCard.kt`] };
@@ -171,13 +172,21 @@ try {
   await check(capsuleQuiet, '가리킨 결과는 캡슐에 뜨지 않는다');
   await check(`(()=>{const c=${card}.getBoundingClientRect(),i=document.querySelectorAll('#cards .card img')[0].getBoundingClientRect();return c.left>=i.right+15 && Math.abs(c.top-i.top)<1 && ${card}.closest('#boardView')})()`,
     '카드는 가리킨 그림 밖 오른쪽에, 위쪽을 그림 위쪽에 맞춰 선다');
-  await check(`${card}.querySelector('.pc-chip').textContent==='Compose' && ${card}.querySelector('.pc-dims').textContent==='324×45dp'`, '이름 옆 출처 칩(정의가 없으면 Compose)과 크기(dp)');
+  await check(`${card}.querySelector('.pc-chip.compose').textContent==='Compose' && !!${card}.querySelector('.pc-chip.compose svg') && ${card}.querySelector('.pc-dims').textContent==='324×45dp'`, '이름 옆 출처 칩(데몬이 Compose 로 가리면 Compose 표지와 Compose)과 크기(dp)');
   await check(`[...${card}.querySelectorAll('.pc-mods li')].map(l=>l.querySelector('.pc-mod-name').textContent).join()==='padding,background' && !!${card}.querySelector('.pc-shape.padded') && !!${card}.querySelector('.pc-swatch')`,
     'Modifier 체인은 같은 자리의 레이아웃 노드에서 읽고, 여백이 있으면 크기 그림에 점선 상자');
   await check(`${card}.querySelector('.pc-id').title.startsWith('@${FILE}#L12') && ${card}.querySelector('.pc-id').title.includes('PearlScreen › Text')`, '카드 머리 툴팁에 멘션 전체와 조상 사슬');
   await check(`[...${card}.querySelectorAll('.pc-pick')].map(b=>b.textContent+(b.getAttribute('aria-current')?'*':'')).join()==='PearlScreen,Title,Text*,Label,DrinkCard'`,
     '트리는 조상 · 형제 · 가리킨 노드를 그림에서 고를 수 있는 노드로 잇는다(Compose 안 노드는 건너뛴다)');
   await check(`!${card}.querySelector('.pc-rescue') && ${card}.querySelector('.pc-jump').title==='Go to Preview — Card1'`, '복사됐으면 글자 버튼이 없고, 지금 보는 Preview 를 뺀 점프가 머리에 선다');
+
+  const row = name => `[...${card}.querySelectorAll('.pc-pick')].find(b=>b.textContent==='${name}')`;
+  await mouse(await evaluate(`(()=>{const r=${row('Title')}.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`));
+  await until(`${head}==='Title'`);
+  await check(`${card}.querySelector('.pc-chip.library').textContent==='Library' && !!${card}.querySelector('.pc-chip.library svg')`, '외부 라이브러리 컴포저블은 책 글리프와 Library 칩');
+  await mouse(await evaluate(`(()=>{const r=${row('PearlScreen')}.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`));
+  await until(`${head}==='PearlScreen'`);
+  await check(`!${card}.querySelector('.pc-chip')`, '데몬이 출처를 모르는 노드는 칩이 없다 — 이름이 색인에 있어도 짐작하지 않는다');
 
   // 2. 트리 줄을 누르면 그림 클릭과 같다 — 박스 · 데몬의 선택 · 클립보드가 그 노드로. 줄에 올리면 그림 위에 옅은 바탕.
   const before = calls.point.length;

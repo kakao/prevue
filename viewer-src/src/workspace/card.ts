@@ -49,11 +49,12 @@ export function indexOf(d: PreviewFiles): PreviewIndex {
   return { modules, callers };
 }
 
-/** 출처 칩 — 이름이 프로젝트에 정의돼 있으면 그 모듈, 아니면 Compose 기본. 같은 이름의 컴포저블은 가리지 못한다. */
-export function originOf(name: string | null | undefined, index: PreviewIndex | null): CardOrigin {
-  if (!index || !name) return null;
-  const module = index.modules.get(name);
-  return module ? { module } : 'compose';
+/** 출처 칩 — 데몬이 가린 출처(origin)를 따르고, 프로젝트면 이름으로 정의 모듈을 찾는다. 출처를 모르거나 모듈을 못 찾으면 칩이 없다. */
+export function originOf(n: Pick<PointNode, 'name' | 'origin'>, index: PreviewIndex | null): CardOrigin {
+  if (n.origin === 'compose' || n.origin === 'library') return n.origin;
+  if (n.origin !== 'project' || !index || !n.name) return null;
+  const module = index.modules.get(n.name);
+  return module ? { module } : null;
 }
 
 /** 가리킨 노드를 본문에서 직접 부르는 Preview — 지금 보는 Preview(seen)는 도착지가 아니라 뺀다. */

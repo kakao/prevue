@@ -41,14 +41,14 @@ internal object ViewInfoJson {
     }
 
     /** ComposeViewAdapter는 루트가 아니라 몇 단계 아래에 있어 트리를 훑어 찾는다. */
-    fun compose(roots: List<ViewInfo>): List<Map<String, Any?>> {
-        for (root in roots) deepFind(root)?.let { return it }
+    fun compose(roots: List<ViewInfo>, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> {
+        for (root in roots) deepFind(root, origins)?.let { return it }
         return emptyList()
     }
 
-    private fun deepFind(vi: ViewInfo): List<Map<String, Any?>>? {
-        composeViewInfos(vi.viewObject)?.let { return it }
-        vi.children.orEmpty().forEach { child -> deepFind(child)?.let { return it } }
+    private fun deepFind(vi: ViewInfo, origins: (Int) -> ComposableOrigin?): List<Map<String, Any?>>? {
+        composeViewInfos(vi.viewObject, origins)?.let { return it }
+        vi.children.orEmpty().forEach { child -> deepFind(child, origins)?.let { return it } }
         return null
     }
 
@@ -98,27 +98,27 @@ internal object ViewInfoJson {
      * ComposeViewAdapter가 들고 있는 viewInfos를 리플렉션으로 읽는다.
      * 접근자가 internal이라 JVM 이름이 모듈명으로 맹글링돼 있다 — alpha 렌더러라 릴리즈마다 깨질 수 있는 지점이다.
      */
-    private fun composeViewInfos(root: Any?): List<Map<String, Any?>>? {
+    private fun composeViewInfos(root: Any?, origins: (Int) -> ComposableOrigin?): List<Map<String, Any?>>? {
         if (root == null) return null
         val cls = root.javaClass
         if (cls.name != ADAPTER) return null
         val getter = runCatching { cls.getMethod(TREE_GETTER) }.getOrNull() ?: return null
         val infos = runCatching { getter.invoke(root) as? List<*> }.getOrNull() ?: return null
-        return infos.flatMap { nodes(it) }.map { it.json }
+        return infos.flatMap { nodes(it, origins) }.map { it.json }
     }
 
     private class Node(val json: Map<String, Any?>, val holdsPlacedLayout: Boolean, val hasArea: Boolean) {
         val shown: Boolean get() = holdsPlacedLayout || hasArea
     }
 
-    private fun nodes(o: Any?): List<Node> {
+    private fun nodes(o: Any?, origins: (Int) -> ComposableOrigin?): List<Node> {
         if (o == null) return listOf(Node(emptyMap(), false, false))
         val c = o.javaClass
         fun call(n: String) = runCatching { c.getMethod(n).invoke(o) }.getOrNull()
         val layout = call("getLayoutInfo")
         val placed = layout == null || isPlaced(layout)
         val raw = (call("getChildren") as? List<*>).orEmpty()
-        val kids = raw.map { nodes(it) }
+        val kids = raw.map { nodes(it, origins) }
         val children = kids.flatten()
         if (!placed) return if (children.any { it.holdsPlacedLayout }) children else emptyList()
         val holdsPlacedLayout = layout != null || children.any { it.holdsPlacedLayout }
@@ -128,11 +128,17 @@ internal object ViewInfoJson {
             put("name", call("getName")?.toString() ?: "")
             put("fileName", call("getFileName")?.toString() ?: "")
             put("lineNumber", call("getLineNumber") ?: -1)
+            raw.firstNotNullOfOrNull(::packageHash)?.let(origins)?.let { put("origin", it.json) }
             put("bounds", box)
             if (layout != null) put("modifiers", ModifierChain.of(layout))
             put("children", children.map { it.json })
         }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
+
+    private fun packageHash(child: Any?): Int? = runCatching {
+        val location = child?.javaClass?.getMethod("getLocation")?.invoke(child) ?: return null
+        location.javaClass.getMethod("getPackageHash").invoke(location) as? Int
+    }.getOrNull()
 
     private fun box(bounds: Any?): List<Int> = EDGES.map { n ->
         (bounds?.let { r -> runCatching { r.javaClass.getMethod(n).invoke(r) }.getOrNull() } as? Number)?.toInt() ?: 0

@@ -1,8 +1,8 @@
 // 가리키기 카드 스토리의 재료 — pearl 0번 그림(600×1300px = 360×780dp)의 노드 트리를 눈으로 잡아 본뜬 것이다. 실제로는 데몬이 준 트리의 bounds 와
 // 레이아웃마다 실은 modifier 체인(ViewInfoJson · ModifierChain)을 쓴다. 그림은 360px 로 보이므로 px 좌표 × 0.6 이 곧 화면 px 이자 dp 다.
 // 카드의 내용은 뷰어와 같은 함수(workspace/card.ts)로 짓는다.
-import { boxOf, previewsOf, treeOf, type PreviewIndex, type TreeHit } from '../src/workspace/card';
-import type { CardModifier, CardOrigin, PointCardData, PointSay } from '../src/workspace/view';
+import { boxOf, originOf, previewsOf, treeOf, type PreviewIndex, type TreeHit } from '../src/workspace/card';
+import type { CardModifier, CardOrigin, PointCardData, PointNode, PointSay } from '../src/workspace/view';
 
 export type Node = {
   name: string; file: string; line: number; module?: string;
@@ -95,10 +95,12 @@ function indexFor(list: Picked[]): PreviewIndex {
 }
 
 /** 노드 하나를 가리켰을 때 카드가 받는 것 — 뷰어의 point.ts showCard 와 같은 함수로 짓는다. 긴 사슬은 크기가 dp 라 밀도 1 이다. */
-export function cardOf(list: Picked[], here: Picked, { copied = true, bare = false, msg }: { copied?: boolean; bare?: boolean; msg?: string } = {}): PointCardData {
+export function cardOf(list: Picked[], here: Picked, { copied = true, bare = false, msg, from }: { copied?: boolean; bare?: boolean; msg?: string; from?: PointNode['origin'] | 'unknown' } = {}): PointCardData {
   const index = bare ? null : indexFor(list), name = here.name;
   const say: PointSay = msg ? { msg } : { msg: null, ref: `@${here.node.file}#L${here.lineNumber}`, file: here.node.file, copied, again: copied ? undefined : () => {} };
-  const origin: CardOrigin = index ? (index.modules.has(name!) ? { module: index.modules.get(name!)! } : 'compose') : null;
+  // 데몬은 안쪽 노드의 패키지로 출처를 싣는다 — 스토리는 모듈을 단 노드를 프로젝트, 나머지를 Compose 로 보고, from 으로 바꿔 본다
+  const said = from ?? (here.node.module ? 'project' : 'compose');
+  const origin: CardOrigin = originOf({ name, origin: said === 'unknown' ? undefined : said }, index);
   return {
     node: { ...here, uchain: [...here.ups.map(id => list[id].name!), name!] }, say,
     box: boxOf(here, here.node.b ? PX : 1), tree: bare ? null : treeOf(list, here), modifiers: bare ? null : here.mods,

@@ -81,7 +81,7 @@
   "panel.size": "Size",
   "point.card.blocked": "Can't copy",
   "point.card.close": "Close",
-  "point.card.compose.title": "Built-in Compose composable",
+  "point.card.compose.title": "Compose composable — defined in androidx.compose",
   "point.card.jump": "Go to Preview — {name}",
   "point.card.kind.click": "Click",
   "point.card.kind.color": "Fill",
@@ -301,5 +301,8 @@
   "insetOverlay.kind.navigationBars": "NAV",
   "insetOverlay.kind.captionBar": "CAPTION",
   "insetOverlay.kind.displayCutout": "CUTOUT",
-  "insetOverlay.kind.systemOverlays": "OVERLAY"
+  "insetOverlay.kind.systemOverlays": "OVERLAY",
+  "point.card.compose": "Compose",
+  "point.card.library": "Library",
+  "point.card.library.title": "Composable from an external library — defined outside the project and Compose"
 }

@@ -11,6 +11,7 @@ import './point-card.css';
 const meta = { title: '가리키기/PointCard' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
+type Origin = NonNullable<Parameters<typeof cardOf>[2]>['from'];
 const NO: PointActions = { choose() {}, cancel() {}, follow() {}, pick() {}, peek() {}, jump() {}, close() {} };
 
 /** 카드 높이를 재어 밑에 적는다 — 시안의 높이 실측(약 430px)을 Storybook 에서 바로 본다. */
@@ -21,11 +22,11 @@ function Height({ of, deps }: { of: () => HTMLElement | null | undefined; deps: 
 }
 
 /** 상태 하나 — 트리 줄을 누르면 그 노드로 다시 가리킨 것처럼 카드 전체가 바뀐다. */
-function Picker({ list, start, copied, bare, msg }: { list: Picked[]; start: Picked; copied?: boolean; bare?: boolean; msg?: string }) {
+function Picker({ list, start, copied, bare, msg, from }: { list: Picked[]; start: Picked; copied?: boolean; bare?: boolean; msg?: string; from?: Origin }) {
   const [here, setHere] = useState(start), wrap = useRef<HTMLDivElement>(null);
   const actions: PointActions = { ...NO, pick: r => setHere(list[Number(r.id)]) };
   return <div ref={wrap} className="story-stack">
-    <PointCard card={cardOf(list, here, { copied, bare, msg })} actions={actions} />
+    <PointCard card={cardOf(list, here, { copied, bare, msg, from: here === start ? from : undefined })} actions={actions} />
     <Height of={() => wrap.current?.querySelector('.point-card')} deps={here} />
   </div>;
 }
@@ -39,6 +40,8 @@ export const States: Story = { render: () => <div className="story-sheets">{['li
     <Case name="기본 · 트리 줄을 눌러 보세요"><Picker list={tree} start={drink} /></Case>
     <Case name="여백이 있는 노드"><Picker list={tree} start={caption} /></Case>
     <Case name="글자 노드 (Compose)"><Picker list={tree} start={label} /></Case>
+    <Case name="외부 라이브러리"><Picker list={tree} start={label} from="library" /></Case>
+    <Case name="출처 모름 (칩 없음)"><Picker list={tree} start={label} from="unknown" /></Case>
     <Case name="Preview 여럿"><Picker list={tree} start={screen} /></Case>
     <Case name="복사 막힘"><Picker list={tree} start={drink} copied={false} /></Case>
     <Case name="긴 사슬 (조상 19)"><Picker list={chain} start={find(chain, asyncImage.name)} /></Case>
