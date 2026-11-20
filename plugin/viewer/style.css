@@ -511,6 +511,11 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 .card:hover .go-t, .go:focus-visible .go-t { max-width: 80px; opacity: 1; margin-left: var(--space-4); }
 .go:hover { background: var(--state-hover); color: var(--on-surface); }
 .go:active { transform: scale(var(--motion-enter-scale)); }
+/* 움직임을 줄여 달라면 펼침은 바로 끝나고 바탕 · 글자의 페이드만 남는다 — 시간은 두어야 transitionend가 온다(tokens.css). */
+@media (prefers-reduced-motion: reduce) {
+  .go { transition-property: background; }
+  .go-t { transition-property: opacity; }
+}
 /* 좁은 칸(작은 컴포넌트 · 줄인 폰 · 폴더블)에서는 호버해도 글자를 펼치지 않는다 — 펼친 버튼이 이름 · 크기 칸을 몇 px 로 눌렀다
    (이름 > 칸). 180px 부터는 흔한 이름(`Light theme` 14px 로 79px)이 펼친 버튼(85px) 옆에 다 든다 — 셈으로는 172px 에 들고, 남은 8px 는 더 긴 이름의 여유다. 뜻은 버튼의 툴팁이 갖는다. */
 @container (max-width: 179px) {
