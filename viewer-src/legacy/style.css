@@ -226,7 +226,7 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 .pn-it[aria-checked="true"] { background: var(--primary-container); color: var(--on-surface); }
 /* 고른 칸도 눌린다(메뉴를 닫고, 커스텀이면 폭 입력으로 간다) — 고름 바탕 위에 호버 바탕을 한 겹 더 얹는다.
    호버(--state-hover)가 고름(--primary-container)보다 옅어 바꿔 끼우면 고른 표시가 흐려진다 */
-.pn-it[aria-checked="true"]:hover { background: linear-gradient(var(--state-hover), var(--state-hover)) var(--primary-container); }
+.pn-it[aria-checked="true"]:hover { background: linear-gradient(var(--state-hover) 0 0) var(--primary-container); }
 .pn-it .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pn-it.mono .nm { font: var(--type-code); }
 .pn-it .d { flex: 0 0 auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }

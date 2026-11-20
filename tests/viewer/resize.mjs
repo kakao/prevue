@@ -109,22 +109,23 @@ try {
   // 고른 칸도 호버에 반응한다 — 고름 바탕 위에 호버 바탕이 한 겹 얹혀 쉴 때보다 진하고, 고르지 않은 칸의 호버와도 다르다.
   // 겹친 진하기는 두 알파의 합성(1-(1-a)(1-b))으로 비교한다. 전환(--duration-short4)이 끝나기를 기다린 뒤 잰다.
   {
+    // 바탕의 진하기 — 바탕색과 그 위 첫 겹(있으면)의 알파를 합성한다. 겹을 무엇으로 그리는지는 보지 않는다
+    const shadeOf = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
+      const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
+      const layers=[s.backgroundColor,...(s.backgroundImage.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1)];
+      return {hover:el.matches(':hover'),a:1-layers.reduce((k,c)=>k*(1-alpha(c)),1)}})()`);
     const hoverAt = async selector => {
       const at = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
       await send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at }); await pause(300);
-      return evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
-        const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
-        const layers=[s.backgroundColor,...(s.backgroundImage.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1)];
-        return {hover:el.matches(':hover'),color:s.backgroundColor,image:s.backgroundImage,a:1-layers.reduce((k,c)=>k*(1-alpha(c)),1)}})()`);
+      return shadeOf(selector);
     };
     const on = `#pnPick .pn-it[aria-checked="true"]`, off = `#pnPick .pn-it[aria-checked="false"]`;
-    const rest = await evaluate(`(()=>{const s=getComputedStyle(document.querySelector(${JSON.stringify(on)}));return {color:s.backgroundColor,image:s.backgroundImage}})()`);
     const onHover = await hoverAt(on), offHover = await hoverAt(off);
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 1 }); await pause(300);
-    const restAlpha = await evaluate(`(()=>{const m=getComputedStyle(document.querySelector(${JSON.stringify(on)})).backgroundColor.match(/rgba?\\(([^)]+)\\)/);const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1})()`);
-    assert(onHover.hover && offHover.hover, "호버 이동이 칸에 닿는다");
-    assert(rest.image === "none" && onHover.color === rest.color && onHover.image.includes("gradient") && onHover.a > restAlpha + 0.05, `고른 칸 호버는 고름 바탕 위에 한 겹 더 진하다: 쉼 ${restAlpha} → 호버 ${onHover.a} (${onHover.image})`);
-    assert(offHover.image === "none" && Math.abs(offHover.a - onHover.a) > 0.05, `고른 칸 호버와 고르지 않은 칸 호버는 다르다: ${onHover.a} · ${offHover.a}`);
+    const rest = await shadeOf(on), restAlpha = rest.a;
+    assert(onHover.hover && offHover.hover && !rest.hover, "호버 이동이 칸에 닿고 떠난다");
+    assert(onHover.a > restAlpha + 0.05, `고른 칸 호버는 쉴 때보다 진하다: 쉼 ${restAlpha} → 호버 ${onHover.a}`);
+    assert(Math.abs(offHover.a - onHover.a) > 0.05, `고른 칸 호버와 고르지 않은 칸 호버는 다르다: ${onHover.a} · ${offHover.a}`);
     console.log(`통과 ${++checked}: 고른 칸도 호버에 반응한다(쉼 ${restAlpha.toFixed(3)} → 호버 ${onHover.a.toFixed(3)}, 고르지 않은 칸 호버 ${offHover.a.toFixed(3)})`);
   }
   // 기기 묶음은 제품 라인(label 첫 단어)이고, 칸 이름은 그 묶음 이름을 되풀이하지 않는다 — 전체 이름은 툴팁이다.
