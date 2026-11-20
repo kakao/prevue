@@ -49,7 +49,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 
 | 바뀐 곳 | 덮는 명령 |
 |---|---|
-| `plugin/daemon/` | `(cd plugin/daemon && ./gradlew --offline test)`. `integrationTest`는 리뷰어가 돌리지 않는다 — CI(`Verify`)가 돌고 `implement` 승인 진입 조건 3이 그 초록을 요구한다. Gradle은 JDK 21+에서만 뜬다(Metro) — `tools/check-local.sh`는 스스로 고르고, 손으로 부를 때는 `python3 tools/lint/gradle_jdk.py`가 경로를 내면 그것을 `JAVA_HOME`으로 준다(빈 줄이면 셸 그대로 둔다) |
+| `plugin/daemon/` | `(cd plugin/daemon && ./gradlew --offline test)`. `integrationTest`는 로컬에서 돌리지 않는다(리뷰어 · `implement` 모두) — CI(`Verify`)가 돌고 `implement` 승인 진입 조건 3이 그 초록을 요구한다. Gradle은 JDK 21+에서만 뜬다(Metro) — `tools/check-local.sh`는 스스로 고르고, 손으로 부를 때는 `python3 tools/lint/gradle_jdk.py`가 경로를 내면 그것을 `JAVA_HOME`으로 준다(빈 줄이면 셸 그대로 둔다) |
 | `plugin/cli/` · `plugin/bin/` | `python3 -m unittest discover -s tests/cli` |
 | `tools/lint/` | `sh tools/lint.sh`(자기 검사 `tests/lint`를 먼저 돈다) |
 | `viewer-src/` · `plugin/viewer/` | `sh tools/gen-viewer.sh --check` · `python3 -m unittest discover -s tests/cli`(마크업 · 사전) · 헤드리스 Chrome(`tests/viewer/`) |
