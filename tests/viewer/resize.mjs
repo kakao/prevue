@@ -106,10 +106,8 @@ try {
   await check(`document.querySelector('#pnSum .nm').textContent==='@Preview' && document.querySelector('#pnSum').getAttribute('aria-expanded')==='false' && document.querySelector('#pnBody').inert && getComputedStyle(document.querySelector('#pnBody')).visibility==='hidden'`, "메뉴 버튼은 고른 것의 이름 · 메뉴는 닫혀 있다");
   await openMenu();
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='true' && document.querySelector('#pnBody').getBoundingClientRect().bottom<=document.querySelector('#pnSum').getBoundingClientRect().top`, "메뉴는 독 위로 열린다");
-  // 고른 칸도 호버에 반응한다 — 고름 바탕 위에 호버 바탕이 한 겹 얹혀 쉴 때보다 진하고, 고르지 않은 칸의 호버와도 다르다.
-  // 겹친 진하기는 두 알파의 합성(1-(1-a)(1-b))으로 비교한다. 전환(--duration-short4)이 끝나기를 기다린 뒤 잰다.
   {
-    // 바탕의 진하기 — 바탕색과 그 위에 칠한 겹(그림 · 안쪽 그림자, 있으면 첫 색)의 알파를 합성한다. 겹을 무엇으로 그리는지는 묻지 않는다
+    // 바탕색과 그 위 겹(그림 · 안쪽 그림자)의 알파를 합성한다 — 겹을 무엇으로 그리는지에 묶이지 않게
     const shadeOf = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
       const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
       const first=v=>(v.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1);
