@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- The size and device you already picked in the dock menu now responds to hover too.
 - The ▶ button on board cards opens at once instead of sliding wider when your system asks to reduce motion.
 
 ## [0.23.0] — 2026-11-19
