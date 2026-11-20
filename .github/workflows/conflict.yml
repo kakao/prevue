@@ -1,0 +1,83 @@
+# Marks work PRs that conflict with develop. GitHub builds no merge commit for a conflicting PR, so no pull_request
+# workflow (Verify) runs and the check list stays empty or shows only license/cla. This workflow leaves a commit status
+# named "conflict" on the PR head instead: failure while the PR conflicts, success once it is resolved. It is not a
+# required check — a conflicting PR cannot be merged anyway — but `gh pr checks` and the PR page both show it.
+# A conflict usually appears when another PR merges, so the push to develop re-checks every open PR. The PR events
+# re-check one PR when its head moves; pull_request_target is used because it still runs for a conflicting PR.
+# pull_request_target reads this file from the default branch (main), not from develop, so the PR events pick up a
+# change only after the next release; the push event runs the develop copy.
+name: Conflict status
+
+on:
+  push:
+    branches: [develop]
+  # No checkout anywhere in this file: the PR's code is never fetched or run, so the elevated token is safe here.
+  pull_request_target:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: conflict-${{ github.event.pull_request.number || 'develop' }}
+  cancel-in-progress: true
+
+jobs:
+  conflict:
+    # Not named "conflict": that is the status name, and a green job of the same name would read as a verdict.
+    name: Mark conflicts
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Mark conflicting PRs
+        shell: sh
+        run: |
+          set -eu
+
+          mark() {
+            gh api "repos/$GH_REPO/statuses/$1" -f state="$2" -f context=conflict -f description="$3" > /dev/null
+          }
+
+          check() {
+            n=$1
+            attempt=0
+            # mergeable is UNKNOWN until GitHub finishes computing it, which takes a few seconds after a push.
+            while [ "$attempt" -lt 8 ]; do
+              row=$(gh pr view "$n" --json state,mergeable,headRefOid --jq '[.state, .mergeable, .headRefOid] | @tsv')
+              state=$(printf '%s' "$row" | cut -f1)
+              mergeable=$(printf '%s' "$row" | cut -f2)
+              sha=$(printf '%s' "$row" | cut -f3)
+              [ "$state" = OPEN ] || { echo "#$n is $state, skipped"; return 0; }
+              case "$mergeable" in
+                CONFLICTING)
+                  mark "$sha" failure "Conflicts with develop - merge origin/develop to resolve"
+                  echo "#$n $sha conflict"
+                  return 0 ;;
+                MERGEABLE)
+                  mark "$sha" success "No conflict with develop"
+                  echo "#$n $sha clean"
+                  return 0 ;;
+              esac
+              attempt=$((attempt + 1))
+              sleep 5
+            done
+            echo "::warning::#$n mergeable stayed UNKNOWN, status left as is"
+          }
+
+          if [ -n "$PR_NUMBER" ]; then
+            check "$PR_NUMBER"
+          else
+            # Assigned first: a failing command substitution inside the for list would not trip set -e.
+            prs=$(gh pr list --base develop --state open --limit 200 --json number --jq '.[].number')
+            for n in $prs; do
+              check "$n"
+            done
+          fi
