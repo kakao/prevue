@@ -27,6 +27,7 @@ internal class PreviewCatalog(
 ) {
     private data class Entry(
         val module: String, val mtimeMs: Long, val fqns: Map<String, String>, val calls: Map<String, List<String>>, val composables: List<String>,
+        val innerComposables: List<String>,
     ) {
         val functions get() = fqns.keys.toList()
 
@@ -35,17 +36,20 @@ internal class PreviewCatalog(
 
     private class Catalog(val byFile: Map<File, Entry> = emptyMap(), val ready: Boolean = false) {
         val index: PreviewIndex by lazy {
-            val composables = byFile.entries.sortedBy { it.key.path }
-                .flatMap { (f, e) -> e.composables.map { it to ComposableDefinition(f, e.module) } }
-                .groupBy({ it.first }, { it.second })
+            val composables = definitions(Entry::composables)
+            val inner = definitions(Entry::innerComposables) - composables.keys
             val files = byFile.filterValues { it.functions.isNotEmpty() }
                 .map { (f, e) ->
                     val projectCalls = e.calls.mapValues { (_, names) -> names.filter(composables::containsKey) }
                     PreviewFile(f, e.module, e.mtimeMs, e.functions, projectCalls, e.fqns)
                 }
                 .sortedByDescending { it.mtimeMs }
-            PreviewIndex(files, composables)
+            PreviewIndex(files, composables, inner)
         }
+
+        private fun definitions(names: (Entry) -> List<String>) = byFile.entries.sortedBy { it.key.path }
+            .flatMap { (f, e) -> names(e).map { it to ComposableDefinition(f, e.module) } }
+            .groupBy({ it.first }, { it.second })
     }
 
     private val catalog = MutableStateFlow(Catalog())
@@ -99,8 +103,8 @@ internal class PreviewCatalog(
         val fqns = if (text.contains("Preview")) previewFunctions(f) else emptyMap()
         if (fqns.isEmpty() && !text.contains("Composable")) return null
         val outline = previews.outline(text, fqns.keys)
-        if (fqns.isEmpty() && outline.composables.isEmpty()) return null
-        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fqns, outline.calls, outline.composables)
+        if (fqns.isEmpty() && outline.composables.isEmpty() && outline.innerComposables.isEmpty()) return null
+        return Entry(ws.graph.ownerOf(f), sources.modifiedAt(f) ?: 0L, fqns, outline.calls, outline.composables, outline.innerComposables)
     }
 
     private fun previewFunctions(f: File): Map<String, String> = runCatching { previews.inFile(f) }

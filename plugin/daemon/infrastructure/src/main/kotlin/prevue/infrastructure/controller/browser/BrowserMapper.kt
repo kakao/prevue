@@ -70,7 +70,8 @@ internal fun previewFilesJson(index: PreviewIndex?, repoRoot: String): Map<Strin
         mapOf("path" to f.file.path, "rel" to f.file.relTo(repoRoot), "module" to f.module, "mtime" to f.mtimeMs, "functions" to f.functions,
             "previews" to f.functions.map { fn -> mapOf("fn" to fn, "calls" to f.calls[fn].orEmpty()) })
     },
-    "composables" to index?.composables.orEmpty().flatMap { (name, defs) -> defs.map { mapOf("name" to name) + it.toJson(repoRoot) } },
+    "composables" to index?.let { it.composables + it.innerComposables }.orEmpty()
+        .flatMap { (name, defs) -> defs.map { mapOf("name" to name) + it.toJson(repoRoot) } },
 )
 
 internal fun BrowserPresenter.OpenResult.toJson(): Map<String, Any?> = when (this) {
