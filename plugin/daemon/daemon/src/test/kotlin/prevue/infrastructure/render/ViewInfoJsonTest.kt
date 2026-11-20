@@ -59,6 +59,52 @@ class ViewInfoJsonTest {
     private fun view(name: String, viewObject: Any?, vararg children: ViewInfo) =
         ViewInfo(name, null, 0, 0, 100, 100, viewObject, null, null).apply { setChildren(children.toList()) }
 
+    private fun adapterWithTree(tree: String) = fakeTooling(
+        "public java.util.List<ViewInfo> getViewInfos\$ui_tooling() { return java.util.List.of($tree); }",
+        "String n; Integer h; ViewInfo[] c;" +
+            " public ViewInfo(String n, Integer h, ViewInfo... c) { this.n = n; this.h = h; this.c = c; }" +
+            " public String getName() { return n; } public String getFileName() { return \"A.kt\"; } public int getLineNumber() { return 1; }" +
+            " public java.util.List<ViewInfo> getChildren() { return java.util.List.of(c); }" +
+            " public Loc getLocation() { return h == null ? null : new Loc(h); }" +
+            " public Edges getBounds() { return new Edges(); }" +
+            " public static class Loc { int h; Loc(int h) { this.h = h; } public int getPackageHash() { return h; } }" +
+            " public static class Edges { public int getLeft() { return 0; } public int getTop() { return 0; }" +
+            " public int getRight() { return 10; } public int getBottom() { return 10; } }",
+    )
+
+    private fun originsOf(tree: String): Map<String, Any?> {
+        val known = mapOf(1 to ComposableOrigin.COMPOSE, 2 to ComposableOrigin.PROJECT, 3 to ComposableOrigin.LIBRARY)
+        val out = HashMap<String, Any?>()
+        fun walk(list: List<*>) {
+            for (n in list) { val m = n as Map<*, *>; out[m["name"] as String] = m["origin"]; walk(m["children"] as List<*>) }
+        }
+        walk(ViewInfoJson.compose(listOf(view("ComposeViewAdapter", adapterWithTree(tree))), known::get))
+        return out
+    }
+
+    @Test fun `출처는 안쪽 노드 중 부른 자리와 다른 패키지, 없으면 첫 안쪽 노드의 패키지다 — 모르면 싣지 않는다`() {
+        val origins = originsOf(
+            "new ViewInfo(\"Screen\", 2," +
+                " new ViewInfo(\"Row\", 2, new ViewInfo(\"rowLayout\", 1))," +
+                " new ViewInfo(\"Card\", 2, new ViewInfo(\"group\", null), new ViewInfo(\"cardBody\", 2))," +
+                " new ViewInfo(\"Image\", 2, new ViewInfo(\"imageBody\", 3))," +
+                " new ViewInfo(\"Stripped\", 2, new ViewInfo(\"noSource\", null))," +
+                " new ViewInfo(\"Unknown\", 2, new ViewInfo(\"elsewhere\", 9))," +
+                " new ViewInfo(\"Leaf\", 2)," +
+                " new ViewInfo(\"Constraint\", 2, new ViewInfo(\"callerLambda\", 2), new ViewInfo(\"libraryBody\", 3))," +
+                " new ViewInfo(\"Wrapped\", 2, new ViewInfo(\"group\", null, new ViewInfo(\"wrappedBody\", 3))))",
+        )
+        assertEquals("project", origins["Screen"])
+        assertEquals("compose", origins["Row"])
+        assertEquals("project", origins["Card"])
+        assertEquals("library", origins["Image"])
+        assertEquals(null, origins["Stripped"])
+        assertEquals(null, origins["Unknown"])
+        assertEquals(null, origins["Leaf"])
+        assertEquals("library", origins["Constraint"])
+        assertEquals("library", origins["Wrapped"])
+    }
+
     @Test fun `ui-tooling 판이 트리 접근자를 갖지 않으면 그 이름을 판 짝 실패로 낸다`() {
         val roots = listOf(view("FrameLayout", null, view("ComposeViewAdapter", adapterWithoutTreeGetter())))
         assertEquals("ComposeViewAdapter.getViewInfos\$ui_tooling", ViewInfoJson.toolingMismatch(roots))
