@@ -24,8 +24,7 @@ export const zoomView = createStore<ZoomView>({ pct: 100, real: false, atFit: tr
 export type LoadingView = { on: boolean; failed: boolean };
 export const loadingView = createStore<LoadingView>({ on: false, failed: false });
 
-/** 가리킨 노드 — 카드 머리의 이름과 툴팁의 조상 사슬. */
-/** origin 은 데몬이 안쪽 노드의 패키지로 가린 출처다 — 모르면 없다. */
+/** 가리킨 노드 — 카드 머리의 이름과 툴팁의 조상 사슬. origin 은 데몬이 안쪽 노드의 패키지로 가린 출처다 — 모르면 없다. */
 export type PointNode = { name?: string | null; fileName: string; lineNumber: number; bounds: number[]; chain?: string[]; uchain?: string[]; origin?: 'compose' | 'project' | 'library' };
 /** 가리킨 결과의 말 — 멘션이 없으면 문장 한 줄, 있으면 멘션과 복사 결과 · 다시 복사(again). file 은 멘션의 풀패스다. */
 export type PointSay = { msg: string | null; ref?: string; copied?: boolean; file?: string; again?: () => void };
@@ -40,7 +39,7 @@ export type CardModifier = { name: string; value?: string; color?: string; sizes
 export type CardBox = { width: number; height: number; unit: 'dp' | 'px'; padded: boolean };
 /** 가리킨 노드를 부르는 Preview — 지금 보는 것은 뺀다. */
 export type CardPreview = { file: string; rel: string; fn: string };
-/** 출처 — 프로젝트 컴포저블이면 정의 모듈, Compose 기본이면 'compose', 색인이 없으면 null. */
+/** 출처 — 프로젝트 컴포저블이면 정의 모듈, Compose 면 'compose', 외부 라이브러리면 'library', 출처를 모르거나 프로젝트인데 모듈을 못 찾으면 null. */
 export type CardOrigin = { module: string } | 'compose' | 'library' | null;
 /** 카드 하나의 내용. tree · modifiers 가 null 이면 그 칸을 숨긴다. */
 export type PointCardData = {
