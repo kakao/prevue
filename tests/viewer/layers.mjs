@@ -19,7 +19,6 @@ const FILE = state.board.file;
 const CARD = `${REPO}/core/ui/src/main/kotlin/demo/ui/DrinkCard.kt`;
 const BADGES = `${REPO}/app/src/main/kotlin/demo/Badges.kt`;
 // 그림(480×1040px = 360×780dp)의 트리. 체인은 레이아웃 노드에 붙는다 — Text 는 같은 자리의 Compose 안 노드(Text.kt)가 갖는다.
-// origin 은 데몬이 안쪽 노드의 패키지로 가린 출처다 — 없으면 출처를 모르는 노드다.
 const node = (name, fileName, lineNumber, bounds, children = [], modifiers, origin) => ({ name, fileName, lineNumber, bounds, ...(modifiers && { modifiers }), ...(origin && { origin }), children });
 const tree = { composeViewInfo: [node('PearlScreen', 'Cards.kt', 5, [0, 0, 480, 1040], [
   node('Title', 'Cards.kt', 20, [24, 8, 300, 40], [], undefined, 'library'),

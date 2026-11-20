@@ -98,7 +98,6 @@ function indexFor(list: Picked[]): PreviewIndex {
 export function cardOf(list: Picked[], here: Picked, { copied = true, bare = false, msg, from }: { copied?: boolean; bare?: boolean; msg?: string; from?: PointNode['origin'] | 'unknown' } = {}): PointCardData {
   const index = bare ? null : indexFor(list), name = here.name;
   const say: PointSay = msg ? { msg } : { msg: null, ref: `@${here.node.file}#L${here.lineNumber}`, file: here.node.file, copied, again: copied ? undefined : () => {} };
-  // 데몬은 안쪽 노드의 패키지로 출처를 싣는다 — 스토리는 모듈을 단 노드를 프로젝트, 나머지를 Compose 로 보고, from 으로 바꿔 본다
   const said = from ?? (here.node.module ? 'project' : 'compose');
   const origin: CardOrigin = originOf({ name, origin: said === 'unknown' ? undefined : said }, index);
   return {

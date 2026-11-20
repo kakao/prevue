@@ -49,7 +49,6 @@ export function indexOf(d: PreviewFiles): PreviewIndex {
   return { modules, callers };
 }
 
-/** 출처 칩 — 데몬이 가린 출처(origin)를 따르고, 프로젝트면 이름으로 정의 모듈을 찾는다. 출처를 모르거나 모듈을 못 찾으면 칩이 없다. */
 export function originOf(n: Pick<PointNode, 'name' | 'origin'>, index: PreviewIndex | null): CardOrigin {
   if (n.origin === 'compose' || n.origin === 'library') return n.origin;
   if (n.origin !== 'project' || !index || !n.name) return null;

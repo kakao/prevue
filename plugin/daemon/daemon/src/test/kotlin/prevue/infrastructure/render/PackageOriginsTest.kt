@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-/** 렌더러의 packageHash 는 패키지 이름 String.hashCode() 의 절댓값이다 — 클래스패스의 패키지로 되돌려 출처를 가린다. */
 class PackageOriginsTest {
     @TempDir lateinit var dir: Path
 
@@ -30,11 +29,11 @@ class PackageOriginsTest {
         val origins = PackageOrigins(listOf(project), listOf(project, compose, navigation, coil))
 
         assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.compose.foundation.layout")))
-        assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.navigation.compose")))   // Google Jetpack 은 Compose 본체 밖이어도 Compose 다
+        assertEquals(ComposableOrigin.COMPOSE, origins.of(hash("androidx.navigation.compose")))
         assertEquals(ComposableOrigin.PROJECT, origins.of(hash("com.example.pearl.core.ui")))
         assertEquals(ComposableOrigin.LIBRARY, origins.of(hash("coil3.compose")))
         assertEquals(null, origins.of(hash("org.nowhere")))
-        assertEquals(-710273174, "com.example.pearl.core.ui".hashCode())   // 부호 있는 값이 와도 같은 패키지로 본다
+        assertEquals(-710273174, "com.example.pearl.core.ui".hashCode())
         assertEquals(ComposableOrigin.PROJECT, origins.of("com.example.pearl.core.ui".hashCode()))
     }
 

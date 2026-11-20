@@ -101,8 +101,8 @@ class ViewInfoJsonTest {
         assertEquals(null, origins["Stripped"])
         assertEquals(null, origins["Unknown"])
         assertEquals(null, origins["Leaf"])
-        assertEquals("library", origins["Constraint"])   // 부른 쪽 콘텐츠 람다가 먼저 와도 부른 자리와 다른 패키지를 고른다
-        assertEquals("library", origins["Wrapped"])   // 위치 없는 그룹은 건너 안쪽의 첫 위치를 본다
+        assertEquals("library", origins["Constraint"])
+        assertEquals("library", origins["Wrapped"])
     }
 
     @Test fun `ui-tooling 판이 트리 접근자를 갖지 않으면 그 이름을 판 짝 실패로 낸다`() {
