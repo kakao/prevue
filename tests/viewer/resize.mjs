@@ -107,7 +107,6 @@ try {
   await openMenu();
   await check(`document.querySelector('#pnSum').getAttribute('aria-expanded')==='true' && document.querySelector('#pnBody').getBoundingClientRect().bottom<=document.querySelector('#pnSum').getBoundingClientRect().top`, "메뉴는 독 위로 열린다");
   {
-    // 바탕색과 그 위 겹(그림 · 안쪽 그림자)의 알파를 합성한다 — 겹을 무엇으로 그리는지에 묶이지 않게
     const shadeOf = selector => evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(el);
       const alpha=c=>{const m=c.match(/rgba?\\(([^)]+)\\)/);if(!m)return 0;const p=m[1].split(/[ ,\\/]+/).filter(Boolean);return p.length>3?+p[3]:1};
       const first=v=>(v.match(/rgba?\\([^)]+\\)/g)||[]).slice(0,1);
