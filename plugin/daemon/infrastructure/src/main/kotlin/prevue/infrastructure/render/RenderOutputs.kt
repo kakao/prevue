@@ -98,6 +98,8 @@ internal class RenderOutputs(
         lastAdapter = ViewInfoJson.adapter(result.rootViews)
     }
 
+    fun isNewAdapter(result: RenderResult): Boolean = ViewInfoJson.adapter(result.rootViews) !== lastAdapter
+
     fun failed(p: PreviewSpec, kind: FailureKind, message: Phrase, timing: RenderTiming): RenderOutput {
         afterBuild = afterBuild && kind == FailureKind.NOT_FOUND
         val treeJson = mapOf(
