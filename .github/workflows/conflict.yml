@@ -4,6 +4,8 @@
 # required check — a conflicting PR cannot be merged anyway — but `gh pr checks` and the PR page both show it.
 # A conflict usually appears when another PR merges, so the push to develop re-checks every open PR. The PR events
 # re-check one PR when its head moves; pull_request_target is used because it still runs for a conflicting PR.
+# pull_request_target reads this file from the default branch (main), not from develop, so the PR events pick up a
+# change only after the next release; the push event runs the develop copy.
 name: Conflict status
 
 on:
@@ -22,6 +24,8 @@ concurrency:
 
 jobs:
   conflict:
+    # Not named "conflict": that is the status name, and a green job of the same name would read as a verdict.
+    name: Mark conflicts
     permissions:
       contents: read
       pull-requests: read
@@ -71,7 +75,9 @@ jobs:
           if [ -n "$PR_NUMBER" ]; then
             check "$PR_NUMBER"
           else
-            for n in $(gh pr list --base develop --state open --limit 200 --json number --jq '.[].number'); do
+            # Assigned first: a failing command substitution inside the for list would not trip set -e.
+            prs=$(gh pr list --base develop --state open --limit 200 --json number --jq '.[].number')
+            for n in $prs; do
               check "$n"
             done
           fi
