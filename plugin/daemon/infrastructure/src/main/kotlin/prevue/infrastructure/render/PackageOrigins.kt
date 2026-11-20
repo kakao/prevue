@@ -3,20 +3,22 @@ package prevue.infrastructure.render
 import java.io.File
 import java.util.zip.ZipFile
 import kotlin.math.abs
+import prevue.infrastructure.dump.ClasspathSpec
 
 internal enum class ComposableOrigin(val json: String) { COMPOSE("compose"), PROJECT("project"), LIBRARY("library") }
 
 internal class PackageOrigins(private val projectPath: List<String>, private val libraryPath: List<String>) {
-    private var project: Map<Int, String> = emptyMap()
-    private var library: Map<Int, String> = emptyMap()
-    private var scanned = false
+    constructor(spec: ClasspathSpec) : this(spec.projectClassPath, spec.classPath)
+
+    private var projectTable: Map<Int, String>? = null
+    private val library: Map<Int, String> by lazy { hashes(libraryPath.filter { it !in projectPath }) }
     private val missed = HashSet<Int>()
 
-    @Synchronized
     fun of(packageHash: Int): ComposableOrigin? {
-        if (!scanned) { library = hashes(libraryPath.filter { it !in projectPath }); project = hashes(projectPath); scanned = true }
         val key = abs(packageHash)
+        var project = projectTable ?: hashes(projectPath)
         if (key !in project && key !in library && missed.add(key)) project = hashes(projectPath)
+        projectTable = project
         val name = project[key] ?: library[key] ?: return null
         return when {
             name.startsWith(COMPOSE_PREFIX) -> ComposableOrigin.COMPOSE

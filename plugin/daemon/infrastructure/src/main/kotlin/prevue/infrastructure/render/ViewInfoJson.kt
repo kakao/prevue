@@ -128,12 +128,15 @@ internal object ViewInfoJson {
             put("name", call("getName")?.toString() ?: "")
             put("fileName", call("getFileName")?.toString() ?: "")
             put("lineNumber", call("getLineNumber") ?: -1)
-            raw.firstNotNullOfOrNull(::packageHash)?.let(origins)?.let { put("origin", it.json) }
+            putAll(originOf(raw, origins))
             put("bounds", box)
             if (layout != null) put("modifiers", ModifierChain.of(layout))
             put("children", children.map { it.json })
         }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
+
+    private fun originOf(children: List<*>, origins: (Int) -> ComposableOrigin?): Map<String, String> =
+        children.firstNotNullOfOrNull(::packageHash)?.let(origins)?.let { mapOf("origin" to it.json) }.orEmpty()
 
     private fun packageHash(child: Any?): Int? = runCatching {
         val location = child?.javaClass?.getMethod("getLocation")?.invoke(child) ?: return null

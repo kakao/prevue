@@ -9,6 +9,7 @@ import prevue.application.domain.model.Verbatim
 import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
 import prevue.application.port.RenderOutput
+import prevue.infrastructure.dump.ClasspathSpec
 
 internal data class RenderTiming(
     val taskMs: Long,
@@ -30,9 +31,10 @@ internal enum class TreeOut {
 internal class RenderOutputs(
     private val artifacts: RenderArtifactStore,
     private val chrome: DeviceChromePainter,
+    spec: ClasspathSpec? = null,
     private val onBlank: (PreviewSpec, RenderVerdict.Blank, ClassLoader?) -> Unit = { _, _, _ -> },
-    private val origins: (Int) -> ComposableOrigin? = { null },
 ) {
+    private val origins: (Int) -> ComposableOrigin? = spec?.let(::PackageOrigins)?.let { it::of } ?: { null }
     var afterBuild = false
     var lastCompose: List<Map<String, Any?>> = emptyList()
     var lastAdapter: Any? = null
