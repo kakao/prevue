@@ -179,14 +179,6 @@ class Boards(
         return b
     }
 
-    private suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long?): ShowResult {
-        val r = try {
-            live.show(ed, p, by, since)
-        } finally {
-            val at = ws.nowMs()
-            ed.update { it.copy(focusAttachedAt = at) }
-        }
-        live.recordFocus(ed, r.shot)
-        return r
-    }
+    private suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long?): ShowResult =
+        live.show(ed, p, by, LiveShot.Draw(since = since, attach = true))
 }

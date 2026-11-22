@@ -159,20 +159,13 @@ class HotReload(
         ed.updateBoard { it.advance() }
         ed.markHiddenTabsStale()
         ed.markCompiled(seen)
-        live.rendering(ed, p, save.by)
-        live.dropPostures(ed)
-        val shown = engine.show(p, ws.now.interactive)
-        val out = if (repair) modules.repair(ed, shown, p, files) else shown
-        val kept = live.keepPosture(out)
-        val r = live.finish(ed, out, c, save.t, save.by) {
+        val draw = LiveShot.SaveDraw(c, save.t, { out -> if (repair) modules.repair(ed, out, p, files) else out }) {
             it.copy(
                 timing = save.timing, saveToScreenMs = save.change?.let { ch -> System.currentTimeMillis() - ch.mtimeMs },
-                startedAtMs = save.since, lines = c?.let { linesOf(it.files.map(::File), save) },
+                lines = c?.let { linesOf(it.files.map(::File), save) },
             )
         }
-        ed.update { it.copy(current = p) }
-        live.recordFocus(ed, r.shot)
-        live.seedPostures(ed, out.ok, kept, keep = false)
+        val r = live.show(ed, p, save.by, LiveShot.Draw(since = save.since), draw)
         boards.fill(save.by, save.since)
         return ReloadResult.Rendered(r)
     }
