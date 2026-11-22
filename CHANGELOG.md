@@ -11,6 +11,7 @@ Only changes users can see go here.
 - **The pointing card's source chip tells where a composable comes from** — the Jetpack Compose mark with `Compose` (Compose and other AndroidX libraries), a book with `Library` for libraries outside AndroidX, or the module that defines your own composable (including one defined inside a function or class); when the source can't be told, there's no chip.
 - The size and device you already picked in the dock menu now responds to hover too.
 - The ▶ button on board cards opens at once instead of sliding wider when your system asks to reduce motion.
+- Redrawing with `render --fresh` while a card is interactive now updates that card on the board too.
 
 ## [0.23.0] — 2026-11-19
 
