@@ -15,6 +15,7 @@ import prevue.application.domain.model.ScreenSize
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.json.Json
+import prevue.infrastructure.render.ApkManifest
 import prevue.infrastructure.render.RenderEngine
 import prevue.infrastructure.render.ViewInfoJson
 
@@ -24,6 +25,10 @@ internal class StaleBoundsIntegrationTest {
         val source = File(PearlFixture.dir, "app/src/main/kotlin/com/example/pearl/StaleBounds.kt")
         val json = PearlFixture.warmupJson(source, "--variant", "debug")
         val home = ClasspathSpec.load(File(Regex("\"classpath\": \"([^\"]+)\"").find(json)!!.groupValues[1]))
+        assertTrue(
+            ApkManifest.targetSdk(File(home.resourceApkPath)) >= 35,
+            "fixture app must be edge-to-edge (targetSdk 35+) — below 35 fitsContent rebuilds the first tree and the new-adapter refresh goes unchecked",
+        )
         val out = Files.createTempDirectory("prevue-stale-bounds").toFile()
         try {
             RenderEngine(home, PearlFixture.layoutlib()!!, out, realDispatchers).use { engine ->
