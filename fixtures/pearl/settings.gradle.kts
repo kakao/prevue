@@ -23,7 +23,6 @@ dependencyResolutionManagement {
 rootProject.name = "Pearl"
 include(":app")
 include(":legacy")
-include(":compose-ablation")
 include(":core:model")
 include(":core:designsystem")
 include(":core:ui")
