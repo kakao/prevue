@@ -56,6 +56,7 @@ import prevue.infrastructure.bindings.EntryPoints
 import prevue.infrastructure.bindings.PrevueCheckout
 import prevue.infrastructure.bindings.TargetRepo
 import prevue.infrastructure.store.InMemoryWorkspaceStore
+import prevue.application.port.WorkspaceStore
 
 /** 그림 없이 순서만 기록하는 렌더러. 막고 풀기(latch)로 락 안의 한 순간에 다른 스레드를 끼워 넣는다. */
 class FakePreviewRenderer(override val outDir: File) : PreviewRenderer, LiveSessionFactory {
@@ -422,9 +423,9 @@ class Fixture(previews: Int = 3) : AutoCloseable {
     internal fun graph(
         clock: Clock = FakeClock(), sources: SourceWatcher? = null, builds: BuildWatcher? = null, scope: CoroutineScope = this.scope,
         resources: ResourceValues? = null, watchRoots: Boolean = true, quietMs: Long = prevue.application.service.QuietFill.QUIET_MS,
-        hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir),
+        hooks: EntryHooks = EntryHooks(0), target: TargetRepo = TargetRepo(renderer.outDir), store: WorkspaceStore = InMemoryWorkspaceStore(),
     ): TestGraph {
-        val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), InMemoryWorkspaceStore())
+        val ws = Workspace(module, clock, graph, if (watchRoots) graph.roots + ValueDirs.of(graph.resRoots) else emptyList(), store)
         val ports = TestPorts(renderer, renderer, compiler, SourcePreviewRepository(spec.classPath),
             root, realDispatchers, resources = resources, sources = sources, builds = builds)
         return testGraph(ports, ws, scope, PrevueCheckout(File(root, "viewer").apply { mkdirs() }), target, hooks, quietMs)

@@ -50,15 +50,14 @@ class ExternalBuilds(
         val className = preview.fqn.substringBeforeLast('.')
         if (!compiler.hasClass(owner, className))
             return pending(ed, change, preview, phrase("stale.classMissing", "class" to className))
-        val r = live.show(ed, preview, "gradle", deferMissing = true)
+        val r = live.show(ed, preview, "gradle", LiveShot.Draw(deferMissing = true, newRound = true))
         if (r.shot.out.failure == FailureKind.NOT_FOUND)
             return pending(ed, change, preview, r.shot.out.message ?: Verbatim(""))
         ed.markStale(StaleReasons.BUILD, if (r.ok) null else StaleReasons.redrawFailed(change.built, change.own.isNotEmpty()))
         if (r.ok) ed.markStale(StaleReasons.EXPECT_ACTUAL, null)
         val out = r.copy(stale = ws.now.stale)
-        ed.update { s -> s.copy(lastResult = out, board = s.board?.advance()) }
+        ed.update { it.copy(lastResult = out) }
         ed.markHiddenTabsStale()
-        live.recordFocus(ed, out.shot)
         boards.fill("gradle", out.startedAtMs)
         return ExternalResult.Redrawn(out)
     }

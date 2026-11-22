@@ -164,8 +164,7 @@ class Tabs @Inject internal constructor(
 
     private suspend fun showFocus(ed: WorkspaceEditor, b: Board, interactive: Boolean, by: String, since: Long?): ShowResult {
         if (interactive) return boards.enter(ed, b.focus, by, since = since)
-        val r = live.show(ed, b.focusCard.spec, by, since)
-        live.recordFocus(ed, r.shot)
+        val r = live.show(ed, b.focusCard.spec, by, LiveShot.Draw(since = since))
         boards.fill(by, r.startedAtMs)
         return r
     }

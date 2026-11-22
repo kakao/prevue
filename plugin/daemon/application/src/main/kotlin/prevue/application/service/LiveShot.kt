@@ -28,38 +28,49 @@ import prevue.application.domain.rule.StaleReasons
 @SingleIn(AppScope::class)
 @Inject
 class LiveShot(private val ws: Workspace, private val engine: Engine) {
-    /** 새 태스크로 그려 live로 삼는다. [since]는 이 렌더를 부른 일의 시작(epoch ms)이고, 없으면 그리기 시작이다(D-63). */
-    suspend fun show(
-        ed: WorkspaceEditor, spec: PreviewSpec, by: String, since: Long? = null, keepPostures: Boolean = false, deferMissing: Boolean = false,
-    ): ShowResult {
-        val t = System.nanoTime()
-        val at = since ?: System.currentTimeMillis()
+    suspend fun show(ed: WorkspaceEditor, spec: PreviewSpec, by: String, draw: Draw = Draw(), save: SaveDraw? = null): ShowResult = try {
+        paint(ed, spec, by, draw, save)
+    } finally {
+        if (draw.attach) {
+            val at = ws.nowMs()
+            ed.update { it.copy(focusAttachedAt = at) }
+        }
+    }
+
+    private suspend fun paint(ed: WorkspaceEditor, spec: PreviewSpec, by: String, draw: Draw, save: SaveDraw?): ShowResult {
+        val t = save?.t0 ?: System.nanoTime()
+        val at = draw.since ?: System.currentTimeMillis()
         val p = ws.now.sized(spec)
         rendering(ed, p, by)
-        if (!keepPostures) dropPostures(ed)
-        val out = engine.show(p, ws.now.interactive)
-        if (deferMissing && out.failure == FailureKind.NOT_FOUND) {
+        if (!draw.keepPostures) dropPostures(ed)
+        val shown = engine.show(p, ws.now.interactive)
+        val out = save?.repair?.invoke(shown) ?: shown
+        if (draw.deferMissing && out.failure == FailureKind.NOT_FOUND) {
             ed.update { it.copy(work = null) }
             return ShowResult(shot(out, null, t, by), ws.now.stale)
         }
+        if (draw.newRound) ed.updateBoard { it.advance() }
         val kept = keepPosture(out)
         ed.update { it.copy(current = p) }
-        val r = finish(ed, out, null, t, by) { it.copy(startedAtMs = at) }
-        seedPostures(ed, out.ok, kept, keepPostures)
+        val r = finish(ed, out, save?.compile, t, by) { drawn ->
+            drawn.copy(startedAtMs = at).let { save?.extra?.invoke(it) ?: it }
+        }
+        if (ws.now.board?.focusCard?.spec?.previewId == p.previewId) recordFocus(ed, r.shot)
+        seedPostures(ed, out.ok, kept, draw.keepPostures)
         return r
     }
 
-    fun keepPosture(out: RenderOutput): RenderOutput? {
+    private fun keepPosture(out: RenderOutput): RenderOutput? {
         if (!out.ok) return null
         val (base, d) = ws.now.shownTarget()?.takeIf { Postures.planned(it.second) } ?: return null
         return engine.keepImage(out, Postures.idOf(base, d))
     }
 
-    fun dropPostures(ed: WorkspaceEditor) {
+    private fun dropPostures(ed: WorkspaceEditor) {
         if (ws.now.postures != null) ed.update { it.copy(postures = null) }
     }
 
-    suspend fun seedPostures(ed: WorkspaceEditor, liveOk: Boolean, kept: RenderOutput?, keep: Boolean) {
+    private suspend fun seedPostures(ed: WorkspaceEditor, liveOk: Boolean, kept: RenderOutput?, keep: Boolean) {
         val (base, d) = ws.now.shownTarget() ?: return dropPostures(ed)
         if (!liveOk && !keep) return dropPostures(ed)
         val shot = kept?.let { k ->
@@ -159,6 +170,15 @@ class LiveShot(private val ws: Workspace, private val engine: Engine) {
 
     /** 같은 경로의 산출물이 갱신됐음을 소비자에게 알린다. */
     fun restamped(shot: Shot): Shot = shot.copy(artifactRevision = System.currentTimeMillis())
+
+    data class Draw(
+        val since: Long? = null, val keepPostures: Boolean = false, val deferMissing: Boolean = false, val attach: Boolean = false,
+        val newRound: Boolean = false,
+    )
+
+    class SaveDraw(
+        val compile: CompileResult?, val t0: Long, val repair: suspend (RenderOutput) -> RenderOutput, val extra: (ShowResult) -> ShowResult,
+    )
 
     companion object {
         const val POSTURE = "posture"

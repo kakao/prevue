@@ -173,17 +173,7 @@ class Live(
         ed.update { it.copy(cardOverride = next) }
         val sameBars = (next?.edgeToEdge ?: EdgeToEdge.AUTO) == (now?.edgeToEdge ?: EdgeToEdge.AUTO) &&
             (next?.systemUi ?: SystemUi.ANNOTATED) == (now?.systemUi ?: SystemUi.ANNOTATED)
-        val onBoard = ws.now.board != null
-        val r = try {
-            live.show(ed, target, by, keepPostures = sameBars)
-        } finally {
-            if (onBoard) {
-                val at = ws.nowMs()
-                ed.update { it.copy(focusAttachedAt = at) }
-            }
-        }
-        live.recordFocus(ed, r.shot)
-        return r
+        return live.show(ed, target, by, LiveShot.Draw(keepPostures = sameBars, attach = true))
     }
 
     private fun overrideTarget(): PreviewSpec {
