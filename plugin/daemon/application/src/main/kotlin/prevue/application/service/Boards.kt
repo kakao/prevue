@@ -155,7 +155,7 @@ class Boards(
         require(on || adjustment == CardAdjustment()) { "크기 · 시스템 UI는 인터랙티브 카드에만 준다 — --on과 함께" }
         if (on) return FocusResult.On(index, enter(ed, index, by, adjustment = adjustment))
         val b = boardWith(index)
-        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = false, cardOverride = null) }
+        ed.update { s -> s.copy(board = s.board?.focusOn(index)).withoutInteractive() }
         live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
         fill(by)
         return FocusResult.Off(index)
@@ -168,7 +168,7 @@ class Boards(
         val id = b.cards[index].spec.previewId
         val kept = ws.now.cardOverride?.takeIf { ws.now.interactive && it.previewId == id }
         val next = (kept ?: CardOverride(id)).with(adjustment.size, adjustment.systemUi, adjustment.edgeToEdge)
-        ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, cardOverride = next) }
+        ed.update { s -> s.copy(board = s.board?.focusOn(index)).withInteractive(next) }
         return live.show(ed, b.cards[index].spec, by, LiveShot.Draw(since = since, attach = true))
     }
 
