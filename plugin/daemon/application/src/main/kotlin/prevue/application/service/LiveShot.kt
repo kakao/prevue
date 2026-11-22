@@ -50,6 +50,7 @@ class LiveShot(private val ws: Workspace, private val engine: Engine) {
             ed.update { it.copy(work = null) }
             return ShowResult(shot(out, null, t, by), ws.now.stale)
         }
+        if (draw.newRound) ed.updateBoard { it.advance() }
         val kept = keepPosture(out)
         ed.update { it.copy(current = p) }
         val r = finish(ed, out, save?.compile, t, by) { drawn ->
@@ -171,7 +172,10 @@ class LiveShot(private val ws: Workspace, private val engine: Engine) {
     /** 같은 경로의 산출물이 갱신됐음을 소비자에게 알린다. */
     fun restamped(shot: Shot): Shot = shot.copy(artifactRevision = System.currentTimeMillis())
 
-    data class Draw(val since: Long? = null, val keepPostures: Boolean = false, val deferMissing: Boolean = false, val attach: Boolean = false)
+    data class Draw(
+        val since: Long? = null, val keepPostures: Boolean = false, val deferMissing: Boolean = false, val attach: Boolean = false,
+        val newRound: Boolean = false,
+    )
 
     class SaveDraw(
         val compile: CompileResult?, val t0: Long, val repair: suspend (RenderOutput) -> RenderOutput, val extra: (ShowResult) -> ShowResult,

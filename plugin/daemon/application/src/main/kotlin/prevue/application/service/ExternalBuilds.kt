@@ -50,8 +50,7 @@ class ExternalBuilds(
         val className = preview.fqn.substringBeforeLast('.')
         if (!compiler.hasClass(owner, className))
             return pending(ed, change, preview, phrase("stale.classMissing", "class" to className))
-        ed.updateBoard { it.advance() }
-        val r = live.show(ed, preview, "gradle", LiveShot.Draw(deferMissing = true))
+        val r = live.show(ed, preview, "gradle", LiveShot.Draw(deferMissing = true, newRound = true))
         if (r.shot.out.failure == FailureKind.NOT_FOUND)
             return pending(ed, change, preview, r.shot.out.message ?: Verbatim(""))
         ed.markStale(StaleReasons.BUILD, if (r.ok) null else StaleReasons.redrawFailed(change.built, change.own.isNotEmpty()))
