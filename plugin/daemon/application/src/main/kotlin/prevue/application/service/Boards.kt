@@ -13,7 +13,6 @@ import prevue.application.domain.model.Board
 import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
-import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.CardAdjustment
 import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.CardOverride
@@ -170,7 +169,7 @@ class Boards(
         val kept = ws.now.cardOverride?.takeIf { ws.now.interactive && it.previewId == id }
         val next = (kept ?: CardOverride(id)).with(adjustment.size, adjustment.systemUi, adjustment.edgeToEdge)
         ed.update { s -> s.copy(board = s.board?.focusOn(index), focusAttachedAt = null, interactive = true, cardOverride = next) }
-        return attach(ed, b.cards[index].spec, by, since)
+        return live.show(ed, b.cards[index].spec, by, LiveShot.Draw(since = since, attach = true))
     }
 
     private fun boardWith(index: Int): Board {
@@ -178,7 +177,4 @@ class Boards(
         require(index in b.cards.indices) { "카드 $index 없음 — ${b.cards.size}장" }
         return b
     }
-
-    private suspend fun attach(ed: WorkspaceEditor, p: PreviewSpec, by: String, since: Long?): ShowResult =
-        live.show(ed, p, by, LiveShot.Draw(since = since, attach = true))
 }
