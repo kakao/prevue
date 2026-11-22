@@ -11,7 +11,7 @@ class WorkspaceStateTest {
     private val small = ScreenSize.Dp(320, 640)
     private val live = WorkspaceState(current = specs[1], board = board).withInteractive(CardOverride("P1", small))
 
-    @Test fun `인터랙티브를 끄면 같은 보드에 남아도 그 카드에 준 크기가 따라오지 않는다 — 다음에 켤 때 덮어쓰기 없이 시작한다`() {
+    @Test fun `인터랙티브를 끄면 같은 보드에 남아도 그 카드에 준 크기가 남아 보이지 않는다`() {
         assertEquals(small, live.shownTarget()?.second)
         val off = live.withoutInteractive()
         assertNull(off.shownTarget())
