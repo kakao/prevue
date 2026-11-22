@@ -84,7 +84,7 @@ data class WorkspaceState(
     private fun withPostures(round: Long, edit: (Postures, ScreenSize) -> Postures): WorkspaceState =
         postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = edit(ps, it.second)) } } ?: this
 
-    fun withInteractive(override: CardOverride): WorkspaceState = copy(interactive = true, focusAttachedAt = null, cardOverride = override)
+    fun withInteractive(override: CardOverride?): WorkspaceState = copy(interactive = true, focusAttachedAt = null, cardOverride = override)
 
     fun withoutInteractive(): WorkspaceState = copy(interactive = false, focusAttachedAt = null, cardOverride = null)
 
