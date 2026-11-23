@@ -43,7 +43,7 @@ class WorkspaceStateTest {
 
         val other = same.focusInteractive(0)
         assertEquals(0, other.board?.focus)
-        assertEquals(specs[0].previewId to ScreenSize.Original, other.shownTarget())
+        assertEquals(specs[0] to ScreenSize.Original, other.shownTarget())
         assertNull(other.cardOverride)
     }
 }
