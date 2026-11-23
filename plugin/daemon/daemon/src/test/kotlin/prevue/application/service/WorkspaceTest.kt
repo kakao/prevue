@@ -5,9 +5,15 @@ import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -70,5 +76,51 @@ class WorkspaceTest {
         val ws = workspace()
         val leaked = runBlocking { ws.exclusive { it } }
         assertThrows<IllegalStateException> { leaked.openBoard(null) }
+    }
+
+    @Test fun `같은 작업이 다시 줄을 서면 즉시 실패하고 다음 작업은 줄을 쓸 수 있다`() = runBlocking {
+        val ws = workspace()
+        withTimeout(5_000) {
+            val failure = runCatching {
+                ws.exclusive { ws.exclusive { error("중첩 호출이 실행됐다") } }
+            }.exceptionOrNull()
+            val error = assertInstanceOf(IllegalStateException::class.java, failure)
+            assertEquals("같은 작업 공간의 줄에 다시 설 수 없다", error.message)
+            assertEquals("다음 작업", ws.exclusive { "다음 작업" })
+        }
+    }
+
+    @Test fun `줄 안의 자식 작업도 같은 줄에서 저장을 시작할 수 없다`() = runBlocking {
+        val ws = workspace()
+        withTimeout(5_000) {
+            ws.exclusive {
+                val failure = runCatching {
+                    coroutineScope { ws.saving { error("중첩 저장이 실행됐다") } }
+                }.exceptionOrNull()
+                val error = assertInstanceOf(IllegalStateException::class.java, failure)
+                assertEquals("같은 작업 공간의 줄에 다시 설 수 없다", error.message)
+                assertFalse(ws.reloadPending)
+            }
+        }
+    }
+
+    @Test fun `독립 작업은 앞 작업이 끝난 뒤 줄에 들어간다`() = runBlocking {
+        val ws = workspace()
+        withTimeout(5_000) {
+            val entered = CompletableDeferred<Unit>()
+            val leave = CompletableDeferred<Unit>()
+            val first = async {
+                ws.exclusive {
+                    entered.complete(Unit)
+                    leave.await()
+                }
+            }
+            entered.await()
+            val next = async(start = CoroutineStart.UNDISPATCHED) { ws.exclusive { "다음 작업" } }
+            assertFalse(next.isCompleted)
+            leave.complete(Unit)
+            first.await()
+            assertEquals("다음 작업", next.await())
+        }
     }
 }

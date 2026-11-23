@@ -12,9 +12,7 @@ import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.LiveFrame
 import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
-import prevue.application.domain.model.PreviewSpec
-import prevue.application.domain.model.EdgeToEdge
-import prevue.application.domain.model.CardOverride
+import prevue.application.domain.model.CardAdjustment
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ScrollResult
@@ -35,11 +33,11 @@ import prevue.application.port.LiveSession
 import prevue.application.port.SourceFileRepository
 
 @SingleIn(AppScope::class)
-@Inject
-class Live(
+class Live @Inject internal constructor(
     private val ws: Workspace,
     private val engine: Engine,
     private val live: LiveShot,
+    private val boardFocus: BoardFocus,
     private val sources: SourceFileRepository,
 ) {
     val screen: StateFlow<LiveFrame?> get() = engine.screen
@@ -159,29 +157,9 @@ class Live(
         live.finish(ed, engine.rerender(p), null, t, by).also { ed.update { it.copy(current = p) } }
     }
 
-    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, size, null, by) }
+    suspend fun resize(size: ScreenSize, by: String): ShowResult? = ws.exclusive { ed -> boardFocus.adjust(ed, CardAdjustment(size = size), by) }
 
-    suspend fun setSystemUi(systemUi: SystemUi, by: String): ShowResult? = ws.exclusive { ed -> overrideWithin(ed, null, systemUi, by) }
-
-    suspend fun overrideWithin(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge? = null): ShowResult? {
-        val now = ws.now.cardOverride
-        val defaults = size in setOf(null, ScreenSize.Original) && systemUi in setOf(null, SystemUi.ANNOTATED) && edgeToEdge in setOf(null, EdgeToEdge.AUTO)
-        if (now == null && defaults) return null
-        val target = overrideTarget()
-        val next = (now?.takeIf { it.previewId == target.previewId } ?: CardOverride(target.previewId)).with(size, systemUi, edgeToEdge)
-        if (next == now) return null
-        ed.update { it.copy(cardOverride = next) }
-        val sameBars = (next?.edgeToEdge ?: EdgeToEdge.AUTO) == (now?.edgeToEdge ?: EdgeToEdge.AUTO) &&
-            (next?.systemUi ?: SystemUi.ANNOTATED) == (now?.systemUi ?: SystemUi.ANNOTATED)
-        return live.show(ed, target, by, LiveShot.Draw(keepPostures = sameBars, attach = true))
-    }
-
-    private fun overrideTarget(): PreviewSpec {
-        val s = ws.now
-        val b = s.board ?: error("보여 주는 프리뷰가 없다 — 먼저 show")
-        require(s.interactive) { "인터랙티브 카드에서만 크기 · 시스템 UI를 바꾼다 — prevue focus <index> --on" }
-        return b.focusCard.spec
-    }
+    suspend fun setSystemUi(systemUi: SystemUi, by: String): ShowResult? = ws.exclusive { ed -> boardFocus.adjust(ed, CardAdjustment(systemUi = systemUi), by) }
 
     suspend fun select(file: String, line: Int, at: Pointed, by: String): Selection = ws.exclusive { ed ->
         val onLive = (ws.now.interactive || ws.now.board == null) && (at.previewId == null || at.previewId == ws.now.current?.previewId)
