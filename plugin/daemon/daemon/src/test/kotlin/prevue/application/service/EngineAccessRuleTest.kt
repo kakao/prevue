@@ -5,13 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * 줄 밖에서 허용하는 엔진 접근은 파일별 허용 표(`EngineRule.outside`)가 정한다.
- * `Engine` 채널이 호출을 직렬화해 엔진의 일반 필드를 지킨다(D-74). 통합 테스트는 `Dispatchers.Default`에서 액터를 돌려도 통과한다.
- * status는 렌더가 멈춰도 답해야 한다. 구체 엔진(`RenderEngine`)은 조립(`RenderBindings`)만 쥔다.
- * 리소스 덧층(`ResourceValues`)은 렌더 스레드와 저장 사이에서 스냅숏(StateFlow)을 교체한다.
- * 이 검사는 철자를 센다 — 별칭(`val e = ports.engine`)이나 `with(engine)`은 못 본다.
- */
 class EngineAccessRuleTest {
     private companion object {
         val files by lazy { prevue.daemon.Sources.daemon() }
