@@ -1,17 +1,13 @@
 package prevue.application.service
 
 import java.io.File
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import prevue.application.domain.model.Board
 import prevue.application.domain.model.BoardEpoch
@@ -79,33 +75,21 @@ class Workspace(
     suspend fun seedsNoted() { seeding.value?.join() }
 
     private val turn = Mutex()
-    private class Turn(key: CoroutineContext.Key<Turn>) : AbstractCoroutineContextElement(key)
-    private val inTurn = Turn(object : CoroutineContext.Key<Turn> {})
     private val savesWaiting = MutableStateFlow(0)
 
-    suspend fun <T> exclusive(block: suspend (WorkspaceEditor) -> T): T {
-        checkOutsideTurn()
-        return takeTurn(block)
-    }
-
-    private suspend fun checkOutsideTurn() {
-        check(currentCoroutineContext()[inTurn.key] == null) { "같은 작업 공간의 줄에 다시 설 수 없다" }
-    }
-
-    private suspend fun <T> takeTurn(block: suspend (WorkspaceEditor) -> T): T = turn.withLock {
+    suspend fun <T> exclusive(block: suspend (WorkspaceEditor) -> T): T = turn.withLock {
         yield()
         var open = true
         val ed = WorkspaceEditor(clock) { f -> check(open) { "줄 밖에서 쓴다" }; store.edit(f) }
-        try { withContext(inTurn) { block(ed) } } finally {
+        try { block(ed) } finally {
             open = false
             if (store.state.value.work != null) store.edit { it.copy(work = null) }
         }
     }
 
     suspend fun <T> saving(block: suspend (WorkspaceEditor) -> T): T {
-        checkOutsideTurn()
         savesWaiting.update { it + 1 }
-        try { return takeTurn(block) } finally { savesWaiting.update { it - 1 } }
+        try { return exclusive(block) } finally { savesWaiting.update { it - 1 } }
     }
 
     val reloadPending: Boolean get() = savesWaiting.value > 0

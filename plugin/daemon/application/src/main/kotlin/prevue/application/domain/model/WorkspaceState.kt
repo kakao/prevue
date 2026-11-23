@@ -86,6 +86,14 @@ data class WorkspaceState(
 
     fun withInteractive(override: CardOverride?): WorkspaceState = copy(interactive = true, focusAttachedAt = null, cardOverride = override)
 
+    fun focusInteractive(index: Int, adjustment: CardAdjustment = CardAdjustment()): WorkspaceState {
+        val board = checkNotNull(board)
+        val id = board.cards[index].spec.previewId
+        val kept = cardOverride?.takeIf { interactive && it.previewId == id }
+        val next = (kept ?: CardOverride(id)).with(adjustment.size, adjustment.systemUi, adjustment.edgeToEdge)
+        return copy(board = board.focusOn(index)).withInteractive(next)
+    }
+
     fun withoutInteractive(): WorkspaceState = copy(interactive = false, focusAttachedAt = null, cardOverride = null)
 
     fun withNothingShown(): WorkspaceState = withoutInteractive().copy(board = null, current = null)
