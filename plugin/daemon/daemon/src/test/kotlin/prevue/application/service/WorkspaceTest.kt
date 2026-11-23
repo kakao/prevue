@@ -6,10 +6,12 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -104,23 +106,24 @@ class WorkspaceTest {
         }
     }
 
-    @Test fun `독립 작업은 앞 작업이 끝난 뒤 줄에 들어간다`() = runBlocking {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun `독립 작업은 앞 작업이 끝난 뒤 줄에 들어간다`() = runTest {
         val ws = workspace()
-        withTimeout(5_000) {
-            val entered = CompletableDeferred<Unit>()
-            val leave = CompletableDeferred<Unit>()
-            val first = async {
-                ws.exclusive {
-                    entered.complete(Unit)
-                    leave.await()
-                }
+        val entered = CompletableDeferred<Unit>()
+        val leave = CompletableDeferred<Unit>()
+        val first = async {
+            ws.exclusive {
+                entered.complete(Unit)
+                leave.await()
             }
-            entered.await()
-            val next = async(start = CoroutineStart.UNDISPATCHED) { ws.exclusive { "다음 작업" } }
-            assertFalse(next.isCompleted)
-            leave.complete(Unit)
-            first.await()
-            assertEquals("다음 작업", next.await())
         }
+        entered.await()
+        val nextEntered = CompletableDeferred<Unit>()
+        val next = async { ws.exclusive { nextEntered.complete(Unit) } }
+        runCurrent()
+        assertFalse(nextEntered.isCompleted)
+        leave.complete(Unit)
+        first.await()
+        assertTrue(next.await())
     }
 }
