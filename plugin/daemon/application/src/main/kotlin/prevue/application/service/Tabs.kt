@@ -120,9 +120,10 @@ class Tabs @Inject internal constructor(
     }
 
     private suspend fun enter(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long?): ShowResult {
-        val specs = ws.now.board?.takeIf { pick.interactive && key == ws.now.activeTab && params.isEmpty() }?.cards?.map { it.spec }
-        val i = specs?.takeIf(pick::within)?.let { pick.of(it, key) } ?: return activate(ed, key, pick, params, by, since)
-        return boards.enter(ed, i, by, since = since)
+        val b = ws.now.board?.takeIf { pick.interactive && key == ws.now.activeTab && params.isEmpty() }
+        val specs = b?.cards?.map { it.spec }
+        val i = specs?.takeIf(pick::within)?.let { pick.of(it, key) }
+        return if (b != null && i != null) showFocus(ed, b, true, by, since, i) else activate(ed, key, pick, params, by, since)
     }
 
     internal suspend fun activate(ed: WorkspaceEditor, key: String, pick: Pick, params: Map<String, String>, by: String, since: Long? = null): ShowResult {
@@ -162,10 +163,10 @@ class Tabs @Inject internal constructor(
         return showFocus(ed, board, o.pick.interactive, by, since)
     }
 
-    private suspend fun showFocus(ed: WorkspaceEditor, b: Board, interactive: Boolean, by: String, since: Long?): ShowResult {
-        if (interactive) return boards.enter(ed, b.focus, by, since = since)
-        val r = live.show(ed, b.focusCard.spec, by, LiveShot.Draw(since = since))
-        boards.fill(by, r.startedAtMs)
+    private suspend fun showFocus(ed: WorkspaceEditor, b: Board, interactive: Boolean, by: String, since: Long?, index: Int = b.focus): ShowResult {
+        if (interactive) ed.update { it.focusInteractive(index) }
+        val r = live.show(ed, b.cards[index].spec, by, LiveShot.Draw(since = since, attach = interactive))
+        if (!interactive) boards.fill(by, r.startedAtMs)
         return r
     }
 
