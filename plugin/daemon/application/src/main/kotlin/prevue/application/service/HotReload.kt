@@ -14,7 +14,8 @@ import prevue.application.port.CompileResult
 import prevue.application.port.SourceChange
 
 @SingleIn(AppScope::class)
-class HotReload @Inject internal constructor(
+@Inject
+class HotReload(
     private val ws: Workspace,
     private val engine: Engine,
     private val modules: StaleCallers,
@@ -22,7 +23,7 @@ class HotReload @Inject internal constructor(
     private val resources: ResourcePatches,
     private val live: LiveShot,
     private val boards: Boards,
-    private val tabs: TabSteps,
+    private val tabs: Tabs,
 ) {
     private data class Save(
         val ed: WorkspaceEditor, val t: Long, val by: String, val change: SourceChange?, val valuesSeen: Map<String, Long>,

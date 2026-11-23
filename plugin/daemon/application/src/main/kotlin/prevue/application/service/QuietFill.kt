@@ -19,11 +19,12 @@ import prevue.application.domain.model.phrase
 import prevue.application.port.RenderOutput
 
 @SingleIn(AppScope::class)
-class QuietFill @Inject internal constructor(
+@Inject
+class QuietFill(
     private val ws: Workspace,
     private val engine: Engine,
     private val live: LiveShot,
-    private val cards: BoardCards,
+    private val boards: Boards,
     private val scope: CoroutineScope,
     @Named(QUIET) private val quietMs: Long = QUIET_MS,
 ) {
@@ -74,7 +75,7 @@ class QuietFill @Inject internal constructor(
         if (roundOf(ws.now) != round) return@exclusive Step.Done
         if (ws.reloadPending || quietFor() < quietMs) return@exclusive Step.Later
         postureStep()?.let { return@exclusive it }
-        cards.startNextAside(ed, from, QUIET_BY)?.let { Step.Card(it + 1) } ?: Step.Done
+        boards.startNextAside(ed, from, QUIET_BY)?.let { Step.Card(it + 1) } ?: Step.Done
     }
 
     private suspend fun postureStep(): Step? {
