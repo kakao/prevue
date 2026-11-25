@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.CardResult
-import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
@@ -87,7 +86,7 @@ class LiveShotOrderTest {
         fx.compiler.ok = true
         val attached = uc.workspace.now.focusAttachedAt
 
-        val r = runBlocking { uc.boards.focus(0, by = "test", size = size) } as FocusResult.On
+        val r = runBlocking { uc.boards.focus(0, by = "test", size = size) }
         assertSame(r.result.shot, focusShot(uc))
         assertEquals(attached, uc.workspace.now.focusAttachedAt)
     }

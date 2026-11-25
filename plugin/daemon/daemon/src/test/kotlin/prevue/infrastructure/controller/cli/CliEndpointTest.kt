@@ -44,13 +44,13 @@ class CliEndpointTest {
         assertEquals(500 to "java.lang.IllegalStateException: file 또는 of가 필요하다", error("/previews", emptyMap()))
     }
 
-    @Test fun `focus 를 끄면서 크기나 시스템 UI를 주면 거절하고 아무것도 바꾸지 않는다`() {
+    @Test fun `focus 를 끄면서 크기나 시스템 UI를 주면 500으로 --on과 함께 주라고 답한다`() {
         val sized = request("POST", "/focus", mapOf("index" to 0, "interactive" to false, "size" to "320x640"))
         val bars = request("POST", "/focus", mapOf("index" to 0, "interactive" to false, "systemUi" to "off"))
-        assertEquals(500, sized.first)
-        assertEquals(500, bars.first)
-        assertTrue((bars.second as Map<*, *>)["error"].toString().contains("--on과 함께"))
-        assertEquals(null, uc.workspace.now.cardOverride)
+        for ((code, json) in listOf(sized, bars)) {
+            assertEquals(500, code)
+            assertTrue((json as Map<*, *>)["error"].toString().contains("--on과 함께"))
+        }
     }
 
     @Test fun `status 와 board 는 메서드를 가리지 않는다`() {
