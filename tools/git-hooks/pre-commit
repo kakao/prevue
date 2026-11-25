@@ -1,0 +1,28 @@
+#!/bin/sh
+# 원본(skills-src · dev-skills-src · AGENTS.md)이 커밋에 들면 tools/gen-agents.sh 로 생성물을 만들어 같은 커밋에 담는다.
+# 생성은 작업 트리를 읽으므로, 원본에 스테이징 안 된 변경이 있으면 커밋된 원본과 다른 생성물이 실린다 — 그때는 막는다.
+#
+#   git config core.hooksPath tools/git-hooks    켠다(워크트리마다 자기 판의 훅이 돈다)
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+
+SRC="skills-src dev-skills-src AGENTS.md"
+# shellcheck disable=SC2086
+[ -n "$(git diff --cached --name-only -- $SRC)" ] || exit 0
+
+# 경로를 준 커밋(git commit -- <경로>)은 임시 인덱스에서 돈다 — 담은 생성물이 실제 인덱스에 남지 않아 다음 커밋이 되돌린다
+case "${GIT_INDEX_FILE:-}" in
+  */next-index*) echo "pre-commit: 원본이 든 커밋은 경로를 주지 않는다 — git add 한 뒤 git commit 으로 다시 커밋한다" >&2; exit 1 ;;
+esac
+
+# shellcheck disable=SC2086
+LEFT="$(git diff --name-only -- $SRC; git ls-files --others --exclude-standard -- $SRC)"
+if [ -n "$LEFT" ]; then
+  echo "pre-commit: 원본에 스테이징 안 된 변경이 있다 — add 하거나 치운 뒤 다시 커밋한다" >&2
+  echo "$LEFT" >&2
+  exit 1
+fi
+
+sh tools/gen-agents.sh >/dev/null || { echo "pre-commit: tools/gen-agents.sh 가 실패했다" >&2; exit 1; }
+git add -A -- CLAUDE.md ':(glob)plugin/skills/claude/**/*.md' ':(glob)plugin/skills/codex/**/*.md' \
+  ':(glob).claude/skills/**/*.md' ':(glob).agents/skills/**/*.md'

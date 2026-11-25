@@ -4,11 +4,11 @@
 
 ## 해당 없음
 
-둘 중 하나면 그 이유를 "화면 확인 해당 없음 — <이유>"로 적는다. 제품 입력이 develop과 같거나, 사용자에게 보이는 동작(뷰어 화면 · CLI 출력)이 바뀌지 않았다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
+둘 중 하나면 그 이유를 "화면 확인 해당 없음 — <이유>"로 적는다. 제품 입력이 develop과 같거나, 사용자에게 보이는 동작(뷰어 화면 · CLI 출력)이 바뀌지 않았다. 제품 입력은 `sh tools/unit-test.sh --inputs`가 찍는 경로에 `plugin/bin`을 더한 것이다.
 
 ```sh
 # sh로 감싼다 — zsh는 $P를 단어로 나누지 않아 plugin/bin만 보고 "해당 없음"으로 잘못 건너뛴다
-sh -c 'P="$(sed -n "s/^INPUTS=\"\(.*\)\"\$/\1/p" tools/check-local.sh)"; test -n "$P" || exit 2; git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P'
+sh -c 'P="$(sh tools/unit-test.sh --inputs)"; test -n "$P" || exit 2; git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P'
 # 0 해당 없음 · 1 제품 입력이 바뀌었다 · 2 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
 ```
 

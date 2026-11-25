@@ -75,20 +75,20 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기의 `tools/check-local.sh`가 같은 여섯 — 스킬 두 벌 · 고지 사본 · 뷰어 생성물 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 버전 커밋(버전 문자열 네 파일)과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 같은 여섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것과 고지 사본의 어긋남은 릴리즈 PR의 `Verify`가 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
 printf '%s\n' 0.11.0 > plugin/VERSION
-sh tools/sync-version.sh            # 매니페스트 둘 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜). README 배지는 Release를 읽는 동적 배지다
+sh tools/sync-version.sh            # 매니페스트 둘 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜) · plugin/ 의 고지 사본. README 배지는 Release를 읽는 동적 배지다
 sh tools/sync-version.sh --check
-git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md 뿐이다
+git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md, 루트 고지가 바뀌었으면 plugin/LICENSE · plugin/NOTICE.md 뿐이다
 git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
 git push origin HEAD:develop        # fast-forward 만
 gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본문>"
 ```
 
-이 네 파일 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
+이 파일들 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 고지 사본이 함께 바뀌었으면 커밋 메시지 괄호에 그것도 적는다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
 
 본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 

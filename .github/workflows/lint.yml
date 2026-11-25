@@ -38,8 +38,9 @@ jobs:
       - name: Check that both skill sets and CLAUDE.md are generated from source
         run: sh tools/gen-agents.sh --check
 
-      # Installs receive plugin/ only (D-123) — its LICENSE · NOTICE.md are copies of the root originals.
+      # Installs receive plugin/ only (D-123). The version commit syncs the copies (tools/sync-version.sh); release PRs only.
       - name: Check that the plugin's notice copies match the originals
+        if: ${{ github.base_ref == 'main' }}
         run: sh tools/plugin-copies.sh --check
 
       - name: Set up Node for viewer development

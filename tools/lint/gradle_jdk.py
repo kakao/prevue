@@ -1,6 +1,6 @@
 """도구 자신의 Gradle(plugin/daemon)을 띄울 JDK — Metro 의 Gradle 플러그인은 Gradle 이 JVM 21+ 에서 돌아야 풀린다.
 
-AGP 세계의 기본 JAVA_HOME 은 흔히 17 이라 tools/check-local.sh · tools/lint.sh 가 그대로 부르면 설정 단계에서 실패한다.
+AGP 세계의 기본 JAVA_HOME 은 흔히 17 이라 tools/unit-test.sh · tools/lint.sh 가 그대로 부르면 설정 단계에서 실패한다.
 셸의 JDK 가 21 이상이면 건드리지 않고, 21 미만이거나 판을 모르면 데몬과 같은 길(PREVUE_JDK → plugin/cli/jdk_find.py)로 찾는다.
 못 찾으면 셸 그대로 둔다 — Gradle 이 JDK 판을 짚는 실패를 내고, lint 는 그 실패를 안내(hint)로 읽는다.
 
