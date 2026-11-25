@@ -44,7 +44,6 @@ try {
         fileName: (_, name) => `js/${name}.js`,
       },
       // 런타임 모듈(src/runtime)은 아래 따로 빌드해 js/<이름>.js 한 벌만 쓴다 — 사본이 번들에 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
-      // resize-scene 도 같은 URL(./motion.js · ./strings.js)로 부르므로 이름과 자리를 지킨다.
       // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
         external: separate,

@@ -1,11 +1,10 @@
 import { DEVICES } from "../../legacy/js/devices.js";
-import type { Unit } from "./calc";
-import { P, bump, camBox, castShadow, clamp, edgeOf, endsOf, holdSize, homeBox, isOpen, lerp, lightOf, lined, litOf, lookOf, perimeter, place, plateOf, putCam, putCams, px, q, radii, rgbOf, rigCrease, shade, shelled, smooth, splitTop, stripPaint, swapAt, swapBlurAt, tallOf, toned, turnR } from "./calc";
-import { fit, lookAt, rigAt, rigCamera, rigEdges, room, spinAt } from "./engine";
-import type { Scene } from "./state";
+import { LENS, P, bump, camBox, castShadow, clamp, edgeOf, endsOf, glintAt, holdSize, homeBox, isOpen, lerp, lightOf, lined, litOf, lookOf, perimeter, plateOf, px, radii, rgbOf, rigCrease, shade, shelled, smooth, splitTop, stripPaint, swapAt, swapBlurAt, tallOf, toned, turnR } from "./calc";
+import { lookAt, rigAt, rigCamera, rigEdges, room, spinAt } from "./engine";
+import type { Scene, Unit } from "./state";
 import type { Axis, Box, Face, Layers, Outline, Panel, PanelSpec, Plan, SceneImage, Shadow, Side } from "./types";
 
-export function stretch(S: Scene, el: HTMLElement, w: number, h: number) {
+function stretch(S: Scene, el: HTMLElement, w: number, h: number) {
   let st = S.stretchOf.get(el);
   if (!st && S.seeding && !S.seeding.has(el)) return;
   if (!st) { st = { w0: Math.max(w, 1), h0: Math.max(h, 1), k: [1, 1] }; S.stretchOf.set(el, st); Object.assign(el.style, { width: px(st.w0), height: px(st.h0) }); }
@@ -22,12 +21,12 @@ export function paintShades(S: Scene) {
   }
 }
 // 접기는 기기 고유 좌표에서 하고, 그림은 장면의 회전을 상쇄해 화면 위로 선다.
-export function foldImage(S: Scene, img: HTMLImageElement, spec: SceneImage | null, size: { w: number; h: number }, folded: boolean, du: number, s: number, now: number, blur = 0, opacity = 1) {
+function foldImage(S: Scene, img: HTMLImageElement, spec: SceneImage | null, size: { w: number; h: number }, folded: boolean, du: number, s: number, now: number, blur = 0, opacity = 1) {
   const panel = plateOf(S.rig.d, folded ? "cover" : "open");
   place(img, spec, (panel.w - size.w) * s / 2 - du * s, size.w * s, size.h * s, opacity, blur, (panel.h - size.h) * s / 2);
   img.style.transform = `rotate(${-rigAt(S, now).angle}deg)`;
 }
-export function paintFace(S: Scene, f: Face, plan: Plan, s: number, now: number, u: number) {
+function paintFace(S: Scene, f: Face, plan: Plan, s: number, now: number, u: number) {
   const o = S.layer.old, n = S.layer.neu, spec = S.rig.oldSpec, folded = plan === S.rig.plan.outer;
   const put = (img: HTMLImageElement, src: SceneImage | null, size: { w: number; h: number }, blur: number, op = 1) => foldImage(S, img, src, size, folded, plan.du, s, now, blur * u, op);
   if (plan.role === "crisp") {
@@ -48,14 +47,14 @@ export function paintFace(S: Scene, f: Face, plan: Plan, s: number, now: number,
   else f.neu.style.opacity = "0";
   f.el.style.background = (n.r && n.op.at(now) > .5 && plan.neu ? n.r : spec).edge;
 }
-export function turnRig(S: Scene, el: HTMLElement, now: number) {
+function turnRig(S: Scene, el: HTMLElement, now: number) {
   const { angle, cy } = rigAt(S, now);
   el.style.transformOrigin = `${room(S).cx}px ${cy}px`;
   el.style.transform = `rotate(${angle}deg)`;
 }
 // 판 하나 — 몸체 상자(body)와 그 안의 화면(scr). 좌표는 힌지 위 끝이 원점인 판의 평면이고, 뒷면은 두께 T 만큼 뒤에서 뒤집힌다.
 // normal(v) 은 판 좌표의 법선을 화면 좌표로 옮긴다. hingeLeft 는 판 좌표에서 힌지가 화면의 왼쪽 변인지다.
-export function drawPanel(S: Scene, p: Panel, { body, span, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }: PanelSpec) {
+function drawPanel(S: Scene, p: Panel, { body, span, bodyR, scr, scrR, backScrR, T, normal, tone, hk, hingeLeft, u }: PanelSpec) {
   const [x0, y0, x1, y1] = body, W = x1 - x0, H = y1 - y0, cap = (r: number[]) => r.map(v => clamp(v, 0, Math.min(W, H) / 2));
   const R = cap(bodyR), mirror = (r: number[]) => [r[1], r[0], r[3], r[2]];
   for (const [f, back] of [[p.front, false], [p.back, true]] as [Side, boolean][]) {
@@ -88,7 +87,7 @@ export function drawPanel(S: Scene, p: Panel, { body, span, bodyR, scr, scrR, ba
   });
 }
 // 보이는 그림(old · neu 중 위)을 겹마다 베껴 흐린다 — 접히는 각도(lift = sin θ)만큼 짙어지고, 힌지에서 먼 쪽일수록 센 겹이 드러난다(마스크는 paintShades).
-export function smear(S: Scene, f: Face, lift: number, u: number) {
+function smear(S: Scene, f: Face, lift: number, u: number) {
   const on = S.rig.d.plate.blur && lift > .01, top = Number(f.neu.style.opacity) > .5 ? f.neu : f.old;
   f.blurs.forEach(({ el, inv, img }, i) => {
     const blur = P.foldBlur * lift * Math.pow((i + 1) / 4, 1.35) * u, base = parseFloat((/blur\(([\d.]+)px\)/.exec(top.style.filter) || ["0", "0"])[1]);
@@ -104,7 +103,7 @@ export function smear(S: Scene, f: Face, lift: number, u: number) {
 }
 // 조개형의 옆 단추는 힌지와 나란한 변(판 좌표의 위 · 아래 변)에 있고 접히는 장을 따라 돈다 — 힌지에서 잰 거리를 펼친 자리에서
 // 커버 자리로 옮기며 그 거리의 앞모습(cos)만큼 그린다. 펼친 화면의 오른쪽 변(side 1)이 판 좌표의 위 변이다.
-export function tallButtons(S: Scene, { hu, T0, Bv, t, s, k, sn, cs, lift, tone, u }: { hu: number; T0: number; Bv: number; t: number; s: number; k: number; sn: number; cs: number; lift: number; tone: string; u: number }) {
+function tallButtons(S: Scene, { hu, T0, Bv, t, s, k, sn, cs, lift, tone, u }: { hu: number; T0: number; Bv: number; t: number; s: number; k: number; sn: number; cs: number; lift: number; tone: string; u: number }) {
   const d = S.rig.d, H = d.open.hinge!, bw = 3 * u;
   d.look.open.btn.forEach((bo, i) => {
     const bc = d.look.cover.btn[i], leaf = bo.at < H;
@@ -114,7 +113,7 @@ export function tallButtons(S: Scene, { hu, T0, Bv, t, s, k, sn, cs, lift, tone,
       backgroundColor: tone, opacity: (leaf ? lerp(bo.len, bc.len, k) : bo.len) * s > .5 * u ? 1 : 0, transform: `translateZ(${px(lift + (leaf ? wm * s * sn : 0))})` });
   });
 }
-export const elevation = (S: Scene) => S.elevationOf ??= splitTop(getComputedStyle(S.rigEl).getPropertyValue("--elevation-2")).map((part): Shadow | null => {
+const elevation = (S: Scene) => S.elevationOf ??= splitTop(getComputedStyle(S.rigEl).getPropertyValue("--elevation-2")).map((part): Shadow | null => {
   const m = /^\s*(-?[\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+([\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+(.+)$/.exec(part);
   return m ? [+m[1], +m[2], +m[3], +m[4], m[5].trim()] : null;
 }).filter((e): e is Shadow => e !== null);
@@ -195,7 +194,7 @@ export function drawRig(S: Scene, now: number) {
   Object.assign(S.RG.tTop.style, { left: px(tx), top: px(T0 - tv), width: px(u), height: px(tv), opacity: tk });
   Object.assign(S.RG.tBot.style, { left: px(tx), top: px(T0 + Bv), width: px(u), height: px(tv), opacity: tk });
 }
-export function drawContent(U: Unit, rect: { w: number; h: number; y: number }, s: number, layers: Layers, now: number): SceneImage | null {
+function drawContent(U: Unit, rect: { w: number; h: number; y: number }, s: number, layers: Layers, now: number): SceneImage | null {
   const o = layers.old, n = layers.neu, sw = layers.swap, k = sw ? swapAt(sw, now) : 0;
   const nop = sw ? smooth(0, 1, k) : n.op.at(now), nb = sw ? swapBlurAt(k) : n.blur.at(now), ob = Math.max(o.blur.at(now), sw ? swapBlurAt(k) : 0);
   U.l0.style.transform = U.l1.style.transform = "";
@@ -217,7 +216,7 @@ export function drawContent(U: Unit, rect: { w: number; h: number; y: number }, 
   return n.r && nop > .5 ? n.r : o.r;
 }
 // 돌리는 동안 — 틀은 몸체와 함께 돌고, 그림은 틀 가운데에서 반대로 돌아 화면 기준 0°에 선다.
-export function drawUpright(S: Scene, U: Unit, rect: { w: number; h: number; y: number }, s: number, now: number): SceneImage | null {
+function drawUpright(S: Scene, U: Unit, rect: { w: number; h: number; y: number }, s: number, now: number): SceneImage | null {
   const { p } = spinAt(S, now), deg = S.spin.dir * 90 * p, a = deg * Math.PI / 180, o = S.layer.old;
   const up = (img: HTMLImageElement, spec: SceneImage, size: { w: number; h: number }, op: number, blur: number, dx = 0, dy = 0) => {
     place(img, spec, (rect.w - size.w) / 2 + dx, size.w, size.h, op, blur, (rect.h - size.h) / 2 + dy);
@@ -237,7 +236,7 @@ export function drawUpright(S: Scene, U: Unit, rect: { w: number; h: number; y: 
   up(U.l1, to, { w: to.dpW * s, h: to.dpH * s }, w, b);
   return w > .5 ? to : from;
 }
-export function drawUnit(S: Scene, U: Unit, rect: { w: number; h: number; y: number }, ol: Outline, s: number, layers: Layers, now: number, opacity: number, turning = false) {
+function drawUnit(S: Scene, U: Unit, rect: { w: number; h: number; y: number }, ol: Outline, s: number, layers: Layers, now: number, opacity: number, turning = false) {
   const { cx } = room(S), g = P.gap, y = rect.y;
   U.el.style.opacity = String(opacity);
   Object.assign(U.stage.style, { left: cx - rect.w / 2 + "px", top: y + "px", width: rect.w + "px", height: rect.h + "px" });
@@ -327,3 +326,19 @@ export function drawRuler(S: Scene, now: number) {
   S.RL.w.style.left = cx + "px"; S.RL.w.style.top = yr + "px";
   S.RL.h.style.left = xr + "px"; S.RL.h.style.top = M + "px";
 }
+
+function place(img: HTMLImageElement, spec: SceneImage | null, x: number, w: number, h: number, op: number, blur: number, y = 0) {
+  if (!spec || op <= .001) { img.style.opacity = "0"; return; }
+  if (img.dataset.u !== spec.url) { img.src = spec.url; img.dataset.u = spec.url; }
+  img.style.left = x + "px"; img.style.top = y + "px"; img.style.width = w + "px"; img.style.height = h + "px";
+  img.style.opacity = String(op);
+  img.style.filter = blur > .05 ? `blur(${blur.toFixed(2)}px)` : "none";
+}
+const putCam = (el: HTMLElement, b: Box, dx: number, dy: number, op: number, turn = 0) => {
+  Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
+  el.classList.toggle("lens", !!b.lens);
+  if (!b.lens) return;
+  const [gx, gy] = glintAt(turn);
+  for (const [k, v] of [["--lens-inset", LENS.inset * b.lens + "px"], ["--lens-ring", LENS.ring * b.lens + "px"], ["--lens-glint-x", gx], ["--lens-glint-y", gy], ["--lens-glint", LENS.glint * 100 + "%"]]) el.style.setProperty(k, v);
+};
+const putCams = (els: HTMLElement[], boxes: Box[], dx: number, dy: number, op: number, turn = 0) => els.forEach((el, i) => boxes[i] ? putCam(el, boxes[i], dx, dy, op, turn) : (el.style.opacity = "0"));

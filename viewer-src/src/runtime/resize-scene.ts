@@ -3,7 +3,7 @@ import { P, springOf } from "../scene/calc";
 import { dropDraft, installDock, menuOpen, orientationOpen, outside, paintPick, setOpen, setOrientationOpen } from "../scene/dock";
 import { animate, fit, go, relayout, resolve, setFrame, snapTo, tick, wake } from "../scene/engine";
 import { createState } from "../scene/state";
-import type { Axis, ResizeScene, SceneHooks, SceneImage, SceneRect, SceneTarget } from "../scene/types";
+import type { Axis, ResizeScene, SceneHooks } from "../scene/types";
 
 export type { ResizeScene, SceneHooks, SceneImage, SceneRect, SceneTarget } from "../scene/types";
 

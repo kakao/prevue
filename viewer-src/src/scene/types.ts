@@ -1,6 +1,5 @@
 import type { DeviceBody, DeviceEntry } from "../../legacy/js/devices.js";
-import { Tw, q } from "./calc";
-import { fit, relayout, request } from "./engine";
+import { Tw } from "./calc";
 
 export type SceneRect = { cx: number; y: number; w: number; h: number; s: number; radius: Radii; bezel: number };
 export type SceneImage = { url: string; dpW: number; dpH: number; edge: string };
@@ -30,7 +29,7 @@ export type SceneHooks = {
 };
 export type Radii = [number, number, number, number];
 export type Shape = { w: number; h: number; y: number; x?: number; notch?: number; rad?: number; flat?: number; edge?: "right" | "bottom"; lens?: true };
-export type Btn = { side: number; at: number; len: number };
+type Btn = { side: number; at: number; len: number };
 export type Body = { tone: string; bezel: number; ends?: number; home?: boolean | number; radius: Radii; cams: Shape[]; btn: Btn[] };
 export type Box = { left: number; top: number; width: number; height: number; corners: string; on: boolean; lens: number };
 export type Orientation = "portrait" | "landscape-left" | "landscape-right";
@@ -39,8 +38,8 @@ export type Dev = { sel: string; kind: "device"; dev: string; folded: boolean; r
 export type St = Plain | Dev;
 export type Frame = { s: number; w: number; h: number; cx: number; y: number };
 export type Spring = { w0: number; z: number };
-export type Layer = { r: SceneImage | null; held: boolean; grow: Tw; blur: Tw; veil: Tw; op: Tw };
-export type TrBase = { from: St; to: St; t0: number; arriveAt: number; arrived: boolean };
+type Layer = { r: SceneImage | null; held: boolean; grow: Tw; blur: Tw; veil: Tw; op: Tw };
+type TrBase = { from: St; to: St; t0: number; arriveAt: number; arrived: boolean };
 export type SizeTr = TrBase & { kind: "size"; cached: boolean; swapped: boolean; deepAt: number; grow: boolean; f0: { w: number; h: number }; f1: Frame };
 export type Tr = SizeTr | (TrBase & { kind: "fade" | "spin" | "fold" | "unfold"; cached?: undefined; deepAt?: undefined });
 export type Plan = { role: "crisp" | "hold"; du: number; neu?: true; frame?: { w: number; h: number } };
@@ -49,7 +48,7 @@ export type Rig = { on: boolean; turn: number; q: number; z: number; t0: number;
   hx0: number; hx1: number; plan: { inner: Plan; base: Plan; outer: Plan }; dip: (e: number) => number };
 export type FoldDevice = DeviceEntry & { plate: NonNullable<DeviceEntry["plate"]>; cover: NonNullable<DeviceEntry["cover"]>; look: { open: DeviceBody; cover: DeviceBody } };
 export type Side = { body: HTMLElement; gloss: HTMLElement; home: HTMLElement; clip: HTMLElement | null; ring: HTMLElement | null; lit: HTMLElement | null; fit: HTMLElement[] };
-export type Smear = { el: HTMLElement; inv: HTMLElement; img: HTMLImageElement };
+type Smear = { el: HTMLElement; inv: HTMLElement; img: HTMLImageElement };
 export type Face = { el: HTMLElement; cam: HTMLElement; cams: HTMLElement[]; old: HTMLImageElement; veil: HTMLElement; neu: HTMLImageElement; cast: HTMLElement; blurs: Smear[]; dark: HTMLElement | null };
 export type Panel = { el: HTMLElement; front: Side; back: Side; strips: HTMLElement[] };
 export type PanelSpec = { body: number[]; span: number[]; bodyR: number[]; scr: number[]; scrR: number[]; backScrR?: number[]; T: number; normal: (v: number[]) => number[]; tone: number[]; hk: number; hingeLeft: boolean; u: number };

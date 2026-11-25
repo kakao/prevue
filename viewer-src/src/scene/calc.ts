@@ -1,8 +1,7 @@
 import type { DeviceEntry } from "../../legacy/js/devices.js";
 import { DEVICES } from "../../legacy/js/devices.js";
 import { reduced } from "../runtime/motion";
-import { fit } from "./engine";
-import type { Body, Box, Dev, Face, Layers, Orientation, Panel, Radii, SceneImage, Shadow, Shape, Side, Spring, St } from "./types";
+import type { Body, Box, Dev, Layers, Orientation, Radii, SceneImage, Shadow, Shape, Spring, St } from "./types";
 
 export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 export const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -10,7 +9,7 @@ export const smooth = (a: number, b: number, v: number) => { const k = clamp((v 
 export const easeOut = (k: number) => 1 - Math.pow(1 - k, 3);
 export const shade = (a: number) => `color-mix(in srgb, var(--device-shade) ${(a * 100).toFixed(1)}%, transparent)`;
 export const springOf = (duration: number, bounce: number): Spring => ({ w0: 2 * Math.PI / Math.max(.05, duration), z: 1 - clamp(bounce, 0, .95) });
-export function osc({ w0, z }: Spring, x0: number, v0: number, t: number): [number, number] {
+function osc({ w0, z }: Spring, x0: number, v0: number, t: number): [number, number] {
   if (z < 1) {
     const wd = w0 * Math.sqrt(1 - z * z), e = Math.exp(-z * w0 * t), B = (v0 + z * w0 * x0) / wd;
     const c = Math.cos(wd * t), s = Math.sin(wd * t);
@@ -78,7 +77,7 @@ export function turnOf(panel: { w: number; h: number }, rot: boolean, right: boo
 // notch 는 가장자리에 붙은 노치의 안쪽 모서리 반경이다 — 가장자리 쪽 두 모서리와, 옆 변에 닿은 모서리(Flip8 커버의 오른쪽 아래 컷아웃)는 각진다.
 // rad · flat 은 기기를 바꾸는 보간용이다.
 // 보간 중인 cam 은 rad · flat 을 이미 갖고, 스펙의 cam 은 notch 에서 나온다 — 두 곳이 같은 판단을 쓴다.
-export const camRad = (c: Shape) => c.rad ?? c.notch ?? Math.min(c.w, c.h) / 2, camFlat = (c: Shape) => c.flat ?? (c.notch !== undefined ? 1 : 0);
+const camRad = (c: Shape) => c.rad ?? c.notch ?? Math.min(c.w, c.h) / 2, camFlat = (c: Shape) => c.flat ?? (c.notch !== undefined ? 1 : 0);
 export function camBox(W0: number, H0: number, rot: boolean, cam: Shape, s: number, mirrored = false): Box {
   const own = cam.edge === "right" ? 1 : cam.edge === "bottom" ? 2 : 0, turns = (own + (rot ? 1 : 0) + (mirrored ? 2 : 0)) % 4;
   let fw = (own % 2 ? H0 : W0) * s, fh = (own % 2 ? W0 : H0) * s;
@@ -103,8 +102,7 @@ export const glintAt = (turn: number) => {
   return [at(x * c + y * s), at(-x * s + y * c)];
 };
 export const CAM_MAX = Math.max(1, ...Object.values(DEVICES).flatMap(d => Object.values(d.look).map(l => l!.cams.length)));
-export const HOME_K = .62;
- // 홈 버튼 지름 / 위·아래 베젤 두께
+const HOME_K = .62;   // 홈 버튼 지름 / 위·아래 베젤 두께
 export const P = { rotDur: .6, rotLift: .42, rotLand: .18, rotDip: .12, shellK: 1.6,
   frameDur: .45, frameBounce: 0, outlineBounce: 0, outlineLead: 0, veil: .06,
   foldDur: 1, foldLift: .42, foldLand: .18, perspective: 3200, shade: .22,
@@ -134,8 +132,8 @@ export const padsOf = (st: St): [number, number] => {
 };
 export const dims = (st: { w: number; h: number }) => `${Math.round(st.w)}×${Math.round(st.h)}`;
 // CAPSULE_ROOM — 아래 캡슐(바닥 20 + 높이 약 40)과 조작 독(바닥 12 + 슬라이더를 띄운 높이 약 68) 중 큰 쪽과 그 위 틈. 맞춤일 때 기기가 가리지 않게 이만큼만 비운다.
-export const TOP = 14;
-export const RULER_TOP = 34;
+const TOP = 14;
+const RULER_TOP = 34;
 export const RULER_SIDE = 90;
 export const FRAME_TOP = TOP + RULER_TOP;
 export const CAPSULE_ROOM = 88;
@@ -148,7 +146,7 @@ export const RULER_RAIL = 22;
 export const PLATE_EDGE = 10;
 export const BADGE_W = 45;
 // 인셋 배지 — 오른쪽 배지는 몸체에서 48(resize.css 의 --im-off-x) 떨어진 선 가운데에 서고, 레이블이 붙어 가장 긴 배지의 반폭이 CHIP_HALF 다. 켜졌을 때만 양옆을 그만큼 비운다.
-export const CHIP_HALF = 56;
+const CHIP_HALF = 56;
 export const RIGHT_NEED = 48 + CHIP_HALF + PLATE_EDGE;
 // 틀은 남는 세로 자리의 가운데다 — 위에 붙이면 작은 크기 · 가로로 넓은 기기에서 아래가 크게 비었다.
 // 컷아웃 배지는 눈금(#ruler) 바깥에 선다 — 컷아웃이 위 · 아래 변이면 높이 눈금 왼쪽에, 왼쪽 · 오른쪽 변이면 폭 눈금 위에 자리가 더 든다.
@@ -171,7 +169,7 @@ export const bump = (k: number) => P.swapBlur * 4 * k * (1 - k);
 // 크기 교체의 흐림 — 가운데서 가장 흐리고 틀이 멈추길 기다리지 않고 끝까지 걷는다
 export const swapBlurAt = (k: number) => k < .5 ? bump(k) : lerp(P.swapBlur, 0, smooth(.5, 1, k));
 // 카메라 보간 — 가장자리가 다르면 끝에서 줄어 사라졌다 다른 가장자리에서 자란다(버튼이 변을 바꿀 때와 같다).
-export const camLook = (a: Shape, b: Shape, k: number, m: (x: number, y: number) => number): Shape => {
+const camLook = (a: Shape, b: Shape, k: number, m: (x: number, y: number) => number): Shape => {
   const swap = a.edge !== b.edge, grow = swap ? (k < .5 ? 1 - 2 * k : 2 * k - 1) : 1, from = swap && k < .5 ? a : b;
   return { w: swap ? from.w * grow : m(a.w, b.w), h: m(a.h, b.h), y: m(a.y, b.y), x: swap ? from.x ?? .5 : m(a.x ?? .5, b.x ?? .5),
     rad: m(camRad(a), camRad(b)), flat: m(camFlat(a), camFlat(b)), edge: from.edge, lens: (from.w > 0 ? from : a).lens };
@@ -184,45 +182,15 @@ export const homeBox = (lk: Body, W0: number, H0: number, rot: boolean, s: numbe
   const e = endsOf(lk) * P.shellK, hd = e * HOME_K, b = camBox(W0, H0, rot, { w: hd, h: hd, y: H0 + (e - hd) / 2 }, s, mirrored);
   return { ...b, on: b.on && hk > .01 };
 };
-export const putCam = (el: HTMLElement, b: Box, dx: number, dy: number, op: number, turn = 0) => {
-  Object.assign(el.style, { left: b.left + dx + "px", top: b.top + dy + "px", width: b.width + "px", height: b.height + "px", borderRadius: b.corners, opacity: b.on ? op : 0 });
-  el.classList.toggle("lens", !!b.lens);
-  if (!b.lens) return;
-  const [gx, gy] = glintAt(turn);
-  for (const [k, v] of [["--lens-inset", LENS.inset * b.lens + "px"], ["--lens-ring", LENS.ring * b.lens + "px"], ["--lens-glint-x", gx], ["--lens-glint-y", gy], ["--lens-glint", LENS.glint * 100 + "%"]]) el.style.setProperty(k, v);
-};
-// 그릴 모양마다 .cam 하나 — 첫 .cam(마크업)을 기기 표의 가장 긴 목록만큼 복제해 둔다. 남는 것은 숨긴다.
-export const camsIn = (el: ParentNode) => {
-  const first = el.querySelector<HTMLElement>(".cam")!, list = [first];
-  while (list.length < CAM_MAX) { const c = first.cloneNode() as HTMLElement; list[list.length - 1].after(c); list.push(c); }
-  return list;
-};
-export const putCams = (els: HTMLElement[], boxes: Box[], dx: number, dy: number, op: number, turn = 0) => els.forEach((el, i) => boxes[i] ? putCam(el, boxes[i], dx, dy, op, turn) : (el.style.opacity = "0"));
 export const reducedOn = () => reduced.matches;
-export const q = <T extends HTMLElement = HTMLElement>(root: ParentNode, s: string) => root.querySelector<T>(s)!;
-export const maybe = (root: ParentNode, s: string) => root.querySelector<HTMLElement>(s);
-export const faceOf = (el: HTMLElement): Face => ({ el, cam: q(el, ".cam"), cams: camsIn(el), old: q<HTMLImageElement>(el, ".old"), veil: q(el, ".veil"), neu: q<HTMLImageElement>(el, ".neu"), cast: q(el, ".cast"), blurs: [], dark: null });
-export const sideOf = (el: HTMLElement): Side => {
-  const gloss = document.createElement("div"), rim = document.createElement("div"), home = document.createElement("div");
-  gloss.className = "gloss"; rim.className = "rim"; home.className = "home"; el.prepend(gloss, rim); el.append(home);
-  return { body: el, gloss, home, clip: maybe(el, ".clip"), ring: maybe(el, ".ring"), lit: maybe(el, ".lit"), fit: [] };
-};
-export const panelOf = (el: HTMLElement): Panel => ({ el, front: sideOf(q(el, ".front")), back: sideOf(q(el, ".rear")), strips: [] });
 export const rigCrease = (th: number) => clamp(1 - th / 24, 0, 1);
 export const holdSize = (spec: SceneImage, frame: { w: number; h: number }, fill: boolean) => {
   if (!fill) return { w: spec.dpW, h: spec.dpH };
   const k = Math.max(frame.w / spec.dpW, frame.h / spec.dpH);
   return { w: spec.dpW * k, h: spec.dpH * k };
 };
-export function place(img: HTMLImageElement, spec: SceneImage | null, x: number, w: number, h: number, op: number, blur: number, y = 0) {
-  if (!spec || op <= .001) { img.style.opacity = "0"; return; }
-  if (img.dataset.u !== spec.url) { img.src = spec.url; img.dataset.u = spec.url; }
-  img.style.left = x + "px"; img.style.top = y + "px"; img.style.width = w + "px"; img.style.height = h + "px";
-  img.style.opacity = String(op);
-  img.style.filter = blur > .05 ? `blur(${blur.toFixed(2)}px)` : "none";
-}
 // 빛은 화면에 고정이고, 정면을 보는 면이 1이 되게 맞춘다 — 멈춘 장면의 밝기는 그대로이고 돌아간 면만 어두워지거나 밝아진다.
-export const LIGHT = (() => { const az = P.lightAz * Math.PI / 180, el = P.lightEl * Math.PI / 180; return [Math.cos(el) * Math.cos(az), -Math.cos(el) * Math.sin(az), Math.sin(el)]; })();
+const LIGHT = (() => { const az = P.lightAz * Math.PI / 180, el = P.lightEl * Math.PI / 180; return [Math.cos(el) * Math.cos(az), -Math.cos(el) * Math.sin(az), Math.sin(el)]; })();
 export const lightOf = (n: number[]) => clamp(P.ambient + (1 - P.ambient) * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / LIGHT[2], 0, 1.5);
 export const rgbOf = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 export const toned = (rgb: number[], b: number) => `rgb(${rgb.map(c => Math.round(b <= 1 ? c * b : c + (255 - c) * (b - 1) * .5)).join(" ")})`;
@@ -255,9 +223,6 @@ export function perimeter([x0, y0, x1, y1]: number[], [tl, tr, br, bl]: number[]
 }
 export const castShadow = (list: Shadow[], a: number, u: number) => list.map(([x, y, b, sp, color]) =>
   `${px((x * Math.cos(a) + y * Math.sin(a)) * u)} ${px((-x * Math.sin(a) + y * Math.cos(a)) * u)} ${px(b * u)} ${px(sp * u)} ${color}`).join(", ");
-export const unitOf = (el: HTMLElement) => ({ el, shell: q(el, ".shell"), btns: [...el.querySelectorAll<HTMLElement>(".btn")], cams: camsIn(el), home: q(el, ".home"), outline: q(el, ".outline"), stage: q(el, ".stage"), l0: q<HTMLImageElement>(el, ".l0"), l1: q<HTMLImageElement>(el, ".l1"), veil: q(el, ".veil"), crease: q(el, ".crease"), tTop: q(el, ".t-top"), tBot: q(el, ".t-bot") });
-export type Unit = ReturnType<typeof unitOf>;
-export const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 // 칸은 이름과 dp 두 쪽이다. 기기 칸은 몸체 윤곽을 앞에 둔다 — 비율 · 모서리 · 카메라(구멍 · 섬)는 몸체 그림의 값에서 줄이고,
 // 접는 기기는 힌지 선을 긋는다. 이름은 줄이고 전체 이름은 툴팁에 둔다.
 export const silOf = (d: DeviceEntry) => {

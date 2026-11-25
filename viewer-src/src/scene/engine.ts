@@ -1,6 +1,6 @@
 import { DEVICES } from "../../legacy/js/devices.js";
 import { phrase } from "../runtime/strings";
-import { BELOW_H, CAPSULE_ROOM, FRAME_TOP, LANE_H, LANE_W, NARROW, P, PLATE_EDGE, RIGHT_NEED, RULER_RAIL, RULER_SIDE, Val, WIDE, bezier, camBox, camsLook, clamp, cutEdgesOf, easeOut, edgeOf, endsOf, isOpen, layersOf, lerp, lined, padsOf, plateOf, q, reducedOn, rigCrease, shelled, smooth, springOf, swapAt, swapBlurAt, tallOf, turnOf, turnR } from "./calc";
+import { BELOW_H, CAPSULE_ROOM, FRAME_TOP, LANE_H, LANE_W, NARROW, P, PLATE_EDGE, RIGHT_NEED, RULER_RAIL, RULER_SIDE, Val, WIDE, bezier, camBox, camsLook, clamp, cutEdgesOf, easeOut, edgeOf, endsOf, isOpen, layersOf, lerp, lined, padsOf, plateOf, reducedOn, rigCrease, shelled, smooth, springOf, swapAt, swapBlurAt, tallOf, turnOf, turnR } from "./calc";
 import { paintBar } from "./dock";
 import { draw, drawRig, drawRuler, paintShades } from "./draw";
 import type { Scene } from "./state";
@@ -24,7 +24,7 @@ export function resolve(S: Scene, sel: string): St | null {
   st.img = S.images.get(sel) || S.cur?.img || S.ORIGINAL.img;
   return st;
 }
-export const foldEase = (S: Scene) => {
+const foldEase = (S: Scene) => {
   const k = `${P.foldLift},${P.foldLand}`;
   if (k !== S.foldEaseKey) { S.foldEaseKey = k; S.foldEaseFn = bezier(P.foldLift, 0, P.foldLand, 1); }
   return S.foldEaseFn!;
@@ -34,8 +34,8 @@ export function room(S: Scene, st?: St) {
   const side = Math.max(lerp(P.gap + RULER_RAIL + Math.ceil(S.badge.w / 2) + PLATE_EDGE, RULER_SIDE, k), st && shelled(st) && S.hooks.insetOn?.() ? RIGHT_NEED : 0);
   return { W, side, cx: W / 2, top: FRAME_TOP, maxW: Math.max(60, W - 2 * side), maxH: Math.max(60, S.root.clientHeight - FRAME_TOP - CAPSULE_ROOM) };
 }
-export const belowOf = (S: Scene, st: St) => shelled(st) && S.hooks.insetOn?.() && S.hooks.insetBelow?.() ? BELOW_H : 0;
-export const cutLaneOf = (S: Scene, st: St, side: number) => {
+const belowOf = (S: Scene, st: St) => shelled(st) && S.hooks.insetOn?.() && S.hooks.insetBelow?.() ? BELOW_H : 0;
+const cutLaneOf = (S: Scene, st: St, side: number) => {
   if (!shelled(st) || !S.hooks.insetOn?.()) return { w: 0, h: 0 };
   const edges = cutEdgesOf(st);
   return { w: edges.includes("w") ? Math.max(0, LANE_W - side) : 0, h: edges.includes("h") ? LANE_H : 0 };
@@ -82,12 +82,12 @@ export function snapTo(S: Scene, sel: string) {
   S.unitOp.a.snap(1); S.unitOp.b.snap(0);
   paintBar(S, st, true);
 }
-export function settle(S: Scene, img: SceneImage | null) {
+function settle(S: Scene, img: SceneImage | null) {
   const o = S.layer.old, n = S.layer.neu;
   o.r = img; o.held = false; o.grow.snap(0); o.blur.snap(0); o.veil.snap(0); o.op.snap(1);
   n.r = null; n.op.snap(0); n.blur.snap(0); S.layer.swap = null;
 }
-export function freeze(S: Scene, now: number) {
+function freeze(S: Scene, now: number) {
   const n = S.layer.neu, o = S.layer.old, sw = S.layer.swap;
   const nb = sw ? swapBlurAt(swapAt(sw, now)) : n.blur.at(now), nop = sw ? smooth(0, 1, swapAt(sw, now)) : n.op.at(now);
   if (n.r && nop > .5) { o.r = n.r; o.grow.snap(0); o.blur.snap(nb); o.veil.snap(0); o.op.snap(1); }
@@ -98,17 +98,17 @@ export function freeze(S: Scene, now: number) {
 // 도착 그림이 없으면 옛 화면을 틀에 채워 흐린다 — 빈칸 · 잘림 대신 흐린 화면이 자리를 지킨다.
 // 채움은 흐림이 오르는 동안 원래 dp 자리에서 덮는 크기로 자란다 — 틀이 움직이던 중이면 그 사이가 커서 한 프레임에 튀었다.
 // 기기를 바꿀 때 그림은 대개 수백 ms 안에 온다 — 크기 전환은 옅게만 흐리고(light), 그 안에 안 오면 tick 이 holdBlur 로 깊인다.
-export function hold(S: Scene, now: number, light = false) {
+function hold(S: Scene, now: number, light = false) {
   const o = S.layer.old;
   o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(light ? P.holdLight : P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
 }
-export function sharpen(S: Scene, now: number) {
+function sharpen(S: Scene, now: number) {
   const o = S.layer.old;
   o.grow.to(0, 120, now); o.blur.to(0, 120, now); o.veil.to(0, 120, now);
 }
-export const atRest = (S: Scene, now: number) => S.V.w.done(now) && S.V.h.done(now) && S.V.y.done(now) && S.V.s.done(now, .002);
+const atRest = (S: Scene, now: number) => S.V.w.done(now) && S.V.h.done(now) && S.V.y.done(now) && S.V.s.done(now, .002);
 // 눈에는 이미 멈춘 때 — 남은 거리가 3px 안. 끝 꼬리를 기다리면 흐림이 오래 남았다
-export const nearRest = (S: Scene, now: number) => { const f = fit(S, S.cur!); return Math.abs(S.V.w.at(now) - f.w) < 3 && Math.abs(S.V.h.at(now) - f.h) < 3 && Math.abs(S.V.y.at(now) - f.y) < 3; };
+const nearRest = (S: Scene, now: number) => { const f = fit(S, S.cur!); return Math.abs(S.V.w.at(now) - f.w) < 3 && Math.abs(S.V.h.at(now) - f.h) < 3 && Math.abs(S.V.y.at(now) - f.y) < 3; };
 export function go(S: Scene, sel: string) {
   const now = performance.now(), to = resolve(S, sel);
   S.clock.t = now;
@@ -139,7 +139,7 @@ export function go(S: Scene, sel: string) {
   if (cached && S.tr!.kind !== "size") S.tr!.arriveAt = now;
 }
 // 캐시가 있으면 틀을 덮는 쪽 레이아웃을 원래 dp로 둔다 — 커지면 처음에, 작아지면 틀이 새 크기에 닿을 즈음 바꾼다.
-export function startSize(S: Scene, from: St, to: St, now: number, cached: boolean) {
+function startSize(S: Scene, from: St, to: St, now: number, cached: boolean) {
   if (S.tr && S.tr.kind === "fade") endFade(S, now);
   freeze(S, now);
   const f0 = { w: S.V.w.at(now), h: S.V.h.at(now) }, f = fit(S, to);
@@ -151,17 +151,17 @@ export function startSize(S: Scene, from: St, to: St, now: number, cached: boole
   S.tr = { kind: "size", from, to, t0: now, arriveAt: Infinity, arrived: false, cached, swapped: false, deepAt: cached ? 0 : now + P.holdDeepAfter,
     grow: to.w >= from.w && to.h >= from.h, f0, f1: f };
 }
-export function nearTarget(S: Scene, now: number) {
+function nearTarget(S: Scene, now: number) {
   const { f0, f1 } = S.tr as SizeTr, part = (v: number, a: number, b: number) => Math.abs(a - b) < 1 ? 0 : Math.abs(v - b) / Math.abs(a - b);
   return Math.max(part(S.V.w.at(now), f0.w, f1.w), part(S.V.h.at(now), f0.h, f1.h)) < P.swapNear;
 }
-export function startSwap(S: Scene, now: number) {
+function startSwap(S: Scene, now: number) {
   const n = S.layer.neu, t = S.tr as SizeTr;
   t.swapped = t.arrived = true;
   n.r = t.to.img; n.op.snap(0); n.blur.snap(0);
   S.layer.swap = { t0: now, dur: P.swapDur };
 }
-export function startFade(S: Scene, from: St, to: St, now: number) {
+function startFade(S: Scene, from: St, to: St, now: number) {
   if (S.tr && S.tr.kind === "fade") endFade(S, now);
   if (S.rig.on) endRig(S, now);
   if (S.spin.on) endSpin(S, now);
@@ -172,7 +172,7 @@ export function startFade(S: Scene, from: St, to: St, now: number) {
   S.layer.old.op.to(P.reducedDim, 160, now);
   S.tr = { kind: "fade", from, to, t0: now, arriveAt: Infinity, arrived: false };
 }
-export function endFade(S: Scene, now: number) {
+function endFade(S: Scene, now: number) {
   const t = S.tr!;
   S.tr = null; S.fadeB = null;
   setFrame(S, fit(S, t.to));
@@ -181,7 +181,7 @@ export function endFade(S: Scene, now: number) {
   S.unitOp.a.snap(1); S.unitOp.b.snap(0);
   S.rulerOp.to(1, 200, now);
 }
-export function arrive(S: Scene) {
+function arrive(S: Scene) {
   if (!S.tr) return;
   const at = S.tr.arriveAt;
   S.tr.arrived = true;
@@ -211,7 +211,7 @@ export function rigCamera(S: Scene, folded: boolean, scale: number) {
   const panel = S.rig.d[folded ? "cover" : "open"]!, tall = tallOf(S.rig.d);
   return S.rig.d.look[folded ? "cover" : "open"]!.cams.map(c => camBox(panel.w, panel.h, tall, c, scale, tall));
 }
-export function startFold(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
+function startFold(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
   const d = DEVICES[to.dev] as FoldDevice, dir = to.folded ? "fold" : "unfold", H = d.open.hinge!;
   const f0 = fit(S, from), f1 = fit(S, to);
   freeze(S, now);
@@ -248,11 +248,11 @@ export function startFold(S: Scene, from: Dev, to: Dev, now: number, cached: boo
   S.rulerOp.to(0, 120, now);
   S.tr = { kind: dir, from, to, t0: now, arriveAt: Infinity, arrived: false };
 }
-export const rigAngle = (S: Scene, e: number) => S.rig.from.angle + S.rig.turn * e + S.rig.q;
+const rigAngle = (S: Scene, e: number) => S.rig.from.angle + S.rig.turn * e + S.rig.q;
 // 판 좌표의 몸체 두께 [왼 · 오른 변(u), 위 · 아래 변(v)] — ends 는 기기 자연 방향의 위 · 아래라 조개형(tall)은 u, 책형은 v 다.
 export const rigEdges = (S: Scene, lk: Body): [number, number] => { const side = lk.bezel * P.shellK, end = endsOf(lk) * P.shellK; return tallOf(S.rig.d) ? [end, side] : [side, end]; };
 // 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
-export function rigPose(S: Scene, e: number, [bu, bv]: [number, number]) {
+function rigPose(S: Scene, e: number, [bu, bv]: [number, number]) {
   const th = (S.rig.dir === "fold" ? e : 1 - e) * 180;
   const baseS = lerp(S.rig.s0, S.rig.s1, e), cy = lerp(S.rig.f0.y + S.rig.f0.h / 2, S.rig.f1.y + S.rig.f1.h / 2, e);
   const angle = rigAngle(S, e), rad = th * Math.PI / 180, a = angle * Math.PI / 180, k = th / 180;
@@ -271,7 +271,7 @@ export function rigPose(S: Scene, e: number, [bu, bv]: [number, number]) {
 // 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 프레임마다 모자란 만큼 줄이면 경계에 닿는 순간 배율이 꺾여
 // 기기 전체가 덜컥였다 — 시작할 때 전 구간의 모자람을 재고, 양끝 0에서 그 자리까지 부드럽게 오르내리는 곡선의 최댓값으로 준다.
 // 양끝은 정지 자세의 fit 이라 재지 않는다.
-export function rigDip(S: Scene) {
+function rigDip(S: Scene) {
   const [ou, ov] = rigEdges(S, S.rig.d.look.open), [cu, cv] = rigEdges(S, S.rig.d.look.cover), bezel: [number, number] = [Math.max(ou, cu), Math.max(ov, cv)], n = 48, need: [number, number][] = [];
   for (let i = 1; i < n; i++) { const e = i / n, lack = 1 - rigPose(S, e, bezel).need; if (lack > 0) need.push([e, lack + .004]); }
   const hump = (e: number, c: number) => e <= c ? smooth(0, c, e) : 1 - smooth(c, 1, e);
@@ -285,7 +285,7 @@ export function rigAt(S: Scene, now: number) {
   return { t, th, p: e, s, hx: r.cx + (hx - r.cx) * s / baseS, cy,
     angle, top: cy - v * s / 2, settled: t >= T };
 }
-export function endRig(S: Scene, now: number) {
+function endRig(S: Scene, now: number) {
   const shown = P.crease * rigCrease(rigAt(S, now).th);
   S.rig.on = false;
   if (S.rig.cached) settle(S, S.cur!.img);
@@ -294,13 +294,13 @@ export function endRig(S: Scene, now: number) {
   S.creaseOp.snap(isOpen(S.cur!) ? shown : 0); if (isOpen(S.cur!)) S.creaseOp.to(P.crease, 240, now);
   S.rulerOp.to(1, 200, now);
 }
-export const spinEase = (S: Scene) => {
+const spinEase = (S: Scene) => {
   const k = `${P.rotLift},${P.rotLand}`;
   if (k !== S.spinEaseKey) { S.spinEaseKey = k; S.spinEaseFn = bezier(P.rotLift, 0, P.rotLand, 1); }
   return S.spinEaseFn!;
 };
 // 몸체 · 틀만 돌고 내용은 반대로 돌아 똑바로 선다. 캐시가 있으면 45° 근처에서 가로 레이아웃으로 흐림 교체한다.
-export function startSpin(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
+function startSpin(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
   freeze(S, now);
   if (cached) sharpen(S, now); else hold(S, now);
   const degrees = ((to.angle - from.angle + 540) % 360) - 180;
@@ -313,7 +313,7 @@ export function spinAt(S: Scene, now: number) {
   const t = (now - S.spin.t0) / 1000, T = Math.max(.05, S.spin.dur);
   return { p: spinEase(S)(clamp(t / T, 0, 1)), done: t >= T };
 }
-export function endSpin(S: Scene, now: number) {
+function endSpin(S: Scene, now: number) {
   const st = S.spin.to, cached = S.spin.cached;
   S.spin.on = false;
   S.UA.el.style.transform = "";

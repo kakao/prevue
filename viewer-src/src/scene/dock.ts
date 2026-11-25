@@ -28,7 +28,7 @@ export const outside = (S: Scene, e: PointerEvent) => {
   if (orientationOpen(S) && !S.ORIENT.el.contains(e.target as Node)) setOrientationOpen(S, false);
 };
 // 이름은 목록의 칸 이름 그대로다(기기는 짧은 이름). 치수 · 자세는 치수선과 자세 버튼이 말한다.
-export function paintSum(S: Scene, key: string) {
+function paintSum(S: Scene, key: string) {
   const here = S.cur!, dev = here.kind === "device" && key === here.dev ? DEVICES[key] : null, row = S.ROWS.find(b => b.dataset.sel === key)!;
   if (S.SUM.dev !== dev) { S.SUM.dev = dev; S.SUM.sil.innerHTML = dev ? silOf(dev) : ""; }
   S.SUM.nm.textContent = row.querySelector(".nm")!.textContent;
@@ -36,7 +36,7 @@ export function paintSum(S: Scene, key: string) {
   S.PN.sum.title = `${dev ? dev.name : S.SUM.nm.textContent} · ${dims(here)}`;
 }
 // 방향키로 지나가는 것은 고르기만 한다 — 커서까지 옮기면 라디오 묶음에서 빠져나가 다음 칩에 못 간다.
-export function pick(S: Scene, sel: string, byKey?: boolean) {
+function pick(S: Scene, sel: string, byKey?: boolean) {
   S.focusW = false;
   dropDraft(S);
   // 슬라이더에 초점이 남으면 커스텀 칸이 고른 채로 남는다 — 숫자 입력처럼 놓고 간다
@@ -93,8 +93,8 @@ export function paintPick(S: Scene) {
   paintSum(S, key);
   paintSlider(S);
 }
-export function paintHinge(S: Scene) { S.CTL.hinge.setAttribute("aria-pressed", String(S.hingeLine)); S.CTL.hinge.title = S.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show"); }
-export function toggleHinge(S: Scene) {
+function paintHinge(S: Scene) { S.CTL.hinge.setAttribute("aria-pressed", String(S.hingeLine)); S.CTL.hinge.title = S.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show"); }
+function toggleHinge(S: Scene) {
   const here = S.cur!;
   if (here.kind !== "device" || !DEVICES[here.dev].fold) return;
   S.hingeLine = !S.hingeLine; paintHinge(S);
@@ -102,10 +102,10 @@ export function toggleHinge(S: Scene) {
   wake(S);
 }
 // 접고 펼 때는 손에 든 회전(기본 방향에서 돈 각도)을 잇는다. 다른 화면에 그 각도가 없으면(거꾸로 선 세로) 세로로 간다.
-export const foldSel = (S: Scene, st: Dev) => ["portrait", "landscape-left", "landscape-right"].map(o => devSel(st, !st.folded, o))
+const foldSel = (S: Scene, st: Dev) => ["portrait", "landscape-left", "landscape-right"].map(o => devSel(st, !st.folded, o))
   .find(sel => { const r = resolve(S, sel); return r?.kind === "device" && r.angle === st.angle; }) ?? devSel(st, !st.folded, "portrait");
-export function toggleFold(S: Scene) { const here = S.cur!; if (here.kind === "device" && DEVICES[here.dev].fold) request(S, foldSel(S, here)); }
-export function applyRuler(S: Scene, axis: Axis, raw: string) {
+function toggleFold(S: Scene) { const here = S.cur!; if (here.kind === "device" && DEVICES[here.dev].fold) request(S, foldSel(S, here)); }
+function applyRuler(S: Scene, axis: Axis, raw: string) {
   const v = /^\d+$/.test(raw.trim()) ? Number(raw) : NaN;
   if (!(v > 0)) return;
   const n = clamp(v, DP_MIN, DP_MAX), w0 = Math.round(S.cur!.w), h0 = Math.round(S.cur!.h);
@@ -114,9 +114,9 @@ export function applyRuler(S: Scene, axis: Axis, raw: string) {
   S.roll[axis].snap(n);
   request(S, sizeSel(S, w, h));
 }
-export const sizeSel = (S: Scene, w: number, h: number) => S.PRESETS.find(x => x.w === w && x.h === h)?.sel || `custom:${w}x${h}`;
+const sizeSel = (S: Scene, w: number, h: number) => S.PRESETS.find(x => x.w === w && x.h === h)?.sel || `custom:${w}x${h}`;
 // 숫자를 고치기 시작하면 지금 크기 그대로 커스텀이 된다 — 기기를 고른 동안에도(D-99)
-export function toCustom(S: Scene, typing = false) {
+function toCustom(S: Scene, typing = false) {
   if (S.editing) return;   // 누름(pointerdown)과 초점(focus)이 함께 와도 한 번만 보낸다
   if (S.cur!.kind !== "custom") {
     const w = clamp(Math.round(S.cur!.w), DP_MIN, DP_MAX), h = clamp(Math.round(S.cur!.h), DP_MIN, DP_MAX);
@@ -126,21 +126,21 @@ export function toCustom(S: Scene, typing = false) {
   }
   S.editing = true; paintPick(S);
 }
-export const slOff = (S: Scene) => S.SL.el.classList.contains("off");
-export const slValue = (S: Scene, axis: Axis) => S.draft ? S.draft[axis] : clamp(Math.round(S.cur![axis]), DP_MIN, DP_MAX);
-export function paintSlider(S: Scene) {
+const slOff = (S: Scene) => S.SL.el.classList.contains("off");
+const slValue = (S: Scene, axis: Axis) => S.draft ? S.draft[axis] : clamp(Math.round(S.cur![axis]), DP_MIN, DP_MAX);
+function paintSlider(S: Scene) {
   for (const axis of ["w", "h"] as Axis[]) {
     const s = S.SL[axis], v = slValue(S, axis), at = slAt(v);
     s.fill.style.width = at; s.thumb.style.left = at; s.val.textContent = String(v);
     s.thumb.setAttribute("aria-valuenow", String(v)); s.thumb.setAttribute("aria-valuetext", `${v}dp`);
   }
 }
-export function slide(S: Scene, axis: Axis, v: number) {
+function slide(S: Scene, axis: Axis, v: number) {
   const n = clamp(Math.round(v), DP_MIN, DP_MAX);
   S.draft = { w: slValue(S, "w"), h: slValue(S, "h"), [axis]: n };
   paintSlider(S); wake(S);
 }
-export function commit(S: Scene) {
+function commit(S: Scene) {
   clearTimeout(S.keyTimer); S.keyTimer = 0;
   if (!S.draft || S.dragging) return;
   const { w, h } = S.draft;
