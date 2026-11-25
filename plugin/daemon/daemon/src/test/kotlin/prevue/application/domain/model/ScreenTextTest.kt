@@ -8,7 +8,6 @@ class ScreenTextTest {
     private val code = Regex("""(?:screenText|phrase)(?:OrNull)?\("([\w.]+)"""")
     private val sources = prevue.daemon.Sources.kotlinRoots.map { it.path to code } + listOf(
         "../../../viewer-src" to Regex("""phrase\(['"]([\w.]+)['"]|data-t(?:-[\w-]+)?="([\w.]+)""""),
-        "../../viewer/js/resize-scene.js" to Regex("""phrase\(['"]([\w.]+)['"]"""),
         "../../cli/prevue_prepare.py" to Regex("""say\("([\w.]+)"\)"""),
     )
 

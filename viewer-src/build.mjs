@@ -13,10 +13,10 @@ const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
 const server = await mkdtemp(join(tmpdir(), 'prevue-prerender-'));
 const legacy = join(source, 'legacy/js/');
 const runtimeDir = join(source, 'src/runtime/');
-const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion'];
+const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion', 'resize-scene'];
 const separate = id => id.startsWith(legacy) || id.startsWith(runtimeDir);
 const separatePath = id => './js/' + id.slice((id.startsWith(legacy) ? legacy : runtimeDir).length).replace(/\.ts$/, '.js');
-const handWritten = name => name === 'tokens.css' || name === 'js/resize-scene.js' || name === 'prevue.svg' || name.startsWith('strings/');
+const handWritten = name => name === 'tokens.css' || name === 'prevue.svg' || name.startsWith('strings/');
 
 async function files(directory, prefix = '') {
   return (await Promise.all((await readdir(directory, { withFileTypes: true })).map(async entry => {
@@ -44,8 +44,7 @@ try {
         fileName: (_, name) => `js/${name}.js`,
       },
       // 런타임 모듈(src/runtime)은 아래 따로 빌드해 js/<이름>.js 한 벌만 쓴다 — 사본이 번들에 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
-      // 손으로 고치는 resize-scene.js 가 같은 URL(./motion.js · ./strings.js)로 부르므로 이름과 자리를 지킨다.
-      // resize-scene.js 도 번들 밖이다 — 타입만 legacy/js 에 두고 본체는 plugin/viewer/js 의 그 주소로 부른다.
+      // resize-scene 도 같은 URL(./motion.js · ./strings.js)로 부르므로 이름과 자리를 지킨다.
       // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
         external: separate,
@@ -76,12 +75,12 @@ try {
       minify: true,
       lib: { entry: join(runtimeDir, `${name}.ts`), formats: ['es'], fileName: () => `js/${name}.js` },
       rolldownOptions: {
-        external: id => id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`),
+        external: id => id.startsWith(legacy) || (id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`)),
         output: { paths: id => separate(id) ? separatePath(id) : id },
       },
     },
   });
-  // 한 장의 정적 껍데기(WorkspaceShell)를 index.html 에 미리 그린다 — resize-scene.js 와 접기 하네스가 페이지의 그 마크업을 쥔다.
+  // 한 장의 정적 껍데기(WorkspaceShell)를 index.html 에 미리 그린다 — resize-scene 과 접기 하네스가 페이지의 그 마크업을 쥔다.
   await build({
     configFile: false,
     root: source,

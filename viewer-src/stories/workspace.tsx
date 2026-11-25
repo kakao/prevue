@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
 import '../legacy/style.css';
 import '../legacy/resize.css';
-import { createResizeScene } from '../legacy/js/resize-scene.js';
+import { createResizeScene } from '../src/runtime/resize-scene';
 import type { Store } from '../src/workspace/view';
 import { examples } from './examples';
 import { pearlBoard } from './pearl';

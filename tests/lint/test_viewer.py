@@ -91,7 +91,7 @@ class ReactStyles(unittest.TestCase):
                 os.makedirs(os.path.dirname(full), exist_ok=True)
                 with open(full, "w") as f:
                     f.write("")
-            self.assertEqual(set(viewer.files(root)), set(paths[:4]) | {"plugin/viewer/js/resize-scene.js"})
+            self.assertEqual(set(viewer.files(root)), set(paths[:4]))
 
 
 class Color(unittest.TestCase):

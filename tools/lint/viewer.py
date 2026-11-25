@@ -497,10 +497,6 @@ def files(root):
             path = os.path.relpath(os.path.join(d, f), root)
             if f.endswith((".css", ".js", ".html", ".ts", ".tsx")) and not f.endswith(".d.ts"):
                 out.append(path)
-    # 번들 밖에 남긴 장면은 여전히 손으로 고치는 원본이다.
-    scene = VIEWER + "/js/resize-scene.js"
-    if os.path.isfile(os.path.join(root, scene)):
-        out.append(scene)
     return sorted(out)
 
 
