@@ -133,14 +133,14 @@ class Boards(
     ): FocusResult.On = ws.exclusive { ed ->
         val b = ws.now.board
         val adjusts = size != null || systemUi != null || edgeToEdge != null
-        if (adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
+        if (adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, by, size, systemUi, edgeToEdge))
         else focusOn(ed, index, by, size, systemUi, edgeToEdge)
     }
 
     suspend fun exitInteractive(index: Int, by: String): FocusResult.Off = ws.exclusive { ed -> focusOff(ed, index, by) }
 
-    private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge?): ShowResult =
-        liveService.overrideWithin(ed, size, systemUi, by, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
+    private suspend fun overridden(ed: WorkspaceEditor, by: String, size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge?): ShowResult =
+        liveService.overrideWithin(ed, by, size, systemUi, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
     suspend fun exitInteractiveCurrent(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
