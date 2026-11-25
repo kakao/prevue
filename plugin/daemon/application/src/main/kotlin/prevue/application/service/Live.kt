@@ -14,7 +14,7 @@ import prevue.application.domain.model.Miss
 import prevue.application.domain.model.Pointed
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.EdgeToEdge
-import prevue.application.domain.model.CardOverride
+import prevue.application.domain.model.CardAdjustment
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
 import prevue.application.domain.model.ScrollResult
@@ -168,7 +168,7 @@ class Live(
         val defaults = size in setOf(null, ScreenSize.Original) && systemUi in setOf(null, SystemUi.ANNOTATED) && edgeToEdge in setOf(null, EdgeToEdge.AUTO)
         if (now == null && defaults) return null
         val target = overrideTarget()
-        val next = (now?.takeIf { it.previewId == target.previewId } ?: CardOverride(target.previewId)).with(size, systemUi, edgeToEdge)
+        val next = ws.now.nextOverride(target.previewId, CardAdjustment(size, systemUi, edgeToEdge))
         if (next == now) return null
         ed.update { it.copy(cardOverride = next) }
         val sameBars = (next?.edgeToEdge ?: EdgeToEdge.AUTO) == (now?.edgeToEdge ?: EdgeToEdge.AUTO) &&
