@@ -21,3 +21,16 @@ export async function toBoard(viewer) {
   if (state.focus || state.busy) throw Error('데몬을 보드로 되돌리지 못했다');
   return state;
 }
+
+export async function openFile(viewer, name) {
+  const read = () => fetch(new URL('/viewer/state', viewer)).then(response => response.json());
+  if ((await read()).board?.file?.endsWith('/' + name)) return;
+  const { files } = await fetch(new URL('/preview-files.json', viewer)).then(response => response.json());
+  const file = files.find(f => f.rel.endsWith('/' + name));
+  if (!file) throw Error(`${name} 이 이 데몬의 프리뷰 파일에 없다`);
+  const opened = await fetch(new URL('/viewer/open', viewer), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: file.path }) }).then(response => response.json());
+  if (!opened.ok) throw Error(`${name} 을 열지 못했다: ${JSON.stringify(opened)}`);
+  let state = await read();
+  for (const end = Date.now() + 60_000; (!state.board?.file?.endsWith('/' + name) || state.busy) && Date.now() < end; state = await read()) await new Promise(resolve => setTimeout(resolve, 100));
+  if (!state.board?.file?.endsWith('/' + name) || state.busy) throw Error(`${name} 보드를 다 그리지 못했다`);
+}
