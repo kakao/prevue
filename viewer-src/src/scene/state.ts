@@ -22,7 +22,6 @@ const maybe = (root: ParentNode, s: string) => root.querySelector<HTMLElement>(s
 const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 export type Unit = ReturnType<typeof unitOf>;
 
-
 export function createState(root: HTMLElement, hooks: SceneHooks) {
   // 시제품에서 확정한 기하와 곡선을 유지하고, 그림 도착은 실제 디코드가 알린다.
   const $ = <T extends Element = HTMLElement>(id: string) => root.querySelector<T>(`#${id}`)!;
