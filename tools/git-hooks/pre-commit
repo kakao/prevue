@@ -10,6 +10,11 @@ SRC="skills-src dev-skills-src AGENTS.md"
 # shellcheck disable=SC2086
 [ -n "$(git diff --cached --name-only -- $SRC)" ] || exit 0
 
+# 경로를 준 커밋(git commit -- <경로>)은 임시 인덱스에서 돈다 — 담은 생성물이 실제 인덱스에 남지 않아 다음 커밋이 되돌린다
+case "${GIT_INDEX_FILE:-}" in
+  */next-index*) echo "pre-commit: 원본이 든 커밋은 경로를 주지 않는다 — git add 한 뒤 git commit 으로 다시 커밋한다" >&2; exit 1 ;;
+esac
+
 # shellcheck disable=SC2086
 LEFT="$(git diff --name-only -- $SRC; git ls-files --others --exclude-standard -- $SRC)"
 if [ -n "$LEFT" ]; then

@@ -76,7 +76,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것과 고지 사본의 어긋남은 릴리즈 PR의 `Verify`가 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤

@@ -6,7 +6,7 @@
 
 `dev-skills-src/coding.md`를 끝까지 읽고 diff의 신규 · 수정 줄에 댄다 — `coding.md` 전체가 코딩 표준이다.
 
-- **생성물만 바뀌고 원본이 그대로면 고칠 것이다** — 무엇이 생성물이고 원본인지는 생성 스크립트 머리말(`tools/gen-agents.sh` · `tools/plugin-copies.sh`)과 뷰어의 손 소스 · 생성물 구분(`viewer-src/README.md`)이 갖고, CI가 각각의 `--check`로 막는다.
+- **생성물만 바뀌고 원본이 그대로면 고칠 것이다** — 무엇이 생성물이고 원본인지는 생성 스크립트 머리말(`tools/gen-agents.sh` · `tools/plugin-copies.sh`)과 뷰어의 손 소스 · 생성물 구분(`viewer-src/README.md`)이 갖고, CI가 각각의 `--check`로 막는다(고지 사본은 릴리즈 PR에서만).
 - **결정(`D-<n>`)을 뒤집으면 물을 것이다** — 결정을 뒤집는 일은 사람이 정한다.
 
 반복 리뷰 지적 — 리뷰가 통과시킨 뒤 사람이 잡은 모양이다.
