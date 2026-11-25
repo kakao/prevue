@@ -145,6 +145,31 @@ else:
         self.assertEqual(state["errorKey"], "prep.stopped")
         self.assertEqual(len(self.log.read_text().splitlines()), 1)
 
+    def slow_server(self, seconds):
+        text = self.script.read_text()
+        slow = "    sys.stderr.write('slow boot\\n'); sys.stderr.flush(); time.sleep(%s)\n    server = ThreadingHTTPServer(" % seconds
+        self.script.write_text(text.replace("    server = ThreadingHTTPServer(", slow, 1))
+
+    def test_server_that_never_answers_ends_with_guidance_and_keeps_its_stderr(self):
+        self.slow_server(30)
+        process = self.launch("--module", ":ui", "--show", PREVUE_PREPARATION_WAIT=".5")
+        output, error = process.communicate(timeout=10)
+        self.assertEqual(process.returncode, 1, error)
+        result = json.loads(output)
+        self.assertFalse(result["ok"])
+        self.assertNotIn("Errno", result["error"])
+        self.assertIn("prevue show", result["error"])
+        self.assertIn("slow boot", Path(result["log"]).read_text())
+        self.assertFalse(self.log.exists())
+        self.assertEqual(list(self.home.glob("preparations/*")), [])
+
+    def test_server_that_answers_late_is_waited_for(self):
+        self.slow_server(.5)
+        process = self.launch("--module", ":ui", "--show", PREVUE_PREPARATION_WAIT="5")
+        output, error = process.communicate(timeout=10)
+        self.assertEqual(process.returncode, 0, error)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_private_state_and_parent_paths_are_not_static_files(self):
         process = self.launch("--module", ":ui", "--show")
         state, url = self.wait_state()

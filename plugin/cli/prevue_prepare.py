@@ -17,6 +17,9 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# 준비 서버가 server.json 을 쓰기까지 기다리는 시한 — 판올림 직후 첫 실행은 2초를 넘긴 적이 있다. 테스트가 환경 변수로 줄인다.
+SERVER_WAIT = float(os.environ.get("PREVUE_PREPARATION_WAIT") or 10)
+
 
 # 준비 서버가 내는 실패 이유는 뷰어 영어 사전(viewer/strings/en.json)에서 읽는다 — CLI 출력에도 실려 CLI 문장처럼 영어 한 벌이다(D-106).
 # 오류를 알리는 길에서 불리므로 사전을 못 읽어도 원래 실패를 가리지 않게 키를 그대로 돌려준다.
@@ -258,8 +261,11 @@ def run(mode, port, args):
     state = {"id": uuid.uuid4().hex, "started": round(time.time() * 1000), "file": file,
              "phase": "project" if mode == "warmup" else "environment", "owner": os.getpid(), "root": str(ROOT)}
     (directory / "state.json").write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
-    server = subprocess.Popen([sys.executable, __file__, "serve", str(directory)], start_new_session=True,
-                              stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log = home / "daemons" / "preparation-server.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("w") as server_log:
+        server = subprocess.Popen([sys.executable, __file__, "serve", str(directory)], start_new_session=True,
+                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=server_log)
     child = None
     opened = False
     url = ""
@@ -274,11 +280,14 @@ def run(mode, port, args):
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     try:
-        for _ in range(100):
-            if (directory / "server.json").exists():
-                break
+        deadline = time.monotonic() + SERVER_WAIT
+        while not (directory / "server.json").exists():
             if server.poll() is not None:
                 raise RuntimeError("Couldn't start the preparation screen server.")
+            if time.monotonic() > deadline:
+                server.terminate()
+                server.wait(2)
+                raise RuntimeError("The preparation screen server didn't respond within %g seconds. Run `prevue show` to try again." % SERVER_WAIT)
             time.sleep(.02)
         info = json.loads((directory / "server.json").read_text())
         url = "http://127.0.0.1:%d/?%s" % (info["port"], urlencode(dict(id=state["id"], **language())))
@@ -328,7 +337,9 @@ def run(mode, port, args):
         return code
     except (OSError, RuntimeError, ValueError) as error:
         failure(directory, str(error))
-        print(json.dumps({"ok": False, "error": str(error), "viewer": url, "opened": opened}, ensure_ascii=False))
+        if server.poll() is not None:
+            shutil.rmtree(directory, ignore_errors=True)
+        print(json.dumps({"ok": False, "error": str(error), "viewer": url, "opened": opened, "log": str(log)}, ensure_ascii=False))
         return 130 if interrupted else 1
 
 
