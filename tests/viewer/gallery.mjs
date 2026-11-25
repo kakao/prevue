@@ -315,6 +315,13 @@ try {
   push({ ...current, version: version++, screen: 'empty', tabs: [], board: null });
   await until(`document.querySelector('#galleryView').hidden===false`);
   ok(true, '탭을 다 닫으면 다시 갤러리');
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(`!!document.querySelector('.gsheet-shell')`);
+  await check(`(()=>{const as=document.querySelector('.gsheet-layer').getAnimations({subtree:true});return as.length>0&&as.every(a=>a.effect.getKeyframes().every(k=>!('transform' in k)&&!('clipPath' in k)))})()`, '움직임 줄이기에서는 시트가 옮겨 오지 않고 페이드만 한다');
+  await key('Escape');
+  await until(sheetGone);
+  await send('Emulation.setEmulatedMedia', { features: [] });
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {
