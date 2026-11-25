@@ -1,6 +1,6 @@
 # Entry point of Verify — calls the static checks, the build, the unit tests and the integration tests. Work PRs and the
 # release PR (develop → main) run the same Verify. On the release PR its verdict is one of the two merge conditions; the
-# other is the skill evaluation certificate (/ship). Version · tag · sync are checked by /ship before the version commit,
+# other is the skill evaluation certificate (/release). Version · tag · sync are checked by /release before the version commit,
 # and once more by the Release workflow (release.yml) before it tags.
 # The file keeps its name build.yml: the README badges link to it, and dispatching a branch needs this file on main.
 name: Verify

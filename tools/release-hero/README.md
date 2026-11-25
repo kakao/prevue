@@ -1,6 +1,6 @@
 # 릴리즈 히어로
 
-릴리즈 노트 맨 위 그림(`assets/release-<버전>.png`, 1280×820을 2배로)을 찍는 틀이다. 톤은 GitHub 소셜 프리뷰(OG)를 따르고(배경 · 그라데이션 · 형광펜 밑줄), 글꼴은 Google Sans다. 이 그림이 develop에 있으면 `/ship`이 그 판의 노트 맨 위에 건다 — 규약은 `dev-skills-src/release-notes.md`의 "판의 모양".
+릴리즈 노트 맨 위 그림(`assets/release-<버전>.png`, 1280×820을 2배로)을 찍는 틀이다. 톤은 GitHub 소셜 프리뷰(OG)를 따르고(배경 · 그라데이션 · 형광펜 밑줄), 글꼴은 Google Sans다. 이 그림이 develop에 있으면 `/release`가 그 판의 노트 맨 위에 건다 — 규약은 `dev-skills-src/release-notes.md`의 "판의 모양".
 
 바꾸는 것은 주소의 쿼리뿐이다: `kick`(칩 앞말, 예: Release) · `ver`(버전 — 둘이 제목 형광펜과 같은 살구색 칩 하나가 된다) · `l1` · `l2`(제목 두 줄, `l2`에 형광펜) · `shot`(창 캡처). 글꼴은 Google Fonts에서 읽으니 네트워크가 있어야 한다.
 

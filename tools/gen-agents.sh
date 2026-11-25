@@ -1,7 +1,7 @@
 #!/bin/sh
 # 원본 한 벌에서 에이전트별 생성물을 만든다. 원본은 셋이다.
 #   skills-src/      → plugin/skills/claude/ · plugin/skills/codex/   제품 — 플러그인에 실려 Prevue 사용자에게 간다
-#   dev-skills-src/  → .claude/skills/ · .agents/skills/ 이 저장소를 개발할 때만 — 플러그인에 싣지 않는다(implement · ship)
+#   dev-skills-src/  → .claude/skills/ · .agents/skills/ 이 저장소를 개발할 때만 — 플러그인에 싣지 않는다(implement · release)
 #   AGENTS.md        → CLAUDE.md                          세션 규칙 — Codex 는 원본을, Claude Code 는 생성물을 읽는다
 # 손으로 두 벌을 고치면 공통 내용이 조용히 어긋난다. 원본은 여기 하나고, 나머지는 생성물이다.
 #
