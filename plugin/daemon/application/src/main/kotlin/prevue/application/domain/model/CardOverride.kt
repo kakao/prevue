@@ -56,5 +56,3 @@ data class CardOverride(
             }
     }
 }
-
-data class CardAdjustment(val size: ScreenSize? = null, val systemUi: SystemUi? = null, val edgeToEdge: EdgeToEdge? = null)

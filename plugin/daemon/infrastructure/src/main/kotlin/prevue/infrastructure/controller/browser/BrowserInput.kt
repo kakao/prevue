@@ -38,9 +38,9 @@ internal class BrowserInput(
         }
     }
 
-    fun enterFocus(index: Int) = enqueue(GestureLine.Step.Kept { boards.focus(index, on = true, by = "viewer") })
+    fun enterFocus(index: Int) = enqueue(GestureLine.Step.Kept { boards.focus(index, by = "viewer") })
 
-    fun exitFocus() = enqueue(GestureLine.Step.Kept { boards.unfocus(by = "viewer") })
+    fun exitFocus() = enqueue(GestureLine.Step.Kept { boards.exitInteractiveCurrent(by = "viewer") })
 
     fun resize(size: ScreenSize) { sizes.trySend(size) }
 

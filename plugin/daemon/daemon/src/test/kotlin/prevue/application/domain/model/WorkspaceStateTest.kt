@@ -34,8 +34,7 @@ class WorkspaceStateTest {
     }
 
     @Test fun `같은 카드를 다시 선택하면 조정값을 유지하고 다른 카드를 선택하면 초기화한다`() {
-        val adjustment = CardAdjustment(small, SystemUi.OFF, EdgeToEdge.ON)
-        val adjusted = live.focusInteractive(1, adjustment).copy(focusAttachedAt = 9)
+        val adjusted = live.focusInteractive(1, small, SystemUi.OFF, EdgeToEdge.ON).copy(focusAttachedAt = 9)
 
         val same = adjusted.focusInteractive(1)
         assertEquals(CardOverride(specs[1].previewId, small, SystemUi.OFF, EdgeToEdge.ON), same.cardOverride)
@@ -45,5 +44,9 @@ class WorkspaceStateTest {
         assertEquals(0, other.board?.focus)
         assertEquals(specs[0] to ScreenSize.Original, other.shownTarget())
         assertNull(other.cardOverride)
+    }
+
+    @Test fun `인터랙티브를 껐다 켜면 앞서 준 조정 없이 시작한다`() {
+        assertNull(live.withoutInteractive().focusInteractive(1).cardOverride)
     }
 }

@@ -13,7 +13,6 @@ import prevue.application.domain.model.Board
 import prevue.application.domain.model.BoardFill
 import prevue.application.domain.model.CardResult
 import prevue.application.domain.model.FocusResult
-import prevue.application.domain.model.CardAdjustment
 import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.SystemUi
@@ -130,33 +129,36 @@ class Boards(
     }
 
     suspend fun focus(
-        index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null,
-    ): FocusResult = ws.exclusive { ed ->
+        index: Int, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null,
+    ): FocusResult.On = ws.exclusive { ed ->
         val b = ws.now.board
         val adjusts = size != null || systemUi != null || edgeToEdge != null
-        if (on && adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
-        else switchFocus(ed, index, on, by, CardAdjustment(size, systemUi, edgeToEdge))
+        if (adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
+        else focusOn(ed, index, by, size, systemUi, edgeToEdge)
     }
+
+    suspend fun exitInteractive(index: Int, by: String): FocusResult.Off = ws.exclusive { ed -> focusOff(ed, index, by) }
 
     private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge?): ShowResult =
         liveService.overrideWithin(ed, size, systemUi, by, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
-    suspend fun unfocus(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
+    suspend fun exitInteractiveCurrent(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
     internal suspend fun leave(ed: WorkspaceEditor, by: String) {
         val b = ws.now.board ?: return
-        switchFocus(ed, b.focus, on = false, by)
+        focusOff(ed, b.focus, by)
     }
 
-    private suspend fun switchFocus(
-        ed: WorkspaceEditor, index: Int, on: Boolean, by: String, adjustment: CardAdjustment = CardAdjustment(),
-    ): FocusResult {
-        require(on || adjustment == CardAdjustment()) { "크기 · 시스템 UI는 인터랙티브 카드에만 준다 — --on과 함께" }
+    private suspend fun focusOn(
+        ed: WorkspaceEditor, index: Int, by: String, size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge?,
+    ): FocusResult.On {
         val b = boardWith(index)
-        if (on) {
-            ed.update { it.focusInteractive(index, adjustment) }
-            return FocusResult.On(index, live.show(ed, b.cards[index].spec, by, LiveShot.Draw(attach = true)))
-        }
+        ed.update { it.focusInteractive(index, size, systemUi, edgeToEdge) }
+        return FocusResult.On(index, live.show(ed, b.cards[index].spec, by, LiveShot.Draw(attach = true)))
+    }
+
+    private suspend fun focusOff(ed: WorkspaceEditor, index: Int, by: String): FocusResult.Off {
+        val b = boardWith(index)
         ed.update { s -> s.copy(board = s.board?.focusOn(index)).withoutInteractive() }
         live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
         fill(by)

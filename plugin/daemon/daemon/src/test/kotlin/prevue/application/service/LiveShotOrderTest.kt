@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import prevue.application.domain.model.CardResult
-import prevue.application.domain.model.FocusResult
 import prevue.application.domain.model.ReloadResult
 import prevue.application.domain.model.ScreenSize
 import prevue.application.domain.model.ShowResult
@@ -62,7 +61,7 @@ class LiveShotOrderTest {
         val card = uc.workspace.now.board!!.cards[1].spec
         assertNotEquals(card.previewId, uc.workspace.now.current?.previewId)
 
-        val first = firstShown(uc) { runBlocking { uc.boards.focus(1, on = true, by = "test") } }
+        val first = firstShown(uc) { runBlocking { uc.boards.focus(1, by = "test") } }
         assertEquals(card.previewId, first.current?.previewId)
         assertSame((first.lastShown as ShowResult).shot, focusShot(uc))
     }
@@ -73,7 +72,7 @@ class LiveShotOrderTest {
         runBlocking { uc.tabs.showPreview("test") }
         assertSame(before, uc.workspace.now.board!!.focusCard.result)
 
-        runBlocking { uc.boards.focus(0, on = true, by = "test") }
+        runBlocking { uc.boards.focus(0, by = "test") }
         val r = runBlocking { uc.tabs.showPreview("test") }
         assertSame(r.shot, focusShot(uc))
     }
@@ -81,13 +80,13 @@ class LiveShotOrderTest {
     @Test fun `덮을 것이 없어 다시 그린 포커스 카드도 카드에 적고 스트림 주소는 그대로다`() {
         val uc = opened()
         val size = ScreenSize.Dp(320, 640)
-        runBlocking { uc.boards.focus(0, on = true, by = "test", size = size) }
+        runBlocking { uc.boards.focus(0, by = "test", size = size) }
         fx.compiler.ok = false
         assertTrue(runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") } is ReloadResult.CompileFailed)
         fx.compiler.ok = true
         val attached = uc.workspace.now.focusAttachedAt
 
-        val r = runBlocking { uc.boards.focus(0, on = true, by = "test", size = size) } as FocusResult.On
+        val r = runBlocking { uc.boards.focus(0, by = "test", size = size) }
         assertSame(r.result.shot, focusShot(uc))
         assertEquals(attached, uc.workspace.now.focusAttachedAt)
     }
