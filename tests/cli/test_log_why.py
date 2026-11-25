@@ -7,13 +7,15 @@ import unittest
 
 SCRIPT = (Path(__file__).resolve().parents[2] / "plugin/bin/prevue").read_text(encoding="utf-8")
 NOISE = re.search(r"^JVM_NOISE=.*$", SCRIPT, re.M).group(0)
-FUNCS = "\n".join(re.search(rf"^{n}\(\) \{{.*?^\}}|^{n}\(\) \{{.*?\}}$", SCRIPT, re.S | re.M).group(0)
+FUNCS = "\n".join(re.search(rf"^{n}\(\) \{{[^\n]*\}}$|^{n}\(\) \{{.*?^\}}", SCRIPT, re.S | re.M).group(0)
                   for n in ("log_failure", "log_why", "still_booting"))
 AOT_TAIL = """Temporary AOTConfiguration recorded: /h/aot/1.aot.tmp.config
 Launching child process /jdk/bin/java to assemble AOT cache /h/aot/1.aot.tmp using configuration /h/aot/1.aot.tmp.config
 Picked up JAVA_TOOL_OPTIONS: -Xmx2g
 Reading AOTConfiguration /h/aot/1.aot.tmp.config and writing AOTCache /h/aot/1.aot.tmp
 [0.5s][warning][aot] Skipping a/B: Failed verification
+[0.03s][error  ][aot] Unable to map shared spaces
+[1.0s][info   ][cds] x
 AOTCache creation is complete: /h/aot/1.aot.tmp 204144640 bytes
 Removed temporary AOT configuration file /h/aot/1.aot.tmp.config
 """
