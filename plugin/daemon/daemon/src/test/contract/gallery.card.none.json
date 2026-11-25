@@ -1,0 +1,9 @@
+{
+  "status": 404,
+  "schema": {
+    "ok": "boolean"
+  },
+  "example": {
+    "ok": false
+  }
+}

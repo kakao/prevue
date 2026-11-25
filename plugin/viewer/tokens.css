@@ -81,6 +81,7 @@
   /* outline은 입력 · 버튼처럼 경계가 보여야 하는 테두리라 3:1을 넘긴다. 구분선은 outline-variant(장식이라 대비 면제). */
   --outline: light-dark(var(--gray-light-8), var(--gray-dark-8));
   --outline-variant: light-dark(var(--gray-light-6), var(--gray-dark-7));
+  --outline-faint: color-mix(in srgb, var(--outline-variant) 55%, transparent);
   --primary: light-dark(var(--gray-light-11), var(--gray-dark-7));
   --on-primary: var(--gray-light-0);
   --focus-ring: var(--on-surface);

@@ -5,7 +5,14 @@
 :root {
   /* 아래 구분선 1px 를 더해 52 — 헤더 시안(layout/header.html 안 C)과 같은 높이다. */
   --bar-h: 51px;
-  --qo-w: 640px;   /* 팔레트 · 시작 화면 상자 폭(D-100) */
+  --qo-w: 640px;
+  --gallery-card-min: 300px;
+  --gallery-cover: 4 / 3;
+  --gallery-tall-w: 58%;
+  --gallery-wide-w: 86%;
+  --gallery-plate: 9 / 19.5;
+  --gallery-hover-scale: 1.02;
+  --gallery-breathe: .55;
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
   --rail-size: 200px;   /* 레일 자체의 폭 — 좁은 창에서는 본문을 밀지 않고(--rail-w 0) 이 폭 그대로 서랍으로 뜬다 */
@@ -317,8 +324,6 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 @keyframes sweep { to { left: 100%; } }
 
 /* ---------- 열린 파일 레일(D-98) ---------- */
-/* 헤더 아래 왼쪽 --rail-size. 지금 파일만 옅은 회색 판이 깔린다 — 하이라이트는 하나다. 파일이 없으면(시작 화면) "열린 파일 없음"과 "파일 열기"만 남는다.
-   작업 공간에서는 접힌다(D-99) — 단번에, 전환 없이(커지는 그림의 목적지가 움직이지 않게). */
 body.rail-on { --rail-w: var(--rail-size); }
 .rail { position: fixed; top: calc(var(--bar-h) + 1px); left: 0; bottom: 0; z-index: 16; width: var(--rail-size); display: flex; flex-direction: column; gap: var(--space-2);
         padding: var(--space-12) var(--space-8); overflow: hidden auto; scrollbar-width: none; background: var(--surface); border-right: 1px solid var(--outline-variant);
@@ -366,6 +371,14 @@ body.rail-on { --rail-w: var(--rail-size); }
 .rail-open:hover, .rail-open[aria-expanded="true"] { background: var(--state-hover); color: var(--on-surface); }
 .rail-open svg { flex: 0 0 auto; width: 18px; height: 18px; }
 .rail-open-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rail-all { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-6); width: 100%; height: var(--control-medium); margin-bottom: var(--space-12); padding: 0 var(--space-8);
+            border: 0; border-radius: var(--corner-medium); background: transparent; color: var(--on-surface-variant); font: var(--type-label-large); white-space: nowrap; text-align: left; cursor: pointer;
+            transition: background var(--duration-short4) var(--easing-standard), color var(--duration-short4) var(--easing-standard); }
+.rail-all:hover { background: var(--state-hover); color: var(--on-surface); }
+.rail-all.on { background: var(--primary-container); color: var(--on-surface); }
+.rail-all svg { flex: 0 0 auto; width: 18px; height: 18px; }
+.rail-all-n { color: var(--on-surface-variant); font: var(--type-label-small); }
+.rail-all:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 /* 단축키 표의 키캡(kbd)이 아니라 글자에 두른 테두리다 — 시안의 크기. */
 .rail-open kbd { display: inline; min-width: 0; height: auto; background: transparent; box-shadow: none; padding: 0 var(--space-4); border: 1px solid var(--outline-variant); border-radius: var(--corner-small); color: var(--on-surface-variant); font: var(--type-code-small); }
 /* 좁은 창(≤640px)에서는 레일이 보드를 밀지 않는다 — 360px 창에서 200px 를 먹으면 보드가 100px 남짓으로 줄어 묶음이 한 칸씩 쌓였다.
@@ -784,22 +797,57 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
       background: var(--surface-container); box-shadow: 0 0 0 1px var(--outline-variant);
       color: var(--on-surface); font: var(--type-label-medium); }
 
-/* ---------- 시작 화면(D-63 · D-100) ---------- */
-/* 열린 탭이 없을 때 — 빠른 열기의 상자가 막 없이 본문 가운데에 놓인다. 오류가 아니라 할 수 있는 일이다.
-   상자는 팔레트의 것을 옮겨 온 한 벌이라 줄 · 머리말 · 고른 줄이 팔레트와 같다. 떠 있지 않으니 그림자 대신 테만 두른다. */
-.start { display: flex; justify-content: center; padding-top: min(calc(var(--space-64) + var(--space-32) + var(--space-4)), 11vh); }   /* 낮은 창에서는 줄어든다 */
 .vacant { display: flex; flex-direction: column; align-items: center; gap: var(--space-6); padding: max(var(--space-24), 16vh) var(--space-16) 0; text-align: center; }
 .vacant-msg { margin: 0; font: var(--type-title-small); color: var(--on-surface); }
 .vacant-hint { margin: 0; font: var(--type-body-medium); color: var(--on-surface-variant); }
-.start-in { width: min(var(--qo-w), 100%); min-width: 0; }
-.start-lead { margin: 0 0 var(--space-16); text-align: center; color: var(--on-surface-variant); font: var(--type-body-medium); }
-.start .qo-col { box-shadow: 0 0 0 1px var(--outline-variant); }
-.start .qo-keys, .start .qo-esc { display: none; }
-/* 펼칠 때만 줄이 계단으로 떠오른다 — 팔레트와 같은 모션이다(새 모션을 만들지 않는다). */
-.start.enter .qo-field { animation: qo-rise var(--duration-medium2) var(--easing-standard) both; animation-delay: calc(var(--motion-stagger) * 2); }
-.start.enter .qo-row, .start.enter .qo-h { animation: qo-rise var(--duration-medium2) var(--easing-standard) both; animation-delay: calc(var(--motion-stagger) * (4 + var(--i, 0))); }
+
+.gallery-head { display: flex; align-items: baseline; gap: var(--space-8); margin-bottom: var(--space-12); }
+.gallery-title { margin: 0; font: var(--type-title-large); }
+.gallery-n { color: var(--on-surface-variant); font: var(--type-label-large); }
+.gallery-sort { margin-left: auto; color: var(--on-surface-variant); font: var(--type-label-medium); }
+.gallery-note { margin: var(--space-24) 0; color: var(--on-surface-variant); font: var(--type-body-medium); }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--gallery-card-min), 1fr)); gap: var(--space-24); }
+.gcard-slot, .gcard { min-width: 0; }
+.gcard-hit { display: flex; flex-direction: column; width: 100%; min-width: 0; padding: 0; overflow: hidden; border: 0; border-radius: var(--corner-large);
+             background: var(--surface); color: inherit; text-align: left; cursor: pointer;
+             box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1);
+             transition: box-shadow var(--duration-medium2) var(--easing-decelerate), transform var(--duration-medium2) var(--easing-decelerate); }
+.gcard-hit:hover { position: relative; z-index: 1; transform: translateY(calc(var(--space-4) * -1)) scale(var(--gallery-hover-scale));
+                   box-shadow: 0 0 0 1px var(--outline-variant), var(--elevation-4); }
+.gcard-hit:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.gcard-cover { position: relative; display: flex; aspect-ratio: var(--gallery-cover); overflow: hidden; padding: var(--space-20) var(--space-20) 0; background: var(--surface-container-high); }
+.gcard-stack { position: relative; display: block; margin-inline: auto; }
+.gcard-stack[data-o="tall"] { width: var(--gallery-tall-w); height: 100%; }
+.gcard-stack[data-o="wide"] { width: fit-content; max-width: var(--gallery-wide-w); height: fit-content; max-height: 100%; }
+.gcard-shot { display: block; width: 100%; height: 100%; overflow: hidden; border-radius: var(--corner-medium) var(--corner-medium) 0 0;
+              background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1); }
+.gcard-stack[data-o="wide"] .gcard-shot { height: auto; }
+.gcard-shot img { display: block; width: 100%; height: auto; opacity: 0; transition: opacity var(--duration-medium2) var(--easing-standard); }
+.gcard-shot img.in { opacity: 1; }
+.gcard-stack[data-o="wide"] .gcard-shot img { width: auto; max-width: 100%; }
+.gcard-ph { display: block; width: 100%; aspect-ratio: var(--gallery-plate); background: var(--surface-container);
+            animation: gcard-breathe var(--duration-long4) var(--easing-standard) infinite alternate; }
+.gcard-count { position: absolute; right: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center; gap: var(--space-4);
+               padding: 0 var(--space-6); border-radius: var(--corner-full); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint);
+               color: var(--on-surface-variant); font: var(--type-label-small); }
+.gcard-count svg { width: 12px; height: 12px; }
+.gcard-failed { flex: 1 1 auto; display: grid; place-items: center; margin-bottom: var(--space-20); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); }
+.gcard-body { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; padding: var(--space-16) var(--space-20); }
+.gcard-file { display: block; overflow: hidden; white-space: nowrap; font: var(--type-title-medium); }
+.gcard-pkgrow { display: flex; align-items: flex-start; gap: var(--space-4); min-width: 0; color: var(--on-surface-variant); }
+.gcard-pkgrow svg { flex: 0 0 auto; width: 14px; height: 14px; margin-top: var(--space-2); }
+.gcard-pkg { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-body-small); }
+.gcard-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); margin-top: var(--space-2); }
+.gcard-mod { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--space-6);
+             border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-small); }
+.gcard-info { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-medium); }
+@keyframes gcard-breathe { to { opacity: var(--gallery-breathe); } }
 @media (prefers-reduced-motion: reduce) {
-  .start.enter .qo-field, .start.enter .qo-row, .start.enter .qo-h { animation: fade var(--duration-short4) var(--easing-standard) both; animation-delay: 0s; }
+  .gcard-hit:hover { transform: none; }
+  .gcard-ph { animation: none; }
+}
+@media (max-width: 640px) {
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-12); }
 }
 
 /* ---------- 빠른 열기(D-100) — 화면 위 가운데 팔레트 ---------- */
@@ -816,8 +864,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .qo-sheet.on { opacity: 1; transform: none; }
 .qo-sheet.closing { transition-duration: var(--duration-short4); pointer-events: none; }   /* 흐려지는 동안 아래 카드를 누를 수 있다 */
 .qo-sheet .qo-col { box-shadow: var(--elevation-4); }
-.qo-sheet .qo-term { display: none; }
-/* 상자 — 팔레트와 시작 화면이 같은 상자다: 입력 · 결과 · 안내 줄. */
 .qo-col { display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-radius: var(--corner-large); background: var(--surface-container); }
 .qo-field { flex: none; display: flex; align-items: center; gap: var(--space-12); height: 56px; padding: 0 var(--space-16); border-bottom: 1px solid var(--outline-variant); cursor: text; color: var(--on-surface-variant); }
 .qo-field svg { flex: 0 0 auto; width: 16px; height: 16px; }
@@ -848,7 +894,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .qo-foot { padding: var(--space-8) var(--space-8) var(--space-4); font: var(--type-body-small); color: var(--on-surface-variant); }
 .qo-hint { flex: none; display: flex; gap: var(--space-16); padding: var(--space-12) var(--space-16); border-top: 1px solid var(--outline-variant); color: var(--on-surface-variant); font: var(--type-body-small); }
 .qo-keys { display: flex; gap: var(--space-16); }
-.qo-hint code { font: var(--type-code-small); }
 /* 열 때만 줄이 계단으로 떠오른다(apple.com 빠른 링크). 치는 동안 바뀌는 결과는 바로 바꾼다 — 타이핑마다 계단이 돌면 멀미가 난다. */
 .qo-sheet.enter .qo-field { animation: qo-rise var(--duration-medium2) var(--easing-standard) both; animation-delay: calc(var(--motion-stagger) * 2); }
 .qo-sheet.enter .qo-row, .qo-sheet.enter .qo-h { animation: qo-rise var(--duration-medium2) var(--easing-standard) both; animation-delay: calc(var(--motion-stagger) * (4 + var(--i, 0))); }

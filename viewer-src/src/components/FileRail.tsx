@@ -7,6 +7,8 @@ import { useMessages } from '../messages';
 import type { ViewerState } from '../state';
 import { FileIcon, kindOf } from './FileIcon';
 import { QuickOpenButton } from './QuickOpen';
+import { fit, fontOf, measure } from './fit';
+import { closeGallery } from '../gallery/layer';
 
 // 뷰어 탭(D-54) — 왼쪽 레일의 열린 파일 줄(D-98). 파일 보드가 있으면 하나여도 이 줄이 파일명을 말한다(H4). 열기 · 옮기기 · 닫기는 데몬이 정하고 여기는 그리고 의도만 보낸다.
 // 지금 파일은 글자가 아니라 그 아래 떠 있는 바탕(glider)이 가리키고, 옮기면 바탕이 미끄러진다.
@@ -27,50 +29,14 @@ let railTabs: Tab[] = [];
 export function stepTab(d: number) {
   const i = railTabs.findIndex(t => t.active);
   const t = railTabs[Math.max(0, Math.min(railTabs.length - 1, i + d))];
-  if (t && !t.active) post('/viewer/tab', { key: t.key });
+  if (t) { if (t.active) closeGallery(); else post('/viewer/tab', { key: t.key }); }
 }
 /** `1`~`9` — 그 번째 탭. */
 export function jumpTab(n: number) {
   const t = railTabs[n - 1];
-  if (t && !t.active) post('/viewer/tab', { key: t.key });
+  if (t) { if (t.active) closeGallery(); else post('/viewer/tab', { key: t.key }); }
 }
 export const tabCount = () => railTabs.length;
-
-const WORDS = /[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])|./g;
-/** 꼬리 — 뒤쪽 낱말(CamelCase) 몇 개. 형제 파일은 앞이 같고 뒤가 달라서, 뒤를 자르면 셋이 똑같이 `DrinkDetailSc…`가 됐다. */
-function tailOf(name: string) {
-  const words = name.match(WORDS) || [name];
-  let tail = '';
-  for (let i = words.length - 1; i > 0; i--) {
-    if (tail && (words[i] + tail).length > 12) break;
-    tail = words[i] + tail;
-  }
-  return tail.length >= name.length - 2 ? '' : tail;
-}
-
-let context: CanvasRenderingContext2D | null = null;
-const measure = (s: string, font: string) => { context ??= document.createElement('canvas').getContext('2d')!; context.font = font; return context.measureText(s).width; };
-const fontOf = (el: Element) => { const cs = getComputedStyle(el); return `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; };
-
-/** room 안에 드는 이름 — 넘치면 머리를 줄이고 꼬리는 남긴다(`Drink…OptionsHeader`). CSS 줄임은 끝만 자르고 글자 사이에 빈칸을 남긴다. */
-function fit(name: string, room: number, font: string) {
-  if (measure(name, font) <= room) return name;
-  // 좁으면 꼬리를 낱말 단위로 줄인다(`Dri…DetailScreen` → `Drink…Screen`) — 글자 단위로 깎으면 `P…ilScreen`가 된다.
-  const full = tailOf(name);
-  const words = full.match(WORDS) || [];
-  const tails = words.map((_, i) => words.slice(i).join(''));
-  for (const [tail, least] of [...tails.map(t => [t, 3] as const), [tails[tails.length - 1] || '', 1] as const]) {
-    for (let k = name.length - tail.length - 1; k >= least; k--) {
-      const s = name.slice(0, k) + '…' + tail;
-      if (measure(s, font) <= room) return s;
-    }
-  }
-  for (let j = 1; j < full.length; j++) {
-    const s = name[0] + '…' + full.slice(j);
-    if (measure(s, font) <= room) return s;
-  }
-  return name[0] + '…';
-}
 
 // 레일의 줄임 — 폭은 레일이 정하고(--rail-size, 좁은 창의 서랍도 같다) 줄마다 같다. 이름이 먼저다: 모듈 · 함수 표시는 이름이 남긴 칸을 갖되 MOD_MIN 까지는 지키고
 // 끝을 자른다. 이름은 남은 칸에서 꼬리를 남기고 가운데를 줄인다. 이름 · 표시 · 칸이 그대로인 줄은 건너뛴다.
@@ -137,7 +103,7 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
     className={['rt', tab.active && 'active', tab.stale && 'stale', entering && 'entering', leaving && 'leaving'].filter(Boolean).join(' ')}
     // 공유 세트는 그림이 Android 빌드라는 것을 툴팁에서도 말한다 — 표식만으로는 뜻을 모른다.
     title={kind === 'kmp' ? tab.title + '\n' + phrase('tabs.sharedTip') : tab.title}
-    onClick={() => { if (tab.active) closeRailDrawer(); else post('/viewer/tab', { key: tab.key }); }}
+    onClick={() => { if (tab.active) { closeRailDrawer(); closeGallery(); } else post('/viewer/tab', { key: tab.key }); }}
     // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇
     onAuxClick={e => { if (e.button === 1) { e.preventDefault(); close(); } }}>
     <FileIcon kind={kind} />
@@ -149,9 +115,9 @@ function RailRow({ tab, leaving, enter, onGone, observe }: {
   </div>;
 }
 
-export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement; open: HTMLElement; toggle: HTMLElement; scrim: HTMLElement };
+export type RailHosts = { rail: HTMLElement; list: HTMLElement; empty: HTMLElement; open: HTMLElement; all: HTMLElement; toggle: HTMLElement; scrim: HTMLElement };
 
-export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: ViewerState['screen'] | null; hosts?: RailHosts }) {
+export function FileRail({ tabs, screen, gallery = false, hosts }: { tabs: Tab[] | null; screen: ViewerState['screen'] | null; gallery?: boolean; hosts?: RailHosts }) {
   const { phrase } = useMessages();
   const { element: list, place } = useHost(hosts?.list);
   const [rail, setRail] = useState<HTMLElement | null>(null);
@@ -186,7 +152,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   const move = (slide: boolean) => {
     const g = glider.current, state = glide.current;
     if (!g || !list) return;
-    const el = list.querySelector<HTMLElement>('.rt.active:not(.leaving)');
+    const el = galleryRef.current ? null : list.querySelector<HTMLElement>('.rt.active:not(.leaving)');
     g.hidden = !el;
     if (!el) return;
     const y = el.offsetTop;
@@ -200,6 +166,8 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
     state.y = y;
     g.style.transform = `translateY(${y}px)`;
   };
+  const galleryRef = useRef(gallery);
+  galleryRef.current = gallery;
   const moveRef = useRef(move);
   moveRef.current = move;
   // 줄 높이가 움직이는 동안(열고 닫기) 바탕이 따라간다. 미끄러지는 중이면 그 전환을 끊지 않고 새 자리로 다시 겨눈다.
@@ -211,16 +179,17 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
   }, [railEl, list]);
   useEffect(() => {
     if (!hosts) return;
-    const { toggle, scrim, open } = hosts;
+    const { toggle, scrim, open, all } = hosts;
     setDrawer = (v: boolean) => { document.body.classList.toggle('rail-drawer', v); toggle.setAttribute('aria-expanded', String(v)); };
     const flip = () => setDrawer(!drawerOpen()), close = () => setDrawer(false);
     toggle.addEventListener('click', flip);
     scrim.addEventListener('click', close);
     open.addEventListener('click', close);
+    all.addEventListener('click', close);
     narrow.addEventListener('change', close);
     return () => {
       toggle.removeEventListener('click', flip); scrim.removeEventListener('click', close);
-      open.removeEventListener('click', close); narrow.removeEventListener('change', close);
+      open.removeEventListener('click', close); all.removeEventListener('click', close); narrow.removeEventListener('change', close);
     };
   }, [hosts]);
 
@@ -243,7 +212,7 @@ export function FileRail({ tabs, screen, hosts }: { tabs: Tab[] | null; screen: 
     activeKey.current = key;
     shown.current = on;
     move(moved);
-  }, [tabs, screen, railEl, list, emptyEl]);
+  }, [tabs, screen, gallery, railEl, list, emptyEl]);
 
   const rows = [...current.map(t => ({ tab: t, leaving: false })), ...leaving.map(t => ({ tab: t, leaving: true }))];
   const body = <>

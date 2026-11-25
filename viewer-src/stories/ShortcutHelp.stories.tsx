@@ -9,7 +9,7 @@ import { shortcutTable, type ShortcutActions } from '../src/shortcuts';
 // 디스패치와 같은 표를 그린다. 여기서는 키가 하는 일이 없다.
 const idle: ShortcutActions = {
   screen: () => 'board', tabCount: () => 0, helpOpen: () => true,
-  moveCursor() {}, openCursor() {}, exitFocus() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, stepTab() {}, jumpTab() {}, openQuickOpen() {}, toggleHelp() {},
+  moveCursor() {}, openCursor() {}, exitFocus() {}, openGallery() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, stepTab() {}, jumpTab() {}, openQuickOpen() {}, toggleHelp() {},
 };
 const meta = { title: '도움말/ShortcutHelp' } satisfies Meta;
 export default meta;

@@ -82,6 +82,12 @@ class ContractTest {
         runBlocking { uc.watchers.indexPreviewFiles() }
         check("preview-files", get("/preview-files.json"))
         check("previews.of", post("/previews", mapOf("of" to "lib.Badge")))
+        val card = "/gallery/card?file=" + java.net.URLEncoder.encode(f, UTF_8)
+        check("gallery.card", get(card))
+        fx.renderer.asideFails = "그리지 못했다"
+        check("gallery.card.failed", get(card))
+        fx.renderer.asideFails = null
+        check("gallery.card.none", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("previews.of.none", post("/previews", mapOf("of" to "Nope")))
         check("card.cached", post("/card", mapOf("index" to 1)))
         check("card.force", post("/card", mapOf("index" to 1, "force" to true)))
