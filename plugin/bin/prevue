@@ -62,13 +62,21 @@ any_repo_daemons() {  # <저장소 키>
 # 데몬이 끝나며 남기는 줄(Main.kt). 로그는 시작마다 새로 쓰고, 자기를 다시 띄우는 데몬(NFR-4)은 이 줄 없이 끝난다 —
 # 그래서 이 줄이 있으면 죽은 것이고, pid 를 보면 새 JVM 이 pid 파일을 고쳐 쓰기 전의 틈을 죽음으로 읽는다.
 log_failure() { grep -E '^\[prevue [0-9:]+\] (데몬 실패|데몬 시작·실행 실패|포트를 열지 못했다)' "$LOG" 2>/dev/null | tail -1; }
+# JVM 이 끝나며 AOT 캐시를 굽고 남기는 줄 — 데몬이 살았든 죽었든 이유가 아니다. 같은 로그에 지는 쪽 JVM 도 쓴다.
+JVM_NOISE='^\(Temporary AOTConfiguration\|Launching child process\|Picked up JAVA_TOOL_OPTIONS\|Reading AOTConfiguration\|AOTCache creation\|Removed temporary AOT\|\[[0-9.]*s\]\[[a-z]*\] *\[\(aot\|cds\)\)'
 # 죽은 이유. 데몬의 실패 줄을 먼저 본다 — 첫 실행이면 JVM 이 그 뒤에 AOT 캐시를 구운 줄을 더 붙인다.
 # 그런 줄이 없으면 스택 프레임을 걷어낸 마지막 줄이 대개 그 이유다. JSON 문자열에 넣으므로 제어 문자를 걷는다.
 log_why() {
   local why
   why="$(log_failure)"
-  [ -n "$why" ] || why="$(grep -v '^[[:space:]]*at ' "$LOG" 2>/dev/null | grep -v '^[[:space:]]*$' | tail -1)"
+  [ -n "$why" ] || why="$(grep -v "$JVM_NOISE" "$LOG" 2>/dev/null | grep -v '^[[:space:]]*at ' | grep -v '^[[:space:]]*$' | tail -1)"
   printf '%s' "$why" | tr '\t' ' ' | LC_ALL=C tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+# 기록된 데몬 프로세스가 아직 살아 있고 실패 줄도 없다 — 죽은 것이 아니라 아직 뜨는 중이다(첫 실행은 AOT 학습 · 콜드 기동으로 느리다).
+# kill -0 이 EPERM(샌드박스)이면 살았는지 모르므로 뜨는 중으로 치지 않는다.
+still_booting() {
+  local p; p="$(cat "$DAEMON_DIR/daemon-$PORT.pid" 2>/dev/null)"
+  [ -n "$p" ] && [ -z "$(log_failure)" ] && kill -0 "$p" 2>/dev/null
 }
 # 그 저장소에서 마지막으로 show·start 를 받은 데몬. 두 앱이 함께 담은 모듈(core:ui)이나 파일을 안 가리킨 명령(status·wait)이 그리로 간다.
 mark_recent() { [ -n "${KEY:-}" ] && printf '%s' "$PORT" > "$DAEMON_DIR/recent-$KEY" 2>/dev/null; return 0; }
@@ -1029,6 +1037,10 @@ except OSError:
     for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; [ -n "$(log_failure)" ] && break; sleep 0.5; done
     # JVM 은 맞지 않는 캐시를 알리고 캐시 없이 뜬다 — 지워 두면 다음 시작이 다시 학습한다
     [ -n "$AOT_CACHE" ] && grep -E '\[(error|warning) *\]\[(aot|cds)' "$LOG" 2>/dev/null | grep -qv 'Preload Warning' && rm -f "$AOT_CACHE"
+    # 30초 안에 못 떴어도 프로세스가 살아 있고 실패 줄이 없으면 더 기다린다 — 실패로 답한 뒤 데몬이 떠 있던 사례가 있다
+    if ! curl -sf -m 2 "$BASE/status" >/dev/null && still_booting; then
+      for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; still_booting || break; sleep 0.5; done
+    fi
     if ! curl -sf -m 2 "$BASE/status" >/dev/null; then
       # 경로만 주고 "읽어 봐라"로 끝내면 이유가 한 겹 아래에 묻힌다
       WHY="$(log_why)"
