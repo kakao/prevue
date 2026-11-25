@@ -233,8 +233,6 @@ shared_toolchain() {
     && [ -d "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/$mv" ]
 }
 
-# 툴체인을 굽는다. 컴파일은 Gradle 안에서 한다 — Kotlin 데몬은 JDK 를 따지지 않고 재사용돼, 대상 프로젝트가 JDK 17 로 띄운
-# 데몬에 붙으면 Metro 플러그인(class 65)을 못 읽는다(이슈 #315). 명령줄 -P 는 ~/.gradle/gradle.properties 보다 우선한다.
 bake_toolchain() {
   (cd "$ROOT/daemon" && ./gradlew installPrevue -q -Pkotlin.compiler.execution.strategy=in-process "$@")
 }

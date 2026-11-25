@@ -73,8 +73,10 @@ class Baked(Case):
                        ".gradle/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/" + v["metro"])
 
     def traced(self, path):
-        """부르면 받은 인자를 흔적 파일에 남기는 실행 파일. 흔적 경로를 돌려준다."""
+        """부르면 흔적 파일을 남기는 실행 파일. 흔적 경로를 돌려준다."""
         trace = path + ".ran"
+        if os.path.exists(trace):
+            os.remove(trace)
         with open(path, "w") as f:
             f.write('#!/bin/sh\necho "$*" > "%s"\n' % trace)
         os.chmod(path, 0o755)
