@@ -19,7 +19,7 @@ class DeviceInsetDeliveryTest {
         uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
         uc.workspace.awaitBoardFilled()
         val first = ScreenSize.Device(DeviceModel.GALAXY_S26)
-        uc.boards.focus(0, true, "test", first)
+        uc.boards.focus(0, "test", first)
         for (d in DeviceModel.entries.flatMap { it.postures }) {
             uc.live.resize(d, "test")
             val state = uc.status.read()
@@ -45,7 +45,7 @@ class DeviceInsetDeliveryTest {
         val uc = fx.graph()
         uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
         uc.workspace.awaitBoardFilled()
-        uc.boards.focus(0, true, "test", systemUi = SystemUi.OFF)
+        uc.boards.focus(0, "test", systemUi = SystemUi.OFF)
         uc.live.resize(ScreenSize.Device(DeviceModel.IPHONE_DUO), "test")
         val before = uc.workspace.now.cardOverride
         val e = assertThrows<IllegalArgumentException> { uc.live.setSystemUi(SystemUi.OFF, "test") }
@@ -61,7 +61,7 @@ class DeviceInsetDeliveryTest {
         val uc = fx.graph()
         uc.tabs.openPreview(fx.file.path, null, emptyMap(), "test")
         uc.workspace.awaitBoardFilled()
-        uc.boards.focus(0, true, "test", ScreenSize.Device(DeviceModel.GALAXY_S26))
+        uc.boards.focus(0, "test", ScreenSize.Device(DeviceModel.GALAXY_S26))
         val device = ScreenSize.Device(DeviceModel.IPHONE_DUO, folded = true)
         fx.renderer.exceptions.add("인셋 적용 실패")
         val result = uc.live.resize(device, "test")!!

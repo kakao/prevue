@@ -34,7 +34,7 @@ class BoardAsideFillTest {
             it.workspace.awaitBoardFilled()
         }
 
-    private fun TestGraph.focus(size: ScreenSize? = null) = runBlocking { boards.focus(0, on = true, by = "test", size = size) }
+    private fun TestGraph.focus(size: ScreenSize? = null) = runBlocking { boards.focus(0, by = "test", size = size) }
 
     private fun TestGraph.save() = runBlocking { hotReload.applySave(listOf(fx.file), "test") }
 
@@ -71,7 +71,7 @@ class BoardAsideFillTest {
         val b = uc.workspace.now.board!!
         assertFalse(b.cards[1].fresh(b.gen))
 
-        runBlocking { uc.boards.unfocus("test") }
+        runBlocking { uc.boards.unfocusCurrent("test") }
         uc.workspace.awaitBoardFilled()
         assertEquals(emptyList<Any>(), cardAsides())
     }
@@ -153,7 +153,7 @@ class BoardAsideFillTest {
         uc.workspace.awaitBoardFilled()
         fx.renderer.shown.clear()
 
-        runBlocking { uc.boards.unfocus("test") }
+        runBlocking { uc.boards.unfocusCurrent("test") }
         uc.workspace.awaitBoardFilled()
         assertEquals(listOf(uc.cardSpecs()[0]), fx.renderer.shown.toList(), "나갈 때 첫 화면만 다시 그린다")
     }

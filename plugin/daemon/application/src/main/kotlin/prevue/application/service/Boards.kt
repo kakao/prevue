@@ -129,22 +129,20 @@ class Boards(
     }
 
     suspend fun focus(
-        index: Int, on: Boolean, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null,
-    ): FocusResult = ws.exclusive { ed ->
+        index: Int, by: String, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null,
+    ): FocusResult.On = ws.exclusive { ed ->
         val b = ws.now.board
         val adjusts = size != null || systemUi != null || edgeToEdge != null
-        require(on || !adjusts) { "크기 · 시스템 UI는 인터랙티브 카드에만 준다 — --on과 함께" }
-        when {
-            !on -> focusOff(ed, index, by)
-            adjusts && b != null && ws.now.interactive && b.focus == index -> FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
-            else -> focusOn(ed, index, by, size, systemUi, edgeToEdge)
-        }
+        if (adjusts && b != null && ws.now.interactive && b.focus == index) FocusResult.On(index, overridden(ed, size, systemUi, by, edgeToEdge))
+        else focusOn(ed, index, by, size, systemUi, edgeToEdge)
     }
+
+    suspend fun unfocus(index: Int, by: String): FocusResult.Off = ws.exclusive { ed -> focusOff(ed, index, by) }
 
     private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge?): ShowResult =
         liveService.overrideWithin(ed, size, systemUi, by, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
-    suspend fun unfocus(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
+    suspend fun unfocusCurrent(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
     internal suspend fun leave(ed: WorkspaceEditor, by: String) {
         val b = ws.now.board ?: return
@@ -153,13 +151,13 @@ class Boards(
 
     private suspend fun focusOn(
         ed: WorkspaceEditor, index: Int, by: String, size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge?,
-    ): FocusResult {
+    ): FocusResult.On {
         val b = boardWith(index)
         ed.update { it.focusInteractive(index, size, systemUi, edgeToEdge) }
         return FocusResult.On(index, live.show(ed, b.cards[index].spec, by, LiveShot.Draw(attach = true)))
     }
 
-    private suspend fun focusOff(ed: WorkspaceEditor, index: Int, by: String): FocusResult {
+    private suspend fun focusOff(ed: WorkspaceEditor, index: Int, by: String): FocusResult.Off {
         val b = boardWith(index)
         ed.update { s -> s.copy(board = s.board?.focusOn(index)).withoutInteractive() }
         live.fresh(ed, b.cards[index].spec, by)?.let { live.recordFocus(ed, it) }
