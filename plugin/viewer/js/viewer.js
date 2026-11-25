@@ -2914,7 +2914,7 @@ function ya({ file: e, text: t, view: n, closing: r, onClose: i, onClosed: a, on
 		if (_) return;
 		let t = !0;
 		return j(e.path).then((e) => e ?? { sheets: [] }, () => ({ sheets: [] })).then((e) => {
-			t && d(e);
+			t && d(e), e.sheets.some((e) => e.image) && Xe();
 		}), () => {
 			t = !1;
 		};

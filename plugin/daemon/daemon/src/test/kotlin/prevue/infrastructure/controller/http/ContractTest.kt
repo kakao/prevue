@@ -80,6 +80,7 @@ class ContractTest {
         check("preview-files.pending", get("/preview-files.json"))
         check("previews.of.pending", post("/previews", mapOf("of" to "Badge")))
         runBlocking { uc.watchers.indexPreviewFiles() }
+        prevue.daemon.fake.awaitUntil("보드가 그린 앞 장이 갤러리 캐시에 남기") { uc.galleryShots.kept(File(f)) != null }
         check("preview-files", get("/preview-files.json"))
         check("previews.of", post("/previews", mapOf("of" to "lib.Badge")))
         val card = "/gallery/card?file=" + java.net.URLEncoder.encode(f, UTF_8)

@@ -4,6 +4,7 @@ import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { useMessages } from '../messages';
 import type { PreviewFile } from '../match';
 import { keptOf, stale, stemOf } from '../gallery/cards';
+import { galleryFilesChanged } from '../gallery/layer';
 import type { CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
 
@@ -141,7 +142,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   useEffect(() => {
     if (cached) return;
     let live = true;
-    fetchGallerySheet(file.path).then(a => a ?? { sheets: [] }, () => ({ sheets: [] })).then(a => { if (live) setAnswer(a); });
+    fetchGallerySheet(file.path).then(a => a ?? { sheets: [] }, () => ({ sheets: [] })).then(a => { if (live) setAnswer(a); if (a.sheets.some(s => s.image)) galleryFilesChanged(); });
     return () => { live = false; };
   }, [file.path]);
 

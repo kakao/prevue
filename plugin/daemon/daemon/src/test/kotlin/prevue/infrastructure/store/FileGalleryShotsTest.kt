@@ -4,6 +4,9 @@ import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.file.Files
 import javax.imageio.ImageIO
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -69,6 +72,15 @@ class FileGalleryShotsTest {
         assertNull(s.kept(File("/r/Old.kt")))
         assertNotNull(s.kept(File("/r/New.kt")))
         assertTrue(root.walk().filter { it.isFile }.sumOf { it.length() } <= s.maxBytes)
+    }
+
+    @Test fun `같은 장을 동시에 남겨도 온전한 그림 하나만 남는다`() = runBlocking {
+        val s = store()
+        val outs = (0 until 8).map { out("C$it", 1080, 2400) }
+        outs.map { o -> async(Dispatchers.IO) { s.keep(File("/r/C.kt"), 1, 0, o) } }.awaitAll()
+        val shot = s.kept(File("/r/C.kt"))!!.shots.single()
+        assertEquals(600 to 1333, ImageIO.read(s.image(shot.id)).let { it.width to it.height })
+        assertEquals(listOf("0.png", "shots.json"), s.image(shot.id)!!.parentFile.list()!!.sorted())
     }
 
     @Test fun `모르는 id 는 그림이 없다`() {

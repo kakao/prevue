@@ -398,14 +398,19 @@ try {
 
   const sheetsBefore = sheetAsked.length;
   await evaluate(`document.querySelector('${slot(fresh)}').scrollIntoView({block:'center'})`);
+  await pause(200);
+  await evaluate(watchFrames);
   await click(`${slot(fresh)} .gcard-hit`);
   await until(sheetUp);
   await until(`document.querySelectorAll('.gsheet-shot img').length===3`);
-  await pause(300);
+  for (let i = 0; i < 100 && await evaluate('__frames') < 90; i++) await pause(30);
+  ok((await evaluate('__out')).length === 0, `캐시 장 셋으로 여는 동안 시트 내용이 틀 밖으로 나가지 않는다 ${(await evaluate('__out')).slice(0, 3)}`);
   ok(sheetAsked.length === sheetsBefore, '앞 장이 모두 캐시에 있으면 시트는 그리라고 묻지 않는다');
   await check(`[...document.querySelectorAll('.gsheet-cap')].map(c=>c.textContent).join()==='Dark,Long'`, '캐시 장의 이름표도 함수 이름에서 짓는다');
+  await evaluate(watchFrames);
   await key('Escape');
   await until(sheetGone);
+  ok((await evaluate('__out')).length === 0, `캐시 장 셋으로 닫는 동안 시트 내용이 틀 밖으로 나가지 않는다 ${(await evaluate('__out')).slice(0, 3)}`);
   await evaluate(`document.querySelector('${slot(old)}').scrollIntoView({block:'center'})`);
   await click(`${slot(old)} .gcard-hit`);
   await until(sheetUp);

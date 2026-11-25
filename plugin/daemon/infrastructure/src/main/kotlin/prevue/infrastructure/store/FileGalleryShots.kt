@@ -37,7 +37,7 @@ public class FileGalleryShots(
         val image = out.image?.takeIf { out.ok } ?: throw IOException("${out.preview.previewId} 그림이 없다")
         val key = keyOf(file)
         val dir = File(root, key).apply { mkdirs() }
-        val tmp = File(dir, ".$index.png.tmp")
+        val tmp = Files.createTempFile(dir.toPath(), ".$index-", ".png.tmp").toFile()
         val (w, h) = shrink(image, out.width, out.height, tmp)
         lock.withLock {
             Files.move(tmp.toPath(), File(dir, "$index.png").toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
@@ -89,7 +89,7 @@ public class FileGalleryShots(
                 mapOf("i" to it.index, "name" to it.name, "variant" to it.variant, "w" to it.width, "h" to it.height, "at" to it.drawnAt)
             },
         )
-        val tmp = File(dir, ".$META.tmp")
+        val tmp = Files.createTempFile(dir.toPath(), ".$META-", ".tmp").toFile()
         tmp.writeText(Json.str(json))
         Files.move(tmp.toPath(), File(dir, META).toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
     }
