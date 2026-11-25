@@ -88,8 +88,6 @@ class ContractTest {
         fx.renderer.asideFails = "그리지 못했다"
         check("gallery.card.failed", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.srcRoot, "demo/Badges.kt").path, UTF_8)))
         fx.renderer.asideFails = null
-        check("gallery.sheet", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(f, UTF_8)))
-        check("gallery.sheet.none", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("gallery.card.none", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("previews.of.none", post("/previews", mapOf("of" to "Nope")))
         check("card.cached", post("/card", mapOf("index" to 1)))
@@ -348,7 +346,7 @@ class ContractTest {
 
     /** 예시에서 매번 바뀌는 것을 걷는다 — 문서로 읽힐 것이라 diff가 시끄러우면 안 된다. */
     private fun normalize(v: Any?): Any? = when (v) {
-        is String -> v.replace(fx.root.path, "<repo>").replace(fx.root.parent, "<tmp>").replace(fx.root.name, "<repo-name>").replace(Regex("""\?t=\d+"""), "?t=<t>")
+        is String -> v.replace(fx.root.path, "<repo>").replace(fx.root.parent, "<tmp>").replace(fx.root.name, "<repo-name>").replace(Regex("""\?t=\d+"""), "?t=<t>").replace(Regex("""/gallery/shot/[0-9a-f]{16}-"""), "/gallery/shot/<key>-")
             .replace(Regex("""\d{4}-\d\d-\d\dT[\d:.]+Z"""), "<at>").replace("127.0.0.1:$port", "127.0.0.1:<port>")
             .replace(Regex("""\b\d\d:\d\d:\d\d\b"""), "<hh:mm:ss>").replace(Regex("""\b\d+(ms|(\.\d+)?s)\b"""), "<took>")
         is Map<*, *> -> v.entries.associate { (k, x) ->
@@ -386,5 +384,5 @@ class ContractTest {
 /** 실행마다 달라지는 측정값. 고정값(`atMs` · `gapMs` · `heapMaxMb`)과 음수 표지(`firstChangeMs: -1`)는 그대로 둔다. */
 private val VOLATILE = setOf(
     "bootstrapMs", "burstMs", "coldMs", "encodeMs", "renderMs", "taskMs", "tickMs", "totalMs", "waitedMs", "ms",
-    "heapUsedMb", "version", "mtime",
+    "heapUsedMb", "version", "mtime", "at",
 )

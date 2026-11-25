@@ -27,16 +27,18 @@
         ],
         "rel": "string",
         "shots": {
-          "items": [
+          "front": [
             {
-              "at": "number",
-              "h": "number",
+              "failure": "null",
               "i": "number",
-              "id": "string",
+              "image": {
+                "at": "number",
+                "h": "number",
+                "url": "string",
+                "w": "number"
+              },
               "name": "string",
-              "url": "string",
-              "variant": "null",
-              "w": "number"
+              "variant": "null"
             }
           ],
           "sheets": "number",
@@ -88,26 +90,30 @@
         ],
         "shots": {
           "sheets": 2,
-          "items": [
+          "front": [
             {
               "i": 0,
-              "id": "fdab69354228da4d-0",
               "name": "Card0",
               "variant": null,
-              "url": "/gallery/shot/fdab69354228da4d-0.png?t=<t>",
-              "w": 100,
-              "h": 100,
-              "at": 1795592218406
+              "image": {
+                "url": "/gallery/shot/<key>-0.png?t=<t>",
+                "w": 100,
+                "h": 100,
+                "at": 0
+              },
+              "failure": null
             },
             {
               "i": 1,
-              "id": "fdab69354228da4d-1",
               "name": "Card1",
               "variant": null,
-              "url": "/gallery/shot/fdab69354228da4d-1.png?t=<t>",
-              "w": 100,
-              "h": 100,
-              "at": 1795592218415
+              "image": {
+                "url": "/gallery/shot/<key>-1.png?t=<t>",
+                "w": 100,
+                "h": 100,
+                "at": 0
+              },
+              "failure": null
             }
           ]
         }

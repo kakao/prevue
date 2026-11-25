@@ -2,8 +2,9 @@
 // 이어진 글자에 가산점을 준다. 화면과 데이터를 모르는 순수 함수라 매칭 규칙은 여기 한 곳에 있다.
 
 /** 데몬의 `/preview-files.json` 한 줄(계약 preview-files.json). */
-export type KeptShot = { i: number; id: string; name: string; variant: string | null; url: string; w: number; h: number; at: number };
-export type PreviewFile = { path: string; rel: string; module: string; mtime: number; functions: string[]; shots?: { sheets: number; items: KeptShot[] } | null };
+import type { CardAnswer } from './gallery/queue';
+
+export type PreviewFile = { path: string; rel: string; module: string; mtime: number; functions: string[]; shots?: CardAnswer | null };
 /** 목록의 한 파일 — 파일명을 붙이고, 디렉터리는 처음 견줄 때 적어 둔다. */
 export type FileEntry = PreviewFile & { name: string; dir?: string };
 export type FileMatch = { score: number; name: Set<number>; fns: Map<string, Set<number>> };

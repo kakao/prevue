@@ -59,7 +59,7 @@ class FileGalleryShotsTest {
         s.keep(File("/r/A.kt"), 3, 2, out("A2", 100, 200))
         val first = s.keep(File("/r/A.kt"), 1, 0, out("A0", 100, 200))
         assertEquals(listOf(0), s.kept(File("/r/A.kt"))!!.shots.map { it.index })
-        assertNull(s.image(first.id.dropLast(1) + "2"))
+        assertEquals(listOf("0.png", "shots.json"), s.image(first.id)!!.parentFile.list()!!.sorted())
     }
 
     @Test fun `상한을 넘으면 오래 쓴 파일부터 통째로 지운다`() = runBlocking {
@@ -67,11 +67,11 @@ class FileGalleryShotsTest {
         s.keep(File("/r/Old.kt"), 1, 0, out("Old", 300, 600))
         File(root.listFiles()!!.single(), "shots.json").setLastModified(1_000)
         val one = root.walk().filter { it.isFile }.sumOf { it.length() }
-        s.maxBytes = one + one / 2
-        s.keep(File("/r/New.kt"), 1, 0, out("New", 300, 600))
-        assertNull(s.kept(File("/r/Old.kt")))
-        assertNotNull(s.kept(File("/r/New.kt")))
-        assertTrue(root.walk().filter { it.isFile }.sumOf { it.length() } <= s.maxBytes)
+        val capped = store(maxBytes = one + one / 2)
+        capped.keep(File("/r/New.kt"), 1, 0, out("New", 300, 600))
+        assertNull(capped.kept(File("/r/Old.kt")))
+        assertNotNull(capped.kept(File("/r/New.kt")))
+        assertTrue(root.walk().filter { it.isFile }.sumOf { it.length() } <= one + one / 2)
     }
 
     @Test fun `같은 장을 동시에 남겨도 온전한 그림 하나만 남는다`() = runBlocking {
@@ -81,6 +81,15 @@ class FileGalleryShotsTest {
         val shot = s.kept(File("/r/C.kt"))!!.shots.single()
         assertEquals(600 to 1333, ImageIO.read(s.image(shot.id)).let { it.width to it.height })
         assertEquals(listOf("0.png", "shots.json"), s.image(shot.id)!!.parentFile.list()!!.sorted())
+    }
+
+    @Test fun `파일이 사라진 장은 남은 것으로 치지 않는다`() = runBlocking {
+        val s = store()
+        val shot = s.keep(File("/r/A.kt"), 2, 0, out("A0", 100, 200))
+        s.keep(File("/r/A.kt"), 2, 1, out("A1", 100, 200))
+        s.image(shot.id)!!.delete()
+        assertEquals(listOf(1), s.kept(File("/r/A.kt"))!!.shots.map { it.index })
+        assertNull(s.image(shot.id))
     }
 
     @Test fun `모르는 id 는 그림이 없다`() {

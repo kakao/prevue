@@ -1,15 +1,27 @@
 {
   "status": 200,
   "schema": {
-    "failure": "string",
-    "image": "null",
-    "ok": "boolean",
+    "front": [
+      {
+        "failure": "string",
+        "i": "number",
+        "image": "null",
+        "name": "string",
+        "variant": "null"
+      }
+    ],
     "sheets": "number"
   },
   "example": {
-    "ok": false,
-    "sheets": 2,
-    "image": null,
-    "failure": "그리지 못했다"
+    "sheets": 1,
+    "front": [
+      {
+        "i": 0,
+        "name": "BadgePreview",
+        "variant": null,
+        "image": null,
+        "failure": "그리지 못했다"
+      }
+    ]
   }
 }

@@ -1,4 +1,5 @@
 // 데몬을 아는 유일한 파일. 나머지 모듈은 여기를 지나서만 데몬과 말한다.
+import type { CardAnswer } from '../gallery/queue';
 import type { PreviewFile } from '../match';
 import type { Message, ViewerState } from '../state';
 
@@ -19,12 +20,8 @@ export const fetchProjectFiles = (): Promise<{ files?: Record<string, string[]> 
 /** 빠른 열기의 목록(D-56) — 이 데몬이 열 수 있는 프리뷰 파일. 열 때마다 새로 받는다. */
 export const fetchPreviewFiles = (): Promise<{ ready: boolean; files: PreviewFile[] }> => fetch("/preview-files.json").then(r => r.json());
 
-export const fetchGalleryCard = (path: string): Promise<{ ok: boolean; sheets: number; image: { url: string; w: number; h: number; at?: number } | null; failure: Message | null } | null> =>
+export const fetchGalleryCard = (path: string): Promise<CardAnswer | null> =>
   fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
-
-export type GallerySheetAnswer = { sheets: Array<{ name: string; variant: string | null; image: { url: string; w: number; h: number; at?: number } | null; failure: Message | null }> };
-export const fetchGallerySheet = (path: string): Promise<GallerySheetAnswer | null> =>
-  fetch(`/gallery/sheet?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
 
 /** 데몬 이벤트(SSE). 상태(state)와 일회성 알림(ui)만 온다(D-42). */
 export function connect({ open, state, ui, error }: { open(): void; state(state: ViewerState): void; ui(event: { kind: string; text?: Message }): void; error(event: Event): void }): void {

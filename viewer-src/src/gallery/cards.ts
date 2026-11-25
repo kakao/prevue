@@ -1,4 +1,5 @@
-import type { KeptShot, PreviewFile } from '../match';
+import type { PreviewFile } from '../match';
+import { viewOf, type CardView } from './queue';
 
 export const stemOf = (f: Pick<PreviewFile, 'rel'>) => f.rel.slice(f.rel.lastIndexOf('/') + 1).replace(/\.kts?$/, '');
 
@@ -34,6 +35,11 @@ export const byChanged = (files: PreviewFile[]) => [...files].sort((a, b) => b.m
 
 export const cardKey = (f: Pick<PreviewFile, 'path' | 'mtime'>) => `${f.mtime} ${f.path}`;
 
-export const keptOf = (f: Pick<PreviewFile, 'shots'>, i: number): KeptShot | null => f.shots?.items.find(s => s.i === i) ?? null;
+export function cachedView(f: Pick<PreviewFile, 'shots'>): CardView | null {
+  const k = f.shots;
+  if (!k) return null;
+  const n = Math.min(3, k.sheets);
+  return Array.from({ length: n }, (_, i) => k.front.find(s => s.i === i)?.image).every(Boolean) ? viewOf(k) : null;
+}
 
 export const stale = (f: Pick<PreviewFile, 'mtime'>, image: { at?: number } | null | undefined) => image?.at != null && f.mtime > image.at;

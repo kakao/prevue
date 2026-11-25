@@ -24,7 +24,7 @@ import prevue.infrastructure.json.Json
 public class FileGalleryShots(
     private val root: File,
     private val dispatchers: PrevueDispatchers,
-    public var maxBytes: Long = galleryMaxMb(System.getenv("PREVUE_GALLERY_MAX_MB")) * 1024 * 1024,
+    private val maxBytes: Long = galleryMaxMb(System.getenv("PREVUE_GALLERY_MAX_MB")) * 1024 * 1024,
     private val now: () -> Long = System::currentTimeMillis,
 ) : GalleryShots {
     private class Entry(val path: String, val sheets: Int, val shots: Map<Int, Shot>)
@@ -36,10 +36,10 @@ public class FileGalleryShots(
     override suspend fun keep(file: File, sheets: Int, index: Int, out: RenderOutput): Shot = withContext(dispatchers.io) {
         val image = out.image?.takeIf { out.ok } ?: throw IOException("${out.preview.previewId} 그림이 없다")
         val key = keyOf(file)
-        val dir = File(root, key).apply { mkdirs() }
-        val tmp = Files.createTempFile(dir.toPath(), ".$index-", ".png.tmp").toFile()
-        val (w, h) = shrink(image, out.width, out.height, tmp)
         lock.withLock {
+            val dir = File(root, key).apply { mkdirs() }
+            val tmp = Files.createTempFile(dir.toPath(), ".$index-", ".png.tmp").toFile()
+            val (w, h) = try { shrink(image, out.width, out.height, tmp) } catch (e: IOException) { tmp.delete(); throw e }
             Files.move(tmp.toPath(), File(dir, "$index.png").toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
             val shot = Shot("$key-$index", index, out.preview.functionName, out.preview.paramLabel, w, h, now())
             val old = entries[key]?.shots.orEmpty()
@@ -52,8 +52,12 @@ public class FileGalleryShots(
         }
     }
 
-    override fun kept(file: File): Kept? =
-        entries[keyOf(file)]?.takeIf { it.shots.isNotEmpty() }?.let { e -> Kept(e.sheets, e.shots.values.sortedBy { it.index }) }
+    override fun kept(file: File): Kept? {
+        val key = keyOf(file)
+        val e = entries[key] ?: return null
+        val shots = e.shots.values.filter { File(File(root, key), "${it.index}.png").isFile }.sortedBy { it.index }
+        return if (shots.isEmpty()) null else Kept(e.sheets, shots)
+    }
 
     override fun image(id: String): File? {
         val key = id.substringBeforeLast('-')

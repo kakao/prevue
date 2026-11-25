@@ -6,7 +6,7 @@ import { useHost } from '../host';
 import { useMessages, type Messages } from '../messages';
 import type { PreviewFile } from '../match';
 import { activeKey, type ViewerState } from '../state';
-import { byChanged, cardKey, changedAgo, commonHead, keptOf, moduleOf, packageOf, stale as isStale, stemOf } from '../gallery/cards';
+import { byChanged, cachedView, cardKey, changedAgo, commonHead, moduleOf, packageOf, stale as isStale, stemOf } from '../gallery/cards';
 import { createCardQueue, type CardImage, type CardQueue, type CardView } from '../gallery/queue';
 import { closeGallery, closeSheet, currentLayer, galleryShown, loadFiles, markShown, openGallery, openSheet, sheetClosed, useLayer } from '../gallery/layer';
 import { GallerySheet } from './GallerySheet';
@@ -49,14 +49,10 @@ export type CardText = { name: string; pkg: string; mod: string; changed: string
 
 const NO_GHOSTS: Array<CardImage | null> = [];
 
-export function keptView(f: PreviewFile, queued: CardView): CardView {
-  const first = keptOf(f, 0);
-  return first ? { status: 'done', sheets: f.shots!.sheets, image: first } : queued;
-}
-
-export const GalleryCard = memo(function GalleryCard({ text, view, stale = false, ghosts = NO_GHOSTS, near = true, onOpen, onLost }: {
-  text: CardText; view: CardView; stale?: boolean; ghosts?: Array<CardImage | null>; near?: boolean; onOpen?: () => void; onLost?: () => void;
+export const GalleryCard = memo(function GalleryCard({ text, view, stale = false, near = true, onOpen, onLost }: {
+  text: CardText; view: CardView; stale?: boolean; near?: boolean; onOpen?: () => void; onLost?: () => void;
 }) {
+  const ghosts = view.status === 'done' ? [view.front[1]?.image ?? null, view.front[2]?.image ?? null] : NO_GHOSTS;
   const { phrase, daemonText } = useMessages();
   const state = view.status === 'done' ? 'done' : view.status === 'error' ? 'failed' : 'loading';
   const tall = view.status !== 'done' || view.image.w <= view.image.h;
@@ -94,9 +90,9 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
   const key = cardKey(f);
   const queued = useSyncExternalStore(cards.subscribe, () => cards.get(key));
   const [broken, setBroken] = useState(false);
-  const cached = !broken && !!keptOf(f, 0);
-  const view = useMemo(() => (cached ? keptView(f, queued) : queued), [cached, f, queued]);
-  const ghosts = useMemo(() => [keptOf(f, 1), keptOf(f, 2)], [f]);
+  const cachedCard = useMemo(() => (broken ? null : cachedView(f)), [broken, f]);
+  const cached = !!cachedCard;
+  const view = cachedCard ?? queued;
   const [near, setNear] = useState(false);
   useEffect(() => {
     const el = ref.current!;
@@ -109,7 +105,7 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
   const lost = useCallback(() => (cached ? setBroken(true) : cards.lost(key, f.path, order)), [cached, cards, key, f, order]);
   const stale = view.status === 'done' && isStale(f, view.image);
   return <div ref={ref} className="gcard-slot" data-path={f.path}>
-    <GalleryCard text={text} view={view} stale={stale} ghosts={ghosts} near={near} onOpen={open} onLost={lost} />
+    <GalleryCard text={text} view={view} stale={stale} near={near} onOpen={open} onLost={lost} />
   </div>;
 });
 
@@ -189,7 +185,9 @@ function SheetHost({ f, closing, onOpen }: { f: PreviewFile; closing: boolean; o
   const { phrase } = useMessages();
   const key = cardKey(f);
   const queued = useSyncExternalStore(queue.subscribe, () => queue.get(key));
-  const view = useMemo(() => keptView(f, queued), [f, queued]);
+  const cachedCard = useMemo(() => cachedView(f), [f]);
+  const view = cachedCard ?? queued;
+  useEffect(() => { if (!cachedCard) queue.urgent(key, f.path); }, [key]);
   const lang = document.documentElement.lang || 'en';
   const text = useMemo(() => ({ name: stemOf(f), pkg: packageOf(f, []), mod: moduleOf(f.module), changed: changedAgo(f.mtime, Date.now(), phrase, lang) }), [f, phrase, lang]);
   return <GallerySheet file={f} text={text} view={view} closing={closing} onClose={closeSheet} onClosed={sheetClosed} onOpen={onOpen} />;

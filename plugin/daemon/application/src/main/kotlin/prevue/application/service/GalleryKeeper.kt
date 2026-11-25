@@ -5,12 +5,9 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import prevue.application.domain.model.Board
 import prevue.application.domain.model.CardResult
-import prevue.application.domain.model.Shot
 import prevue.application.port.GalleryShots
 
 @SingleIn(AppScope::class)
@@ -23,27 +20,19 @@ class GalleryKeeper(
     private val kept = HashMap<String, Long>()
 
     fun start() {
-        scope.launch {
-            ws.state.map { it.board?.let(::front) }.distinctUntilChanged().collect { drawn -> drawn?.forEach { keep(it) } }
-        }
+        scope.launch { ws.state.collect { s -> s.board?.let { keepFront(it) } } }
     }
 
-    private class Front(val board: Board, val index: Int, val shot: Shot) {
-        val key get() = "${board.file.path}#$index"
-        override fun equals(other: Any?) = other is Front && other.key == key && other.shot.artifactRevision == shot.artifactRevision
-        override fun hashCode() = key.hashCode()
-    }
-
-    private fun front(b: Board): List<Front> = b.cards.take(GalleryShots.FRONT).mapIndexedNotNull { i, c ->
-        (c.result as? CardResult.Drawn)?.shot?.takeIf { it.out.ok && it.out.image != null }?.let { Front(b, i, it) }
-    }
-
-    private suspend fun keep(f: Front) {
-        if (kept[f.key] == f.shot.artifactRevision) return
-        kept[f.key] = f.shot.artifactRevision
-        try { gallery.keep(f.board.file, f.board.cards.size, f.index, f.shot.out) } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            System.err.println("[prevue] 갤러리 그림을 남기지 못했다: $e")
+    private suspend fun keepFront(b: Board) {
+        b.cards.take(GalleryShots.FRONT).forEachIndexed { i, c ->
+            val shot = (c.result as? CardResult.Drawn)?.shot?.takeIf { it.out.ok && it.out.image != null } ?: return@forEachIndexed
+            val key = "${b.file.path}#$i"
+            if (kept[key] == shot.artifactRevision) return@forEachIndexed
+            kept[key] = shot.artifactRevision
+            try { gallery.keep(b.file, b.cards.size, i, shot.out) } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                System.err.println("[prevue] 갤러리 그림을 남기지 못했다: $e")
+            }
         }
     }
 }

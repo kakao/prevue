@@ -22,22 +22,23 @@ class GalleryCards(
     private val live: LiveShot,
     private val gallery: GalleryShots,
 ) {
-    class Card(val sheets: Int, val sheet: Sheet)
-    class Sheet(val name: String, val variant: String?, val kept: GalleryShots.Shot?, val failure: Phrase?)
+    class Card(val sheets: Int, val front: List<Sheet>)
+    sealed interface Sheet {
+        val index: Int
+        val name: String
+        val variant: String?
+        class Kept(override val index: Int, override val name: String, override val variant: String?, val shot: GalleryShots.Shot) : Sheet
+        class Failed(override val index: Int, override val name: String, override val variant: String?, val why: Phrase?) : Sheet
+    }
 
     suspend fun draw(file: File): Card? {
         val specs = specsOf(file) ?: return null
-        return Card(specs.size, keptOrShoot(file, specs, 0))
-    }
-
-    suspend fun sheets(file: File): List<Sheet>? {
-        val specs = specsOf(file) ?: return null
-        return specs.indices.take(GalleryShots.FRONT).map { keptOrShoot(file, specs, it) }
+        return Card(specs.size, specs.indices.take(GalleryShots.FRONT).map { keptOrShoot(file, specs, it) })
     }
 
     private suspend fun keptOrShoot(file: File, specs: List<PreviewSpec>, index: Int): Sheet =
         gallery.kept(file)?.takeIf { it.sheets == specs.size }?.shots?.firstOrNull { it.index == index }
-            ?.let { Sheet(it.name, it.variant, it, null) }
+            ?.let { Sheet.Kept(index, it.name, it.variant, it) }
             ?: shoot(file, specs, index)
 
     private suspend fun specsOf(file: File): List<PreviewSpec>? {
@@ -50,11 +51,11 @@ class GalleryCards(
         val spec = specs[index]
         val t = System.nanoTime()
         val out = engine.showAside(spec.copy(previewId = spec.previewId + SUFFIX))
-        fun failed(why: Phrase?) = Sheet(spec.functionName, spec.paramLabel, null, why)
+        fun failed(why: Phrase?) = Sheet.Failed(index, spec.functionName, spec.paramLabel, why)
         return try {
             val shot = live.shot(out, null, t, BY)
             if (!shot.out.ok || shot.out.image == null) failed(shot.out.message)
-            else Sheet(spec.functionName, spec.paramLabel, gallery.keep(file, specs.size, index, shot.out), null)
+            else Sheet.Kept(index, spec.functionName, spec.paramLabel, gallery.keep(file, specs.size, index, shot.out))
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             failed(phrase("render.writeFailed", "why" to e))

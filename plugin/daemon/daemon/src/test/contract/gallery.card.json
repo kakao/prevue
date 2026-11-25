@@ -1,25 +1,49 @@
 {
   "status": 200,
   "schema": {
-    "failure": "null",
-    "image": {
-      "at": "number",
-      "h": "number",
-      "url": "string",
-      "w": "number"
-    },
-    "ok": "boolean",
+    "front": [
+      {
+        "failure": "null",
+        "i": "number",
+        "image": {
+          "at": "number",
+          "h": "number",
+          "url": "string",
+          "w": "number"
+        },
+        "name": "string",
+        "variant": "null"
+      }
+    ],
     "sheets": "number"
   },
   "example": {
-    "ok": true,
     "sheets": 2,
-    "image": {
-      "url": "/gallery/shot/fdab69354228da4d-0.png?t=<t>",
-      "w": 100,
-      "h": 100,
-      "at": 1795592218442
-    },
-    "failure": null
+    "front": [
+      {
+        "i": 0,
+        "name": "Card0",
+        "variant": null,
+        "image": {
+          "url": "/gallery/shot/<key>-0.png?t=<t>",
+          "w": 100,
+          "h": 100,
+          "at": 0
+        },
+        "failure": null
+      },
+      {
+        "i": 1,
+        "name": "Card1",
+        "variant": null,
+        "image": {
+          "url": "/gallery/shot/<key>-1.png?t=<t>",
+          "w": 100,
+          "h": 100,
+          "at": 0
+        },
+        "failure": null
+      }
+    ]
   }
 }

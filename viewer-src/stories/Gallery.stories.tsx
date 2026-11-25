@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo } from 'react';
 import '../legacy/style.css';
 import { GalleryCard, GalleryGrid } from '../src/components/Gallery';
-import { createCardQueue, type CardAnswer, type CardView } from '../src/gallery/queue';
+import { createCardQueue, viewOf, type CardAnswer, type CardView } from '../src/gallery/queue';
 import { pearlBoard, pearlFiles } from './pearl';
 
 const meta = { title: '파일/Gallery' } satisfies Meta;
@@ -12,11 +12,16 @@ type Story = StoryObj<typeof meta>;
 const shots = pearlBoard.groups.flatMap(g => g.cards).map(c => c.imageUrl).filter((u): u is string => !!u);
 const NOW = Math.max(...pearlFiles.map(f => f.mtime)) + 5 * 60000;
 
+function answer(sheets: number, at: number, w: number, h: number): CardAnswer {
+  return { sheets, front: Array.from({ length: Math.min(3, sheets) }, (_, i) => ({
+    i, name: `Preview${i}`, variant: null, image: { url: shots[(at + i) % shots.length], w, h }, failure: null })) };
+}
+
 function fakeAsk(delay: number) {
   return (path: string) => new Promise<CardAnswer | null>(resolve => setTimeout(() => {
     const i = pearlFiles.findIndex(f => f.path === path);
-    if (i >= pearlFiles.length - 2) resolve({ ok: false, sheets: 1, image: null, failure: null });
-    else resolve({ ok: true, sheets: pearlFiles[i].functions.length, image: { url: shots[i % shots.length], w: 360, h: 780 }, failure: null });
+    if (i >= pearlFiles.length - 2) resolve({ sheets: 1, front: [{ i: 0, name: 'Preview', variant: null, image: null, failure: null }] });
+    else resolve(answer(pearlFiles[i].functions.length, i, 360, 780));
   }, delay));
 }
 
@@ -32,11 +37,11 @@ export const Loading: Story = { render: () => {
 
 const text = { name: 'SearchScreenWithAVeryLongNameThatNeedsAMiddleCut', pkg: 'feature.search.ui.components', mod: 'feature/search', changed: '5 min ago' };
 const views: Array<[string, CardView]> = [
-  ['done', { status: 'done', sheets: 1, image: { url: shots[0], w: 360, h: 780 } }],
-  ['sheets', { status: 'done', sheets: 4, image: { url: shots[1], w: 360, h: 780 } }],
-  ['wide', { status: 'done', sheets: 2, image: { url: shots[2], w: 780, h: 360 } }],
+  ['done', viewOf(answer(1, 0, 360, 780))],
+  ['sheets', viewOf(answer(4, 1, 360, 780))],
+  ['wide', viewOf(answer(2, 2, 780, 360))],
   ['loading', { status: 'loading' }],
-  ['failed', { status: 'error', sheets: 1, failure: null }],
+  ['failed', viewOf(null)],
 ];
 export const Cards: Story = { render: () => <div className="story-shell gallery"><div className="gallery-grid">
   {views.map(([k, v]) => <GalleryCard key={k} text={text} view={v} />)}

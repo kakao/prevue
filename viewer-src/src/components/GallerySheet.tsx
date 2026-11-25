@@ -1,11 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { fetchGallerySheet, type GallerySheetAnswer } from '../runtime/api';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { useMessages } from '../messages';
 import type { PreviewFile } from '../match';
-import { keptOf, stale, stemOf } from '../gallery/cards';
-import { galleryFilesChanged } from '../gallery/layer';
-import type { CardView } from '../gallery/queue';
+import { stale, stemOf } from '../gallery/cards';
+import type { CardImage, CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
 
 const SHEET_MAX = 3;
@@ -16,26 +14,16 @@ function shortLabel(name: string, stem: string) {
   return r.replace(/^Preview/, '').replace(/Preview$/, '').replace(/^_+|_+$/g, '');
 }
 
-type Shot = { url: string; w: number; h: number; at?: number } | 'failed' | null;
+type Shot = CardImage | 'failed' | null;
 
-const slotCount = (view: CardView, f: Pick<PreviewFile, 'functions' | 'shots'>, answer: GallerySheetAnswer | null) => {
-  const total = view.status === 'done' || view.status === 'error' ? view.sheets : f.shots?.sheets ?? f.functions.length;
-  return Math.min(SHEET_MAX, Math.max(1, total, answer?.sheets.length ?? 0));
-};
-
-export const sheetCached = (view: CardView, f: Pick<PreviewFile, 'functions' | 'shots'>) =>
-  Array.from({ length: slotCount(view, f, null) }, (_, i) => keptOf(f, i)).every(Boolean);
-
-function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions' | 'shots'>, answer: GallerySheetAnswer | null) {
+function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>) {
+  const drawn = view.status === 'done' || view.status === 'error' ? view : null;
+  const n = Math.min(SHEET_MAX, Math.max(1, drawn ? drawn.sheets : f.functions.length));
   const stem = stemOf(f);
-  return Array.from({ length: slotCount(view, f, answer) }, (_, i): { shot: Shot; label: string } => {
-    const kept = keptOf(f, i);
-    if (kept) return { shot: kept, label: kept.variant ?? shortLabel(kept.name, stem) };
-    const a = answer?.sheets[i];
-    const shot: Shot = i === 0 && view.status === 'done' ? view.image
-      : a?.image ?? (answer || (i === 0 && view.status === 'error') ? 'failed' : null);
-    const label = a ? a.variant ?? shortLabel(a.name, stem) : answer ? '' : shortLabel(f.functions[i] ?? '', stem);
-    return { shot, label };
+  return Array.from({ length: n }, (_, i): { shot: Shot; label: string } => {
+    if (!drawn) return { shot: null, label: shortLabel(f.functions[i] ?? '', stem) };
+    const s = drawn.front[i];
+    return { shot: s?.image ?? 'failed', label: s ? s.variant ?? shortLabel(s.name, stem) : '' };
   });
 }
 
@@ -131,20 +119,11 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
 }) {
   const { phrase } = useMessages();
   const sheet = useRef<HTMLElement>(null);
-  const [answer, setAnswer] = useState<GallerySheetAnswer | null>(null);
   const [place, setPlace] = useState<CSSProperties | null>(null);
-  const slots = sheetSlots(view, file, answer);
+  const slots = sheetSlots(view, file);
   const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : view.status === 'done' ? view.image : null));
   const flow = known.every(s => s && s.w > s.h * WIDE) ? 'col' : 'row';
   const count = view.status === 'done' ? view.sheets : 0;
-
-  const cached = sheetCached(view, file);
-  useEffect(() => {
-    if (cached) return;
-    let live = true;
-    fetchGallerySheet(file.path).then(a => a ?? { sheets: [] }, () => ({ sheets: [] })).then(a => { if (live) setAnswer(a); if (a.sheets.some(s => s.image)) galleryFilesChanged(); });
-    return () => { live = false; };
-  }, [file.path]);
 
   useLayoutEffect(() => {
     const root = document.documentElement, body = document.body;
