@@ -24,6 +24,7 @@ const asked = [], opened = [], sheetAsked = [];
 const WIDE = files[4].path;
 let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null;
 const streams = new Set();
+const notifyFiles = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'previewFiles' } })}\n\n`); };
 const push = s => { current = s; for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'state', state: s })}\n\n`); };
 
 const server = createServer(async (request, response) => {
@@ -206,6 +207,7 @@ try {
 
   await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
   await until(sheetUp);
+  await evaluate(`document.activeElement.blur()`);
   for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
   await until(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false && ${sheetGone}`);
   ok(opened.at(-1) === files[2].path, '시트의 Enter 로 그 파일의 탭과 보드가 열린다');
@@ -315,6 +317,22 @@ try {
   push({ ...current, version: version++, screen: 'empty', tabs: [], board: null });
   await until(`document.querySelector('#galleryView').hidden===false`);
   ok(true, '탭을 다 닫으면 다시 갤러리');
+  delay = 600;
+  for (const f of files) f.mtime += 1;
+  notifyFiles();
+  for (let i = 0; i < 100 && !inFlight; i++) await pause(20);
+  await click('#galleryView .gcard-slot:nth-child(2) .gcard-hit');
+  await until(sheetUp);
+  for (let i = 0; i < 100 && inFlight; i++) await pause(20);
+  const heldBySheet = asked.length;
+  await pause(1500);
+  ok(asked.length === heldBySheet, '시트가 열린 동안 카드 줄이 멈춘다');
+  await key('Escape');
+  await until(sheetGone);
+  for (let i = 0; i < 100 && asked.length === heldBySheet; i++) await pause(20);
+  ok(asked.length > heldBySheet, '시트를 닫으면 카드 줄이 다시 돈다');
+  delay = 120;
+
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
   await until(`!!document.querySelector('.gsheet-shell')`);
@@ -322,6 +340,18 @@ try {
   await key('Escape');
   await until(sheetGone);
   await send('Emulation.setEmulatedMedia', { features: [] });
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(sheetUp);
+  const gone = await evaluate(`document.querySelector('#galleryView .gcard-slot:nth-child(1)').dataset.path`);
+  files.splice(files.findIndex(f => f.path === gone), 1);
+  notifyFiles();
+  await until(`${sheetGone} && !document.querySelector('#galleryView .gcard-slot[data-path="${gone}"]')`);
+  await check(`getComputedStyle(document.documentElement).overflow!=='hidden' && !document.querySelector('#galleryView .gallery-in').inert`, '연 파일이 목록에서 빠지면 시트가 닫히고 잠금이 풀린다');
+  await key('/', 'Slash');
+  await until(`document.querySelector('#qoSheet').classList.contains('on')`);
+  await key('Escape');
+  await until(`document.querySelector('#qoSheet').hidden`);
+  ok(true, '시트가 닫힌 뒤에는 갤러리 키가 다시 먹는다');
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {

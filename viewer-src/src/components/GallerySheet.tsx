@@ -7,17 +7,17 @@ import { stemOf } from '../gallery/cards';
 import type { CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
 
-export const SHEET_MAX = 3;
+const SHEET_MAX = 3;
 const SCALE = 1.5, MIN_W = 420, MAX_W = 640, EDGE = 16, STAGE_RATIO = 10 / 16, STAGE_INSET = 40, WIDE = 1.2;
 
-export function shortLabel(name: string, stem: string) {
+function shortLabel(name: string, stem: string) {
   const r = name.startsWith(stem) ? name.slice(stem.length) : name;
   return r.replace(/^Preview/, '').replace(/Preview$/, '').replace(/^_+|_+$/g, '');
 }
 
 type Shot = { url: string; w: number; h: number } | 'failed' | null;
 
-export function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>, answer: GallerySheetAnswer | null) {
+function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>, answer: GallerySheetAnswer | null) {
   const total = view.status === 'done' || view.status === 'error' ? view.sheets : f.functions.length;
   const n = Math.min(SHEET_MAX, Math.max(1, total, answer?.sheets.length ?? 0));
   const stem = stemOf(f);
@@ -105,8 +105,6 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : view.status === 'done' ? view.image : null));
   const flow = known.every(s => s && s.w > s.h * WIDE) ? 'col' : 'row';
   const count = view.status === 'done' ? view.sheets : 0;
-  const latest = useRef({ onClosed });
-  latest.current = { onClosed };
 
   useEffect(() => {
     let live = true;
@@ -168,7 +166,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       el.parentElement!.style.visibility = 'hidden';
       document.querySelector('#galleryView .gallery-in')?.removeAttribute('inert');
       if (c) { c.style.visibility = ''; c.querySelector<HTMLElement>('.gcard-hit')?.focus({ preventScroll: true }); }
-      latest.current.onClosed();
+      onClosed();
     };
     const dur = motionMs('--duration-long1'), ease = motionToken('--easing-standard'), quick = motionMs('--duration-short2');
     el.parentElement!.getAnimations({ subtree: true }).forEach(a => a.cancel());

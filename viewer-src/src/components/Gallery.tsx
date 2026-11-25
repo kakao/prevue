@@ -136,7 +136,6 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
     const was = galleryShown();
     markShown(on);
     element.hidden = !on;
-    queue.pause(!on);
     if (on === was) return;
     const over = state?.screen === 'board' || state?.screen === 'vacant';
     if (on) {
@@ -151,7 +150,7 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
     }
   }, [on, element]);
 
-  useEffect(() => { queue.pause(!on || !!s.sheet); }, [on, s.sheet]);
+  useLayoutEffect(() => { queue.pause(!on || !!s.sheet); }, [on, s.sheet]);
   useEffect(() => {
     if (s.sheet && (!on || (s.files && !s.files.some(f => f.path === s.sheet!.path)))) sheetClosed();
   }, [on, s.files, s.sheet]);
