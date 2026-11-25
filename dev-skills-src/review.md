@@ -27,9 +27,9 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 - **diff가 닿지 않은 파일에 위반이 났으면 물을 것이다** — detekt 판 · 규칙 변경이 기존 코드를 새로 잡은 것이라 범위를 정해야 한다.
 - **종료 2는 통과가 아니다** — stderr를 결과에 그대로 남긴다. 흔한 원인은 `viewer-src/node_modules`가 없거나(`npm ci --prefix viewer-src`) 이 머신에 detekt가 아직 없는 것(`sh tools/lint.sh --online` 한 번)이다.
 
-리뷰어가 직접 돌려도 된다 — detekt는 Gradle로 돌지만 `build/lint`와 그 안의 프로젝트 캐시를 따로 써서 메인의 빌드 · 테스트와 겹치지 않는다. 그 밖의 빌드 도구는 부르지 않는다. 리뷰어 정의가 빌드 도구 실행을 막으면 돌리지 않고 "검사를 못 했다(리뷰어 정의)"로 적는다 — 관문은 `implement`의 검증 돌리기(`tools/check-local.sh`)다.
+리뷰어가 직접 돌려도 된다 — detekt는 Gradle로 돌지만 `build/lint`와 그 안의 프로젝트 캐시를 따로 써서 메인의 빌드 · 테스트와 겹치지 않는다. 그 밖의 빌드 도구는 부르지 않는다. 리뷰어 정의가 빌드 도구 실행을 막으면 돌리지 않고 "검사를 못 했다(리뷰어 정의)"로 적는다 — 관문은 `implement`의 검증 돌리기다.
 
-**`implement`가 넘긴 위임에 `check-local.sh` 요약이 실려 오면** 그 커밋이 끝 커밋과 같고 작업 트리가 깨끗하다고 찍혀 있을 때 린트 줄을 결과의 린트 집계 줄로 옮기고 다시 돌리지 않는다. 다르거나 요약이 없으면(단독 리뷰) 위대로 돌린다.
+**`implement`가 넘긴 위임에 `lint.sh` 결과가 실려 오면** 돌린 커밋이 끝 커밋과 같고 깨끗한 작업 트리에서 돌렸다고 적혀 있을 때 그 결과 줄을 결과의 린트 집계 줄로 옮기고 다시 돌리지 않는다. 다르거나 요약이 없으면(단독 리뷰) 위대로 돌린다.
 
 `lint.sh`는 끝 커밋이 아니라 작업 트리를 읽는다. `git diff --quiet <끝 커밋>`이 실패하면(리뷰 중에 메인이 고쳤다) 그 결과를 끝 커밋의 판정으로 쓰지 않고 그렇다고 적는다.
 
@@ -49,7 +49,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 
 | 바뀐 곳 | 덮는 명령 |
 |---|---|
-| `plugin/daemon/` | `(cd plugin/daemon && ./gradlew --offline test)`. `integrationTest`는 로컬에서 돌리지 않는다(리뷰어 · `implement` 모두) — CI(`Verify`)가 돌고 `implement` 승인 진입 조건 3이 그 초록을 요구한다. Gradle은 JDK 21+에서만 뜬다(Metro) — `tools/check-local.sh`는 스스로 고르고, 손으로 부를 때는 `python3 tools/lint/gradle_jdk.py`가 경로를 내면 그것을 `JAVA_HOME`으로 준다(빈 줄이면 셸 그대로 둔다) |
+| `plugin/daemon/` | `(cd plugin/daemon && ./gradlew --offline test)`. `integrationTest`는 로컬에서 돌리지 않는다(리뷰어 · `implement` 모두) — CI(`Verify`)가 돌고 `implement` 승인 진입 조건 3이 그 초록을 요구한다. Gradle은 JDK 21+에서만 뜬다(Metro) — `tools/unit-test.sh`는 스스로 고르고, 손으로 부를 때는 `python3 tools/lint/gradle_jdk.py`가 경로를 내면 그것을 `JAVA_HOME`으로 준다(빈 줄이면 셸 그대로 둔다) |
 | `plugin/cli/` · `plugin/bin/` | `python3 -m unittest discover -s tests/cli` |
 | `tools/lint/` | `sh tools/lint.sh`(자기 검사 `tests/lint`를 먼저 돈다) |
 | `viewer-src/` · `plugin/viewer/` | `sh tools/gen-viewer.sh --check` · `python3 -m unittest discover -s tests/cli`(마크업 · 사전) · 헤드리스 Chrome(`tests/viewer/`) |

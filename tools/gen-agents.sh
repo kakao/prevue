@@ -14,7 +14,7 @@
 # 원본은 plugin/ 밖에 둔다 — Claude Code 는 매니페스트와 무관하게 플러그인 루트의 skills/<이름>/SKILL.md 를 스캔해 표시째 읽는다.
 # 두 벌은 skills/claude/ · skills/codex/ 한 단계 아래에 두고 매니페스트의 skills 경로로 가리킨다(D-138) — 기본 스캔에 안 잡힌다.
 #
-#   tools/gen-agents.sh           만든다
+#   tools/gen-agents.sh           만든다 — 원본에 없는 생성물 문서는 지운다
 #   tools/gen-agents.sh --check   만든 것이 커밋된 생성물과 다르면 무엇이 다른지 말하고 1로 끝난다
 #
 # 로컬은 BSD 도구라 POSIX sh·awk 만 쓴다.
@@ -98,6 +98,9 @@ for R in $SRCS; do
     for F in $(docs "$R"); do
       mkdir -p "$(dirname "$D/$F")"
       gen "$A" "$R/$F" "$D/$F"
+    done
+    for F in $(docs "$D"); do
+      [ -f "$R/$F" ] || rm "$D/$F"
     done
   done
 done

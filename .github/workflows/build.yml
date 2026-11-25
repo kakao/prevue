@@ -6,7 +6,7 @@
 name: Verify
 
 on:
-  # Runs on release PRs (→ main) and work PRs (→ develop). Work PRs pass local checks (tools/check-local.sh) before they are
+  # Runs on release PRs (→ main) and work PRs (→ develop). Work PRs pass the implement skill's local checks before they are
   # opened; for outside contributions, which skip the local checks, this is the only verification. A person merges once the
   # verdict is green.
   # No push trigger — every merge would build the same tree again (one release PR once ran three builds).

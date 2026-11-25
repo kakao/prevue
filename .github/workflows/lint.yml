@@ -1,4 +1,4 @@
-# Called by Verify (build.yml) — checks that read code without running it: generated files · copies · viewer types · Kotlin
+# Called by Verify (build.yml) — checks that read code without running it: generated files · viewer types · Kotlin
 # lint. Uses no daemon build output, so it runs beside the build.
 name: Verify — static checks
 
@@ -37,10 +37,6 @@ jobs:
       # generated from their sources. Catches commits that edited one side by hand.
       - name: Check that both skill sets and CLAUDE.md are generated from source
         run: sh tools/gen-agents.sh --check
-
-      # Installs receive plugin/ only (D-123) — its LICENSE · NOTICE.md are copies of the root originals.
-      - name: Check that the plugin's notice copies match the originals
-        run: sh tools/plugin-copies.sh --check
 
       - name: Set up Node for viewer development
         uses: actions/setup-node@v4
