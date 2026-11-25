@@ -724,6 +724,14 @@ class UseCaseTest {
         assertTrue(ws.now.interactive)
     }
 
+    @Test fun `보드에서 인터랙티브가 아니어도 기본값 요청은 오류 없이 넘긴다`() {
+        val uc = opened()
+        assertEquals(null, runBlocking { uc.live.resize(ScreenSize.Original, "viewer") })
+        assertEquals(null, runBlocking { uc.live.setSystemUi(SystemUi.ANNOTATED, "viewer") })
+        assertEquals(null, uc.workspace.now.cardOverride)
+        assertFalse(uc.workspace.now.interactive)
+    }
+
     @Test fun `보드에서 인터랙티브가 아니면 시스템 UI를 바꾸지 않는다`() {
         val uc = opened()
         assertThrows<IllegalArgumentException> { runBlocking { uc.live.setSystemUi(SystemUi.ON, "viewer") } }
