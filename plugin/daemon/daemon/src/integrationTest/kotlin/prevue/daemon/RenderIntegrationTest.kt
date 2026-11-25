@@ -469,7 +469,7 @@ class RenderIntegrationTest {
 
     /** 스트림을 끄면 구독이 끊긴다 — 켤 때마다 다시 구독한다. */
     private fun focus(on: Boolean) {
-        val r = runBlocking { uc.boards.focus(0, on = on, by = "test") }
+        val r: FocusResult = runBlocking { if (on) uc.boards.focus(0, "test") else uc.boards.unfocus(0, "test") }
         if (on) {
             assertTrue((r as FocusResult.On).result.ok, r.result.shot.out.message?.text)
             app!!.frames.subscribe(java.io.OutputStream.nullOutputStream())
