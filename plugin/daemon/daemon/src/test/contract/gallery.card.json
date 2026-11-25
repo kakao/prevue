@@ -3,6 +3,7 @@
   "schema": {
     "failure": "null",
     "image": {
+      "at": "number",
       "h": "number",
       "url": "string",
       "w": "number"
@@ -14,9 +15,10 @@
     "ok": true,
     "sheets": 2,
     "image": {
-      "url": "/Card0@gallery-0.png?t=<t>",
+      "url": "/gallery/shot/fdab69354228da4d-0.png?t=<t>",
       "w": 100,
-      "h": 100
+      "h": 100,
+      "at": 1795592218442
     },
     "failure": null
   }

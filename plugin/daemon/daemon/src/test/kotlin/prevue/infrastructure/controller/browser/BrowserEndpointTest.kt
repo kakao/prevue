@@ -77,10 +77,31 @@ class BrowserEndpointTest {
             assertEquals(2L, body["sheets"])
             assertEquals(null, body["failure"])
             val image = body["image"] as Map<*, *>
-            assertTrue((image["url"] as String).startsWith("/Card0@gallery-0.png?t="), image.toString())
+            assertTrue((image["url"] as String).startsWith("/gallery/shot/"), image.toString())
             assertEquals(100L to 100L, image["w"] to image["h"])
             assertEquals(listOf("Card0@gallery"), own.renderer.asides.drop(before).map { it.previewId })
             assertTrue(own.compiler.compiled.isEmpty(), "갤러리 카드가 컴파일했다")
+            module.stopInputs()
+        }
+    }
+
+    @Test fun `갤러리가 그린 장은 파일 목록에 실리고 그림 주소로 받는다`() {
+        Fixture(previews = 2).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val graph = own.graph(hooks = EntryHooks(p))
+            val module = own.entryPoints(graph)
+            module.start()
+            runBlocking { graph.watchers.indexPreviewFiles() }
+            val image = (request("GET", "/gallery/card?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p).second as Map<*, *>)["image"] as Map<*, *>
+            val files = ((request("GET", "/preview-files.json", null, p).second as Map<*, *>)["files"] as List<*>).map { it as Map<*, *> }
+            val shots = files.single { it["path"] == own.file.path }["shots"] as Map<*, *>
+            assertEquals(2L, shots["sheets"])
+            val item = (shots["items"] as List<*>).single() as Map<*, *>
+            assertEquals(0L to "Card0", item["i"] to item["name"])
+            assertEquals(image["url"], item["url"])
+            assertEquals(200, open(image["url"] as String, p).responseCode)
+            assertEquals(404, open("/gallery/shot/nope-0.png", p).responseCode)
+            assertTrue(files.filter { it["path"] != own.file.path }.all { it["shots"] == null })
             module.stopInputs()
         }
     }
@@ -110,7 +131,7 @@ class BrowserEndpointTest {
             val sheets = (body as Map<*, *>)["sheets"] as List<*>
             assertEquals(listOf("Card0", "Card1", "Card2"), sheets.map { (it as Map<*, *>)["name"] })
             assertTrue(sheets.all { (it as Map<*, *>)["variant"] == null && it["failure"] == null }, sheets.toString())
-            assertTrue(((sheets[1] as Map<*, *>)["image"] as Map<*, *>)["url"].toString().startsWith("/Card1@gallery-0.png?t="), sheets.toString())
+            assertTrue(((sheets[1] as Map<*, *>)["image"] as Map<*, *>)["url"].toString().startsWith("/gallery/shot/"), sheets.toString())
             assertEquals(listOf("Card0@gallery", "Card1@gallery", "Card2@gallery"), own.renderer.asides.drop(before).map { it.previewId })
             assertTrue(own.compiler.compiled.isEmpty(), "갤러리 시트가 컴파일했다")
             module.stopInputs()

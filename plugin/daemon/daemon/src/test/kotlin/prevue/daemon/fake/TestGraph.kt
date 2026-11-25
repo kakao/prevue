@@ -50,6 +50,8 @@ import prevue.application.port.LiveSessionFactory
 import prevue.application.port.MemoryMeter
 import prevue.application.port.MonotonicClock
 import prevue.application.port.PreviewRenderer
+import prevue.application.port.GalleryShots
+import prevue.infrastructure.store.FileGalleryShots
 import prevue.application.port.PreviewRepository
 import prevue.application.port.ResourceValues
 import prevue.application.port.SourceFileRepository
@@ -91,6 +93,7 @@ internal interface TestGraph {
     val browserInput: BrowserInput
     val browserTabs: BrowserTabs
     val browserGallery: BrowserGallery
+    val galleryShots: GalleryShots
     val browserPointing: BrowserPointing
     val browserEndpoint: BrowserEndpoint
     val hotSwap: HotSwapRunner
@@ -142,6 +145,8 @@ internal class TestPorts(
     @Provides fun dispatchers(): PrevueDispatchers = dispatchers
     @Provides fun engineLog(): EngineLog = EngineLog { System.err.println("[prevue] $it") }
     @Provides fun monotonicClock(): MonotonicClock = MonotonicClock.SYSTEM
+    @Provides @SingleIn(AppScope::class)
+    fun galleryShots(dispatchers: PrevueDispatchers): GalleryShots = FileGalleryShots(File(repoRoot, "build/prevue-gallery"), dispatchers)
 }
 
 @Suppress("LongParameterList")

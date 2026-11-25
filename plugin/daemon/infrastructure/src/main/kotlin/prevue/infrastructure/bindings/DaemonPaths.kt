@@ -6,6 +6,7 @@ internal class DaemonPaths(val cache: File, val mine: File, val out: File, val o
     val overlayModules: File get() = File("$overlay.modules")
     val warmup: File get() = File(mine, "warmup")
     val thumbs: File get() = File(cache, "daemon/thumbs")
+    val gallery: File get() = File(cache, "gallery")
 
     fun dumpOf(module: String, variant: String) = File(cache, "${dirName(module)}-$variant.json")
 

@@ -5,6 +5,7 @@
       {
         "failure": "null",
         "image": {
+          "at": "number",
           "h": "number",
           "url": "string",
           "w": "number"
@@ -20,9 +21,10 @@
         "name": "Card0",
         "variant": null,
         "image": {
-          "url": "/Card0@gallery-0.png?t=<t>",
+          "url": "/gallery/shot/fdab69354228da4d-0.png?t=<t>",
           "w": 100,
-          "h": 100
+          "h": 100,
+          "at": 1795592218445
         },
         "failure": null
       },
@@ -30,9 +32,10 @@
         "name": "Card1",
         "variant": null,
         "image": {
-          "url": "/Card1@gallery-0.png?t=<t>",
+          "url": "/gallery/shot/fdab69354228da4d-1.png?t=<t>",
           "w": 100,
-          "h": 100
+          "h": 100,
+          "at": 1795592218446
         },
         "failure": null
       }

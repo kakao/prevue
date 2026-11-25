@@ -25,7 +25,23 @@
             "fn": "string"
           }
         ],
-        "rel": "string"
+        "rel": "string",
+        "shots": {
+          "items": [
+            {
+              "at": "number",
+              "h": "number",
+              "i": "number",
+              "id": "string",
+              "name": "string",
+              "url": "string",
+              "variant": "null",
+              "w": "number"
+            }
+          ],
+          "sheets": "number",
+          "|": "null"
+        }
       }
     ],
     "ready": "boolean"
@@ -48,7 +64,8 @@
               "Badge"
             ]
           }
-        ]
+        ],
+        "shots": null
       },
       {
         "path": "<repo>/app/src/main/kotlin/demo/Cards.kt",
@@ -68,7 +85,32 @@
             "fn": "Card1",
             "calls": []
           }
-        ]
+        ],
+        "shots": {
+          "sheets": 2,
+          "items": [
+            {
+              "i": 0,
+              "id": "fdab69354228da4d-0",
+              "name": "Card0",
+              "variant": null,
+              "url": "/gallery/shot/fdab69354228da4d-0.png?t=<t>",
+              "w": 100,
+              "h": 100,
+              "at": 1795592218406
+            },
+            {
+              "i": 1,
+              "id": "fdab69354228da4d-1",
+              "name": "Card1",
+              "variant": null,
+              "url": "/gallery/shot/fdab69354228da4d-1.png?t=<t>",
+              "w": 100,
+              "h": 100,
+              "at": 1795592218415
+            }
+          ]
+        }
       }
     ],
     "composables": [
