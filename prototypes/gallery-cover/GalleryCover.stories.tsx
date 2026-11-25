@@ -8,7 +8,6 @@ import { pearlBoard } from '../../viewer-src/stories/pearl';
 import './gallery-cover.css';
 import pearl from '../../viewer-src/stories/pearl/preview-files.json';
 
-// 갤러리(1) 시안 — 카드 격자 · 레일 입구 · 펼친 시트 · 보드 왕복(2026-11-25 사용자와 고름).
 // 데이터는 .cache/gallery/*.json(소스를 정규식으로 읽은 근사)이 있으면 그것을, 없으면 pearl 픽스처를 쓴다 — 비공개 저장소 이름은 무시 경로에만 둔다.
 type Preview = { fn: string; calls: string[] };
 type File = { rel: string; module: string; mtime: number; functions: string[]; previews?: Preview[] };
@@ -19,17 +18,11 @@ const DATA: Record<string, Data> = { pearl: { name: 'pearl', files: (pearl as { 
 for (const d of Object.values(local)) DATA[d.name] = d;
 
 const stem = (f: File) => f.rel.slice(f.rel.lastIndexOf('/') + 1).replace(/\.kt$/, '');
-const headOf = new WeakMap<File[], string[]>();
 function commonHead(files: File[]) {
-  let h = headOf.get(files);
-  if (h) return h;
   const xs = files.map(ff => segs(ff)).filter(x => x.length);
-  h = xs.reduce((a, x) => { let i = 0; while (i < a.length && i < x.length && a[i] === x[i]) i++; return a.slice(0, i); }, xs[0] ?? []);
-  headOf.set(files, h);
-  return h;
+  return xs.reduce((a, x) => { let i = 0; while (i < a.length && i < x.length && a[i] === x[i]) i++; return a.slice(0, i); }, xs[0] ?? []);
 }
-let currentFiles: File[] = [];
-const pkgShort = (f: File) => { const s = segs(f), h = commonHead(currentFiles); return (s.slice(h.length).join('.') || s.join('.')); };
+const pkgShort = (f: File, head: string[]) => { const s = segs(f); return s.slice(head.length).join('.') || s.join('.'); };
 const segs = (f: File) => f.rel.match(/\/src\/[^/]+\/(?:java|kotlin)\/(.+)\/[^/]+$/)?.[1].split('/') ?? [];
 const previewsOf = (f: File): Preview[] => f.previews ?? f.functions.map(fn => ({ fn, calls: [] }));
 const moduleLabel = (m: string) => { const p = m.split(':').filter(Boolean); while (p.length > 1 && (p.at(-1) === 'impl' || p.at(-1) === 'api')) p.pop(); return p.join('/'); };
@@ -51,7 +44,7 @@ const shotsOf = (f: File) => previewsOf(f).flatMap(p => Object.entries(IMG)
 const imagesOf = (f: File) => shotsOf(f).map(x => x.src);
 const labelsOf = (f: File) => { const sh = shotsOf(f); return (sh.length ? sh.map(x => x.fn) : previewsOf(f).map(p => p.fn)).map(fn => shortLabel(fn, stem(f))); };
 
-function LazyCard({ f, info, done, onDone, onPeek }: { f: File; info: string; done: boolean; onDone: () => void; onPeek: () => void }) {
+function LazyCard({ f, head, info, done, onDone, onPeek }: { f: File; head: string[]; info: string; done: boolean; onDone: () => void; onPeek: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const images = useMemo(() => imagesOf(f), [f]);
   useEffect(() => {
@@ -65,13 +58,13 @@ function LazyCard({ f, info, done, onDone, onPeek }: { f: File; info: string; do
     return () => { io.disconnect(); clearTimeout(t); };
   }, [images]);
   return <div ref={ref} className="gc-slot">
-    <GalleryCard file={stem(f)} info={info} pkg={pkgShort(f)} mod={moduleLabel(f.module)} state={done ? 'done' : 'loading'} images={images} previews={previewsOf(f).map(p => p.fn)}
+    <GalleryCard file={stem(f)} info={info} pkg={pkgShort(f, head)} mod={moduleLabel(f.module)} state={done ? 'done' : 'loading'} images={images} previews={previewsOf(f).map(p => p.fn)}
       aspect="4 / 3" peekKey={f.rel} onPeek={onPeek} /></div>;
 }
 
 function Gallery(a: Args) {
   const d = DATA[a.data] ?? DATA.pearl;
-  currentFiles = d.files;
+  const head = useMemo(() => commonHead(d.files), [d]);
   const [tabs, setTabs] = useState<File[]>([]);
   const [cur, setCur] = useState<File | null>(null);
   const pk = usePeek();
@@ -110,7 +103,7 @@ function Gallery(a: Args) {
         </main> : <main className="gc-main" style={{ ['--gc-gap' as string]: `var(${a.gap})` }}>
           <div className="gc-head"><h1>{a.railLabel}</h1><span className="gc-n">{shown.length}</span><span className="gc-sort">최근 바뀐 순</span></div>
           <div className="gc-grid" style={{ ['--gc-min' as string]: `${a.cardMin}px` }}>
-            {shown.map(f => <LazyCard key={f.rel} f={f} done={done.has(f.rel)}
+            {shown.map(f => <LazyCard key={f.rel} f={f} head={head} done={done.has(f.rel)}
               onDone={() => setDone(x => new Set(x).add(f.rel))} onPeek={() => pk.open(f.rel)} info={ago(f.mtime, now)} />)}
           </div>
         </main>}
@@ -126,7 +119,7 @@ const meta = {
   title: '시안/갤러리',
   render: args => <Gallery {...(args as Args)} />,
   args: {
-    data: Object.keys(DATA).includes('KakaoMap') ? 'KakaoMap' : 'pearl', frame: 'full', cardMin: 300, gap: '--space-24', railLabel: '모든 Preview',
+    data: Object.keys(DATA).find(k => k !== 'pearl') ?? 'pearl', frame: 'full', cardMin: 300, gap: '--space-24', railLabel: '모든 Preview',
   } satisfies Args,
   argTypes: {
     data: { control: 'select', options: Object.keys(DATA) },

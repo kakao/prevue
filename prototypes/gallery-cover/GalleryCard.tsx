@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { motionMs, motionToken, reduced } from '../../viewer-src/src/runtime/motion';
 
 export type CardState = 'done' | 'loading' | 'failed';
 
@@ -87,8 +88,6 @@ export function GalleryCard(p: CardProps) {
   );
 }
 
-const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const ms = (name: string, fallback: number) => parseFloat(css(name)) || fallback;
 const visible = (r: DOMRect) => r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && r.width > 0;
 const box = (el: Element | null) => el?.getBoundingClientRect() ?? null;
 
@@ -153,7 +152,7 @@ export type PeekProps = { peekKey: string; closing: boolean; file: string; info:
 
 export function GalleryPeek(p: PeekProps) {
   const total = p.state === 'done' ? p.images.length : p.previews.length;
-  const n = Math.max(1, Math.min(3, total || 1));
+  const n = Math.min(3, total || 1);
   const sheet = useRef<HTMLElement>(null);
   const [place, setPlace] = useState<CSSProperties & { '--stage-h'?: string }>({ visibility: 'hidden' });
   const card = () => document.querySelector<HTMLElement>(`[data-peek-key="${CSS.escape(p.peekKey)}"]`);
@@ -177,12 +176,12 @@ export function GalleryPeek(p: PeekProps) {
   useLayoutEffect(() => {
     if (place.visibility === 'hidden') return;
     const c = card(), el = sheet.current!;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dur = ms('--duration-long3', 550), ease = css('--easing-spring') || 'ease-out', fade = ms('--duration-medium2', 300);
+    const reduce = reduced.matches;
+    const dur = motionMs('--duration-long3'), ease = motionToken('--easing-spring'), fade = motionMs('--duration-medium2');
     let live = true;
     el.style.visibility = 'hidden';
     Promise.all([...el.querySelectorAll('img')].map(i => i.decode().catch(() => undefined))).then(() => {
-      if (!live) return;
+      if (!live || el.classList.contains('closing')) return;
       const imgs = [...el.querySelectorAll<HTMLImageElement>('.gpeek-shot img')];
       const wide = imgs.length > 0 && imgs.every(i => i.naturalWidth > i.naturalHeight * 1.2);
       const stage = el.querySelector('.gpeek-stage') as HTMLElement;
@@ -209,8 +208,11 @@ export function GalleryPeek(p: PeekProps) {
   useLayoutEffect(() => {
     if (!p.closing) return;
     const c = card(), el = sheet.current!;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dur = ms('--duration-long1', 450), ease = css('--easing-standard') || 'ease', quick = ms('--duration-short2', 100);
+    let live = true;
+    const finish = () => { if (!live) return; el.parentElement!.style.visibility = 'hidden'; if (c) c.style.visibility = ''; p.onClosed(); };
+    if (el.style.visibility === 'hidden') { el.classList.add('closing'); finish(); return () => { live = false; }; }
+    const reduce = reduced.matches;
+    const dur = motionMs('--duration-long1'), ease = motionToken('--easing-standard'), quick = motionMs('--duration-short2');
     el.parentElement!.getAnimations({ subtree: true }).forEach(a => a.cancel());
     el.classList.add('closing');
     const runs: Animation[] = [el.parentElement!.querySelector('.gpeek-scrim')!.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: ease, fill: 'forwards' })];
@@ -221,9 +223,10 @@ export function GalleryPeek(p: PeekProps) {
         if (s.op) runs.push(s.el.animate([{ opacity: s.op[1] }, { opacity: s.op[0] }], { delay: dur * (1 - s.op[3]), duration: dur * (s.op[3] - s.op[2]), fill: 'both' }));
       }
     } else {
-      runs.push(el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `scale(${reduce ? 1 : .96})` }], { duration: ms('--duration-short4', 200), easing: ease, fill: 'forwards' }));
+      runs.push(el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `scale(${reduce ? 1 : .96})` }], { duration: motionMs('--duration-short4'), easing: ease, fill: 'forwards' }));
     }
-    Promise.all(runs.map(a => a.finished)).then(() => { el.parentElement!.style.visibility = 'hidden'; if (c) c.style.visibility = ''; p.onClosed(); });
+    Promise.all(runs.map(a => a.finished)).then(finish).catch(() => undefined);
+    return () => { live = false; };
   }, [p.closing]);
 
   return (
