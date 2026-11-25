@@ -1,5 +1,3 @@
-// 갤러리(D-198 · D-200) — 가짜 데몬으로 시작 화면 · 카드 줄 · 카드 상태 · 레일 입구 · Esc 층 · 탭 옮김을 본다.
-// node tests/viewer/gallery.mjs — 설치본 plugin/viewer 를 띄운다(먼저 sh tools/gen-viewer.sh).
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -23,7 +21,7 @@ const tabOf = path => ({ ...board.tabs[0], key: path, name: path.split('/').pop(
 const boardOf = path => ({ ...board, version: version++, screen: 'board', tabs: [tabOf(path)], board: { ...board.board, file: path } });
 let current = { ...board, version: version++, screen: 'empty', tabs: [], board: null, focus: null };
 const asked = [], opened = [];
-let inFlight = 0, maxInFlight = 0;
+let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null;
 const streams = new Set();
 const push = s => { current = s; for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'state', state: s })}\n\n`); };
 
@@ -38,11 +36,11 @@ const server = createServer(async (request, response) => {
     const file = url.searchParams.get('file');
     asked.push(file);
     maxInFlight = Math.max(maxInFlight, ++inFlight);
-    await new Promise(r => setTimeout(r, 120));
+    await new Promise(r => setTimeout(r, delay));
     inFlight--;
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(file === FAILED ? { ok: false, sheets: 1, image: null, failure: null }
-      : { ok: true, sheets: file === files[0].path ? 3 : 1, image: { url: '/prevue.svg', w: 300, h: 650 }, failure: null }));
+      : { ok: true, sheets: file === files[0].path ? 3 : 1, image: { url: file === brokenImage ? `/gone.png?n=${asked.length}` : '/prevue.svg', w: 300, h: 650 }, failure: null }));
   } else if (path === '/viewer/open' && request.method === 'POST') {
     let body = ''; for await (const c of request) body += c;
     const { file } = JSON.parse(body);
@@ -107,7 +105,6 @@ try {
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...p, button: 'left', clickCount: 1 });
   };
   const key = async (key, code = key) => { for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key, code }); };
-  // 지금 화면에 든 카드의 경로 — 줄이 묻는 것은 이 안에서만이어야 한다.
   const visible = `[...document.querySelectorAll('#galleryView .gcard-slot')].filter(el=>{const r=el.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight}).map(el=>el.dataset.path)`;
 
   await send('Page.enable');
@@ -177,6 +174,62 @@ try {
   push({ ...boardOf(files[2].path) });
   await pause(300);
   await check(`document.querySelector('#galleryView').hidden`, '옛 탭으로 돌아와도 닫힌 층은 다시 뜨지 않는다');
+
+  const count = p => asked.filter(x => x === p).length;
+  const settled = () => until(`!document.querySelector('.vt-tab')`);
+  const toGallery = async () => { await settled(); await click('#railAll'); await until(`document.querySelector('#galleryView').hidden===false`); };
+  const toBoard = async () => { await settled(); await until(`document.querySelector('#railList .rt.active')?.getBoundingClientRect().height>0`); await click('#railList .rt.active'); await until(`document.querySelector('#galleryView').hidden`); };
+  await toGallery();
+  await evaluate(`scrollTo(0, 0)`);
+  await until(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').dataset.state==='done'`);
+  const firstAsks = count(files[0].path);
+  files[0].mtime += 1;
+  await toBoard();
+  await toGallery();
+  await until(`${count(files[0].path)}>0 && document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').dataset.state==='done'`);
+  for (let i = 0; i < 50 && count(files[0].path) === firstAsks; i++) await pause(50);
+  ok(count(files[0].path) === firstAsks + 1, '같은 파일의 mtime 이 바뀌면 그 카드를 다시 묻는다');
+
+  delay = 600;
+  for (const f of files) f.mtime += 1;
+  await toBoard();
+  await toGallery();
+  for (let i = 0; i < 100 && !inFlight; i++) await pause(20);
+  await toBoard();
+  const held = asked.length;
+  await pause(1500);
+  ok(asked.length === held, '갤러리가 숨으면 줄이 멈춘다');
+
+  await toGallery();
+  await evaluate(`scrollTo(0, 0)`);
+  for (let i = 0; i < 100 && !inFlight; i++) await pause(20);
+  const top = await evaluate(visible);
+  await evaluate(`scrollTo(0, document.documentElement.scrollHeight)`);
+  const fromScroll = asked.length;
+  await until(`(${visible}).every(p=>document.querySelector('#galleryView .gcard-slot[data-path="'+CSS.escape(p)+'"] .gcard').dataset.state!=='loading')`);
+  const bottomNow = await evaluate(visible);
+  ok(asked.slice(fromScroll).every(p => bottomNow.includes(p) || !top.includes(p)) && asked.length > fromScroll, '화면을 벗어난 대기 카드는 줄에서 빠진다');
+  delay = 120;
+  await evaluate(`scrollTo(0, 0)`);
+
+  brokenImage = files[3].path;
+  const brokenAsks = count(files[3].path);
+  files[3].mtime += 1;
+  await toBoard();
+  await toGallery();
+  await until(`${count(files[3].path)}>0 && document.querySelector('#galleryView .gcard-slot:nth-child(4) .gcard').dataset.state==='done'`);
+  for (let i = 0; i < 100 && count(files[3].path) < brokenAsks + 2; i++) await pause(50);
+  await pause(800);
+  ok(count(files[3].path) === brokenAsks + 2, '그림을 받지 못하면 그 카드를 한 번만 다시 묻는다');
+  brokenImage = null;
+
+  push({ ...boardOf(files[2].path), tabs: [tabOf(files[2].path), { ...tabOf(files[6].path), active: false }] });
+  await until(`document.querySelectorAll('#railList .rt').length===2`);
+  await toGallery();
+  await settled();
+  await key('1', 'Digit1');
+  await until(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false`);
+  ok(true, '갤러리가 보드 위에 있을 때 지금 탭의 번호를 누르면 보드로');
 
   push({ ...current, version: version++, screen: 'empty', tabs: [], board: null });
   await until(`document.querySelector('#galleryView').hidden===false`);

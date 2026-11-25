@@ -358,6 +358,12 @@ try {
   fl = (await frames()).filter(Boolean);
   assert(fl.every(f => still(f.t)) && fl.some(f => f.o > 0 && f.o < 1) && fl.at(-1).o === 1, `움직임 줄이기 등장 ${JSON.stringify(fl)}`);
   console.log(`통과 ${++checked}: 움직임 줄이기에서 카드는 크기 변화 없이 짙어지기만 하며 나타난다`);
+  await key('Escape');
+  await until(`!${card}`);
+  await check(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false`, '보드의 Esc 는 가리킨 카드를 먼저 걷는다');
+  await key('Escape');
+  await until(`document.querySelector('#galleryView').hidden===false`);
+  console.log(`통과 ${++checked}: 걷을 것이 없으면 보드의 Esc 가 갤러리로`);
   await check(`getComputedStyle(document.documentElement).getPropertyValue('--cap-room')==='76px'`, '캡슐 자리(토큰의 합)가 px 로 풀려 읽힌다');
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);

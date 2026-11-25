@@ -1,7 +1,6 @@
 // 단축키 — 표 하나가 디스패치와 `?` 도움말(ShortcutHelp)을 함께 갖는다. 같은 키가 화면마다 다른 일을 하므로 화면을 먼저 본다.
 // 하는 일은 기존 모듈의 함수라 actions 로 받는다 — Storybook 은 표만 그린다.
 export type ShortcutActions = {
-  /** 끊겼으면 화면이 없다(offline). 갤러리가 보이면 gallery — 데몬 상태의 화면과 달리 보이는 층이다(D-198). */
   screen(): string;
   tabCount(): number;
   moveCursor(d: number): void;
@@ -29,7 +28,6 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
       { keys: ['ArrowLeft', 'ArrowRight'], cap: ['←', '→'], label: phrase('keys.card.pick'), when: () => a.screen() === 'board',
         run: e => a.moveCursor(e.key === 'ArrowLeft' ? -1 : 1) },
       { keys: ['Enter', 'i'], cap: ['↩', 'I'], label: phrase('keys.card.open'), when: () => a.screen() === 'board', run: () => a.openCursor() },
-      // 떠 있는 층(아래 installShortcuts)과 가리킨 카드가 먼저 걷히고, 아무것도 없을 때 보드의 위층으로 물러난다.
       { keys: ['Escape'], cap: ['esc'], label: phrase('keys.board.gallery'), when: () => a.screen() === 'board', run: () => a.openGallery() },
     ] },
     { group: phrase('keys.group.single'), rows: [

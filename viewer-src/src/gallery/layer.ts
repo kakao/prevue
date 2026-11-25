@@ -1,5 +1,3 @@
-// 갤러리 층 — 화면에 하나뿐이라 모듈이 갖는다. 데몬 상태의 screen 은 늘리지 않는다(층은 뷰어만 안다).
-// 탭 0개면 늘 보이고, 탭이 있으면 연 자리(그때의 지금 탭)의 보드 위에서만 보인다 — 다른 탭으로 옮겨지면 그 커밋에서 안 보인다.
 import { useSyncExternalStore } from 'react';
 import { fetchPreviewFiles } from '../runtime/api';
 import { store } from '../runtime/store';
@@ -20,26 +18,22 @@ const snapshot = () => layer;
 export const useLayer = () => useSyncExternalStore(subscribe, snapshot);
 export const currentLayer = () => layer;
 
-let shown = false, stale = true, asked = 0;
-/** 단축키가 보는 것 — 마지막으로 그린 갤러리가 보이는가. */
+let shown = false, asked = 0;
 export const galleryShown = () => shown;
 export function markShown(on: boolean) { shown = on; }
 
-/** 보드 위에 연다. */
 export function openGallery() { update({ open: true, openedOver: activeKey(store.st) }); }
 export function closeGallery() { update({ open: false }); }
 
 export async function loadFiles() {
   const n = ++asked;
-  stale = false;
   const next = await fetchPreviewFiles().then(d => ({ ready: d.ready, files: d.files }), () => ({ files: [] as PreviewFile[], ready: true }));
   if (n === asked) update(next);
 }
-export const filesStale = () => stale || !layer.files;
-/** 목록이 바뀌었다(데몬의 `previewFiles`) — 보이면 다시 받고, 아니면 다음에 보일 때 받는다. */
-export function galleryFilesChanged() { if (shown) loadFiles(); else stale = true; }
+export function galleryFilesChanged() { if (shown) loadFiles(); }
 
-/** 갤러리가 보이는가 — 탭 0개면 늘, 탭이 있으면 연 자리의 보드 위에서만. 한 장에서는 보이지 않는다. 끊김은 오류로 남는다. */
+addEventListener('visibilitychange', () => { if (shown && document.visibilityState === 'visible') loadFiles(); });
+
 export function useGalleryShown(state: ViewerState | null, connection: Connection | null) {
   const s = useLayer();
   if (connection === 'lost' || !state?.header.repo) return false;

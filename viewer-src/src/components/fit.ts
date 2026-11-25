@@ -1,4 +1,3 @@
-// 이름의 가운데 줄임 — 레일 줄과 갤러리 카드가 함께 쓴다. CSS 줄임은 끝만 잘라 형제 파일이 똑같이 보인다.
 const WORDS = /[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])|./g;
 /** 꼬리 — 뒤쪽 낱말(CamelCase) 몇 개. 형제 파일은 앞이 같고 뒤가 달라서, 뒤를 자르면 셋이 똑같이 `DrinkDetailSc…`가 됐다. */
 function tailOf(name: string) {

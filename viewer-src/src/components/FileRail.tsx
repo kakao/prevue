@@ -29,12 +29,12 @@ let railTabs: Tab[] = [];
 export function stepTab(d: number) {
   const i = railTabs.findIndex(t => t.active);
   const t = railTabs[Math.max(0, Math.min(railTabs.length - 1, i + d))];
-  if (t && !t.active) post('/viewer/tab', { key: t.key });
+  if (t) { if (t.active) closeGallery(); else post('/viewer/tab', { key: t.key }); }
 }
 /** `1`~`9` — 그 번째 탭. */
 export function jumpTab(n: number) {
   const t = railTabs[n - 1];
-  if (t && !t.active) post('/viewer/tab', { key: t.key });
+  if (t) { if (t.active) closeGallery(); else post('/viewer/tab', { key: t.key }); }
 }
 export const tabCount = () => railTabs.length;
 
@@ -152,7 +152,6 @@ export function FileRail({ tabs, screen, gallery = false, hosts }: { tabs: Tab[]
   const move = (slide: boolean) => {
     const g = glider.current, state = glide.current;
     if (!g || !list) return;
-    // 갤러리에 있는 동안은 「모든 Preview」가 고른 줄이다 — 바탕은 탭에 서지 않는다.
     const el = galleryRef.current ? null : list.querySelector<HTMLElement>('.rt.active:not(.leaving)');
     g.hidden = !el;
     if (!el) return;

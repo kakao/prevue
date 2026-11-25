@@ -160,8 +160,6 @@
   "quickopen.none": "No Preview files in this app can be opened",
   "quickopen.opened": "Recently opened",
   "quickopen.placeholder": "Search Preview files",
-  "quickopen.term": "Or in the terminal",
-  "quickopen.term.file": "file",
   "rail.all": "All Previews",
   "rail.empty": "No open files",
   "rail.open": "Open file",

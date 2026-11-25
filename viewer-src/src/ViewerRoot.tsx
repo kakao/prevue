@@ -56,7 +56,6 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
 }) {
   // 스트림 · 틀 · 스크롤처럼 그린 뒤에 재는 것은 session.ts 가 한다. 영역들은 자식이라 그 효과가 먼저 돈다 — 헤더 · 레일 · 화면이 먼저 자리를 잡는다.
   useLayoutEffect(() => { if (state) renderLegacy(state); }, [draw]);
-  // 갤러리는 보드의 위층이다 — 보이는 동안 보드 · 빈 탭은 숨는다. 데몬 상태의 화면은 그대로다.
   const gallery = useGalleryShown(state, connection);
   const files = useLayer().files;
   const screen = gallery ? 'gallery' : state?.screen ?? null;
@@ -69,11 +68,9 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <GalleryEntry on={gallery} count={files?.length ?? null} host={hosts.railAll} />
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
     <BuildNotice pending={!!state?.buildPending} host={hosts.buildNotice} />
-    {/* 보드보다 먼저 — 보드가 숨기 전의 스크롤을 갤러리가 적어 둔다. */}
     <Gallery shown={gallery} state={state} draw={draw} host={hosts.gallery} />
     {/* 레일이 접히고 펴진 뒤에 잰다 — 보드의 배율은 레일을 뺀 폭으로 정한다. */}
     <PreviewBoard board={state?.board ?? null} screen={screen} hosts={hosts.board} actions={board} />
-    {/* 팔레트는 새 화면을 그리는 이 커밋에서 걷힌다. */}
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <VacantTab screen={screen} vacant={state?.vacant ?? null} host={hosts.vacant} />
     {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}

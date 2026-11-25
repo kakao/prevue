@@ -13,7 +13,6 @@ import { closeGallery } from '../gallery/layer';
 // 빠른 열기(D-56 · D-100) — 이 데몬이 열 수 있는 프리뷰 파일을 찾아 탭으로 연다.
 // 레일 맨 아래 "파일 열기"(D-98) · / · ⌘K 로 열면 창 위 가운데에 팔레트가 뜨고, 그 맨 위 입력에 바로 칠 수 있다. 뒤에는 막이 깔린다.
 // 목록은 데몬이 갖고(`/preview-files.json`), 매칭 · 순위 · 최근 연 파일은 브라우저의 일이다.
-// 열린 탭이 없을 때의 시작 화면은 갤러리다(D-198, D-63 대체) — 팔레트는 그 위에서도 같은 팔레트다.
 
 const ROWS = 8, CHANGED = 5;          // 빈 상태 = 최근 바뀐 5 + 최근 연 3 — 결과와 줄 수가 같아 치기 시작해도 팔레트 높이가 거의 그대로다
 
@@ -77,7 +76,7 @@ let px = -1, py = -1, real = false;
 addEventListener('mousemove', e => { real = e.screenX !== px || e.screenY !== py; px = e.screenX; py = e.screenY; }, true);
 
 /**
- * 검색 상자 — 입력 · 목록 · 안내 줄. 팔레트와 시작 화면이 같은 상자를 쓴다.
+ * 검색 상자 — 입력 · 목록 · 안내 줄.
  * 입력은 React 가 값을 갖지 않는다 — 사람이 친 글자도, 브라우저 검사가 넣은 값도 같은 input 이벤트로 온다.
  * 고른 줄(sel)은 쉬는 동안(막 열었고 아무것도 안 했다) -1 이다. ↓ · 입력 · 포인터가 움직이면 생긴다(R5). 그래도 Enter 의 기본값은 첫 줄이다.
  */
@@ -178,7 +177,6 @@ export const FileSearch = memo(function FileSearch({ files, ready, query, sel, r
     </div>
     <div className="qo-hint">
       <span className="qo-keys" aria-hidden="true"><span>{phrase('quickopen.keys.move')}</span><span>{phrase('quickopen.keys.open')}</span><span>{phrase('quickopen.keys.close')}</span></span>
-      <span className="qo-term"><span>{phrase('quickopen.term')}</span> <code>prevue show &lt;<span>{phrase('quickopen.term.file')}</span>&gt;</code></span>
     </div>
   </div>;
 });
@@ -205,7 +203,6 @@ const subscribe = (listener: () => void) => { listeners.add(listener); return ()
 const snapshot = () => search;
 
 let parts: QuickOpenHosts | null = null, field: HTMLInputElement | null = null, button: HTMLElement | null = null;
-// returnTo — 키보드로 연 자리. 닫을 때 그리로 포커스를 돌려준다(마우스로 열었으면 없다).
 let returnTo: HTMLElement | null = null, closeOnDraw = 0, entering = false, settling = false, lastActive: string | null = null;
 let asked = 0;
 
@@ -324,10 +321,6 @@ export const QuickOpenButton = memo(function QuickOpenButton({ host }: { host?: 
   return place(body, (ref, children) => <button className="rail-open" id="railOpen" ref={ref} type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="qoSheet">{children}</button>);
 });
 
-/**
- * 뷰어의 빠른 열기 — 상태를 그릴 때마다 팔레트를 걷을지, 지금 탭을 최근 연 파일에 적을지 정한다.
- * 화면 전환이 새 화면을 찍기 전에 같은 커밋에서 정해야 해서 바깥 요소의 hidden · 클래스는 레이아웃 효과에서 바로 쓴다.
- */
 export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerState | null; draw: number; connection: Connection | null; hosts: QuickOpenHosts }) {
   const messages = useMessages();
   const s = useSyncExternalStore(subscribe, snapshot);
@@ -352,7 +345,6 @@ export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerSta
     if (!state) return;
     const a = activeKey(state);
     if (a && a !== lastActive) { lastActive = a; remember(a); }
-    // 탭 0개에서 고른 파일은 탭이 열린 상태에서 걷힌다 — 그 사이에 온 빈 화면 상태로는 걷지 않는다.
     if (closeOnDraw && state.screen !== 'empty') closeQuickOpen(true);
   }, [draw]);
   useLayoutEffect(() => { if (connection === 'lost') closeQuickOpen(true); }, [connection]);

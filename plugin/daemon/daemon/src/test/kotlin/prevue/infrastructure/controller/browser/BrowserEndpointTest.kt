@@ -64,19 +64,25 @@ class BrowserEndpointTest {
         }
     }
 
-    @Test fun `갤러리 카드는 첫 장 하나를 옆에서 그리고 장 수를 함께 준다`() {
-        val before = fx.renderer.asides.size
-        val (code, body) = request("GET", "/gallery/card?file=" + URLEncoder.encode(fx.file.path, UTF_8), null)
-        assertEquals(200, code)
-        body as Map<*, *>
-        assertEquals(true, body["ok"])
-        assertEquals(1L, body["sheets"])
-        assertEquals(null, body["failure"])
-        val image = body["image"] as Map<*, *>
-        assertTrue((image["url"] as String).startsWith("/Card0@gallery-0.png?t="), image.toString())
-        assertEquals(100L to 100L, image["w"] to image["h"])
-        assertEquals(listOf("Card0@gallery"), fx.renderer.asides.drop(before).map { it.previewId })
-        assertTrue(fx.compiler.compiled.isEmpty(), "갤러리 카드가 컴파일했다")
+    @Test fun `갤러리 카드는 여러 장 중 첫 장만 옆에서 그리고 센 장 수를 준다`() {
+        Fixture(previews = 2).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            val before = own.renderer.asides.size
+            val (code, body) = request("GET", "/gallery/card?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p)
+            assertEquals(200, code)
+            body as Map<*, *>
+            assertEquals(true, body["ok"])
+            assertEquals(2L, body["sheets"])
+            assertEquals(null, body["failure"])
+            val image = body["image"] as Map<*, *>
+            assertTrue((image["url"] as String).startsWith("/Card0@gallery-0.png?t="), image.toString())
+            assertEquals(100L to 100L, image["w"] to image["h"])
+            assertEquals(listOf("Card0@gallery"), own.renderer.asides.drop(before).map { it.previewId })
+            assertTrue(own.compiler.compiled.isEmpty(), "갤러리 카드가 컴파일했다")
+            module.stopInputs()
+        }
     }
 
     @Test fun `갤러리 카드가 못 그리면 그림 없이 실패 문구를 준다`() {
@@ -212,13 +218,13 @@ class BrowserEndpointTest {
         override fun getPrincipal(): HttpPrincipal? = null
     }
 
-    private fun open(path: String) = URI("http://127.0.0.1:$port$path").toURL().openConnection() as HttpURLConnection
+    private fun open(path: String, at: Int = port) = URI("http://127.0.0.1:$at$path").toURL().openConnection() as HttpURLConnection
 
     private fun error(method: String, path: String, body: Map<String, Any?>?): Pair<Int, String> =
         request(method, path, body).let { (code, json) -> code to (json as Map<*, *>)["error"].toString() }
 
-    private fun request(method: String, path: String, body: Map<String, Any?>?): Pair<Int, Any?> {
-        val c = open(path)
+    private fun request(method: String, path: String, body: Map<String, Any?>?, at: Int = port): Pair<Int, Any?> {
+        val c = open(path, at)
         c.requestMethod = method
         if (body != null) { c.doOutput = true; c.outputStream.use { it.write(Json.str(body).toByteArray(UTF_8)) } }
         val code = c.responseCode

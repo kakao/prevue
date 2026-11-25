@@ -158,8 +158,6 @@
   "quickopen.none": "이 앱에서 열 수 있는 Preview 파일이 없어요",
   "quickopen.opened": "최근 연 파일",
   "quickopen.placeholder": "Preview 파일 검색하기",
-  "quickopen.term": "또는 터미널에서",
-  "quickopen.term.file": "파일",
   "rail.all": "모든 Preview",
   "rail.empty": "열린 파일 없음",
   "rail.open": "파일 열기",

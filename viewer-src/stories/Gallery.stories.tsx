@@ -5,8 +5,6 @@ import { GalleryCard, GalleryGrid } from '../src/components/Gallery';
 import { createCardQueue, type CardAnswer, type CardView } from '../src/gallery/queue';
 import { pearlBoard, pearlFiles } from './pearl';
 
-// 갤러리(D-198 · D-200) — 데몬 없이 pearl 목록과 보드 그림으로 돌린다. 카드 그림은 화면에 든 카드만 하나씩 묻고, 묻는 데 잠깐 걸린다.
-// 맨 뒤 두 파일은 빌드 산출물이 없는 파일처럼 그리지 못한다.
 const meta = { title: '파일/Gallery' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -32,7 +30,6 @@ export const Loading: Story = { render: () => {
   return <div className="story-shell gallery"><GalleryGrid files={null} ready={false} cards={cards} onOpen={() => {}} /></div>;
 } };
 
-// 카드의 네 모양 — 그림 · 여러 장 · 로딩 판 · 그리지 못함. 대기와 묻는 중은 같은 로딩 판이다.
 const text = { name: 'SearchScreenWithAVeryLongNameThatNeedsAMiddleCut', pkg: 'feature.search.ui.components', mod: 'feature/search', changed: '5 min ago' };
 const views: Array<[string, CardView]> = [
   ['done', { status: 'done', sheets: 1, image: { url: shots[0], w: 360, h: 780 } }],
