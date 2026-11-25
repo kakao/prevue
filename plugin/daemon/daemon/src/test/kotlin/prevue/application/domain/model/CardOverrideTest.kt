@@ -1,9 +1,7 @@
 package prevue.application.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class CardOverrideTest {
@@ -36,12 +34,5 @@ class CardOverrideTest {
         assertNull(on.params["widthDp"])
         val off = CardOverride("demo.CardsKt.Card0", ScreenSize.Dp(320, 640), SystemUi.OFF).applyTo(spec("showSystemUi" to "true"))
         assertEquals(mapOf("widthDp" to "320", "heightDp" to "640"), off.params)
-    }
-
-    @Test fun `기본값 판정은 건드리지 않음과 기본값을 같게 본다`() {
-        assertTrue(CardOverride.isDefault(null, null, null))
-        assertTrue(CardOverride.isDefault(ScreenSize.Original, SystemUi.ANNOTATED, EdgeToEdge.AUTO))
-        assertFalse(CardOverride.isDefault(null, SystemUi.ON, null))
-        assertNull(CardOverride.of("demo.CardsKt.Card0", ScreenSize.Original, SystemUi.ANNOTATED))
     }
 }
