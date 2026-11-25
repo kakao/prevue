@@ -3,12 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { requireDaemon, toBoard } from "./daemon.mjs";
+import { openFile, requireDaemon, toBoard } from "./daemon.mjs";
 
-// 좁은 창(≤640px)의 레일 서랍과 본문 여백을 잰다. 전용 워크트리로 fixtures/pearl의 PearlPreviews.kt(장이 여럿인 묶음이 있다)를 먼저 연다.
 const viewer = process.argv[2];
 assert(viewer, "node tests/viewer/narrow.mjs <전용 프리뷰 서버 URL>");
 await requireDaemon(viewer);
+await openFile(viewer, "PearlPreviews.kt");
 await toBoard(viewer);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const profile = await mkdtemp(join(tmpdir(), "prevue-narrow-check-"));
