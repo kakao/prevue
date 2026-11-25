@@ -35,6 +35,8 @@
   "gallery.ago.hours": "{n} hr ago",
   "gallery.ago.minutes": "{n} min ago",
   "gallery.failed": "Couldn't draw",
+  "gallery.sheet.close": "Close",
+  "gallery.sheet.open": "View on board",
   "gallery.sort": "Recently changed",
   "gallery.title": "All Previews",
   "header.copied": "Copied {what}: {text}",

@@ -52,6 +52,7 @@ public class BrowserEndpoint @Inject internal constructor(
             path == "/preview-files.json" -> ex.json(200, tabs.previewFiles())
             path == "/viewer/state" -> ex.json(200, presenter.current().toJson())
             path == "/gallery/card" && method == "GET" -> galleryCard(ex)
+            path == "/gallery/sheet" && method == "GET" -> gallerySheet(ex)
             path == "/app.json" -> ex.json(200, appJson())
             path == "/app-icon.png" && method == "GET" -> png(ex, identity.second, "max-age=3600")
             else -> return false
@@ -63,6 +64,11 @@ public class BrowserEndpoint @Inject internal constructor(
         val file = queryParam(ex, "file")
         val card = file?.let { gallery.card(it) }
         if (card == null) ex.json(404, mapOf("ok" to false)) else ex.json(200, card)
+    }
+
+    private suspend fun gallerySheet(ex: HttpExchange) {
+        val sheet = queryParam(ex, "file")?.let { gallery.sheet(it) }
+        if (sheet == null) ex.json(404, mapOf("ok" to false)) else ex.json(200, sheet)
     }
 
     private fun queryParam(ex: HttpExchange, name: String): String? =

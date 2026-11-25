@@ -8,7 +8,8 @@ import type { PreviewFile } from '../match';
 import { activeKey, type ViewerState } from '../state';
 import { byChanged, cardKey, changedAgo, commonHead, moduleOf, packageOf, stemOf } from '../gallery/cards';
 import { createCardQueue, type CardQueue, type CardView } from '../gallery/queue';
-import { closeGallery, currentLayer, galleryShown, loadFiles, markShown, openGallery, useLayer } from '../gallery/layer';
+import { closeGallery, closeSheet, currentLayer, galleryShown, loadFiles, markShown, openGallery, openSheet, sheetClosed, useLayer } from '../gallery/layer';
+import { GallerySheet } from './GallerySheet';
 import { fit, fontOf } from './fit';
 
 
@@ -52,11 +53,12 @@ export const GalleryCard = memo(function GalleryCard({ text, view, near = true, 
   const tall = view.status !== 'done' || view.image.w <= view.image.h;
   const sheets = view.status === 'done' ? view.sheets : 0;
   return <article className="gcard" data-state={state} aria-busy={state === 'loading'}>
-    <button className="gcard-hit" type="button" onClick={onOpen}>
+    <button className="gcard-hit" type="button" aria-haspopup="dialog" onClick={onOpen}>
       <span className="gcard-cover">
         {view.status === 'error'
           ? <span className="gcard-failed" title={daemonText(view.failure) || undefined}>{phrase('gallery.failed')}</span>
           : <span className="gcard-stack" data-o={tall ? 'tall' : 'wide'}>
+              {(sheets > 2 ? ['l', 'r'] : sheets > 1 ? ['r'] : []).map(g => <span key={g} className="gcard-ghost" data-g={g} />)}
               <span className="gcard-shot">{view.status === 'done' && near
                 ? <img src={view.image.url} width={view.image.w} height={view.image.h} alt="" decoding="async" onLoad={e => e.currentTarget.classList.add('in')} onError={onLost} />
                 : <span className="gcard-ph" />}</span>
@@ -134,7 +136,6 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
     const was = galleryShown();
     markShown(on);
     element.hidden = !on;
-    queue.pause(!on);
     if (on === was) return;
     const over = state?.screen === 'board' || state?.screen === 'vacant';
     if (on) {
@@ -149,11 +150,28 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
     }
   }, [on, element]);
 
+  useLayoutEffect(() => { queue.pause(!on || !!s.sheet); }, [on, s.sheet]);
+  useEffect(() => {
+    if (s.sheet && (!on || (s.files && !s.files.some(f => f.path === s.sheet!.path)))) sheetClosed();
+  }, [on, s.files, s.sheet]);
+
   const latest = useRef(messages);
   latest.current = messages;
-  const onOpen = useCallback((f: PreviewFile) => openFile(f, latest.current), []);
-  return place(<GalleryGrid files={s.files} ready={s.ready} cards={queue} onOpen={onOpen} />,
-    (ref, body) => <section id="galleryView" className="gallery" ref={ref}>{body}</section>);
+  const onPeek = useCallback((f: PreviewFile) => openSheet(f.path), []);
+  const peek = on && s.sheet ? s.files?.find(f => f.path === s.sheet!.path) ?? null : null;
+  return place(<>
+    <GalleryGrid files={s.files} ready={s.ready} cards={queue} onOpen={onPeek} />
+    {peek && <SheetHost key={peek.path} f={peek} closing={s.sheet!.closing} onOpen={() => openFile(peek, latest.current)} />}
+  </>, (ref, body) => <section id="galleryView" className="gallery" ref={ref}>{body}</section>);
+}
+
+function SheetHost({ f, closing, onOpen }: { f: PreviewFile; closing: boolean; onOpen(): void }) {
+  const { phrase } = useMessages();
+  const key = cardKey(f);
+  const view = useSyncExternalStore(queue.subscribe, () => queue.get(key));
+  const lang = document.documentElement.lang || 'en';
+  const text = useMemo(() => ({ name: stemOf(f), pkg: packageOf(f, []), mod: moduleOf(f.module), changed: changedAgo(f.mtime, Date.now(), phrase, lang) }), [f, phrase, lang]);
+  return <GallerySheet file={f} text={text} view={view} closing={closing} onClose={closeSheet} onClosed={sheetClosed} onOpen={onOpen} />;
 }
 
 export function GalleryEntry({ on, count, host }: { on: boolean; count: number | null; host?: HTMLElement | null }) {

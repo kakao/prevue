@@ -75,16 +75,12 @@ export function keyOf(e: KeyboardEvent) {
   return e.key;
 }
 
-/**
- * 떠 있는 층이 먼저 Esc 를 먹는다 — 도움말, 그다음 후보 고르기 · 배율 메뉴 · 기기 메뉴 · 폴더 팝오버 · 레일 서랍 · 가리킨 카드. 닫은 것이 있으면 true.
- * 카드가 화면의 Esc 보다 먼저라 한 장에서는 첫 Esc 가 카드를 걷고 둘째가 보드로 나간다.
- */
-export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDeviceMenu(): boolean; closeDirPop(): boolean; closeRailDrawer(): boolean; closeCard(): boolean };
+export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDeviceMenu(): boolean; closeDirPop(): boolean; closeRailDrawer(): boolean; closeCard(): boolean; closeSheet(): boolean; sheetOpen(): boolean; openSheetFile(): void };
 
 export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, layers: EscapeLayers) {
   const keydown = (e: KeyboardEvent) => {
     // ⌘K(Ctrl+K) — 웹 앱 검색의 관용 키. 브라우저의 주소창 검색보다 먼저 받는다. ⌘P(인쇄)는 잡지 않는다.
-    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); a.openQuickOpen(document.activeElement); return; }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); if (!layers.sheetOpen()) a.openQuickOpen(document.activeElement); return; }
     if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
     const key = keyOf(e);
     // 버튼의 Enter 는 그 버튼이 받는다 — 키보드로 간 버튼(:focus-visible)만. 마우스로 누른 뒤 남은 포커스가 고른 카드 열기를 가져가면 안 된다(D-63).
@@ -97,6 +93,8 @@ export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, lay
     if (key === 'Escape' && layers.closeDirPop()) { e.preventDefault(); return; }
     if (key === 'Escape' && layers.closeRailDrawer()) { e.preventDefault(); return; }
     if (key === 'Escape' && layers.closeCard()) { e.preventDefault(); return; }
+    if (key === 'Escape' && layers.closeSheet()) { e.preventDefault(); return; }
+    if (layers.sheetOpen() && !a.helpOpen()) { if (key === 'Enter') { e.preventDefault(); layers.openSheetFile(); } return; }
     if (a.helpOpen() && key !== '?') return;
     for (const g of table) for (const r of g.rows) {
       if (!r.run || !r.keys!.includes(key) || !r.when!()) continue;

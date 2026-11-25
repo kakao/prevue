@@ -33,6 +33,8 @@
   "gallery.ago.hours": "{n}시간 전",
   "gallery.ago.minutes": "{n}분 전",
   "gallery.failed": "그리지 못했어요",
+  "gallery.sheet.close": "닫기",
+  "gallery.sheet.open": "보드에서 보기",
   "gallery.sort": "최근 바뀐 순",
   "gallery.title": "모든 Preview",
   "header.copied": "{what} 복사했어요: {text}",

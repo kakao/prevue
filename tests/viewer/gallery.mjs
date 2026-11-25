@@ -20,9 +20,11 @@ let version = board.version + 1;
 const tabOf = path => ({ ...board.tabs[0], key: path, name: path.split('/').pop().replace('.kt', ''), title: path, active: true });
 const boardOf = path => ({ ...board, version: version++, screen: 'board', tabs: [tabOf(path)], board: { ...board.board, file: path } });
 let current = { ...board, version: version++, screen: 'empty', tabs: [], board: null, focus: null };
-const asked = [], opened = [];
+const asked = [], opened = [], sheetAsked = [];
+const WIDE = files[4].path;
 let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null;
 const streams = new Set();
+const notifyFiles = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'previewFiles' } })}\n\n`); };
 const push = s => { current = s; for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'state', state: s })}\n\n`); };
 
 const server = createServer(async (request, response) => {
@@ -40,7 +42,16 @@ const server = createServer(async (request, response) => {
     inFlight--;
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(file === FAILED ? { ok: false, sheets: 1, image: null, failure: null }
-      : { ok: true, sheets: file === files[0].path ? 3 : 1, image: { url: file === brokenImage ? `/gone.png?n=${asked.length}` : '/prevue.svg', w: 300, h: 650 }, failure: null }));
+      : { ok: true, sheets: file === files[0].path || file === WIDE ? 3 : 1, image: { url: file === brokenImage ? `/gone.png?n=${asked.length}` : '/prevue.svg', ...(file === WIDE ? { w: 650, h: 300 } : { w: 300, h: 650 }) }, failure: null }));
+  } else if (path === '/gallery/sheet') {
+    const file = url.searchParams.get('file');
+    sheetAsked.push(file);
+    await new Promise(r => setTimeout(r, delay));
+    const image = file === WIDE ? { url: '/prevue.svg', w: 650, h: 300 } : { url: '/prevue.svg', w: 300, h: 650 };
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({ sheets: file === files[0].path || file === WIDE
+      ? [{ name: 'Screen0Preview', variant: null, image, failure: null }, { name: 'Screen0DarkPreview', variant: null, image, failure: null }, { name: 'Screen0Preview', variant: 'Long', image: null, failure: null }]
+      : [{ name: 'ScreenPreview', variant: null, image, failure: null }] }));
   } else if (path === '/viewer/open' && request.method === 'POST') {
     let body = ''; for await (const c of request) body += c;
     const { file } = JSON.parse(body);
@@ -138,9 +149,85 @@ try {
   await evaluate(`scrollTo(0, 0)`);
   await pause(300);
 
+  const sheetUp = `document.querySelector('.gsheet')?.style.visibility!=='hidden' && !!document.querySelector('.gsheet')`;
+  const sheetGone = `!document.querySelector('.gsheet-layer')`;
+  const watchFrames = `(()=>{window.__out=[];window.__frames=0;const cut=(el,r)=>{const m=/inset\\(([^)]*)\\)/.exec(getComputedStyle(el).clipPath);if(!m)return r;const v=m[1].trim().split(/\\s+/);while(v.length<4)v.push(v[v.length===3?1:v.length===2?0:0]);const n=(x,len)=>x.endsWith('%')?len*parseFloat(x)/100:parseFloat(x)||0;return{left:r.left+n(v[3],r.width),top:r.top+n(v[0],r.height),right:r.right-n(v[1],r.width),bottom:r.bottom-n(v[2],r.height)}};const f=()=>{const s=document.querySelector('.gsheet-shell');if(s){const b=s.getBoundingClientRect();for(const el of document.querySelectorAll('.gsheet-shot,.gsheet-cap,.gsheet-file,.gsheet-pkgrow,.gsheet-info,.gsheet-mod,.gsheet-go,.gsheet .gcard-count')){if(+getComputedStyle(el).opacity<.05)continue;const r=cut(el,el.getBoundingClientRect());if(r.right-r.left<1)continue;if(r.left<b.left-1.5||r.top<b.top-1.5||r.right>b.right+1.5||r.bottom>b.bottom+1.5)__out.push(el.className+' '+__frames)}__frames++}if(__frames<90)requestAnimationFrame(f)};requestAnimationFrame(f)})()`;
+  const openedBefore = opened.length;
+  await evaluate(watchFrames);
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(sheetUp);
+  await check(`document.querySelector('#galleryView').hidden===false && document.querySelector('.gsheet[role=dialog][aria-modal=true]').getAttribute('aria-label')==='Screen0'`, '카드를 누르면 그 자리에서 시트가 뜬다');
+  ok(opened.length === openedBefore, '시트를 여는 것만으로는 파일을 열지 않는다');
+  await check(`getComputedStyle(document.documentElement).overflow==='hidden' && document.documentElement.style.scrollbarGutter==='stable'`, '시트가 열린 동안 뒤 스크롤을 잠근다');
+  await check(`document.activeElement?.classList.contains('gsheet-go')`, '포커스는 「보드에서 보기」');
+  await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').style.visibility==='hidden'`, '시트가 뜬 동안 카드 자리는 비운다');
+  await until(`document.querySelectorAll('.gsheet-fig').length===3 && document.querySelectorAll('.gsheet-shot img').length===2`);
+  ok(sheetAsked.at(-1) === files[0].path, '시트를 열 때 앞 장들을 묻는다');
+  await check(`[...document.querySelectorAll('.gsheet-cap')].map(c=>c.textContent).join()==='Dark,Long'`, '이름표는 파일 이름 · Preview 를 떼고, 변주는 변주 이름, 남는 것이 없으면 생략');
+  await check(`document.querySelectorAll('.gsheet-shot[data-state="failed"] .gsheet-failed').length===1`, '그리지 못한 장은 실패 판');
+  await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='3'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
+  await check(`document.querySelectorAll('.gsheet-close').length===1 && document.querySelector('.gsheet-close').textContent.length>0`, '화면 읽기용 닫기 단추');
+  const stayed = [];
+  for (let i = 0; i < 6; i++) { await key('Tab'); stayed.push(await evaluate(`!!document.activeElement?.closest('.gsheet')`)); }
+  ok(stayed.every(x => x === true), 'Tab 이 시트 밖으로 나가지 않는다');
+  await check(`!!document.querySelector('#rail').closest('[inert]') && !!document.querySelector('#bar').closest('[inert]') && !document.querySelector('.gsheet').closest('[inert]')`, '시트가 떠 있는 동안 헤더 · 레일은 막힌다');
+  for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'k', code: 'KeyK', modifiers: 4 });
+  await pause(200);
+  await check(`!document.querySelector('#qoSheet').classList.contains('on')`, '시트가 떠 있는 동안 ⌘K 는 빠른 열기를 띄우지 않는다');
+  for (let i = 0; i < 100 && await evaluate('__frames') < 90; i++) await pause(30);
+  ok((await evaluate('__out')).length === 0, `여는 동안 시트 내용이 틀 밖으로 나가지 않는다 ${(await evaluate('__out')).slice(0, 3)}`);
+  await key('/', 'Slash');
+  await pause(200);
+  await check(`!document.querySelector('#qoSheet').classList.contains('on')`, '시트가 열린 동안 갤러리 키는 먹지 않는다');
+  await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 700, y: 450, deltaX: 0, deltaY: 600 });
+  await pause(200);
+  ok(await evaluate('scrollY') === 0, '시트가 열린 동안 휠로 뒤가 스크롤되지 않는다');
+
+  await evaluate(watchFrames);
+  await key('Escape');
+  await until(sheetGone);
+  ok((await evaluate('__out')).length === 0, `닫는 동안 시트 내용이 틀 밖으로 나가지 않는다 ${(await evaluate('__out')).slice(0, 3)}`);
+  await check(`document.querySelector('#galleryView').hidden===false && document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').style.visibility===''`, 'Esc 로 시트를 닫으면 카드가 제자리에 돌아온다');
+  await check(`document.activeElement===document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard-hit')`, '닫으면 포커스가 카드로 돌아온다');
+  await check(`getComputedStyle(document.documentElement).overflow!=='hidden' && !document.querySelector('#galleryView .gallery-in').inert`, '닫으면 뒤 스크롤 잠금이 풀린다');
+
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(sheetUp);
+  await click('.gsheet-scrim');
+  await until(sheetGone);
+  ok(true, '바깥을 누르면 시트가 닫힌다');
+
+  await click('#galleryView .gcard-slot:nth-child(2) .gcard-hit');
+  await until(sheetUp);
+  await evaluate(`document.documentElement.scrollTop=document.documentElement.scrollHeight`);
+  await key('Escape');
+  await until(sheetGone);
+  await evaluate(`scrollTo(0, 0)`);
+  await check(`document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard').style.visibility==='' && document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-hit').getBoundingClientRect().height>0`, '카드가 화면 밖일 때 닫아도 카드가 돌아온다');
+
+  await click('#galleryView .gcard-slot:nth-child(5) .gcard-hit');
+  await until(sheetUp);
+  await until(`document.querySelectorAll('.gsheet-shot img').length===2`);
+  await check(`document.querySelector('.gsheet-stage').dataset.flow==='col'`, '모든 그림이 가로면 세로로 쌓는다');
+  await key('Escape');
+  await until(sheetGone);
+
+  const openedBeforeClosing = opened.length;
   await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
-  await until(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false`);
-  ok(opened.at(-1) === files[2].path, '카드를 고르면 그 파일을 연다');
+  await until(sheetUp);
+  await key('Escape');
+  for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
+  await until(sheetGone);
+  await pause(300);
+  ok(opened.length === openedBeforeClosing && await evaluate(`document.querySelector('#galleryView').hidden===false`), '닫히는 중에 누른 Enter 는 보드를 열지 않는다');
+  await check(`!document.querySelector('[data-sheet-inert]') && !document.querySelector('#rail').closest('[inert]')`, '닫으면 바깥 막음이 풀린다');
+
+  await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
+  await until(sheetUp);
+  await evaluate(`document.activeElement.blur()`);
+  for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
+  await until(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false && ${sheetGone}`);
+  ok(opened.at(-1) === files[2].path, '시트의 Enter 로 그 파일의 탭과 보드가 열린다');
   await check(`!document.querySelector('#railAll').classList.contains('on') && !document.querySelector('#railGlider').hidden`, '보드에서는 레일의 탭 줄이 고른 줄');
 
   await click('#railAll');
@@ -159,6 +246,19 @@ try {
   await key('Escape');
   await until(`document.querySelector('#galleryView').hidden===false`);
   ok(true, '층이 없으면 보드의 Esc 가 갤러리로');
+  await check(sheetGone, '보드에서 물러난 갤러리에는 시트가 없다');
+  await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
+  await until(sheetUp);
+  await click('.gsheet-go');
+  await until(`document.querySelector('#galleryView').hidden && document.querySelector('#boardView').hidden===false && ${sheetGone}`);
+  ok(true, '「보드에서 보기」를 누르면 보드로');
+  await key('Escape');
+  await until(`document.querySelector('#galleryView').hidden===false`);
+  await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
+  await until(sheetUp);
+  await key('Escape');
+  await until(sheetGone);
+  await check(`document.querySelector('#galleryView').hidden===false`, 'Esc 층 — 시트가 먼저 닫히고 갤러리는 남는다');
   await key('Escape');
   await pause(200);
   await check(`document.querySelector('#galleryView').hidden===false`, '갤러리의 Esc 는 아무 데도 가지 않는다');
@@ -234,6 +334,41 @@ try {
   push({ ...current, version: version++, screen: 'empty', tabs: [], board: null });
   await until(`document.querySelector('#galleryView').hidden===false`);
   ok(true, '탭을 다 닫으면 다시 갤러리');
+  delay = 600;
+  for (const f of files) f.mtime += 1;
+  notifyFiles();
+  for (let i = 0; i < 100 && !inFlight; i++) await pause(20);
+  await click('#galleryView .gcard-slot:nth-child(2) .gcard-hit');
+  await until(sheetUp);
+  for (let i = 0; i < 100 && inFlight; i++) await pause(20);
+  const heldBySheet = asked.length;
+  await pause(1500);
+  ok(asked.length === heldBySheet, '시트가 열린 동안 카드 줄이 멈춘다');
+  await key('Escape');
+  await until(sheetGone);
+  for (let i = 0; i < 100 && asked.length === heldBySheet; i++) await pause(20);
+  ok(asked.length > heldBySheet, '시트를 닫으면 카드 줄이 다시 돈다');
+  delay = 120;
+
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(`!!document.querySelector('.gsheet-shell')`);
+  await check(`(()=>{const as=document.querySelector('.gsheet-layer').getAnimations({subtree:true});return as.length>0&&as.every(a=>a.effect.getKeyframes().every(k=>!('transform' in k)&&!('clipPath' in k)))})()`, '움직임 줄이기에서는 시트가 옮겨 오지 않고 페이드만 한다');
+  await key('Escape');
+  await until(sheetGone);
+  await send('Emulation.setEmulatedMedia', { features: [] });
+  await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
+  await until(sheetUp);
+  const gone = await evaluate(`document.querySelector('#galleryView .gcard-slot:nth-child(1)').dataset.path`);
+  files.splice(files.findIndex(f => f.path === gone), 1);
+  notifyFiles();
+  await until(`${sheetGone} && !document.querySelector('#galleryView .gcard-slot[data-path="${gone}"]')`);
+  await check(`getComputedStyle(document.documentElement).overflow!=='hidden' && !document.querySelector('#galleryView .gallery-in').inert`, '연 파일이 목록에서 빠지면 시트가 닫히고 잠금이 풀린다');
+  await key('/', 'Slash');
+  await until(`document.querySelector('#qoSheet').classList.contains('on')`);
+  await key('Escape');
+  await until(`document.querySelector('#qoSheet').hidden`);
+  ok(true, '시트가 닫힌 뒤에는 갤러리 키가 다시 먹는다');
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {
