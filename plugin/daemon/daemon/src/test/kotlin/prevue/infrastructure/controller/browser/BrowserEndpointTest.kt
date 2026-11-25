@@ -124,7 +124,7 @@ class BrowserEndpointTest {
         }
     }
 
-    @Test fun `갤러리 카드는 제공자 값 이름을 변주로 주고 못 그린 장만 실패다`() {
+    @Test fun `갤러리 카드는 제공자 값 이름을 변주로 준다`() {
         File(fx.srcRoot, "demo/Names.kt").writeText("package demo\nclass Names : PreviewParameterProvider<String> { override val values = sequenceOf(\"a\", \"b\") }\n")
         val source = fx.file.readText()
         fx.file.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Card0(@PreviewParameter(Names::class) n: String) {}\n")

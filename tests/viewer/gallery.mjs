@@ -16,6 +16,7 @@ const files = Array.from({ length: 40 }, (_, i) => ({
   module: `:feature:f${i}:impl`, mtime: 1_800_000_000_000 - i * 60_000, functions: [`Screen${i}Preview`],
 }));
 const FAILED = files[1].path;
+const BROKEN = files[9].path;
 let version = board.version + 1;
 const tabOf = path => ({ ...board.tabs[0], key: path, name: path.split('/').pop().replace('.kt', ''), title: path, active: true });
 const boardOf = path => ({ ...board, version: version++, screen: 'board', tabs: [tabOf(path)], board: { ...board.board, file: path } });
@@ -43,6 +44,7 @@ const server = createServer(async (request, response) => {
     inFlight--;
     const image = file === WIDE ? { url: '/prevue.svg', w: 650, h: 300 } : { url: '/prevue.svg', w: 300, h: 650 };
     const first = { i: 0, name: 'Screen0Preview', variant: null, image: file === brokenImage ? { ...image, url: `/gone.png?n=${asked.length}` } : image };
+    if (file === BROKEN) { response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'boom' })); return; }
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(file === FAILED ? { sheets: 1, front: [], failure: null }
       : file === files[0].path || file === WIDE ? { sheets: 4, front: [first, { i: 1, name: 'Screen0DarkPreview', variant: null, image }, { i: 3, name: 'Screen0Preview', variant: 'Long', image }], failure: null }
@@ -430,6 +432,9 @@ try {
   await check(`getComputedStyle(document.querySelector('#phProbe'),'::after').display==='none' && getComputedStyle(document.querySelector('#phProbe')).animationName==='none'`, '움직임 줄이기에서는 멈춘 판');
   await send('Emulation.setEmulatedMedia', { features: [] });
   await evaluate(`document.querySelector('#phProbe').remove()`);
+  await evaluate(`document.querySelector('#galleryView .gcard-slot[data-path="${BROKEN}"]').scrollIntoView({block:'center'})`);
+  await until(`document.querySelector('#galleryView .gcard-slot[data-path="${BROKEN}"] .gcard').dataset.state==='failed'`);
+  ok(true, '카드 요청이 서버 오류로 끝나면 실패 카드');
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {

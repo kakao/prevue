@@ -21,7 +21,7 @@ export const fetchProjectFiles = (): Promise<{ files?: Record<string, string[]> 
 export const fetchPreviewFiles = (): Promise<{ ready: boolean; files: PreviewFile[] }> => fetch("/preview-files.json").then(r => r.json());
 
 export const fetchGalleryCard = (path: string): Promise<CardAnswer | null> =>
-  fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
+  fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.ok ? r.json() : null));
 
 /** 데몬 이벤트(SSE). 상태(state)와 일회성 알림(ui)만 온다(D-42). */
 export function connect({ open, state, ui, error }: { open(): void; state(state: ViewerState): void; ui(event: { kind: string; text?: Message }): void; error(event: Event): void }): void {

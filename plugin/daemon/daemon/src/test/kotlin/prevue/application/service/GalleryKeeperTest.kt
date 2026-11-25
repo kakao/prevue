@@ -5,6 +5,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import prevue.application.domain.model.CardOverride
+import prevue.application.domain.model.ScreenSize
+import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.Clock
 import prevue.daemon.fake.Fixture
 import prevue.daemon.fake.awaitBoardFilled
@@ -33,7 +36,7 @@ class GalleryKeeperTest {
         assertTrue(again.shots.all { fx.graph().galleryShots.image(it.id)?.isFile == true })
     }
 
-    @Test fun `보드가 못 그린 장은 실패로 남고 남길 때마다 갤러리에 알린다`() {
+    @Test fun `보드가 못 그린 장은 실패로 남고 남기면 갤러리에 알린다`() {
         val events = java.util.concurrent.atomic.AtomicInteger()
         val uc = fx.graph(Clock(System::currentTimeMillis))
         val off = uc.workspace.onEvent { if (it == prevue.application.domain.model.WorkspaceEvent.GalleryShotsChanged) events.incrementAndGet() }
@@ -54,5 +57,15 @@ class GalleryKeeperTest {
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") }
         uc.workspace.awaitBoardFilled()
         awaitUntil("첫 장이 다시 남기") { first.isFile }
+    }
+
+    @Test fun `보드가 낡았거나 덮어쓴 크기 · 조작 중인 장은 남기지 않는다`() {
+        val s = opened().workspace.now
+        val focus = s.board!!.focus
+        assertEquals(listOf(0, 1, 2), GalleryKeeper.picks(s).map { it.index })
+        assertEquals(emptyList<Int>(), GalleryKeeper.picks(s.copy(stale = mapOf("compile" to StaleReasons.compileFailed(listOf(fx.file), "x")))).map { it.index })
+        val first = s.board!!.cards[0].spec
+        assertEquals(emptyList<Int>(), GalleryKeeper.picks(s.copy(cardOverride = CardOverride(first.previewId, ScreenSize.BAR[1]))).map { it.index })
+        assertEquals((0 until focus).toList(), GalleryKeeper.picks(s.copy(interactive = true)).map { it.index })
     }
 }

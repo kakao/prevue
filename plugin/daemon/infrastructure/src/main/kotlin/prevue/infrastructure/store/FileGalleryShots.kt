@@ -152,11 +152,11 @@ public class FileGalleryShots(
     private fun keyOf(file: File): String =
         MessageDigest.getInstance("SHA-1").digest(file.path.toByteArray()).take(KEY_BYTES).joinToString("") { "%02x".format(it) }
 
-    public companion object {
-        public const val MAX_WIDTH: Int = 600
+    private companion object {
+        private const val MAX_WIDTH: Int = 600
         private const val META = "shots.json"
         private const val KEY_BYTES = 8
         private const val DEFAULT_MAX_MB = 128L
-        internal fun galleryMaxMb(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_MAX_MB
+        private fun galleryMaxMb(env: String?): Long = env?.toLongOrNull() ?: DEFAULT_MAX_MB
     }
 }

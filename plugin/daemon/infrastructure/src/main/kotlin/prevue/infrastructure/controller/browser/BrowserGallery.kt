@@ -23,5 +23,5 @@ internal class BrowserGallery(
     )
 }
 
-internal fun GalleryShots.Shot.toImage(): Map<String, Any?> =
+private fun GalleryShots.Shot.toImage(): Map<String, Any?> =
     mapOf("url" to "/gallery/shot/$id.png?t=$drawnAt", "w" to width, "h" to height, "at" to drawnAt)

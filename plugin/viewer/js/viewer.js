@@ -2684,10 +2684,16 @@ function Li(e, t = 1) {
 	}
 	function u(e, t, i) {
 		let a = n.get(e)?.status ?? "idle";
-		(a === "idle" || a === "wait") && (r.set(e, {
+		if (a !== "idle" && a !== "wait") return;
+		let o = r.get(e)?.urgent;
+		r.set(e, o ? {
+			path: t,
+			order: -1,
+			urgent: o
+		} : {
 			path: t,
 			order: i
-		}), a === "idle" && c(e, { status: "wait" }), l());
+		}), a === "idle" && c(e, { status: "wait" }), l();
 	}
 	return {
 		want: u,
@@ -2700,7 +2706,7 @@ function Li(e, t = 1) {
 			}), i === "idle" && c(e, { status: "wait" }), l());
 		},
 		drop(e) {
-			r.delete(e) && c(e, Fi);
+			!r.get(e)?.urgent && r.delete(e) && c(e, Fi);
 		},
 		lost(e, t, r) {
 			a.has(e) || n.get(e)?.status !== "done" || (a.add(e), c(e, Fi), u(e, t, r));
@@ -2913,7 +2919,7 @@ function ha(e) {
 }
 var ga = (e) => document.querySelector(`#galleryView .gcard-slot[data-path="${CSS.escape(e)}"] .gcard`);
 function _a({ file: e, text: t, view: n, closing: r, onClose: i, onClosed: a, onOpen: o }) {
-	let { phrase: c } = s(), l = (0, R.useRef)(null), [u, d] = (0, R.useState)(null), f = ra(n, e), p = f.map((e) => e.shot && e.shot !== "failed" ? e.shot : n.status === "done" ? n.image : null).every((e) => e && e.w > e.h * ta) ? "col" : "row", m = n.status === "done" ? n.sheets : 0;
+	let { phrase: c } = s(), l = (0, R.useRef)(null), [u, d] = (0, R.useState)(null), f = ra(n, e), p = f.map((e) => e.shot && e.shot !== "failed" ? e.shot : null).every((e) => e && e.w > e.h * ta) ? "col" : "row", m = n.status === "done" ? n.sheets : 0;
 	return (0, R.useLayoutEffect)(() => {
 		let t = document.documentElement, n = document.body, r = [
 			t.style.overflow,

@@ -9,7 +9,7 @@ function e(e, t) {
 var t = (e) => fetch(e), n = Math.random().toString(36).slice(2, 10), r = (e) => `${e}${e.includes("?") ? "&" : "?"}v=${n}`, i = (t) => e("/stream/viewport", {
 	width: t,
 	viewer: n
-}), a = () => fetch("/project-files.json").then((e) => e.json()), o = () => fetch("/preview-files.json").then((e) => e.json()), s = (e) => fetch(`/gallery/card?file=${encodeURIComponent(e)}`).then((e) => e.status === 404 ? null : e.json());
+}), a = () => fetch("/project-files.json").then((e) => e.json()), o = () => fetch("/preview-files.json").then((e) => e.json()), s = (e) => fetch(`/gallery/card?file=${encodeURIComponent(e)}`).then((e) => e.ok ? e.json() : null);
 function c({ open: e, state: t, ui: n, error: r }) {
 	let i = null;
 	function a() {

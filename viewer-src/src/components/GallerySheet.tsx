@@ -117,7 +117,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   const sheet = useRef<HTMLElement>(null);
   const [place, setPlace] = useState<CSSProperties | null>(null);
   const slots = sheetSlots(view, file);
-  const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : view.status === 'done' ? view.image : null));
+  const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : null));
   const flow = known.every(s => s && s.w > s.h * WIDE) ? 'col' : 'row';
   const count = view.status === 'done' ? view.sheets : 0;
 

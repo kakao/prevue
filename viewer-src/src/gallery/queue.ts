@@ -46,7 +46,8 @@ export function createCardQueue(ask: (path: string) => Promise<CardAnswer | null
   function want(key: string, path: string, order: number) {
     const v = views.get(key)?.status ?? 'idle';
     if (v !== 'idle' && v !== 'wait') return;
-    waiting.set(key, { path, order });
+    const urgent = waiting.get(key)?.urgent;
+    waiting.set(key, urgent ? { path, order: -1, urgent } : { path, order });
     if (v === 'idle') set(key, { status: 'wait' });
     pump();
   }
@@ -61,7 +62,7 @@ export function createCardQueue(ask: (path: string) => Promise<CardAnswer | null
       pump();
     },
     drop(key: string) {
-      if (!waiting.delete(key)) return;
+      if (waiting.get(key)?.urgent || !waiting.delete(key)) return;
       set(key, IDLE);
     },
     lost(key: string, path: string, order: number) {
