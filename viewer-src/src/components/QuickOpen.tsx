@@ -8,11 +8,12 @@ import { hideReactKeys, useHost } from '../host';
 import { matchFile, type FileEntry, type FileMatch, type PreviewFile } from '../match';
 import { useMessages, type Messages } from '../messages';
 import { activeKey, type ViewerState } from '../state';
+import { closeGallery } from '../gallery/layer';
 
 // 빠른 열기(D-56 · D-100) — 이 데몬이 열 수 있는 프리뷰 파일을 찾아 탭으로 연다.
 // 레일 맨 아래 "파일 열기"(D-98) · / · ⌘K 로 열면 창 위 가운데에 팔레트가 뜨고, 그 맨 위 입력에 바로 칠 수 있다. 뒤에는 막이 깔린다.
 // 목록은 데몬이 갖고(`/preview-files.json`), 매칭 · 순위 · 최근 연 파일은 브라우저의 일이다.
-// 열린 탭이 없으면 같은 상자(FileSearch)가 막 없이 본문 가운데의 시작 화면이 된다(D-63) — 상자는 한 벌이고 둘 중 한 곳에만 선다.
+// 열린 탭이 없을 때의 시작 화면은 갤러리다(D-198, D-63 대체) — 팔레트는 그 위에서도 같은 팔레트다.
 
 const ROWS = 8, CHANGED = 5;          // 빈 상태 = 최근 바뀐 5 + 최근 연 3 — 결과와 줄 수가 같아 치기 시작해도 팔레트 높이가 거의 그대로다
 
@@ -188,20 +189,9 @@ export function QuickOpenPalette({ hosts, children }: { hosts?: { sheet: HTMLEle
   return place(children, (ref, body) => <><div className="qo-curtain on" id="qoCurtain" /><div className="qo-sheet on" id="qoSheet" ref={ref}>{body}</div></>);
 }
 
-/**
- * 시작 화면(D-63 · D-100) — 열린 탭이 없으면(모두 닫았거나 파일 없이 띄웠다) 검색 상자가 본문 가운데에 선다. 오류가 아니라 할 수 있는 일 위에 선다.
- * 막 · 떠오르는 움직임 · Esc 닫기는 없고 줄 · 매칭 · 고르기는 팔레트와 한 벌이다. 상자가 팔레트 자리로 날아가는 모션은 만들지 않는다.
- * 썸네일 · 미리 렌더는 붙이지 않는다(D-08 — 카탈로그가 된다).
- */
-export function StartScreen({ host, children }: { host?: HTMLElement; children?: ReactNode }) {
-  const { phrase } = useMessages();
-  const { place } = useHost(host);
-  return place(<div className="start-in"><p className="start-lead">{phrase('start.lead')}</p>{children}</div>,
-    (ref, body) => <section id="startView" className="start" ref={ref}>{body}</section>);
-}
 
 /* ---------- 열림 — 화면에 하나뿐이라 모듈이 갖는다 ---------- */
-export type QuickOpenHosts = { sheet: HTMLElement; curtain: HTMLElement; start: HTMLElement };
+export type QuickOpenHosts = { sheet: HTMLElement; curtain: HTMLElement };
 type Search = { open: boolean; files: PreviewFile[] | null; ready: boolean; query: string; sel: number; recent: string[] };
 let search: Search = { open: false, files: null, ready: false, query: '', sel: -1, recent: [] };
 const listeners = new Set<() => void>();
@@ -215,8 +205,8 @@ const subscribe = (listener: () => void) => { listeners.add(listener); return ()
 const snapshot = () => search;
 
 let parts: QuickOpenHosts | null = null, field: HTMLInputElement | null = null, button: HTMLElement | null = null;
-// docked — 상자가 시작 화면에 있다. returnTo — 키보드로 연 자리. 닫을 때 그리로 포커스를 돌려준다(마우스로 열었으면 없다).
-let docked = false, returnTo: HTMLElement | null = null, closeOnDraw = 0, entering = false, settling = false, lastActive: string | null = null;
+// returnTo — 키보드로 연 자리. 닫을 때 그리로 포커스를 돌려준다(마우스로 열었으면 없다).
+let returnTo: HTMLElement | null = null, closeOnDraw = 0, entering = false, settling = false, lastActive: string | null = null;
 let asked = 0;
 
 /* 최근 연 파일 — 저장소별로 브라우저에만 남는다(표시 취향, 데몬은 모른다). */
@@ -238,8 +228,6 @@ async function load() {
 
 /** opener 는 키보드로 연 자리다 — 그냥 닫으면(Esc · 커튼) 그리로 포커스가 돌아간다. 마우스로 열었으면 null 이다(D-63). */
 export function openQuickOpen(opener: Element | null = null) {
-  // 시작 화면이면 필드가 이미 본문에 있다 — 팔레트를 띄우지 않고 그 필드로 간다.
-  if (docked) { field?.focus({ preventScroll: true }); field?.select(); return; }
   if (!parts) return;
   if (!search.open) {
     const { sheet, curtain } = parts;
@@ -277,7 +265,7 @@ export function closeQuickOpen(instant = false, back = false) {
 }
 
 /** 목록이 바뀌었다(데몬의 `previewFiles`). 펼쳐져 있으면 다시 받는다 — 닫혀 있으면 다음에 열 때 받는다. */
-export function previewFilesChanged() { if (search.open || docked) load(); }
+export function previewFilesChanged() { if (search.open) load(); }
 
 /** 다음 화면 전환이 팔레트를 걷어 가게 한다. 전환이 오지 않으면(데몬이 답만 하고 끝) 잠시 뒤 스스로 닫는다. */
 function arm() {
@@ -294,6 +282,7 @@ async function pick(it: SearchRow, { phrase, daemonText }: Messages) {
   const f = it.f, st = store.st, fn = it.fn ? it.fn.fn : null;
   remember(f.path, true);
   if (f.path === activeKey(st)) {
+    closeGallery();
     reveal(f.path, fn);
     if (st?.screen === 'focus' && st.focus) { arm(); post('/viewer/exit'); }
     else { closeQuickOpen(); applyReveal(); }
@@ -310,8 +299,7 @@ async function pick(it: SearchRow, { phrase, daemonText }: Messages) {
 const bindField = (el: HTMLInputElement | null) => { if (el) field = el; else if (field && !field.isConnected) field = null; };
 const setQuery = (query: string, sel: number) => update({ query, sel });
 const setSel = (sel: number) => update({ sel });
-// 시작 화면은 닫을 것이 없다 — 빈 필드면 필드를 떠난다.
-const escape = () => { if (docked) field?.blur(); else closeQuickOpen(false, true); };
+const escape = () => closeQuickOpen(false, true);
 // 키보드로 팔레트 밖에 나가도 닫는다 — 막이 레일 · 헤더를 덮지 않아 Tab 으로 닿는다. 입구 단추로 가는 것은 그 단추가 닫는다.
 const leave = (to: Element | null) => { if (search.open && parts && to && !parts.sheet.contains(to) && to !== button) closeQuickOpen(); };
 
@@ -337,15 +325,12 @@ export const QuickOpenButton = memo(function QuickOpenButton({ host }: { host?: 
 });
 
 /**
- * 뷰어의 빠른 열기 — 상태를 그릴 때마다 시작 화면을 펼지, 팔레트를 걷을지, 지금 탭을 최근 연 파일에 적을지 정한다.
+ * 뷰어의 빠른 열기 — 상태를 그릴 때마다 팔레트를 걷을지, 지금 탭을 최근 연 파일에 적을지 정한다.
  * 화면 전환이 새 화면을 찍기 전에 같은 커밋에서 정해야 해서 바깥 요소의 hidden · 클래스는 레이아웃 효과에서 바로 쓴다.
  */
 export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerState | null; draw: number; connection: Connection | null; hosts: QuickOpenHosts }) {
   const messages = useMessages();
   const s = useSyncExternalStore(subscribe, snapshot);
-  // 최근 연 파일이 저장소별이라 저장소를 안 뒤에 편다 — 데몬이 막 떴을 때의 첫 상태는 저장소가 비어 있다.
-  // 끊김은 오류로 남고 시작 화면이 덮지 않는다(탭 0개와 가른다). 다시 붙으면 페이지를 새로 연다.
-  const dock = connection !== 'lost' && state?.screen === 'empty' && !!state.header.repo;
 
   useLayoutEffect(() => {
     parts = hosts;
@@ -355,31 +340,19 @@ export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerSta
       if (search.open && !hosts.sheet.contains(t) && !hosts.curtain.contains(t) && !button?.contains(t)) closeQuickOpen();
     };
     const curtain = () => closeQuickOpen(false, true);
-    // 시작 화면은 계속 떠 있다 — 저장마다 다시 받지 않고(mtime만 바뀐 저장은 조용하다) 창에 돌아올 때 받는다.
-    const back = () => { if (docked && !document.hidden) load(); };
     document.addEventListener('pointerdown', outside, true);
     hosts.curtain.addEventListener('click', curtain);
-    document.addEventListener('visibilitychange', back);
     return () => {
       document.removeEventListener('pointerdown', outside, true);
       hosts.curtain.removeEventListener('click', curtain);
-      document.removeEventListener('visibilitychange', back);
-      parts = null; docked = false;
+      parts = null;
     };
   }, [hosts]);
-  useLayoutEffect(() => {
-    if (dock === docked) return;
-    docked = dock;
-    if (dock) { closeQuickOpen(true); entering = true; hosts.start.hidden = false; load(); }
-    else { hosts.start.hidden = true; hosts.start.classList.remove('enter'); }
-    // 상자는 새 자리에서 새로 선다 — 입력이 비어 있다.
-    update({ query: '', sel: -1, ...(dock ? { recent: readRecent() } : {}) });
-  }, [dock]);
   useLayoutEffect(() => {
     if (!state) return;
     const a = activeKey(state);
     if (a && a !== lastActive) { lastActive = a; remember(a); }
-    // 시작 화면에서 고른 파일은 탭이 열린 상태에서 걷힌다 — 그 사이에 온 빈 화면 상태로는 걷지 않는다.
+    // 탭 0개에서 고른 파일은 탭이 열린 상태에서 걷힌다 — 그 사이에 온 빈 화면 상태로는 걷지 않는다.
     if (closeOnDraw && state.screen !== 'empty') closeQuickOpen(true);
   }, [draw]);
   useLayoutEffect(() => { if (connection === 'lost') closeQuickOpen(true); }, [connection]);
@@ -387,18 +360,14 @@ export function QuickOpen({ state, draw, connection, hosts }: { state: ViewerSta
   // 펼친 커밋 뒤 같은 틀의 커밋(입력 비우기 · 최근 연 파일)은 걷지 않는다 — 한 프레임이 지난 뒤의 다음 그리기에서 걷는다.
   useLayoutEffect(() => {
     if (entering) {
-      (docked ? hosts.start : hosts.sheet).classList.add('enter');
-      (docked ? hosts.sheet : hosts.start).classList.remove('enter');
+      hosts.sheet.classList.add('enter');
       entering = false; settling = true;
       requestAnimationFrame(() => { settling = false; });
-    } else if (!settling) { hosts.sheet.classList.remove('enter'); hosts.start.classList.remove('enter'); }
+    } else if (!settling) hosts.sheet.classList.remove('enter');
   });
 
   const onPick = useCallback((it: SearchRow) => pick(it, messages), [messages]);
   const box = <FileSearch files={s.files} ready={s.ready} query={s.query} sel={s.sel} recent={s.recent}
     fieldRef={bindField} onQuery={setQuery} onSelect={setSel} onPick={onPick} onEscape={escape} onLeave={leave} />;
-  return <>
-    <QuickOpenPalette hosts={hosts}>{!dock && box}</QuickOpenPalette>
-    <StartScreen host={hosts.start}>{dock && box}</StartScreen>
-  </>;
+  return <QuickOpenPalette hosts={hosts}>{box}</QuickOpenPalette>;
 }

@@ -45,8 +45,10 @@
   <div class="progress"></div>
 </header>
 
-<!-- 열린 파일 레일(D-54 · D-98). 지금 파일은 떠 있는 바탕이 가리킨다. 작업 공간에서는 접힌다(D-99). 빠른 열기의 입구는 맨 아래 "파일 열기"와 / · ⌘K 다. -->
+<!-- 열린 파일 레일(D-54 · D-98). 지금 파일은 떠 있는 바탕이 가리킨다. 작업 공간에서는 접힌다(D-99). 빠른 열기의 입구는 맨 아래 "파일 열기"와 / · ⌘K 다.
+     맨 위 「모든 Preview」는 갤러리의 입구다(D-198) — 안은 React 의 GalleryEntry 가 그린다. -->
 <nav class="rail" id="rail" data-t-aria-label="rail.title" hidden>
+  <button class="rail-all" id="railAll" type="button"></button>
   <h4 class="rail-h" data-t="rail.title"></h4>
   <!-- 줄들과 파일 열기의 안은 React 의 FileRail 이 그린다. 머리 · 빈 안내는 마크업이다. -->
   <div class="rail-list" id="railList" role="tablist" aria-orientation="vertical"></div>
@@ -62,9 +64,8 @@
 <aside class="build-notice" id="buildNotice" role="status" hidden></aside>
 
 <main>
-  <!-- 시작 화면(D-63 · D-100) — 열린 탭이 없을 때. 빠른 열기의 상자(입력 · 최근 바뀐 · 최근 연 파일)를 막 없이 본문 가운데에 둔다 —
-       오류가 아니라 할 수 있는 일 위에 선다. 안은 React 의 StartScreen 이 그리고, 상자는 팔레트와 한 벌이라 둘 중 한 곳에만 선다. -->
-  <section id="startView" class="start" hidden></section>
+  <!-- 갤러리(D-198 · D-200) — 프리뷰 파일 전부의 카드 격자. 탭이 0개면 시작 화면이고, 탭이 있으면 보드의 위층이다. 안은 React 의 Gallery 가 그린다. -->
+  <section id="galleryView" class="gallery" hidden></section>
 
   <!-- 빈 탭 — 탭의 파일이 지워졌거나 @Preview 를 잃었다. 안은 React 의 VacantTab 이 그린다. -->
   <section id="vacantView" class="vacant" hidden></section>

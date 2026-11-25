@@ -6,6 +6,7 @@ import { closeDirPop } from './components/ProjectHeader';
 import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
+import { galleryFilesChanged, galleryShown, openGallery } from './gallery/layer';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
 import { drawScreens, startViewer } from './session';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
@@ -31,8 +32,8 @@ const workspaceActions: WorkspaceActions = {
 const pointActions: PointActions = { choose, cancel: cancelChoice, follow: followChooser, pick: pickRow, peek: peekRow, jump, close: clearPick };
 watchBlankClicks();
 const actions: ShortcutActions = {
-  screen: () => store.st ? store.st.screen : 'offline',
-  tabCount, moveCursor, openCursor, exitFocus, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
+  screen: () => !store.st ? 'offline' : galleryShown() ? 'gallery' : store.st.screen,
+  tabCount, moveCursor, openCursor, exitFocus, openGallery, stepTab, jumpTab, openQuickOpen, helpOpen, toggleHelp,
   zoomIn: workspaceActions.zoomIn, zoomOut: workspaceActions.zoomOut, zoomFit: workspaceActions.zoomFit,
 };
 const shortcuts = shortcutTable(phrase, actions);
@@ -47,7 +48,7 @@ installShortcuts(shortcuts, actions, {
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
-startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); forgetPreviewIndex(); }, prepared: preparation });
+startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); galleryFilesChanged(); forgetPreviewIndex(); }, prepared: preparation });
 
 /*
  * 마우스로 누른 버튼은 포커스를 쥐지 않는다(D-63) — Chromium 은 누른 버튼에 포커스를 줘서, 다음 Enter(고른 카드 열기)를

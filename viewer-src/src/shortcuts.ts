@@ -1,12 +1,13 @@
 // 단축키 — 표 하나가 디스패치와 `?` 도움말(ShortcutHelp)을 함께 갖는다. 같은 키가 화면마다 다른 일을 하므로 화면을 먼저 본다.
 // 하는 일은 기존 모듈의 함수라 actions 로 받는다 — Storybook 은 표만 그린다.
 export type ShortcutActions = {
-  /** 끊겼으면 화면이 없다(offline) — 탭이 0개인 빈 화면(시작 화면)과 가른다(D-63). */
+  /** 끊겼으면 화면이 없다(offline). 갤러리가 보이면 gallery — 데몬 상태의 화면과 달리 보이는 층이다(D-198). */
   screen(): string;
   tabCount(): number;
   moveCursor(d: number): void;
   openCursor(): void;
   exitFocus(): void;
+  openGallery(): void;
   zoomIn(): void;
   zoomOut(): void;
   zoomFit(): void;
@@ -28,6 +29,8 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
       { keys: ['ArrowLeft', 'ArrowRight'], cap: ['←', '→'], label: phrase('keys.card.pick'), when: () => a.screen() === 'board',
         run: e => a.moveCursor(e.key === 'ArrowLeft' ? -1 : 1) },
       { keys: ['Enter', 'i'], cap: ['↩', 'I'], label: phrase('keys.card.open'), when: () => a.screen() === 'board', run: () => a.openCursor() },
+      // 떠 있는 층(아래 installShortcuts)과 가리킨 카드가 먼저 걷히고, 아무것도 없을 때 보드의 위층으로 물러난다.
+      { keys: ['Escape'], cap: ['esc'], label: phrase('keys.board.gallery'), when: () => a.screen() === 'board', run: () => a.openGallery() },
     ] },
     { group: phrase('keys.group.single'), rows: [
       // ← → 는 비워 둔다 — 이웃 장으로 넘기지 않는다(W3). 나오면 그 카드에 커서가 있어 → ↩ 로 이웃에 든다.
@@ -50,7 +53,6 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
     ] },
     { group: phrase('keys.group.anywhere'), rows: [
       // 파일을 여는 것은 화면과 무관하다 — 보드에서도 작업 공간에서도 같은 패널이다(D-56).
-      // 시작 화면(탭 0개)이면 본문의 필드로 간다(D-63).
       { keys: ['/'], cap: ['/', '⌘K'], label: phrase('keys.any.open'), when: () => a.screen() !== 'offline', run: () => a.openQuickOpen(document.activeElement) },
       { cap: [phrase('keys.cap.click')], label: phrase('keys.any.point') },
       { keys: ['?'], cap: ['?'], label: phrase('keys.any.help'), when: () => true, run: () => a.toggleHelp(!a.helpOpen(), true) },

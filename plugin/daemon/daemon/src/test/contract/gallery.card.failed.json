@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "schema": {
+    "failure": "string",
+    "image": "null",
+    "ok": "boolean",
+    "sheets": "number"
+  },
+  "example": {
+    "ok": false,
+    "sheets": 2,
+    "image": null,
+    "failure": "그리지 못했다"
+  }
+}

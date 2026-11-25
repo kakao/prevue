@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { get } from './runtime/api';
 import { BuildNotice } from './components/BuildNotice';
 import { FileRail, type RailHosts } from './components/FileRail';
+import { Gallery, GalleryEntry } from './components/Gallery';
+import { useGalleryShown, useLayer } from './gallery/layer';
 import { ProjectHeader, type AppInfo } from './components/ProjectHeader';
 import { HelpButton, ShortcutHelp } from './components/ShortcutHelp';
 import { NotificationCapsule } from './components/NotificationCapsule';
@@ -22,7 +24,7 @@ import type { ViewerState } from './state';
 /** index.html 이 두는 영역의 바깥 요소 — 기존 모듈이 처음부터 쥐는 요소가 그 안에 섞여 있어 바깥은 마크업이 갖는다. */
 export type Hosts = {
   bar: HTMLElement; brand: HTMLElement; app: HTMLElement; status: HTMLElement; helpButton: HTMLElement;
-  rail: RailHosts; stale: HTMLElement; buildNotice: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
+  rail: RailHosts; railAll: HTMLElement; gallery: HTMLElement; stale: HTMLElement; buildNotice: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
   vacant: HTMLElement; workspace: WorkspaceHosts; workspaceHeader: WorkspaceHeaderHosts; chooser: HTMLElement;
 };
 
@@ -30,9 +32,10 @@ export function findHosts(): Hosts {
   const $ = (id: string) => document.getElementById(id)!;
   return {
     bar: $('bar'), brand: $('brand'), app: $('app'), status: $('status'), helpButton: $('helpBtn'),
-    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen'), toggle: $('railToggle'), scrim: $('railScrim') },
+    rail: { rail: $('rail'), list: $('railList'), empty: $('railEmpty'), open: $('railOpen'), all: $('railAll'), toggle: $('railToggle'), scrim: $('railScrim') },
+    railAll: $('railAll'), gallery: $('galleryView'),
     stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
-    quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain'), start: $('startView') }, capsule: $('strip'), help: $('help'),
+    quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain') }, capsule: $('strip'), help: $('help'),
     vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), inset: $('insetOverlay'), insetMarks: $('insetMarks'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
   };
 }
@@ -53,19 +56,26 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
 }) {
   // 스트림 · 틀 · 스크롤처럼 그린 뒤에 재는 것은 session.ts 가 한다. 영역들은 자식이라 그 효과가 먼저 돈다 — 헤더 · 레일 · 화면이 먼저 자리를 잡는다.
   useLayoutEffect(() => { if (state) renderLegacy(state); }, [draw]);
+  // 갤러리는 보드의 위층이다 — 보이는 동안 보드 · 빈 탭은 숨는다. 데몬 상태의 화면은 그대로다.
+  const gallery = useGalleryShown(state, connection);
+  const files = useLayer().files;
+  const screen = gallery ? 'gallery' : state?.screen ?? null;
   if (!hosts) return null;
   return <>
     <ProjectHeader header={state?.header ?? null} tabs={state?.tabs ?? []} app={app} host={hosts.app} brand={hosts.brand} />
     <StatusPill state={statusState} connection={connection} host={hosts.status} bar={hosts.bar} />
     <HelpButton host={hosts.helpButton} />
-    <FileRail tabs={state?.tabs ?? null} screen={state?.screen ?? null} hosts={hosts.rail} />
+    <FileRail tabs={state?.tabs ?? null} screen={state?.screen ?? null} gallery={gallery} hosts={hosts.rail} />
+    <GalleryEntry on={gallery} count={files?.length ?? null} host={hosts.railAll} />
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
     <BuildNotice pending={!!state?.buildPending} host={hosts.buildNotice} />
+    {/* 보드보다 먼저 — 보드가 숨기 전의 스크롤을 갤러리가 적어 둔다. */}
+    <Gallery shown={gallery} state={state} draw={draw} host={hosts.gallery} />
     {/* 레일이 접히고 펴진 뒤에 잰다 — 보드의 배율은 레일을 뺀 폭으로 정한다. */}
-    <PreviewBoard board={state?.board ?? null} screen={state?.screen ?? null} hosts={hosts.board} actions={board} />
-    {/* 빈 화면은 시작 화면이 갖는다. 팔레트는 새 화면을 그리는 이 커밋에서 걷힌다. */}
+    <PreviewBoard board={state?.board ?? null} screen={screen} hosts={hosts.board} actions={board} />
+    {/* 팔레트는 새 화면을 그리는 이 커밋에서 걷힌다. */}
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
-    <VacantTab screen={state?.screen ?? null} vacant={state?.vacant ?? null} host={hosts.vacant} />
+    <VacantTab screen={screen} vacant={state?.vacant ?? null} host={hosts.vacant} />
     {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}
     <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} deviceInsets={state?.focus?.deviceInsets ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} />
     <WorkspaceHeader state={state} hosts={hosts.workspaceHeader} actions={workspace} />

@@ -19,6 +19,10 @@ export const fetchProjectFiles = (): Promise<{ files?: Record<string, string[]> 
 /** 빠른 열기의 목록(D-56) — 이 데몬이 열 수 있는 프리뷰 파일. 열 때마다 새로 받는다. */
 export const fetchPreviewFiles = (): Promise<{ ready: boolean; files: PreviewFile[] }> => fetch("/preview-files.json").then(r => r.json());
 
+/** 갤러리 카드 하나의 그림(D-200) — 탭 없이 그 파일의 첫 장을 카드 크기로 줄여 그린다. 데몬이 모르는 파일이면 null. */
+export const fetchGalleryCard = (path: string): Promise<{ ok: boolean; sheets: number; image: { url: string; w: number; h: number } | null; failure: Message | null } | null> =>
+  fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
+
 /** 데몬 이벤트(SSE). 상태(state)와 일회성 알림(ui)만 온다(D-42). */
 export function connect({ open, state, ui, error }: { open(): void; state(state: ViewerState): void; ui(event: { kind: string; text?: Message }): void; error(event: Event): void }): void {
   // 숨겨진 탭의 SSE와 스트림이 연결 한도를 채우면 터치 요청이 대기한다.

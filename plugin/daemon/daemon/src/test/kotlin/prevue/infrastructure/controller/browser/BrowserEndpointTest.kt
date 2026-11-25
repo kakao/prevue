@@ -12,6 +12,8 @@ import java.net.InetSocketAddress
 import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
+import java.net.URLEncoder
+import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -60,6 +62,35 @@ class BrowserEndpointTest {
             assertEquals(200 to mapOf("name" to null, "icon" to false, "prevue" to null, "reveal" to false),
                 request(m, "/app.json", if (m == "POST") emptyMap() else null), m)
         }
+    }
+
+    @Test fun `갤러리 카드는 첫 장 하나를 옆에서 그리고 장 수를 함께 준다`() {
+        val before = fx.renderer.asides.size
+        val (code, body) = request("GET", "/gallery/card?file=" + URLEncoder.encode(fx.file.path, UTF_8), null)
+        assertEquals(200, code)
+        body as Map<*, *>
+        assertEquals(true, body["ok"])
+        assertEquals(1L, body["sheets"])
+        assertEquals(null, body["failure"])
+        val image = body["image"] as Map<*, *>
+        assertTrue((image["url"] as String).startsWith("/Card0@gallery-0.png?t="), image.toString())
+        assertEquals(100L to 100L, image["w"] to image["h"])
+        assertEquals(listOf("Card0@gallery"), fx.renderer.asides.drop(before).map { it.previewId })
+        assertTrue(fx.compiler.compiled.isEmpty(), "갤러리 카드가 컴파일했다")
+    }
+
+    @Test fun `갤러리 카드가 못 그리면 그림 없이 실패 문구를 준다`() {
+        fx.renderer.asideFails = "가짜 실패"
+        try {
+            val (code, body) = request("GET", "/gallery/card?file=" + URLEncoder.encode(fx.file.path, UTF_8), null)
+            assertEquals(200, code)
+            assertEquals(mapOf("ok" to false, "sheets" to 1L, "image" to null, "failure" to "가짜 실패"), body)
+        } finally { fx.renderer.asideFails = null }
+    }
+
+    @Test fun `갤러리 카드는 프리뷰 소스가 아니면 404 다`() {
+        assertEquals(404 to mapOf("ok" to false), request("GET", "/gallery/card?file=" + URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8), null))
+        assertEquals(404 to mapOf("ok" to false), request("GET", "/gallery/card", null))
     }
 
     @Test fun `stream 은 multipart 로 답하고 닫지 않는다`() {
@@ -143,7 +174,7 @@ class BrowserEndpointTest {
 
     private fun sideEndpoint(scope: CoroutineScope): Side {
         val feed = ViewerFeed(g.presenter, Relay(scope, realDispatchers), realDispatchers, EntryLog {})
-        return Side(BrowserEndpoint(g.presenter, g.browserTabs, g.browserInput, g.browserPointing, server.frames, feed, ViewerTarget({ null to null }, null, null, null)), feed)
+        return Side(BrowserEndpoint(g.presenter, g.browserTabs, g.browserGallery, g.browserInput, g.browserPointing, server.frames, feed, ViewerTarget({ null to null }, null, null, null)), feed)
     }
 
     /** 놓아 줄 때까지 쓰기가 멈춘다 — 읽지 않는 브라우저 탭. */

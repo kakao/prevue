@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import prevue.application.service.Workspace
 import prevue.infrastructure.controller.browser.BrowserEndpoint
+import prevue.infrastructure.controller.browser.BrowserGallery
 import prevue.infrastructure.controller.browser.BrowserInput
 import prevue.infrastructure.controller.browser.BrowserPointing
 import prevue.infrastructure.controller.browser.BrowserPresenter
@@ -89,6 +90,7 @@ internal interface TestGraph {
     val presenter: BrowserPresenter
     val browserInput: BrowserInput
     val browserTabs: BrowserTabs
+    val browserGallery: BrowserGallery
     val browserPointing: BrowserPointing
     val browserEndpoint: BrowserEndpoint
     val hotSwap: HotSwapRunner

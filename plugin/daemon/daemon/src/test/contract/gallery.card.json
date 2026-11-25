@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "schema": {
+    "failure": "null",
+    "image": {
+      "h": "number",
+      "url": "string",
+      "w": "number"
+    },
+    "ok": "boolean",
+    "sheets": "number"
+  },
+  "example": {
+    "ok": true,
+    "sheets": 2,
+    "image": {
+      "url": "/Card0@gallery-0.png?t=<t>",
+      "w": 100,
+      "h": 100
+    },
+    "failure": null
+  }
+}
