@@ -87,6 +87,8 @@ class ContractTest {
         fx.renderer.asideFails = "그리지 못했다"
         check("gallery.card.failed", get(card))
         fx.renderer.asideFails = null
+        check("gallery.sheet", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(f, UTF_8)))
+        check("gallery.sheet.none", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("gallery.card.none", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("previews.of.none", post("/previews", mapOf("of" to "Nope")))
         check("card.cached", post("/card", mapOf("index" to 1)))

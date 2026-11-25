@@ -1,0 +1,41 @@
+{
+  "status": 200,
+  "schema": {
+    "sheets": [
+      {
+        "failure": "null",
+        "image": {
+          "h": "number",
+          "url": "string",
+          "w": "number"
+        },
+        "name": "string",
+        "variant": "null"
+      }
+    ]
+  },
+  "example": {
+    "sheets": [
+      {
+        "name": "Card0",
+        "variant": null,
+        "image": {
+          "url": "/Card0@gallery-0.png?t=<t>",
+          "w": 100,
+          "h": 100
+        },
+        "failure": null
+      },
+      {
+        "name": "Card1",
+        "variant": null,
+        "image": {
+          "url": "/Card1@gallery-0.png?t=<t>",
+          "w": 100,
+          "h": 100
+        },
+        "failure": null
+      }
+    ]
+  }
+}

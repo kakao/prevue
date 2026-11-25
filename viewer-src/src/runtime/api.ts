@@ -22,6 +22,10 @@ export const fetchPreviewFiles = (): Promise<{ ready: boolean; files: PreviewFil
 export const fetchGalleryCard = (path: string): Promise<{ ok: boolean; sheets: number; image: { url: string; w: number; h: number } | null; failure: Message | null } | null> =>
   fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
 
+export type GallerySheetAnswer = { sheets: Array<{ name: string; variant: string | null; image: { url: string; w: number; h: number } | null; failure: Message | null }> };
+export const fetchGallerySheet = (path: string): Promise<GallerySheetAnswer | null> =>
+  fetch(`/gallery/sheet?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
+
 /** 데몬 이벤트(SSE). 상태(state)와 일회성 알림(ui)만 온다(D-42). */
 export function connect({ open, state, ui, error }: { open(): void; state(state: ViewerState): void; ui(event: { kind: string; text?: Message }): void; error(event: Event): void }): void {
   // 숨겨진 탭의 SSE와 스트림이 연결 한도를 채우면 터치 요청이 대기한다.

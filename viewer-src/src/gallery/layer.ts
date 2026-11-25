@@ -5,8 +5,9 @@ import type { PreviewFile } from '../match';
 import type { Connection } from '../session';
 import { activeKey, type ViewerState } from '../state';
 
-export type Layer = { open: boolean; openedOver: string | null; files: PreviewFile[] | null; ready: boolean };
-let layer: Layer = { open: false, openedOver: null, files: null, ready: false };
+export type Sheet = { path: string; closing: boolean };
+export type Layer = { open: boolean; openedOver: string | null; files: PreviewFile[] | null; ready: boolean; sheet: Sheet | null };
+let layer: Layer = { open: false, openedOver: null, files: null, ready: false, sheet: null };
 const listeners = new Set<() => void>();
 function update(next: Partial<Layer>) {
   if ((Object.keys(next) as Array<keyof Layer>).every(k => layer[k] === next[k])) return;
@@ -23,7 +24,17 @@ export const galleryShown = () => shown;
 export function markShown(on: boolean) { shown = on; }
 
 export function openGallery() { update({ open: true, openedOver: activeKey(store.st) }); }
-export function closeGallery() { update({ open: false }); }
+export function closeGallery() { update({ open: false, sheet: null }); }
+
+export function openSheet(path: string) { update({ sheet: { path, closing: false } }); }
+export function closeSheet() {
+  const s = layer.sheet;
+  if (!s || !shown) return false;
+  if (!s.closing) update({ sheet: { ...s, closing: true } });
+  return true;
+}
+export function sheetClosed() { update({ sheet: null }); }
+export const sheetOpen = () => shown && !!layer.sheet;
 
 export async function loadFiles() {
   const n = ++asked;

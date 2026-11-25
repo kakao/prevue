@@ -61,6 +61,8 @@ try {
     await check(`!document.querySelector('body>main').inert`, '파일 미지정 준비는 실제 갤러리로 연결');
     await until(`[...document.querySelectorAll('#galleryView .gcard-file')].some(el=>el.title==='PearlPreviews'||el.textContent==='PearlPreviews')`);
     await evaluate(`[...document.querySelectorAll('#galleryView .gcard-file')].find(el=>el.title==='PearlPreviews'||el.textContent==='PearlPreviews').closest('.gcard-hit').click()`);
+    await until(`!!document.querySelector('.gsheet-go')`);
+    await evaluate(`document.querySelector('.gsheet-go').click()`);
     await until(`import('/js/store.js').then(m=>m.store.st?.screen==='board' && !m.store.st.busy)`);
     await check(`!document.querySelector('#boardView').hidden && document.querySelector('#galleryView').hidden && document.querySelector('.card img').naturalWidth>0`, '갤러리에서 고른 파일이 보드로 열림');
     state = await fetch(new URL('/viewer/state', viewer)).then(response => response.json());

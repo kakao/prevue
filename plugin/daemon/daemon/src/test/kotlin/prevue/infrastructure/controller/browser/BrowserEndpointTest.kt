@@ -99,6 +99,45 @@ class BrowserEndpointTest {
         assertEquals(404 to mapOf("ok" to false), request("GET", "/gallery/card", null))
     }
 
+    @Test fun `갤러리 시트는 앞 세 장을 옆에서 그리고 장마다 함수 이름을 준다`() {
+        Fixture(previews = 4).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            val before = own.renderer.asides.size
+            val (code, body) = request("GET", "/gallery/sheet?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p)
+            assertEquals(200, code)
+            val sheets = (body as Map<*, *>)["sheets"] as List<*>
+            assertEquals(listOf("Card0", "Card1", "Card2"), sheets.map { (it as Map<*, *>)["name"] })
+            assertTrue(sheets.all { (it as Map<*, *>)["variant"] == null && it["failure"] == null }, sheets.toString())
+            assertTrue(((sheets[1] as Map<*, *>)["image"] as Map<*, *>)["url"].toString().startsWith("/Card1@gallery-0.png?t="), sheets.toString())
+            assertEquals(listOf("Card0@gallery", "Card1@gallery", "Card2@gallery"), own.renderer.asides.drop(before).map { it.previewId })
+            assertTrue(own.compiler.compiled.isEmpty(), "갤러리 시트가 컴파일했다")
+            module.stopInputs()
+        }
+    }
+
+    @Test fun `갤러리 시트는 제공자 값 이름을 변주로 주고 못 그린 장만 실패다`() {
+        File(fx.srcRoot, "demo/Names.kt").writeText("package demo\nclass Names : PreviewParameterProvider<String> { override val values = sequenceOf(\"a\", \"b\") }\n")
+        fx.file.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Card0(@PreviewParameter(Names::class) n: String) {}\n")
+        fx.renderer.providerLabels["demo.Names"] = listOf("a", "b")
+        fx.renderer.asideFails = "가짜 실패"
+        fx.renderer.asideFailsIf = { it.paramIndex == 1 }
+        try {
+            val (code, body) = request("GET", "/gallery/sheet?file=" + URLEncoder.encode(fx.file.path, UTF_8), null)
+            assertEquals(200, code)
+            val sheets = ((body as Map<*, *>)["sheets"] as List<*>).map { it as Map<*, *> }
+            assertEquals(listOf("Card0" to "a", "Card0" to "b"), sheets.map { it["name"] to it["variant"] })
+            assertEquals(listOf(null, "가짜 실패"), sheets.map { it["failure"] })
+            assertEquals(listOf(true, false), sheets.map { it["image"] != null })
+        } finally { fx.renderer.asideFails = null; fx.renderer.asideFailsIf = { true } }
+    }
+
+    @Test fun `갤러리 시트는 프리뷰 소스가 아니면 404 다`() {
+        assertEquals(404 to mapOf("ok" to false), request("GET", "/gallery/sheet?file=" + URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8), null))
+        assertEquals(404 to mapOf("ok" to false), request("GET", "/gallery/sheet", null))
+    }
+
     @Test fun `stream 은 multipart 로 답하고 닫지 않는다`() {
         val c = open("/stream")
         assertEquals(200, c.responseCode)

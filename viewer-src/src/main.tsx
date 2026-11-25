@@ -6,7 +6,7 @@ import { closeDirPop } from './components/ProjectHeader';
 import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
-import { galleryFilesChanged, galleryShown, openGallery } from './gallery/layer';
+import { closeSheet, galleryFilesChanged, galleryShown, openGallery, sheetOpen } from './gallery/layer';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
 import { drawScreens, startViewer } from './session';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
@@ -45,6 +45,9 @@ installShortcuts(shortcuts, actions, {
   closeDirPop,
   closeRailDrawer,
   closeCard,
+  closeSheet,
+  sheetOpen,
+  openSheetFile: () => document.querySelector<HTMLElement>('#galleryView .gsheet-go')?.click(),
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
