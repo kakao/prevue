@@ -3,7 +3,7 @@
 import { post, viewerStream } from '../runtime/api';
 import { flash } from '../runtime/capsule';
 import { motionMs, motionToken, reduced } from '../runtime/motion';
-import { createResizeScene, type SceneImage, type SceneRect } from '../../legacy/js/resize-scene.js';
+import { createResizeScene, type SceneImage, type SceneRect } from '../runtime/resize-scene';
 import { phrase } from '../runtime/strings';
 import type { Focus, Size } from '../state';
 import { marksBelow } from './insets';
