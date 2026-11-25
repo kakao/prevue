@@ -1,20 +1,8 @@
 // 한 장 · 가리키기의 브라우저 쪽 표시 상태 — 데몬 상태가 아니라 뷰어가 재고 정한 것(배율 · 첫 장 대기 · 가리킨 카드).
 // 정하는 쪽(focus.ts · resize.ts · point.ts)이 여기 쓰고 React 컴포넌트가 구독한다. Storybook 은 이 저장소에 값을 넣어 그린다.
-export type Store<T> = { get(): T; set(next: Partial<T>): void; subscribe(listener: () => void): () => void };
+import { createStore, type Store } from '../runtime/store';
 
-export function createStore<T extends object>(initial: T): Store<T> {
-  let value = initial;
-  const listeners = new Set<() => void>();
-  return {
-    get: () => value,
-    set(next) {
-      if ((Object.keys(next) as Array<keyof T>).every(key => value[key] === next[key])) return;
-      value = { ...value, ...next };
-      for (const listener of listeners) listener();
-    },
-    subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-  };
-}
+export type { Store };
 
 /** 확대 줄 — 배율 숫자는 실제 크기(1dp = 1 CSS px) 대비, 밀도를 모르면 맞춤 대비다. */
 export type ZoomView = { pct: number; real: boolean; atFit: boolean; menu: boolean; disabled: boolean };

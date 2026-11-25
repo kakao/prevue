@@ -1,7 +1,7 @@
 import type { DeviceEntry } from "../../legacy/js/devices.js";
 import { DEVICES } from "../../legacy/js/devices.js";
 import { reduced } from "../runtime/motion";
-import type { Body, Box, Dev, Layers, Orientation, Radii, SceneImage, Shadow, Shape, Spring, St } from "./types";
+import type { Body, Box, Dev, DockView, Layers, Orientation, Radii, SceneImage, Shadow, Shape, Spring, St } from "./types";
 
 export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 export const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -223,9 +223,7 @@ export function perimeter([x0, y0, x1, y1]: number[], [tl, tr, br, bl]: number[]
 }
 export const castShadow = (list: Shadow[], a: number, u: number) => list.map(([x, y, b, sp, color]) =>
   `${px((x * Math.cos(a) + y * Math.sin(a)) * u)} ${px((-x * Math.sin(a) + y * Math.cos(a)) * u)} ${px(b * u)} ${px(sp * u)} ${color}`).join(", ");
-// 칸은 이름과 dp 두 쪽이다. 기기 칸은 몸체 윤곽을 앞에 둔다 — 비율 · 모서리 · 카메라(구멍 · 섬)는 몸체 그림의 값에서 줄이고,
-// 접는 기기는 힌지 선을 긋는다. 이름은 줄이고 전체 이름은 툴팁에 둔다.
-export const silOf = (d: DeviceEntry) => {
+export const silhouette = (d: DeviceEntry) => {
   const o = d.open, lk = d.look.open, k = 19 / Math.max(o.w, o.h), W = o.w * k, H = o.h * k, x = 10 - W / 2, y = 10 - H / 2, sw = 1.4;
   const f = (n: number) => n.toFixed(2), r = clamp((Math.max(...lk.radius) + lk.bezel * P.shellK) * k * 1.8, 1.2, Math.min(W, H) / 3);
   const inset = sw / 2 + clamp(lk.bezel * P.shellK * k, .9, 2.2), ri = Math.max(.4, r - inset + sw / 2), tall = tallOf(d);
@@ -244,11 +242,13 @@ export const silOf = (d: DeviceEntry) => {
       : `<circle cx="${f(cx)}" cy="${f(cy)}" r=".75" fill="currentColor"/>`;
   }
   const hinge = !d.fold ? "" : `<path d="${tall ? `M${f(x)} ${f(y + H / 2)}H${f(x + W)}` : `M${f(x + W / 2)} ${f(y)}V${f(y + H)}`}" stroke="currentColor" stroke-width=".8"/>`;
-  return `<svg class="pn-sil" viewBox="0 0 20 20" aria-hidden="true">${glass}<rect x="${f(x + sw / 2)}" y="${f(y + sw / 2)}" width="${f(W - sw)}" height="${f(H - sw)}" rx="${f(r)}" fill="none" stroke="currentColor" stroke-width="${sw}"/>${hinge}${cam}</svg>`;
+  return `${glass}<rect x="${f(x + sw / 2)}" y="${f(y + sw / 2)}" width="${f(W - sw)}" height="${f(H - sw)}" rx="${f(r)}" fill="none" stroke="currentColor" stroke-width="${sw}"/>${hinge}${cam}`;
 };
 export const itemOf = (st: St) => st.kind === "device" ? st.dev : st.sel;
 export const openDims = (d: DeviceEntry) => `${Math.round(d.open.w)}×${Math.round(d.open.h)}`;
 // 커스텀 슬라이더(D-99) — 끄는 동안은 틀과 치수선 숫자만 따라온다(draft, 요청 없음). 놓거나 키 입력이 멈추면 치수선 입력과 같은 규칙으로 한 번 보낸다.
 // 보낸 뒤에도 새 상태가 올 때까지 draft 를 붙들어 틀이 옛 크기로 되튀지 않는다.
 export const SL_KEY_SETTLE = 350;
+export const DOCK_START: DockView = { menu: false, orientMenu: false, locked: false, checked: "", rows: {}, sumKey: "", sumDev: "", sumTitle: "",
+  posture: false, sliders: false, foldable: false, folded: false, orientFixed: false, orientation: "portrait", hinge: true, slW: DP_MIN, slH: DP_MIN };
 export const slAt = (v: number) => `${((v - DP_MIN) / (DP_MAX - DP_MIN) * 100).toFixed(3)}%`;

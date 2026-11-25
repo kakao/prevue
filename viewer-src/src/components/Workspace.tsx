@@ -2,14 +2,14 @@ import { memo, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import { findCard, type DeviceInsets, type Focus, type Size, type SystemUi, type ViewerState } from '../state';
+import type { SceneDock } from '../runtime/resize-scene';
 import { loadingView, zoomView, type ZoomView } from '../workspace/view';
+import { CustomSizeSliders, DeviceMenu, DevicePosture } from './Dock';
 import { InsetMarks, InsetOverlay, InsetOverlayButton } from './InsetOverlay';
 import { loadingHost, systemUiHost, WorkspacePanel, WorkspaceStage, zoomHost } from './WorkspaceShell';
 
 // 한 장 — 기기를 손에 쥔 작업 공간(D-57). 이름 · 출구는 헤더가, 크기 · 기기 · 자세 · 확대는 무대 아래 가운데의 조작 독이 갖고(D-167)
 // 무대는 창을 다 쓴다.
-// 장면 · 무대 · 조작 독의 칸은 빌드가 index.html 에 미리 그린 정적 껍데기다(WorkspaceShell). 여기는 그 안팎에서 움직이는 것 —
-// 확대 · 첫 장 대기 · 내비게이션 바 — 만 그린다.
 export type WorkspaceActions = {
   exit(): void;
   zoomIn(): void;
@@ -20,7 +20,7 @@ export type WorkspaceActions = {
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
 };
-export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; systemUi: HTMLElement; inset: HTMLElement; insetMarks: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
+export type WorkspaceHosts = { view: HTMLElement; panel: HTMLElement; menu: HTMLElement; posture: HTMLElement; sliders: HTMLElement; systemUi: HTMLElement; inset: HTMLElement; insetMarks: HTMLElement; zoom: HTMLElement; loading: HTMLElement };
 export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
 const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
@@ -178,17 +178,18 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
  * 섹션의 hidden 은 같은 커밋의 레이아웃 효과에서 맞춘다 — session.ts 가 무대의 높이를 재는 것이 그 뒤다.
  * 뷰어에서는 껍데기가 이미 index.html 에 있어 움직이는 칸만 포털로 그리고, Storybook 에서는 껍데기째 그린다.
  */
-export function Workspace({ screen, systemUi = null, deviceInsets = null, size = null, hosts, actions = NO_ACTIONS }: {
+export function Workspace({ screen, systemUi = null, deviceInsets = null, size = null, hosts, actions = NO_ACTIONS, dock }: {
   screen: ViewerState['screen'] | null; systemUi?: SystemUi | null; deviceInsets?: DeviceInsets | null; size?: Size | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions;
+  dock?: SceneDock;
 }) {
   const { phrase } = useMessages();
   const [view, setView] = useState<HTMLElement | null>(null);
   const viewEl = hosts?.view ?? view;
   useLayoutEffect(() => { if (viewEl && screen !== null) viewEl.hidden = screen !== 'focus'; }, [screen, viewEl]);
-  if (hosts) return <><WorkspaceLoading host={hosts.loading} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetMarks deviceInsets={deviceInsets} size={size} host={hosts.insetMarks} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
+  if (hosts) return <>{dock && <><DeviceMenu dock={dock} host={hosts.menu} /><DevicePosture dock={dock} host={hosts.posture} /><CustomSizeSliders dock={dock} host={hosts.sliders} /></>}<WorkspaceLoading host={hosts.loading} /><InsetOverlay deviceInsets={deviceInsets} size={size} host={hosts.inset} /><InsetMarks deviceInsets={deviceInsets} size={size} host={hosts.insetMarks} /><SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} host={hosts.systemUi} actions={actions} /><ZoomControls host={hosts.zoom} actions={actions} /></>;
   return <>
     <section id="focusView" ref={setView}><WorkspaceStage loading={<WorkspaceLoading />}
       inset={<InsetOverlay deviceInsets={deviceInsets} size={size} />} marks={<InsetMarks deviceInsets={deviceInsets} size={size} />} /></section>
-    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
+    <div className="panel" id="panel" role="toolbar" aria-label={phrase('panel.label')}><WorkspacePanel {...dock && { menu: <DeviceMenu dock={dock} />, posture: <DevicePosture dock={dock} />, sliders: <CustomSizeSliders dock={dock} /> }} systemUi={<SystemUiControl systemUi={systemUi} deviceInsets={deviceInsets} actions={actions} />} zoom={<ZoomControls actions={actions} />} /></div>
   </>;
 }

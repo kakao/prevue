@@ -1,7 +1,8 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
 import '../legacy/style.css';
 import '../legacy/resize.css';
-import { createResizeScene } from '../src/runtime/resize-scene';
+import { createResizeScene, DOCK_START, type DockView, type SceneDock } from '../src/runtime/resize-scene';
+import { createStore } from '../src/runtime/store';
 import type { Store } from '../src/workspace/view';
 import { examples } from './examples';
 import { pearlBoard } from './pearl';
@@ -33,11 +34,14 @@ export function WithView<T extends object>({ store, value, children }: { store: 
   return <>{children}</>;
 }
 
-/**
- * 실제 장면 — 번들 밖의 resize-scene.js 를 페이지처럼 띄워 pearl 첫 카드를 원래 크기(@Preview)로 담는다.
- * 장면은 문서에서 조작 독(#panel · #pnPick · #devCtl)도 찾으므로 Workspace 를 통째로 그린 뒤에 부른다. 크기 · 기기 · 자세를 고르면 틀이 옮겨 간다 — 데몬이 없어 새 그림은 오지 않는다.
- */
+export function idleDock(view: Partial<DockView> = {}): SceneDock {
+  const store = createStore<DockView>({ ...DOCK_START, ...view }), none = () => {};
+  return { view: store, setMenu: menu => store.set({ menu }), setOrientMenu: orientMenu => store.set({ orientMenu }),
+    pick: none, orient: none, fold: none, hinge: none, cancelRuler: none, grab: none, drag: none, release: none, step: none, sliderFocus: none, lock: none };
+}
+
 export function useLiveScene() {
+  const [dock, setDock] = useState<SceneDock>();
   useLayoutEffect(() => {
     const root = document.getElementById('resizeScene'), stage = document.getElementById('stage');
     if (!root || !stage) return;
@@ -52,6 +56,8 @@ export function useLiveScene() {
     scene.image('original', image);
     scene.enable(true);
     scene.update({ sel: 'original', w: image.dpW, h: image.dpH }, true);
+    setDock(scene.dock);
     return () => { scene.enable(false); document.body.classList.remove('resizing-ui'); };
   }, []);
+  return dock;
 }

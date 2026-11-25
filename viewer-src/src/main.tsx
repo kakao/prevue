@@ -50,7 +50,7 @@ installShortcuts(shortcuts, actions, {
   openSheetFile: () => { if (!currentLayer().sheet?.closing) document.querySelector<HTMLElement>('#galleryView .gsheet-go')?.click(); },
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
-  board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
+  board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, dock: workspace.dock, point: pointActions });
 startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); galleryFilesChanged(); forgetPreviewIndex(); }, prepared: preparation });
 
 /*

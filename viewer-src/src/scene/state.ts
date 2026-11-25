@@ -1,7 +1,7 @@
-import type { DeviceEntry } from "../../legacy/js/devices.js";
 import { phrase } from "../runtime/strings";
-import { BADGE_W, CAM_MAX, FRAME_TOP, Tw, Val, layersOf, slAt } from "./calc";
-import type { Axis, Body, Face, Frame, Layers, Panel, Plain, Rig, SceneHooks, SceneImage, SceneTarget, Shadow, Side, Slider, Spin, St, Tr } from "./types";
+import { createStore } from "../runtime/store";
+import { BADGE_W, CAM_MAX, DOCK_START, FRAME_TOP, Tw, Val, layersOf } from "./calc";
+import type { Axis, Body, DockView, Face, Frame, Layers, Panel, Plain, Rig, SceneHooks, SceneImage, SceneTarget, Shadow, Side, Spin, St, Tr } from "./types";
 
 const faceOf = (el: HTMLElement): Face => ({ el, cam: q(el, ".cam"), cams: camsIn(el), old: q<HTMLImageElement>(el, ".old"), veil: q(el, ".veil"), neu: q<HTMLImageElement>(el, ".neu"), cast: q(el, ".cast"), blurs: [], dark: null });
 const sideOf = (el: HTMLElement): Side => {
@@ -19,7 +19,6 @@ const camsIn = (el: ParentNode) => {
 };
 const q = <T extends HTMLElement = HTMLElement>(root: ParentNode, s: string) => root.querySelector<T>(s)!;
 const maybe = (root: ParentNode, s: string) => root.querySelector<HTMLElement>(s);
-const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 export type Unit = ReturnType<typeof unitOf>;
 
 export function createState(root: HTMLElement, hooks: SceneHooks) {
@@ -73,26 +72,9 @@ export function createState(root: HTMLElement, hooks: SceneHooks) {
   const UA = unitOf($("ua"));
   const UB = unitOf($("ub"));
   const roll = { w: new Tw(411), h: new Tw(891) };
-  // 조작 독은 장면 밖(무대 아래 가운데에 뜬다)에 선다 — $ 는 장면 안만 찾는다
-  const PN = { el: byId("panel"), pick: byId("pnPick"), fold: byId("pnFold"), sum: byId("pnSum"), body: byId("pnBody") };
-  const CTL = { el: byId("devCtl"), fold: byId("dcFold"), rot: byId("dcRot"), hinge: byId("dcHinge") };
-  const ORIENT = { el: byId("dcOrientation"), menu: byId("dcOrientMenu") };
-  const directions = [...ORIENT.menu.querySelectorAll<HTMLElement>("[data-orientation]")];
-  const ROWS = [...PN.pick.querySelectorAll<HTMLElement>("[data-sel]")];
-  // 크기 · 기기 메뉴(D-167) — 독의 버튼 위로 열린다. 그림을 가리는 층이라 고르면 닫는다. 방향키로 지나가는 동안(고르기만 한다)은
-  // 열어 둔다. 바깥 누름도 닫는다. Esc 는 다른 떠 있는 층과 한 줄로 단축키의 EscapeLayers 가 closeMenu 로 닫는다.
-  // 자세 · 슬라이더는 독 가운데(#devCtl · #pnSl)가 갖는다.
-  const SUM = { sil: PN.sum.querySelector<HTMLElement>(".pn-sum-sil")!, nm: PN.sum.querySelector<HTMLElement>(".nm")!, dev: null as DeviceEntry | null };
   // 커스텀 칸은 눈금자 숫자로 가는 입구다 — 지금 크기 그대로 커스텀이 되고, 장면이 멈추면 폭 숫자에 커서가 간다.
   const RL = { el: $("ruler"), ext: $<SVGPathElement>("rlExt"), dim: $<SVGPathElement>("rlDim"), w: $<HTMLInputElement>("rlW"), h: $<HTMLInputElement>("rlH"), shown: { w: "", h: "" } };
-  const slEl = byId("pnSl");
-  const slAxes: Partial<Record<Axis, Slider>> = {};
-  for (const box of slEl.querySelectorAll<HTMLElement>(".sl")) {
-    const track = box.querySelector<HTMLElement>(".sl-track")!;
-    slAxes[box.dataset.axis as Axis] = { track, thumb: box.querySelector<HTMLElement>(".thumb")!, fill: box.querySelector<HTMLElement>(".fill")!, val: box.querySelector<HTMLElement>(".v b")! };
-    for (const t of track.querySelectorAll<HTMLElement>(".tick")) t.style.left = slAt(Number(t.dataset.v));
-  }
-  const SL = { el: slEl, w: slAxes.w!, h: slAxes.h! };
+  const dock = createStore<DockView>(DOCK_START);
   return {
     root,
     hooks,
@@ -131,16 +113,10 @@ export function createState(root: HTMLElement, hooks: SceneHooks) {
     UA,
     UB,
     roll,
-    PN,
-    CTL,
-    ORIENT,
-    directions,
-    ROWS,
-    SUM,
+    dock,
     focusW: false,
     RL,
     editing: false,
-    SL,
     draft: null as { w: number; h: number } | null,
     dragging: null as Axis | null,
     slFocus: false,

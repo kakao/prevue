@@ -19,6 +19,7 @@ import { Workspace, WorkspaceHeader, type WorkspaceActions, type WorkspaceHeader
 import { MessagesContext, type Messages } from './messages';
 import type { Connection } from './session';
 import type { ShortcutGroup } from './shortcuts';
+import type { SceneDock } from './runtime/resize-scene';
 import type { ViewerState } from './state';
 
 /** index.html 이 두는 영역의 바깥 요소 — 기존 모듈이 처음부터 쥐는 요소가 그 안에 섞여 있어 바깥은 마크업이 갖는다. */
@@ -36,11 +37,11 @@ export function findHosts(): Hosts {
     railAll: $('railAll'), gallery: $('galleryView'),
     stale: $('staleBar'), buildNotice: $('buildNotice'), board: { view: $('boardView'), cards: $('cards') },
     quickOpen: { sheet: $('qoSheet'), curtain: $('qoCurtain') }, capsule: $('strip'), help: $('help'),
-    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), systemUi: $('sysUiCtl'), inset: $('insetOverlay'), insetMarks: $('insetMarks'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
+    vacant: $('vacantView'), workspace: { view: $('focusView'), panel: $('panel'), menu: $('pnFold'), posture: $('devCtl'), sliders: $('pnSl'), systemUi: $('sysUiCtl'), inset: $('insetOverlay'), insetMarks: $('insetMarks'), zoom: $('zoomCtl'), loading: $('workspaceLoading') }, workspaceHeader: { back: $('back'), title: $('wsTitle') }, chooser: $('chooser'),
   };
 }
 
-export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, point, renderLegacy }: {
+export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, renderLegacy }: {
   state: ViewerState | null;
   /** apply 한 번에 하나씩 는다 — 기존 화면은 apply 마다 한 번만 그린다(앱 정보가 늦게 와도 다시 그리지 않는다). */
   draw?: number;
@@ -51,6 +52,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   hosts?: Hosts;
   board?: BoardActions;
   workspace?: WorkspaceActions;
+  dock?: SceneDock;
   point?: PointActions;
   renderLegacy: (state: ViewerState) => void;
 }) {
@@ -74,7 +76,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <VacantTab screen={screen} vacant={state?.vacant ?? null} host={hosts.vacant} />
     {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}
-    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} deviceInsets={state?.focus?.deviceInsets ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} />
+    <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} deviceInsets={state?.focus?.deviceInsets ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} dock={dock} />
     <WorkspaceHeader state={state} hosts={hosts.workspaceHeader} actions={workspace} />
     <PointOverlay actions={point} />
     <ChoicePopover choice={state?.choice ?? null} repo={state?.header?.repo} host={hosts.chooser} actions={point} />
@@ -83,13 +85,14 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   </>;
 }
 
-export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, board, workspace, point }: {
+export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, board, workspace, dock, point }: {
   renderLegacy: (state: ViewerState) => void;
   messages: Messages;
   hosts: Hosts;
   shortcuts: ShortcutGroup[];
   board: BoardActions;
   workspace: WorkspaceActions;
+  dock: SceneDock;
   point: PointActions;
 }) {
   const container = document.createElement('div');
@@ -98,7 +101,7 @@ export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, boa
   const root = createRoot(container);
   let state: ViewerState | null = null, statusState: ViewerState | null = null, connection: Connection | null = null, app: AppInfo | null = null, draw = 0;
   const render = () => root.render(<MessagesContext.Provider value={messages}>
-    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} point={point} renderLegacy={renderLegacy} />
+    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} dock={dock} point={point} renderLegacy={renderLegacy} />
   </MessagesContext.Provider>);
   // 끊김은 상태가 오기 전에도 알린다 — 첫 상태를 기다리지 않고 바로 붙인다.
   flushSync(render);

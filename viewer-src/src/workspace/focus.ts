@@ -496,6 +496,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     image: () => shot,
     zoomIn, zoomOut, zoomFit, zoomMenuPick, toggleZoomMenu, closeZoomMenu,
     closeDeviceMenu: () => resizeUI.closeMenu(),
+    dock: resizeUI.dock,
   };
 }
 
