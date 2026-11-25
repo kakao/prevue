@@ -1,9 +1,9 @@
 {
   "status": 200,
   "schema": {
+    "failure": "null",
     "front": [
       {
-        "failure": "null",
         "i": "number",
         "image": {
           "at": "number",
@@ -29,8 +29,7 @@
           "w": 100,
           "h": 100,
           "at": 0
-        },
-        "failure": null
+        }
       },
       {
         "i": 1,
@@ -41,9 +40,9 @@
           "w": 100,
           "h": 100,
           "at": 0
-        },
-        "failure": null
+        }
       }
-    ]
+    ],
+    "failure": null
   }
 }

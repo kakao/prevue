@@ -16,15 +16,11 @@ function shortLabel(name: string, stem: string) {
 
 type Shot = CardImage | 'failed' | null;
 
-function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>) {
-  const drawn = view.status === 'done' || view.status === 'error' ? view : null;
-  const n = Math.min(SHEET_MAX, Math.max(1, drawn ? drawn.sheets : f.functions.length));
+function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>): Array<{ shot: Shot; label: string }> {
   const stem = stemOf(f);
-  return Array.from({ length: n }, (_, i): { shot: Shot; label: string } => {
-    if (!drawn) return { shot: null, label: shortLabel(f.functions[i] ?? '', stem) };
-    const s = drawn.front[i];
-    return { shot: s?.image ?? 'failed', label: s ? s.variant ?? shortLabel(s.name, stem) : '' };
-  });
+  if (view.status === 'done') return view.front.map(s => ({ shot: s.image, label: s.variant ?? shortLabel(s.name, stem) }));
+  if (view.status === 'error') return [{ shot: 'failed', label: '' }];
+  return f.functions.slice(0, SHEET_MAX).map(fn => ({ shot: null, label: shortLabel(fn, stem) }));
 }
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;

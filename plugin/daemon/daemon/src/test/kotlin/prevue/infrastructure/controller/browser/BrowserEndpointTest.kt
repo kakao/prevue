@@ -79,7 +79,8 @@ class BrowserEndpointTest {
             assertEquals(4L, (body as Map<*, *>)["sheets"])
             val front = front(body)
             assertEquals(listOf(0L to "Card0", 1L to "Card1", 2L to "Card2"), front.map { it["i"] to it["name"] })
-            assertTrue(front.all { it["variant"] == null && it["failure"] == null }, front.toString())
+            assertTrue(front.all { it["variant"] == null }, front.toString())
+            assertEquals(null, body["failure"])
             val image = front[1]["image"] as Map<*, *>
             assertTrue((image["url"] as String).startsWith("/gallery/shot/"), image.toString())
             assertEquals(100L to 100L, image["w"] to image["h"])
@@ -128,16 +129,52 @@ class BrowserEndpointTest {
         val source = fx.file.readText()
         fx.file.writeText("package demo\nimport androidx.compose.ui.tooling.preview.Preview\n@Preview\nfun Card0(@PreviewParameter(Names::class) n: String) {}\n")
         fx.renderer.providerLabels["demo.Names"] = listOf("a", "b")
-        fx.renderer.asideFails = "가짜 실패"
-        fx.renderer.asideFailsIf = { it.paramIndex == 1 }
         try {
             val (code, body) = card(fx.file.path)
             assertEquals(200, code)
-            val front = front(body)
-            assertEquals(listOf("Card0" to "a", "Card0" to "b"), front.map { it["name"] to it["variant"] })
-            assertEquals(listOf(null, "가짜 실패"), front.map { it["failure"] })
-            assertEquals(listOf(true, false), front.map { it["image"] != null })
-        } finally { fx.renderer.asideFails = null; fx.renderer.asideFailsIf = { true }; fx.file.writeText(source) }
+            assertEquals(listOf("Card0" to "a", "Card0" to "b"), front(body).map { it["name"] to it["variant"] })
+        } finally { fx.file.writeText(source) }
+    }
+
+    @Test fun `못 그린 장은 건너뛰고 여섯 장 안에서 그려진 세 장을 모은다`() {
+        Fixture(previews = 8).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            own.renderer.asideFails = "가짜 실패"
+            own.renderer.asideFailsIf = { it.functionName in setOf("Card0", "Card2") }
+            val before = own.renderer.asides.size
+            val (_, body) = card(own.file.path, p)
+            assertEquals(listOf("Card1", "Card3", "Card4"), front(body).map { it["name"] })
+            assertEquals("가짜 실패", (body as Map<*, *>)["failure"])
+            assertEquals((0..4).map { "Card$it@gallery" }, own.renderer.asides.drop(before).map { it.previewId })
+
+            val again = own.renderer.asides.size
+            assertEquals(listOf("Card1", "Card3", "Card4"), front(card(own.file.path, p).second).map { it["name"] })
+            assertEquals(again, own.renderer.asides.size, "파일이 그대로면 못 그린 장도 다시 그리지 않는다")
+
+            own.renderer.asideFailsIf = { true }
+            own.file.setLastModified(System.currentTimeMillis() + 60_000)
+            val after = own.renderer.asides.size
+            front(card(own.file.path, p).second)
+            assertEquals(listOf("Card0@gallery", "Card2@gallery"), own.renderer.asides.drop(after).map { it.previewId }, "파일이 바뀌면 못 그린 장만 다시")
+            module.stopInputs()
+        }
+    }
+
+    @Test fun `여섯 장이 모두 실패하면 그 뒤는 시도하지 않고 실패 카드다`() {
+        Fixture(previews = 8).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            own.renderer.asideFails = "가짜 실패"
+            val before = own.renderer.asides.size
+            val (_, body) = card(own.file.path, p)
+            assertTrue(front(body).isEmpty())
+            assertEquals(8L to "가짜 실패", (body as Map<*, *>)["sheets"] to body["failure"])
+            assertEquals(6, own.renderer.asides.size - before)
+            module.stopInputs()
+        }
     }
 
     @Test fun `갤러리 카드는 프리뷰 소스가 아니면 404 다`() {

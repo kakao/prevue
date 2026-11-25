@@ -22,44 +22,63 @@ class GalleryCards(
     private val live: LiveShot,
     private val gallery: GalleryShots,
 ) {
-    class Card(val sheets: Int, val front: List<Sheet>)
+    class Card(val sheets: Int, val front: List<Sheet.Drawn>, val failure: Phrase?)
+
     sealed interface Sheet {
-        val index: Int
-        val name: String
-        val variant: String?
-        class Kept(override val index: Int, override val name: String, override val variant: String?, val shot: GalleryShots.Shot) : Sheet
-        class Failed(override val index: Int, override val name: String, override val variant: String?, val why: Phrase?) : Sheet
+        class Drawn(val shot: GalleryShots.Shot) : Sheet
+        class Failed(val why: Phrase?) : Sheet
     }
 
     suspend fun draw(file: File): Card? {
-        val specs = specsOf(file) ?: return null
-        return Card(specs.size, specs.indices.take(GalleryShots.FRONT).map { keptOrShoot(file, specs, it) })
-    }
-
-    private suspend fun keptOrShoot(file: File, specs: List<PreviewSpec>, index: Int): Sheet =
-        gallery.kept(file)?.takeIf { it.sheets == specs.size }?.shots?.firstOrNull { it.index == index }
-            ?.let { Sheet.Kept(index, it.name, it.variant, it) }
-            ?: shoot(file, specs, index)
-
-    private suspend fun specsOf(file: File): List<PreviewSpec>? {
         if (!sources.has(file)) return null
         val found = previews.inFile(file)
-        return PreviewExpansion.expand(found, engine.instances(found)::getValue).ifEmpty { null }
+        val specs = PreviewExpansion.expand(found, engine.instances(found)::getValue).ifEmpty { return null }
+        val known = known(file)?.takeIf { it.sheets == specs.size }
+        return walk(specs.size) { i -> known?.at(i) ?: shoot(file, specs, i) }
+    }
+
+    fun cached(file: File): Card? {
+        val known = known(file) ?: return null
+        return walk(known.sheets) { known.at(it) }
+    }
+
+    private class Known(val sheets: Int, val drawn: Map<Int, GalleryShots.Shot>, val failed: Set<Int>) {
+        fun at(i: Int): Sheet? = drawn[i]?.let(Sheet::Drawn) ?: Sheet.Failed(null).takeIf { i in failed }
+    }
+
+    private fun known(file: File): Known? {
+        val kept = gallery.kept(file) ?: return null
+        val changed = sources.modifiedAt(file) ?: return null
+        return Known(kept.sheets, kept.shots.associateBy { it.index }, kept.failedAt.filterValues { it >= changed }.keys)
+    }
+
+    private inline fun walk(sheets: Int, at: (Int) -> Sheet?): Card? {
+        val front = ArrayList<Sheet.Drawn>()
+        var failure: Phrase? = null
+        for (i in 0 until minOf(sheets, GalleryShots.TRY)) {
+            if (front.size == GalleryShots.FRONT) break
+            when (val s = at(i) ?: return null) {
+                is Sheet.Drawn -> front += s
+                is Sheet.Failed -> failure = failure ?: s.why
+            }
+        }
+        return Card(sheets, front, failure)
     }
 
     private suspend fun shoot(file: File, specs: List<PreviewSpec>, index: Int): Sheet {
         val spec = specs[index]
         val t = System.nanoTime()
         val out = engine.showAside(spec.copy(previewId = spec.previewId + SUFFIX))
-        fun failed(why: Phrase?) = Sheet.Failed(index, spec.functionName, spec.paramLabel, why)
-        return try {
+        val why = try {
             val shot = live.shot(out, null, t, BY)
-            if (!shot.out.ok || shot.out.image == null) failed(shot.out.message)
-            else Sheet.Kept(index, spec.functionName, spec.paramLabel, gallery.keep(file, specs.size, index, shot.out))
+            if (shot.out.ok && shot.out.image != null) return Sheet.Drawn(gallery.keep(file, specs.size, index, shot.out))
+            shot.out.message
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            failed(phrase("render.writeFailed", "why" to e))
+            phrase("render.writeFailed", "why" to e)
         }
+        gallery.fail(file, specs.size, index)
+        return Sheet.Failed(why)
     }
 
     companion object {

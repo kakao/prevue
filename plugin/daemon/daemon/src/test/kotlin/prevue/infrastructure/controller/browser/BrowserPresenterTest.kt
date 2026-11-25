@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -242,7 +243,7 @@ class BrowserPresenterTest {
     @Test fun `진행과 정착은 알림을 내지 않고 정착 뒤에도 알약 시간이 남는다`() {
         opened()
         runBlocking {
-            presenter.events.test {
+            presenter.events.filterNot { it == UiEvent.GalleryShots }.test {
                 uc.hotReload.applySave(listOf(fx.file), "watch"); uc.workspace.awaitBoardFilled()
                 input.enterFocus(0); presenter.drain()
                 input.touch("tap", 1, 1); presenter.drain()
@@ -333,7 +334,7 @@ class BrowserPresenterTest {
         presenter.state.awaitState("뷰어 상태가 보드 시간까지") { it.timing == now().timing }
         val before = presenter.state.value.version
         runBlocking {
-            presenter.events.test {
+            presenter.events.filterNot { it == UiEvent.GalleryShots }.test {
                 uc.watchers.indexPreviewFiles()
                 assertEquals(UiEvent.PreviewFiles, awaitItem())
                 assertEquals(before, presenter.state.value.version)

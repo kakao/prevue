@@ -10,23 +10,17 @@ internal class BrowserGallery(
     private val cards: GalleryCards,
     private val shots: GalleryShots,
 ) {
-    suspend fun card(path: String): Map<String, Any?>? {
-        val card = cards.draw(File(path)) ?: return null
-        return mapOf("sheets" to card.sheets, "front" to card.front.map { s ->
-            mapOf("i" to s.index, "name" to s.name, "variant" to s.variant) + when (s) {
-                is GalleryCards.Sheet.Kept -> mapOf("image" to s.shot.toImage(), "failure" to null)
-                is GalleryCards.Sheet.Failed -> mapOf("image" to null, "failure" to s.why?.toJson())
-            }
-        })
-    }
+    suspend fun card(path: String): Map<String, Any?>? = cards.draw(File(path))?.toJson()
 
     fun image(id: String): File? = shots.image(id)
 
-    fun keptOf(file: File): Map<String, Any?>? = shots.kept(file)?.let { k ->
-        mapOf("sheets" to k.sheets, "front" to k.shots.map { s ->
-            mapOf("i" to s.index, "name" to s.name, "variant" to s.variant, "image" to s.toImage(), "failure" to null)
-        })
-    }
+    fun keptOf(file: File): Map<String, Any?>? = cards.cached(file)?.toJson()
+
+    private fun GalleryCards.Card.toJson(): Map<String, Any?> = mapOf(
+        "sheets" to sheets,
+        "front" to front.map { d -> d.shot.let { mapOf("i" to it.index, "name" to it.name, "variant" to it.variant, "image" to it.toImage()) } },
+        "failure" to failure?.toJson(),
+    )
 }
 
 internal fun GalleryShots.Shot.toImage(): Map<String, Any?> =

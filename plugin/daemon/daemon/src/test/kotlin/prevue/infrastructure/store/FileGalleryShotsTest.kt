@@ -48,6 +48,7 @@ class FileGalleryShotsTest {
         clock = 2_000L
         store().keep(File("/r/A.kt"), 4, 2, out("A2", 100, 200))
         val kept = store().kept(File("/r/A.kt"))!!
+        assertEquals(emptyMap<Int, Long>(), kept.failedAt)
         assertEquals(4, kept.sheets)
         assertEquals(listOf(0 to 1_000L, 2 to 2_000L), kept.shots.map { it.index to it.drawnAt })
         assertTrue(store().image(kept.shots[1].id)!!.isFile)
@@ -90,6 +91,21 @@ class FileGalleryShotsTest {
         s.image(shot.id)!!.delete()
         assertEquals(listOf(1), s.kept(File("/r/A.kt"))!!.shots.map { it.index })
         assertNull(s.image(shot.id))
+    }
+
+    @Test fun `못 그린 장도 시각과 함께 남고 그리면 지워지며 장 수가 바뀌면 옛 기록을 버린다`() = runBlocking {
+        val s = store()
+        s.keep(File("/r/A.kt"), 4, 0, out("A0", 100, 200))
+        clock = 2_000L
+        s.fail(File("/r/A.kt"), 4, 1)
+        assertEquals(mapOf(1 to 2_000L), store().kept(File("/r/A.kt"))!!.failedAt)
+        s.keep(File("/r/A.kt"), 4, 1, out("A1", 100, 200))
+        assertEquals(emptyMap<Int, Long>(), s.kept(File("/r/A.kt"))!!.failedAt)
+        s.fail(File("/r/A.kt"), 5, 2)
+        val k = s.kept(File("/r/A.kt"))!!
+        assertEquals(5 to emptyList<Int>(), k.sheets to k.shots.map { it.index })
+        assertEquals(setOf(2), k.failedAt.keys)
+        assertEquals(listOf("shots.json"), root.listFiles()!!.single().list()!!.toList())
     }
 
     @Test fun `모르는 id 는 그림이 없다`() {

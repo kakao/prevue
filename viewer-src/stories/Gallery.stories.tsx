@@ -14,13 +14,13 @@ const NOW = Math.max(...pearlFiles.map(f => f.mtime)) + 5 * 60000;
 
 function answer(sheets: number, at: number, w: number, h: number): CardAnswer {
   return { sheets, front: Array.from({ length: Math.min(3, sheets) }, (_, i) => ({
-    i, name: `Preview${i}`, variant: null, image: { url: shots[(at + i) % shots.length], w, h }, failure: null })) };
+    i, name: `Preview${i}`, variant: null, image: { url: shots[(at + i) % shots.length], w, h } })), failure: null };
 }
 
 function fakeAsk(delay: number) {
   return (path: string) => new Promise<CardAnswer | null>(resolve => setTimeout(() => {
     const i = pearlFiles.findIndex(f => f.path === path);
-    if (i >= pearlFiles.length - 2) resolve({ sheets: 1, front: [{ i: 0, name: 'Preview', variant: null, image: null, failure: null }] });
+    if (i >= pearlFiles.length - 2) resolve({ sheets: 1, front: [], failure: null });
     else resolve(answer(pearlFiles[i].functions.length, i, 360, 780));
   }, delay));
 }

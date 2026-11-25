@@ -159,11 +159,12 @@ type UiEvent = { kind: string; text?: Parameters<typeof daemonText>[0] };
  * onPreviewFiles 는 빠른 열기의 목록이 바뀌었다는 데몬의 알림을 받는다.
  * prepared 는 준비 화면이 이어받은 요청이다 — 있으면 끊김을 그 화면의 실패로 알리고, 다시 시작 알림은 받지 않는다.
  */
-export function startViewer({ workspace: ws, render, onConnection, onPreviewFiles, prepared = null }: {
+export function startViewer({ workspace: ws, render, onConnection, onPreviewFiles, onGalleryShots, prepared = null }: {
   workspace: Workspace;
   render(state: ViewerState, holdStatus: boolean): void;
   onConnection(connection: Connection): void;
   onPreviewFiles(): void;
+  onGalleryShots(): void;
   prepared?: Preparation | null;
 }) {
   workspace = ws;
@@ -176,6 +177,7 @@ export function startViewer({ workspace: ws, render, onConnection, onPreviewFile
     ui: (ev: UiEvent) => {
       if (ev.kind === 'flash') flash(daemonText(ev.text ?? null));
       else if (ev.kind === 'previewFiles') onPreviewFiles();
+      else if (ev.kind === 'galleryShots') onGalleryShots();
       else if (ev.kind === 'projectFiles') loadProjectFiles();
       else if (ev.kind === 'restart' && !preparation) restart();
     },

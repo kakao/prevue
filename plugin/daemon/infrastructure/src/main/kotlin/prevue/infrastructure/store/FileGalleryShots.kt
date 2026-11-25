@@ -27,7 +27,7 @@ public class FileGalleryShots(
     private val maxBytes: Long = galleryMaxMb(System.getenv("PREVUE_GALLERY_MAX_MB")) * 1024 * 1024,
     private val now: () -> Long = System::currentTimeMillis,
 ) : GalleryShots {
-    private class Entry(val path: String, val sheets: Int, val shots: Map<Int, Shot>)
+    private class Entry(val path: String, val sheets: Int, val shots: Map<Int, Shot>, val failedAt: Map<Int, Long>)
 
     private val lock = Mutex()
     private val loaded = lazy { MutableStateFlow(load()) }
@@ -42,13 +42,19 @@ public class FileGalleryShots(
             val (w, h) = try { shrink(image, out.width, out.height, tmp) } catch (e: IOException) { tmp.delete(); throw e }
             Files.move(tmp.toPath(), File(dir, "$index.png").toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
             val shot = Shot("$key-$index", index, out.preview.functionName, out.preview.paramLabel, w, h, now())
-            val old = entries[key]?.shots.orEmpty()
-            val entry = Entry(file.path, sheets, (old + (index to shot)).filterKeys { it < minOf(sheets, GalleryShots.FRONT) })
-            (old.keys - entry.shots.keys).forEach { File(dir, "$it.png").delete() }
-            loaded.value.update { it + (key to entry) }
-            writeMeta(dir, entry)
+            val prev = sameShape(key, sheets)
+            record(key, dir, Entry(file.path, sheets, prev?.shots.orEmpty() + (index to shot), prev?.failedAt.orEmpty() - index))
             prune(key)
             shot
+        }
+    }
+
+    override suspend fun fail(file: File, sheets: Int, index: Int): Unit = withContext(dispatchers.io) {
+        val key = keyOf(file)
+        lock.withLock {
+            val dir = File(root, key).apply { mkdirs() }
+            val prev = sameShape(key, sheets)
+            record(key, dir, Entry(file.path, sheets, prev?.shots.orEmpty() - index, prev?.failedAt.orEmpty() + (index to now())))
         }
     }
 
@@ -56,7 +62,7 @@ public class FileGalleryShots(
         val key = keyOf(file)
         val e = entries[key] ?: return null
         val shots = e.shots.values.filter { File(File(root, key), "${it.index}.png").isFile }.sortedBy { it.index }
-        return if (shots.isEmpty()) null else Kept(e.sheets, shots)
+        return Kept(e.sheets, shots, e.failedAt)
     }
 
     override fun image(id: String): File? {
@@ -66,6 +72,16 @@ public class FileGalleryShots(
         val dir = File(root, key)
         File(dir, META).setLastModified(now())
         return File(dir, "$index.png").takeIf { it.isFile }
+    }
+
+    private fun sameShape(key: String, sheets: Int): Entry? = entries[key]?.takeIf { it.sheets == sheets }
+
+    private fun record(key: String, dir: File, next: Entry) {
+        val limit = minOf(next.sheets, GalleryShots.TRY)
+        val entry = Entry(next.path, next.sheets, next.shots.filterKeys { it < limit }, next.failedAt.filterKeys { it < limit })
+        (entries[key]?.shots.orEmpty().keys - entry.shots.keys).forEach { File(dir, "$it.png").delete() }
+        loaded.value.update { it + (key to entry) }
+        writeMeta(dir, entry)
     }
 
     private fun shrink(image: File, width: Int, height: Int, to: File): Pair<Int, Int> {
@@ -92,6 +108,7 @@ public class FileGalleryShots(
             "shots" to e.shots.values.sortedBy { it.index }.map {
                 mapOf("i" to it.index, "name" to it.name, "variant" to it.variant, "w" to it.width, "h" to it.height, "at" to it.drawnAt)
             },
+            "failed" to e.failedAt.entries.sortedBy { it.key }.map { mapOf("i" to it.key, "at" to it.value) },
         )
         val tmp = Files.createTempFile(dir.toPath(), ".$META-", ".tmp").toFile()
         tmp.writeText(Json.str(json))
@@ -127,7 +144,9 @@ public class FileGalleryShots(
             Shot("${dir.name}-$i", i, it["name"] as String, it["variant"] as String?, (it["w"] as Number).toInt(), (it["h"] as Number).toInt(),
                 (it["at"] as Number).toLong())
         }.filter { File(dir, "${it.index}.png").isFile }
-        return Entry(m["path"] as String, (m["sheets"] as Number).toInt(), shots.associateBy { it.index })
+        val failed = (m["failed"] as List<*>?).orEmpty().map { it as Map<*, *> }
+            .associate { (it["i"] as Number).toInt() to (it["at"] as Number).toLong() }
+        return Entry(m["path"] as String, (m["sheets"] as Number).toInt(), shots.associateBy { it.index }, failed)
     }
 
     private fun keyOf(file: File): String =

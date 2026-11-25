@@ -35,11 +35,6 @@ export const byChanged = (files: PreviewFile[]) => [...files].sort((a, b) => b.m
 
 export const cardKey = (f: Pick<PreviewFile, 'path' | 'mtime'>) => `${f.mtime} ${f.path}`;
 
-export function cachedView(f: Pick<PreviewFile, 'shots'>): CardView | null {
-  const k = f.shots;
-  if (!k) return null;
-  const n = Math.min(3, k.sheets);
-  return Array.from({ length: n }, (_, i) => k.front.find(s => s.i === i)?.image).every(Boolean) ? viewOf(k) : null;
-}
+export const cachedView = (f: Pick<PreviewFile, 'shots'>): CardView | null => (f.shots ? viewOf(f.shots) : null);
 
 export const stale = (f: Pick<PreviewFile, 'mtime'>, image: { at?: number } | null | undefined) => image?.at != null && f.mtime > image.at;

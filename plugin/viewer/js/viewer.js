@@ -2455,16 +2455,16 @@ function Ei(e) {
 		Si ||= (clearTimeout(xi), window.setTimeout(() => location.reload(), yi)), wi(e) && location.reload();
 	} else Ci && e.boot !== Ci ? location.reload() : (Ci = e.boot, fi(e));
 }
-function Di({ workspace: e, render: t, onConnection: n, onPreviewFiles: r, prepared: i = null }) {
+function Di({ workspace: e, render: t, onConnection: n, onPreviewFiles: r, onGalleryShots: i, prepared: a = null }) {
 	$r = e, si = (e) => {
 		ai(e), t(e, ti(e));
-	}, gi = n, _i = i, ee({
+	}, gi = n, _i = a, ee({
 		open: () => {
 			hi && !bi ? location.reload() : hi || mi();
 		},
 		state: Ei,
 		ui: (e) => {
-			e.kind === "flash" ? F(O(e.text ?? null)) : e.kind === "previewFiles" ? r() : e.kind === "projectFiles" ? mi() : e.kind === "restart" && !_i && Ti();
+			e.kind === "flash" ? F(O(e.text ?? null)) : e.kind === "previewFiles" ? r() : e.kind === "galleryShots" ? i() : e.kind === "projectFiles" ? mi() : e.kind === "restart" && !_i && Ti();
 		},
 		error: () => {
 			hi = !0, bi || vi();
@@ -2655,7 +2655,7 @@ function Pi({ pending: e, host: t }) {
 var Fi = { status: "idle" };
 function Ii(e) {
 	let t = e?.front[0];
-	return e && t?.image ? {
+	return e && t ? {
 		status: "done",
 		sheets: e.sheets,
 		front: e.front,
@@ -2663,8 +2663,7 @@ function Ii(e) {
 	} : {
 		status: "error",
 		sheets: e?.sheets ?? 0,
-		front: e?.front ?? [],
-		failure: t?.failure ?? null
+		failure: e?.failure ?? null
 	};
 }
 function Li(e, t = 1) {
@@ -2743,30 +2742,22 @@ function Ui(e, t, n, r) {
 		day: "numeric"
 	});
 }
-var Wi = (e) => [...e].sort((e, t) => t.mtime - e.mtime || e.rel.localeCompare(t.rel)), Gi = (e) => `${e.mtime} ${e.path}`;
-function Ki(e) {
-	let t = e.shots;
-	if (!t) return null;
-	let n = Math.min(3, t.sheets);
-	return Array.from({ length: n }, (e, n) => t.front.find((e) => e.i === n)?.image).every(Boolean) ? Ii(t) : null;
-}
-var qi = (e, t) => t?.at != null && e.mtime > t.at, Ji = 3, Yi = 1.5, Xi = 420, Zi = 640, Qi = 16, $i = 10 / 16, ea = 40, ta = 1.2;
+var Wi = (e) => [...e].sort((e, t) => t.mtime - e.mtime || e.rel.localeCompare(t.rel)), Gi = (e) => `${e.mtime} ${e.path}`, Ki = (e) => e.shots ? Ii(e.shots) : null, qi = (e, t) => t?.at != null && e.mtime > t.at, Ji = 3, Yi = 1.5, Xi = 420, Zi = 640, Qi = 16, $i = 10 / 16, ea = 40, ta = 1.2;
 function na(e, t) {
 	return (e.startsWith(t) ? e.slice(t.length) : e).replace(/^Preview/, "").replace(/Preview$/, "").replace(/^_+|_+$/g, "");
 }
 function ra(e, t) {
-	let n = e.status === "done" || e.status === "error" ? e : null, r = Math.min(Ji, Math.max(1, n ? n.sheets : t.functions.length)), i = Ri(t);
-	return Array.from({ length: r }, (e, r) => {
-		if (!n) return {
-			shot: null,
-			label: na(t.functions[r] ?? "", i)
-		};
-		let a = n.front[r];
-		return {
-			shot: a?.image ?? "failed",
-			label: a ? a.variant ?? na(a.name, i) : ""
-		};
-	});
+	let n = Ri(t);
+	return e.status === "done" ? e.front.map((e) => ({
+		shot: e.image,
+		label: e.variant ?? na(e.name, n)
+	})) : e.status === "error" ? [{
+		shot: "failed",
+		label: ""
+	}] : t.functions.slice(0, Ji).map((e) => ({
+		shot: null,
+		label: na(e, n)
+	}));
 }
 var ia = () => /* @__PURE__ */ (0, z.jsx)("svg", {
 	viewBox: "0 0 16 16",
@@ -3162,30 +3153,30 @@ function Ta({ text: e, className: t }) {
 		children: r
 	});
 }
-var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: r = !0, onOpen: i, onLost: a }) {
-	let o = t.status === "done" ? [t.front[1]?.image ?? null, t.front[2]?.image ?? null] : Ea, { phrase: c, daemonText: l } = s(), u = t.status === "done" ? "done" : t.status === "error" ? "failed" : "loading", d = t.status !== "done" || t.image.w <= t.image.h, f = t.status === "done" ? t.sheets : 0;
+var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: r = !0, shown: i = !0, onOpen: a, onLost: o }) {
+	let c = t.status === "done" ? [t.front[1]?.image ?? null, t.front[2]?.image ?? null] : Ea, { phrase: l, daemonText: u } = s(), d = t.status === "done" ? "done" : t.status === "error" ? "failed" : "loading", f = t.status !== "done" || t.image.w <= t.image.h, p = t.status === "done" ? t.sheets : 0;
 	return /* @__PURE__ */ (0, z.jsx)("article", {
 		className: "gcard",
-		"data-state": u,
+		"data-state": d,
 		"data-stale": n || void 0,
-		"aria-busy": u === "loading",
+		"aria-busy": d === "loading",
 		children: /* @__PURE__ */ (0, z.jsxs)("button", {
 			className: "gcard-hit",
 			type: "button",
 			"aria-haspopup": "dialog",
-			onClick: i,
+			onClick: a,
 			children: [/* @__PURE__ */ (0, z.jsxs)("span", {
 				className: "gcard-cover",
 				children: [
 					t.status === "error" ? /* @__PURE__ */ (0, z.jsx)("span", {
 						className: "gcard-failed",
-						title: l(t.failure) || void 0,
-						children: c("gallery.failed")
+						title: u(t.failure) || void 0,
+						children: l("gallery.failed")
 					}) : /* @__PURE__ */ (0, z.jsxs)("span", {
 						className: "gcard-stack",
-						"data-o": d ? "tall" : "wide",
-						children: [(f > 2 ? ["l", "r"] : f > 1 ? ["r"] : []).map((e) => {
-							let t = r ? o[e === "r" ? 0 : 1] : null;
+						"data-o": f ? "tall" : "wide",
+						children: [["r", "l"].slice(0, c.filter(Boolean).length).map((e) => {
+							let t = i ? c[e === "r" ? 0 : 1] : null;
 							return /* @__PURE__ */ (0, z.jsx)("span", {
 								className: "gcard-ghost",
 								"data-g": e,
@@ -3206,19 +3197,19 @@ var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 								alt: "",
 								decoding: "async",
 								onLoad: (e) => e.currentTarget.classList.add("in"),
-								onError: a
+								onError: o
 							}) : /* @__PURE__ */ (0, z.jsx)("span", { className: "gcard-ph" })
 						})]
 					}),
 					n && /* @__PURE__ */ (0, z.jsx)("span", {
 						className: "gcard-old",
-						title: c("gallery.stale.why"),
-						children: c("gallery.stale")
+						title: l("gallery.stale.why"),
+						children: l("gallery.stale")
 					}),
-					f > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
+					p > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
 						className: "gcard-count",
-						"aria-label": c("board.count", { n: f }),
-						children: [/* @__PURE__ */ (0, z.jsx)(Sa, {}), f]
+						"aria-label": l("board.count", { n: p }),
+						children: [/* @__PURE__ */ (0, z.jsx)(Sa, {}), p]
 					})
 				]
 			}), /* @__PURE__ */ (0, z.jsxs)("span", {
@@ -3250,10 +3241,10 @@ var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 		})
 	});
 }), Oa = (0, R.memo)(function({ f: e, order: t, name: n, pkg: r, mod: i, changed: a, cards: o, onOpen: s }) {
-	let c = (0, R.useRef)(null), l = Gi(e), u = (0, R.useSyncExternalStore)(o.subscribe, () => o.get(l)), [d, f] = (0, R.useState)(!1), p = (0, R.useMemo)(() => d ? null : Ki(e), [d, e]), m = !!p, h = p ?? u, [g, _] = (0, R.useState)(!1);
+	let c = (0, R.useRef)(null), l = Gi(e), u = (0, R.useSyncExternalStore)(o.subscribe, () => o.get(l)), [d, f] = (0, R.useState)(!1), p = (0, R.useMemo)(() => d ? null : Ki(e), [d, e]), m = !!p, h = p ?? u, [g, _] = (0, R.useState)(!1), [v, y] = (0, R.useState)(!1);
 	(0, R.useEffect)(() => {
 		let n = c.current, r = ba().add(n, (n) => {
-			n ? m || o.want(l, e.path, t) : o.drop(l);
+			y(n), n ? m || o.want(l, e.path, t) : o.drop(l);
 		}), i = xa().add(n, _);
 		return () => {
 			r(), i(), o.drop(l);
@@ -3264,7 +3255,7 @@ var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 		o,
 		m
 	]);
-	let v = (0, R.useMemo)(() => ({
+	let b = (0, R.useMemo)(() => ({
 		name: n,
 		pkg: r,
 		mod: i,
@@ -3274,24 +3265,25 @@ var Ea = [], Da = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 		r,
 		i,
 		a
-	]), y = (0, R.useCallback)(() => s(e), [s, e]), b = (0, R.useCallback)(() => m ? f(!0) : o.lost(l, e.path, t), [
+	]), x = (0, R.useCallback)(() => s(e), [s, e]), S = (0, R.useCallback)(() => m ? f(!0) : o.lost(l, e.path, t), [
 		m,
 		o,
 		l,
 		e,
 		t
-	]), x = h.status === "done" && qi(e, h.image);
+	]), C = h.status === "done" && qi(e, h.image);
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		ref: c,
 		className: "gcard-slot",
 		"data-path": e.path,
 		children: /* @__PURE__ */ (0, z.jsx)(Da, {
-			text: v,
+			text: b,
 			view: h,
-			stale: x,
+			stale: C,
 			near: g,
-			onOpen: y,
-			onLost: b
+			shown: v,
+			onOpen: x,
+			onLost: S
 		})
 	});
 });
@@ -5810,6 +5802,7 @@ Di({
 	onPreviewFiles: () => {
 		kt(), Xe(), gr();
 	},
+	onGalleryShots: Xe,
 	prepared: js
 });
 for (let e of [

@@ -1,19 +1,19 @@
 import type { Message } from '../state';
 
 export type CardImage = { url: string; w: number; h: number; at?: number };
-export type FrontSheet = { i: number; name: string; variant: string | null; image: CardImage | null; failure: Message | null };
-export type CardAnswer = { sheets: number; front: FrontSheet[] };
+export type FrontSheet = { i: number; name: string; variant: string | null; image: CardImage };
+export type CardAnswer = { sheets: number; front: FrontSheet[]; failure: Message | null };
 export type CardView =
   | { status: 'idle' | 'wait' | 'loading' }
   | { status: 'done'; sheets: number; front: FrontSheet[]; image: CardImage }
-  | { status: 'error'; sheets: number; front: FrontSheet[]; failure: Message | null };
+  | { status: 'error'; sheets: number; failure: Message | null };
 
 const IDLE: CardView = { status: 'idle' };
 
 export function viewOf(a: CardAnswer | null): CardView {
   const first = a?.front[0];
-  return a && first?.image ? { status: 'done', sheets: a.sheets, front: a.front, image: first.image }
-    : { status: 'error', sheets: a?.sheets ?? 0, front: a?.front ?? [], failure: first?.failure ?? null };
+  return a && first ? { status: 'done', sheets: a.sheets, front: a.front, image: first.image }
+    : { status: 'error', sheets: a?.sheets ?? 0, failure: a?.failure ?? null };
 }
 
 export type CardQueue = ReturnType<typeof createCardQueue>;

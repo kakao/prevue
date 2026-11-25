@@ -58,6 +58,7 @@ internal fun CardState.toJson(): Map<String, Any?> = mapOf(
 internal fun UiEvent.toJson(): Map<String, Any?> = when (this) {
     is UiEvent.Flash -> mapOf("kind" to "flash", "text" to text.toJson())
     UiEvent.PreviewFiles -> mapOf("kind" to "previewFiles")
+    UiEvent.GalleryShots -> mapOf("kind" to "galleryShots")
     UiEvent.ProjectFiles -> mapOf("kind" to "projectFiles")
 }
 

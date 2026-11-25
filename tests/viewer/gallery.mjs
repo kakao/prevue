@@ -24,6 +24,7 @@ const asked = [], opened = [], sheetAsked = [];
 const WIDE = files[4].path;
 let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null;
 const streams = new Set();
+const notifyShots = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'galleryShots' } })}\n\n`); };
 const notifyFiles = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'previewFiles' } })}\n\n`); };
 const push = s => { current = s; for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'state', state: s })}\n\n`); };
 
@@ -41,11 +42,11 @@ const server = createServer(async (request, response) => {
     await new Promise(r => setTimeout(r, delay));
     inFlight--;
     const image = file === WIDE ? { url: '/prevue.svg', w: 650, h: 300 } : { url: '/prevue.svg', w: 300, h: 650 };
-    const first = { i: 0, name: 'Screen0Preview', variant: null, image: file === brokenImage ? { ...image, url: `/gone.png?n=${asked.length}` } : image, failure: null };
+    const first = { i: 0, name: 'Screen0Preview', variant: null, image: file === brokenImage ? { ...image, url: `/gone.png?n=${asked.length}` } : image };
     response.setHeader('Content-Type', 'application/json');
-    response.end(JSON.stringify(file === FAILED ? { sheets: 1, front: [{ ...first, image: null }] }
-      : file === files[0].path || file === WIDE ? { sheets: 3, front: [first, { i: 1, name: 'Screen0DarkPreview', variant: null, image, failure: null }, { i: 2, name: 'Screen0Preview', variant: 'Long', image: null, failure: null }] }
-      : { sheets: 1, front: [first] }));
+    response.end(JSON.stringify(file === FAILED ? { sheets: 1, front: [], failure: null }
+      : file === files[0].path || file === WIDE ? { sheets: 4, front: [first, { i: 1, name: 'Screen0DarkPreview', variant: null, image }, { i: 3, name: 'Screen0Preview', variant: 'Long', image }], failure: null }
+      : { sheets: 1, front: [first], failure: null }));
   } else if (path === '/gallery/sheet') {
     sheetAsked.push(url.searchParams.get('file'));
     response.writeHead(404).end();
@@ -135,8 +136,8 @@ try {
   ok(maxInFlight === 1, '한 번에 하나씩 묻는다');
   ok(asked.join() === shown.filter(p => asked.includes(p)).join(), '격자 순서로 묻는다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').dataset.state==='done' && document.querySelector('#galleryView .gcard-slot:nth-child(1) img')`, '완료 카드는 그림');
-  await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard-count')?.textContent==='3' && !document.querySelector('#galleryView .gcard-slot:nth-child(3) .gcard-count')`, '두 장 이상일 때만 장 수');
-  await check(`document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost').length===2 && document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost img').length===1`, '카드는 앞 세 장을 함께 그려 호버 뒤 판에 두고, 못 그린 장은 빈 판');
+  await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard-count')?.textContent==='4' && !document.querySelector('#galleryView .gcard-slot:nth-child(3) .gcard-count')`, '두 장 이상일 때만 장 수');
+  await check(`document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost img').length===2 && document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost').length===2`, '카드는 그려진 앞 세 장을 함께 받아 호버 뒤 판에 둔다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard').dataset.state==='failed' && document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-failed')`, '그리지 못한 카드는 실패 판');
   const before = asked.length;
   await evaluate(`scrollTo(0, document.documentElement.scrollHeight)`);
@@ -160,11 +161,11 @@ try {
   await check(`getComputedStyle(document.documentElement).overflow==='hidden' && document.documentElement.style.scrollbarGutter==='stable'`, '시트가 열린 동안 뒤 스크롤을 잠근다');
   await check(`document.activeElement?.classList.contains('gsheet-go')`, '포커스는 「보드에서 보기」');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').style.visibility==='hidden'`, '시트가 뜬 동안 카드 자리는 비운다');
-  await until(`document.querySelectorAll('.gsheet-fig').length===3 && document.querySelectorAll('.gsheet-shot img').length===2`);
+  await until(`document.querySelectorAll('.gsheet-fig').length===3 && document.querySelectorAll('.gsheet-shot img').length===3`);
   ok(sheetAsked.length === 0 && count0() === 1, '시트는 카드가 그린 앞 장을 그대로 쓰고 따로 묻지 않는다');
   await check(`[...document.querySelectorAll('.gsheet-cap')].map(c=>c.textContent).join()==='Dark,Long'`, '이름표는 파일 이름 · Preview 를 떼고, 변주는 변주 이름, 남는 것이 없으면 생략');
-  await check(`document.querySelectorAll('.gsheet-shot[data-state="failed"] .gsheet-failed').length===1`, '그리지 못한 장은 실패 판');
-  await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='3'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
+  await check(`!document.querySelector('.gsheet-shot[data-state="failed"]')`, '못 그린 장은 시트에 없다');
+  await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='4'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
   await check(`document.querySelectorAll('.gsheet-close').length===1 && document.querySelector('.gsheet-close').textContent.length>0`, '화면 읽기용 닫기 단추');
   const stayed = [];
   for (let i = 0; i < 6; i++) { await key('Tab'); stayed.push(await evaluate(`!!document.activeElement?.closest('.gsheet')`)); }
@@ -206,7 +207,7 @@ try {
 
   await click('#galleryView .gcard-slot:nth-child(5) .gcard-hit');
   await until(sheetUp);
-  await until(`document.querySelectorAll('.gsheet-shot img').length===2`);
+  await until(`document.querySelectorAll('.gsheet-shot img').length===3`);
   await check(`document.querySelector('.gsheet-stage').dataset.flow==='col'`, '모든 그림이 가로면 세로로 쌓는다');
   await key('Escape');
   await until(sheetGone);
@@ -339,6 +340,9 @@ try {
   for (let i = 0; i < 100 && !inFlight; i++) await pause(20);
   await click('#galleryView .gcard-slot:nth-child(2) .gcard-hit');
   await until(sheetUp);
+  await until(`!['loading'].includes(document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard').dataset.state)`);
+  for (let i = 0; i < 100 && inFlight; i++) await pause(20);
+  await pause(100);
   for (let i = 0; i < 100 && inFlight; i++) await pause(20);
   const heldBySheet = asked.length;
   await pause(1500);
@@ -369,14 +373,12 @@ try {
   await until(`document.querySelector('#qoSheet').hidden`);
   ok(true, '시트가 닫힌 뒤에는 갤러리 키가 다시 먹는다');
 
-  const kept = (f, i, at, url = '/prevue.svg') => ({ i, name: `${f.path.split('/').pop().replace('.kt', '')}${['', 'Dark', 'Long'][i]}Preview`, variant: null, image: { url, w: 300, h: 650, at }, failure: null });
-  const [fresh, old, part] = [files[6], files[7], files[8]];
-  part.mtime += 1;
-  fresh.shots = { sheets: 3, front: [0, 1, 2].map(i => kept(fresh, i, fresh.mtime + 1000)) };
-  old.shots = { sheets: 1, front: [kept(old, 0, old.mtime - 1000)] };
-  part.shots = { sheets: 3, front: [kept(part, 0, part.mtime + 1000)] };
+  const kept = (f, i, at, url = '/prevue.svg') => ({ i, name: `${f.path.split('/').pop().replace('.kt', '')}${['', 'Dark', 'Long'][i]}Preview`, variant: null, image: { url, w: 300, h: 650, at } });
+  const [fresh, old] = [files[6], files[7]];
+  fresh.shots = { sheets: 3, front: [0, 1, 2].map(i => kept(fresh, i, fresh.mtime + 1000)), failure: null };
+  old.shots = { sheets: 1, front: [kept(old, 0, old.mtime - 1000)], failure: null };
   const slot = f => `#galleryView .gcard-slot[data-path="${f.path}"]`;
-  const asksBefore = [fresh, old, part].map(f => count(f.path));
+  const asksBefore = [fresh, old].map(f => count(f.path));
   notifyFiles();
   await until(`document.querySelector('${slot(fresh)} .gcard').dataset.state==='done' && document.querySelector('${slot(old)} .gcard').dataset.state==='done'`);
   await evaluate(`document.querySelector('${slot(old)}').scrollIntoView({block:'center'})`);
@@ -384,13 +386,18 @@ try {
   ok(count(fresh.path) === asksBefore[0] && count(old.path) === asksBefore[1], '앞 장이 모두 캐시에 있는 카드는 그리라고 묻지 않는다');
   await check(`document.querySelector('${slot(fresh)} .gcard-shot img')?.getAttribute('src')==='/prevue.svg' && !document.querySelector('${slot(fresh)} .gcard').dataset.stale`, '캐시가 있는 카드는 로딩 없이 그림부터');
   await check(`document.querySelectorAll('${slot(fresh)} .gcard-ghost img').length===2`, '캐시가 있는 카드의 뒤 판에는 2 · 3번째 장');
+  await evaluate(`scrollBy(0, document.querySelector('${slot(fresh)}').getBoundingClientRect().top - innerHeight - 100)`);
+  await pause(300);
+  await check(`(()=>{const r=document.querySelector('${slot(fresh)}').getBoundingClientRect();return (r.top>innerHeight||r.bottom<0) && !!document.querySelector('${slot(fresh)} .gcard-shot img') && !document.querySelector('${slot(fresh)} .gcard-ghost img')})()`, '화면 밖 카드는 대표 그림만 준비하고 뒤 판 그림은 떼어 둔다');
+  await evaluate(`document.querySelector('${slot(fresh)}').scrollIntoView({block:'center'})`);
+  await pause(300);
   await check(`document.querySelector('${slot(old)} .gcard').dataset.stale==='true' && document.querySelector('${slot(old)} .gcard-old')?.textContent==='Outdated' && !!document.querySelector('${slot(old)} .gcard-old').title`, '그린 뒤 파일이 바뀌면 흐리게 + 「Outdated」');
   await check(`+getComputedStyle(document.querySelector('${slot(old)} .gcard-shot img')).opacity<1`, '낡은 그림은 흐리다');
   const oldShots = old.shots;
-  old.shots = { sheets: 1, front: [kept(old, 0, old.mtime + 1000, '/prevue.svg?new')] };
-  notifyFiles();
+  old.shots = { sheets: 1, front: [kept(old, 0, old.mtime + 1000, '/prevue.svg?new')], failure: null };
+  notifyShots();
   await until(`document.querySelector('${slot(old)} .gcard-shot img')?.getAttribute('src')==='/prevue.svg?new' && !document.querySelector('${slot(old)} .gcard').dataset.stale && !document.querySelector('${slot(old)} .gcard-old')`);
-  ok(true, '보드에서 다시 그려 목록에 새 그림이 오면 갈아 끼우고 흐림이 풀린다');
+  ok(true, '보드가 다시 그려 갤러리 알림이 오면 그 자리에서 갈아 끼우고 흐림이 풀린다');
   old.shots = oldShots;
   notifyFiles();
   await until(`document.querySelector('${slot(old)} .gcard').dataset.stale==='true'`);
@@ -416,10 +423,6 @@ try {
   await check(`document.querySelector('.gsheet-fig').dataset.stale==='true' && document.querySelector('.gsheet-old')?.textContent==='Outdated'`, '시트에서도 낡은 장은 흐리게 + 「Outdated」');
   await key('Escape');
   await until(sheetGone);
-  await evaluate(`document.querySelector('${slot(part)}').scrollIntoView({block:'center'})`);
-  for (let i = 0; i < 100 && count(part.path) === asksBefore[2]; i++) await pause(30);
-  await until(`document.querySelector('${slot(part)} .gcard').dataset.state==='done'`);
-  ok(count(part.path) === asksBefore[2] + 1, '앞 장 중 하나라도 캐시에 없으면 카드가 앞 장을 다시 묻는다');
 
   await evaluate(`(()=>{const p=document.createElement('span');p.className='gcard-ph';p.id='phProbe';document.querySelector('#galleryView').append(p)})()`);
   await check(`getComputedStyle(document.querySelector('#phProbe'),'::after').animationName==='gcard-shimmer'`, '로딩 판은 빛이 지나가는 쉬머');

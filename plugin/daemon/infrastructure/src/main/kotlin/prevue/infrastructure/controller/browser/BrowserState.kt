@@ -143,6 +143,7 @@ internal sealed interface UiEvent {
     data class Flash(val text: Phrase) : UiEvent
     /** D-56. 빠른 열기의 목록이 바뀌었다 — 목록은 싣지 않는다. 뷰어가 `/preview-files.json`을 다시 받는다. */
     data object PreviewFiles : UiEvent
+    data object GalleryShots : UiEvent
     /** 소스 파일 색인이 바뀌었다 — 뷰어가 `/project-files.json`을 다시 받는다. */
     data object ProjectFiles : UiEvent
 }

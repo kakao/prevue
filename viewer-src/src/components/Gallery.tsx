@@ -49,8 +49,8 @@ export type CardText = { name: string; pkg: string; mod: string; changed: string
 
 const NO_GHOSTS: Array<CardImage | null> = [];
 
-export const GalleryCard = memo(function GalleryCard({ text, view, stale = false, near = true, onOpen, onLost }: {
-  text: CardText; view: CardView; stale?: boolean; near?: boolean; onOpen?: () => void; onLost?: () => void;
+export const GalleryCard = memo(function GalleryCard({ text, view, stale = false, near = true, shown = true, onOpen, onLost }: {
+  text: CardText; view: CardView; stale?: boolean; near?: boolean; shown?: boolean; onOpen?: () => void; onLost?: () => void;
 }) {
   const ghosts = view.status === 'done' ? [view.front[1]?.image ?? null, view.front[2]?.image ?? null] : NO_GHOSTS;
   const { phrase, daemonText } = useMessages();
@@ -63,8 +63,8 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
         {view.status === 'error'
           ? <span className="gcard-failed" title={daemonText(view.failure) || undefined}>{phrase('gallery.failed')}</span>
           : <span className="gcard-stack" data-o={tall ? 'tall' : 'wide'}>
-              {(sheets > 2 ? ['l', 'r'] : sheets > 1 ? ['r'] : []).map(g => {
-                const img = near ? ghosts[g === 'r' ? 0 : 1] : null;
+              {(['r', 'l'] as const).slice(0, ghosts.filter(Boolean).length).map(g => {
+                const img = shown ? ghosts[g === 'r' ? 0 : 1] : null;
                 return <span key={g} className="gcard-ghost" data-g={g}>{img && <img src={img.url} width={img.w} height={img.h} alt="" decoding="async" />}</span>;
               })}
               <span className="gcard-shot">{view.status === 'done' && near
@@ -94,9 +94,10 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
   const cached = !!cachedCard;
   const view = cachedCard ?? queued;
   const [near, setNear] = useState(false);
+  const [shown, setShown] = useState(false);
   useEffect(() => {
     const el = ref.current!;
-    const off = inView().add(el, on => { if (!on) cards.drop(key); else if (!cached) cards.want(key, f.path, order); });
+    const off = inView().add(el, on => { setShown(on); if (!on) cards.drop(key); else if (!cached) cards.want(key, f.path, order); });
     const offNear = nearView().add(el, setNear);
     return () => { off(); offNear(); cards.drop(key); };
   }, [key, order, cards, cached]);
@@ -105,7 +106,7 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
   const lost = useCallback(() => (cached ? setBroken(true) : cards.lost(key, f.path, order)), [cached, cards, key, f, order]);
   const stale = view.status === 'done' && isStale(f, view.image);
   return <div ref={ref} className="gcard-slot" data-path={f.path}>
-    <GalleryCard text={text} view={view} stale={stale} near={near} onOpen={open} onLost={lost} />
+    <GalleryCard text={text} view={view} stale={stale} near={near} shown={shown} onOpen={open} onLost={lost} />
   </div>;
 });
 
