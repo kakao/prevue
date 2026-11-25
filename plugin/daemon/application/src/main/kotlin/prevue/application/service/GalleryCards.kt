@@ -67,6 +67,7 @@ class GalleryCards(
 
     private suspend fun shoot(file: File, specs: List<PreviewSpec>, index: Int): Sheet {
         val spec = specs[index]
+        gallery.fail(file, specs.size, index)
         val t = System.nanoTime()
         val out = engine.showAside(spec.copy(previewId = spec.previewId + SUFFIX))
         val why = try {
@@ -77,7 +78,6 @@ class GalleryCards(
             if (e is CancellationException) throw e
             phrase("render.writeFailed", "why" to e)
         }
-        gallery.fail(file, specs.size, index)
         return Sheet.Failed(why)
     }
 

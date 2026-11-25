@@ -162,6 +162,21 @@ class BrowserEndpointTest {
         }
     }
 
+    @Test fun `그리다 데몬이 죽은 장은 실패로 남아 다음에는 건너뛴다`() {
+        Fixture(previews = 4).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            own.renderer.asideThrows = { it.functionName == "Card2" }
+            assertTrue(card(own.file.path, p).first >= 500, "그리던 장에서 렌더러가 죽는다")
+            own.renderer.asideThrows = null
+            val before = own.renderer.asides.size
+            assertEquals(listOf("Card0", "Card1", "Card3"), front(card(own.file.path, p).second).map { it["name"] })
+            assertEquals(listOf("Card3@gallery"), own.renderer.asides.drop(before).map { it.previewId })
+            module.stopInputs()
+        }
+    }
+
     @Test fun `여섯 장이 모두 실패하면 그 뒤는 시도하지 않고 실패 카드다`() {
         Fixture(previews = 8).use { own ->
             val p = ServerSocket(0).use { it.localPort }
