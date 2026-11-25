@@ -12,6 +12,7 @@ Only changes users can see go here.
 - The size and device you already picked in the dock menu now responds to hover too.
 - The ▶ button on board cards opens at once instead of sliding wider when your system asks to reduce motion.
 - Redrawing with `render --fresh` while a card is interactive now updates that card on the board too.
+- **Leftover AOT training files no longer pile up in `~/.prevue/aot`** — the `.aot.tmp.config` files an interrupted class-cache training leaves behind are removed on the next daemon start once they are a day old, and right away when that training's stale lock is cleaned up.
 
 ## [0.23.0] — 2026-11-19
 
