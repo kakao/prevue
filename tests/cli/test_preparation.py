@@ -160,6 +160,7 @@ else:
         self.assertFalse(result["ok"])
         self.assertNotIn("Errno", result["error"])
         self.assertIn("prevue show", result["error"])
+        self.assertEqual(Path(result["log"]).name, "preparation-server-%s.log" % self.port)
         self.assertIn("slow boot", Path(result["log"]).read_text())
         self.assertFalse(self.log.exists())
         self.assertEqual(list(self.home.glob("preparations/*")), [])
@@ -172,6 +173,7 @@ else:
         output, error = process.communicate(timeout=5)
         self.assertEqual(process.returncode, 130, error)
         self.assertIn("interrupted", json.loads(output)["error"])
+        self.assertNotIn("log", json.loads(output))
 
     def test_server_that_answers_late_is_waited_for(self):
         self.slow_server(2.5)

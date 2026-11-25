@@ -261,7 +261,7 @@ def run(mode, port, args):
     state = {"id": uuid.uuid4().hex, "started": round(time.time() * 1000), "file": file,
              "phase": "project" if mode == "warmup" else "environment", "owner": os.getpid(), "root": str(ROOT)}
     (directory / "state.json").write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
-    log = home / "daemons" / "preparation-server.log"
+    log = home / "daemons" / ("preparation-server-%s.log" % port)
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open("w") as server_log:
         server = subprocess.Popen([sys.executable, __file__, "serve", str(directory)], start_new_session=True,
@@ -270,6 +270,7 @@ def run(mode, port, args):
     opened = False
     url = ""
     interrupted = False
+    server_failed = False
 
     def stop(signum, _):
         nonlocal interrupted
@@ -285,8 +286,10 @@ def run(mode, port, args):
             if interrupted:
                 raise InterruptedError(say("prep.stopped"))
             if server.poll() is not None:
+                server_failed = True
                 raise RuntimeError("Couldn't start the preparation screen server.")
             if time.monotonic() > deadline:
+                server_failed = True
                 server.kill()
                 server.wait()
                 raise RuntimeError("The preparation screen server didn't respond within %g seconds. Run `prevue show` to try again." % SERVER_WAIT)
@@ -341,7 +344,7 @@ def run(mode, port, args):
         failure(directory, str(error))
         if server.poll() is not None:
             shutil.rmtree(directory, ignore_errors=True)
-        print(json.dumps({"ok": False, "error": str(error), "viewer": url, "opened": opened, "log": str(log)}, ensure_ascii=False))
+        print(json.dumps(dict({"ok": False, "error": str(error), "viewer": url, "opened": opened}, **({"log": str(log)} if server_failed else {})), ensure_ascii=False))
         return 130 if interrupted else 1
 
 
