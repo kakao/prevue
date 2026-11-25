@@ -19,10 +19,10 @@ export const fetchProjectFiles = (): Promise<{ files?: Record<string, string[]> 
 /** 빠른 열기의 목록(D-56) — 이 데몬이 열 수 있는 프리뷰 파일. 열 때마다 새로 받는다. */
 export const fetchPreviewFiles = (): Promise<{ ready: boolean; files: PreviewFile[] }> => fetch("/preview-files.json").then(r => r.json());
 
-export const fetchGalleryCard = (path: string): Promise<{ ok: boolean; sheets: number; image: { url: string; w: number; h: number } | null; failure: Message | null } | null> =>
+export const fetchGalleryCard = (path: string): Promise<{ ok: boolean; sheets: number; image: { url: string; w: number; h: number; at?: number } | null; failure: Message | null } | null> =>
   fetch(`/gallery/card?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
 
-export type GallerySheetAnswer = { sheets: Array<{ name: string; variant: string | null; image: { url: string; w: number; h: number } | null; failure: Message | null }> };
+export type GallerySheetAnswer = { sheets: Array<{ name: string; variant: string | null; image: { url: string; w: number; h: number; at?: number } | null; failure: Message | null }> };
 export const fetchGallerySheet = (path: string): Promise<GallerySheetAnswer | null> =>
   fetch(`/gallery/sheet?file=${encodeURIComponent(path)}`).then(r => (r.status === 404 ? null : r.json()));
 

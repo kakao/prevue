@@ -32,13 +32,13 @@ class GalleryKeeperTest {
         assertTrue(again.shots.all { fx.graph().galleryShots.image(it.id)?.isFile == true })
     }
 
-    @Test fun `저장으로 보드를 다시 그리면 남은 그림의 그린 시각이 바뀐다`() {
+    @Test fun `저장으로 보드를 다시 그리면 남은 그림을 다시 쓴다`() {
         val uc = opened()
         awaitUntil("앞 세 장이 남기") { uc.galleryShots.kept(fx.file)?.shots?.size == 3 }
-        val before = uc.galleryShots.kept(fx.file)!!.shots.first().drawnAt
-        Thread.sleep(5)
+        val first = uc.galleryShots.image(uc.galleryShots.kept(fx.file)!!.shots.first().id)!!
+        first.delete()
         runBlocking { uc.hotReload.applySave(listOf(fx.file), "test") }
         uc.workspace.awaitBoardFilled()
-        awaitUntil("첫 장이 다시 남기") { uc.galleryShots.kept(fx.file)!!.shots.first().drawnAt > before }
+        awaitUntil("첫 장이 다시 남기") { first.isFile }
     }
 }

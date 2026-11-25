@@ -33,7 +33,7 @@ public class BrowserEndpoint @Inject internal constructor(
     private val reveal = target.reveal
 
     override suspend fun route(ex: HttpExchange, path: String, method: String): Boolean =
-        routeLive(ex, path, method) || routeData(ex, path, method)
+        routeLive(ex, path, method) || routeData(ex, path, method) || routeGallery(ex, path, method)
 
     private suspend fun routeLive(ex: HttpExchange, path: String, method: String): Boolean {
         when {
@@ -51,12 +51,20 @@ public class BrowserEndpoint @Inject internal constructor(
             path == "/project-files.json" -> ex.json(200, tabs.sourceIndex()?.toJson() ?: emptyMap<String, Any?>())
             path == "/preview-files.json" -> ex.json(200, tabs.previewFiles(gallery::keptOf))
             path == "/viewer/state" -> ex.json(200, presenter.current().toJson())
-            path == "/gallery/card" && method == "GET" -> galleryCard(ex)
-            path == "/gallery/sheet" && method == "GET" -> gallerySheet(ex)
-            path.startsWith(SHOT) && path.endsWith(".png") && method == "GET" ->
-                png(ex, gallery.image(path.removePrefix(SHOT).removeSuffix(".png"))?.readBytes(), "max-age=31536000, immutable")
             path == "/app.json" -> ex.json(200, appJson())
             path == "/app-icon.png" && method == "GET" -> png(ex, identity.second, "max-age=3600")
+            else -> return false
+        }
+        return true
+    }
+
+    private suspend fun routeGallery(ex: HttpExchange, path: String, method: String): Boolean {
+        if (method != "GET") return false
+        when {
+            path == "/gallery/card" -> galleryCard(ex)
+            path == "/gallery/sheet" -> gallerySheet(ex)
+            path.startsWith(SHOT) && path.endsWith(".png") ->
+                png(ex, gallery.image(path.removePrefix(SHOT).removeSuffix(".png"))?.readBytes(), "max-age=31536000, immutable")
             else -> return false
         }
         return true

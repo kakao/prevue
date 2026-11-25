@@ -27,13 +27,18 @@ class GalleryCards(
 
     suspend fun draw(file: File): Card? {
         val specs = specsOf(file) ?: return null
-        return Card(specs.size, shoot(file, specs, 0))
+        return Card(specs.size, keptOrShoot(file, specs, 0))
     }
 
     suspend fun sheets(file: File): List<Sheet>? {
         val specs = specsOf(file) ?: return null
-        return specs.indices.take(GalleryShots.FRONT).map { shoot(file, specs, it) }
+        return specs.indices.take(GalleryShots.FRONT).map { keptOrShoot(file, specs, it) }
     }
+
+    private suspend fun keptOrShoot(file: File, specs: List<PreviewSpec>, index: Int): Sheet =
+        gallery.kept(file)?.takeIf { it.sheets == specs.size }?.shots?.firstOrNull { it.index == index }
+            ?.let { Sheet(it.name, it.variant, it, null) }
+            ?: shoot(file, specs, index)
 
     private suspend fun specsOf(file: File): List<PreviewSpec>? {
         if (!sources.has(file)) return null

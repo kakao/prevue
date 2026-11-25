@@ -3,7 +3,7 @@ import { fetchGallerySheet, type GallerySheetAnswer } from '../runtime/api';
 import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { useMessages } from '../messages';
 import type { PreviewFile } from '../match';
-import { stemOf } from '../gallery/cards';
+import { keptOf, stale, stemOf } from '../gallery/cards';
 import type { CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
 
@@ -15,13 +15,21 @@ function shortLabel(name: string, stem: string) {
   return r.replace(/^Preview/, '').replace(/Preview$/, '').replace(/^_+|_+$/g, '');
 }
 
-type Shot = { url: string; w: number; h: number } | 'failed' | null;
+type Shot = { url: string; w: number; h: number; at?: number } | 'failed' | null;
 
-function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>, answer: GallerySheetAnswer | null) {
-  const total = view.status === 'done' || view.status === 'error' ? view.sheets : f.functions.length;
-  const n = Math.min(SHEET_MAX, Math.max(1, total, answer?.sheets.length ?? 0));
+const slotCount = (view: CardView, f: Pick<PreviewFile, 'functions' | 'shots'>, answer: GallerySheetAnswer | null) => {
+  const total = view.status === 'done' || view.status === 'error' ? view.sheets : f.shots?.sheets ?? f.functions.length;
+  return Math.min(SHEET_MAX, Math.max(1, total, answer?.sheets.length ?? 0));
+};
+
+export const sheetCached = (view: CardView, f: Pick<PreviewFile, 'functions' | 'shots'>) =>
+  Array.from({ length: slotCount(view, f, null) }, (_, i) => keptOf(f, i)).every(Boolean);
+
+function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions' | 'shots'>, answer: GallerySheetAnswer | null) {
   const stem = stemOf(f);
-  return Array.from({ length: n }, (_, i): { shot: Shot; label: string } => {
+  return Array.from({ length: slotCount(view, f, answer) }, (_, i): { shot: Shot; label: string } => {
+    const kept = keptOf(f, i);
+    if (kept) return { shot: kept, label: kept.variant ?? shortLabel(kept.name, stem) };
     const a = answer?.sheets[i];
     const shot: Shot = i === 0 && view.status === 'done' ? view.image
       : a?.image ?? (answer || (i === 0 && view.status === 'error') ? 'failed' : null);
@@ -129,7 +137,9 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   const flow = known.every(s => s && s.w > s.h * WIDE) ? 'col' : 'row';
   const count = view.status === 'done' ? view.sheets : 0;
 
+  const cached = sheetCached(view, file);
   useEffect(() => {
+    if (cached) return;
     let live = true;
     fetchGallerySheet(file.path).then(a => a ?? { sheets: [] }, () => ({ sheets: [] })).then(a => { if (live) setAnswer(a); });
     return () => { live = false; };
@@ -216,12 +226,13 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       <span className="gsheet-shell" />
       <span className="gsheet-mediabg" />
       <div className="gsheet-stage" data-flow={flow} style={{ ['--k' as string]: slots.length }}>
-        {slots.map((s, i) => <span key={i} className="gsheet-fig" style={{ zIndex: slots.length - i }}>
+        {slots.map((s, i) => { const old = !!s.shot && s.shot !== 'failed' && stale(file, s.shot); return <span key={i} className="gsheet-fig" data-stale={old || undefined} style={{ zIndex: slots.length - i }}>
           <span className="gsheet-shot" data-state={s.shot === 'failed' ? 'failed' : s.shot ? 'done' : 'loading'}>
+            {old && <span className="gsheet-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
             {s.shot === 'failed' ? <span className="gsheet-failed">{phrase('gallery.failed')}</span>
               : s.shot ? <img src={s.shot.url} width={s.shot.w} height={s.shot.h} alt="" />
               : <span className="gcard-ph" />}</span>
-          {s.label && <span className="gsheet-cap">{s.label}</span>}</span>)}
+          {s.label && <span className="gsheet-cap">{s.label}</span>}</span>; })}
         {count > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: count })}><Stack />{count}</span>}
       </div>
       <div className="gsheet-body">

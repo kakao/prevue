@@ -85,7 +85,7 @@ class ContractTest {
         val card = "/gallery/card?file=" + java.net.URLEncoder.encode(f, UTF_8)
         check("gallery.card", get(card))
         fx.renderer.asideFails = "그리지 못했다"
-        check("gallery.card.failed", get(card))
+        check("gallery.card.failed", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.srcRoot, "demo/Badges.kt").path, UTF_8)))
         fx.renderer.asideFails = null
         check("gallery.sheet", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(f, UTF_8)))
         check("gallery.sheet.none", get("/gallery/sheet?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))

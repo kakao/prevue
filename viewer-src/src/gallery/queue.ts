@@ -1,6 +1,6 @@
 import type { Message } from '../state';
 
-export type CardImage = { url: string; w: number; h: number };
+export type CardImage = { url: string; w: number; h: number; at?: number };
 export type CardAnswer = { ok: boolean; sheets: number; image: CardImage | null; failure: Message | null };
 export type CardView =
   | { status: 'idle' | 'wait' | 'loading' }

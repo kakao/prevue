@@ -106,6 +106,22 @@ class BrowserEndpointTest {
         }
     }
 
+    @Test fun `캐시에 남은 장은 갤러리가 다시 그리지 않는다`() {
+        Fixture(previews = 3).use { own ->
+            val p = ServerSocket(0).use { it.localPort }
+            val module = own.entryPoints(own.graph(hooks = EntryHooks(p)))
+            module.start()
+            request("GET", "/gallery/card?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p)
+            val before = own.renderer.asides.size
+            val card = request("GET", "/gallery/card?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p).second as Map<*, *>
+            assertEquals(true, card["ok"])
+            val sheets = ((request("GET", "/gallery/sheet?file=" + URLEncoder.encode(own.file.path, UTF_8), null, p).second as Map<*, *>)["sheets"] as List<*>)
+            assertEquals(3, sheets.size)
+            assertEquals(listOf("Card1@gallery", "Card2@gallery"), own.renderer.asides.drop(before).map { it.previewId })
+            module.stopInputs()
+        }
+    }
+
     @Test fun `갤러리 카드가 못 그리면 그림 없이 실패 문구를 준다`() {
         fx.renderer.asideFails = "가짜 실패"
         try {

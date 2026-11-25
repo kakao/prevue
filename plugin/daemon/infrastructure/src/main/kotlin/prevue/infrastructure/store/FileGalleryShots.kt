@@ -8,8 +8,9 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -29,7 +30,8 @@ public class FileGalleryShots(
     private class Entry(val path: String, val sheets: Int, val shots: Map<Int, Shot>)
 
     private val lock = Mutex()
-    private val entries: MutableMap<String, Entry> by lazy { load() }
+    private val loaded = lazy { MutableStateFlow(load()) }
+    private val entries: Map<String, Entry> get() = loaded.value.value
 
     override suspend fun keep(file: File, sheets: Int, index: Int, out: RenderOutput): Shot = withContext(dispatchers.io) {
         val image = out.image?.takeIf { out.ok } ?: throw IOException("${out.preview.previewId} 그림이 없다")
@@ -43,7 +45,7 @@ public class FileGalleryShots(
             val old = entries[key]?.shots.orEmpty()
             val entry = Entry(file.path, sheets, (old + (index to shot)).filterKeys { it < minOf(sheets, GalleryShots.FRONT) })
             (old.keys - entry.shots.keys).forEach { File(dir, "$it.png").delete() }
-            entries[key] = entry
+            loaded.value.update { it + (key to entry) }
             writeMeta(dir, entry)
             prune(key)
             shot
@@ -100,14 +102,16 @@ public class FileGalleryShots(
             if (total <= maxBytes) return
             total -= d.listFiles().orEmpty().sumOf { it.length() }
             d.deleteRecursively()
-            entries.remove(d.name)
+            loaded.value.update { it - d.name }
         }
     }
 
-    private fun load(): MutableMap<String, Entry> {
-        val out = ConcurrentHashMap<String, Entry>()
+    private fun load(): Map<String, Entry> {
+        val out = HashMap<String, Entry>()
         for (dir in root.listFiles().orEmpty().filter { it.isDirectory }) {
-            runCatching { readMeta(dir) }.getOrNull()?.let { out[dir.name] = it }
+            try { out[dir.name] = readMeta(dir) } catch (e: Exception) {
+                System.err.println("[prevue] 갤러리 그림 ${dir.name}을 읽지 못해 건너뛴다: $e")
+            }
         }
         return out
     }

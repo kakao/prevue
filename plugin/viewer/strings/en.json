@@ -38,6 +38,8 @@
   "gallery.sheet.close": "Close",
   "gallery.sheet.open": "View on board",
   "gallery.sort": "Recently changed",
+  "gallery.stale": "Outdated",
+  "gallery.stale.why": "The file changed after this was drawn · open it to redraw",
   "gallery.title": "All Previews",
   "header.copied": "Copied {what}: {text}",
   "header.copy.branch": "the branch name",

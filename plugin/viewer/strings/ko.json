@@ -36,6 +36,8 @@
   "gallery.sheet.close": "닫기",
   "gallery.sheet.open": "보드에서 보기",
   "gallery.sort": "최근 바뀐 순",
+  "gallery.stale": "예전",
+  "gallery.stale.why": "그린 뒤 파일이 바뀌었어요 · 열면 새로 그려요",
   "gallery.title": "모든 Preview",
   "header.copied": "{what} 복사했어요: {text}",
   "header.copy.branch": "브랜치 이름을",
