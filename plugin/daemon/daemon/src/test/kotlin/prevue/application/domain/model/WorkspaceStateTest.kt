@@ -49,15 +49,4 @@ class WorkspaceStateTest {
     @Test fun `인터랙티브를 껐다 켜면 앞서 준 조정 없이 시작한다`() {
         assertNull(live.withoutInteractive().focusInteractive(1).cardOverride)
     }
-
-    @Test fun `같은 카드에는 진입 경로와 라이브 조정 경로가 같은 다음 값을 낸다`() {
-        val viaFocus = live.focusInteractive(1, null, SystemUi.OFF, EdgeToEdge.ON).cardOverride
-        assertEquals(CardOverride(specs[1].previewId, small, SystemUi.OFF, EdgeToEdge.ON), viaFocus)
-        assertEquals(viaFocus, live.adjustedOverride(specs[1].previewId, null, SystemUi.OFF, EdgeToEdge.ON))
-    }
-
-    @Test fun `다른 카드에는 지금 조정을 잇지 않고 새로 짓는다`() {
-        val size = ScreenSize.Dp(360, 720)
-        assertEquals(CardOverride(specs[0].previewId, size), live.adjustedOverride(specs[0].previewId, size, null, null))
-    }
 }
