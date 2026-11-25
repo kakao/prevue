@@ -37,7 +37,7 @@ function Sheet({ a }: { a: Args }) {
     {SAMPLES.map(s => <GalleryCard key={s.file} peekKey={`${state}|${s.file}`} {...s} state={state} aspect={a.aspect} onPeek={() => pk.open(`${state}|${s.file}`)} />)}</div>;
   return <div className="gcard-sheet">
     {states.map(x => <section key={x}><h2>{{ done: '완료 — 누르면 카드 자리에서 시트가 떠오르고 묶음이 펼쳐진다', loading: '로딩', failed: '실패' }[x]}</h2>{grid(x)}</section>)}
-    {smp && <GalleryPeek key={pk.key} peekKey={pk.key} closing={pk.closing} {...smp} pkg={smp.full} state={st as CardProps['state']}
+    {smp && pk.key && <GalleryPeek key={pk.key} peekKey={pk.key} closing={pk.closing} {...smp} pkg={smp.full} state={st as CardProps['state']}
       onClose={pk.close} onClosed={pk.closed} onOpen={pk.close} />}
   </div>;
 }

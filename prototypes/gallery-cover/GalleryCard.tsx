@@ -180,6 +180,7 @@ export function GalleryPeek(p: PeekProps) {
     const dur = motionMs('--duration-long3'), ease = motionToken('--easing-spring'), fade = motionMs('--duration-medium2');
     let live = true;
     el.style.visibility = 'hidden';
+    el.parentElement!.querySelector('.gpeek-scrim')!.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade });
     Promise.all([...el.querySelectorAll('img')].map(i => i.decode().catch(() => undefined))).then(() => {
       if (!live || el.classList.contains('closing')) return;
       const imgs = [...el.querySelectorAll<HTMLImageElement>('.gpeek-shot img')];
@@ -188,7 +189,6 @@ export function GalleryPeek(p: PeekProps) {
       stage.dataset.flow = wide ? 'col' : 'row';
       stage.style.setProperty('--k', String(Math.max(1, imgs.length)));
       el.style.visibility = '';
-      el.parentElement!.querySelector('.gpeek-scrim')!.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade });
       if (!c || reduce || !visible(c.getBoundingClientRect())) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade }); return; }
       const runs: Animation[] = [];
       for (const s of plan(c, el)) {
