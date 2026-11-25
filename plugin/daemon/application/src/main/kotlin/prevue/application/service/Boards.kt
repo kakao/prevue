@@ -137,12 +137,12 @@ class Boards(
         else focusOn(ed, index, by, size, systemUi, edgeToEdge)
     }
 
-    suspend fun unfocus(index: Int, by: String): FocusResult.Off = ws.exclusive { ed -> focusOff(ed, index, by) }
+    suspend fun exitInteractive(index: Int, by: String): FocusResult.Off = ws.exclusive { ed -> focusOff(ed, index, by) }
 
     private suspend fun overridden(ed: WorkspaceEditor, size: ScreenSize?, systemUi: SystemUi?, by: String, edgeToEdge: EdgeToEdge?): ShowResult =
         liveService.overrideWithin(ed, size, systemUi, by, edgeToEdge) ?: ws.now.lastShown as? ShowResult ?: live.show(ed, ws.now.board!!.focusCard.spec, by)
 
-    suspend fun unfocusCurrent(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
+    suspend fun exitInteractiveCurrent(by: String): Unit = ws.exclusive { ed -> leave(ed, by) }
 
     internal suspend fun leave(ed: WorkspaceEditor, by: String) {
         val b = ws.now.board ?: return

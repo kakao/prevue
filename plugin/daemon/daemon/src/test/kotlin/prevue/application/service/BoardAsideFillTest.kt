@@ -71,7 +71,7 @@ class BoardAsideFillTest {
         val b = uc.workspace.now.board!!
         assertFalse(b.cards[1].fresh(b.gen))
 
-        runBlocking { uc.boards.unfocusCurrent("test") }
+        runBlocking { uc.boards.exitInteractiveCurrent("test") }
         uc.workspace.awaitBoardFilled()
         assertEquals(emptyList<Any>(), cardAsides())
     }
@@ -153,7 +153,7 @@ class BoardAsideFillTest {
         uc.workspace.awaitBoardFilled()
         fx.renderer.shown.clear()
 
-        runBlocking { uc.boards.unfocusCurrent("test") }
+        runBlocking { uc.boards.exitInteractiveCurrent("test") }
         uc.workspace.awaitBoardFilled()
         assertEquals(listOf(uc.cardSpecs()[0]), fx.renderer.shown.toList(), "나갈 때 첫 화면만 다시 그린다")
     }

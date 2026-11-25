@@ -200,7 +200,7 @@ class RenderIntegrationTest {
             val settled = assertSettled(turned, next.result.shot.out)
             assertTrue(samePixels(settled, drawnAhead), "${turned.key} 미리 그린 그림이 정착한 그림과 다르다 — 인셋 전 배치에서 칸이 움직이는 중이다")
         } finally {
-            runBlocking { uc.boards.unfocus(index, "test") }
+            runBlocking { uc.boards.exitInteractive(index, "test") }
         }
         assertAlive()
     }
@@ -287,7 +287,7 @@ class RenderIntegrationTest {
         assertTrue(now.out.ok, "정착한 그림이 없다")
         runBlocking { engine.awaitWrites() }
         assertFalse(before.contentEquals(now.out.image!!.readBytes()), "끈 뒤에도 그림이 같다")
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
     }
 
     // D-59. 카드를 누르면 리플이 단색으로 바뀌어 틱이 가볍다. 반짝이 리플이면 한 틱 ~250ms(CPU가 셰이더를 해석한다).
@@ -307,7 +307,7 @@ class RenderIntegrationTest {
         assertTrue(ms.size >= 12, "틱이 ${ms.size}번")
         assertTrue(engine.calmedRipples > before, "바꿔 끼운 리플이 없다 — 카드를 못 눌렀거나 리플 내부가 바뀌었다")
         assertTrue(ms.max() < 150, "누른 뒤 가장 긴 틱 ${ms.max()}ms — ${ms}")
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
     }
 
     // D-58. 휠은 마우스 ACTION_SCROLL로 들어가 스크롤만 한다 — 누름이 아니라 리플이 켜지지 않는다.
@@ -324,7 +324,7 @@ class RenderIntegrationTest {
         runBlocking { engine.awaitWrites() }
         assertFalse(before.contentEquals(now.out.image!!.readBytes()), "휠 뒤에도 그림이 같다")
         assertEquals(ripples, engine.calmedRipples, "휠이 누름을 만들었다")
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
     }
 
     // D-68. values 값을 렌더러 리소스에 얹으면 같은 로더로 그 값을 그리고, 되돌리면 원래 그림과 바이트까지 같다.
@@ -380,7 +380,7 @@ class RenderIntegrationTest {
         val pick = after.last()
         val t = runBlocking { uc.live.touchAt("$line#${pick.n}", "tap", "test", settle = true) }
         assertEquals(pick.node, (t as TouchResult.Settled).aim!!.node, "굴린 뒤의 트리로 겨냥하지 않는다")
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
     }
 
     private fun visible(at: String): List<prevue.application.domain.model.Numbered> =
@@ -433,7 +433,7 @@ class RenderIntegrationTest {
             val overlaps = cards.flatMapIndexed { i, a -> cards.drop(i + 1).filter { b -> a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom }.map { a.sameBox to it.sameBox } }
             assertTrue(overlaps.isEmpty(), "겹친 카드 — $overlaps")
         } finally {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
     }
 
@@ -474,7 +474,7 @@ class RenderIntegrationTest {
             assertTrue(r.result.ok, r.result.shot.out.message?.text)
             app!!.frames.subscribe(java.io.OutputStream.nullOutputStream())
         } else {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
     }
 
@@ -782,7 +782,7 @@ class RenderIntegrationTest {
             assertTrue(t is TouchResult.Settled, "$t")
             assertTrue(detail in lines(), "눌렀는데 상세(${file.name}:$detail)가 트리에 없다 — ${lines()}")
         } finally {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
     }
 
@@ -810,7 +810,7 @@ class RenderIntegrationTest {
                 assertTrue(item.at?.startsWith("${file.name}:$line") == true, "$item")
             }
         } finally {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
     }
 
@@ -843,7 +843,7 @@ class RenderIntegrationTest {
                 assertTrue(out.ok, out.message?.text)
                 return out.image!!.readBytes() to PearlFixture.tree(out.tree!!).nodes
             } finally {
-                runBlocking { uc.boards.unfocus(0, "test") }
+                runBlocking { uc.boards.exitInteractive(0, "test") }
             }
         }
         val (viewerPng, viewerTree) = tap(viewer = true)
@@ -879,7 +879,7 @@ class RenderIntegrationTest {
                     assertFalse(picked.moved, "$picked")
                     assertEquals("${n}번 선택됨", picked.found?.semantics?.text, "카드 $card · ${found.at} 로 다른 칸을 눌렀다: $picked")
                 } finally {
-                    runBlocking { uc.boards.unfocus(card, "test") }
+                    runBlocking { uc.boards.exitInteractive(card, "test") }
                 }
             }
         }
@@ -902,7 +902,7 @@ class RenderIntegrationTest {
             val rolled = plain.container!!.list!!.first!! - sought
             assertTrue(sought > 0 && kotlin.math.abs(sought - rolled) <= 1, "못 찾은 --until 이 그냥 scroll 과 다른 거리를 굴렸다: $sought / $rolled")
         } finally {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
     }
 
@@ -923,7 +923,7 @@ class RenderIntegrationTest {
                 assertTrue(passed.isNotEmpty(), "카드 $card: passed 가 비었다 — $r")
                 assertEquals((1..now.max()).toList(), was + passed + now, "카드 $card: 직전 $was · 지나감 $passed · 지금 $now")
             } finally {
-                runBlocking { uc.boards.unfocus(card, "test") }
+                runBlocking { uc.boards.exitInteractive(card, "test") }
             }
         }
     }
@@ -936,7 +936,7 @@ class RenderIntegrationTest {
 
     private fun forDirectEngine(fqn: String): prevue.application.domain.model.PreviewSpec {
         val p = single(fqn)
-        runBlocking { uc.boards.unfocusCurrent("test") }
+        runBlocking { uc.boards.exitInteractiveCurrent("test") }
         assertFalse(ws.now.interactive, "포커스를 풀어도 인터랙티브다 — QuietFill 이 엔진을 같이 쓴다")
         ws.awaitBoardFilled(timeoutMs = 60_000)
         runBlocking { engine.awaitWrites() }
@@ -1038,7 +1038,7 @@ class RenderIntegrationTest {
             runBlocking { engine.awaitWrites() }
             assertFalse(samePixels(before, javax.imageio.ImageIO.read(now.out.image!!)), "자세별 그림을 그린 뒤 끌어도 그림이 같다")
         } finally {
-            runBlocking { uc.boards.unfocus(0, "test") }
+            runBlocking { uc.boards.exitInteractive(0, "test") }
         }
         assertAlive()
     }
@@ -1104,7 +1104,7 @@ class RenderIntegrationTest {
             val png = javax.imageio.ImageIO.read(on.result.shot.out.image!!)
             assertEquals(1080 to 2340, png.width to png.height)
         } finally {
-            runBlocking { uc.boards.unfocus(index, "test") }
+            runBlocking { uc.boards.exitInteractive(index, "test") }
         }
         assertAlive()
     }

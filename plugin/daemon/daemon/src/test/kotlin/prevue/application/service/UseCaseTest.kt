@@ -218,7 +218,7 @@ class UseCaseTest {
     @Test fun `저장은 프리뷰 인자를 다시 읽어 그 인자로 그린다`() {
         val uc = opened()
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card1", "@Preview(widthDp = 480)\nfun Card1"))
-        runBlocking { uc.boards.unfocus(1, "test") }
+        runBlocking { uc.boards.exitInteractive(1, "test") }
         fx.renderer.shown.clear()
         uc.save()
         val b = uc.workspace.now.board!!
@@ -228,7 +228,7 @@ class UseCaseTest {
 
     @Test fun `저장으로 프리뷰가 늘거나 줄면 카드 수가 따라가고 포커스는 같은 프리뷰에 남는다`() {
         val uc = opened()
-        runBlocking { uc.boards.unfocus(2, "test") }
+        runBlocking { uc.boards.exitInteractive(2, "test") }
         val focused = uc.workspace.now.board!!.focusCard.spec.previewId
         fx.file.writeText(fx.file.readText().replaceFirst("@Preview\nfun Card0() {}\n", "") + "@Preview\nfun Card3() {}\n@Preview\nfun Card4() {}\n")
         uc.save()
@@ -650,7 +650,7 @@ class UseCaseTest {
         assertEquals("320", fx.renderer.opened.last().params["widthDp"])
         assertEquals(ScreenSize.Dp(320, 640), uc.status.read().size)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["widthDp"])
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown.first { it.previewId == ws.now.board!!.focusCard.spec.previewId && it.params.isEmpty() })
         assertEquals(null, uc.status.read().size)
     }
@@ -699,7 +699,7 @@ class UseCaseTest {
         assertEquals(SystemUiState(SystemUi.ON, annotated = false, SystemBars.COMMON), uc.status.read().systemUi)
         assertTrue(uc.status.read().systemUi!!.shown)
         assertEquals(null, ws.now.board!!.focusCard.spec.params["showSystemUi"])
-        runBlocking { uc.boards.unfocus(0, "test") }
+        runBlocking { uc.boards.exitInteractive(0, "test") }
         assertEquals(null, ws.now.cardOverride)
         assertEquals(null, uc.status.read().systemUi)
         assertEquals(null, ws.now.current!!.params["showSystemUi"])
@@ -738,7 +738,7 @@ class UseCaseTest {
         runBlocking { uc.boards.focus(0, by = "test") }
         val entered = fx.renderer.shown.size
         runBlocking { uc.live.touch("tap", 1, 1, "viewer", settle = false) }
-        runBlocking { uc.boards.unfocus(0, "viewer") }
+        runBlocking { uc.boards.exitInteractive(0, "viewer") }
         assertEquals(ws.now.board!!.focusCard.spec, fx.renderer.shown[entered])        // 나가며 새 태스크로 그렸다(채우기는 그 뒤에 붙는다)
         val after = (ws.now.board!!.focusCard.result as prevue.application.domain.model.CardResult.Drawn).shot
         assertEquals("viewer", after.by)
@@ -754,7 +754,7 @@ class UseCaseTest {
         uc.save()
         val b = ws.now.board!!
         assertTrue(b.cards.drop(1).none { it.fresh(b.gen) })
-        runBlocking { uc.boards.unfocus(0, "viewer") }
+        runBlocking { uc.boards.exitInteractive(0, "viewer") }
         ws.awaitBoardFilled()
     }
 
@@ -766,7 +766,7 @@ class UseCaseTest {
         val card = ws.now.board!!.focusCard.result
         val last = ws.now.lastResult
         fx.renderer.exceptions += "렌더 시간 초과"
-        runBlocking { uc.boards.unfocus(0, "viewer") }
+        runBlocking { uc.boards.exitInteractive(0, "viewer") }
         assertEquals(card, ws.now.board!!.focusCard.result)
         assertTrue(last === ws.now.lastResult)
         assertFalse(ws.now.interactive)
