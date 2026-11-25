@@ -282,11 +282,13 @@ def run(mode, port, args):
     try:
         deadline = time.monotonic() + SERVER_WAIT
         while not (directory / "server.json").exists():
+            if interrupted:
+                raise InterruptedError(say("prep.stopped"))
             if server.poll() is not None:
                 raise RuntimeError("Couldn't start the preparation screen server.")
             if time.monotonic() > deadline:
-                server.terminate()
-                server.wait(2)
+                server.kill()
+                server.wait()
                 raise RuntimeError("The preparation screen server didn't respond within %g seconds. Run `prevue show` to try again." % SERVER_WAIT)
             time.sleep(.02)
         info = json.loads((directory / "server.json").read_text())
