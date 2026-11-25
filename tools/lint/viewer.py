@@ -35,6 +35,7 @@ ADVICE = {
     "viewer/raw-motion": ("시간 · 이징 날값", "--duration-* · --easing-*, 계단 지연은 --motion-stagger 의 배수. JS 는 motionMs · motionToken 으로 읽는다"),
     "viewer/raw-space": ("간격 날값", "--space-*"),
     "viewer/primitive": ("원시값", "역할 이름을 쓴다. 색 원시값은 라이트 · 다크 한쪽 값이다"),
+    "viewer/scene-import": ("src/scene 직접 import", "src/runtime/resize-scene 입구로만 부른다 — 직접 부르면 viewer.js 에 장면이 한 벌 더 든다"),
     "viewer/art-token": ("크롬의 그림 토큰", "크롬은 역할 이름만 쓴다. 그림이면 /* 그림 시작 … */ ~ /* 그림 끝 */ 안에 둔다"),
 }
 
@@ -564,6 +565,25 @@ def advice(rule, evidence):
     return "%s %s — %s%s" % (label, evidence, fix, ". " + NEW_VALUE if rule.startswith("viewer/raw-") else "")
 
 
+SCENE_DIR = SOURCES + "/src/scene"
+SCENE_ENTRY = SOURCES + "/src/runtime/resize-scene.ts"
+_IMPORT = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"]+)\1""")
+
+
+def scene_imports(root):
+    out = []
+    for path in files(root):
+        if not path.startswith(SOURCES + "/") or not path.endswith((".ts", ".tsx")) or path.startswith(SCENE_DIR + "/") or path == SCENE_ENTRY:
+            continue
+        with open(os.path.join(root, path), encoding="utf-8") as f:
+            text = f.read()
+        for m in _IMPORT.finditer(text):
+            target = os.path.normpath(os.path.join(os.path.dirname(path), m.group(2)))
+            if m.group(2).startswith(".") and (target == SCENE_DIR or target.startswith(SCENE_DIR + "/")):
+                out.append((path, _line(text, m.start()), "viewer/scene-import", m.group(2)))
+    return out
+
+
 def check(root="."):
     """[(경로, 줄, 규칙, 처방)] — 데이터 예외를 빼고, 가리키는 곳이 없는 예외 줄은 낡음으로 알린다."""
     found, texts = scan(root)
@@ -576,6 +596,7 @@ def check(root="."):
             used.update(data)
             continue
         out.append((path, line, rule, advice(rule, evidence)))
+    out += [(path, line, rule, advice(rule, spec)) for path, line, rule, spec in scene_imports(root)]
     out += [(os.path.relpath(os.path.abspath(__file__), root), 1, "viewer/data-stale", "DATA 의 %s %s 이 가리키는 곳이 없다 — 지운다" % d[:2])
             for d in DATA if d not in used]
     return out

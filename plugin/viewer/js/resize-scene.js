@@ -1,7 +1,7 @@
-import { reduced as e } from "./motion.js";
-import { phrase as t } from "./strings.js";
-import { DEVICES as n } from "./devices.js";
-// src/runtime/resize-scene.ts
+import { DEVICES as e } from "./devices.js";
+import { reduced as t } from "./motion.js";
+import { phrase as n } from "./strings.js";
+// src/scene/calc.ts
 var r = (e, t, n) => e + (t - e) * n, i = (e, t, n) => Math.min(n, Math.max(t, e)), a = (e, t, n) => {
 	let r = i((n - e) / (t - e), 0, 1);
 	return r * r * (3 - 2 * r);
@@ -155,1307 +155,1392 @@ var b = {
 }, x = (e) => {
 	let t = e * Math.PI / 180, n = Math.cos(t), r = Math.sin(t), i = -b.shift, a = -b.shift, o = (e) => (.5 + e - b.glint / 2) * 100 + "%";
 	return [o(i * n + a * r), o(-i * r + a * n)];
-}, ee = Math.max(1, ...Object.values(n).flatMap((e) => Object.values(e.look).map((e) => e.cams.length)));
-function S(l, S) {
-	let C = (e) => l.querySelector(`#${e}`), w = {
-		rotDur: .6,
-		rotLift: .42,
-		rotLand: .18,
-		rotDip: .12,
-		shellK: 1.6,
-		frameDur: .45,
-		frameBounce: 0,
-		outlineBounce: 0,
-		outlineLead: 0,
-		veil: .06,
-		foldDur: 1,
-		foldLift: .42,
-		foldLand: .18,
-		perspective: 3200,
-		shade: .22,
-		swapDur: 220,
-		swapBlur: 8,
-		swapNear: .15,
-		spinSwapA: .35,
-		spinSwapB: .65,
-		holdBlur: 24,
-		holdRise: 150,
-		holdLight: 8,
-		holdDeepAfter: 250,
-		holdDeepen: 200,
-		fastReveal: 120,
-		revealFade: 240,
-		revealDur: 280,
-		swapZoom: .03,
-		moveBlur: 6,
-		settleSharp: 220,
-		reducedFade: 240,
-		reducedDim: .62,
-		gap: 7,
-		crease: .35,
-		hingeLine: !0,
-		foldBlur: 24,
-		foldDark: .85,
-		shrinkFrom: 90,
-		ambient: .35,
-		screenDim: .6,
-		lightAz: 125,
-		lightEl: 55,
-		arcSegs: 4
-	}, T = 1600, te = (e) => e.shiftKey ? 10 : 1, ne = {
-		sel: "original",
-		kind: "original",
-		name: "@Preview",
-		w: 411,
-		h: 891,
-		img: null
-	}, re = [{
-		sel: "narrow",
-		name: t("size.narrow"),
-		w: 320,
-		h: 640
+}, S = Math.max(1, ...Object.values(e).flatMap((e) => Object.values(e.look).map((e) => e.cams.length))), C = .62, w = {
+	rotDur: .6,
+	rotLift: .42,
+	rotLand: .18,
+	rotDip: .12,
+	shellK: 1.6,
+	frameDur: .45,
+	frameBounce: 0,
+	outlineBounce: 0,
+	outlineLead: 0,
+	veil: .06,
+	foldDur: 1,
+	foldLift: .42,
+	foldLand: .18,
+	perspective: 3200,
+	shade: .22,
+	swapDur: 220,
+	swapBlur: 8,
+	swapNear: .15,
+	spinSwapA: .35,
+	spinSwapB: .65,
+	holdBlur: 24,
+	holdRise: 150,
+	holdLight: 8,
+	holdDeepAfter: 250,
+	holdDeepen: 200,
+	fastReveal: 120,
+	revealFade: 240,
+	revealDur: 280,
+	swapZoom: .03,
+	moveBlur: 6,
+	settleSharp: 220,
+	reducedFade: 240,
+	reducedDim: .62,
+	gap: 7,
+	crease: .35,
+	foldBlur: 24,
+	foldDark: .85,
+	shrinkFrom: 90,
+	ambient: .35,
+	screenDim: .6,
+	lightAz: 125,
+	lightEl: 55,
+	arcSegs: 4
+}, T = 1600, E = (e) => e.shiftKey ? 10 : 1, D = (e) => e.kind === "preset" || e.kind === "custom", O = (e) => e.kind === "device", k = (t, n, r) => {
+	let i = e[t.dev][n ? "cover" : "open"], a = r !== "portrait";
+	return `${t.dev}:${n ? "cover" : "open"}${a === i.w > i.h ? "" : ":rot"}${r === "landscape-right" ? ":right" : ""}`;
+}, A = (t) => t.kind === "device" && e[t.dev].fold && !t.folded, j = (t) => e[t.dev].look[t.folded ? "cover" : "open"], M = (e) => e.ends ?? e.bezel, N = (e) => Math.max(e.bezel, M(e)) * w.shellK, P = (e) => {
+	if (!O(e)) return [0, 0];
+	let t = j(e), n = t.bezel * w.shellK, r = M(t) * w.shellK;
+	return e.rot ? [2 * r, 2 * n] : [2 * n, 2 * r];
+}, F = (e) => `${Math.round(e.w)}×${Math.round(e.h)}`, I = (t) => {
+	let n = e[t.dev][t.folded ? "cover" : "open"].cutIn, r = t.right ? "landscape-right" : t.w > t.h ? "landscape-left" : "portrait";
+	return n[r] ?? n[r === "landscape-right" ? "landscape-left" : "landscape-right"] ?? "";
+}, ee = (e) => ({
+	old: {
+		r: e,
+		held: !1,
+		grow: new f(0, (e) => a(0, 1, e)),
+		blur: new f(0),
+		veil: new f(0),
+		op: new f(1)
+	},
+	neu: {
+		r: null,
+		op: new f(0),
+		blur: new f(0)
+	},
+	swap: null
+}), L = (e, t) => i((t - e.t0) / e.dur, 0, 1), R = (e) => w.swapBlur * 4 * e * (1 - e), te = (e) => e < .5 ? R(e) : r(w.swapBlur, 0, a(.5, 1, e)), z = (e, t, n, r) => {
+	let i = e.edge !== t.edge, a = i ? n < .5 ? 1 - 2 * n : 2 * n - 1 : 1, o = i && n < .5 ? e : t;
+	return {
+		w: i ? o.w * a : r(e.w, t.w),
+		h: r(e.h, t.h),
+		y: r(e.y, t.y),
+		x: i ? o.x ?? .5 : r(e.x ?? .5, t.x ?? .5),
+		rad: r(_(e), _(t)),
+		flat: r(v(e), v(t)),
+		edge: o.edge,
+		lens: (o.w > 0 ? o : e).lens
+	};
+}, ne = (e, t, n, r) => Array.from({ length: Math.max(e.length, t.length) }, (i, a) => z(e[a] ?? {
+	...t[a],
+	w: 0,
+	h: 0
+}, t[a] ?? {
+	...e[a],
+	w: 0,
+	h: 0
+}, n, r)), re = (e, t, n, r, i, a, o) => {
+	let s = M(e) * w.shellK, c = s * C, l = y(t, n, r, {
+		w: c,
+		h: c,
+		y: n + (s - c) / 2
+	}, i, a);
+	return {
+		...l,
+		on: l.on && o > .01
+	};
+}, ie = (e, t, n, r, i, a = 0) => {
+	if (Object.assign(e.style, {
+		left: t.left + n + "px",
+		top: t.top + r + "px",
+		width: t.width + "px",
+		height: t.height + "px",
+		borderRadius: t.corners,
+		opacity: t.on ? i : 0
+	}), e.classList.toggle("lens", !!t.lens), !t.lens) return;
+	let [o, s] = x(a);
+	for (let [n, r] of [
+		["--lens-inset", b.inset * t.lens + "px"],
+		["--lens-ring", b.ring * t.lens + "px"],
+		["--lens-glint-x", o],
+		["--lens-glint-y", s],
+		["--lens-glint", b.glint * 100 + "%"]
+	]) e.style.setProperty(n, r);
+}, ae = (e) => {
+	let t = e.querySelector(".cam"), n = [t];
+	for (; n.length < S;) {
+		let e = t.cloneNode();
+		n[n.length - 1].after(e), n.push(e);
+	}
+	return n;
+}, oe = (e, t, n, r, i, a = 0) => e.forEach((e, o) => t[o] ? ie(e, t[o], n, r, i, a) : e.style.opacity = "0"), se = () => t.matches, B = (e, t) => e.querySelector(t), ce = (e, t) => e.querySelector(t), V = (e) => ({
+	el: e,
+	cam: B(e, ".cam"),
+	cams: ae(e),
+	old: B(e, ".old"),
+	veil: B(e, ".veil"),
+	neu: B(e, ".neu"),
+	cast: B(e, ".cast"),
+	blurs: [],
+	dark: null
+}), le = (e) => {
+	let t = document.createElement("div"), n = document.createElement("div"), r = document.createElement("div");
+	return t.className = "gloss", n.className = "rim", r.className = "home", e.prepend(t, n), e.append(r), {
+		body: e,
+		gloss: t,
+		home: r,
+		clip: ce(e, ".clip"),
+		ring: ce(e, ".ring"),
+		lit: ce(e, ".lit"),
+		fit: []
+	};
+}, ue = (e) => ({
+	el: e,
+	front: le(B(e, ".front")),
+	back: le(B(e, ".rear")),
+	strips: []
+}), de = (e) => i(1 - e / 24, 0, 1), H = (e, t, n) => {
+	if (!n) return {
+		w: e.dpW,
+		h: e.dpH
+	};
+	let r = Math.max(t.w / e.dpW, t.h / e.dpH);
+	return {
+		w: e.dpW * r,
+		h: e.dpH * r
+	};
+};
+function U(e, t, n, r, i, a, o, s = 0) {
+	!t || a <= .001 ? e.style.opacity = "0" : (e.dataset.u !== t.url && (e.src = t.url, e.dataset.u = t.url), e.style.left = n + "px", e.style.top = s + "px", e.style.width = r + "px", e.style.height = i + "px", e.style.opacity = String(a), e.style.filter = o > .05 ? `blur(${o.toFixed(2)}px)` : "none");
+}
+var fe = (() => {
+	let e = w.lightAz * Math.PI / 180, t = w.lightEl * Math.PI / 180;
+	return [
+		Math.cos(t) * Math.cos(e),
+		-Math.cos(t) * Math.sin(e),
+		Math.sin(t)
+	];
+})(), pe = (e) => i(w.ambient + (1 - w.ambient) * Math.max(0, e[0] * fe[0] + e[1] * fe[1] + e[2] * fe[2]) / fe[2], 0, 1.5), me = (e) => [
+	1,
+	3,
+	5
+].map((t) => parseInt(e.slice(t, t + 2), 16)), he = (e, t) => `rgb(${e.map((e) => Math.round(t <= 1 ? e * t : e + (255 - e) * (t - 1) * .5)).join(" ")})`, ge = (e, t) => {
+	let n = he(e, t);
+	return `linear-gradient(90deg, ${`color-mix(in srgb, ${n}, var(--device-veil) 18%)`} 0, ${n} 10%, ${n} 90%, ${`color-mix(in srgb, ${n}, var(--device-shade) 20%)`} 100%)`;
+}, _e = (e) => e <= 1 ? ["var(--device-shade)", w.screenDim * (1 - e)] : ["var(--device-veil)", (e - 1) * .25], ve = (e) => {
+	let t = [], n = 0, r = 0;
+	for (let i = 0; i < e.length; i++) {
+		let a = e[i];
+		a === "(" ? n++ : a === ")" ? n-- : a === "," && !n && (t.push(e.slice(r, i)), r = i + 1);
+	}
+	return [...t, e.slice(r)].filter((e) => e.trim());
+}, W = (e) => e.toFixed(2) + "px", G = (e) => e.map(W).join(" ");
+function ye([e, t, n, r], [i, a, o, s], c) {
+	let l = [], u = 90 / c, d = (e) => e * Math.PI / 180, f = (e) => 2 * e * Math.tan(d(u) / 2), p = (e, t, n, r) => {
+		for (let i = 0; i < c; i++) {
+			let a = r + (i + .5) * u;
+			l.push({
+				x: e + n * Math.cos(d(a)),
+				y: t + n * Math.sin(d(a)),
+				a,
+				len: f(n)
+			});
+		}
+	};
+	return l.push({
+		x: (e + i + n - a) / 2,
+		y: t,
+		a: 270,
+		len: n - a - e - i
+	}), p(n - a, t + a, a, 270), l.push({
+		x: n,
+		y: (t + a + r - o) / 2,
+		a: 0,
+		len: r - o - t - a
+	}), p(n - o, r - o, o, 0), l.push({
+		x: (e + s + n - o) / 2,
+		y: r,
+		a: 90,
+		len: n - o - e - s
+	}), p(e + s, r - s, s, 90), l.push({
+		x: e,
+		y: (t + i + r - s) / 2,
+		a: 180,
+		len: r - s - t - i
+	}), p(e + i, t + i, i, 180), l;
+}
+var be = (e, t, n) => e.map(([e, r, i, a, o]) => `${W((e * Math.cos(t) + r * Math.sin(t)) * n)} ${W((-e * Math.sin(t) + r * Math.cos(t)) * n)} ${W(i * n)} ${W(a * n)} ${o}`).join(", "), xe = (e) => ({
+	el: e,
+	shell: B(e, ".shell"),
+	btns: [...e.querySelectorAll(".btn")],
+	cams: ae(e),
+	home: B(e, ".home"),
+	outline: B(e, ".outline"),
+	stage: B(e, ".stage"),
+	l0: B(e, ".l0"),
+	l1: B(e, ".l1"),
+	veil: B(e, ".veil"),
+	crease: B(e, ".crease"),
+	tTop: B(e, ".t-top"),
+	tBot: B(e, ".t-bot")
+}), K = (e) => document.getElementById(e), Se = (e) => {
+	let t = e.open, n = e.look.open, r = 19 / Math.max(t.w, t.h), a = t.w * r, o = t.h * r, s = 10 - a / 2, c = 10 - o / 2, l = 1.4, u = (e) => e.toFixed(2), d = i((Math.max(...n.radius) + n.bezel * w.shellK) * r * 1.8, 1.2, Math.min(a, o) / 3), f = l / 2 + i(n.bezel * w.shellK * r, .9, 2.2), p = Math.max(.4, d - f + l / 2), h = m(e), g = (e, t, n, r) => `<rect x="${u(e)}" y="${u(t)}" width="${u(n)}" height="${u(r)}" rx="${u(p)}" fill="currentColor" fill-opacity=".16"/>`, _ = e.fold ? h ? g(s + f, c + f, a - 2 * f, o / 2 - f - .4) + g(s + f, c + o / 2 + .4, a - 2 * f, o / 2 - f - .4) : g(s + f, c + f, a / 2 - f - .4, o - 2 * f) + g(s + a / 2 + .4, c + f, a / 2 - f - .4, o - 2 * f) : g(s + f, c + f, a - 2 * f, o - 2 * f), v = "", y = n.cuts[0];
+	if (y) {
+		let e = s + a * (y.x ?? .5), t = c + f + 1.1;
+		v = y.edge === "right" ? `<rect x="${u(s + a - f - 1.7)}" y="${u(c + o * (y.x ?? .5) - 1.8)}" width="1.2" height="3.6" rx=".6" fill="currentColor"/>` : y.w > y.h * 3 ? `<rect x="${u(e - 1.8)}" y="${u(t - .6)}" width="3.6" height="1.2" rx=".6" fill="currentColor"/>` : `<circle cx="${u(e)}" cy="${u(t)}" r=".75" fill="currentColor"/>`;
+	}
+	let b = e.fold ? `<path d="${h ? `M${u(s)} ${u(c + o / 2)}H${u(s + a)}` : `M${u(s + a / 2)} ${u(c)}V${u(c + o)}`}" stroke="currentColor" stroke-width=".8"/>` : "";
+	return `<svg class="pn-sil" viewBox="0 0 20 20" aria-hidden="true">${_}<rect x="${u(s + l / 2)}" y="${u(c + l / 2)}" width="${u(a - l)}" height="${u(o - l)}" rx="${u(d)}" fill="none" stroke="currentColor" stroke-width="${l}"/>${b}${v}</svg>`;
+}, Ce = (e) => e.kind === "device" ? e.dev : e.sel, we = (e) => `${Math.round(e.open.w)}×${Math.round(e.open.h)}`, Te = (e) => `${((e - 240) / 1360 * 100).toFixed(3)}%`;
+// src/scene/draw.ts
+function Ee(e, t, n, r) {
+	let i = e.stretchOf.get(t);
+	(i || !e.seeding || e.seeding.has(t)) && (i || (i = {
+		w0: Math.max(n, 1),
+		h0: Math.max(r, 1),
+		k: [1, 1]
+	}, e.stretchOf.set(t, i), Object.assign(t.style, {
+		width: W(i.w0),
+		height: W(i.h0)
+	})), i.k = [n / i.w0, r / i.h0], t.style.transform = `scale(${i.k[0].toFixed(5)}, ${i.k[1].toFixed(5)})`);
+}
+function De(e) {
+	e.RG.F.base.cast.style.background = `linear-gradient(90deg, ${s(1)}, ${s(.35)} 45%, ${s(0)} 90%)`;
+	for (let [t, n] of [[e.RG.F.inner, "to left"], [e.RG.F.outer, "to right"]]) t.dark.style.background = `linear-gradient(${n}, ${[
+		0,
+		.2,
+		.4,
+		.6,
+		.8,
+		1
+	].map((e) => `${s(Math.min(1, 2 * Math.max(0, (e - .2) / .8) ** 1.35) * w.foldDark)} ${e * 100}%`).join(", ")})`, t.blurs.forEach(({ el: e }, t) => {
+		e.style.webkitMaskImage = e.style.maskImage = `linear-gradient(${n}, transparent ${((t + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((t + 1) / 4 * 100).toFixed(1)}%)`;
+	});
+}
+function Oe(e, t, n, r, i, a, o, s, c = 0, l = 1) {
+	let u = h(e.rig.d, i ? "cover" : "open");
+	U(t, n, (u.w - r.w) * o / 2 - a * o, r.w * o, r.h * o, l, c, (u.h - r.h) * o / 2), t.style.transform = `rotate(${-ft(e, s).angle}deg)`;
+}
+function ke(e, t, n, r, i, a) {
+	let o = e.layer.old, s = e.layer.neu, c = e.rig.oldSpec, l = n === e.rig.plan.outer, u = (t, o, s, c, u = 1) => Oe(e, t, o, s, l, n.du, r, i, c * a, u);
+	if (n.role === "crisp") u(t.old, c, {
+		w: c.dpW,
+		h: c.dpH
+	}, e.rig.restBlur), t.veil.style.opacity = "0";
+	else if (e.rig.cached) {
+		let n = e.rig.to.img;
+		u(t.old, n, {
+			w: n.dpW,
+			h: n.dpH
+		}, 0), t.veil.style.opacity = "0", t.neu.style.opacity = "0", t.el.style.background = n.edge;
+		return;
+	} else u(t.old, c, H(c, n.frame, o.grow.b > 0), o.blur.at(i)), t.veil.style.opacity = String(o.veil.at(i));
+	n.neu && s.r ? u(t.neu, s.r, {
+		w: s.r.dpW,
+		h: s.r.dpH
+	}, s.blur.at(i), s.op.at(i)) : t.neu.style.opacity = "0", t.el.style.background = (s.r && s.op.at(i) > .5 && n.neu ? s.r : c).edge;
+}
+function Ae(e, t, n) {
+	let { angle: r, cy: i } = ft(e, n);
+	t.style.transformOrigin = `${He(e).cx}px ${i}px`, t.style.transform = `rotate(${r}deg)`;
+}
+function je(e, t, { body: n, span: r, bodyR: a, scr: o, scrR: s, backScrR: c, T: l, normal: u, tone: d, hk: f, hingeLeft: p, u: m }) {
+	let [h, g, _, v] = n, y = _ - h, b = v - g, x = ((e) => e.map((e) => i(e, 0, Math.min(y, b) / 2)))(a), S = (e) => [
+		e[1],
+		e[0],
+		e[3],
+		e[2]
+	];
+	for (let [n, i] of [[t.front, !1], [t.back, !0]]) {
+		let t = i ? _ - o[2] : o[0] - h, a = i ? S(c || s) : s, v = o[2] - o[0], C = o[3] - o[1];
+		if (Object.assign(n.body.style, {
+			left: W(h),
+			top: W(g),
+			width: W(y),
+			height: W(b),
+			backgroundColor: he(d, 1),
+			borderRadius: G(i ? S(x) : x),
+			transform: i ? `translateZ(${W(-l)}) rotateY(180deg)` : "none"
+		}), n.clip && Object.assign(n.clip.style, {
+			left: W(t),
+			top: W(o[1] - g),
+			width: W(v),
+			height: W(C),
+			borderRadius: G(a)
+		}), n.ring) {
+			let r = 2 * m / e.rig.z, s = r * f, [c, l] = p ? [s, r] : [r, s], [u, d] = i ? [l, c] : [c, l];
+			Object.assign(n.ring.style, {
+				left: W(t - u),
+				top: W(o[1] - g - r),
+				width: W(v + u + d),
+				height: W(C + 2 * r),
+				borderWidth: `${W(r)} ${W(d)} ${W(r)} ${W(u)}`,
+				borderRadius: G(a.map((e) => e + r))
+			});
+		}
+		if (n.lit) {
+			let [e, t] = _e(pe(u([
+				0,
+				0,
+				i ? -1 : 1
+			])));
+			n.lit.style.background = e, n.lit.style.opacity = t.toFixed(4);
+		}
+		n.gloss.style.left = i ? "0px" : W(r[0] - h), Ee(e, n.gloss, i ? y : r[1] - r[0], b);
+		for (let t of n.fit) Ee(e, t, v, C);
+	}
+	let C = ye(n, x, w.arcSegs);
+	for (; t.strips.length < C.length;) {
+		let e = document.createElement("div");
+		e.className = "strip", t.el.append(e), t.strips.push(e);
+	}
+	t.strips.forEach((e, t) => {
+		let n = C[t];
+		if (!n || n.len < .05 || l < .05) {
+			e.style.display = "none";
+			return;
+		}
+		let r = n.len + .6 * m, i = n.a * Math.PI / 180;
+		Object.assign(e.style, {
+			display: "",
+			width: W(l),
+			height: W(r),
+			marginLeft: W(-l / 2),
+			marginTop: W(-r / 2),
+			transform: `translate3d(${W(n.x)},${W(n.y)},${W(-l / 2)}) rotateZ(${n.a.toFixed(3)}deg) rotateY(90deg)`
+		}), e.style.background = ge(d, pe(u([
+			Math.cos(i),
+			Math.sin(i),
+			0
+		])));
+	});
+}
+function Me(e, t, n, r) {
+	let i = e.rig.d.plate.blur && n > .01, a = Number(t.neu.style.opacity) > .5 ? t.neu : t.old;
+	t.blurs.forEach(({ el: t, inv: o, img: s }, c) => {
+		let l = w.foldBlur * n * ((c + 1) / 4) ** 1.35 * r, u = parseFloat((/blur\(([\d.]+)px\)/.exec(a.style.filter) || ["0", "0"])[1]);
+		if (t.style.opacity = i && l > .2 ? "1" : "0", !i || l <= .2) return;
+		s.src !== a.src && (s.src = a.src);
+		let [d, f] = e.stretchOf.get(t).k;
+		o.style.transform = `scale(${(1 / d).toFixed(5)}, ${(1 / f).toFixed(5)})`, Object.assign(s.style, {
+			left: a.style.left,
+			top: a.style.top,
+			width: a.style.width,
+			height: a.style.height,
+			transform: a.style.transform,
+			filter: `blur(${Math.max(l, u).toFixed(2)}px)`
+		});
+	}), t.dark.style.opacity = i ? n.toFixed(4) : "0";
+}
+function Ne(e, { hu: t, T0: n, Bv: i, t: a, s: o, k: s, sn: c, cs: l, lift: u, tone: d, u: f }) {
+	let p = e.rig.d, m = p.open.hinge, h = 3 * f;
+	p.look.open.btn.forEach((g, _) => {
+		let v = p.look.cover.btn[_], y = g.at < m, b = r(y ? m - g.at - g.len : g.at - m, v.at, y ? s : 0), x = r(y ? m - g.at : g.at + g.len - m, v.at + v.len, y ? s : 0), [S, C] = y ? [-x * l, -b * l].sort((e, t) => e - t) : [b, x], w = (b + x) / 2;
+		Object.assign(e.RG.btns[_].style, {
+			left: W(t + S * o),
+			top: W(g.side > 0 ? n - a - h + .5 * f : n + i + a - .5 * f),
+			width: W((C - S) * o),
+			height: W(h),
+			backgroundColor: d,
+			opacity: +((y ? r(g.len, v.len, s) : g.len) * o > .5 * f),
+			transform: `translateZ(${W(u + (y ? w * o * c : 0))})`
+		});
+	});
+}
+var Pe = (e) => e.elevationOf ??= ve(getComputedStyle(e.rigEl).getPropertyValue("--elevation-2")).map((e) => {
+	let t = /^\s*(-?[\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+([\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+(.+)$/.exec(e);
+	return t ? [
+		+t[1],
+		+t[2],
+		+t[3],
+		+t[4],
+		t[5].trim()
+	] : null;
+}).filter((e) => e !== null);
+function Fe(e, t) {
+	let { th: n, s: i, hx: o, top: c, cy: l, angle: u } = ft(e, t), d = e.rig.sRef, f = i / d, h = 1 / f, g = l - (l - c) * d / i, _ = n / 180, v = n * Math.PI / 180, y = Math.sin(v), b = Math.cos(v), x = e.rig.d, S = X(e, t), C = S.bezel * w.shellK * d, [T, E] = lt(e, S).map((e) => e * d), D = me(S.tone), O = r(e.rig.half.u, e.rig.cover.u, _) * d, k = r(e.rig.half.v, e.rig.cover.v, _) * d, A = r(e.rig.half.u, Math.min(e.rig.half.u, e.rig.cover.u), a(w.shrinkFrom, 180, n)) * d, j = k, M = x.plate.thickness * d, N = x.plate.gap * d / 2, P = (M + 2 * N) * (1 - b) / 2, F = a(20, 160, n), I = T * F, ee = m(x) ? 3 : 0, L = p(x.look.open.radius, ee).map((e) => e * d), R = p(x.look.cover.radius, ee).map((e) => e * d), te = a(60, 120, n), z = (e, t) => r(e, t, te) + C, ne = [
+		z(L[0], R[0]) * F,
+		z(L[1], R[1]),
+		z(L[2], R[2]),
+		z(L[3], R[3]) * F
+	], ae = [
+		z(L[0], R[1]),
+		z(L[1], R[0]) * F,
+		z(L[2], R[3]) * F,
+		z(L[3], R[2])
+	], se = ne[1], B = ne[0], ce = `${W(o)} ${W(l)}`, V = f.toFixed(5);
+	Object.assign(e.RG.lift.style, {
+		perspective: w.perspective + "px",
+		perspectiveOrigin: ce
+	}), Object.assign(e.RG.space.style, {
+		transformOrigin: ce,
+		transform: `scale3d(${V},${V},${V}) translateZ(${W(-P)})`
+	});
+	let le = u * Math.PI / 180, ue = Math.cos(le), H = Math.sin(le), U = (e) => [
+		e[0] * ue - e[1] * H,
+		e[0] * H + e[1] * ue,
+		e[2]
+	], fe = (e) => [
+		e[0] * b + e[2] * y,
+		e[1],
+		-e[0] * y + e[2] * b
+	];
+	for (let t of [e.RG.base, e.RG.leaf]) Object.assign(t.el.style, {
+		left: W(o),
+		top: W(g)
+	});
+	e.RG.leaf.el.style.transform = `translateZ(${W(N)}) rotateY(${n.toFixed(3)}deg) translateZ(${W(-N)})`;
+	let he = [-O - T, A + T];
+	je(e, e.RG.base, {
+		body: [
+			-I,
+			-E,
+			A + T,
+			j + E
+		],
+		span: he,
+		bodyR: ne,
+		scr: [
+			0,
+			0,
+			A,
+			j
+		],
+		scrR: [
+			L[0] * F,
+			L[1],
+			L[2],
+			L[3] * F
+		],
+		T: M,
+		normal: U,
+		tone: D,
+		hk: F,
+		hingeLeft: !0,
+		u: h
+	}), je(e, e.RG.leaf, {
+		body: [
+			-O - T,
+			-E,
+			I,
+			k + E
+		],
+		span: he,
+		bodyR: ae,
+		scr: [
+			-O,
+			0,
+			0,
+			k
+		],
+		scrR: [
+			L[0],
+			L[1] * F,
+			L[2] * F,
+			L[3]
+		],
+		backScrR: [
+			R[1],
+			R[0] * F,
+			R[3] * F,
+			R[2]
+		],
+		T: M,
+		normal: (e) => U(fe(e)),
+		tone: D,
+		hk: F,
+		hingeLeft: !1,
+		u: h
+	}), ke(e, e.RG.F.base, e.rig.plan.base, d, t, h), ke(e, e.RG.F.inner, e.rig.plan.inner, d, t, h), ke(e, e.RG.F.outer, e.rig.plan.outer, d, t, h), Me(e, e.RG.F.inner, n <= 90 ? y : 0, h), Me(e, e.RG.F.outer, n > 90 ? y : 0, h);
+	let _e = ot(e, !1, d), ve = x.open.hinge * d;
+	oe(e.RG.F.outer.cams, ot(e, !0, d), 0, 0, 1, u), oe(e.RG.F.inner.cams, _e, 0, 0, 1, u), oe(e.RG.F.base.cams, _e, -ve, 0, 1, u);
+	let G = (e) => {
+		let t = x[e ? "cover" : "open"], n = Number(x.look[e ? "cover" : "open"].home) || 0;
+		return [re(S, t.w, t.h, m(x), d, m(x), n), n];
+	}, [ye, xe] = G(!1), [K, Se] = G(!0);
+	ie(e.RG.base.front.home, ye, I - ve, E, xe), ie(e.RG.leaf.front.home, ye, T, E, xe), ie(e.RG.leaf.back.home, K, I, E, Se);
+	let Ce = w.shade * (.85 * a(90, 180, n) + .25 * y);
+	e.RG.F.base.cast.style.opacity = Ce.toFixed(4);
+	let we = -I, Te = -M, Ee = -M - N, De = I * b + Ee * y, Oe = N - I * y + Ee * b, Ae = Math.hypot(De - we, Oe - Te), Fe = Math.atan2(-(Oe - Te), De - we), Ie = j + 2 * E;
+	Object.assign(e.RG.spine.style, {
+		display: Ae > .3 && M > .05 ? "" : "none",
+		left: W(o),
+		top: W(g - E),
+		width: W(Ae + .6 * h),
+		height: W(Ie),
+		marginLeft: W(-(Ae + .6 * h) / 2),
+		borderRadius: `${W(Math.min(B, (Ae + .6 * h) / 2))} / ${W(B)}`,
+		transform: `translate3d(${W((we + De) / 2)},0,${W((Te + Oe) / 2)}) rotateY(${(Fe * 180 / Math.PI).toFixed(3)}deg)`
+	}), e.RG.spine.style.background = ge(D, pe(U([
+		Math.sin(Fe),
+		0,
+		Math.cos(Fe)
+	])));
+	let Le = o - O * b, Re = Math.min(o - I, Le - T), ze = Math.max(o + A + T, Le + T);
+	Object.assign(e.RG.plate.style, {
+		left: W(Re),
+		top: W(g - E),
+		width: W(ze - Re),
+		height: W(j + 2 * E),
+		borderRadius: W(se),
+		transform: `translateZ(${W(-M - h)})`,
+		boxShadow: be([...Pe(e), [
+			0,
+			10 + 18 * y,
+			30 + 34 * y,
+			0,
+			s(.05 * y)
+		]], le, h)
+	}), m(x) ? Ne(e, {
+		hu: o,
+		T0: g,
+		Bv: j,
+		t: E,
+		s: d,
+		k: _,
+		sn: y,
+		cs: b,
+		lift: P,
+		tone: S.tone,
+		u: h
+	}) : S.btn.forEach((t, n) => {
+		Object.assign(e.RG.btns[n].style, {
+			left: W(Math.max(o + A, Le) + T - .5 * h),
+			top: W(g + t.at * d),
+			width: W(3 * h),
+			height: W(t.len * d),
+			backgroundColor: S.tone,
+			opacity: +(t.len * d > .5 * h),
+			transform: `translateZ(${W(P)})`
+		});
+	});
+	let Be = de(n), q = w.crease * Be;
+	Object.assign(e.RG.crease.style, {
+		left: W(o),
+		top: W(g),
+		width: W(14 * h),
+		marginLeft: W(-7 * h),
+		height: W(j),
+		opacity: q * e.hingeOp.at(t)
+	});
+	let Ve = o - (ue + H > 0 ? 0 : h);
+	Object.assign(e.RG.tTop.style, {
+		left: W(Ve),
+		top: W(g - E),
+		width: W(h),
+		height: W(E),
+		opacity: Be
+	}), Object.assign(e.RG.tBot.style, {
+		left: W(Ve),
+		top: W(g + j),
+		width: W(h),
+		height: W(E),
+		opacity: Be
+	});
+}
+function Ie(e, t, n, i, o) {
+	let s = i.old, c = i.neu, l = i.swap, u = l ? L(l, o) : 0, d = l ? a(0, 1, u) : c.op.at(o), f = l ? te(u) : c.blur.at(o), p = Math.max(s.blur.at(o), l ? te(u) : 0);
+	if (e.l0.style.transform = e.l1.style.transform = "", s.r) {
+		let i = s.held ? s.grow.at(o) : 0, a = H(s.r, {
+			w: t.w / n,
+			h: t.h / n
+		}, i > 0), c = r(s.r.dpW, a.w, i) * n, l = r(s.r.dpH, a.h, i) * n;
+		U(e.l0, s.r, (t.w - a.w * n) / 2 * i, c, l, s.op.at(o), p, (t.h - a.h * n) / 2 * i);
+	} else e.l0.style.opacity = "0";
+	e.veil.style.opacity = String(s.veil.at(o)), c.r ? U(e.l1, c.r, 0, c.r.dpW * n, c.r.dpH * n, d, f) : e.l1.style.opacity = "0";
+	let m = c.r ? l ? a(0, 1, u) : d : 0;
+	return m > 0 && m < 1 && (e.l0.style.transformOrigin = e.l1.style.transformOrigin = "50% 50%", e.l0.style.transform = `scale(${(1 + w.swapZoom * m).toFixed(4)})`, e.l1.style.transform = `scale(${(1 - w.swapZoom * (1 - m)).toFixed(4)})`), c.r && d > .5 ? c.r : s.r;
+}
+function Le(e, t, n, i, o) {
+	let { p: s } = gt(e, o), c = e.spin.dir * 90 * s, l = c * Math.PI / 180, u = e.layer.old, d = (e, t, r, i, a, o = 0, s = 0) => {
+		U(e, t, (n.w - r.w) / 2 + o, r.w, r.h, i, a, (n.h - r.h) / 2 + s), e.style.transform = `rotate(${(-c).toFixed(3)}deg)`;
+	};
+	if (t.veil.style.opacity = String(u.veil.at(o)), !u.r) return t.l0.style.opacity = t.l1.style.opacity = "0", null;
+	if (!e.spin.cached || !e.spin.to.img) {
+		let e = {
+			w: (Math.abs(n.w * Math.cos(l)) + Math.abs(n.h * Math.sin(l))) / i,
+			h: (Math.abs(n.w * Math.sin(l)) + Math.abs(n.h * Math.cos(l))) / i
+		}, a = H(u.r, e, !0), s = u.grow.at(o), c = {
+			w: r(u.r.dpW, a.w, s) * i,
+			h: r(u.r.dpH, a.h, s) * i
+		};
+		return d(t.l0, u.r, c, 1, u.blur.at(o), (u.r.dpW * i - n.w) / 2 * (1 - s), (u.r.dpH * i - n.h) / 2 * (1 - s)), t.l1.style.opacity = "0", u.r;
+	}
+	let f = a(w.spinSwapA, w.spinSwapB, s), p = R(f), m = u.r, h = e.spin.to.img;
+	return d(t.l0, m, {
+		w: m.dpW * i,
+		h: m.dpH * i
+	}, 1, p), d(t.l1, h, {
+		w: h.dpW * i,
+		h: h.dpH * i
+	}, f, p), f > .5 ? h : m;
+}
+function Re(e, t, n, r, i, a, o, s, c = !1) {
+	let { cx: l } = He(e), u = w.gap, d = n.y;
+	t.el.style.opacity = String(s), Object.assign(t.stage.style, {
+		left: l - n.w / 2 + "px",
+		top: d + "px",
+		width: n.w + "px",
+		height: n.h + "px"
+	});
+	let f = c ? Le(e, t, n, i, o) : Ie(t, n, i, a, o);
+	t.stage.style.background = f ? f.edge : "var(--surface-container)";
+	let m = r.look, h = p(m.radius, +!!r.rot + (r.mirrored ? 2 : 0)).map((e) => e * i * r.shell);
+	t.stage.style.borderRadius = G(h), Object.assign(t.outline.style, {
+		left: l - r.w / 2 + "px",
+		top: d - u + "px",
+		width: r.w + "px",
+		height: r.h + "px",
+		borderRadius: G(h.map((e) => e > 0 ? e + u : 0)),
+		opacity: r.op
+	});
+	let g = m.bezel * w.shellK * i, _ = M(m) * w.shellK * i, v = l - n.w / 2, b = r.rot ? _ : g, x = r.rot ? g : _;
+	Object.assign(t.shell.style, {
+		left: v - b + "px",
+		top: d - x + "px",
+		width: n.w + 2 * b + "px",
+		height: n.h + 2 * x + "px",
+		borderRadius: G(h.map((e) => e + g)),
+		backgroundColor: m.tone,
+		opacity: r.shell
+	});
+	let S = (r.rot ? n.w : n.h) / i;
+	m.btn.forEach((e, a) => {
+		let o = t.btns[a], s = e.at * i, c = e.len * i;
+		Object.assign(o.style, r.rot ? {
+			left: v + (S * i - s - c) + "px",
+			top: (e.side < 0 ? d - g - 3 + .5 : d + n.h + g - .5) + "px",
+			width: c + "px",
+			height: "3px"
+		} : {
+			left: (e.side < 0 ? v - g - 3 + .5 : v + n.w + g - .5) + "px",
+			top: d + s + "px",
+			width: "3px",
+			height: c + "px"
+		}, {
+			backgroundColor: m.tone,
+			opacity: c > .5 ? r.shell : 0
+		}), r.mirrored && (o.style.left = 2 * v + n.w - parseFloat(o.style.left) - parseFloat(o.style.width) + "px", o.style.top = 2 * d + n.h - parseFloat(o.style.top) - parseFloat(o.style.height) + "px");
+	}), oe(t.cams, m.cams.map((e) => y((r.rot ? n.h : n.w) / i, S, r.rot, e, i, r.mirrored)), 0, 0, r.shell);
+	let C = Number(m.home) || 0;
+	ie(t.home, re(m, (r.rot ? n.h : n.w) / i, S, r.rot, i, r.mirrored, C), v, d, r.shell * C);
+	let T = r.crease, E = r.rot !== !!r.tall;
+	t.crease.classList.toggle("h", E), Object.assign(t.crease.style, E ? {
+		left: "0px",
+		top: n.h / 2 + "px",
+		width: n.w + "px",
+		height: "",
+		opacity: T * e.hingeOp.at(o)
+	} : {
+		left: n.w / 2 + "px",
+		top: "0px",
+		width: "",
+		height: n.h + "px",
+		opacity: T * e.hingeOp.at(o)
+	});
+	let D = T > 0 ? r.shell * Math.min(1, T / Math.max(.01, w.crease)) : 0;
+	E ? (Object.assign(t.tTop.style, {
+		left: v - b + "px",
+		top: d + n.h / 2 + "px",
+		width: b + "px",
+		height: "1px",
+		opacity: D
+	}), Object.assign(t.tBot.style, {
+		left: v + n.w + "px",
+		top: d + n.h / 2 + "px",
+		width: b + "px",
+		height: "1px",
+		opacity: D
+	})) : (Object.assign(t.tTop.style, {
+		left: l + "px",
+		top: d - x + "px",
+		width: "1px",
+		height: x + "px",
+		opacity: D
+	}), Object.assign(t.tBot.style, {
+		left: l + "px",
+		top: d + n.h + "px",
+		width: "1px",
+		height: x + "px",
+		opacity: D
+	}));
+}
+function ze(t, n) {
+	if (t.rig.on) {
+		t.UA.el.hidden = !0, t.UB.el.hidden = !0, t.rigEl.hidden = !1, Ae(t, t.rigEl, n), Fe(t, n);
+		return;
+	}
+	t.rigEl.hidden = !0, t.UA.el.hidden = !1;
+	let i = t.V.s.at(n), a = t.spin.on ? t.spin.from : t.cur;
+	if (t.spin.on) {
+		let { p: e } = gt(t, n), { f0: i, f1: a } = t.spin, o = i.y + i.h / 2, s = a.y + a.h / 2;
+		t.UA.el.style.transformOrigin = `${i.cx}px ${o}px`;
+		let c = (r(1, a.s / i.s, e) * (1 - w.rotDip * Math.sin(Math.PI * e))).toFixed(4);
+		t.UA.el.style.transform = `translate(${((a.cx - i.cx) * e).toFixed(2)}px, ${((s - o) * e).toFixed(2)}px) rotate(${(t.spin.dir * 90 * e).toFixed(3)}deg) scale(${c})`, t.UA.el.style.setProperty("--spin-s", c);
+	}
+	if (Re(t, t.UA, {
+		w: t.V.w.at(n),
+		h: t.V.h.at(n),
+		y: t.V.y.at(n)
 	}, {
-		sel: "foldable",
-		name: t("size.foldable"),
-		w: 673,
-		h: 841
-	}], E = null, D = /* @__PURE__ */ new Map();
-	function ie(e) {
-		let r;
-		if (e === "original") r = { ...ne };
-		else if (re.some((t) => t.sel === e)) r = {
-			...re.find((t) => t.sel === e),
-			kind: "preset",
+		w: t.O.w.at(n),
+		h: t.O.h.at(n),
+		op: t.outlineOp.at(n),
+		crease: t.creaseOp.at(n),
+		shell: t.shellOp.at(n),
+		rot: !!a.rot,
+		mirrored: !!a.mirrored,
+		tall: a.kind === "device" && m(e[a.dev]),
+		look: X(t, n)
+	}, i, t.layer, n, t.unitOp.a.at(n), t.spin.on), t.fadeB) {
+		t.UB.el.hidden = !1;
+		let r = t.fadeB.f, i = w.gap, a = t.fadeB.st;
+		Re(t, t.UB, {
+			w: r.w,
+			h: r.h,
+			y: r.y
+		}, {
+			w: r.w + 2 * i,
+			h: r.h + 2 * i,
+			op: +!!D(a),
+			crease: A(a) ? w.crease : 0,
+			shell: +!!O(a),
+			rot: !!a.rot,
+			mirrored: !!a.mirrored,
+			tall: a.kind === "device" && m(e[a.dev]),
+			look: O(a) ? j(a) : X(t, n)
+		}, r.s, t.fadeB.layers, n, t.unitOp.b.at(n));
+	} else t.UB.el.hidden = !0;
+}
+function Be(e, t) {
+	let n = e.rulerOp.at(t);
+	if (e.focusW && !e.tr && !e.queued && n > .99 && (e.focusW = !1, e.RL.w.focus()), n < .01 && (e.roll.w.snap(e.cur.w), e.roll.h.snap(e.cur.h)), e.RL.el.hidden = n < .01 && !e.editing, e.RL.el.hidden) return;
+	e.RL.el.style.opacity = String(n);
+	let { cx: r } = He(e), a = Math.max(w.gap, (N(X(e, t)) * e.V.s.at(t) + 6) * e.shellOp.at(t)), o = e.V.w.at(t), s = e.V.h.at(t), c = e.V.y.at(t), l = r - o / 2, u = r + o / 2, d = c + s, f = (c + d) / 2, p = c - a - 15, m = l - a - 22, h = 4.5;
+	for (let [n, r] of [["w", e.RL.w], ["h", e.RL.h]]) {
+		if (document.activeElement === r) continue;
+		let i = String(Math.round(e.roll[n].at(t)));
+		e.RL.shown[n] !== i && (r.value = i, e.RL.shown[n] = i);
+	}
+	let g = i(e.RL.w.value.length * 7.2 + 16, 0, u - l - 4 * h) / 2, _ = i(30, 0, d - c - 4 * h) / 2, v = (e) => e.toFixed(1);
+	e.RL.ext.setAttribute("d", `M${v(l)} ${v(c - a)}V${v(p - 5)}M${v(u)} ${v(c - a)}V${v(p - 5)}M${v(l - a)} ${v(c)}H${v(m - 5)}M${v(l - a)} ${v(d)}H${v(m - 5)}`), e.RL.dim.setAttribute("d", `M${v(l)} ${v(p)}H${v(r - g)}M${v(r + g)} ${v(p)}H${v(u)}M${v(l + h)} ${v(p - h)}L${v(l)} ${v(p)}L${v(l + h)} ${v(p + h)}M${v(u - h)} ${v(p - h)}L${v(u)} ${v(p)}L${v(u - h)} ${v(p + h)}M${v(m)} ${v(c)}V${v(f - _)}M${v(m)} ${v(f + _)}V${v(d)}M${v(m - h)} ${v(c + h)}L${v(m)} ${v(c)}L${v(m + h)} ${v(c + h)}M${v(m - h)} ${v(d - h)}L${v(m)} ${v(d)}L${v(m + h)} ${v(d - h)}`), e.RL.w.style.left = r + "px", e.RL.w.style.top = p + "px", e.RL.h.style.left = m + "px", e.RL.h.style.top = f + "px";
+}
+// src/scene/engine.ts
+function q(t, r) {
+	let i;
+	if (r === "original") i = { ...t.ORIGINAL };
+	else if (t.PRESETS.some((e) => e.sel === r)) i = {
+		...t.PRESETS.find((e) => e.sel === r),
+		kind: "preset",
+		img: null
+	};
+	else if (/^custom:\d+x\d+$/.test(r)) {
+		let [e, t] = r.slice(7).split("x").map(Number);
+		i = {
+			sel: r,
+			kind: "custom",
+			name: n("size.custom"),
+			w: e,
+			h: t,
 			img: null
 		};
-		else if (/^custom:\d+x\d+$/.test(e)) {
-			let [n, i] = e.slice(7).split("x").map(Number);
-			r = {
-				sel: e,
-				kind: "custom",
-				name: t("size.custom"),
-				w: n,
-				h: i,
-				img: null
-			};
-		} else {
-			let [t, i, ...a] = e.split(":"), o = n[t], s = i === "open" || i === "cover" ? o?.[i] : void 0;
-			if (!o || !s) return null;
-			let c = a.includes("rot"), l = a.includes("right");
-			if (s.fixed && (c || l)) return null;
-			r = {
-				sel: e,
-				kind: "device",
-				dev: t,
-				folded: i === "cover",
-				rot: c,
-				right: l,
-				...g(s, c, l),
-				name: o.name,
-				short: o.short,
-				w: c ? s.h : s.w,
-				h: c ? s.w : s.h,
-				hinge: s.hinge,
-				img: null
-			};
-		}
-		return E?.sel === e && (r.w = E.w, r.h = E.h), r.img = D.get(e) || N?.img || ne.img, r;
-	}
-	let ae = (e) => e.kind === "preset" || e.kind === "custom", O = (e) => e.kind === "device", oe = (e, t, r) => {
-		let i = n[e.dev][t ? "cover" : "open"], a = r !== "portrait";
-		return `${e.dev}:${t ? "cover" : "open"}${a === i.w > i.h ? "" : ":rot"}${r === "landscape-right" ? ":right" : ""}`;
-	}, se = (e) => e.kind === "device" && n[e.dev].fold && !e.folded, k = (e) => n[e.dev].look[e.folded ? "cover" : "open"], A = (e) => e.ends ?? e.bezel, ce = (e) => Math.max(e.bezel, A(e)) * w.shellK, j = (e) => {
-		if (!O(e)) return [0, 0];
-		let t = k(e), n = t.bezel * w.shellK, r = A(t) * w.shellK;
-		return e.rot ? [2 * r, 2 * n] : [2 * n, 2 * r];
-	}, le = (e) => `${Math.round(e.w)}×${Math.round(e.h)}`, ue = "", de = null, fe = () => {
-		let e = `${w.foldLift},${w.foldLand}`;
-		return e !== ue && (ue = e, de = u(w.foldLift, 0, w.foldLand, 1)), de;
-	}, pe = { t: 0 }, me = { w: 45 };
-	function he(e) {
-		let t = l.clientWidth, n = i((t - 400) / 400, 0, 1), a = Math.max(r(w.gap + 22 + Math.ceil(me.w / 2) + 10, 90, n), e && O(e) && S.insetOn?.() ? 114 : 0);
-		return {
-			W: t,
-			side: a,
-			cx: t / 2,
-			top: 48,
-			maxW: Math.max(60, t - 2 * a),
-			maxH: Math.max(60, l.clientHeight - 48 - 88)
+	} else {
+		let [t, n, ...a] = r.split(":"), o = e[t], s = n === "open" || n === "cover" ? o?.[n] : void 0;
+		if (!o || !s) return null;
+		let c = a.includes("rot"), l = a.includes("right");
+		if (s.fixed && (c || l)) return null;
+		i = {
+			sel: r,
+			kind: "device",
+			dev: t,
+			folded: n === "cover",
+			rot: c,
+			right: l,
+			...g(s, c, l),
+			name: o.name,
+			short: o.short,
+			w: c ? s.h : s.w,
+			h: c ? s.w : s.h,
+			hinge: s.hinge,
+			img: null
 		};
 	}
-	let ge = (e) => O(e) && S.insetOn?.() && S.insetBelow?.() ? 40 : 0, _e = (e) => {
-		let t = n[e.dev][e.folded ? "cover" : "open"].cutIn, r = e.right ? "landscape-right" : e.w > e.h ? "landscape-left" : "portrait";
-		return t[r] ?? t[r === "landscape-right" ? "landscape-left" : "landscape-right"] ?? "";
-	}, ve = (e, t) => {
-		if (!O(e) || !S.insetOn?.()) return {
-			w: 0,
-			h: 0
-		};
-		let n = _e(e);
-		return {
-			w: n.includes("w") ? Math.max(0, 178 - t) : 0,
-			h: n.includes("h") ? 32 : 0
-		};
+	return t.target?.sel === r && (i.w = t.target.w, i.h = t.target.h), i.img = t.images.get(r) || t.cur?.img || t.ORIGINAL.img, i;
+}
+var Ve = (e) => {
+	let t = `${w.foldLift},${w.foldLand}`;
+	return t !== e.foldEaseKey && (e.foldEaseKey = t, e.foldEaseFn = u(w.foldLift, 0, w.foldLand, 1)), e.foldEaseFn;
+};
+function He(e, t) {
+	let n = e.root.clientWidth, a = i((n - 400) / 400, 0, 1), o = Math.max(r(w.gap + 22 + Math.ceil(e.badge.w / 2) + 10, 90, a), t && O(t) && e.hooks.insetOn?.() ? 114 : 0);
+	return {
+		W: n,
+		side: o,
+		cx: n / 2,
+		top: 48,
+		maxW: Math.max(60, n - 2 * o),
+		maxH: Math.max(60, e.root.clientHeight - 48 - 88)
 	};
-	function M(e) {
-		let t = he(e), n = ve(e, t.side), r = (e, t, n) => {
-			let [r, i] = j(e);
-			return Math.min(t / (e.w + r), n / (e.h + i), 2);
-		}, i = (t, n) => Math.min(r(ne, t, n), r(e, t, n)), a = t.maxW, o = t.maxH, s = 0, c = i(a, o), l = (o - (e.h + j(e)[1]) * c) / 2, u = ge(e), d = l < Math.max(n.h, u);
-		n.w && (a - (e.w + j(e)[0]) * c) / 2 < n.w && (a -= 2 * n.w), n.h && d && (o -= n.h, s = n.h), u && d && (o -= u), c = i(a, o);
-		let f = e.h * c, p = j(e)[1] * c;
-		return {
-			s: c,
-			w: e.w * c,
-			h: f,
-			cx: t.cx,
-			y: t.top + s + p / 2 + Math.max(0, (o - f - p) / 2)
-		};
-	}
-	let N = null, P = null, F = null, I = {
-		w: new d(),
-		h: new d(),
-		s: new d(),
-		y: new d(48)
-	}, ye = {
-		w: new d(),
-		h: new d()
-	}, be = new f(0), xe = new f(0), Se = new f(0), Ce = new f(0), we = new f(1);
-	function L(e, t = 0, n, r = n, i = 0) {
-		let a = w.gap;
-		for (let [r, a] of [
-			[I.w, e.w],
-			[I.h, e.h],
-			[I.s, e.s],
-			[I.y, e.y]
-		]) n ? r.set(a, n, t, i) : r.snap(a);
-		for (let [n, i] of [[ye.w, e.w + 2 * a], [ye.h, e.h + 2 * a]]) r ? n.set(i, r, t) : n.snap(i);
-	}
-	let Te = (e) => ({
-		old: {
-			r: e,
-			held: !1,
-			grow: new f(0, (e) => a(0, 1, e)),
-			blur: new f(0),
-			veil: new f(0),
-			op: new f(1)
-		},
-		neu: {
-			r: null,
-			op: new f(0),
-			blur: new f(0)
-		},
-		swap: null
-	}), R = Te(null), Ee = (e, t) => i((t - e.t0) / e.dur, 0, 1), De = (e) => w.swapBlur * 4 * e * (1 - e), Oe = (e) => e < .5 ? De(e) : r(w.swapBlur, 0, a(.5, 1, e)), z = {
-		a: new f(1),
-		b: new f(0)
-	}, ke = null, B = {
-		a: null,
-		b: null,
-		t0: 0,
-		dur: 460
-	};
-	function Ae(e, t) {
-		let n = pe.t;
-		B.a = t || !B.b ? e : Ne(n), B.b = e, B.t0 = t ? -1e9 : n;
-	}
-	let je = (e, t, n, r) => {
-		let i = e.edge !== t.edge, a = i ? n < .5 ? 1 - 2 * n : 2 * n - 1 : 1, o = i && n < .5 ? e : t;
-		return {
-			w: i ? o.w * a : r(e.w, t.w),
-			h: r(e.h, t.h),
-			y: r(e.y, t.y),
-			x: i ? o.x ?? .5 : r(e.x ?? .5, t.x ?? .5),
-			rad: r(_(e), _(t)),
-			flat: r(v(e), v(t)),
-			edge: o.edge,
-			lens: (o.w > 0 ? o : e).lens
-		};
-	}, Me = (e, t, n, r) => Array.from({ length: Math.max(e.length, t.length) }, (i, a) => je(e[a] ?? {
-		...t[a],
+}
+var Ue = (e, t) => O(t) && e.hooks.insetOn?.() && e.hooks.insetBelow?.() ? 40 : 0, We = (e, t, n) => {
+	if (!O(t) || !e.hooks.insetOn?.()) return {
 		w: 0,
 		h: 0
-	}, t[a] ?? {
-		...e[a],
-		w: 0,
-		h: 0
-	}, n, r));
-	function Ne(e) {
-		let t = B.a, a = B.b;
-		if (!a) return n.s26.look.open;
-		let s = o(i((e - B.t0) / B.dur, 0, 1)), c = (e, t) => r(e, t, s);
-		return {
-			tone: a.tone,
-			bezel: c(t.bezel, a.bezel),
-			ends: c(A(t), A(a)),
-			home: c(Number(t.home) || 0, Number(a.home) || 0),
-			radius: a.radius.map((e, n) => c(t.radius[n], e)),
-			cams: Me(t.cams, a.cams, s, c),
-			btn: a.btn.map((e, n) => {
-				let r = t.btn[n];
-				return r.side === e.side ? {
-					side: e.side,
-					at: c(r.at, e.at),
-					len: c(r.len, e.len)
-				} : s < .5 ? {
-					side: r.side,
-					at: r.at,
-					len: r.len * (1 - 2 * s)
-				} : {
-					side: e.side,
-					at: e.at,
-					len: e.len * (2 * s - 1)
-				};
-			})
-		};
-	}
-	let Pe = (e, t, n, r, i, a, o) => {
-		let s = A(e) * w.shellK, c = s * .62, l = y(t, n, r, {
-			w: c,
-			h: c,
-			y: n + (s - c) / 2
-		}, i, a);
-		return {
-			...l,
-			on: l.on && o > .01
-		};
-	}, Fe = (e, t, n, r, i, a = 0) => {
-		if (Object.assign(e.style, {
-			left: t.left + n + "px",
-			top: t.top + r + "px",
-			width: t.width + "px",
-			height: t.height + "px",
-			borderRadius: t.corners,
-			opacity: t.on ? i : 0
-		}), e.classList.toggle("lens", !!t.lens), !t.lens) return;
-		let [o, s] = x(a);
-		for (let [n, r] of [
-			["--lens-inset", b.inset * t.lens + "px"],
-			["--lens-ring", b.ring * t.lens + "px"],
-			["--lens-glint-x", o],
-			["--lens-glint-y", s],
-			["--lens-glint", b.glint * 100 + "%"]
-		]) e.style.setProperty(n, r);
-	}, Ie = (e) => {
-		let t = e.querySelector(".cam"), n = [t];
-		for (; n.length < ee;) {
-			let e = t.cloneNode();
-			n[n.length - 1].after(e), n.push(e);
-		}
-		return n;
-	}, Le = (e, t, n, r, i, a = 0) => e.forEach((e, o) => t[o] ? Fe(e, t[o], n, r, i, a) : e.style.opacity = "0");
-	function Re(e) {
-		let t = ie(e), n = M(t);
-		N = t, P = null, F = null, V.on = !1, G.on = !1, ke = null, q.el.style.transform = "", q.el.style.removeProperty("--spin-s"), L(n), Se.snap(1), ze(t.img), be.snap(+!!ae(t)), Ce.snap(+!!O(t)), xe.snap(se(t) ? w.crease : 0), z.a.snap(1), z.b.snap(0), hn(t, !0);
-	}
-	function ze(e) {
-		let t = R.old, n = R.neu;
-		t.r = e, t.held = !1, t.grow.snap(0), t.blur.snap(0), t.veil.snap(0), t.op.snap(1), n.r = null, n.op.snap(0), n.blur.snap(0), R.swap = null;
-	}
-	function Be(e) {
-		let t = R.neu, n = R.old, r = R.swap, i = r ? Oe(Ee(r, e)) : t.blur.at(e), o = r ? a(0, 1, Ee(r, e)) : t.op.at(e);
-		t.r && o > .5 ? (n.r = t.r, n.grow.snap(0), n.blur.snap(i), n.veil.snap(0), n.op.snap(1)) : r && n.blur.snap(i), n.held = !0, t.r = null, t.op.snap(0), t.blur.snap(0), R.swap = null;
-	}
-	function Ve(e, t = !1) {
-		let n = R.old;
-		n.grow.to(1, w.holdRise, e), n.blur.to(Math.max(t ? w.holdLight : w.holdBlur, n.blur.at(e)), w.holdRise, e), n.veil.to(w.veil, w.holdRise, e);
-	}
-	function He(e) {
-		let t = R.old;
-		t.grow.to(0, 120, e), t.blur.to(0, 120, e), t.veil.to(0, 120, e);
-	}
-	let Ue = () => e.matches, We = (e) => I.w.done(e) && I.h.done(e) && I.y.done(e) && I.s.done(e, .002), Ge = (e) => {
-		let t = M(N);
-		return Math.abs(I.w.at(e) - t.w) < 3 && Math.abs(I.h.at(e) - t.h) < 3 && Math.abs(I.y.at(e) - t.y) < 3;
 	};
-	function Ke(e) {
-		let t = performance.now(), n = ie(e);
-		if (pe.t = t, !n || !N || n.sel === N.sel) return;
-		if (V.on || G.on) {
-			F = n.sel;
-			return;
-		}
-		let r = N, i = r.kind === "device" && n.kind === "device" && r.dev === n.dev, a = !Ue() && i && r.folded !== n.folded, o = !Ue() && i && r.angle !== n.angle && r.folded === n.folded;
-		if ((a || o) && !We(t)) {
-			F = n.sel;
-			return;
-		}
-		if (F = null, !P && !O(r) && !O(n) && Math.round(r.w) === Math.round(n.w) && Math.round(r.h) === Math.round(n.h) && r.img) {
-			D.has(n.sel) || D.set(n.sel, r.img), n.img = D.get(n.sel), N = n, hn(n), Wn();
-			return;
-		}
-		let s = D.has(n.sel);
-		N = n, hn(n), Ue() ? Xe(r, n, t) : a ? dt(r, n, t, s) : o ? St(r, n, t, s) : qe(r, n, t, s), s && P.kind !== "size" && (P.arriveAt = t);
-	}
-	function qe(e, t, n, r) {
-		P && P.kind === "fade" && Ze(n), Be(n);
-		let i = {
-			w: I.w.at(n),
-			h: I.h.at(n)
-		}, a = M(t);
-		L(a, n, c(w.frameDur, w.frameBounce), c(w.frameDur, w.outlineBounce), w.outlineLead), be.to(O(t) ? 0 : ae(e) || ae(t) ? 1 : be.b, 140, n), Ce.to(+!!O(t), 220, n), xe.to(se(t) ? w.crease : 0, 220, n), r ? He(n) : Ve(n, !0), P = {
-			kind: "size",
-			from: e,
-			to: t,
-			t0: n,
-			arriveAt: Infinity,
-			arrived: !1,
-			cached: r,
-			swapped: !1,
-			deepAt: r ? 0 : n + w.holdDeepAfter,
-			grow: t.w >= e.w && t.h >= e.h,
-			f0: i,
-			f1: a
-		};
-	}
-	function Je(e) {
-		let { f0: t, f1: n } = P, r = (e, t, n) => Math.abs(t - n) < 1 ? 0 : Math.abs(e - n) / Math.abs(t - n);
-		return Math.max(r(I.w.at(e), t.w, n.w), r(I.h.at(e), t.h, n.h)) < w.swapNear;
-	}
-	function Ye(e) {
-		let t = R.neu, n = P;
-		n.swapped = n.arrived = !0, t.r = n.to.img, t.op.snap(0), t.blur.snap(0), R.swap = {
-			t0: e,
-			dur: w.swapDur
-		};
-	}
-	function Xe(e, t, n) {
-		P && P.kind === "fade" && Ze(n), V.on && vt(n), G.on && wt(n), Be(n), R.old.grow.to(0, 120, n), R.old.blur.to(0, 120, n), R.old.veil.to(0, 120, n);
-		for (let e of [
-			I.w,
-			I.h,
-			I.s,
-			I.y,
-			ye.w,
-			ye.h
-		]) e.snap(e.at(n));
-		J.w.snap(e.w), J.h.snap(e.h), R.old.op.to(w.reducedDim, 160, n), P = {
-			kind: "fade",
-			from: e,
-			to: t,
-			t0: n,
-			arriveAt: Infinity,
-			arrived: !1
-		};
-	}
-	function Ze(e) {
-		let t = P;
-		P = null, ke = null, L(M(t.to)), ze(t.to.img), be.snap(+!!ae(t.to)), Ce.snap(+!!O(t.to)), xe.snap(se(t.to) ? w.crease : 0), z.a.snap(1), z.b.snap(0), Se.to(1, 200, e);
-	}
-	function Qe() {
-		if (!P) return;
-		let e = P.arriveAt;
-		P.arrived = !0;
-		let t = (P.kind === "fold" || P.kind === "unfold") && V.cached || P.kind === "spin" && G.cached;
-		if (P.kind === "spin" || t || P.kind === "size" && P.cached) return;
-		if (P.kind === "fade") {
-			ke = {
-				f: M(P.to),
-				st: P.to,
-				layers: Te(P.to.img)
-			}, z.b.snap(0), z.b.to(1, w.reducedFade, e), z.a.to(0, w.reducedFade, e), Se.to(0, 120, e);
-			return;
-		}
-		let n = R.neu;
-		P.deepAt ? (P.deepAt = 0, n.r = P.to.img, n.op.snap(0), n.op.to(1, w.fastReveal, e), n.blur.snap(R.old.blur.at(e)), n.blur.to(0, w.fastReveal, e)) : (n.r = P.to.img, n.op.snap(0), n.op.to(1, w.revealFade, e), n.blur.snap(Math.max(R.old.blur.at(e), R.old.blur.b)), n.blur.to(P.kind === "size" && !Ge(e) ? w.moveBlur : 0, w.revealDur, e));
-	}
-	let V = { on: !1 };
-	function $e(e, t) {
-		let n = V.d[e ? "cover" : "open"], r = m(V.d);
-		return V.d.look[e ? "cover" : "open"].cams.map((e) => y(n.w, n.h, r, e, t, r));
-	}
-	let H = C("rig"), U = (e, t) => e.querySelector(t), et = (e, t) => e.querySelector(t), tt = (e) => ({
-		el: e,
-		cam: U(e, ".cam"),
-		cams: Ie(e),
-		old: U(e, ".old"),
-		veil: U(e, ".veil"),
-		neu: U(e, ".neu"),
-		cast: U(e, ".cast"),
-		blurs: [],
-		dark: null
-	}), nt = (e) => {
-		let t = document.createElement("div"), n = document.createElement("div"), r = document.createElement("div");
-		return t.className = "gloss", n.className = "rim", r.className = "home", e.prepend(t, n), e.append(r), {
-			body: e,
-			gloss: t,
-			home: r,
-			clip: et(e, ".clip"),
-			ring: et(e, ".ring"),
-			lit: et(e, ".lit"),
-			fit: []
-		};
-	}, rt = (e) => ({
-		el: e,
-		front: nt(U(e, ".front")),
-		back: nt(U(e, ".rear")),
-		strips: []
-	}), it = U(H, ".space"), at = rt(U(H, ".slab.base")), ot = rt(U(H, ".slab.leaf")), W = {
-		lift: U(H, ".lift"),
-		space: it,
-		plate: U(H, ".plate"),
-		spine: U(H, ".spine"),
-		crease: U(H, ".crease"),
-		tTop: U(H, ".r-top"),
-		tBot: U(H, ".r-bot"),
-		base: at,
-		leaf: ot,
-		btns: Array.from({ length: 5 }, () => {
-			let e = document.createElement("div");
-			return e.className = "btn", it.append(e), e;
-		}),
-		F: {
-			inner: tt(ot.front.clip),
-			outer: tt(ot.back.clip),
-			base: tt(at.front.clip)
-		}
+	let r = I(t);
+	return {
+		w: r.includes("w") ? Math.max(0, 178 - n) : 0,
+		h: r.includes("h") ? 32 : 0
 	};
-	for (let [e, t] of [[W.leaf.front, W.F.inner], [W.leaf.back, W.F.outer]]) t.blurs = Array.from({ length: 4 }, () => {
-		let e = document.createElement("div");
-		return e.className = "smear", e.innerHTML = "<div class=\"unstretch\"><img class=\"ly\" alt=\"\"></div>", t.el.insertBefore(e, t.cam), {
-			el: e,
-			inv: U(e, ".unstretch"),
-			img: U(e, "img")
-		};
-	}), t.dark = document.createElement("div"), t.dark.className = "smear", t.el.insertBefore(t.dark, t.cam), e.fit.push(...t.blurs.map((e) => e.el), t.dark);
-	W.base.front.fit.push(W.F.base.cast);
-	let st = /* @__PURE__ */ new Map(), ct = null;
-	function lt(e, t, n) {
-		let r = st.get(e);
-		(r || !ct || ct.has(e)) && (r || (r = {
-			w0: Math.max(t, 1),
-			h0: Math.max(n, 1),
-			k: [1, 1]
-		}, st.set(e, r), Object.assign(e.style, {
-			width: K(r.w0),
-			height: K(r.h0)
-		})), r.k = [t / r.w0, n / r.h0], e.style.transform = `scale(${r.k[0].toFixed(5)}, ${r.k[1].toFixed(5)})`);
-	}
-	function ut() {
-		W.F.base.cast.style.background = `linear-gradient(90deg, ${s(1)}, ${s(.35)} 45%, ${s(0)} 90%)`;
-		for (let [e, t] of [[W.F.inner, "to left"], [W.F.outer, "to right"]]) e.dark.style.background = `linear-gradient(${t}, ${[
-			0,
-			.2,
-			.4,
-			.6,
-			.8,
-			1
-		].map((e) => `${s(Math.min(1, 2 * Math.max(0, (e - .2) / .8) ** 1.35) * w.foldDark)} ${e * 100}%`).join(", ")})`, e.blurs.forEach(({ el: e }, n) => {
-			e.style.webkitMaskImage = e.style.maskImage = `linear-gradient(${t}, transparent ${((n + .5) / 4 * 100).toFixed(1)}%, var(--device-shade) ${((n + 1) / 4 * 100).toFixed(1)}%)`;
-		});
-	}
-	function dt(e, t, r, i) {
-		let a = n[t.dev], o = t.folded ? "fold" : "unfold", s = a.open.hinge, c = M(e), l = M(t);
-		if (Be(r), i) {
-			let e = R.old;
-			e.grow.snap(0), e.blur.snap(0), e.veil.snap(0);
-		}
-		let u = R.old.blur.at(r), d = h(a, "open"), f = h(a, "cover"), p = (e) => e.cx - d.w * e.s / 2 + s * e.s, g = (e) => e.cx - f.w * e.s / 2, _ = {
-			w: t.w,
-			h: t.h
-		}, v = (t.angle - e.angle + 540) % 360 - 180;
-		Object.assign(V, {
-			on: !0,
-			turn: Math.abs(v) === 180 ? 0 : v,
-			q: m(a) ? 90 : 0,
-			z: parseFloat(getComputedStyle(H).getPropertyValue("--z")) || 1,
-			t0: r,
-			dur: w.foldDur,
-			dir: o,
-			d: a,
-			restBlur: u,
-			oldSpec: R.old.r,
-			from: e,
-			to: t,
-			f0: c,
-			f1: l,
-			cached: i,
-			s0: c.s,
-			s1: l.s,
-			sRef: Math.max(c.s, l.s),
-			half: {
-				u: s,
-				v: d.h
-			},
-			cover: {
-				u: f.w,
-				v: f.h
-			},
-			hx0: o === "fold" ? p(c) : g(c),
-			hx1: o === "fold" ? g(l) : p(l),
-			plan: o === "fold" ? {
-				inner: {
-					role: "crisp",
-					du: 0
-				},
-				base: {
-					role: "crisp",
-					du: s
-				},
-				outer: {
-					role: "hold",
-					du: 0,
-					neu: !0,
-					frame: _
-				}
+};
+function J(e, t) {
+	let n = He(e, t), r = We(e, t, n.side), i = (e, t, n) => {
+		let [r, i] = P(e);
+		return Math.min(t / (e.w + r), n / (e.h + i), 2);
+	}, a = (n, r) => Math.min(i(e.ORIGINAL, n, r), i(t, n, r)), o = n.maxW, s = n.maxH, c = 0, l = a(o, s), u = (s - (t.h + P(t)[1]) * l) / 2, d = Ue(e, t), f = u < Math.max(r.h, d);
+	r.w && (o - (t.w + P(t)[0]) * l) / 2 < r.w && (o -= 2 * r.w), r.h && f && (s -= r.h, c = r.h), d && f && (s -= d), l = a(o, s);
+	let p = t.h * l, m = P(t)[1] * l;
+	return {
+		s: l,
+		w: t.w * l,
+		h: p,
+		cx: n.cx,
+		y: n.top + c + m / 2 + Math.max(0, (s - p - m) / 2)
+	};
+}
+function Y(e, t, n = 0, r, i = r, a = 0) {
+	let o = w.gap;
+	for (let [i, o] of [
+		[e.V.w, t.w],
+		[e.V.h, t.h],
+		[e.V.s, t.s],
+		[e.V.y, t.y]
+	]) r ? i.set(o, r, n, a) : i.snap(o);
+	for (let [r, a] of [[e.O.w, t.w + 2 * o], [e.O.h, t.h + 2 * o]]) i ? r.set(a, i, n) : r.snap(a);
+}
+function Ge(e, t, n) {
+	let r = e.clock.t;
+	e.look.a = n || !e.look.b ? t : X(e, r), e.look.b = t, e.look.t0 = n ? -1e9 : r;
+}
+function X(t, n) {
+	let a = t.look.a, s = t.look.b;
+	if (!s) return e.s26.look.open;
+	let c = o(i((n - t.look.t0) / t.look.dur, 0, 1)), l = (e, t) => r(e, t, c);
+	return {
+		tone: s.tone,
+		bezel: l(a.bezel, s.bezel),
+		ends: l(M(a), M(s)),
+		home: l(Number(a.home) || 0, Number(s.home) || 0),
+		radius: s.radius.map((e, t) => l(a.radius[t], e)),
+		cams: ne(a.cams, s.cams, c, l),
+		btn: s.btn.map((e, t) => {
+			let n = a.btn[t];
+			return n.side === e.side ? {
+				side: e.side,
+				at: l(n.at, e.at),
+				len: l(n.len, e.len)
+			} : c < .5 ? {
+				side: n.side,
+				at: n.at,
+				len: n.len * (1 - 2 * c)
 			} : {
-				outer: {
-					role: "crisp",
-					du: 0
-				},
-				inner: {
-					role: "hold",
-					du: 0,
-					neu: !0,
-					frame: _
-				},
-				base: {
-					role: "hold",
-					du: s,
-					neu: !0,
-					frame: _
-				}
-			}
-		}), V.dip = ht(), st.clear(), ut();
-		let y = o === "fold" ? 0 : 1, b = /* @__PURE__ */ new Map([
-			[W.base.front, y],
-			[W.leaf.front, y],
-			[W.base.back, y],
-			[W.leaf.back, 1 - y]
-		]);
-		for (let [e, t] of b) e.gloss.style.setProperty("--turn", ft(t) + "deg");
-		let x = [...b].filter(([, e]) => e === 1).map(([e]) => e);
-		ct = new Set(x.flatMap((e) => [e.gloss, ...e.fit])), Gt(r + V.dur * 1e3), ct = null, i || Ve(r), xe.snap(0), J.w.snap(e.w), J.h.snap(e.h), Se.to(0, 120, r), P = {
-			kind: o,
-			from: e,
-			to: t,
-			t0: r,
-			arriveAt: Infinity,
-			arrived: !1
-		};
-	}
-	let ft = (e) => V.from.angle + V.turn * e + V.q, pt = (e) => {
-		let t = e.bezel * w.shellK, n = A(e) * w.shellK;
-		return m(V.d) ? [n, t] : [t, n];
-	};
-	function mt(e, [t, n]) {
-		let i = (V.dir === "fold" ? e : 1 - e) * 180, o = r(V.s0, V.s1, e), s = r(V.f0.y + V.f0.h / 2, V.f1.y + V.f1.h / 2, e), c = ft(e), l = i * Math.PI / 180, u = c * Math.PI / 180, d = i / 180, f = r(V.half.u, V.cover.u, d), p = r(V.half.v, V.cover.v, d), m = r(V.hx0, V.hx1, e), h = he(), g = (m - h.cx) / o, _ = w.perspective / (w.perspective - (f + V.d.plate.thickness) * Math.sin(l) * o), v = -f * Math.cos(l) * _, y = r(V.half.u, Math.min(V.half.u, V.cover.u), a(w.shrinkFrom, 180, i)), b = [g + Math.min(0, v) - t, g + Math.max(y, v) + t], x = [-p * _ / 2 - n, p * _ / 2 + n], ee = b.flatMap((e) => x.map((t) => [e * Math.cos(u) - t * Math.sin(u), e * Math.sin(u) + t * Math.cos(u)])), S = (e) => Math.max(...ee.map((t) => Math.abs(t[e])));
-		return {
-			th: i,
-			baseS: o,
-			cy: s,
-			angle: c,
-			v: p,
-			hx: m,
-			r: h,
-			need: Math.min(1, h.maxW / (2 * S(0) * o), h.maxH / (2 * S(1) * o))
-		};
-	}
-	function ht() {
-		let [e, t] = pt(V.d.look.open), [n, r] = pt(V.d.look.cover), i = [Math.max(e, n), Math.max(t, r)], o = [];
-		for (let e = 1; e < 48; e++) {
-			let t = e / 48, n = 1 - mt(t, i).need;
-			n > 0 && o.push([t, n + .004]);
-		}
-		let s = (e, t) => e <= t ? a(0, t, e) : 1 - a(t, 1, e);
-		return (e) => o.reduce((t, [n, r]) => Math.max(t, r * s(e, n)), 0);
-	}
-	function gt(e) {
-		let t = (e - V.t0) / 1e3, n = Math.max(.05, V.dur), r = fe()(i(t / n, 0, 1)), { th: a, baseS: o, cy: s, angle: c, v: l, hx: u, r: d } = mt(r, pt(Ne(e))), f = o * (1 - V.dip(r));
-		return {
-			t,
-			th: a,
-			p: r,
-			s: f,
-			hx: d.cx + (u - d.cx) * f / o,
-			cy: s,
-			angle: c,
-			top: s - l * f / 2,
-			settled: t >= n
-		};
-	}
-	let _t = (e) => i(1 - e / 24, 0, 1);
-	function vt(e) {
-		let t = w.crease * _t(gt(e).th);
-		V.on = !1, V.cached && ze(N.img), L(M(N)), be.snap(+!!ae(N)), Ce.snap(+!!O(N)), xe.snap(se(N) ? t : 0), se(N) && xe.to(w.crease, 240, e), Se.to(1, 200, e);
-	}
-	let G = { on: !1 }, yt = "", bt = null, xt = () => {
-		let e = `${w.rotLift},${w.rotLand}`;
-		return e !== yt && (yt = e, bt = u(w.rotLift, 0, w.rotLand, 1)), bt;
-	};
-	function St(e, t, n, r) {
-		Be(n), r ? He(n) : Ve(n);
-		let i = (t.angle - e.angle + 540) % 360 - 180;
-		Object.assign(G, {
-			on: !0,
-			t0: n,
-			dur: w.rotDur,
-			from: e,
-			to: t,
-			f0: M(e),
-			f1: M(t),
-			dir: i / 90,
-			cached: r
-		}), J.w.snap(e.w), J.h.snap(e.h), Se.to(0, 120, n), P = {
-			kind: "spin",
-			from: e,
-			to: t,
-			t0: n,
-			arriveAt: Infinity,
-			arrived: !1
-		};
-	}
-	function Ct(e) {
-		let t = (e - G.t0) / 1e3, n = Math.max(.05, G.dur);
-		return {
-			p: xt()(i(t / n, 0, 1)),
-			done: t >= n
-		};
-	}
-	function wt(e) {
-		let t = G.to, n = G.cached;
-		G.on = !1, q.el.style.transform = "", q.el.style.removeProperty("--spin-s");
-		for (let e of [q.l0, q.l1]) e.style.transform = "";
-		L(M(t)), xe.snap(se(t) ? w.crease : 0), Se.to(1, 200, e), n ? (ze(t.img), P?.kind === "spin" && (P = null)) : P?.kind === "spin" && Object.assign(P, {
-			kind: "size",
-			cached: !1,
-			arrived: !1,
-			arriveAt: D.has(t.sel) ? e : Infinity
-		});
-	}
-	let Tt = (e, t, n) => {
-		if (!n) return {
-			w: e.dpW,
-			h: e.dpH
-		};
-		let r = Math.max(t.w / e.dpW, t.h / e.dpH);
-		return {
-			w: e.dpW * r,
-			h: e.dpH * r
-		};
-	};
-	function Et(e, t, n, r, i, a, o, s = 0) {
-		!t || a <= .001 ? e.style.opacity = "0" : (e.dataset.u !== t.url && (e.src = t.url, e.dataset.u = t.url), e.style.left = n + "px", e.style.top = s + "px", e.style.width = r + "px", e.style.height = i + "px", e.style.opacity = String(a), e.style.filter = o > .05 ? `blur(${o.toFixed(2)}px)` : "none");
-	}
-	function Dt(e, t, n, r, i, a, o, s = 0, c = 1) {
-		let l = h(V.d, r ? "cover" : "open");
-		Et(e, t, (l.w - n.w) * a / 2 - i * a, n.w * a, n.h * a, c, s, (l.h - n.h) * a / 2), e.style.transform = `rotate(${-gt(o).angle}deg)`;
-	}
-	function Ot(e, t, n, r, i) {
-		let a = R.old, o = R.neu, s = V.oldSpec, c = t === V.plan.outer, l = (e, a, o, s, l = 1) => Dt(e, a, o, c, t.du, n, r, s * i, l);
-		if (t.role === "crisp") l(e.old, s, {
-			w: s.dpW,
-			h: s.dpH
-		}, V.restBlur), e.veil.style.opacity = "0";
-		else if (V.cached) {
-			let t = V.to.img;
-			l(e.old, t, {
-				w: t.dpW,
-				h: t.dpH
-			}, 0), e.veil.style.opacity = "0", e.neu.style.opacity = "0", e.el.style.background = t.edge;
-			return;
-		} else l(e.old, s, Tt(s, t.frame, a.grow.b > 0), a.blur.at(r)), e.veil.style.opacity = String(a.veil.at(r));
-		t.neu && o.r ? l(e.neu, o.r, {
-			w: o.r.dpW,
-			h: o.r.dpH
-		}, o.blur.at(r), o.op.at(r)) : e.neu.style.opacity = "0", e.el.style.background = (o.r && o.op.at(r) > .5 && t.neu ? o.r : s).edge;
-	}
-	function kt(e, t) {
-		let { angle: n, cy: r } = gt(t);
-		e.style.transformOrigin = `${he().cx}px ${r}px`, e.style.transform = `rotate(${n}deg)`;
-	}
-	let At = (() => {
-		let e = w.lightAz * Math.PI / 180, t = w.lightEl * Math.PI / 180;
-		return [
-			Math.cos(t) * Math.cos(e),
-			-Math.cos(t) * Math.sin(e),
-			Math.sin(t)
-		];
-	})(), jt = (e) => i(w.ambient + (1 - w.ambient) * Math.max(0, e[0] * At[0] + e[1] * At[1] + e[2] * At[2]) / At[2], 0, 1.5), Mt = (e) => [
-		1,
-		3,
-		5
-	].map((t) => parseInt(e.slice(t, t + 2), 16)), Nt = (e, t) => `rgb(${e.map((e) => Math.round(t <= 1 ? e * t : e + (255 - e) * (t - 1) * .5)).join(" ")})`, Pt = (e, t) => {
-		let n = Nt(e, t);
-		return `linear-gradient(90deg, ${`color-mix(in srgb, ${n}, var(--device-veil) 18%)`} 0, ${n} 10%, ${n} 90%, ${`color-mix(in srgb, ${n}, var(--device-shade) 20%)`} 100%)`;
-	}, Ft = (e) => e <= 1 ? ["var(--device-shade)", w.screenDim * (1 - e)] : ["var(--device-veil)", (e - 1) * .25], It = (e) => {
-		let t = [], n = 0, r = 0;
-		for (let i = 0; i < e.length; i++) {
-			let a = e[i];
-			a === "(" ? n++ : a === ")" ? n-- : a === "," && !n && (t.push(e.slice(r, i)), r = i + 1);
-		}
-		return [...t, e.slice(r)].filter((e) => e.trim());
-	}, K = (e) => e.toFixed(2) + "px", Lt = (e) => e.map(K).join(" ");
-	function Rt([e, t, n, r], [i, a, o, s], c) {
-		let l = [], u = 90 / c, d = (e) => e * Math.PI / 180, f = (e) => 2 * e * Math.tan(d(u) / 2), p = (e, t, n, r) => {
-			for (let i = 0; i < c; i++) {
-				let a = r + (i + .5) * u;
-				l.push({
-					x: e + n * Math.cos(d(a)),
-					y: t + n * Math.sin(d(a)),
-					a,
-					len: f(n)
-				});
-			}
-		};
-		return l.push({
-			x: (e + i + n - a) / 2,
-			y: t,
-			a: 270,
-			len: n - a - e - i
-		}), p(n - a, t + a, a, 270), l.push({
-			x: n,
-			y: (t + a + r - o) / 2,
-			a: 0,
-			len: r - o - t - a
-		}), p(n - o, r - o, o, 0), l.push({
-			x: (e + s + n - o) / 2,
-			y: r,
-			a: 90,
-			len: n - o - e - s
-		}), p(e + s, r - s, s, 90), l.push({
-			x: e,
-			y: (t + i + r - s) / 2,
-			a: 180,
-			len: r - s - t - i
-		}), p(e + i, t + i, i, 180), l;
-	}
-	function zt(e, { body: t, span: n, bodyR: r, scr: a, scrR: o, backScrR: s, T: c, normal: l, tone: u, hk: d, hingeLeft: f, u: p }) {
-		let [m, h, g, _] = t, v = g - m, y = _ - h, b = ((e) => e.map((e) => i(e, 0, Math.min(v, y) / 2)))(r), x = (e) => [
-			e[1],
-			e[0],
-			e[3],
-			e[2]
-		];
-		for (let [t, r] of [[e.front, !1], [e.back, !0]]) {
-			let e = r ? g - a[2] : a[0] - m, i = r ? x(s || o) : o, _ = a[2] - a[0], ee = a[3] - a[1];
-			if (Object.assign(t.body.style, {
-				left: K(m),
-				top: K(h),
-				width: K(v),
-				height: K(y),
-				backgroundColor: Nt(u, 1),
-				borderRadius: Lt(r ? x(b) : b),
-				transform: r ? `translateZ(${K(-c)}) rotateY(180deg)` : "none"
-			}), t.clip && Object.assign(t.clip.style, {
-				left: K(e),
-				top: K(a[1] - h),
-				width: K(_),
-				height: K(ee),
-				borderRadius: Lt(i)
-			}), t.ring) {
-				let n = 2 * p / V.z, o = n * d, [s, c] = f ? [o, n] : [n, o], [l, u] = r ? [c, s] : [s, c];
-				Object.assign(t.ring.style, {
-					left: K(e - l),
-					top: K(a[1] - h - n),
-					width: K(_ + l + u),
-					height: K(ee + 2 * n),
-					borderWidth: `${K(n)} ${K(u)} ${K(n)} ${K(l)}`,
-					borderRadius: Lt(i.map((e) => e + n))
-				});
-			}
-			if (t.lit) {
-				let [e, n] = Ft(jt(l([
-					0,
-					0,
-					r ? -1 : 1
-				])));
-				t.lit.style.background = e, t.lit.style.opacity = n.toFixed(4);
-			}
-			t.gloss.style.left = r ? "0px" : K(n[0] - m), lt(t.gloss, r ? v : n[1] - n[0], y);
-			for (let e of t.fit) lt(e, _, ee);
-		}
-		let ee = Rt(t, b, w.arcSegs);
-		for (; e.strips.length < ee.length;) {
-			let t = document.createElement("div");
-			t.className = "strip", e.el.append(t), e.strips.push(t);
-		}
-		e.strips.forEach((e, t) => {
-			let n = ee[t];
-			if (!n || n.len < .05 || c < .05) {
-				e.style.display = "none";
-				return;
-			}
-			let r = n.len + .6 * p, i = n.a * Math.PI / 180;
-			Object.assign(e.style, {
-				display: "",
-				width: K(c),
-				height: K(r),
-				marginLeft: K(-c / 2),
-				marginTop: K(-r / 2),
-				transform: `translate3d(${K(n.x)},${K(n.y)},${K(-c / 2)}) rotateZ(${n.a.toFixed(3)}deg) rotateY(90deg)`
-			}), e.style.background = Pt(u, jt(l([
-				Math.cos(i),
-				Math.sin(i),
-				0
-			])));
-		});
-	}
-	function Bt(e, t, n) {
-		let r = V.d.plate.blur && t > .01, i = Number(e.neu.style.opacity) > .5 ? e.neu : e.old;
-		e.blurs.forEach(({ el: e, inv: a, img: o }, s) => {
-			let c = w.foldBlur * t * ((s + 1) / 4) ** 1.35 * n, l = parseFloat((/blur\(([\d.]+)px\)/.exec(i.style.filter) || ["0", "0"])[1]);
-			if (e.style.opacity = r && c > .2 ? "1" : "0", !r || c <= .2) return;
-			o.src !== i.src && (o.src = i.src);
-			let [u, d] = st.get(e).k;
-			a.style.transform = `scale(${(1 / u).toFixed(5)}, ${(1 / d).toFixed(5)})`, Object.assign(o.style, {
-				left: i.style.left,
-				top: i.style.top,
-				width: i.style.width,
-				height: i.style.height,
-				transform: i.style.transform,
-				filter: `blur(${Math.max(c, l).toFixed(2)}px)`
-			});
-		}), e.dark.style.opacity = r ? t.toFixed(4) : "0";
-	}
-	function Vt({ hu: e, T0: t, Bv: n, t: i, s: a, k: o, sn: s, cs: c, lift: l, tone: u, u: d }) {
-		let f = V.d, p = f.open.hinge, m = 3 * d;
-		f.look.open.btn.forEach((h, g) => {
-			let _ = f.look.cover.btn[g], v = h.at < p, y = r(v ? p - h.at - h.len : h.at - p, _.at, v ? o : 0), b = r(v ? p - h.at : h.at + h.len - p, _.at + _.len, v ? o : 0), [x, ee] = v ? [-b * c, -y * c].sort((e, t) => e - t) : [y, b], S = (y + b) / 2;
-			Object.assign(W.btns[g].style, {
-				left: K(e + x * a),
-				top: K(h.side > 0 ? t - i - m + .5 * d : t + n + i - .5 * d),
-				width: K((ee - x) * a),
-				height: K(m),
-				backgroundColor: u,
-				opacity: +((v ? r(h.len, _.len, o) : h.len) * a > .5 * d),
-				transform: `translateZ(${K(l + (v ? S * a * s : 0))})`
-			});
-		});
-	}
-	let Ht = null, Ut = () => Ht ??= It(getComputedStyle(H).getPropertyValue("--elevation-2")).map((e) => {
-		let t = /^\s*(-?[\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+([\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+(.+)$/.exec(e);
-		return t ? [
-			+t[1],
-			+t[2],
-			+t[3],
-			+t[4],
-			t[5].trim()
-		] : null;
-	}).filter((e) => e !== null), Wt = (e, t, n) => e.map(([e, r, i, a, o]) => `${K((e * Math.cos(t) + r * Math.sin(t)) * n)} ${K((-e * Math.sin(t) + r * Math.cos(t)) * n)} ${K(i * n)} ${K(a * n)} ${o}`).join(", ");
-	function Gt(e) {
-		let { th: t, s: n, hx: i, top: o, cy: c, angle: l } = gt(e), u = V.sRef, d = n / u, f = 1 / d, h = c - (c - o) * u / n, g = t / 180, _ = t * Math.PI / 180, v = Math.sin(_), y = Math.cos(_), b = V.d, x = Ne(e), ee = x.bezel * w.shellK * u, [S, C] = pt(x).map((e) => e * u), T = Mt(x.tone), te = r(V.half.u, V.cover.u, g) * u, ne = r(V.half.v, V.cover.v, g) * u, re = r(V.half.u, Math.min(V.half.u, V.cover.u), a(w.shrinkFrom, 180, t)) * u, E = ne, D = b.plate.thickness * u, ie = b.plate.gap * u / 2, ae = (D + 2 * ie) * (1 - y) / 2, O = a(20, 160, t), oe = S * O, se = m(b) ? 3 : 0, k = p(b.look.open.radius, se).map((e) => e * u), A = p(b.look.cover.radius, se).map((e) => e * u), ce = a(60, 120, t), j = (e, t) => r(e, t, ce) + ee, le = [
-			j(k[0], A[0]) * O,
-			j(k[1], A[1]),
-			j(k[2], A[2]),
-			j(k[3], A[3]) * O
-		], ue = [
-			j(k[0], A[1]),
-			j(k[1], A[0]) * O,
-			j(k[2], A[3]) * O,
-			j(k[3], A[2])
-		], de = le[1], fe = le[0], pe = `${K(i)} ${K(c)}`, me = d.toFixed(5);
-		Object.assign(W.lift.style, {
-			perspective: w.perspective + "px",
-			perspectiveOrigin: pe
-		}), Object.assign(W.space.style, {
-			transformOrigin: pe,
-			transform: `scale3d(${me},${me},${me}) translateZ(${K(-ae)})`
-		});
-		let he = l * Math.PI / 180, ge = Math.cos(he), _e = Math.sin(he), ve = (e) => [
-			e[0] * ge - e[1] * _e,
-			e[0] * _e + e[1] * ge,
-			e[2]
-		], M = (e) => [
-			e[0] * y + e[2] * v,
-			e[1],
-			-e[0] * v + e[2] * y
-		];
-		for (let e of [W.base, W.leaf]) Object.assign(e.el.style, {
-			left: K(i),
-			top: K(h)
-		});
-		W.leaf.el.style.transform = `translateZ(${K(ie)}) rotateY(${t.toFixed(3)}deg) translateZ(${K(-ie)})`;
-		let N = [-te - S, re + S];
-		zt(W.base, {
-			body: [
-				-oe,
-				-C,
-				re + S,
-				E + C
-			],
-			span: N,
-			bodyR: le,
-			scr: [
-				0,
-				0,
-				re,
-				E
-			],
-			scrR: [
-				k[0] * O,
-				k[1],
-				k[2],
-				k[3] * O
-			],
-			T: D,
-			normal: ve,
-			tone: T,
-			hk: O,
-			hingeLeft: !0,
-			u: f
-		}), zt(W.leaf, {
-			body: [
-				-te - S,
-				-C,
-				oe,
-				ne + C
-			],
-			span: N,
-			bodyR: ue,
-			scr: [
-				-te,
-				0,
-				0,
-				ne
-			],
-			scrR: [
-				k[0],
-				k[1] * O,
-				k[2] * O,
-				k[3]
-			],
-			backScrR: [
-				A[1],
-				A[0] * O,
-				A[3] * O,
-				A[2]
-			],
-			T: D,
-			normal: (e) => ve(M(e)),
-			tone: T,
-			hk: O,
-			hingeLeft: !1,
-			u: f
-		}), Ot(W.F.base, V.plan.base, u, e, f), Ot(W.F.inner, V.plan.inner, u, e, f), Ot(W.F.outer, V.plan.outer, u, e, f), Bt(W.F.inner, t <= 90 ? v : 0, f), Bt(W.F.outer, t > 90 ? v : 0, f);
-		let P = $e(!1, u), F = b.open.hinge * u;
-		Le(W.F.outer.cams, $e(!0, u), 0, 0, 1, l), Le(W.F.inner.cams, P, 0, 0, 1, l), Le(W.F.base.cams, P, -F, 0, 1, l);
-		let I = (e) => {
-			let t = b[e ? "cover" : "open"], n = Number(b.look[e ? "cover" : "open"].home) || 0;
-			return [Pe(x, t.w, t.h, m(b), u, m(b), n), n];
-		}, [ye, be] = I(!1), [xe, Se] = I(!0);
-		Fe(W.base.front.home, ye, oe - F, C, be), Fe(W.leaf.front.home, ye, S, C, be), Fe(W.leaf.back.home, xe, oe, C, Se);
-		let Ce = w.shade * (.85 * a(90, 180, t) + .25 * v);
-		W.F.base.cast.style.opacity = Ce.toFixed(4);
-		let L = -oe, Te = -D, R = -D - ie, Ee = oe * y + R * v, De = ie - oe * v + R * y, Oe = Math.hypot(Ee - L, De - Te), z = Math.atan2(-(De - Te), Ee - L), ke = E + 2 * C;
-		Object.assign(W.spine.style, {
-			display: Oe > .3 && D > .05 ? "" : "none",
-			left: K(i),
-			top: K(h - C),
-			width: K(Oe + .6 * f),
-			height: K(ke),
-			marginLeft: K(-(Oe + .6 * f) / 2),
-			borderRadius: `${K(Math.min(fe, (Oe + .6 * f) / 2))} / ${K(fe)}`,
-			transform: `translate3d(${K((L + Ee) / 2)},0,${K((Te + De) / 2)}) rotateY(${(z * 180 / Math.PI).toFixed(3)}deg)`
-		}), W.spine.style.background = Pt(T, jt(ve([
-			Math.sin(z),
-			0,
-			Math.cos(z)
-		])));
-		let B = i - te * y, Ae = Math.min(i - oe, B - S), je = Math.max(i + re + S, B + S);
-		Object.assign(W.plate.style, {
-			left: K(Ae),
-			top: K(h - C),
-			width: K(je - Ae),
-			height: K(E + 2 * C),
-			borderRadius: K(de),
-			transform: `translateZ(${K(-D - f)})`,
-			boxShadow: Wt([...Ut(), [
-				0,
-				10 + 18 * v,
-				30 + 34 * v,
-				0,
-				s(.05 * v)
-			]], he, f)
-		}), m(b) ? Vt({
-			hu: i,
-			T0: h,
-			Bv: E,
-			t: C,
-			s: u,
-			k: g,
-			sn: v,
-			cs: y,
-			lift: ae,
-			tone: x.tone,
-			u: f
-		}) : x.btn.forEach((e, t) => {
-			Object.assign(W.btns[t].style, {
-				left: K(Math.max(i + re, B) + S - .5 * f),
-				top: K(h + e.at * u),
-				width: K(3 * f),
-				height: K(e.len * u),
-				backgroundColor: x.tone,
-				opacity: +(e.len * u > .5 * f),
-				transform: `translateZ(${K(ae)})`
-			});
-		});
-		let Me = _t(t), Ie = w.crease * Me;
-		Object.assign(W.crease.style, {
-			left: K(i),
-			top: K(h),
-			width: K(14 * f),
-			marginLeft: K(-7 * f),
-			height: K(E),
-			opacity: Ie * we.at(e)
-		});
-		let Re = i - (ge + _e > 0 ? 0 : f);
-		Object.assign(W.tTop.style, {
-			left: K(Re),
-			top: K(h - C),
-			width: K(f),
-			height: K(C),
-			opacity: Me
-		}), Object.assign(W.tBot.style, {
-			left: K(Re),
-			top: K(h + E),
-			width: K(f),
-			height: K(C),
-			opacity: Me
-		});
-	}
-	let Kt = (e) => ({
-		el: e,
-		shell: U(e, ".shell"),
-		btns: [...e.querySelectorAll(".btn")],
-		cams: Ie(e),
-		home: U(e, ".home"),
-		outline: U(e, ".outline"),
-		stage: U(e, ".stage"),
-		l0: U(e, ".l0"),
-		l1: U(e, ".l1"),
-		veil: U(e, ".veil"),
-		crease: U(e, ".crease"),
-		tTop: U(e, ".t-top"),
-		tBot: U(e, ".t-bot")
-	}), q = Kt(C("ua")), qt = Kt(C("ub"));
-	function Jt(e, t, n, i, o) {
-		let s = i.old, c = i.neu, l = i.swap, u = l ? Ee(l, o) : 0, d = l ? a(0, 1, u) : c.op.at(o), f = l ? Oe(u) : c.blur.at(o), p = Math.max(s.blur.at(o), l ? Oe(u) : 0);
-		if (e.l0.style.transform = e.l1.style.transform = "", s.r) {
-			let i = s.held ? s.grow.at(o) : 0, a = Tt(s.r, {
-				w: t.w / n,
-				h: t.h / n
-			}, i > 0), c = r(s.r.dpW, a.w, i) * n, l = r(s.r.dpH, a.h, i) * n;
-			Et(e.l0, s.r, (t.w - a.w * n) / 2 * i, c, l, s.op.at(o), p, (t.h - a.h * n) / 2 * i);
-		} else e.l0.style.opacity = "0";
-		e.veil.style.opacity = String(s.veil.at(o)), c.r ? Et(e.l1, c.r, 0, c.r.dpW * n, c.r.dpH * n, d, f) : e.l1.style.opacity = "0";
-		let m = c.r ? l ? a(0, 1, u) : d : 0;
-		return m > 0 && m < 1 && (e.l0.style.transformOrigin = e.l1.style.transformOrigin = "50% 50%", e.l0.style.transform = `scale(${(1 + w.swapZoom * m).toFixed(4)})`, e.l1.style.transform = `scale(${(1 - w.swapZoom * (1 - m)).toFixed(4)})`), c.r && d > .5 ? c.r : s.r;
-	}
-	function Yt(e, t, n, i) {
-		let { p: o } = Ct(i), s = G.dir * 90 * o, c = s * Math.PI / 180, l = R.old, u = (e, n, r, i, a, o = 0, c = 0) => {
-			Et(e, n, (t.w - r.w) / 2 + o, r.w, r.h, i, a, (t.h - r.h) / 2 + c), e.style.transform = `rotate(${(-s).toFixed(3)}deg)`;
-		};
-		if (e.veil.style.opacity = String(l.veil.at(i)), !l.r) return e.l0.style.opacity = e.l1.style.opacity = "0", null;
-		if (!G.cached || !G.to.img) {
-			let a = {
-				w: (Math.abs(t.w * Math.cos(c)) + Math.abs(t.h * Math.sin(c))) / n,
-				h: (Math.abs(t.w * Math.sin(c)) + Math.abs(t.h * Math.cos(c))) / n
-			}, o = Tt(l.r, a, !0), s = l.grow.at(i), d = {
-				w: r(l.r.dpW, o.w, s) * n,
-				h: r(l.r.dpH, o.h, s) * n
+				side: e.side,
+				at: e.at,
+				len: e.len * (2 * c - 1)
 			};
-			return u(e.l0, l.r, d, 1, l.blur.at(i), (l.r.dpW * n - t.w) / 2 * (1 - s), (l.r.dpH * n - t.h) / 2 * (1 - s)), e.l1.style.opacity = "0", l.r;
-		}
-		let d = a(w.spinSwapA, w.spinSwapB, o), f = De(d), p = l.r, m = G.to.img;
-		return u(e.l0, p, {
-			w: p.dpW * n,
-			h: p.dpH * n
-		}, 1, f), u(e.l1, m, {
-			w: m.dpW * n,
-			h: m.dpH * n
-		}, d, f), d > .5 ? m : p;
+		})
+	};
+}
+function Ke(e, t) {
+	let n = q(e, t), r = J(e, n);
+	e.cur = n, e.tr = null, e.queued = null, e.rig.on = !1, e.spin.on = !1, e.fadeB = null, e.UA.el.style.transform = "", e.UA.el.style.removeProperty("--spin-s"), Y(e, r), e.rulerOp.snap(1), qe(e, n.img), e.outlineOp.snap(+!!D(n)), e.shellOp.snap(+!!O(n)), e.creaseOp.snap(A(n) ? w.crease : 0), e.unitOp.a.snap(1), e.unitOp.b.snap(0), Dt(e, n, !0);
+}
+function qe(e, t) {
+	let n = e.layer.old, r = e.layer.neu;
+	n.r = t, n.held = !1, n.grow.snap(0), n.blur.snap(0), n.veil.snap(0), n.op.snap(1), r.r = null, r.op.snap(0), r.blur.snap(0), e.layer.swap = null;
+}
+function Je(e, t) {
+	let n = e.layer.neu, r = e.layer.old, i = e.layer.swap, o = i ? te(L(i, t)) : n.blur.at(t), s = i ? a(0, 1, L(i, t)) : n.op.at(t);
+	n.r && s > .5 ? (r.r = n.r, r.grow.snap(0), r.blur.snap(o), r.veil.snap(0), r.op.snap(1)) : i && r.blur.snap(o), r.held = !0, n.r = null, n.op.snap(0), n.blur.snap(0), e.layer.swap = null;
+}
+function Ye(e, t, n = !1) {
+	let r = e.layer.old;
+	r.grow.to(1, w.holdRise, t), r.blur.to(Math.max(n ? w.holdLight : w.holdBlur, r.blur.at(t)), w.holdRise, t), r.veil.to(w.veil, w.holdRise, t);
+}
+function Xe(e, t) {
+	let n = e.layer.old;
+	n.grow.to(0, 120, t), n.blur.to(0, 120, t), n.veil.to(0, 120, t);
+}
+var Ze = (e, t) => e.V.w.done(t) && e.V.h.done(t) && e.V.y.done(t) && e.V.s.done(t, .002), Qe = (e, t) => {
+	let n = J(e, e.cur);
+	return Math.abs(e.V.w.at(t) - n.w) < 3 && Math.abs(e.V.h.at(t) - n.h) < 3 && Math.abs(e.V.y.at(t) - n.y) < 3;
+};
+function $e(e, t) {
+	let n = performance.now(), r = q(e, t);
+	if (e.clock.t = n, !r || !e.cur || r.sel === e.cur.sel) return;
+	if (e.rig.on || e.spin.on) {
+		e.queued = r.sel;
+		return;
 	}
-	function Xt(e, t, n, r, i, a, o, s = !1) {
-		let { cx: c } = he(), l = w.gap, u = t.y;
-		e.el.style.opacity = String(o), Object.assign(e.stage.style, {
-			left: c - t.w / 2 + "px",
-			top: u + "px",
-			width: t.w + "px",
-			height: t.h + "px"
-		});
-		let d = s ? Yt(e, t, r, a) : Jt(e, t, r, i, a);
-		e.stage.style.background = d ? d.edge : "var(--surface-container)";
-		let f = n.look, m = p(f.radius, +!!n.rot + (n.mirrored ? 2 : 0)).map((e) => e * r * n.shell);
-		e.stage.style.borderRadius = Lt(m), Object.assign(e.outline.style, {
-			left: c - n.w / 2 + "px",
-			top: u - l + "px",
-			width: n.w + "px",
-			height: n.h + "px",
-			borderRadius: Lt(m.map((e) => e > 0 ? e + l : 0)),
-			opacity: n.op
-		});
-		let h = f.bezel * w.shellK * r, g = A(f) * w.shellK * r, _ = c - t.w / 2, v = n.rot ? g : h, b = n.rot ? h : g;
-		Object.assign(e.shell.style, {
-			left: _ - v + "px",
-			top: u - b + "px",
-			width: t.w + 2 * v + "px",
-			height: t.h + 2 * b + "px",
-			borderRadius: Lt(m.map((e) => e + h)),
-			backgroundColor: f.tone,
-			opacity: n.shell
-		});
-		let x = (n.rot ? t.w : t.h) / r;
-		f.btn.forEach((i, a) => {
-			let o = e.btns[a], s = i.at * r, c = i.len * r;
-			Object.assign(o.style, n.rot ? {
-				left: _ + (x * r - s - c) + "px",
-				top: (i.side < 0 ? u - h - 3 + .5 : u + t.h + h - .5) + "px",
-				width: c + "px",
-				height: "3px"
-			} : {
-				left: (i.side < 0 ? _ - h - 3 + .5 : _ + t.w + h - .5) + "px",
-				top: u + s + "px",
-				width: "3px",
-				height: c + "px"
-			}, {
-				backgroundColor: f.tone,
-				opacity: c > .5 ? n.shell : 0
-			}), n.mirrored && (o.style.left = 2 * _ + t.w - parseFloat(o.style.left) - parseFloat(o.style.width) + "px", o.style.top = 2 * u + t.h - parseFloat(o.style.top) - parseFloat(o.style.height) + "px");
-		}), Le(e.cams, f.cams.map((e) => y((n.rot ? t.h : t.w) / r, x, n.rot, e, r, n.mirrored)), 0, 0, n.shell);
-		let ee = Number(f.home) || 0;
-		Fe(e.home, Pe(f, (n.rot ? t.h : t.w) / r, x, n.rot, r, n.mirrored, ee), _, u, n.shell * ee);
-		let S = n.crease, C = n.rot !== !!n.tall;
-		e.crease.classList.toggle("h", C), Object.assign(e.crease.style, C ? {
-			left: "0px",
-			top: t.h / 2 + "px",
-			width: t.w + "px",
-			height: "",
-			opacity: S * we.at(a)
+	let i = e.cur, a = i.kind === "device" && r.kind === "device" && i.dev === r.dev, o = !se() && a && i.folded !== r.folded, s = !se() && a && i.angle !== r.angle && i.folded === r.folded;
+	if ((o || s) && !Ze(e, n)) {
+		e.queued = r.sel;
+		return;
+	}
+	if (e.queued = null, !e.tr && !O(i) && !O(r) && Math.round(i.w) === Math.round(r.w) && Math.round(i.h) === Math.round(r.h) && i.img) {
+		e.images.has(r.sel) || e.images.set(r.sel, i.img), r.img = e.images.get(r.sel), e.cur = r, Dt(e, r), Z(e);
+		return;
+	}
+	let c = e.images.has(r.sel);
+	e.cur = r, Dt(e, r), se() ? rt(e, i, r, n) : o ? st(e, i, r, n, c) : s ? ht(e, i, r, n, c) : et(e, i, r, n, c), c && e.tr.kind !== "size" && (e.tr.arriveAt = n);
+}
+function et(e, t, n, r, i) {
+	e.tr && e.tr.kind === "fade" && it(e, r), Je(e, r);
+	let a = {
+		w: e.V.w.at(r),
+		h: e.V.h.at(r)
+	}, o = J(e, n);
+	Y(e, o, r, c(w.frameDur, w.frameBounce), c(w.frameDur, w.outlineBounce), w.outlineLead), e.outlineOp.to(O(n) ? 0 : D(t) || D(n) ? 1 : e.outlineOp.b, 140, r), e.shellOp.to(+!!O(n), 220, r), e.creaseOp.to(A(n) ? w.crease : 0, 220, r), i ? Xe(e, r) : Ye(e, r, !0), e.tr = {
+		kind: "size",
+		from: t,
+		to: n,
+		t0: r,
+		arriveAt: Infinity,
+		arrived: !1,
+		cached: i,
+		swapped: !1,
+		deepAt: i ? 0 : r + w.holdDeepAfter,
+		grow: n.w >= t.w && n.h >= t.h,
+		f0: a,
+		f1: o
+	};
+}
+function tt(e, t) {
+	let { f0: n, f1: r } = e.tr, i = (e, t, n) => Math.abs(t - n) < 1 ? 0 : Math.abs(e - n) / Math.abs(t - n);
+	return Math.max(i(e.V.w.at(t), n.w, r.w), i(e.V.h.at(t), n.h, r.h)) < w.swapNear;
+}
+function nt(e, t) {
+	let n = e.layer.neu, r = e.tr;
+	r.swapped = r.arrived = !0, n.r = r.to.img, n.op.snap(0), n.blur.snap(0), e.layer.swap = {
+		t0: t,
+		dur: w.swapDur
+	};
+}
+function rt(e, t, n, r) {
+	e.tr && e.tr.kind === "fade" && it(e, r), e.rig.on && pt(e, r), e.spin.on && _t(e, r), Je(e, r), e.layer.old.grow.to(0, 120, r), e.layer.old.blur.to(0, 120, r), e.layer.old.veil.to(0, 120, r);
+	for (let t of [
+		e.V.w,
+		e.V.h,
+		e.V.s,
+		e.V.y,
+		e.O.w,
+		e.O.h
+	]) t.snap(t.at(r));
+	e.roll.w.snap(t.w), e.roll.h.snap(t.h), e.layer.old.op.to(w.reducedDim, 160, r), e.tr = {
+		kind: "fade",
+		from: t,
+		to: n,
+		t0: r,
+		arriveAt: Infinity,
+		arrived: !1
+	};
+}
+function it(e, t) {
+	let n = e.tr;
+	e.tr = null, e.fadeB = null, Y(e, J(e, n.to)), qe(e, n.to.img), e.outlineOp.snap(+!!D(n.to)), e.shellOp.snap(+!!O(n.to)), e.creaseOp.snap(A(n.to) ? w.crease : 0), e.unitOp.a.snap(1), e.unitOp.b.snap(0), e.rulerOp.to(1, 200, t);
+}
+function at(e) {
+	if (!e.tr) return;
+	let t = e.tr.arriveAt;
+	e.tr.arrived = !0;
+	let n = (e.tr.kind === "fold" || e.tr.kind === "unfold") && e.rig.cached || e.tr.kind === "spin" && e.spin.cached;
+	if (e.tr.kind === "spin" || n || e.tr.kind === "size" && e.tr.cached) return;
+	if (e.tr.kind === "fade") {
+		e.fadeB = {
+			f: J(e, e.tr.to),
+			st: e.tr.to,
+			layers: ee(e.tr.to.img)
+		}, e.unitOp.b.snap(0), e.unitOp.b.to(1, w.reducedFade, t), e.unitOp.a.to(0, w.reducedFade, t), e.rulerOp.to(0, 120, t);
+		return;
+	}
+	let r = e.layer.neu;
+	e.tr.deepAt ? (e.tr.deepAt = 0, r.r = e.tr.to.img, r.op.snap(0), r.op.to(1, w.fastReveal, t), r.blur.snap(e.layer.old.blur.at(t)), r.blur.to(0, w.fastReveal, t)) : (r.r = e.tr.to.img, r.op.snap(0), r.op.to(1, w.revealFade, t), r.blur.snap(Math.max(e.layer.old.blur.at(t), e.layer.old.blur.b)), r.blur.to(e.tr.kind === "size" && !Qe(e, t) ? w.moveBlur : 0, w.revealDur, t));
+}
+function ot(e, t, n) {
+	let r = e.rig.d[t ? "cover" : "open"], i = m(e.rig.d);
+	return e.rig.d.look[t ? "cover" : "open"].cams.map((e) => y(r.w, r.h, i, e, n, i));
+}
+function st(t, n, r, i, a) {
+	let o = e[r.dev], s = r.folded ? "fold" : "unfold", c = o.open.hinge, l = J(t, n), u = J(t, r);
+	if (Je(t, i), a) {
+		let e = t.layer.old;
+		e.grow.snap(0), e.blur.snap(0), e.veil.snap(0);
+	}
+	let d = t.layer.old.blur.at(i), f = h(o, "open"), p = h(o, "cover"), g = (e) => e.cx - f.w * e.s / 2 + c * e.s, _ = (e) => e.cx - p.w * e.s / 2, v = {
+		w: r.w,
+		h: r.h
+	}, y = (r.angle - n.angle + 540) % 360 - 180, b = Math.abs(y) === 180 ? 0 : y;
+	Object.assign(t.rig, {
+		on: !0,
+		turn: b,
+		q: m(o) ? 90 : 0,
+		z: parseFloat(getComputedStyle(t.rigEl).getPropertyValue("--z")) || 1,
+		t0: i,
+		dur: w.foldDur,
+		dir: s,
+		d: o,
+		restBlur: d,
+		oldSpec: t.layer.old.r,
+		from: n,
+		to: r,
+		f0: l,
+		f1: u,
+		cached: a,
+		s0: l.s,
+		s1: u.s,
+		sRef: Math.max(l.s, u.s),
+		half: {
+			u: c,
+			v: f.h
+		},
+		cover: {
+			u: p.w,
+			v: p.h
+		},
+		hx0: s === "fold" ? g(l) : _(l),
+		hx1: s === "fold" ? _(u) : g(u),
+		plan: s === "fold" ? {
+			inner: {
+				role: "crisp",
+				du: 0
+			},
+			base: {
+				role: "crisp",
+				du: c
+			},
+			outer: {
+				role: "hold",
+				du: 0,
+				neu: !0,
+				frame: v
+			}
 		} : {
-			left: t.w / 2 + "px",
-			top: "0px",
-			width: "",
-			height: t.h + "px",
-			opacity: S * we.at(a)
-		});
-		let T = S > 0 ? n.shell * Math.min(1, S / Math.max(.01, w.crease)) : 0;
-		C ? (Object.assign(e.tTop.style, {
-			left: _ - v + "px",
-			top: u + t.h / 2 + "px",
-			width: v + "px",
-			height: "1px",
-			opacity: T
-		}), Object.assign(e.tBot.style, {
-			left: _ + t.w + "px",
-			top: u + t.h / 2 + "px",
-			width: v + "px",
-			height: "1px",
-			opacity: T
-		})) : (Object.assign(e.tTop.style, {
-			left: c + "px",
-			top: u - b + "px",
-			width: "1px",
-			height: b + "px",
-			opacity: T
-		}), Object.assign(e.tBot.style, {
-			left: c + "px",
-			top: u + t.h + "px",
-			width: "1px",
-			height: b + "px",
-			opacity: T
-		}));
-	}
-	function Zt(e) {
-		if (V.on) {
-			q.el.hidden = !0, qt.el.hidden = !0, H.hidden = !1, kt(H, e), Gt(e);
-			return;
+			outer: {
+				role: "crisp",
+				du: 0
+			},
+			inner: {
+				role: "hold",
+				du: 0,
+				neu: !0,
+				frame: v
+			},
+			base: {
+				role: "hold",
+				du: c,
+				neu: !0,
+				frame: v
+			}
 		}
-		H.hidden = !0, q.el.hidden = !1;
-		let t = I.s.at(e), i = G.on ? G.from : N;
-		if (G.on) {
-			let { p: t } = Ct(e), { f0: n, f1: i } = G, a = n.y + n.h / 2, o = i.y + i.h / 2;
-			q.el.style.transformOrigin = `${n.cx}px ${a}px`;
-			let s = (r(1, i.s / n.s, t) * (1 - w.rotDip * Math.sin(Math.PI * t))).toFixed(4);
-			q.el.style.transform = `translate(${((i.cx - n.cx) * t).toFixed(2)}px, ${((o - a) * t).toFixed(2)}px) rotate(${(G.dir * 90 * t).toFixed(3)}deg) scale(${s})`, q.el.style.setProperty("--spin-s", s);
-		}
-		if (Xt(q, {
-			w: I.w.at(e),
-			h: I.h.at(e),
-			y: I.y.at(e)
-		}, {
-			w: ye.w.at(e),
-			h: ye.h.at(e),
-			op: be.at(e),
-			crease: xe.at(e),
-			shell: Ce.at(e),
-			rot: !!i.rot,
-			mirrored: !!i.mirrored,
-			tall: i.kind === "device" && m(n[i.dev]),
-			look: Ne(e)
-		}, t, R, e, z.a.at(e), G.on), ke) {
-			qt.el.hidden = !1;
-			let t = ke.f, r = w.gap, i = ke.st;
-			Xt(qt, {
-				w: t.w,
-				h: t.h,
-				y: t.y
-			}, {
-				w: t.w + 2 * r,
-				h: t.h + 2 * r,
-				op: +!!ae(i),
-				crease: se(i) ? w.crease : 0,
-				shell: +!!O(i),
-				rot: !!i.rot,
-				mirrored: !!i.mirrored,
-				tall: i.kind === "device" && m(n[i.dev]),
-				look: O(i) ? k(i) : Ne(e)
-			}, t.s, ke.layers, e, z.b.at(e));
-		} else qt.el.hidden = !0;
+	}), t.rig.dip = dt(t), t.stretchOf.clear(), De(t);
+	let x = s === "fold" ? 0 : 1, S = /* @__PURE__ */ new Map([
+		[t.RG.base.front, x],
+		[t.RG.leaf.front, x],
+		[t.RG.base.back, x],
+		[t.RG.leaf.back, 1 - x]
+	]);
+	for (let [e, n] of S) e.gloss.style.setProperty("--turn", ct(t, n) + "deg");
+	let C = [...S].filter(([, e]) => e === 1).map(([e]) => e);
+	t.seeding = new Set(C.flatMap((e) => [e.gloss, ...e.fit])), Fe(t, i + t.rig.dur * 1e3), t.seeding = null, a || Ye(t, i), t.creaseOp.snap(0), t.roll.w.snap(n.w), t.roll.h.snap(n.h), t.rulerOp.to(0, 120, i), t.tr = {
+		kind: s,
+		from: n,
+		to: r,
+		t0: i,
+		arriveAt: Infinity,
+		arrived: !1
+	};
+}
+var ct = (e, t) => e.rig.from.angle + e.rig.turn * t + e.rig.q, lt = (e, t) => {
+	let n = t.bezel * w.shellK, r = M(t) * w.shellK;
+	return m(e.rig.d) ? [r, n] : [n, r];
+};
+function ut(e, t, [n, i]) {
+	let o = (e.rig.dir === "fold" ? t : 1 - t) * 180, s = r(e.rig.s0, e.rig.s1, t), c = r(e.rig.f0.y + e.rig.f0.h / 2, e.rig.f1.y + e.rig.f1.h / 2, t), l = ct(e, t), u = o * Math.PI / 180, d = l * Math.PI / 180, f = o / 180, p = r(e.rig.half.u, e.rig.cover.u, f), m = r(e.rig.half.v, e.rig.cover.v, f), h = r(e.rig.hx0, e.rig.hx1, t), g = He(e), _ = (h - g.cx) / s, v = w.perspective / (w.perspective - (p + e.rig.d.plate.thickness) * Math.sin(u) * s), y = -p * Math.cos(u) * v, b = r(e.rig.half.u, Math.min(e.rig.half.u, e.rig.cover.u), a(w.shrinkFrom, 180, o)), x = [_ + Math.min(0, y) - n, _ + Math.max(b, y) + n], S = [-m * v / 2 - i, m * v / 2 + i], C = x.flatMap((e) => S.map((t) => [e * Math.cos(d) - t * Math.sin(d), e * Math.sin(d) + t * Math.cos(d)])), T = (e) => Math.max(...C.map((t) => Math.abs(t[e])));
+	return {
+		th: o,
+		baseS: s,
+		cy: c,
+		angle: l,
+		v: m,
+		hx: h,
+		r: g,
+		need: Math.min(1, g.maxW / (2 * T(0) * s), g.maxH / (2 * T(1) * s))
+	};
+}
+function dt(e) {
+	let [t, n] = lt(e, e.rig.d.look.open), [r, i] = lt(e, e.rig.d.look.cover), o = [Math.max(t, r), Math.max(n, i)], s = [];
+	for (let t = 1; t < 48; t++) {
+		let n = t / 48, r = 1 - ut(e, n, o).need;
+		r > 0 && s.push([n, r + .004]);
 	}
-	function Qt() {
-		let e = pe.t;
-		P && !P.arrived && e >= P.arriveAt && Qe(), P?.deepAt && e >= P.deepAt && (P.deepAt = 0, R.old.blur.to(Math.max(w.holdBlur, R.old.blur.at(e)), w.holdDeepen, e)), P && P.kind === "size" && P.cached && !P.swapped && (P.grow || Je(e) || e - P.t0 > w.frameDur * 800) && Ye(e), V.on && gt(e).settled && vt(e), G.on && Ct(e).done && wt(e);
-		let t = R.neu, n = R.swap ? Ee(R.swap, e) >= 1 : t.op.done(e) && t.op.b === 1 && t.blur.done(e);
-		if (!V.on && t.r && n) {
-			let e = R.swap ? 0 : t.blur.b;
-			ze(t.r), P?.kind === "size" && e && R.old.blur.snap(e);
-		}
-		if (P?.kind === "size" && P.arrived && !R.neu.r && Ge(e) && R.old.blur.b > 0 && !(R.old.grow.b > 0) && R.old.blur.to(0, w.settleSharp, e), P && (P.kind === "fade" ? P.arrived && z.b.done(e) && Ze(e) : P.kind !== "spin" && P.arrived && !V.on && !R.neu.r && We(e) && ye.w.done(e) && ye.h.done(e) && R.old.blur.b === 0 && R.old.blur.done(e) && (P = null, be.to(+!!ae(N), 220, e))), F && !V.on && !G.on && (!P || P.kind === "size")) {
-			let t = F, n = ie(t), r = N;
-			(r.kind !== "device" || n.kind !== "device" || r.dev !== n.dev || We(e)) && (F = null, Ke(t));
-		}
-		$ && N && (L(M({
-			...N,
-			w: $.w,
-			h: $.h
-		})), J.w.snap($.w), J.h.snap($.h)), Zt(e), l.classList.toggle("at-rest", !P && !F && !$), zn(e), S.layout({
-			w: I.w.at(e),
-			h: I.h.at(e),
-			s: I.s.at(e),
-			y: I.y.at(e),
-			cx: he().cx,
-			radius: p(Ne(e).radius, +!!N?.rot + (N?.mirrored ? 2 : 0)).map((t) => t * I.s.at(e) * Ce.at(e)),
-			bezel: ce(Ne(e)) * I.s.at(e) * Ce.at(e)
-		}, !!P || !!F || V.on || G.on || !!$);
+	let c = (e, t) => e <= t ? a(0, t, e) : 1 - a(t, 1, e);
+	return (e) => s.reduce((t, [n, r]) => Math.max(t, r * c(e, n)), 0);
+}
+function ft(e, t) {
+	let n = (t - e.rig.t0) / 1e3, r = Math.max(.05, e.rig.dur), a = Ve(e)(i(n / r, 0, 1)), { th: o, baseS: s, cy: c, angle: l, v: u, hx: d, r: f } = ut(e, a, lt(e, X(e, t))), p = s * (1 - e.rig.dip(a));
+	return {
+		t: n,
+		th: o,
+		p: a,
+		s: p,
+		hx: f.cx + (d - f.cx) * p / s,
+		cy: c,
+		angle: l,
+		top: c - u * p / 2,
+		settled: n >= r
+	};
+}
+function pt(e, t) {
+	let n = w.crease * de(ft(e, t).th);
+	e.rig.on = !1, e.rig.cached && qe(e, e.cur.img), Y(e, J(e, e.cur)), e.outlineOp.snap(+!!D(e.cur)), e.shellOp.snap(+!!O(e.cur)), e.creaseOp.snap(A(e.cur) ? n : 0), A(e.cur) && e.creaseOp.to(w.crease, 240, t), e.rulerOp.to(1, 200, t);
+}
+var mt = (e) => {
+	let t = `${w.rotLift},${w.rotLand}`;
+	return t !== e.spinEaseKey && (e.spinEaseKey = t, e.spinEaseFn = u(w.rotLift, 0, w.rotLand, 1)), e.spinEaseFn;
+};
+function ht(e, t, n, r, i) {
+	Je(e, r), i ? Xe(e, r) : Ye(e, r);
+	let a = (n.angle - t.angle + 540) % 360 - 180;
+	Object.assign(e.spin, {
+		on: !0,
+		t0: r,
+		dur: w.rotDur,
+		from: t,
+		to: n,
+		f0: J(e, t),
+		f1: J(e, n),
+		dir: a / 90,
+		cached: i
+	}), e.roll.w.snap(t.w), e.roll.h.snap(t.h), e.rulerOp.to(0, 120, r), e.tr = {
+		kind: "spin",
+		from: t,
+		to: n,
+		t0: r,
+		arriveAt: Infinity,
+		arrived: !1
+	};
+}
+function gt(e, t) {
+	let n = (t - e.spin.t0) / 1e3, r = Math.max(.05, e.spin.dur);
+	return {
+		p: mt(e)(i(n / r, 0, 1)),
+		done: n >= r
+	};
+}
+function _t(e, t) {
+	let n = e.spin.to, r = e.spin.cached;
+	e.spin.on = !1, e.UA.el.style.transform = "", e.UA.el.style.removeProperty("--spin-s");
+	for (let t of [e.UA.l0, e.UA.l1]) t.style.transform = "";
+	Y(e, J(e, n)), e.creaseOp.snap(A(n) ? w.crease : 0), e.rulerOp.to(1, 200, t), r ? (qe(e, n.img), e.tr?.kind === "spin" && (e.tr = null)) : e.tr?.kind === "spin" && Object.assign(e.tr, {
+		kind: "size",
+		cached: !1,
+		arrived: !1,
+		arriveAt: e.images.has(n.sel) ? t : Infinity
+	});
+}
+function vt(e) {
+	let t = e.clock.t;
+	e.tr && !e.tr.arrived && t >= e.tr.arriveAt && at(e), e.tr?.deepAt && t >= e.tr.deepAt && (e.tr.deepAt = 0, e.layer.old.blur.to(Math.max(w.holdBlur, e.layer.old.blur.at(t)), w.holdDeepen, t)), e.tr && e.tr.kind === "size" && e.tr.cached && !e.tr.swapped && (e.tr.grow || tt(e, t) || t - e.tr.t0 > w.frameDur * 800) && nt(e, t), e.rig.on && ft(e, t).settled && pt(e, t), e.spin.on && gt(e, t).done && _t(e, t);
+	let n = e.layer.neu, r = e.layer.swap ? L(e.layer.swap, t) >= 1 : n.op.done(t) && n.op.b === 1 && n.blur.done(t);
+	if (!e.rig.on && n.r && r) {
+		let t = e.layer.swap ? 0 : n.blur.b;
+		qe(e, n.r), e.tr?.kind === "size" && t && e.layer.old.blur.snap(t);
 	}
-	let J = {
-		w: new f(411),
-		h: new f(891)
-	}, Y = (e) => document.getElementById(e), X = {
-		el: Y("panel"),
-		pick: Y("pnPick"),
-		fold: Y("pnFold"),
-		sum: Y("pnSum"),
-		body: Y("pnBody")
-	}, Z = {
-		el: Y("devCtl"),
-		fold: Y("dcFold"),
-		rot: Y("dcRot"),
-		hinge: Y("dcHinge")
-	}, $t = {
-		el: Y("dcOrientation"),
-		menu: Y("dcOrientMenu")
-	}, en = [...$t.menu.querySelectorAll("[data-orientation]")], tn = () => Z.rot.getAttribute("aria-expanded") === "true";
-	function nn(e, t = !0) {
-		e && cn(!1), !e && $t.menu.contains(document.activeElement) && Z.rot.focus({ preventScroll: !0 }), Z.rot.setAttribute("aria-expanded", String(e)), $t.menu.classList.toggle("on", e), $t.menu.inert = !e, e && t && (en.find((e) => e.getAttribute("aria-checked") === "true") || en[0]).focus();
+	if (e.tr?.kind === "size" && e.tr.arrived && !e.layer.neu.r && Qe(e, t) && e.layer.old.blur.b > 0 && !(e.layer.old.grow.b > 0) && e.layer.old.blur.to(0, w.settleSharp, t), e.tr && (e.tr.kind === "fade" ? e.tr.arrived && e.unitOp.b.done(t) && it(e, t) : e.tr.kind !== "spin" && e.tr.arrived && !e.rig.on && !e.layer.neu.r && Ze(e, t) && e.O.w.done(t) && e.O.h.done(t) && e.layer.old.blur.b === 0 && e.layer.old.blur.done(t) && (e.tr = null, e.outlineOp.to(+!!D(e.cur), 220, t))), e.queued && !e.rig.on && !e.spin.on && (!e.tr || e.tr.kind === "size")) {
+		let n = e.queued, r = q(e, n), i = e.cur;
+		(i.kind !== "device" || r.kind !== "device" || i.dev !== r.dev || Ze(e, t)) && (e.queued = null, $e(e, n));
 	}
-	$t.menu.addEventListener("click", (e) => {
-		let t = e.target.closest("[data-orientation]"), n = N;
-		t && n.kind === "device" && (Gn(oe(n, n.folded, t.dataset.orientation)), nn(!1));
-	}), $t.menu.addEventListener("keydown", (e) => {
+	e.draft && e.cur && (Y(e, J(e, {
+		...e.cur,
+		w: e.draft.w,
+		h: e.draft.h
+	})), e.roll.w.snap(e.draft.w), e.roll.h.snap(e.draft.h)), ze(e, t), e.root.classList.toggle("at-rest", !e.tr && !e.queued && !e.draft), Be(e, t), e.hooks.layout({
+		w: e.V.w.at(t),
+		h: e.V.h.at(t),
+		s: e.V.s.at(t),
+		y: e.V.y.at(t),
+		cx: He(e).cx,
+		radius: p(X(e, t).radius, +!!e.cur?.rot + (e.cur?.mirrored ? 2 : 0)).map((n) => n * e.V.s.at(t) * e.shellOp.at(t)),
+		bezel: N(X(e, t)) * e.V.s.at(t) * e.shellOp.at(t)
+	}, !!e.tr || !!e.queued || e.rig.on || e.spin.on || !!e.draft);
+}
+function yt(e, t) {
+	if (e.raf = 0, !e.enabled || !e.cur) return;
+	e.clock.t = t, vt(e);
+	let n = [
+		e.outlineOp,
+		e.creaseOp,
+		e.rulerOp,
+		e.shellOp,
+		e.hingeOp,
+		e.unitOp.a,
+		e.unitOp.b,
+		e.layer.old.grow,
+		e.layer.old.blur,
+		e.layer.old.veil,
+		e.layer.old.op,
+		e.layer.neu.op,
+		e.layer.neu.blur,
+		e.roll.w,
+		e.roll.h
+	];
+	(e.tr || e.queued || e.rig.on || e.spin.on || !Ze(e, t) || t < e.look.t0 + e.look.dur || n.some((e) => !e.done(t))) && Z(e);
+}
+function Z(e) {
+	e.enabled && !e.raf && (e.raf = requestAnimationFrame((t) => yt(e, t)));
+}
+function Q(e, t) {
+	return Promise.resolve(e.hooks.request(t));
+}
+function bt(e, t = !1) {
+	let n = `${e.root.clientWidth}:${e.root.clientHeight}:${e.badge.w}`;
+	(n !== e.roomSize || t) && (e.roomSize = n, e.cur && !e.rig.on && !e.spin.on && Y(e, J(e, e.cur), performance.now(), e.tr?.kind === "size" ? c(w.frameDur, w.frameBounce) : null), Z(e), e.cur && (e.clock.t = performance.now(), vt(e)));
+}
+// src/scene/dock.ts
+var xt = (e) => e.CTL.rot.getAttribute("aria-expanded") === "true";
+function $(e, t, n = !0) {
+	t && Ct(e, !1), !t && e.ORIENT.menu.contains(document.activeElement) && e.CTL.rot.focus({ preventScroll: !0 }), e.CTL.rot.setAttribute("aria-expanded", String(t)), e.ORIENT.menu.classList.toggle("on", t), e.ORIENT.menu.inert = !t, t && n && (e.directions.find((e) => e.getAttribute("aria-checked") === "true") || e.directions[0]).focus();
+}
+var St = (e) => e.PN.sum.getAttribute("aria-expanded") === "true";
+function Ct(e, t) {
+	t && $(e, !1), !t && e.PN.body.contains(document.activeElement) && e.PN.sum.focus({ preventScroll: !0 }), e.PN.sum.setAttribute("aria-expanded", String(t)), e.PN.fold.classList.toggle("open", t), e.PN.body.inert = !t;
+}
+var wt = (e, t) => {
+	St(e) && !e.PN.fold.contains(t.target) && Ct(e, !1), xt(e) && !e.ORIENT.el.contains(t.target) && $(e, !1);
+};
+function Tt(t, n) {
+	let r = t.cur, i = r.kind === "device" && n === r.dev ? e[n] : null, a = t.ROWS.find((e) => e.dataset.sel === n);
+	t.SUM.dev !== i && (t.SUM.dev = i, t.SUM.sil.innerHTML = i ? Se(i) : ""), t.SUM.nm.textContent = a.querySelector(".nm").textContent, t.PN.sum.classList.toggle("mono", a.classList.contains("mono")), t.PN.sum.title = `${i ? i.name : t.SUM.nm.textContent} · ${F(r)}`;
+}
+function Et(t, n, r) {
+	t.focusW = !1, Vt(t), t.slFocus = !1;
+	for (let e of [t.SL.w.thumb, t.SL.h.thumb]) document.activeElement === e && e.blur();
+	for (let e of [t.RL.w, t.RL.h]) document.activeElement === e && (e.dataset.cancel = "1", e.blur());
+	if (n === "custom") {
+		let e = i(Math.round(t.cur.w), 240, T), n = i(Math.round(t.cur.h), 240, T);
+		t.cur.kind !== "custom" && Q(t, `custom:${e}x${n}`), r || (t.focusW = !0, Z(t));
+	} else {
+		if (e[n]) return Q(t, `${n}:open`);
+		Q(t, n);
+	}
+}
+function Dt(t, r, i) {
+	let a = t.clock.t;
+	if (i ? (t.roll.w.snap(r.w), t.roll.h.snap(r.h)) : (t.roll.w.to(r.w, 420, a), t.roll.h.to(r.h, 420, a)), r.kind === "device") {
+		Ge(t, j(r), i), t.CTL.fold.hidden = t.CTL.hinge.hidden = !e[r.dev].fold, t.ORIENT.el.hidden = !!e[r.dev][r.folded ? "cover" : "open"].fixed, t.ORIENT.el.hidden && $(t, !1, !1);
+		let a = r.folded ? n("posture.unfold") : n("posture.fold");
+		t.CTL.fold.dataset.folded = String(r.folded), t.CTL.fold.title = a, t.CTL.fold.setAttribute("aria-label", a);
+		let o = n("posture.orientation.tip", { orientation: n(`posture.${r.orientation}`) });
+		t.CTL.rot.dataset.orientation = r.orientation, t.CTL.rot.title = o, t.CTL.rot.setAttribute("aria-label", o);
+		for (let e of t.directions) e.setAttribute("aria-checked", String(e.dataset.orientation === r.orientation));
+	}
+	Ot(t);
+}
+function Ot(t) {
+	let n = t.cur, r = t.editing || t.slFocus && n.sel === t.slSent || n.kind === "custom", i = r ? "custom" : Ce(n);
+	for (let a of t.ROWS) {
+		let o = a.dataset.sel, s = o === i, c = e[o];
+		a.setAttribute("aria-checked", String(s));
+		let l = t.PRESETS.find((e) => e.sel === o);
+		a.lastElementChild.textContent = o === "custom" ? r ? F(n) : `240–${T}` : o === "original" ? F(t.ORIGINAL) : l ? F(l) : s ? F(n) : we(c);
+	}
+	t.RL.el.classList.toggle("custom", r), t.RL.el.classList.toggle("device", !r && n.kind === "device"), t.CTL.el.hidden = r || n.kind !== "device", t.CTL.el.hidden && $(t, !1), t.SL.el.hidden = !r, Tt(t, i), Rt(t);
+}
+function kt(e) {
+	e.CTL.hinge.setAttribute("aria-pressed", String(e.hingeLine)), e.CTL.hinge.title = e.hingeLine ? n("posture.hinge.hide") : n("posture.hinge.show");
+}
+function At(t) {
+	let n = t.cur;
+	n.kind === "device" && e[n.dev].fold && (t.hingeLine = !t.hingeLine, kt(t), t.hingeOp.to(+!!t.hingeLine, 200, performance.now()), Z(t));
+}
+var jt = (e, t) => [
+	"portrait",
+	"landscape-left",
+	"landscape-right"
+].map((e) => k(t, !t.folded, e)).find((n) => {
+	let r = q(e, n);
+	return r?.kind === "device" && r.angle === t.angle;
+}) ?? k(t, !t.folded, "portrait");
+function Mt(t) {
+	let n = t.cur;
+	n.kind === "device" && e[n.dev].fold && Q(t, jt(t, n));
+}
+function Nt(e, t, n) {
+	let r = /^\d+$/.test(n.trim()) ? Number(n) : NaN;
+	if (!(r > 0)) return;
+	let a = i(r, 240, T), o = Math.round(e.cur.w), s = Math.round(e.cur.h), c = t === "w" ? a : o, l = t === "h" ? a : s;
+	(c !== o || l !== s) && (e.roll[t].snap(a), Q(e, Pt(e, c, l)));
+}
+var Pt = (e, t, n) => e.PRESETS.find((e) => e.w === t && e.h === n)?.sel || `custom:${t}x${n}`;
+function Ft(e, t = !1) {
+	if (!e.editing) {
+		if (e.cur.kind !== "custom") {
+			let n = i(Math.round(e.cur.w), 240, T), r = i(Math.round(e.cur.h), 240, T);
+			if (Q(e, `custom:${n}x${r}`), !t) for (let [t, i, a] of [[
+				"w",
+				e.RL.w,
+				n
+			], [
+				"h",
+				e.RL.h,
+				r
+			]]) i.value = String(a), e.RL.shown[t] = String(a);
+		}
+		e.editing = !0, Ot(e);
+	}
+}
+var It = (e) => e.SL.el.classList.contains("off"), Lt = (e, t) => e.draft ? e.draft[t] : i(Math.round(e.cur[t]), 240, T);
+function Rt(e) {
+	for (let t of ["w", "h"]) {
+		let n = e.SL[t], r = Lt(e, t), i = Te(r);
+		n.fill.style.width = i, n.thumb.style.left = i, n.val.textContent = String(r), n.thumb.setAttribute("aria-valuenow", String(r)), n.thumb.setAttribute("aria-valuetext", `${r}dp`);
+	}
+}
+function zt(e, t, n) {
+	let r = i(Math.round(n), 240, T);
+	e.draft = {
+		w: Lt(e, "w"),
+		h: Lt(e, "h"),
+		[t]: r
+	}, Rt(e), Z(e);
+}
+function Bt(e) {
+	if (clearTimeout(e.keyTimer), e.keyTimer = 0, !e.draft || e.dragging) return;
+	let { w: t, h: n } = e.draft;
+	if (t === Math.round(e.cur.w) && n === Math.round(e.cur.h)) {
+		Vt(e);
+		return;
+	}
+	let r = e.draft, i = Pt(e, t, n);
+	e.slSent = i, Q(e, i).then((t) => {
+		!t && e.draft === r && Vt(e);
+	});
+}
+function Vt(e) {
+	clearTimeout(e.keyTimer), e.keyTimer = 0, e.dragging = null, e.draft && (e.draft = null, e.cur && !e.rig.on && !e.spin.on && Y(e, J(e, e.cur)), e.cur && (e.roll.w.snap(e.cur.w), e.roll.h.snap(e.cur.h), Rt(e)), Z(e));
+}
+function Ht(t) {
+	t.ORIENT.menu.addEventListener("click", (e) => {
+		let n = e.target.closest("[data-orientation]"), r = t.cur;
+		n && r.kind === "device" && (Q(t, k(r, r.folded, n.dataset.orientation)), $(t, !1));
+	}), t.ORIENT.menu.addEventListener("keydown", (e) => {
 		if (e.key === "Tab") {
-			nn(!1);
+			$(t, !1);
 			return;
 		}
 		if (![
@@ -1465,326 +1550,294 @@ function S(l, S) {
 			"End"
 		].includes(e.key)) return;
 		e.preventDefault(), e.stopPropagation();
-		let t = en.indexOf(document.activeElement), n = e.key === "Home" ? 0 : e.key === "End" ? en.length - 1 : (t + (e.key === "ArrowUp" ? -1 : 1) + en.length) % en.length;
-		en[n].focus();
-	}), Z.rot.addEventListener("keydown", (e) => {
-		["ArrowDown", "ArrowUp"].includes(e.key) && (e.preventDefault(), e.stopPropagation(), nn(!0));
+		let n = t.directions.indexOf(document.activeElement), r = e.key === "Home" ? 0 : e.key === "End" ? t.directions.length - 1 : (n + (e.key === "ArrowUp" ? -1 : 1) + t.directions.length) % t.directions.length;
+		t.directions[r].focus();
+	}), t.CTL.rot.addEventListener("keydown", (e) => {
+		["ArrowDown", "ArrowUp"].includes(e.key) && (e.preventDefault(), e.stopPropagation(), $(t, !0));
 	});
-	let rn = [...X.pick.querySelectorAll("[data-sel]")], an = (e) => {
-		let t = e.open, n = e.look.open, r = 19 / Math.max(t.w, t.h), a = t.w * r, o = t.h * r, s = 10 - a / 2, c = 10 - o / 2, l = 1.4, u = (e) => e.toFixed(2), d = i((Math.max(...n.radius) + n.bezel * w.shellK) * r * 1.8, 1.2, Math.min(a, o) / 3), f = l / 2 + i(n.bezel * w.shellK * r, .9, 2.2), p = Math.max(.4, d - f + l / 2), h = m(e), g = (e, t, n, r) => `<rect x="${u(e)}" y="${u(t)}" width="${u(n)}" height="${u(r)}" rx="${u(p)}" fill="currentColor" fill-opacity=".16"/>`, _ = e.fold ? h ? g(s + f, c + f, a - 2 * f, o / 2 - f - .4) + g(s + f, c + o / 2 + .4, a - 2 * f, o / 2 - f - .4) : g(s + f, c + f, a / 2 - f - .4, o - 2 * f) + g(s + a / 2 + .4, c + f, a / 2 - f - .4, o - 2 * f) : g(s + f, c + f, a - 2 * f, o - 2 * f), v = "", y = n.cuts[0];
-		if (y) {
-			let e = s + a * (y.x ?? .5), t = c + f + 1.1;
-			v = y.edge === "right" ? `<rect x="${u(s + a - f - 1.7)}" y="${u(c + o * (y.x ?? .5) - 1.8)}" width="1.2" height="3.6" rx=".6" fill="currentColor"/>` : y.w > y.h * 3 ? `<rect x="${u(e - 1.8)}" y="${u(t - .6)}" width="3.6" height="1.2" rx=".6" fill="currentColor"/>` : `<circle cx="${u(e)}" cy="${u(t)}" r=".75" fill="currentColor"/>`;
-		}
-		let b = e.fold ? `<path d="${h ? `M${u(s)} ${u(c + o / 2)}H${u(s + a)}` : `M${u(s + a / 2)} ${u(c)}V${u(c + o)}`}" stroke="currentColor" stroke-width=".8"/>` : "";
-		return `<svg class="pn-sil" viewBox="0 0 20 20" aria-hidden="true">${_}<rect x="${u(s + l / 2)}" y="${u(c + l / 2)}" width="${u(a - l)}" height="${u(o - l)}" rx="${u(d)}" fill="none" stroke="currentColor" stroke-width="${l}"/>${b}${v}</svg>`;
-	};
-	for (let e of rn) {
-		let r = n[e.dataset.sel];
-		r && (e.title = r.name), e.innerHTML = `${r ? an(r) : ""}<span class="nm">${r ? r.short : e.dataset.t ? t(e.dataset.t) : e.textContent}</span><span class="d"></span>`;
+	for (let r of t.ROWS) {
+		let t = e[r.dataset.sel];
+		t && (r.title = t.name), r.innerHTML = `${t ? Se(t) : ""}<span class="nm">${t ? t.short : r.dataset.t ? n(r.dataset.t) : r.textContent}</span><span class="d"></span>`;
 	}
-	let on = {
-		sil: X.sum.querySelector(".pn-sum-sil"),
-		nm: X.sum.querySelector(".nm"),
-		dev: null
-	}, sn = () => X.sum.getAttribute("aria-expanded") === "true";
-	function cn(e) {
-		e && nn(!1), !e && X.body.contains(document.activeElement) && X.sum.focus({ preventScroll: !0 }), X.sum.setAttribute("aria-expanded", String(e)), X.fold.classList.toggle("open", e), X.body.inert = !e;
-	}
-	X.sum.addEventListener("click", () => cn(!sn()));
-	let ln = (e) => {
-		sn() && !X.fold.contains(e.target) && cn(!1), tn() && !$t.el.contains(e.target) && nn(!1);
-	};
-	function un(e) {
-		let t = N, r = t.kind === "device" && e === t.dev ? n[e] : null, i = rn.find((t) => t.dataset.sel === e);
-		on.dev !== r && (on.dev = r, on.sil.innerHTML = r ? an(r) : ""), on.nm.textContent = i.querySelector(".nm").textContent, X.sum.classList.toggle("mono", i.classList.contains("mono")), X.sum.title = `${r ? r.name : on.nm.textContent} · ${le(t)}`;
-	}
-	let dn = (e) => e.kind === "device" ? e.dev : e.sel, fn = (e) => `${Math.round(e.open.w)}×${Math.round(e.open.h)}`, pn = !1;
-	function mn(e, t) {
-		pn = !1, Rn(), An = !1;
-		for (let e of [On.w.thumb, On.h.thumb]) document.activeElement === e && e.blur();
-		for (let e of [Q.w, Q.h]) document.activeElement === e && (e.dataset.cancel = "1", e.blur());
-		if (e === "custom") {
-			let e = i(Math.round(N.w), 240, T), n = i(Math.round(N.h), 240, T);
-			N.kind !== "custom" && Gn(`custom:${e}x${n}`), t || (pn = !0, Wn());
-		} else {
-			if (n[e]) return Gn(`${e}:open`);
-			Gn(e);
-		}
-	}
-	function hn(e, r) {
-		let i = pe.t;
-		if (r ? (J.w.snap(e.w), J.h.snap(e.h)) : (J.w.to(e.w, 420, i), J.h.to(e.h, 420, i)), e.kind === "device") {
-			Ae(k(e), r), Z.fold.hidden = Z.hinge.hidden = !n[e.dev].fold, $t.el.hidden = !!n[e.dev][e.folded ? "cover" : "open"].fixed, $t.el.hidden && nn(!1, !1);
-			let i = e.folded ? t("posture.unfold") : t("posture.fold");
-			Z.fold.dataset.folded = String(e.folded), Z.fold.title = i, Z.fold.setAttribute("aria-label", i);
-			let a = t("posture.orientation.tip", { orientation: t(`posture.${e.orientation}`) });
-			Z.rot.dataset.orientation = e.orientation, Z.rot.title = a, Z.rot.setAttribute("aria-label", a);
-			for (let t of en) t.setAttribute("aria-checked", String(t.dataset.orientation === e.orientation));
-		}
-		gn();
-	}
-	function gn() {
-		let e = N, t = xn || An && e.sel === Mn || e.kind === "custom", r = t ? "custom" : dn(e);
-		for (let i of rn) {
-			let a = i.dataset.sel, o = a === r, s = n[a];
-			i.setAttribute("aria-checked", String(o));
-			let c = re.find((e) => e.sel === a);
-			i.lastElementChild.textContent = a === "custom" ? t ? le(e) : `240–${T}` : a === "original" ? le(ne) : c ? le(c) : o ? le(e) : fn(s);
-		}
-		Q.el.classList.toggle("custom", t), Q.el.classList.toggle("device", !t && e.kind === "device"), Z.el.hidden = t || e.kind !== "device", Z.el.hidden && nn(!1), On.el.hidden = !t, un(r), Fn();
-	}
-	X.pick.addEventListener("click", (e) => {
-		let t = e.target.closest("[data-sel]");
-		t && (mn(t.dataset.sel), cn(!1));
-	}), Z.fold.addEventListener("click", () => bn()), Z.rot.addEventListener("click", () => nn(!tn())), Z.hinge.addEventListener("click", () => vn());
-	function _n() {
-		Z.hinge.setAttribute("aria-pressed", String(w.hingeLine)), Z.hinge.title = w.hingeLine ? t("posture.hinge.hide") : t("posture.hinge.show");
-	}
-	function vn() {
-		let e = N;
-		e.kind === "device" && n[e.dev].fold && (w.hingeLine = !w.hingeLine, _n(), we.to(+!!w.hingeLine, 200, performance.now()), Wn());
-	}
-	let yn = (e) => [
-		"portrait",
-		"landscape-left",
-		"landscape-right"
-	].map((t) => oe(e, !e.folded, t)).find((t) => {
-		let n = ie(t);
-		return n?.kind === "device" && n.angle === e.angle;
-	}) ?? oe(e, !e.folded, "portrait");
-	function bn() {
-		let e = N;
-		e.kind === "device" && n[e.dev].fold && Gn(yn(e));
-	}
-	let Q = {
-		el: C("ruler"),
-		ext: C("rlExt"),
-		dim: C("rlDim"),
-		w: C("rlW"),
-		h: C("rlH"),
-		shown: {
-			w: "",
-			h: ""
-		}
-	}, xn = !1;
-	function Sn(e, t) {
-		let n = /^\d+$/.test(t.trim()) ? Number(t) : NaN;
-		if (!(n > 0)) return;
-		let r = i(n, 240, T), a = Math.round(N.w), o = Math.round(N.h), s = e === "w" ? r : a, c = e === "h" ? r : o;
-		(s !== a || c !== o) && (J[e].snap(r), Gn(Cn(s, c)));
-	}
-	let Cn = (e, t) => re.find((n) => n.w === e && n.h === t)?.sel || `custom:${e}x${t}`;
-	function wn(e = !1) {
-		if (!xn) {
-			if (N.kind !== "custom") {
-				let t = i(Math.round(N.w), 240, T), n = i(Math.round(N.h), 240, T);
-				if (Gn(`custom:${t}x${n}`), !e) for (let [e, r, i] of [[
-					"w",
-					Q.w,
-					t
-				], [
-					"h",
-					Q.h,
-					n
-				]]) r.value = String(i), Q.shown[e] = String(i);
-			}
-			xn = !0, gn();
-		}
-	}
-	for (let [e, t] of [["w", Q.w], ["h", Q.h]]) t.addEventListener("focus", () => {
-		t.select(), N.kind !== "device" && wn();
-	}), t.addEventListener("pointerdown", () => wn()), t.addEventListener("input", () => wn(!0)), t.addEventListener("keydown", (e) => {
-		if (e.key === "Enter") e.preventDefault(), t.blur();
-		else if (e.key === "Escape") e.preventDefault(), e.stopPropagation(), t.dataset.cancel = "1", t.blur();
+	t.PN.sum.addEventListener("click", () => Ct(t, !St(t))), t.PN.pick.addEventListener("click", (e) => {
+		let n = e.target.closest("[data-sel]");
+		n && (Et(t, n.dataset.sel), Ct(t, !1));
+	}), t.CTL.fold.addEventListener("click", () => Mt(t)), t.CTL.rot.addEventListener("click", () => $(t, !xt(t))), t.CTL.hinge.addEventListener("click", () => At(t));
+	for (let [e, n] of [["w", t.RL.w], ["h", t.RL.h]]) n.addEventListener("focus", () => {
+		n.select(), t.cur.kind !== "device" && Ft(t);
+	}), n.addEventListener("pointerdown", () => Ft(t)), n.addEventListener("input", () => Ft(t, !0)), n.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") e.preventDefault(), n.blur();
+		else if (e.key === "Escape") e.preventDefault(), e.stopPropagation(), n.dataset.cancel = "1", n.blur();
 		else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-			e.preventDefault(), wn();
-			let n = (e.key === "ArrowUp" ? 1 : -1) * te(e);
-			t.value = String(i((parseInt(t.value, 10) || 0) + n, 240, T));
+			e.preventDefault(), Ft(t);
+			let r = (e.key === "ArrowUp" ? 1 : -1) * E(e);
+			n.value = String(i((parseInt(n.value, 10) || 0) + r, 240, T));
 		}
-	}), t.addEventListener("blur", (n) => {
-		t.dataset.cancel ? delete t.dataset.cancel : Sn(e, t.value), Q.shown[e] = "", n.relatedTarget !== Q.w && n.relatedTarget !== Q.h && (xn = !1, gn(), Wn());
+	}), n.addEventListener("blur", (r) => {
+		n.dataset.cancel ? delete n.dataset.cancel : Nt(t, e, n.value), t.RL.shown[e] = "", r.relatedTarget !== t.RL.w && r.relatedTarget !== t.RL.h && (t.editing = !1, Ot(t), Z(t));
 	});
-	let Tn = (e) => `${((e - 240) / 1360 * 100).toFixed(3)}%`, En = Y("pnSl"), Dn = {};
-	for (let e of En.querySelectorAll(".sl")) {
-		let t = e.querySelector(".sl-track");
-		Dn[e.dataset.axis] = {
-			track: t,
-			thumb: e.querySelector(".thumb"),
-			fill: e.querySelector(".fill"),
-			val: e.querySelector(".v b")
-		};
-		for (let e of t.querySelectorAll(".tick")) e.style.left = Tn(Number(e.dataset.v));
-	}
-	let On = {
-		el: En,
-		w: Dn.w,
-		h: Dn.h
-	}, $ = null, kn = null, An = !1, jn = 0, Mn = null, Nn = () => On.el.classList.contains("off"), Pn = (e) => $ ? $[e] : i(Math.round(N[e]), 240, T);
-	function Fn() {
-		for (let e of ["w", "h"]) {
-			let t = On[e], n = Pn(e), r = Tn(n);
-			t.fill.style.width = r, t.thumb.style.left = r, t.val.textContent = String(n), t.thumb.setAttribute("aria-valuenow", String(n)), t.thumb.setAttribute("aria-valuetext", `${n}dp`);
-		}
-	}
-	function In(e, t) {
-		let n = i(Math.round(t), 240, T);
-		$ = {
-			w: Pn("w"),
-			h: Pn("h"),
-			[e]: n
-		}, Fn(), Wn();
-	}
-	function Ln() {
-		if (clearTimeout(jn), jn = 0, !$ || kn) return;
-		let { w: e, h: t } = $;
-		if (e === Math.round(N.w) && t === Math.round(N.h)) {
-			Rn();
-			return;
-		}
-		let n = $, r = Cn(e, t);
-		Mn = r, Gn(r).then((e) => {
-			!e && $ === n && Rn();
-		});
-	}
-	function Rn() {
-		clearTimeout(jn), jn = 0, kn = null, $ && ($ = null, N && !V.on && !G.on && L(M(N)), N && (J.w.snap(N.w), J.h.snap(N.h), Fn()), Wn());
-	}
 	for (let e of ["w", "h"]) {
-		let { track: t, thumb: n } = On[e], r = (e) => {
-			let n = t.getBoundingClientRect();
-			return 240 + i((e - n.left) / n.width, 0, 1) * 1360;
+		let { track: n, thumb: r } = t.SL[e], a = (e) => {
+			let t = n.getBoundingClientRect();
+			return 240 + i((e - t.left) / t.width, 0, 1) * (T - 240);
 		};
-		t.addEventListener("pointerdown", (i) => {
-			i.button === 0 && !Nn() && N && (i.preventDefault(), n.focus({
+		n.addEventListener("pointerdown", (i) => {
+			i.button === 0 && !It(t) && t.cur && (i.preventDefault(), r.focus({
 				preventScroll: !0,
 				focusVisible: !1
-			}), t.setPointerCapture(i.pointerId), kn = e, In(e, r(i.clientX)));
-		}), t.addEventListener("pointermove", (n) => {
-			kn === e && t.hasPointerCapture(n.pointerId) && In(e, r(n.clientX));
+			}), n.setPointerCapture(i.pointerId), t.dragging = e, zt(t, e, a(i.clientX)));
+		}), n.addEventListener("pointermove", (r) => {
+			t.dragging === e && n.hasPointerCapture(r.pointerId) && zt(t, e, a(r.clientX));
 		});
-		let a = () => {
-			kn === e && (kn = null, Ln());
+		let o = () => {
+			t.dragging === e && (t.dragging = null, Bt(t));
 		};
-		t.addEventListener("pointerup", a), t.addEventListener("lostpointercapture", a), n.addEventListener("keydown", (t) => {
-			let n = te(t), r = Pn(e), i = {
-				ArrowRight: r + n,
-				ArrowUp: r + n,
-				ArrowLeft: r - n,
-				ArrowDown: r - n,
+		n.addEventListener("pointerup", o), n.addEventListener("lostpointercapture", o), r.addEventListener("keydown", (n) => {
+			let r = E(n), i = Lt(t, e), a = {
+				ArrowRight: i + r,
+				ArrowUp: i + r,
+				ArrowLeft: i - r,
+				ArrowDown: i - r,
 				Home: 240,
 				End: T
-			}[t.key];
-			i !== void 0 && !Nn() && N && (t.preventDefault(), t.stopPropagation(), In(e, i), clearTimeout(jn), jn = window.setTimeout(Ln, 350));
-		}), n.addEventListener("focus", () => {
-			An = !0;
-		}), n.addEventListener("blur", (e) => {
-			e.relatedTarget !== On.w.thumb && e.relatedTarget !== On.h.thumb && (jn && Ln(), An = !1, N && gn());
+			}[n.key];
+			a !== void 0 && !It(t) && t.cur && (n.preventDefault(), n.stopPropagation(), zt(t, e, a), clearTimeout(t.keyTimer), t.keyTimer = window.setTimeout(() => Bt(t), 350));
+		}), r.addEventListener("focus", () => {
+			t.slFocus = !0;
+		}), r.addEventListener("blur", (e) => {
+			e.relatedTarget !== t.SL.w.thumb && e.relatedTarget !== t.SL.h.thumb && (t.keyTimer && Bt(t), t.slFocus = !1, t.cur && Ot(t));
 		});
 	}
-	X.pick.addEventListener("pointerdown", () => {
+	t.PN.pick.addEventListener("pointerdown", () => {
 		let e = document.activeElement;
-		(e === Q.w || e === Q.h) && (e.dataset.cancel = "1");
-	});
-	function zn(e) {
-		let t = Se.at(e);
-		if (pn && !P && !F && t > .99 && (pn = !1, Q.w.focus()), t < .01 && (J.w.snap(N.w), J.h.snap(N.h)), Q.el.hidden = t < .01 && !xn, Q.el.hidden) return;
-		Q.el.style.opacity = String(t);
-		let { cx: n } = he(), r = Math.max(w.gap, (ce(Ne(e)) * I.s.at(e) + 6) * Ce.at(e)), a = I.w.at(e), o = I.h.at(e), s = I.y.at(e), c = n - a / 2, l = n + a / 2, u = s + o, d = (s + u) / 2, f = s - r - 15, p = c - r - 22, m = 4.5;
-		for (let [t, n] of [["w", Q.w], ["h", Q.h]]) {
-			if (document.activeElement === n) continue;
-			let r = String(Math.round(J[t].at(e)));
-			Q.shown[t] !== r && (n.value = r, Q.shown[t] = r);
-		}
-		let h = i(Q.w.value.length * 7.2 + 16, 0, l - c - 4 * m) / 2, g = i(30, 0, u - s - 4 * m) / 2, _ = (e) => e.toFixed(1);
-		Q.ext.setAttribute("d", `M${_(c)} ${_(s - r)}V${_(f - 5)}M${_(l)} ${_(s - r)}V${_(f - 5)}M${_(c - r)} ${_(s)}H${_(p - 5)}M${_(c - r)} ${_(u)}H${_(p - 5)}`), Q.dim.setAttribute("d", `M${_(c)} ${_(f)}H${_(n - h)}M${_(n + h)} ${_(f)}H${_(l)}M${_(c + m)} ${_(f - m)}L${_(c)} ${_(f)}L${_(c + m)} ${_(f + m)}M${_(l - m)} ${_(f - m)}L${_(l)} ${_(f)}L${_(l - m)} ${_(f + m)}M${_(p)} ${_(s)}V${_(d - g)}M${_(p)} ${_(d + g)}V${_(u)}M${_(p - m)} ${_(s + m)}L${_(p)} ${_(s)}L${_(p + m)} ${_(s + m)}M${_(p - m)} ${_(u - m)}L${_(p)} ${_(u)}L${_(p + m)} ${_(u - m)}`), Q.w.style.left = n + "px", Q.w.style.top = f + "px", Q.h.style.left = p + "px", Q.h.style.top = d + "px";
-	}
-	let Bn = !1, Vn = 0, Hn = "";
-	function Un(e) {
-		if (Vn = 0, !Bn || !N) return;
-		pe.t = e, Qt();
-		let t = [
-			be,
-			xe,
-			Se,
-			Ce,
-			we,
-			z.a,
-			z.b,
-			R.old.grow,
-			R.old.blur,
-			R.old.veil,
-			R.old.op,
-			R.neu.op,
-			R.neu.blur,
-			J.w,
-			J.h
-		];
-		(P || F || V.on || G.on || !We(e) || e < B.t0 + B.dur || t.some((t) => !t.done(e))) && Wn();
-	}
-	function Wn() {
-		Bn && !Vn && (Vn = requestAnimationFrame(Un));
-	}
-	function Gn(e) {
-		return Promise.resolve(S.request(e));
-	}
-	X.pick.addEventListener("keydown", (e) => {
-		if (!rn.includes(e.target) || ![
+		(e === t.RL.w || e === t.RL.h) && (e.dataset.cancel = "1");
+	}), t.PN.pick.addEventListener("keydown", (e) => {
+		if (!t.ROWS.includes(e.target) || ![
 			"ArrowDown",
 			"ArrowUp",
 			"Home",
 			"End"
 		].includes(e.key)) return;
 		e.preventDefault(), e.stopPropagation();
-		let t = rn.indexOf(e.target), n = e.key === "Home" ? 0 : e.key === "End" ? rn.length - 1 : (t + (e.key === "ArrowUp" ? -1 : 1) + rn.length) % rn.length;
-		rn[n].focus(), mn(rn[n].dataset.sel, !0);
-	}), _n();
-	function Kn(e = !1) {
-		let t = `${l.clientWidth}:${l.clientHeight}:${me.w}`;
-		(t !== Hn || e) && (Hn = t, N && !V.on && !G.on && L(M(N), performance.now(), P?.kind === "size" ? c(w.frameDur, w.frameBounce) : null), Wn(), N && (pe.t = performance.now(), Qt()));
+		let n = t.ROWS.indexOf(e.target), r = e.key === "Home" ? 0 : e.key === "End" ? t.ROWS.length - 1 : (n + (e.key === "ArrowUp" ? -1 : 1) + t.ROWS.length) % t.ROWS.length;
+		t.ROWS[r].focus(), Et(t, t.ROWS[r].dataset.sel, !0);
+	}), kt(t), new ResizeObserver(() => {
+		let e = t.RL.h.offsetWidth;
+		e && e !== t.badge.w && (t.badge.w = e, bt(t));
+	}).observe(t.RL.h, { box: "border-box" });
+}
+// src/scene/state.ts
+function Ut(e, t) {
+	let r = (t) => e.querySelector(`#${t}`), i = {
+		sel: "original",
+		kind: "original",
+		name: "@Preview",
+		w: 411,
+		h: 891,
+		img: null
+	}, a = [{
+		sel: "narrow",
+		name: n("size.narrow"),
+		w: 320,
+		h: 640
+	}, {
+		sel: "foldable",
+		name: n("size.foldable"),
+		w: 673,
+		h: 841
+	}], o = /* @__PURE__ */ new Map(), s = { t: 0 }, c = { w: 45 }, l = {
+		w: new d(),
+		h: new d(),
+		s: new d(),
+		y: new d(48)
+	}, u = {
+		w: new d(),
+		h: new d()
+	}, p = new f(0), m = new f(0), h = new f(0), g = new f(0), _ = new f(1), v = ee(null), y = {
+		a: new f(1),
+		b: new f(0)
+	}, b = {
+		a: null,
+		b: null,
+		t0: 0,
+		dur: 460
+	}, x = { on: !1 }, S = r("rig"), C = B(S, ".space"), w = ue(B(S, ".slab.base")), T = ue(B(S, ".slab.leaf")), E = {
+		lift: B(S, ".lift"),
+		space: C,
+		plate: B(S, ".plate"),
+		spine: B(S, ".spine"),
+		crease: B(S, ".crease"),
+		tTop: B(S, ".r-top"),
+		tBot: B(S, ".r-bot"),
+		base: w,
+		leaf: T,
+		btns: Array.from({ length: 5 }, () => {
+			let e = document.createElement("div");
+			return e.className = "btn", C.append(e), e;
+		}),
+		F: {
+			inner: V(T.front.clip),
+			outer: V(T.back.clip),
+			base: V(w.front.clip)
+		}
+	};
+	for (let [e, t] of [[E.leaf.front, E.F.inner], [E.leaf.back, E.F.outer]]) t.blurs = Array.from({ length: 4 }, () => {
+		let e = document.createElement("div");
+		return e.className = "smear", e.innerHTML = "<div class=\"unstretch\"><img class=\"ly\" alt=\"\"></div>", t.el.insertBefore(e, t.cam), {
+			el: e,
+			inv: B(e, ".unstretch"),
+			img: B(e, "img")
+		};
+	}), t.dark = document.createElement("div"), t.dark.className = "smear", t.el.insertBefore(t.dark, t.cam), e.fit.push(...t.blurs.map((e) => e.el), t.dark);
+	E.base.front.fit.push(E.F.base.cast);
+	let D = /* @__PURE__ */ new Map(), O = { on: !1 }, k = xe(r("ua")), A = xe(r("ub")), j = {
+		w: new f(411),
+		h: new f(891)
+	}, M = {
+		el: K("panel"),
+		pick: K("pnPick"),
+		fold: K("pnFold"),
+		sum: K("pnSum"),
+		body: K("pnBody")
+	}, N = {
+		el: K("devCtl"),
+		fold: K("dcFold"),
+		rot: K("dcRot"),
+		hinge: K("dcHinge")
+	}, P = {
+		el: K("dcOrientation"),
+		menu: K("dcOrientMenu")
+	}, F = [...P.menu.querySelectorAll("[data-orientation]")], I = [...M.pick.querySelectorAll("[data-sel]")], L = {
+		sil: M.sum.querySelector(".pn-sum-sil"),
+		nm: M.sum.querySelector(".nm"),
+		dev: null
+	}, R = {
+		el: r("ruler"),
+		ext: r("rlExt"),
+		dim: r("rlDim"),
+		w: r("rlW"),
+		h: r("rlH"),
+		shown: {
+			w: "",
+			h: ""
+		}
+	}, te = K("pnSl"), z = {};
+	for (let e of te.querySelectorAll(".sl")) {
+		let t = e.querySelector(".sl-track");
+		z[e.dataset.axis] = {
+			track: t,
+			thumb: e.querySelector(".thumb"),
+			fill: e.querySelector(".fill"),
+			val: e.querySelector(".v b")
+		};
+		for (let e of t.querySelectorAll(".tick")) e.style.left = Te(Number(e.dataset.v));
 	}
-	return new ResizeObserver(() => {
-		let e = Q.h.offsetWidth;
-		e && e !== me.w && (me.w = e, Kn());
-	}).observe(Q.h, { box: "border-box" }), {
-		devices: new Set(Object.keys(n)),
+	return {
+		root: e,
+		hooks: t,
+		hingeLine: !0,
+		ORIGINAL: i,
+		PRESETS: a,
+		target: null,
+		images: o,
+		foldEaseKey: "",
+		foldEaseFn: null,
+		clock: s,
+		badge: c,
+		cur: null,
+		tr: null,
+		queued: null,
+		V: l,
+		O: u,
+		outlineOp: p,
+		creaseOp: m,
+		rulerOp: h,
+		shellOp: g,
+		hingeOp: _,
+		layer: v,
+		unitOp: y,
+		fadeB: null,
+		look: b,
+		rig: x,
+		rigEl: S,
+		RG: E,
+		stretchOf: D,
+		seeding: null,
+		spin: O,
+		spinEaseKey: "",
+		spinEaseFn: null,
+		elevationOf: null,
+		UA: k,
+		UB: A,
+		roll: j,
+		PN: M,
+		CTL: N,
+		ORIENT: P,
+		directions: F,
+		ROWS: I,
+		SUM: L,
+		focusW: !1,
+		RL: R,
+		editing: !1,
+		SL: {
+			el: te,
+			w: z.w,
+			h: z.h
+		},
+		draft: null,
+		dragging: null,
+		slFocus: !1,
+		keyTimer: 0,
+		slSent: null,
+		enabled: !1,
+		raf: 0,
+		roomSize: ""
+	};
+}
+// src/runtime/resize-scene.ts
+function Wt(t, n) {
+	let r = Ut(t, n);
+	Ht(r);
+	let i = (e) => wt(r, e);
+	return {
+		devices: new Set(Object.keys(e)),
 		setOriginal(e, t, n) {
-			Object.assign(ne, {
+			Object.assign(r.ORIGINAL, {
 				w: e,
 				h: t,
 				img: n
-			}), E?.sel === "original" && Object.assign(E, {
+			}), r.target?.sel === "original" && Object.assign(r.target, {
 				w: e,
 				h: t
-			}), N && gn(), N?.sel === "original" && (Object.assign(N, {
+			}), r.cur && Ot(r), r.cur?.sel === "original" && (Object.assign(r.cur, {
 				w: e,
 				h: t
-			}), P?.kind !== "fade" && L(M(N), performance.now(), P ? c(w.frameDur, w.frameBounce) : null), J.w.to(e, 420, performance.now()), J.h.to(t, 420, performance.now()), Wn());
+			}), r.tr?.kind !== "fade" && Y(r, J(r, r.cur), performance.now(), r.tr ? c(w.frameDur, w.frameBounce) : null), r.roll.w.to(e, 420, performance.now()), r.roll.h.to(t, 420, performance.now()), Z(r));
 		},
 		image(e, t) {
-			D.set(e, t), Wn(), N?.sel === e && (N.img = t, P?.to.sel === e ? (P.to.img = t, P.arriveAt = performance.now(), P.kind === "size" && P.swapped && (R.neu.r ? R.neu.r = t : R.old.r = t)) : P || (R.old.r = t));
+			r.images.set(e, t), Z(r), r.cur?.sel === e && (r.cur.img = t, r.tr?.to.sel === e ? (r.tr.to.img = t, r.tr.arriveAt = performance.now(), r.tr.kind === "size" && r.tr.swapped && (r.layer.neu.r ? r.layer.neu.r = t : r.layer.old.r = t)) : r.tr || (r.layer.old.r = t));
 		},
 		update(e, t = !1) {
-			E = e, $ && !kn && !jn && Math.round(e.w) === $.w && Math.round(e.h) === $.h && ($ = null), !N || t ? Re(e.sel) : Ke(e.sel), t && (pe.t = performance.now(), Qt()), Bn && !Vn && (Vn = requestAnimationFrame(Un));
+			r.target = e, r.draft && !r.dragging && !r.keyTimer && Math.round(e.w) === r.draft.w && Math.round(e.h) === r.draft.h && (r.draft = null), !r.cur || t ? Ke(r, e.sel) : $e(r, e.sel), t && (r.clock.t = performance.now(), vt(r)), r.enabled && !r.raf && (r.raf = requestAnimationFrame((e) => yt(r, e)));
 		},
 		enable(e) {
-			Bn = e, l.hidden = !e, e && addEventListener("pointerdown", ln, !0), e || (Z.el.hidden = !0, cn(!1), nn(!1), removeEventListener("pointerdown", ln, !0)), e || (Hn = ""), e ? Vn ||= requestAnimationFrame(Un) : (cancelAnimationFrame(Vn), Vn = 0, D.clear(), N = null, P = null, F = null, Rn(), An = !1);
+			r.enabled = e, r.root.hidden = !e, e && addEventListener("pointerdown", i, !0), e || (r.CTL.el.hidden = !0, Ct(r, !1), $(r, !1), removeEventListener("pointerdown", i, !0)), e || (r.roomSize = ""), e ? r.raf ||= requestAnimationFrame((e) => yt(r, e)) : (cancelAnimationFrame(r.raf), r.raf = 0, r.images.clear(), r.cur = null, r.tr = null, r.queued = null, Vt(r), r.slFocus = !1);
 		},
-		relayout: Kn,
-		moving: () => !!P || !!F || V.on || G.on || !!$,
+		relayout: (e) => bt(r, e),
+		moving: () => !!r.tr || !!r.queued || r.rig.on || r.spin.on || !!r.draft,
 		sliderOff(e) {
-			On.el.classList.toggle("off", e);
-			for (let t of ["w", "h"]) On[t].thumb.tabIndex = e ? -1 : 0, On[t].thumb.setAttribute("aria-disabled", String(e));
-			e && Rn();
+			r.SL.el.classList.toggle("off", e);
+			for (let t of ["w", "h"]) r.SL[t].thumb.tabIndex = e ? -1 : 0, r.SL[t].thumb.setAttribute("aria-disabled", String(e));
+			e && Vt(r);
 		},
 		clearImages() {
-			D.clear();
+			r.images.clear();
 		},
 		closeMenu() {
-			return tn() ? (nn(!1), !0) : sn() ? (cn(!1), !0) : !1;
+			return xt(r) ? ($(r, !1), !0) : St(r) ? (Ct(r, !1), !0) : !1;
 		},
 		sizeOf(e) {
-			let t = ie(e);
+			let t = q(r, e);
 			return t && {
 				w: t.w,
 				h: t.h
@@ -1792,4 +1845,4 @@ function S(l, S) {
 		}
 	};
 }
-export { S as createResizeScene };
+export { Wt as createResizeScene };
