@@ -167,6 +167,13 @@ try {
   await check(`document.querySelectorAll('.gsheet-shot[data-state="failed"] .gsheet-failed').length===1`, '그리지 못한 장은 실패 판');
   await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='3'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
   await check(`document.querySelectorAll('.gsheet-close').length===1 && document.querySelector('.gsheet-close').textContent.length>0`, '화면 읽기용 닫기 단추');
+  const stayed = [];
+  for (let i = 0; i < 6; i++) { await key('Tab'); stayed.push(await evaluate(`!!document.activeElement?.closest('.gsheet')`)); }
+  ok(stayed.every(x => x === true), 'Tab 이 시트 밖으로 나가지 않는다');
+  await check(`!!document.querySelector('#rail').closest('[inert]') && !!document.querySelector('#bar').closest('[inert]') && !document.querySelector('.gsheet').closest('[inert]')`, '시트가 떠 있는 동안 헤더 · 레일은 막힌다');
+  for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'k', code: 'KeyK', modifiers: 4 });
+  await pause(200);
+  await check(`!document.querySelector('#qoSheet').classList.contains('on')`, '시트가 떠 있는 동안 ⌘K 는 빠른 열기를 띄우지 않는다');
   for (let i = 0; i < 100 && await evaluate('__frames') < 90; i++) await pause(30);
   ok((await evaluate('__out')).length === 0, `여는 동안 시트 내용이 틀 밖으로 나가지 않는다 ${(await evaluate('__out')).slice(0, 3)}`);
   await key('/', 'Slash');
@@ -204,6 +211,16 @@ try {
   await check(`document.querySelector('.gsheet-stage').dataset.flow==='col'`, '모든 그림이 가로면 세로로 쌓는다');
   await key('Escape');
   await until(sheetGone);
+
+  const openedBeforeClosing = opened.length;
+  await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
+  await until(sheetUp);
+  await key('Escape');
+  for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, ...(type === 'keyDown' ? { text: '\r' } : {}) });
+  await until(sheetGone);
+  await pause(300);
+  ok(opened.length === openedBeforeClosing && await evaluate(`document.querySelector('#galleryView').hidden===false`), '닫히는 중에 누른 Enter 는 보드를 열지 않는다');
+  await check(`!document.querySelector('[data-sheet-inert]') && !document.querySelector('#rail').closest('[inert]')`, '닫으면 바깥 막음이 풀린다');
 
   await click('#galleryView .gcard-slot:nth-child(3) .gcard-hit');
   await until(sheetUp);

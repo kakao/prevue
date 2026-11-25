@@ -80,7 +80,7 @@ export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; close
 export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, layers: EscapeLayers) {
   const keydown = (e: KeyboardEvent) => {
     // ⌘K(Ctrl+K) — 웹 앱 검색의 관용 키. 브라우저의 주소창 검색보다 먼저 받는다. ⌘P(인쇄)는 잡지 않는다.
-    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); a.openQuickOpen(document.activeElement); return; }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); if (!layers.sheetOpen()) a.openQuickOpen(document.activeElement); return; }
     if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
     const key = keyOf(e);
     // 버튼의 Enter 는 그 버튼이 받는다 — 키보드로 간 버튼(:focus-visible)만. 마우스로 누른 뒤 남은 포커스가 고른 카드 열기를 가져가면 안 된다(D-63).

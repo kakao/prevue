@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { fetchGallerySheet, type GallerySheetAnswer } from '../runtime/api';
 import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { useMessages } from '../messages';
@@ -92,6 +92,29 @@ function plan(card: HTMLElement, sheet: HTMLElement): Step[] {
 
 const dropGhosts = (sheet: HTMLElement) => sheet.parentElement?.querySelectorAll('.gsheet-ghost').forEach(g => g.remove());
 const backwards = (kf: Keyframe[]) => kf.slice().reverse().map((k, i, all) => ({ ...k, offset: k.offset == null ? (all.length === 1 ? 1 : i / (all.length - 1)) : 1 - (k.offset as number) }));
+function shutOutside(layer: HTMLElement) {
+  const shut: Element[] = [];
+  for (let at: HTMLElement | null = layer; at && at !== document.body; at = at.parentElement) {
+    for (const e of at.parentElement?.children ?? []) {
+      if (e === at || e.hasAttribute('inert') || e.tagName === 'SCRIPT') continue;
+      e.setAttribute('inert', '');
+      e.setAttribute('data-sheet-inert', '');
+      shut.push(e);
+    }
+  }
+  return shut;
+}
+
+function cycleFocus(e: KeyboardEvent<HTMLElement>) {
+  if (e.key !== 'Tab') return;
+  const stops = [...e.currentTarget.querySelectorAll<HTMLElement>('button')];
+  const at = stops.indexOf(document.activeElement as HTMLElement);
+  const next = stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length];
+  if (!next) return;
+  e.preventDefault();
+  next.focus();
+}
+
 const cardOf = (path: string) => document.querySelector<HTMLElement>(`#galleryView .gcard-slot[data-path="${CSS.escape(path)}"] .gcard`);
 
 export function GallerySheet({ file, text, view, closing, onClose, onClosed, onOpen }: {
@@ -117,8 +140,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
     const keep = [root.style.overflow, body.style.overflow, root.style.scrollbarGutter];
     root.style.scrollbarGutter = 'stable';
     root.style.overflow = body.style.overflow = 'hidden';
-    const grid = document.querySelector<HTMLElement>('#galleryView .gallery-in');
-    grid?.setAttribute('inert', '');
+    const shut = shutOutside(sheet.current!.parentElement!);
     const c = cardOf(file.path), r = c?.getBoundingClientRect(), el = sheet.current!;
     const w = Math.min(MAX_W, Math.max(MIN_W, (r?.width ?? MIN_W) * SCALE), innerWidth - EDGE * 2);
     const stage = `${Math.round(w * STAGE_RATIO - STAGE_INSET)}px`;
@@ -130,7 +152,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       ['--stage-h' as string]: stage });
     return () => {
       root.style.overflow = keep[0]; body.style.overflow = keep[1]; root.style.scrollbarGutter = keep[2];
-      grid?.removeAttribute('inert');
+      shut.forEach(e => { e.removeAttribute('inert'); e.removeAttribute('data-sheet-inert'); });
       const card = cardOf(file.path);
       if (card) card.style.visibility = '';
       if (sheet.current) dropGhosts(sheet.current);
@@ -164,12 +186,13 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
     const finish = () => {
       if (!live) return;
       el.parentElement!.style.visibility = 'hidden';
-      document.querySelector('#galleryView .gallery-in')?.removeAttribute('inert');
+      document.querySelectorAll('[data-sheet-inert]').forEach(e => { e.removeAttribute('inert'); e.removeAttribute('data-sheet-inert'); });
       if (c) { c.style.visibility = ''; c.querySelector<HTMLElement>('.gcard-hit')?.focus({ preventScroll: true }); }
       onClosed();
     };
     const dur = motionMs('--duration-long1'), ease = motionToken('--easing-standard'), quick = motionMs('--duration-short2');
     el.parentElement!.getAnimations({ subtree: true }).forEach(a => a.cancel());
+    if (el.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
     dropGhosts(el);
     el.classList.add('closing');
     const runs: Animation[] = [el.parentElement!.querySelector('.gsheet-scrim')!.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: ease, fill: 'forwards' })];
@@ -189,7 +212,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   return <div className="gsheet-layer">
     <div className="gsheet-scrim" onClick={onClose} />
     <section ref={sheet} className="gsheet" role="dialog" aria-modal="true" aria-label={text.name} data-cap={slots.some(s => s.label) || undefined}
-      style={place ?? { visibility: 'hidden' }}>
+      style={place ?? { visibility: 'hidden' }} onKeyDown={cycleFocus}>
       <span className="gsheet-shell" />
       <span className="gsheet-mediabg" />
       <div className="gsheet-stage" data-flow={flow} style={{ ['--k' as string]: slots.length }}>
