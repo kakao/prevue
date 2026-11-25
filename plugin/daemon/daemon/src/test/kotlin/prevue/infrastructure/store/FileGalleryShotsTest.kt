@@ -108,6 +108,15 @@ class FileGalleryShotsTest {
         assertEquals(listOf("shots.json"), root.listFiles()!!.single().list()!!.toList())
     }
 
+    @Test fun `빌드가 바뀌면 못 그린 기록을 잊고 그린 장은 남긴다`() = runBlocking {
+        val s = store()
+        s.keep(File("/r/A.kt"), 2, 0, out("A0", 100, 200))
+        s.fail(File("/r/A.kt"), 2, 1)
+        s.forgetFailures()
+        val k = store().kept(File("/r/A.kt"))!!
+        assertEquals(listOf(0) to emptyMap<Int, Long>(), k.shots.map { it.index } to k.failedAt)
+    }
+
     @Test fun `모르는 id 는 그림이 없다`() {
         assertNull(store().image("nope-0"))
         assertNull(store().image("../x"))

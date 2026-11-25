@@ -58,6 +58,12 @@ public class FileGalleryShots(
         }
     }
 
+    override suspend fun forgetFailures(): Unit = withContext(dispatchers.io) {
+        lock.withLock {
+            for ((key, e) in entries.filterValues { it.failedAt.isNotEmpty() }) record(key, File(root, key), Entry(e.path, e.sheets, e.shots, emptyMap()))
+        }
+    }
+
     override fun kept(file: File): Kept? {
         val key = keyOf(file)
         val e = entries[key] ?: return null

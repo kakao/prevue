@@ -8,6 +8,7 @@ interface GalleryShots {
 
     suspend fun keep(file: File, sheets: Int, index: Int, out: RenderOutput): Shot
     suspend fun fail(file: File, sheets: Int, index: Int)
+    suspend fun forgetFailures()
     fun kept(file: File): Kept?
     fun image(id: String): File?
 

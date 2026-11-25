@@ -55,7 +55,7 @@ class GalleryKeeper(
 
     companion object {
         fun picks(s: WorkspaceState): List<Pick> {
-            val b = s.board?.takeIf { s.stale.isEmpty() && !s.buildPending } ?: return emptyList()
+            val b = s.board?.takeIf { s.stale.isEmpty() && !s.buildPending && s.activeTabOrNull()?.params.isNullOrEmpty() } ?: return emptyList()
             val out = ArrayList<Pick>()
             for ((i, c) in b.cards.take(GalleryShots.TRY).withIndex()) {
                 if (out.count { it.drawn } == GalleryShots.FRONT) break

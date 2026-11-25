@@ -14,6 +14,7 @@ import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.BuildChange
 import prevue.application.port.Compiler
 import prevue.application.port.FailureKind
+import prevue.application.port.GalleryShots
 
 @SingleIn(AppScope::class)
 @Inject
@@ -24,10 +25,12 @@ class ExternalBuilds(
     private val literals: LiteralPatches,
     private val live: LiveShot,
     private val boards: Boards,
+    private val gallery: GalleryShots,
 ) {
     suspend fun applyBuild(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
         if (change.buildFiles.isNotEmpty()) ed.markStaleOnce(StaleReasons.BUILD_FILES, StaleReasons.buildFiles(change.buildFiles))
+        if (done && change.built.isNotEmpty()) gallery.forgetFailures()
         if (ws.now.current == null) return@exclusive ExternalResult.NoPreview
 
         val p = ws.now.let { it.board?.focusCard?.spec ?: it.current }

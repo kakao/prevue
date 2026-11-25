@@ -67,5 +67,7 @@ class GalleryKeeperTest {
         val first = s.board!!.cards[0].spec
         assertEquals(emptyList<Int>(), GalleryKeeper.picks(s.copy(cardOverride = CardOverride(first.previewId, ScreenSize.BAR[1]))).map { it.index })
         assertEquals((0 until focus).toList(), GalleryKeeper.picks(s.copy(interactive = true)).map { it.index })
+        val withParams = s.copy(tabs = s.tabs.map { it.copy(params = mapOf("uiMode" to "night")) })
+        assertEquals(emptyList<Int>(), GalleryKeeper.picks(withParams).map { it.index })
     }
 }
