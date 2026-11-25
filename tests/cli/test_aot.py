@@ -1,11 +1,8 @@
-"""AOT 캐시 임시 파일 거두기 — bin/prevue 의 aot_args 를 떼어 와 임시 PREVUE_HOME 에서 돌린다. 데몬 · 실제 JDK 가 필요 없다.
-실행: python3 -m unittest discover -s tests/cli
-"""
-
 import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -30,7 +27,11 @@ class AotTemp(unittest.TestCase):
 
     def put(self, name, age_days):
         p = Path(self.aot, name)
-        p.write_text("x")
+        if name.endswith(".training"):
+            p.mkdir()
+            (p / "pid").write_text("999999")
+        else:
+            p.write_text("x")
         t = p.stat().st_mtime - age_days * DAY
         os.utime(p, (t, t))
 
@@ -44,7 +45,7 @@ class AotTemp(unittest.TestCase):
 
     def test_하루_넘은_다른_키의_임시_파일은_거둔다(self):
         for n in ("1.aot.tmp", "1.aot.tmp.config", "1.aot", "1.training"):
-            self.put(n, 2)
+            self.put(n, 3)
         self.run_aot()
         self.assertFalse([n for n in self.names() if n.startswith("1.")], self.names())
 
@@ -52,7 +53,7 @@ class AotTemp(unittest.TestCase):
         for n in ("1.aot.tmp", "1.aot.tmp.config"):
             self.put(n, 0)
         self.run_aot()
-        self.assertEqual({"1.aot.tmp", "1.aot.tmp.config"} <= set(self.names()), True, self.names())
+        self.assertLessEqual({"1.aot.tmp", "1.aot.tmp.config"}, set(self.names()))
 
     def test_죽은_학습의_잠금을_치울_때_그_키의_config도_치운다(self):
         key = self.learn()
@@ -61,6 +62,21 @@ class AotTemp(unittest.TestCase):
         self.put(key + ".aot.tmp.config", 0)
         self.run_aot()
         self.assertFalse([n for n in self.names() if n.endswith((".tmp", ".tmp.config"))], self.names())
+
+    def test_산_학습의_임시_파일은_하루가_넘어도_둔다(self):
+        key = self.learn()
+        out = os.path.join(self.aot, key + ".aot.tmp")
+        live = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "-XX:AOTCacheOutput=" + out])
+        self.addCleanup(live.wait)
+        self.addCleanup(live.kill)
+        shown = subprocess.run(["ps", "-p", str(live.pid), "-o", "command="], capture_output=True, text=True).stdout
+        if "-XX:AOTCacheOutput=" not in shown:
+            self.skipTest("이 환경은 다른 프로세스의 명령줄을 읽지 못한다")
+        Path(self.aot, key + ".training", "pid").write_text(str(live.pid))
+        self.put(key + ".aot.tmp", 3)
+        self.put(key + ".aot.tmp.config", 3)
+        self.run_aot()
+        self.assertLessEqual({key + ".aot.tmp", key + ".aot.tmp.config"}, set(self.names()))
 
 
 if __name__ == "__main__":
