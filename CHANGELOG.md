@@ -14,6 +14,7 @@ Only changes users can see go here.
 - The ▶ button on board cards opens at once instead of sliding wider when your system asks to reduce motion.
 - Redrawing with `render --fresh` while a card is interactive now updates that card on the board too.
 - **Leftover AOT training files no longer pile up in `~/.prevue/aot`** — the `.aot.tmp.config` files an interrupted class-cache training leaves behind are removed on the next daemon start once they are a day old, and right away when that training's stale lock is cleaned up.
+- **`prevue setup` and the first `start` after an update no longer fail with "UnsupportedClassVersionError"** while a Kotlin compile daemon that another build started on JDK 17 is still running ([#315](https://github.com/kakao/prevue/issues/315)). Reported by @GMLim.
 
 ## [0.23.0] — 2026-11-19
 

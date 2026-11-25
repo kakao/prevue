@@ -75,8 +75,10 @@ class Baked(Case):
     def traced(self, path):
         """부르면 흔적 파일을 남기는 실행 파일. 흔적 경로를 돌려준다."""
         trace = path + ".ran"
+        if os.path.exists(trace):
+            os.remove(trace)
         with open(path, "w") as f:
-            f.write('#!/bin/sh\n: > "%s"\n' % trace)
+            f.write('#!/bin/sh\necho "$*" > "%s"\n' % trace)
         os.chmod(path, 0o755)
         return trace
 
@@ -89,6 +91,13 @@ class Baked(Case):
                                 PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
         return code, out, os.path.exists(gradle_ran)
 
+    def gradle_args(self, *setup_args):
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-setup" + "".join(setup_args)), "21.0.12")
+        trace = self.traced(os.path.join(self.plugin, "daemon", "gradlew"))
+        self.prevue("setup", *setup_args, PREVUE_JDK=jdk)
+        with open(trace) as f:
+            return f.read().split()
+
     def test_start_bake_without_21_jdk_answers_jdk_before_gradle(self):
         code, out, gradle = self.bake_start("11.0.18")
         self.assertEqual((code, out.get("missing"), out.get("jdkVersion")), (3, ["jdk"], "11"), out)
@@ -99,6 +108,15 @@ class Baked(Case):
         code, out, gradle = self.bake_start("21.0.12")
         self.assertTrue(gradle, "21+ JDK 인데 굽기가 Gradle 래퍼를 부르지 않았다")
         self.assertEqual((code, out.get("missing")), (3, ["toolchain"]), out)
+
+    def test_every_bake_compiles_inside_gradle_not_in_a_shared_kotlin_daemon(self):
+        in_process = "-Pkotlin.compiler.execution.strategy=in-process"
+        for args in ((), ("--offline",)):
+            with self.subTest(setup=args):
+                self.assertIn(in_process, self.gradle_args(*args))
+        self.bake_start("21.0.12")
+        with open(os.path.join(self.plugin, "daemon", "gradlew.ran")) as f:
+            self.assertIn(in_process, f.read().split())
 
     def test_health_counts_the_toolchain_by_its_directories_not_the_env_file(self):
         f = self.file()
