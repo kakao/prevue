@@ -1,10 +1,10 @@
 ---
-name: ship
-description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 머지(=배포)하고, Release 워크플로가 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
+name: release
+description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 머지(=배포)하고, Release 워크플로가 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/release, /release 0.11.0). 멈춘 자리부터 이어 간다.
 ---
-<!-- 생성물이다. dev-skills-src/ship/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
+<!-- 생성물이다. dev-skills-src/release/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
 
-# ship — Prevue 릴리즈
+# release — Prevue 릴리즈
 
 릴리즈는 **사용자가 지시할 때만** 한다. 이 스킬이 불렸다는 것이 그 지시다. 규칙(왜 PR이 하나인가 · merge commit · 직접 푸시 예외)은 그 규칙을 쓰는 단계에 이유와 함께 둔다.
 
@@ -130,7 +130,7 @@ gh pr checks <N> --watch
 `Verify`의 판정 job `ci-success`가 초록이어야 하고, PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
 
-실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/ship`을 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
+실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/release`를 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
 
 초록이면:
 

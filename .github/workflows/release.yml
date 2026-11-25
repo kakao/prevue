@@ -1,11 +1,11 @@
-# Release record — runs when the release PR (develop → main) is merged, by hand or by /ship; leaves the tag and the
+# Release record — runs when the release PR (develop → main) is merged, by hand or by /release; leaves the tag and the
 # GitHub Release.
 # main is what users install: both marketplaces read the plugin from the main branch, so the merge itself is the shipping
 # moment and this is only a record — a late or failed run does not affect anyone installing.
 # Verification finished before the merge: the main ruleset requires Verify's verdict (ci-success) and the skill evaluation
-# certificate (the "스킬 평가" status, posted by /ship) on the release PR, a merge commit, and a PR head that contains main —
+# certificate (the "스킬 평가" status, posted by /release) on the release PR, a merge commit, and a PR head that contains main —
 # so the merged tree is exactly the verified develop tree. This run checks that once more before it tags.
-# The version's single source is plugin/VERSION; tools/sync-version.sh carries it over in the version commit (/ship).
+# The version's single source is plugin/VERSION; tools/sync-version.sh carries it over in the version commit (/release).
 #
 #   (merge into main)                                            tags and releases
 #   gh workflow run release.yml --ref main                       run again — does nothing when the tag exists

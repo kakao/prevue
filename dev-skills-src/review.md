@@ -53,7 +53,7 @@ sh tools/lint.sh                       # 기준 origin/develop — 릴리즈 PR�
 | `plugin/cli/` · `plugin/bin/` | `python3 -m unittest discover -s tests/cli` |
 | `tools/lint/` | `sh tools/lint.sh`(자기 검사 `tests/lint`를 먼저 돈다) |
 | `viewer-src/` · `plugin/viewer/` | `sh tools/gen-viewer.sh --check` · `python3 -m unittest discover -s tests/cli`(마크업 · 사전) · 헤드리스 Chrome(`tests/viewer/`) |
-| `skills-src/` · `dev-skills-src/` | `sh tools/gen-agents.sh --check` · `python3 -m unittest discover -s tests/cli`(스킬의 JSON 예시) — 배포 스킬은 릴리즈 때 `/ship`의 스킬 평가(`tests/evals`)가 잰다 |
+| `skills-src/` · `dev-skills-src/` | `sh tools/gen-agents.sh --check` · `python3 -m unittest discover -s tests/cli`(스킬의 JSON 예시) — 배포 스킬은 릴리즈 때 `/release`의 스킬 평가(`tests/evals`)가 잰다 |
 
 렌더 출력(PNG 픽셀 · 크기)을 바꾼 diff는 `plugin/daemon/daemon/src/integrationTest`의 이미지 단언(`ImageIO` 읽기)을 찾아 바뀐 전제와 대조한다 — 돌리지 않으므로 그 단언이 깨지는지는 CI에서야 드러난다.
 
