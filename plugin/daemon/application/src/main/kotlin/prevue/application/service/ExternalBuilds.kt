@@ -3,6 +3,7 @@ package prevue.application.service
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CancellationException
 import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.PreviewSpec
@@ -30,7 +31,7 @@ class ExternalBuilds(
     suspend fun applyBuild(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
         if (change.buildFiles.isNotEmpty()) ed.markStaleOnce(StaleReasons.BUILD_FILES, StaleReasons.buildFiles(change.buildFiles))
-        if (done && change.built.isNotEmpty()) gallery.forgetFailures()
+        if (done && change.built.isNotEmpty()) forgetGalleryFailures()
         if (ws.now.current == null) return@exclusive ExternalResult.NoPreview
 
         val p = ws.now.let { it.board?.focusCard?.spec ?: it.current }
@@ -42,6 +43,13 @@ class ExternalBuilds(
             Plan.OutputsGone -> { ed.markStale(StaleReasons.BUILD, StaleReasons.outputsGone(change.built)); ExternalResult.OutputsGone }
             Plan.BuildPending -> { ed.markStale(StaleReasons.BUILD, StaleReasons.buildPending(change.built, own)); ExternalResult.BuildPending }
             is Plan.Redraw -> redraw(ed, change, p!!, plan.clear)
+        }
+    }
+
+    private suspend fun forgetGalleryFailures() {
+        try { gallery.forgetFailures() } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            System.err.println("[prevue] 갤러리의 못 그린 기록을 잊지 못했다: $e")
         }
     }
 
