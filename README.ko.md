@@ -25,22 +25,21 @@
 
 <p align="center">
   <img src="assets/intro.webp" width="1000"
-       alt="Pearl 예제 앱으로 30초 안에 보는 Prevue. 가리키기: Thai Milk Tea 카드를 누르면 그림 옆에 카드가 열리고 DrinkCard, PearlScreen.kt:135, 크기, Modifier, 둘레의 트리가 보인다. 핫스왑: Preview 여러 장이 놓인 보드에서 한 번 저장하자 음료 카드가 가로로 긴 줄로 바뀌고, 또 한 번 저장해 Theme.kt의 색을 바꾸자 다크 테마가 되며, 그때마다 Preview 30장이 함께 다시 그려진다. 레이아웃은 1.2초, 색은 0.6초, Gradle 빌드 없이. 인터랙티브: 라이브 Preview를 스크롤하고 Mango Smoothie를 열어 사이즈 L, 얼음, 펄, 토핑을 고르면 누를 때마다 컵이 다시 그려진다. 모든 화면: 그 음료 화면이 673×841에서 커스텀 너비 897로 늘어나고, 이어 iPhone Duo가 펼쳐졌다가 접힌다">
+       alt="Pearl 예제 앱으로 보는 가리키기 · 핫스왑 · 인터랙티브 · 모든 화면">
 </p>
 <p align="center"><sub>가리키기, 핫스왑, 인터랙티브, 모든 화면 — 모두 이 저장소의 예제 앱 Pearl(<a href="fixtures/pearl"><code>fixtures/pearl</code></a>)을 실제로 그린 화면입니다.</sub></p>
 
-에이전트가 화면을 다 고쳤다고 하면 Android Studio를 열고 빌드가 끝나기를 기다려 확인합니다.
-틀린 곳이 있으면 스크린샷을 찍어 설명하고 또 기다립니다. **코드는 에이전트가 짜는데, 화면 확인은 매번 사람 몫입니다.**
-Prevue는 저장할 때마다 1초 안팎으로 Preview를 다시 그려 에이전트가 직접 보게 합니다. 사람은 루프에서 빠져 있다가 다 된 화면만 확인하면 됩니다.
+에이전트는 Compose 화면을 고칠 수는 있어도 볼 수는 없습니다. 그래서 고칠 때마다 사람이 Android Studio 빌드를 기다려 확인하고, 틀린 곳을 스크린샷으로 설명해 줘야 합니다.
+Prevue는 저장할 때마다 1초 안팎으로 Preview를 다시 그려 에이전트에게 보여 줍니다. 에이전트가 혼자 고치고 확인하니, 사람은 다 된 화면만 보면 됩니다.
 
 <p align="center">
   <img src="assets/agent-loop.ko.png" width="720"
-       alt="UI 수정 루프를 위아래로 비교한 그림. 위는 Prevue 이전이다. 주황으로 강조된 개발자가 루프 안에 있다. 코딩 에이전트가 고쳐 저장하면 Android Studio가 약 4초 빌드해 Preview를 그리고, 개발자가 보고 스크린샷을 찍어 무엇이 틀렸는지 설명하면 에이전트가 다시 고친다. 이 일이 루프마다 되풀이된다. 아래는 Prevue를 쓸 때로, 개발자는 루프 밖에 있다. 목표와 기준을 코딩 에이전트에게 주면 에이전트가 고쳐 저장하고, Prevue가 약 1초에 그린 PNG를 기준과 비교하며 혼자 루프를 돈다. 끝나면 개발자가 브라우저의 같은 Preview로 확인한다">
+       alt="Prevue 이전과 이후의 UI 수정 루프 비교">
 </p>
 
 ## 확인도 에이전트가 합니다
 
-시안(Figma 프레임 · 스크린샷 · 목업)을 주면 에이전트가 혼자서 고치고, 다시 그려진 Preview를 시안과 비교하고, 또 고칩니다. 사람은 다 된 화면을 브라우저에서 확인하기만 하면 됩니다.
+시안(Figma 프레임 · 스크린샷 · 목업)만 주면 됩니다. 에이전트가 고치고, 다시 그려진 Preview를 시안과 비교하고, 맞을 때까지 이 과정을 되풀이합니다. 사람은 다 된 화면을 브라우저에서 확인만 하세요.
 
 ```
 이 스크린샷처럼 ForYouScreen 헤더 맞춰줘
@@ -48,40 +47,40 @@ Prevue는 저장할 때마다 1초 안팎으로 Preview를 다시 그려 에이�
 
 <p align="center">
   <img src="assets/match.gif" width="640"
-       alt="사람이 손대지 않아도 시안에 맞춰 가는 장면. 왼쪽은 mockup.png로, 헤더가 초록색인 Pearl 메뉴 화면이다. 가운데는 PearlListPreview를 띄운 Prevue 보드로, 헤더가 파랗고 제목 글자가 작고 음료 그리드가 양옆에 붙은 상태로 시작한다. 그 아래는 에이전트의 터미널이다. PearlListPreview를 mockup.png에 맞추라고 하자 에이전트가 세 번 저장한다. 그리드 여백 8 → 24dp, 헤더 색을 초록으로, 제목 22 → 28sp. 저장할 때마다 prevue wait를 돌리고, 보드가 다시 그려질 때마다 차이가 하나씩 사라진다. 세 번째 저장 뒤 Preview가 시안과 똑같아지고 터미널에 matches mockup.png가 찍힌다">
+       alt="에이전트가 혼자 시안에 맞춰 Preview를 고치는 장면">
 </p>
 
-탭하거나 드래그해야 바뀌는 화면도 마찬가지입니다. 에이전트가 Preview를 인터랙티브 모드로 바꾸고 터치를 보낸 뒤, 바뀐 화면을 받아 봅니다.
+탭이나 드래그로 바뀌는 화면도 확인합니다. 에이전트가 Preview에 직접 터치를 보내고 바뀐 화면을 받아 봅니다.
 
 ## 핫스왑
 
 저장하면 Gradle 없이 1초쯤 뒤에 Preview가 새로 뜹니다. 여백 · 색 · 문구 같은 값만 바꿨다면 0.2초쯤 걸립니다([벤치마크](#벤치마크)).
-한 파일의 `@Preview`는 함수별로 묶여 보드 한 장에 펼쳐지고, 저장할 때마다 전부 다시 그려집니다. 에이전트와 사람이 같은 보드를 보므로, 에이전트가 "다 됐어요"라고 말할 때 사람도 이미 그 화면을 보고 있습니다.
+한 파일의 `@Preview`는 함수별로 묶여 보드 한 장에 펼쳐지고, 저장할 때마다 전부 다시 그려집니다. 에이전트와 사람이 같은 보드를 보니, 에이전트가 "다 됐어요"라고 할 때면 사람도 이미 결과를 보고 있습니다.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview가 함수별로 묶여 놓인 보드. 헤더에는 앱 이름과 폴더 · 브랜치 · 모듈 · 변형이, 오른쪽에는 ✓ 알약이 있다. 왼쪽 열린 파일 목록에 ForYouScreen · InterestsScreen · NewsResourceCard가 있고, 묶음 제목 줄에 장 수와 배율이 적혀 있다. Preview마다 그림 위에 이름과 크기가 적혀 있다"><img src="assets/board-kotlinconf.png" width="50%" alt="KotlinConf 앱 ui-components 모듈의 commonMain에 있는 TalkCard.kt 보드. 헤더에 KotlinConf와 kotlinconf-app · main · app:ui-components · commonMain · debug가 적혀 있다. 왼쪽 열린 파일 목록의 SpeakerCard · MainHeader · Kodee · TalkCard 파일 아이콘마다 Kotlin Multiplatform 표식이 붙어 있다. TalkCardLivePreview와 TalkCardUpcomingPreview 두 묶음에 Asynchronous Programming With Kotlin Coroutines 세션 카드가 라이트와 다크로 한 장씩 있다. 카드에는 태그 · 연사 · 장소 · 시간이 보이고, 그림 위에 카드마다 이름과 크기가 적혀 있다">
+  <img src="assets/hero.png" width="50%" alt="nowinandroid ForYouScreen.kt의 Preview 보드"><img src="assets/board-kotlinconf.png" width="50%" alt="KotlinConf 앱 commonMain의 TalkCard.kt 보드">
 </p>
 <p align="center"><sub>왼쪽: <a href="https://github.com/android/nowinandroid">Now in Android</a>(Apache-2.0) · 오른쪽: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf 앱</a>, Compose Multiplatform(Apache-2.0)</sub></p>
 
-Kotlin Multiplatform · Compose Multiplatform 모듈도 똑같이 됩니다. Android Studio처럼 commonMain Preview를 그 모듈의 Android 컴파일 결과로 그리기 때문에, iOS나 웹 타깃이 함께 있어도 상관없습니다. Compose Multiplatform 리소스(`Res`)도 앱에서와 똑같이 그려집니다.
+Kotlin Multiplatform · Compose Multiplatform 모듈도 그대로 됩니다. commonMain Preview도 Android Studio처럼 그 모듈의 Android 쪽으로 컴파일해 그리므로, iOS나 웹 타깃이 같이 있어도 괜찮습니다. Compose Multiplatform 리소스(`Res`)도 앱과 똑같이 나옵니다.
 
-화면 파일과 컴포넌트 파일을 오가며 고쳐도 한 번 연 파일은 왼쪽 목록에 남습니다. `/`나 `⌘K`를 누르면 파일 이름 · 머리글자(`fys` → `ForYouScreen.kt`) · Preview 함수 이름으로 찾아 열 수 있습니다. 단축키 전체는 뷰어에서 `?`를 누르면 나옵니다.
+화면 파일과 컴포넌트 파일을 오가며 고치더라도 한 번 연 파일은 왼쪽 목록에 남아 있습니다. `/`나 `⌘K`를 누르면 파일 이름 · 머리글자(`fys` → `ForYouScreen.kt`) · Preview 함수 이름으로 찾아 열 수 있습니다. 단축키 전체는 뷰어에서 `?`를 누르면 나옵니다.
 
 ## 모든 Preview를 한눈에
 
-파일 이름이 기억나지 않으면 눈으로 훑어 찾으면 됩니다. **모든 Preview** 화면은 프로젝트의 Preview 파일을 전부 카드로 늘어놓고, 최근에 바뀐 파일부터 보여 줍니다. 탭이 하나도 없을 때 처음 뜨는 화면이고, 레일 맨 위에서 열거나 보드에서 `esc`를 눌러 돌아올 수 있습니다.
-카드에는 파일 이름 · 패키지 · 모듈과 Preview 장 수가 나옵니다. 카드는 화면에 들어올 때 이미 빌드된 결과로 그려지고, Gradle은 돌지 않습니다. 카드를 누르면 그 자리에서 시트가 떠올라 앞의 세 장을 보여 주고, **보드에서 보기**를 누르면 그 파일의 보드가 열립니다.
+Preview 파일이 많아지면 이름이 기억나지 않아 찾기 어렵습니다. **모든 Preview** 화면은 프로젝트의 Preview 파일을 전부 카드로 늘어놓아, 이름을 몰라도 눈으로 훑어 고를 수 있게 합니다. 최근에 바뀐 파일이 맨 앞에 옵니다. 탭이 하나도 없을 때의 첫 화면이고, 레일 맨 위의 **모든 Preview**를 누르거나 보드에서 `esc`를 누르면 언제든 돌아옵니다.
+카드에는 파일 이름 · 패키지 · 모듈과 Preview 장 수가 나옵니다. 카드는 화면에 보일 때 이미 빌드된 결과로 그리므로 Gradle을 부르지 않습니다. 카드를 누르면 그 자리에서 시트가 떠올라 앞의 세 장을 보여 주고, **보드에서 보기**를 누르면 그 파일의 보드가 열립니다.
 
 <p align="center">
   <img src="assets/gallery.png" width="1000"
-       alt="탭을 하나도 열지 않은 Pearl 예제 앱의 모든 Preview 화면. 레일 맨 위에 All Previews 23이 있고 그 아래는 열린 파일이 없다. 최근 바뀐 순으로 놓인 격자는 PearlPreviews(30장) · SearchScreen · ShowcasePreviews로 시작하고, 카드마다 그려진 Preview와 파일 이름 · 패키지 · 모듈이 보인다. ShowcasePreviews는 카드 자리에서 떠오른 시트로 열려 NavTour · HomeTour · Sip 세 장과 패키지 com.example.pearl.feature.pearl.showcase, 모듈 feature/pearl, View on board를 보여 준다">
+       alt="Pearl 예제 앱의 모든 Preview 화면과 펼친 시트">
 </p>
 
-한 번 그린 카드는 데몬을 다시 띄워도 남아 있어 갤러리가 바로 뜹니다. 그린 뒤에 파일이 바뀐 카드는 흐려지고 **예전** 표시가 붙는데, 그 파일을 열어 보드에서 다시 그리면 새 그림으로 바뀝니다.
+한 번 그린 카드는 데몬을 다시 띄워도 남아 있어, 다음에 열면 바로 보입니다. 그린 뒤 파일이 바뀐 카드는 흐려지고 **예전** 표시가 붙으며, 그 파일을 열면 새 그림으로 바뀝니다.
 
 ## 설명 대신 가리키세요
 
-Preview에서 아무 곳이나 클릭하고 에이전트에게 할 일을 말하면 됩니다. 스크린샷도, "위에서 두 번째 카드"도 필요 없습니다.
+고칠 곳을 말로 설명하기는 번거롭습니다. Preview에서 그 자리를 클릭하고 에이전트에게 할 일만 말하세요. 스크린샷도, "위에서 두 번째 카드" 같은 설명도 필요 없습니다.
 
 ```
 이거 여백 좀 줄여줘
@@ -93,31 +92,31 @@ Preview에서 아무 곳이나 클릭하고 에이전트에게 할 일을 말하
 
 <p align="center">
   <img src="assets/pointing.gif" width="1000"
-       alt="Pearl 앱 Preview가 놓인 보드. 홈 Preview의 Taro Milk Tea 카드에서 가격 오른쪽을 누르면 그림 옆에 카드가 열린다 — Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize와 주변 요소의 트리. 트리에서 위쪽 DrinkCard 줄을 누르면 음료 카드 전체를 가리키고, 다음 DrinkCard 줄을 누르면 Thai Milk Tea로 옮겨 간다. 카드 위쪽의 Preview 버튼을 누르면 DrinkCard를 호출하는 Preview 세 개가 펼쳐지고, MenuCardsPreview를 고르면 ComponentPreviews.kt 보드가 그 Preview 자리에서 열린다">
+       alt="Preview를 클릭해 컴포저블의 파일 · 줄 · 크기를 보는 장면">
 </p>
 
 ## 인터랙티브 모드
 
-카드의 `▶`를 누르면 크게 열립니다. Android Studio의 Interactive Mode처럼 클릭하고 드래그하며 모션과 애니메이션을 확인할 수 있습니다.
+보드의 카드에서 `▶`를 누르면 Preview가 크게 열립니다. Android Studio의 Interactive Mode처럼 클릭하고 드래그하며 모션과 애니메이션을 확인할 수 있습니다.
 소스를 고치지 않고도 화면 크기나 기기(Android 6종 · iPhone 4종)를 바꾸고, 세로 · 가로(왼쪽) · 가로(오른쪽)로 돌리고, 폴더블을 접었다 펼 수 있습니다.
 
 - **실제 기기의 인셋이 컴포저블에 그대로 들어갑니다** — 값은 [windowinsets.info](https://windowinsets.info/) · [safearea.info](https://safearea.info/)에서 가져왔습니다.
 - **인셋 영역 보기**를 켜면 인셋 띠와 안전 영역이 그림 위에 색으로 표시됩니다.
-- **기기마다 그 기기의 시스템 UI를 그립니다** — Android · iOS · iPhone Duo의 상태 표시줄과 카메라가 브라우저 화면뿐 아니라 에이전트가 읽는 PNG에도 들어갑니다.
+- **기기별 시스템 UI까지 그립니다** — Android · iOS · iPhone Duo의 상태 표시줄과 카메라가 브라우저 화면뿐 아니라 에이전트가 읽는 PNG에도 들어갑니다.
 
 <p align="center">
-  <img src="assets/devices.gif" width="49.2%" alt="작업 공간 무대 아래의 조작 독에서 인셋 영역 보기를 켠 채 기기만 바꾸는 장면. S26에서는 위 37dp · 아래 15dp 띠가 표시되고 그 사이에 SAFE AREA 360 × 728이 적힌다. iPhone 17을 고르면 62dp · 34dp 띠 안에서 화면이 다시 배치되고 402 × 778이 된다. iPhone Duo를 고르고 바로 접으면 커버 화면은 카메라 쪽 84dp 띠 안쪽 382 × 644가 되고, 펴면 컵과 옵션 패널이 867 × 635 안에서 양쪽으로 나뉜다. 다시 S26을 고르면 첫 장면으로 돌아온다"><img src="assets/interactive-detail.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간에서 Taro Milk Tea 카드를 누르면 카드가 화면 가득 커지는 동안 컵이 따로 날아가 상세 화면의 컵 자리에 내려앉는다. Add to bag을 누르면 컵이 오른쪽 위 가방으로 날아가 배지가 튀어 오르고, 뒤로 화살표를 누르면 거꾸로 카드로 돌아간다"><img src="assets/interactive-cup.gif" width="25.4%" alt="무대 아래 조작 독이 놓인 작업 공간의 상세 화면에서 Ice Extra를 누르면 뚜껑이 열리고 얼음이 떨어져 수면이 오르고, Pearls Extra를 누르면 펄이 곡선을 그리며 쏟아지고, None을 누르면 펄이 휘며 화면 밖으로 빠진다. 컵을 좌우로 끌면 음료가 출렁이고, Sweetness 0%와 100%를 누르면 음료 색이 옅어졌다 짙어진다">
+  <img src="assets/devices.gif" width="49.2%" alt="인셋 영역을 켠 채 기기를 바꾸는 장면"><img src="assets/interactive-detail.gif" width="25.4%" alt="카드에서 상세 화면으로 넘어가는 애니메이션"><img src="assets/interactive-cup.gif" width="25.4%" alt="옵션을 누를 때마다 컵이 바뀌는 인터랙티브 Preview">
 </p>
 
 ## 에이전트가 셋이어도 가볍게
 
-Preview 한 장을 보려고 Android Studio를 띄우면 Gradle 데몬과 Kotlin 데몬까지 함께 떠서 메모리를 8GB쯤 씁니다. 저희도 메모리 36GB Mac에서 에이전트 셋에게 워크트리를 하나씩 맡겼더니, Android Studio 세 개가 스왑을 일으켜 모든 작업이 느려졌습니다.
+Preview 한 장을 보려고 Android Studio를 띄우면 Gradle 데몬과 Kotlin 데몬까지 함께 떠서 메모리를 8GB쯤 씁니다. 저희도 메모리 36GB Mac에서 에이전트 셋에게 워크트리를 하나씩 맡겼더니, Android Studio 세 개가 메모리를 다 차지해 스왑이 일어나고 모든 작업이 느려졌습니다.
 
 Prevue는 워크트리마다 가벼운 데몬을 하나씩 띄우고, 데몬 하나는 Android Studio보다 메모리를 83% 적게 씁니다([벤치마크](#벤치마크)). 두 에이전트가 동시에 저장해도 창마다 따로 다시 그려지고, 한쪽만 다시 저장하면 다른 쪽 창은 그대로입니다.
 
 <p align="center">
   <img src="assets/worktrees.gif" width="1000"
-       alt="같은 저장소의 워크트리 두 개를 각각 띄운 크롬 창 두 개. 창마다 데몬과 주소가 따로 있고(main · feature/big-cards), 아래에는 그 워크트리에서 일하는 에이전트의 터미널이 붙어 있다. 두 에이전트가 동시에 저장하면(왼쪽은 헤더 색을 보라로, 오른쪽은 제목을 Big cards, big sips로) 두 창이 각자 다시 그려지고 아래에 prevue wait 결과가 찍힌다. 이어서 왼쪽만 한 번 더 저장해 헤더가 주황이 되는 동안 오른쪽 창은 그대로다">
+       alt="워크트리 두 개가 각자 다시 그려지는 장면">
 </p>
 
 ## 시작하기
@@ -143,7 +142,7 @@ codex plugin marketplace add https://github.com/kakao/prevue.git
 codex plugin add prevue@prevue
 ```
 
-그다음 에이전트에게 파일 이름을 말하면 됩니다. 스킬을 직접 부르면 더 확실합니다(Claude Code는 `/prevue`, Codex는 `$prevue:prevue`).
+설치한 뒤에는 에이전트에게 파일 이름만 말하면 됩니다. 스킬을 직접 부르면 더 확실합니다(Claude Code는 `/prevue`, Codex는 `$prevue:prevue`).
 
 ```
 ForYouScreen.kt Preview 실행해줘
@@ -151,12 +150,12 @@ ForYouScreen.kt Preview 실행해줘
 
 Kotlin Multiplatform · Compose Multiplatform 프로젝트라면 commonMain의 파일 이름을 똑같이 말하면 됩니다.
 
-따로 설정할 것은 없습니다. 처음 실행할 때 필요한 준비는 에이전트가 하나씩 확인을 받으며 진행합니다. 준비가 끝나면 브라우저가 열리고 그 파일의 `@Preview`가 모두 뜹니다.
+따로 설정할 것은 없습니다. 처음 실행할 때 필요한 준비는 에이전트가 진행하고, 단계마다 확인을 받습니다. 준비가 끝나면 브라우저가 열리고 그 파일의 `@Preview`가 모두 뜹니다.
 Prevue는 프로젝트의 빌드 파일 · 플러그인 · 태스크를 바꾸지 않고, 프로젝트 안에 파일도 만들지 않습니다. Gradle은 모듈마다 처음 한 번만 돌고, 그 뒤로는 공용 모듈을 고쳐도 바로 다시 그립니다.
 
 ### 업데이트
 
-마켓플레이스 정보를 먼저 갱신한 뒤 플러그인을 업데이트합니다. 이 단계를 건너뛰면 예전 버전 정보를 그대로 보고 "이미 최신"이라고 나옵니다.
+업데이트할 때는 마켓플레이스 정보부터 갱신하세요. 이 단계를 건너뛰면 예전 정보를 보고 "이미 최신"이라고 나옵니다.
 
 ```sh
 # Claude Code — 재시작하거나 /reload-plugins를 실행해야 적용됩니다
@@ -188,12 +187,12 @@ codex plugin add prevue@prevue
 
 <p align="center">
   <img src="assets/benchmark-vs.ko.png" width="1000"
-       alt="nowinandroid ForYouScreen.kt에서 Android Studio 대 Prevue — Hot Swap 4.3초 대 2.1초(−51%), First Preview 12.1초 대 8.0초(−34%), Memory 8.1GB 대 1.4GB(−83%), Disk 3.2GB 대 446MB(−86%)">
+       alt="Android Studio 대 Prevue 벤치마크">
 </p>
 
 <p align="center">
   <img src="assets/benchmark-redraw.ko.png" width="1000"
-       alt="Prevue가 다시 그리는 속도 — 리터럴 0.23초, 리소스 값 0.22초, 코드 0.90초, 보드 전부 2.07초, 모듈 전환 0.33초, 기기 바꾸기 0.92초, 끄는 동안 약 54fps">
+       alt="Prevue가 다시 그리는 속도">
 </p>
 
 - **측정 사양** — Apple Silicon 14코어 · RAM 36GB · nowinandroid `ForYouScreen.kt`(Preview 25장). Android Studio 2026.1.3은 2026-09-22에, Prevue(develop `feb5c6e`)는 2026-10-23에 측정했습니다. Prevue 값은 중앙값입니다
