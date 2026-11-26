@@ -49,7 +49,7 @@ installShortcuts(shortcuts, actions, {
   sheetOpen,
   openSheetFile: () => { if (!currentLayer().sheet?.closing) document.querySelector<HTMLElement>('#galleryView .gsheet-go')?.click(); },
 });
-const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
+const viewer = createViewerRoot({ afterCommit: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, dock: workspace.dock, point: pointActions });
 startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); loadFiles(); forgetPreviewIndex(); }, onGalleryShots: galleryFilesChanged, onStreamOpen: loadFiles, prepared: preparation });
 

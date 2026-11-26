@@ -1,4 +1,4 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES } from "./devices";
 import { P, springOf } from "../scene/calc";
 import { dropDraft, installDock, menuOpen, orientationOpen, outside, paintPick, setOpen, setOrientationOpen } from "../scene/dock";
 import { animate, fit, go, relayout, resolve, setFrame, snapTo, tick, wake } from "../scene/engine";

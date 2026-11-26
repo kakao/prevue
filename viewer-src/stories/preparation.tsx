@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import '../legacy/preparation.css';
+import '../static/preparation.css';
 import { useMessages } from '../src/messages';
 import { mountScene } from '../src/preparation/scene';
 import type { Card } from '../src/state';

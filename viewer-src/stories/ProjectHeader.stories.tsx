@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { HelpButton } from '../src/components/ShortcutHelp';
 import { ProjectHeader } from '../src/components/ProjectHeader';
 import { StatusPill } from '../src/components/StatusPill';

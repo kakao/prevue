@@ -1,4 +1,4 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES } from "../runtime/devices";
 import { phrase } from "../runtime/strings";
 import { BELOW_H, CAPSULE_ROOM, FRAME_TOP, LANE_H, LANE_W, NARROW, P, PLATE_EDGE, RIGHT_NEED, RULER_RAIL, RULER_SIDE, Val, WIDE, bezier, camBox, camsLook, clamp, cutEdgesOf, easeOut, edgeOf, endsOf, isOpen, layersOf, lerp, lined, padsOf, plateOf, reducedOn, rigCrease, shelled, smooth, springOf, swapAt, swapBlurAt, tallOf, turnOf, turnR } from "./calc";
 import { paintBar } from "./dock";

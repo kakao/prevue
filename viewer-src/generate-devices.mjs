@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const specs = resolve(root, '../plugin/devices');
-const target = resolve(root, 'legacy/js/devices.js');
+const target = resolve(root, 'src/runtime/devices.ts');
 
 const keys = (value, allowed, where, required = allowed) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(`${where}: 객체가 아니다`);
@@ -162,12 +162,24 @@ export async function readSpecs() {
   return Promise.all(names.map(async name => JSON.parse(await readFile(resolve(specs, name), 'utf8'))));
 }
 
+const TYPES = `export type DeviceCam = { w: number; h: number; y: number; x?: number; notch?: number; edge?: 'right' | 'bottom'; lens?: true };
+export type DeviceBody = { tone: string; bezel: number; ends?: number; home?: true; radius: [number, number, number, number]; cuts: DeviceCam[]; cams: DeviceCam[]; btn: { side: 1 | -1; at: number; len: number }[] };
+export type DevicePanel = { w: number; h: number; hinge?: number; fixed?: true; cutIn: Record<string, '' | 'w' | 'h' | 'wh'> };
+export type DeviceEntry = {
+  name: string; short: string; fold: boolean;
+  open: DevicePanel; cover?: DevicePanel;
+  look: { open: DeviceBody; cover?: DeviceBody };
+  plate?: { thickness: number; gap: number; axis: 'width' | 'height'; blur?: true };
+};
+
+`;
+
 export async function generateDevices(check = false) {
   const { table, menu } = deviceTable(await readSpecs());
   const output = '// 생성물이다. plugin/devices/*.json 을 고치고 sh tools/gen-viewer.sh 로 만든다.\n' +
-    '// 번들 밖 한 벌이다 — resize-scene.js 와 번들이 같은 주소에서 읽는다(motion.js 와 같은 이유).\n' +
-    `export const DEVICES = ${JSON.stringify(table, null, 2)};\n\n` +
-    `export const DEVICE_MENU = ${JSON.stringify(menu, null, 2)};\n`;
+    TYPES +
+    `export const DEVICES: Record<string, DeviceEntry> = ${JSON.stringify(table, null, 2)};\n\n` +
+    `export const DEVICE_MENU: { group: string; ids: string[] }[] = ${JSON.stringify(menu, null, 2)};\n`;
   if (check) {
     if (await readFile(target, 'utf8').catch(() => '') !== output) throw Error('기기 표가 스펙과 다르다. sh tools/gen-viewer.sh 를 실행한다');
   } else await writeFile(target, output);

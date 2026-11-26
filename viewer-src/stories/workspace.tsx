@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
-import '../legacy/style.css';
-import '../legacy/resize.css';
+import '../static/style.css';
+import '../static/resize.css';
 import { createResizeScene, DOCK_START, type DockView, type SceneDock } from '../src/runtime/resize-scene';
 import { createStore } from '../src/runtime/store';
 import type { Store } from '../src/workspace/view';

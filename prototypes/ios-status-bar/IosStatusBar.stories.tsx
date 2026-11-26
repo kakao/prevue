@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import '../../viewer-src/legacy/resize.css';
+import '../../viewer-src/static/resize.css';
 import './ios-status-bar.css';
 
 // iPhone 시스템 바(SystemBars.tsx 의 IosStatus)를 iOS 처럼 다시 그릴 때의 후보 — 옮기기 전 모양을 기준으로 기기 실제 크기(1dp = 1px)에서 본다.

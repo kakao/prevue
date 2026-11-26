@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import '../../viewer-src/legacy/resize.css';
+import '../../viewer-src/static/resize.css';
 import './android-status-bar.css';
 
 // Android 기기 시스템 바를 뷰어 오버레이로 그릴 때의 후보(D-176) — 기기 실제 크기(1dp = 1px, 넓은 기기는 줄여서)에서 본다.

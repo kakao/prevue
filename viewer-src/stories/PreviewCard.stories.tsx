@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { PreviewCard } from '../src/components/PreviewBoard';
 import { examples } from './examples';
 import { pearlBoard } from './pearl';

@@ -1,5 +1,5 @@
-import type { DeviceEntry } from "../../legacy/js/devices.js";
-import { DEVICES } from "../../legacy/js/devices.js";
+import type { DeviceEntry } from "../runtime/devices";
+import { DEVICES } from "../runtime/devices";
 import { reduced } from "../runtime/motion";
 import type { Body, Box, Dev, DockView, Layers, Orientation, Radii, SceneImage, Shadow, Shape, Spring, St } from "./types";
 

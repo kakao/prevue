@@ -1,4 +1,4 @@
-import { DEVICES, DEVICE_MENU } from "../../legacy/js/devices.js";
+import { DEVICES, DEVICE_MENU } from "../runtime/devices";
 import { phrase } from "../runtime/strings";
 import { DP_MAX, DP_MIN, SL_KEY_SETTLE, clamp, devSel, dims, itemOf, lookOf, openDims, stepOf } from "./calc";
 import { fit, relayout, request, resolve, setFrame, setLook, wake } from "./engine";

@@ -1,4 +1,4 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES } from "../runtime/devices";
 import { LENS, P, bump, camBox, castShadow, clamp, edgeOf, endsOf, glintAt, holdSize, homeBox, isOpen, lerp, lightOf, lined, litOf, lookOf, perimeter, plateOf, px, radii, rgbOf, rigCrease, shade, shelled, smooth, splitTop, stripPaint, swapAt, swapBlurAt, tallOf, toned, turnR } from "./calc";
 import { lookAt, rigAt, rigCamera, rigEdges, room, spinAt } from "./engine";
 import type { Scene, Unit } from "./state";

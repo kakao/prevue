@@ -11,11 +11,10 @@ const destination = resolve(source, '../plugin/viewer');
 const check = process.argv.includes('--check');
 const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
 const server = await mkdtemp(join(tmpdir(), 'prevue-prerender-'));
-const legacy = join(source, 'legacy/js/');
 const runtimeDir = join(source, 'src/runtime/');
-const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion', 'resize-scene'];
-const separate = id => id.startsWith(legacy) || id.startsWith(runtimeDir);
-const separatePath = id => './js/' + id.slice((id.startsWith(legacy) ? legacy : runtimeDir).length).replace(/\.ts$/, '.js');
+const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion', 'resize-scene', 'devices'];
+const separate = id => id.startsWith(runtimeDir);
+const separatePath = id => './js/' + id.slice(runtimeDir.length).replace(/\.ts$/, '.js');
 const handWritten = name => name === 'tokens.css' || name === 'prevue.svg' || name.startsWith('strings/');
 
 async function files(directory, prefix = '') {
@@ -74,7 +73,7 @@ try {
       minify: true,
       lib: { entry: join(runtimeDir, `${name}.ts`), formats: ['es'], fileName: () => `js/${name}.js` },
       rolldownOptions: {
-        external: id => id.startsWith(legacy) || (id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`)),
+        external: id => id.startsWith(runtimeDir) && id !== join(runtimeDir, `${name}.ts`),
         output: { paths: id => separate(id) ? separatePath(id) : id },
       },
     },
@@ -93,12 +92,10 @@ try {
   const { prerendered } = await import(pathToFileURL(join(server, 'prerender.mjs')).href);
   const shells = prerendered();
   const built = new Set(await files(temporary));
-  for (const name of await files(join(source, 'legacy'))) {
-    if (name.endsWith('.d.ts')) continue;
-    // 위와 같다 — 손으로 둔 legacy 파일이 번들 청크와 같은 이름이면 그 청크를 덮는다.
-    if (built.has(name)) throw Error(`번들 청크와 기존 모듈의 이름이 겹친다: ${name}`);
+  for (const name of await files(join(source, 'static'))) {
+    if (built.has(name)) throw Error(`빌드 출력과 정적 파일의 이름이 겹친다: ${name}`);
     await mkdir(dirname(join(temporary, name)), { recursive: true });
-    let body = await readFile(join(source, 'legacy', name));
+    let body = await readFile(join(source, 'static', name));
     if (name === 'index.html') {
       let html = body.toString('utf8');
       for (const [slot, markup] of Object.entries(shells)) {

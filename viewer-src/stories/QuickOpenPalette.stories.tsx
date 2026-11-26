@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { QuickOpenPalette } from '../src/components/QuickOpen';
 import { pearlFiles, pearlRecent } from './pearl';
 import { Search } from './search';

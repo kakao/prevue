@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect } from 'react';
-import '../legacy/style.css';
+import '../static/style.css';
 import logo from '../../plugin/viewer/prevue.svg';
 import { ShortcutHelp, toggleHelp } from '../src/components/ShortcutHelp';
 import { useMessages } from '../src/messages';

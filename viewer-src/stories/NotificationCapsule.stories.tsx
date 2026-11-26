@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { NotificationCapsule } from '../src/components/NotificationCapsule';
 import { useMessages } from '../src/messages';
 

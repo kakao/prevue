@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { StaleBanner } from '../src/components/StaleBanner';
 import { exampleArgs, examples } from './examples';
 

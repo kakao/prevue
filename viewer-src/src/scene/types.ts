@@ -1,4 +1,4 @@
-import type { DeviceBody, DeviceEntry } from "../../legacy/js/devices.js";
+import type { DeviceBody, DeviceEntry } from "../runtime/devices";
 import type { Store } from "../runtime/store";
 import { Tw } from "./calc";
 

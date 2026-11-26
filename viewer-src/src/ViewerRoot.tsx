@@ -40,7 +40,7 @@ export function findHosts(): Hosts {
   };
 }
 
-export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, renderLegacy }: {
+export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, afterCommit }: {
   state: ViewerState | null;
   draw?: number;
   statusState?: ViewerState | null;
@@ -52,10 +52,10 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   workspace?: WorkspaceActions;
   dock?: SceneDock;
   point?: PointActions;
-  renderLegacy: (state: ViewerState) => void;
+  afterCommit: (state: ViewerState) => void;
 }) {
   // 스트림 · 틀 · 스크롤처럼 그린 뒤에 재는 것은 session.ts 가 한다. 영역들은 자식이라 그 효과가 먼저 돈다 — 헤더 · 레일 · 화면이 먼저 자리를 잡는다.
-  useLayoutEffect(() => { if (state) renderLegacy(state); }, [draw]);
+  useLayoutEffect(() => { if (state) afterCommit(state); }, [draw]);
   const gallery = useGalleryShown(state, connection);
   const { files, ready } = useLayer();
   const screen = gallery ? 'gallery' : state?.screen ?? null;
@@ -83,8 +83,8 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   </>;
 }
 
-export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, board, workspace, dock, point }: {
-  renderLegacy: (state: ViewerState) => void;
+export function createViewerRoot({ afterCommit, messages, hosts, shortcuts, board, workspace, dock, point }: {
+  afterCommit: (state: ViewerState) => void;
   messages: Messages;
   hosts: Hosts;
   shortcuts: ShortcutGroup[];
@@ -99,7 +99,7 @@ export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, boa
   const root = createRoot(container);
   let state: ViewerState | null = null, statusState: ViewerState | null = null, connection: Connection | null = null, app: AppInfo | null = null, draw = 0;
   const render = () => root.render(<MessagesContext.Provider value={messages}>
-    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} dock={dock} point={point} renderLegacy={renderLegacy} />
+    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} dock={dock} point={point} afterCommit={afterCommit} />
   </MessagesContext.Provider>);
   // 끊김은 상태가 오기 전에도 알린다 — 첫 상태를 기다리지 않고 바로 붙인다.
   flushSync(render);

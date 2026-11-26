@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import '../legacy/style.css';
+import '../static/style.css';
 import { PointCard, PointCardLayer, type PointActions } from '../src/components/PointOverlay';
 import { asyncImage, cardOf, find, flat, hit, nia, pearl, PX, rectOf, SHOT, type Picked } from './point-tree';
 import { pearlCard } from './workspace';

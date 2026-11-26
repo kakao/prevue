@@ -36,7 +36,8 @@ const synth = `\nfor (const [id, [from, ends]] of Object.entries(${JSON.stringif
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, 'http://localhost').pathname;
   if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup+harness); return; }
-  if (path === '/js/devices.js') { response.setHeader('Content-Type','text/javascript'); response.end(await readFile(join(root, 'plugin/viewer/js/devices.js'), 'utf8') + synth); return; }
+  if (path === '/js/devices.js') { response.setHeader('Content-Type','text/javascript'); response.end(`import { DEVICES, DEVICE_MENU } from './devices-real.js';${synth}export { DEVICES, DEVICE_MENU };\n`); return; }
+  if (path === '/js/devices-real.js') { response.setHeader('Content-Type','text/javascript'); response.end(await readFile(join(root, 'plugin/viewer/js/devices.js'), 'utf8')); return; }
   const file = resolve(root, 'plugin/viewer', '.' + path);
   if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
   try {
