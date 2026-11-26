@@ -1,39 +1,31 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES, DEVICE_MENU } from "../../legacy/js/devices.js";
 import { phrase } from "../runtime/strings";
-import { DP_MAX, DP_MIN, SL_KEY_SETTLE, clamp, devSel, dims, itemOf, lookOf, openDims, silOf, slAt, stepOf } from "./calc";
+import { DP_MAX, DP_MIN, SL_KEY_SETTLE, clamp, devSel, dims, itemOf, lookOf, openDims, stepOf } from "./calc";
 import { fit, relayout, request, resolve, setFrame, setLook, wake } from "./engine";
 import type { Scene } from "./state";
-import type { Axis, Dev, St } from "./types";
+import type { Axis, Dev, SceneDock, St } from "./types";
 
-export const orientationOpen = (S: Scene) => S.CTL.rot.getAttribute("aria-expanded") === "true";
-export function setOrientationOpen(S: Scene, on: boolean, focus = true) {
+const ROW_SELS = ["original", "narrow", "foldable", "custom", ...DEVICE_MENU.flatMap(g => g.ids)];
+const ROW_NAMES: Record<string, string> = { original: "@Preview", narrow: "320×640", foldable: "673×841" };
+export const itemName = (sel: string) => DEVICES[sel] ? DEVICES[sel].short : sel === "custom" ? phrase("size.custom") : ROW_NAMES[sel] ?? sel;
+
+export const orientationOpen = (S: Scene) => S.dock.get().orientMenu;
+export function setOrientationOpen(S: Scene, on: boolean) {
   if (on) setOpen(S, false);
-  if (!on && S.ORIENT.menu.contains(document.activeElement)) S.CTL.rot.focus({ preventScroll: true });
-  S.CTL.rot.setAttribute("aria-expanded", String(on));
-  S.ORIENT.menu.classList.toggle("on", on);
-  S.ORIENT.menu.inert = !on;
-  if (on && focus) (S.directions.find(b => b.getAttribute("aria-checked") === "true") || S.directions[0]).focus();
+  S.dock.set({ orientMenu: on });
 }
-export const menuOpen = (S: Scene) => S.PN.sum.getAttribute("aria-expanded") === "true";
+export const menuOpen = (S: Scene) => S.dock.get().menu;
 export function setOpen(S: Scene, on: boolean) {
   if (on) setOrientationOpen(S, false);
-  if (!on && S.PN.body.contains(document.activeElement)) S.PN.sum.focus({ preventScroll: true });
-  S.PN.sum.setAttribute("aria-expanded", String(on));
-  S.PN.fold.classList.toggle("open", on);
-  S.PN.body.inert = !on;
+  S.dock.set({ menu: on });
 }
-// 바깥 누름은 창에서 받는다 — 장면이 켜진 동안만 걸고 끌 때 뗀다(Storybook 은 스토리마다 장면을 새로 만든다).
 export const outside = (S: Scene, e: PointerEvent) => {
-  if (menuOpen(S) && !S.PN.fold.contains(e.target as Node)) setOpen(S, false);
-  if (orientationOpen(S) && !S.ORIENT.el.contains(e.target as Node)) setOrientationOpen(S, false);
+  const at = e.target instanceof Element ? e.target : null;
+  if (menuOpen(S) && !at?.closest("#pnFold")) setOpen(S, false);
+  if (orientationOpen(S) && !at?.closest("#dcOrientation")) setOrientationOpen(S, false);
 };
-// 이름은 목록의 칸 이름 그대로다(기기는 짧은 이름). 치수 · 자세는 치수선과 자세 버튼이 말한다.
 function paintSum(S: Scene, key: string) {
-  const here = S.cur!, dev = here.kind === "device" && key === here.dev ? DEVICES[key] : null, row = S.ROWS.find(b => b.dataset.sel === key)!;
-  if (S.SUM.dev !== dev) { S.SUM.dev = dev; S.SUM.sil.innerHTML = dev ? silOf(dev) : ""; }
-  S.SUM.nm.textContent = row.querySelector(".nm")!.textContent;
-  S.PN.sum.classList.toggle("mono", row.classList.contains("mono"));
-  S.PN.sum.title = `${dev ? dev.name : S.SUM.nm.textContent} · ${dims(here)}`;
+  S.dock.set({ sumTitle: `${DEVICES[key] ? DEVICES[key].name : itemName(key)} · ${dims(S.cur!)}` });
 }
 // 방향키로 지나가는 것은 고르기만 한다 — 커서까지 옮기면 라디오 묶음에서 빠져나가 다음 칩에 못 간다.
 function pick(S: Scene, sel: string, byKey?: boolean) {
@@ -41,9 +33,7 @@ function pick(S: Scene, sel: string, byKey?: boolean) {
   dropDraft(S);
   // 슬라이더에 초점이 남으면 커스텀 칸이 고른 채로 남는다 — 숫자 입력처럼 놓고 간다
   S.slFocus = false;
-  for (const el of [S.SL.w.thumb, S.SL.h.thumb]) if (document.activeElement === el) el.blur();
-  // 숫자를 고치던 중이면 그 입력은 버린다 — 칩을 고르며 빠지는 blur 가 옛 숫자를 새 크기 위에 덧입혀 320×841 같은 커스텀이 됐다
-  for (const el of [S.RL.w, S.RL.h]) if (document.activeElement === el) { el.dataset.cancel = "1"; el.blur(); }
+  dropRuler(S);
   if (sel === "custom") {
     const w = clamp(Math.round(S.cur!.w), DP_MIN, DP_MAX), h = clamp(Math.round(S.cur!.h), DP_MIN, DP_MAX);
     if (S.cur!.kind !== "custom") request(S, `custom:${w}x${h}`);
@@ -53,51 +43,41 @@ function pick(S: Scene, sel: string, byKey?: boolean) {
   if (DEVICES[sel]) return request(S, `${sel}:open`);
   request(S, sel);
 }
+function dropRuler(S: Scene) {
+  for (const el of [S.RL.w, S.RL.h]) if (document.activeElement === el) { el.dataset.cancel = "1"; el.blur(); }
+}
 export function paintBar(S: Scene, st: St, instant?: boolean) {
   const now = S.clock.t;
   if (instant) { S.roll.w.snap(st.w); S.roll.h.snap(st.h); } else { S.roll.w.to(st.w, 420, now); S.roll.h.to(st.h, 420, now); }
   if (st.kind === "device") {
     setLook(S, lookOf(st), instant);
-    S.CTL.fold.hidden = S.CTL.hinge.hidden = !DEVICES[st.dev].fold;
-    // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 돌릴 곳이 없다.
-    S.ORIENT.el.hidden = !!DEVICES[st.dev][st.folded ? "cover" : "open"]!.fixed;
-    if (S.ORIENT.el.hidden) setOrientationOpen(S, false, false);
-    // 버튼은 아이콘만이다 — 그림은 data-* 로 상태를 따라가고(style.css), 이름은 툴팁 · aria-label 이 갖는다.
-    const foldName = st.folded ? phrase("posture.unfold") : phrase("posture.fold");
-    S.CTL.fold.dataset.folded = String(st.folded);
-    S.CTL.fold.title = foldName;
-    S.CTL.fold.setAttribute("aria-label", foldName);
-    const turn = phrase("posture.orientation.tip", { orientation: phrase(`posture.${st.orientation}`) });
-    S.CTL.rot.dataset.orientation = st.orientation;
-    S.CTL.rot.title = turn;
-    S.CTL.rot.setAttribute("aria-label", turn);
-    for (const button of S.directions) button.setAttribute("aria-checked", String(button.dataset.orientation === st.orientation));
+    const orientFixed = !!DEVICES[st.dev][st.folded ? "cover" : "open"]!.fixed;
+    S.dock.set({ foldable: !!DEVICES[st.dev].fold, folded: st.folded, orientFixed, orientation: st.orientation });
+    if (orientFixed) setOrientationOpen(S, false);
   }
   paintPick(S);
 }
-// 고른 칸의 dp 는 지금 크기다 — 접거나 돌린 기기 · 커스텀은 그 크기를, 나머지 기기는 펼친 크기를 적는다.
 export function paintPick(S: Scene) {
   const here = S.cur!, custom = S.editing || (S.slFocus && here.sel === S.slSent) || here.kind === "custom", key = custom ? "custom" : itemOf(here);
-  for (const b of S.ROWS) {
-    const sel = b.dataset.sel!, on = sel === key, d = DEVICES[sel];
-    b.setAttribute("aria-checked", String(on));
+  const rows: Record<string, string> = {};
+  for (const sel of ROW_SELS) {
     const preset = S.PRESETS.find(x => x.sel === sel);
-    b.lastElementChild!.textContent = sel === "custom" ? (custom ? dims(here) : `${DP_MIN}–${DP_MAX}`) : sel === "original" ? dims(S.ORIGINAL)
-      : preset ? dims(preset) : on ? dims(here) : openDims(d);
+    rows[sel] = sel === "custom" ? (custom ? dims(here) : `${DP_MIN}–${DP_MAX}`) : sel === "original" ? dims(S.ORIGINAL)
+      : preset ? dims(preset) : sel === key ? dims(here) : openDims(DEVICES[sel]);
   }
+  const before = S.dock.get().rows, same = ROW_SELS.every(sel => before[sel] === rows[sel]);
+  const posture = !custom && here.kind === "device";
   S.RL.el.classList.toggle("custom", custom);
-  S.RL.el.classList.toggle("device", !custom && here.kind === "device");
-  S.CTL.el.hidden = custom || here.kind !== "device";
-  if (S.CTL.el.hidden) setOrientationOpen(S, false);
-  S.SL.el.hidden = !custom;
+  S.RL.el.classList.toggle("device", posture);
+  S.dock.set({ checked: key, rows: same ? before : rows, posture, sliders: custom });
+  if (!posture) setOrientationOpen(S, false);
   paintSum(S, key);
   paintSlider(S);
 }
-function paintHinge(S: Scene) { S.CTL.hinge.setAttribute("aria-pressed", String(S.hingeLine)); S.CTL.hinge.title = S.hingeLine ? phrase("posture.hinge.hide") : phrase("posture.hinge.show"); }
 function toggleHinge(S: Scene) {
   const here = S.cur!;
   if (here.kind !== "device" || !DEVICES[here.dev].fold) return;
-  S.hingeLine = !S.hingeLine; paintHinge(S);
+  S.hingeLine = !S.hingeLine; S.dock.set({ hinge: S.hingeLine });
   S.hingeOp.to(S.hingeLine ? 1 : 0, 200, performance.now());
   wake(S);
 }
@@ -126,15 +106,8 @@ function toCustom(S: Scene, typing = false) {
   }
   S.editing = true; paintPick(S);
 }
-const slOff = (S: Scene) => S.SL.el.classList.contains("off");
 const slValue = (S: Scene, axis: Axis) => S.draft ? S.draft[axis] : clamp(Math.round(S.cur![axis]), DP_MIN, DP_MAX);
-function paintSlider(S: Scene) {
-  for (const axis of ["w", "h"] as Axis[]) {
-    const s = S.SL[axis], v = slValue(S, axis), at = slAt(v);
-    s.fill.style.width = at; s.thumb.style.left = at; s.val.textContent = String(v);
-    s.thumb.setAttribute("aria-valuenow", String(v)); s.thumb.setAttribute("aria-valuetext", `${v}dp`);
-  }
-}
+function paintSlider(S: Scene) { S.dock.set({ slW: slValue(S, "w"), slH: slValue(S, "h") }); }
 function slide(S: Scene, axis: Axis, v: number) {
   const n = clamp(Math.round(v), DP_MIN, DP_MAX);
   S.draft = { w: slValue(S, "w"), h: slValue(S, "h"), [axis]: n };
@@ -158,41 +131,7 @@ export function dropDraft(S: Scene) {
   wake(S);
 }
 
-export function installDock(S: Scene) {
-  S.ORIENT.menu.addEventListener("click", e => {
-    const button = (e.target as HTMLElement).closest<HTMLElement>("[data-orientation]");
-    const here = S.cur!;
-    if (!button || here.kind !== "device") return;
-    request(S, devSel(here, here.folded, button.dataset.orientation!));
-    setOrientationOpen(S, false);
-  });
-  S.ORIENT.menu.addEventListener("keydown", e => {
-    if (e.key === "Tab") { setOrientationOpen(S, false); return; }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-    e.preventDefault(); e.stopPropagation();
-    const index = S.directions.indexOf(document.activeElement as HTMLElement);
-    const next = e.key === "Home" ? 0 : e.key === "End" ? S.directions.length - 1 : (index + (e.key === "ArrowUp" ? -1 : 1) + S.directions.length) % S.directions.length;
-    S.directions[next].focus();
-  });
-  S.CTL.rot.addEventListener("keydown", e => {
-    if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
-    e.preventDefault(); e.stopPropagation(); setOrientationOpen(S, true);
-  });
-  for (const b of S.ROWS) {
-    const d = DEVICES[b.dataset.sel!];
-    if (d) b.title = d.name;
-    b.innerHTML = `${d ? silOf(d) : ""}<span class="nm">${d ? d.short : b.dataset.t ? phrase(b.dataset.t) : b.textContent}</span><span class="d"></span>`;
-  }
-  S.PN.sum.addEventListener("click", () => setOpen(S, !menuOpen(S)));
-  S.PN.pick.addEventListener("click", e => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-sel]");
-    if (!b) return;
-    pick(S, b.dataset.sel!);
-    setOpen(S, false);
-  });
-  S.CTL.fold.addEventListener("click", () => toggleFold(S));
-  S.CTL.rot.addEventListener("click", () => setOrientationOpen(S, !orientationOpen(S)));
-  S.CTL.hinge.addEventListener("click", () => toggleHinge(S));
+export function installDock(S: Scene): SceneDock {
   for (const [axis, el] of [["w", S.RL.w], ["h", S.RL.h]] as [Axis, HTMLInputElement][]) {
     // 프리셋 · @Preview 는 초점만으로 커스텀이 된다. 기기는 누르거나 고칠 때만 — Tab 으로 지나가며 기기 몸체 · 자세를 잃지 않게
     el.addEventListener("focus", () => { el.select(); if (S.cur!.kind !== "device") toCustom(S); });
@@ -217,44 +156,36 @@ export function installDock(S: Scene) {
       wake(S);
     });
   }
-  for (const axis of ["w", "h"] as Axis[]) {
-    const { track, thumb } = S.SL[axis];
-    const valueAt = (x: number) => { const r = track.getBoundingClientRect(); return DP_MIN + clamp((x - r.left) / r.width, 0, 1) * (DP_MAX - DP_MIN); };
-    track.addEventListener("pointerdown", e => {
-      if (e.button !== 0 || slOff(S) || !S.cur) return;
-      e.preventDefault(); thumb.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
-      track.setPointerCapture(e.pointerId); S.dragging = axis;
-      slide(S, axis, valueAt(e.clientX));
-    });
-    track.addEventListener("pointermove", e => { if (S.dragging === axis && track.hasPointerCapture(e.pointerId)) slide(S, axis, valueAt(e.clientX)); });
-    const release = () => { if (S.dragging !== axis) return; S.dragging = null; commit(S); };
-    track.addEventListener("pointerup", release);
-    track.addEventListener("lostpointercapture", release);
-    thumb.addEventListener("keydown", e => {
-      const step = stepOf(e), v = slValue(S, axis);
-      const next = ({ ArrowRight: v + step, ArrowUp: v + step, ArrowLeft: v - step, ArrowDown: v - step, Home: DP_MIN, End: DP_MAX } as Record<string, number>)[e.key];
-      if (next === undefined || slOff(S) || !S.cur) return;
-      e.preventDefault(); e.stopPropagation();
-      slide(S, axis, next);
+  // 높이 자 배지의 폭이 바뀌면(글꼴 · 스타일) 양옆 비움이 달라진다 — 숨겨 폭이 0일 때는 지난 값을 둔다
+  new ResizeObserver(() => { const w = S.RL.h.offsetWidth; if (w && w !== S.badge.w) { S.badge.w = w; relayout(S); } }).observe(S.RL.h, { box: "border-box" });
+  const live = () => !!S.cur && !S.dock.get().locked;
+  return {
+    view: S.dock,
+    setMenu: on => setOpen(S, on),
+    setOrientMenu: on => setOrientationOpen(S, on),
+    pick: (sel, byKey) => { if (S.cur) pick(S, sel, byKey); },
+    orient(orientation) {
+      const here = S.cur;
+      if (here?.kind === "device") request(S, devSel(here, here.folded, orientation));
+      setOrientationOpen(S, false);
+    },
+    fold: () => { if (S.cur) toggleFold(S); },
+    hinge: () => { if (S.cur) toggleHinge(S); },
+    cancelRuler() { for (const el of [S.RL.w, S.RL.h]) if (document.activeElement === el) el.dataset.cancel = "1"; },
+    grab(axis, v) { if (!live()) return; S.dragging = axis; slide(S, axis, v); },
+    drag(axis, v) { if (S.dragging === axis) slide(S, axis, v); },
+    release(axis) { if (S.dragging !== axis) return; S.dragging = null; commit(S); },
+    step(axis, v) {
+      if (!live()) return;
+      slide(S, axis, v);
       clearTimeout(S.keyTimer); S.keyTimer = window.setTimeout(() => commit(S), SL_KEY_SETTLE);
-    });
-    thumb.addEventListener("focus", () => { S.slFocus = true; });
-    thumb.addEventListener("blur", e => {
-      if (e.relatedTarget === S.SL.w.thumb || e.relatedTarget === S.SL.h.thumb) return;
+    },
+    sliderFocus(on) {
+      if (on) { S.slFocus = true; return; }
       if (S.keyTimer) commit(S);
       S.slFocus = false;
       if (S.cur) paintPick(S);
-    });
-  }
-  S.PN.pick.addEventListener("pointerdown", () => { const el = document.activeElement as HTMLElement | null; if (el === S.RL.w || el === S.RL.h) el.dataset.cancel = "1"; });
-  // 칸은 위아래로 늘어선 한 묶음이다 — 방향키로 지나가는 것은 고르기만 한다(커서까지 옮기면 묶음에서 빠져나간다)
-  S.PN.pick.addEventListener("keydown", e => {
-    if (!S.ROWS.includes(e.target as HTMLElement) || !["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-    e.preventDefault(); e.stopPropagation(); const i = S.ROWS.indexOf(e.target as HTMLElement);
-    const n = e.key === "Home" ? 0 : e.key === "End" ? S.ROWS.length - 1 : (i + (e.key === "ArrowUp" ? -1 : 1) + S.ROWS.length) % S.ROWS.length;
-    S.ROWS[n].focus(); pick(S, S.ROWS[n].dataset.sel!, true);
-  });
-  paintHinge(S);
-  // 높이 자 배지의 폭이 바뀌면(글꼴 · 스타일) 양옆 비움이 달라진다 — 숨겨 폭이 0일 때는 지난 값을 둔다
-  new ResizeObserver(() => { const w = S.RL.h.offsetWidth; if (w && w !== S.badge.w) { S.badge.w = w; relayout(S); } }).observe(S.RL.h, { box: "border-box" });
+    },
+    lock(on) { S.dock.set({ locked: on }); if (on) dropDraft(S); },
+  };
 }

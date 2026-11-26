@@ -71,8 +71,6 @@ function plan(card: HTMLElement, sheet: HTMLElement): Step[] {
   sheet.querySelectorAll('.gsheet-cap').forEach(c => steps.push({ el: c, kf: [{}, {}], fade: true }));
   const to = sheet.querySelector('.gcard-count'), from = card.querySelector('.gcard-count');
   if (to) steps.push(from ? { el: to, kf: shift(box(from)!.left - box(to)!.left, box(from)!.top - box(to)!.top) } : { el: to, kf: [{}, {}], fade: true });
-  const [ix, iy] = offset('.gsheet-info', '.gcard-info');
-  steps.push({ el: q('.gsheet-info'), kf: shift(ix, iy) });
   cross('.gsheet-pkgrow', '.gcard-pkgrow');
   const mod = sheet.querySelector('.gsheet-mod');
   if (mod) { const [mx, my] = offset('.gsheet-mod', '.gcard-mod'); steps.push({ el: mod, kf: shift(mx, my) }); }
@@ -213,7 +211,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       <div className="gsheet-body">
         <span className="gsheet-file">{text.name}</span>
         <span className="gsheet-pkgrow"><Folder /><span className="gsheet-pkg">{text.pkg}</span></span>
-        <span className="gsheet-foot"><span className="gsheet-meta">{text.mod && <span className="gsheet-mod">{text.mod}</span>}<span className="gsheet-info">{text.changed}</span></span>
+        <span className="gsheet-foot"><span className="gsheet-meta">{text.mod && <span className="gsheet-mod">{text.mod}</span>}</span>
           <button className="gsheet-go" type="button" onClick={onOpen}><span>{phrase('gallery.sheet.open')}</span><Arrow /></button></span>
       </div>
       <button className="gsheet-close" type="button" onClick={onClose}>{phrase('gallery.sheet.close')}</button>

@@ -13,6 +13,7 @@
   --gallery-hover-scale: 1.02;
   --gallery-stale: .45;
   --gallery-tilt: 5deg;
+  --gallery-drop: var(--space-6);
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
   --rail-size: 200px;   /* 레일 자체의 폭 — 좁은 창에서는 본문을 밀지 않고(--rail-w 0) 이 폭 그대로 서랍으로 뜬다 */
@@ -236,7 +237,6 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 .pn-it .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pn-it.mono .nm { font: var(--type-code); }
 .pn-it .d { flex: 0 0 auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
-/* 기기의 몸체 윤곽 — 그림이 아니라 크롬이라 무채색이다. 모양은 resize-scene.js 의 silOf 가 몸체 값에서 그린다 */
 .pn-sil { flex: 0 0 auto; width: 20px; height: 20px; }
 .pn-sl.off .sl { opacity: .45; cursor: default; pointer-events: none; }
 /* 커스텀 폭 · 높이 슬라이더(D-99) — 조작 독 가운데. 손잡이가 초점을 받고 막대 전체가 끌 자리다. 끝은 240 · 1600, 눈금은 창 크기 구간 경계 */
@@ -818,10 +818,11 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-cover { position: relative; display: flex; aspect-ratio: var(--gallery-cover); overflow: hidden; padding: var(--space-20) var(--space-20) 0; background: var(--surface-container-high); }
 .gcard-stack { position: relative; display: block; margin-inline: auto; }
 .gcard-stack[data-o="tall"] { width: var(--gallery-tall-w); height: 100%; }
-.gcard-stack[data-o="wide"] { width: fit-content; max-width: var(--gallery-wide-w); height: fit-content; max-height: 100%; }
+.gcard-stack[data-o="wide"] { align-self: center; width: fit-content; max-width: var(--gallery-wide-w); height: fit-content; max-height: calc(100% - var(--space-20)); margin-bottom: var(--space-20); }
 .gcard-shot { display: block; width: 100%; height: 100%; overflow: hidden; border-radius: var(--corner-medium) var(--corner-medium) 0 0;
               background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1); }
 .gcard-stack[data-o="wide"] .gcard-shot { height: auto; }
+.gcard-stack[data-o="wide"] :is(.gcard-shot, .gcard-ghost) { border-radius: var(--corner-medium); }
 .gcard-shot img { display: block; width: 100%; height: auto; opacity: 0; transition: opacity var(--duration-medium2) var(--easing-standard); }
 .gcard-shot img.in { opacity: 1; }
 .gcard-stack[data-o="wide"] .gcard-shot img { width: auto; max-width: 100%; }
@@ -831,6 +832,8 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-stack:has(.gcard-ghost) .gcard-shot { position: relative; }
 .gcard-hit:hover .gcard-ghost[data-g="l"] { transform: translateX(calc(var(--space-6) * -1)) rotate(calc(var(--gallery-tilt) * -1)); }
 .gcard-hit:hover .gcard-ghost[data-g="r"] { transform: translateX(var(--space-6)) rotate(var(--gallery-tilt)); }
+.gcard-hit:hover [data-o="wide"] .gcard-ghost[data-g="l"] { transform: translateY(var(--gallery-drop)); }
+.gcard-hit:hover [data-o="wide"] .gcard-ghost[data-g="r"] { transform: translateY(calc(var(--gallery-drop) * 2)); }
 .gcard-ghost img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .gcard[data-stale] .gcard-shot img, .gcard[data-stale] .gcard-ghost img, .gsheet-fig[data-stale] .gsheet-shot img { opacity: var(--gallery-stale); }
 .gcard-old, .gsheet-old { position: absolute; left: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center;
@@ -861,7 +864,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); margin-top: var(--space-2); }
 .gcard-mod { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--space-6);
              border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-small); }
-.gcard-info { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-medium); }
 
 .gsheet-layer { position: fixed; inset: 0; z-index: 21; }
 .gsheet-scrim { position: absolute; inset: 0; background: var(--scrim); }
@@ -889,7 +891,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gsheet-meta { display: flex; align-items: center; gap: var(--space-8); min-width: 0; }
 .gsheet-mod { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--space-6);
               border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-small); }
-.gsheet-info { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-medium); }
 .gsheet-go { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-6); height: var(--control-small); margin-right: calc(var(--space-8) * -1); padding: 0 var(--space-8);
              border: 0; border-radius: var(--corner-medium); background: none; color: var(--on-surface); font: var(--type-label-large); font-weight: var(--weight-semibold); cursor: pointer;
              transition: background var(--duration-short4) var(--easing-standard); }

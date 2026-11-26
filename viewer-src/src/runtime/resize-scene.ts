@@ -3,16 +3,19 @@ import { P, springOf } from "../scene/calc";
 import { dropDraft, installDock, menuOpen, orientationOpen, outside, paintPick, setOpen, setOrientationOpen } from "../scene/dock";
 import { animate, fit, go, relayout, resolve, setFrame, snapTo, tick, wake } from "../scene/engine";
 import { createState } from "../scene/state";
-import type { Axis, ResizeScene, SceneHooks } from "../scene/types";
+import type { ResizeScene, SceneHooks } from "../scene/types";
 
-export type { ResizeScene, SceneHooks, SceneImage, SceneRect, SceneTarget } from "../scene/types";
+export type { Axis, DockView, ResizeScene, SceneDock, SceneHooks, SceneImage, SceneRect, SceneTarget } from "../scene/types";
+export { DOCK_START, DP_MAX, DP_MIN, silhouette, slAt, stepOf } from "../scene/calc";
+export { itemName } from "../scene/dock";
 
 export function createResizeScene(root: HTMLElement, hooks: SceneHooks): ResizeScene {
   const S = createState(root, hooks);
-  installDock(S);
+  const dock = installDock(S);
   const onOutside = (e: PointerEvent) => outside(S, e);
   return {
     devices: new Set(Object.keys(DEVICES)),
+    dock,
     setOriginal(w,h,img) {
       Object.assign(S.ORIGINAL,{w,h,img});
       if (S.target?.sel === "original") Object.assign(S.target,{w,h});
@@ -48,19 +51,13 @@ export function createResizeScene(root: HTMLElement, hooks: SceneHooks): ResizeS
     enable(on) {
       S.enabled = on; S.root.hidden = !on;
       if (on) addEventListener("pointerdown", onOutside, true);
-      if (!on) { S.CTL.el.hidden = true; setOpen(S, false); setOrientationOpen(S, false); removeEventListener("pointerdown", onOutside, true); }
+      if (!on) { S.dock.set({ posture: false }); setOpen(S, false); setOrientationOpen(S, false); removeEventListener("pointerdown", onOutside, true); }
       if (!on) S.roomSize = "";
       if (!on) { cancelAnimationFrame(S.raf); S.raf=0; S.images.clear(); S.cur=null; S.tr=null; S.queued=null; dropDraft(S); S.slFocus=false; }
       else if (!S.raf) S.raf=requestAnimationFrame((ts: number) => animate(S, ts));
     },
     relayout: (force?: boolean) => relayout(S, force),
     moving: () => !!S.tr || !!S.queued || S.rig.on || S.spin.on || !!S.draft,
-    // 준비 중에는 슬라이더도 쉰다 — 칸 단추의 disabled 와 같은 자리에서 부른다
-    sliderOff(on) {
-      S.SL.el.classList.toggle("off", on);
-      for (const axis of ["w", "h"] as Axis[]) { S.SL[axis].thumb.tabIndex = on ? -1 : 0; S.SL[axis].thumb.setAttribute("aria-disabled", String(on)); }
-      if (on) dropDraft(S);
-    },
     clearImages() { S.images.clear(); },
     closeMenu() {
       if (orientationOpen(S)) { setOrientationOpen(S, false); return true; }

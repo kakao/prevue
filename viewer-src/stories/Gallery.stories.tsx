@@ -10,12 +10,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const shots = pearlBoard.groups.flatMap(g => g.cards).map(c => c.imageUrl).filter((u): u is string => !!u);
-const NOW = Math.max(...pearlFiles.map(f => f.mtime)) + 5 * 60000;
 
 function answer(sheets: number, at: number, w: number, h: number): CardAnswer {
   return { sheets, front: Array.from({ length: Math.min(3, sheets) }, (_, i) => ({
     i, name: `Preview${i}`, variant: null, image: { url: shots[(at + i) % shots.length], w, h } })), failure: null };
 }
+
+const cardUrl = (i: number) => pearlBoard.groups.flatMap(g => g.cards).find(c => c.index === i)!.imageUrl!;
+const WIDE_SHOTS = [{ url: cardUrl(29), w: 1486, h: 685 }, { url: cardUrl(27), w: 2134, h: 1333 }, { url: cardUrl(29), w: 1486, h: 685 }];
+const wideAnswer = (sheets: number): CardAnswer => ({ sheets, front: WIDE_SHOTS.slice(0, sheets).map((image, i) => ({ i, name: `Preview${i}`, variant: null, image })), failure: null });
 
 function fakeAsk(delay: number) {
   return (path: string) => new Promise<CardAnswer | null>(resolve => setTimeout(() => {
@@ -27,7 +30,7 @@ function fakeAsk(delay: number) {
 
 export const Pearl: Story = { render: () => {
   const cards = useMemo(() => createCardQueue(fakeAsk(500)), []);
-  return <div className="story-shell gallery"><GalleryGrid files={pearlFiles} ready cards={cards} now={NOW} onOpen={() => {}} /></div>;
+  return <div className="story-shell gallery"><GalleryGrid files={pearlFiles} ready cards={cards} onOpen={() => {}} /></div>;
 } };
 
 export const Loading: Story = { render: () => {
@@ -35,11 +38,11 @@ export const Loading: Story = { render: () => {
   return <div className="story-shell gallery"><GalleryGrid files={null} ready={false} cards={cards} onOpen={() => {}} /></div>;
 } };
 
-const text = { name: 'SearchScreenWithAVeryLongNameThatNeedsAMiddleCut', pkg: 'feature.search.ui.components', mod: 'feature/search', changed: '5 min ago' };
+const text = { name: 'SearchScreenWithAVeryLongNameThatNeedsAMiddleCut', pkg: 'feature.search.ui.components', mod: 'feature/search' };
 const views: Array<[string, CardView]> = [
   ['done', viewOf(answer(1, 0, 360, 780))],
   ['sheets', viewOf(answer(4, 1, 360, 780))],
-  ['wide', viewOf(answer(2, 2, 780, 360))],
+  ['wide', viewOf(wideAnswer(2))],
   ['loading', { status: 'loading' }],
   ['failed', viewOf(null)],
 ];

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
 import '../legacy/style.css';
 import '../legacy/resize.css';
-import { createResizeScene } from '../src/runtime/resize-scene';
+import { createResizeScene, DOCK_START, type DockView, type SceneDock } from '../src/runtime/resize-scene';
+import { createStore } from '../src/runtime/store';
 import type { Store } from '../src/workspace/view';
 import { examples } from './examples';
 import { pearlBoard } from './pearl';
@@ -11,7 +12,6 @@ import { pearlBoard } from './pearl';
 export const focusExample = examples[1], choiceExample = examples[3];
 export const pearlCard = pearlBoard.groups[0].cards[0];
 
-/** 무대의 그림 — 뷰어에서는 focus.ts 가 src 를 갈아 끼우므로 JSX 가 갖지 않는다. 스토리도 그린 뒤에 담는다. */
 export function useShot(url: string | null = pearlCard.imageUrl) {
   useLayoutEffect(() => {
     const shot = document.getElementById('shot') as HTMLImageElement | null;
@@ -19,13 +19,11 @@ export function useShot(url: string | null = pearlCard.imageUrl) {
   }, [url]);
 }
 
-/** 작업 공간의 본문 — 뷰어에서는 한 장에 들어오면 body.ws 가 붙는다. 조작 독을 세우는 스토리는 이 안에서 그린다. */
 export function WorkspaceBody({ children }: { children: ReactNode }) {
   useLayoutEffect(() => { document.body.classList.add('ws'); return () => document.body.classList.remove('ws'); }, []);
   return <div className="story-panel">{children}</div>;
 }
 
-/** 브라우저 쪽 표시 상태(배율 · 첫 장 대기 · 가리킨 카드)를 스토리 동안만 넣고, 끝나면 처음 값으로 돌린다. */
 export function WithView<T extends object>({ store, value, children }: { store: Store<T>; value: Partial<T>; children: ReactNode }) {
   // 첫 렌더에 한 번만 넣는다 — 자식이 붙기 전이라 구독자가 없다. 다시 그려도 뷰어 코드가 바꾼 값을 덮지 않는다.
   const [initial] = useState(() => { const before = store.get(); store.set(value); return before; });
@@ -33,11 +31,14 @@ export function WithView<T extends object>({ store, value, children }: { store: 
   return <>{children}</>;
 }
 
-/**
- * 실제 장면 — 번들 밖의 resize-scene.js 를 페이지처럼 띄워 pearl 첫 카드를 원래 크기(@Preview)로 담는다.
- * 장면은 문서에서 조작 독(#panel · #pnPick · #devCtl)도 찾으므로 Workspace 를 통째로 그린 뒤에 부른다. 크기 · 기기 · 자세를 고르면 틀이 옮겨 간다 — 데몬이 없어 새 그림은 오지 않는다.
- */
+export function idleDock(view: Partial<DockView> = {}): SceneDock {
+  const store = createStore<DockView>({ ...DOCK_START, ...view }), none = () => {};
+  return { view: store, setMenu: menu => store.set({ menu }), setOrientMenu: orientMenu => store.set({ orientMenu }),
+    pick: none, orient: none, fold: none, hinge: none, cancelRuler: none, grab: none, drag: none, release: none, step: none, sliderFocus: none, lock: none };
+}
+
 export function useLiveScene() {
+  const [dock, setDock] = useState<SceneDock>();
   useLayoutEffect(() => {
     const root = document.getElementById('resizeScene'), stage = document.getElementById('stage');
     if (!root || !stage) return;
@@ -52,6 +53,8 @@ export function useLiveScene() {
     scene.image('original', image);
     scene.enable(true);
     scene.update({ sel: 'original', w: image.dpW, h: image.dpH }, true);
+    setDock(scene.dock);
     return () => { scene.enable(false); document.body.classList.remove('resizing-ui'); };
   }, []);
+  return dock;
 }

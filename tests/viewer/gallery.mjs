@@ -23,7 +23,7 @@ const boardOf = path => ({ ...board, version: version++, screen: 'board', tabs: 
 let current = { ...board, version: version++, screen: 'empty', tabs: [], board: null, focus: null };
 const asked = [], opened = [], sheetAsked = [];
 const WIDE = files[4].path;
-let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null;
+let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null, filesReady = true, filesAsked = 0;
 const streams = new Set();
 const notifyShots = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'galleryShots' } })}\n\n`); };
 const notifyFiles = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'previewFiles' } })}\n\n`); };
@@ -60,8 +60,9 @@ const server = createServer(async (request, response) => {
     response.end(JSON.stringify({ ok: true }));
     push(boardOf(file));
   } else if (path === '/preview-files.json' || path === '/project-files.json') {
+    if (path === '/preview-files.json') filesAsked++;
     response.setHeader('Content-Type', 'application/json');
-    response.end(JSON.stringify(path === '/preview-files.json' ? { ready: true, files } : { files: {} }));
+    response.end(JSON.stringify(path === '/preview-files.json' ? { ready: filesReady, files: filesReady ? files : [] } : { files: {} }));
   } else if (path.startsWith('/viewer/')) {
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify({ ok: true }));
@@ -128,6 +129,8 @@ try {
   await check(`document.querySelector('#railAll').classList.contains('on') && document.querySelector('#railAll').getAttribute('aria-current')==='page'`, '갤러리에 있는 동안 레일 「모든 Preview」가 고른 줄');
   await check(`[...document.querySelectorAll('#galleryView .gcard-file')].map(el=>el.title||el.textContent).slice(0,3).join()==='Screen0,Screen1,Screen2'`, '최근 바뀐 순, .kt 를 뗀 이름');
   await check(`document.querySelector('#galleryView .gcard-pkg').textContent==='f0' && document.querySelector('#galleryView .gcard-mod').textContent==='feature/f0'`, '패키지는 공통 머리를 떼고, 모듈은 impl 을 뗀다');
+  await check(`!document.querySelector('#galleryView .gcard-info') && document.querySelector('#galleryView .gcard-foot').textContent==='feature/f0'`, '카드 마지막 줄은 모듈 칩만, 바뀐 시각 없음');
+  await check(`document.querySelector('#railAll .rail-all-n')?.textContent==='${files.length}'`, '레일 「모든 Preview」 옆 숫자는 파일 수');
   await check(`document.querySelectorAll('#galleryView .gcard[data-state="loading"] .gveil').length>0 && !document.querySelector('#galleryView .gcard[data-state="loading"] .gcard-stack')`, '그림이 오기 전에는 그림 칸 전체가 로딩 판');
   await check(`(()=>{const v=document.querySelector('#galleryView .gcard[data-state="loading"] .gveil'),c=v.closest('.gcard-cover').getBoundingClientRect(),r=v.getBoundingClientRect();return r.width===c.width&&r.height===c.height})()`, '로딩 판은 그림 칸을 꽉 채운다');
   await check(`[...document.querySelectorAll('#galleryView .gcard-slot')].filter(el=>{const r=el.getBoundingClientRect();return r.top>innerHeight}).every(el=>!el.querySelector('.gveil'))`, '화면 밖 카드에는 로딩 판이 없다');
@@ -146,6 +149,27 @@ try {
   await check(`document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost img').length===2 && document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost').length===2`, '카드는 그려진 앞 세 장을 함께 받아 호버 뒤 판에 둔다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard').dataset.state==='failed' && document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-failed')`, '그리지 못한 카드는 실패 판');
   await check(`(()=>{const f=document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-failed'),c=f.closest('.gcard-cover').getBoundingClientRect(),r=f.getBoundingClientRect();return r.width===c.width&&r.height===c.height})()`, '실패 판은 그림 칸 전체');
+  const wide = '#galleryView .gcard-slot:nth-child(5)';
+  await until(`document.querySelector('${wide} .gcard-stack')?.dataset.o==='wide' && document.querySelector('${wide} .gcard-shot img')?.complete`);
+  await check(`(()=>{const c=document.querySelector('${wide} .gcard-cover').getBoundingClientRect(),s=document.querySelector('${wide} .gcard-stack').getBoundingClientRect();return s.top-c.top>1&&Math.abs((s.top-c.top)-(c.bottom-s.bottom))<1.5})()`, '가로 그림은 그림 칸 한가운데');
+  await check(`(()=>{const st=getComputedStyle(document.querySelector('${wide} .gcard-shot'));return parseFloat(st.borderBottomLeftRadius)>0&&parseFloat(st.borderBottomRightRadius)>0&&parseFloat(st.borderTopLeftRadius)>0})()`, '가로 그림은 네 모서리가 둥글다');
+  const ghostsOf = sel => `[...document.querySelectorAll('${sel} .gcard-ghost')].map(g=>{const m=new DOMMatrix(getComputedStyle(g).transform);return {g:g.dataset.g,deg:Math.atan2(m.b,m.a)*180/Math.PI,y:m.f}})`;
+  const hover = async sel => {
+    await evaluate(`document.querySelector('${sel}').scrollIntoView({block:'center'})`);
+    const p = await evaluate(`(()=>{const r=document.querySelector('${sel} .gcard-cover').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...p });
+    await pause(600);
+  };
+  await hover(wide);
+  const wideGhosts = await evaluate(ghostsOf(wide));
+  const [wl, wr] = ['l', 'r'].map(g => wideGhosts.find(x => x.g === g));
+  ok(wideGhosts.length === 2 && wideGhosts.every(x => Math.abs(x.deg) < .01) && wl.y > 0 && wr.y > wl.y, `가로 그림 호버 — 뒤 그림은 돌지 않고 아래로 층층이 ${JSON.stringify(wideGhosts)}`);
+  const tall = '#galleryView .gcard-slot:nth-child(1)';
+  await hover(tall);
+  const tallGhosts = await evaluate(ghostsOf(tall));
+  ok(tallGhosts.length === 2 && tallGhosts.every(x => Math.abs(Math.abs(x.deg) - 5) < .1), `세로 그림 호버 — 뒤 그림은 ±5° ${JSON.stringify(tallGhosts)}`);
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 });
+  await evaluate(`scrollTo(0, 0)`);
   const before = asked.length;
   await evaluate(`scrollTo(0, document.documentElement.scrollHeight)`);
   await until(`(${visible}).every(p=>document.querySelector('#galleryView .gcard-slot[data-path="'+CSS.escape(p)+'"] .gcard').dataset.state!=='loading')`);
@@ -158,7 +182,7 @@ try {
   const count0 = () => asked.filter(x => x === files[0].path).length;
   const sheetUp = `document.querySelector('.gsheet')?.style.visibility!=='hidden' && !!document.querySelector('.gsheet')`;
   const sheetGone = `!document.querySelector('.gsheet-layer')`;
-  const watchFrames = `(()=>{window.__out=[];window.__frames=0;const cut=(el,r)=>{const m=/inset\\(([^)]*)\\)/.exec(getComputedStyle(el).clipPath);if(!m)return r;const v=m[1].trim().split(/\\s+/);while(v.length<4)v.push(v[v.length===3?1:v.length===2?0:0]);const n=(x,len)=>x.endsWith('%')?len*parseFloat(x)/100:parseFloat(x)||0;return{left:r.left+n(v[3],r.width),top:r.top+n(v[0],r.height),right:r.right-n(v[1],r.width),bottom:r.bottom-n(v[2],r.height)}};const f=()=>{const s=document.querySelector('.gsheet-shell');if(s){const b=s.getBoundingClientRect();for(const el of document.querySelectorAll('.gsheet-shot,.gsheet-cap,.gsheet-file,.gsheet-pkgrow,.gsheet-info,.gsheet-mod,.gsheet-go,.gsheet .gcard-count')){if(+getComputedStyle(el).opacity<.05)continue;const r=cut(el,el.getBoundingClientRect());if(r.right-r.left<1)continue;if(r.left<b.left-1.5||r.top<b.top-1.5||r.right>b.right+1.5||r.bottom>b.bottom+1.5)__out.push(el.className+' '+__frames)}__frames++}if(__frames<90)requestAnimationFrame(f)};requestAnimationFrame(f)})()`;
+  const watchFrames = `(()=>{window.__out=[];window.__frames=0;const cut=(el,r)=>{const m=/inset\\(([^)]*)\\)/.exec(getComputedStyle(el).clipPath);if(!m)return r;const v=m[1].trim().split(/\\s+/);while(v.length<4)v.push(v[v.length===3?1:v.length===2?0:0]);const n=(x,len)=>x.endsWith('%')?len*parseFloat(x)/100:parseFloat(x)||0;return{left:r.left+n(v[3],r.width),top:r.top+n(v[0],r.height),right:r.right-n(v[1],r.width),bottom:r.bottom-n(v[2],r.height)}};const f=()=>{const s=document.querySelector('.gsheet-shell');if(s){const b=s.getBoundingClientRect();for(const el of document.querySelectorAll('.gsheet-shot,.gsheet-cap,.gsheet-file,.gsheet-pkgrow,.gsheet-mod,.gsheet-go,.gsheet .gcard-count')){if(+getComputedStyle(el).opacity<.05)continue;const r=cut(el,el.getBoundingClientRect());if(r.right-r.left<1)continue;if(r.left<b.left-1.5||r.top<b.top-1.5||r.right>b.right+1.5||r.bottom>b.bottom+1.5)__out.push(el.className+' '+__frames)}__frames++}if(__frames<90)requestAnimationFrame(f)};requestAnimationFrame(f)})()`;
   const openedBefore = opened.length;
   await evaluate(watchFrames);
   await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
@@ -170,6 +194,7 @@ try {
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').style.visibility==='hidden'`, '시트가 뜬 동안 카드 자리는 비운다');
   await until(`document.querySelectorAll('.gsheet-fig').length===3 && document.querySelectorAll('.gsheet-shot img').length===3`);
   ok(sheetAsked.length === 0 && count0() === 1, '시트는 카드가 그린 앞 장을 그대로 쓰고 따로 묻지 않는다');
+  await check(`!document.querySelector('.gsheet-info') && document.querySelector('.gsheet-meta').textContent==='feature/f0'`, '시트에도 바뀐 시각 없음');
   await check(`[...document.querySelectorAll('.gsheet-cap')].map(c=>c.textContent).join()==='Dark,Long'`, '이름표는 파일 이름 · Preview 를 떼고, 변주는 변주 이름, 남는 것이 없으면 생략');
   await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='4'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
   await check(`document.querySelectorAll('.gsheet-close').length===1 && document.querySelector('.gsheet-close').textContent.length>0`, '화면 읽기용 닫기 단추');
@@ -198,7 +223,7 @@ try {
   await check(`getComputedStyle(document.documentElement).overflow!=='hidden' && !document.querySelector('#galleryView .gallery-in').inert`, '닫으면 뒤 스크롤 잠금이 풀린다');
 
   delay = 1500;
-  const drawing = files.find(f => !asked.includes(f.path));
+  const drawing = files.find(f => !asked.includes(f.path) && f.path !== BROKEN && f.path !== FAILED);
   await evaluate(`document.querySelector('#galleryView .gcard-slot[data-path="${drawing.path}"]').scrollIntoView({block:'center'})`);
   await until(`document.querySelector('#galleryView .gcard-slot[data-path="${drawing.path}"] .gveil')`);
   await click(`#galleryView .gcard-slot[data-path="${drawing.path}"] .gcard-hit`);
@@ -472,6 +497,26 @@ try {
   await until(`document.querySelector('#galleryView .gcard-slot[data-path="${BROKEN}"] .gcard').dataset.state==='failed'`);
   ok(true, '카드 요청이 서버 오류로 끝나면 실패 카드');
   await check(`__errors.length===0`, '브라우저 오류 없음');
+
+  current = boardOf(files[2].path);
+  const reopen = async () => {
+    const before = filesAsked;
+    await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` });
+    await until(`document.querySelector('#boardView')?.hidden===false && document.querySelector('#railAll')`);
+    for (let i = 0; i < 100 && filesAsked === before; i++) await pause(50);
+    await pause(200);
+    return filesAsked > before;
+  };
+  ok(await reopen(), '갤러리가 닫힌 채 뷰어를 열어도 목록을 받는다');
+  await check(`document.querySelector('#galleryView').hidden && document.querySelector('#railAll .rail-all-n')?.textContent==='${files.length}'`, '색인이 이미 끝났으면 알림 없이도 레일 숫자가 파일 수');
+  filesReady = false;
+  ok(await reopen(), '색인 중에 다시 열어도 목록을 받는다');
+  await check(`document.querySelector('#galleryView').hidden && !document.querySelector('#railAll .rail-all-n')`, '색인 중에는 레일 숫자가 없다');
+  filesReady = true;
+  notifyFiles();
+  await until(`document.querySelector('#railAll .rail-all-n')?.textContent==='${files.length}'`);
+  await check(`document.querySelector('#galleryView').hidden`, '색인이 끝나면 갤러리를 열지 않아도 숫자가 파일 수');
+  await check(`__errors.length===0`, '다시 띄운 뷰어에서도 브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {
   ws?.close(); chrome.kill();
