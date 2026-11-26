@@ -58,7 +58,7 @@ export class Tw {
   snap(v: number) { this.a = this.b = v; this.dur = 0; }
   done(now: number) { return this.dur <= 0 || now - this.t0 >= this.dur; }
 }
-// 기기 표(크기 · 베젤 · 반경 · 카메라 · 버튼 · 색)는 plugin/devices 스펙에서 생성한 devices.js 다 — 값의 출처(windowinsets.info · safearea.info)와 눈대중인 값은 스펙이 갖는다.
+// 기기 표(크기 · 베젤 · 반경 · 카메라 · 버튼 · 색)는 plugin/devices 스펙에서 생성한 devices.ts 다 — 값의 출처(windowinsets.info · safearea.info)와 눈대중인 값은 스펙이 갖는다.
 
 // 자연 방향 화면(panel)을 sel 의 rot · right 로 돌린 자세 — 세로 / 가로 왼쪽 / 가로 오른쪽과 손에 든 회전 각도.
 // 네 모서리 [좌상, 우상, 우하, 좌하] 를 4분의 1바퀴씩 돌린다 — camBox 의 회전과 같은 방향이다.
