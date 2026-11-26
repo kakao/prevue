@@ -10,7 +10,7 @@ import { type ContrastRow, measureContrast } from '../../tests/viewer/contrast-m
 const meta = { title: '재료/Tokens' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
-const colors = ['surface', 'surface-container', 'surface-container-high', 'state-hover', 'primary-container', 'on-surface', 'on-surface-variant', 'on-surface-disabled',
+const colors = ['surface', 'surface-container', 'surface-container-high', 'state-hover', 'skeleton-sheen', 'primary-container', 'on-surface', 'on-surface-variant', 'on-surface-disabled',
   'outline', 'outline-variant', 'outline-faint', 'primary', 'on-primary', 'focus-ring', 'pick', 'pick-container', 'on-pick', 'pick-outline', 'pick-hover', 'pick-hover-line', 'pick-chosen', 'pick-rest', 'live', 'error', 'error-container', 'on-error', 'warning', 'success', 'scrim',
   'device-body', 'art-kmp',
   'inset-status', 'inset-nav', 'inset-caption', 'inset-cutout', 'inset-overlays', 'inset-safe',

@@ -33,7 +33,7 @@ public class BrowserEndpoint @Inject internal constructor(
     private val reveal = target.reveal
 
     override suspend fun route(ex: HttpExchange, path: String, method: String): Boolean =
-        routeLive(ex, path, method) || routeData(ex, path, method)
+        routeLive(ex, path, method) || routeData(ex, path, method) || routeGallery(ex, path, method)
 
     private suspend fun routeLive(ex: HttpExchange, path: String, method: String): Boolean {
         when {
@@ -49,12 +49,21 @@ public class BrowserEndpoint @Inject internal constructor(
     private suspend fun routeData(ex: HttpExchange, path: String, method: String): Boolean {
         when {
             path == "/project-files.json" -> ex.json(200, tabs.sourceIndex()?.toJson() ?: emptyMap<String, Any?>())
-            path == "/preview-files.json" -> ex.json(200, tabs.previewFiles())
+            path == "/preview-files.json" -> ex.json(200, tabs.previewFiles(gallery::keptOf))
             path == "/viewer/state" -> ex.json(200, presenter.current().toJson())
-            path == "/gallery/card" && method == "GET" -> galleryCard(ex)
-            path == "/gallery/sheet" && method == "GET" -> gallerySheet(ex)
             path == "/app.json" -> ex.json(200, appJson())
             path == "/app-icon.png" && method == "GET" -> png(ex, identity.second, "max-age=3600")
+            else -> return false
+        }
+        return true
+    }
+
+    private suspend fun routeGallery(ex: HttpExchange, path: String, method: String): Boolean {
+        if (method != "GET") return false
+        when {
+            path == "/gallery/card" -> galleryCard(ex)
+            path.startsWith(SHOT) && path.endsWith(".png") ->
+                png(ex, gallery.image(path.removePrefix(SHOT).removeSuffix(".png"))?.readBytes(), "max-age=31536000, immutable")
             else -> return false
         }
         return true
@@ -64,11 +73,6 @@ public class BrowserEndpoint @Inject internal constructor(
         val file = queryParam(ex, "file")
         val card = file?.let { gallery.card(it) }
         if (card == null) ex.json(404, mapOf("ok" to false)) else ex.json(200, card)
-    }
-
-    private suspend fun gallerySheet(ex: HttpExchange) {
-        val sheet = queryParam(ex, "file")?.let { gallery.sheet(it) }
-        if (sheet == null) ex.json(404, mapOf("ok" to false)) else ex.json(200, sheet)
     }
 
     private fun queryParam(ex: HttpExchange, name: String): String? =
@@ -152,5 +156,6 @@ public class BrowserEndpoint @Inject internal constructor(
 
     private companion object {
         val ACCEPTED = mapOf("ok" to true)
+        const val SHOT = "/gallery/shot/"
     }
 }

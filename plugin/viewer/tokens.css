@@ -74,6 +74,7 @@
   --surface-container: light-dark(var(--gray-light-0), var(--gray-dark-2));
   --surface-container-high: light-dark(var(--gray-light-alpha-12), var(--gray-dark-alpha-20));
   --state-hover: light-dark(var(--gray-light-alpha-10), var(--gray-dark-alpha-20));
+  --skeleton-sheen: light-dark(var(--gray-light-alpha-10), var(--gray-dark-alpha-20));
   --primary-container: light-dark(var(--gray-light-alpha-15), var(--gray-dark-alpha-25));
   --on-surface: light-dark(var(--gray-light-12), var(--gray-dark-12));
   --on-surface-variant: light-dark(var(--gray-light-9), var(--gray-dark-9));

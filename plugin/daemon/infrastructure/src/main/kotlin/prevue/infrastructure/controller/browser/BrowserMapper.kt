@@ -1,6 +1,7 @@
 // 뷰어 상태 → SSE·HTTP JSON(D-41·D-42). 브라우저가 읽는 키는 여기서만 정한다.
 package prevue.infrastructure.controller.browser
 
+import java.io.File
 import prevue.application.domain.model.Keyed
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.Verbatim
@@ -57,18 +58,15 @@ internal fun CardState.toJson(): Map<String, Any?> = mapOf(
 internal fun UiEvent.toJson(): Map<String, Any?> = when (this) {
     is UiEvent.Flash -> mapOf("kind" to "flash", "text" to text.toJson())
     UiEvent.PreviewFiles -> mapOf("kind" to "previewFiles")
+    UiEvent.GalleryShots -> mapOf("kind" to "galleryShots")
     UiEvent.ProjectFiles -> mapOf("kind" to "projectFiles")
 }
 
-/**
- * D-56. 빠른 열기의 목록. 다 훑기 전이면 `ready: false`에 빈 목록이다. `path`는 `/viewer/open`에 그대로 넘기는 풀패스,
- * `rel`은 저장소 기준 — 줄에 보이고 매칭하는 것은 이쪽이다.
- */
-internal fun previewFilesJson(index: PreviewIndex?, repoRoot: String): Map<String, Any?> = mapOf(
+internal fun previewFilesJson(index: PreviewIndex?, repoRoot: String, kept: (File) -> Map<String, Any?>? = { null }): Map<String, Any?> = mapOf(
     "ready" to (index != null),
     "files" to index?.files.orEmpty().map { f ->
         mapOf("path" to f.file.path, "rel" to f.file.relTo(repoRoot), "module" to f.module, "mtime" to f.mtimeMs, "functions" to f.functions,
-            "previews" to f.functions.map { fn -> mapOf("fn" to fn, "calls" to f.calls[fn].orEmpty()) })
+            "previews" to f.functions.map { fn -> mapOf("fn" to fn, "calls" to f.calls[fn].orEmpty()) }, "shots" to kept(f.file))
     },
     "composables" to index?.let { it.composables + it.innerComposables }.orEmpty()
         .flatMap { (name, defs) -> defs.map { mapOf("name" to name) + it.toJson(repoRoot) } },

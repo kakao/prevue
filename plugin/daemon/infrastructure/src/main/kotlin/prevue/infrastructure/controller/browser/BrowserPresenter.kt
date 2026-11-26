@@ -96,6 +96,7 @@ internal class BrowserPresenter(
         when (ev) {
             is WorkspaceEvent.Touched, WorkspaceEvent.NewTask -> {}
             WorkspaceEvent.PreviewFilesChanged -> _events.tryEmit(UiEvent.PreviewFiles)
+            WorkspaceEvent.GalleryShotsChanged -> _events.tryEmit(UiEvent.GalleryShots)
             WorkspaceEvent.ProjectFilesChanged -> _events.tryEmit(UiEvent.ProjectFiles)
             is WorkspaceEvent.TabEvicted -> flash(phrase("tabs.evicted", "tab" to tabName(ev.tab)))
             is WorkspaceEvent.TabVacated -> flash(BrowserStates.vacantText(tabName(ev.tab), ev.tab.vacant!!))
