@@ -17,8 +17,8 @@
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
 // 같은 대상을 다른 워크트리의 데몬이 보고 있을 때와 검증장 위생은 dev-skills-src/implement/tools/screen.md 의 개발 위생을 따른다.
-// 장면: hero · board · party · pointing · worktrees · match · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --mw · --mh(match 가운데 창) · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
+// 장면: hero · board · gallery · party · pointing · worktrees · match · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --mw · --mh(match 가운데 창) · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --gw · --gh(gallery 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
 // GIF 장면(pointing · worktrees · match · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을,
 // match 는 크롬을 하나 더 띄우고 --pearl-a 의 PearlScreen.kt · Theme.kt 를 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
@@ -629,6 +629,28 @@ const SCENES = {
       await sleep(500);
     };
     await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)], !!opt.bare);
+  },
+  // 모든 Preview — 탭 없는 시작 화면의 Pearl 카드 격자에서 ShowcasePreviews 카드를 눌러 앞 3장 시트를 띄운다. --gw · --gh(창)
+  // 순서는 최근 바뀐 순이라 데몬을 띄우기 전에 사본에서 Cup · ComponentPreviews · DrinkCard · ShowcasePreviews · SearchScreen · PearlPreviews 순으로 touch 한다.
+  // 그린 뒤 touch 하면 카드가 Outdated 로 흐려진다 — 데몬을 내리고 그 사본의 ~/.prevue/projects/<키>/gallery 를 지운 뒤 다시 찍는다.
+  async gallery(c) {
+    const url = await viewer(opt["pearl-a"], [PEARL.previews]);
+    prevue(opt["pearl-a"], "close", join(opt["pearl-a"], PEARL.previews));
+    const w = +(opt.gw || 1320), h = +(opt.gh || 860);
+    await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: SCALE, mobile: false });
+    await c.send("Page.navigate", { url });
+    const drawn = `(() => { const cs = [...document.querySelectorAll("#galleryView .gcard")].filter(e => e.getBoundingClientRect().top < innerHeight);
+      return cs.length > 0 && cs.every(e => e.dataset.state !== "loading") && [...document.querySelectorAll("#galleryView img")].every(i => i.complete && i.naturalWidth > 0); })()`;
+    await c.until(drawn, 120_000);
+    await sleep(800);
+    const slot = await c.rect(`.gcard-slot[data-path$="${basename(PEARL.showcase)}"] .gcard-hit`);
+    if (!slot) throw new Error("ShowcasePreviews 카드가 첫 화면에 없다");
+    await c.click(slot.x + slot.w / 2, slot.y + slot.h / 2);
+    await c.until(`[...document.querySelectorAll("[role=dialog] img")].length >= 3 && [...document.querySelectorAll("[role=dialog] img")].every(i => i.complete && i.naturalWidth > 0)`, 60_000);
+    await sleep(1200);
+    await c.move(w - 4, h - BAR - 4);
+    const { data } = await c.send("Page.captureScreenshot", { format: "png" });
+    await frame(c, "gallery", [{ data, title: await c.evaluate("document.title"), url, w, h }]);
   },
   // KMP 파티 — KotlinConf 앱 commonMain 의 PartyAnimation 보드에서 포인터가 Dark 카드의 Interactive 를 눌러 작업 공간에 들어가
   // 파티를 보고(3초) ‹ 로 보드에 돌아온다. 처음과 끝이 같은 보드라 반복해도 이음매가 없다. 그 Preview 는 intensity 1 로 고정돼

@@ -67,6 +67,18 @@ Kotlin Multiplatform and Compose Multiplatform modules work the same way. Prevue
 
 Switch between a screen file and its component files while you edit, and the open files stay in the list on the left. `/` or `⌘K` finds a file by name, initials (`fys` → `ForYouScreen.kt`), or Preview function name. Press `?` in the viewer for every shortcut.
 
+## Every preview at a glance
+
+Don't remember the file name? Browse instead. **All Previews** shows every preview file in the project as a card grid, most recently changed first. It's the start screen when no tabs are open, sits at the top of the rail, and `esc` on a board takes you back to it.
+Each card shows the file name, package, module, and how many previews it has. Cards draw as they scroll into view, from what is already built, without Gradle. Click one and a sheet rises from where it sits with its first three previews, and **View on board** opens its board.
+
+<p align="center">
+  <img src="assets/gallery.png" width="1000"
+       alt="All Previews for the Pearl sample app with no tabs open. The rail shows All Previews 23 at the top and No open files below it. The grid, sorted by Recently changed, starts with PearlPreviews (30 previews), SearchScreen, and ShowcasePreviews, each card showing its drawn preview, file name, package, and module. ShowcasePreviews is open as a sheet raised over its card, with NavTour, HomeTour, and Sip side by side, the package com.example.pearl.feature.pearl.showcase, the module feature/pearl, and View on board">
+</p>
+
+Drawn cards are kept, even across daemon restarts, so the grid comes back at once. A card drawn before its file changed shows faded with **Outdated** until the board draws it again.
+
 ## Point instead of explaining
 
 Click anything in the Preview and tell your agent what to do with it. No screenshots, no "the second card from the top."
