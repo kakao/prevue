@@ -6,22 +6,18 @@ import { asyncImage, cardOf, find, flat, hit, nia, pearl, PX, rectOf, SHOT, type
 import { pearlCard } from './workspace';
 import './point-card.css';
 
-// 가리킨 결과의 카드(D-162) — 상태별 카드, 그림 위에 선 모양, 보드에서 가리키기. 카드의 내용은 뷰어와 같은 함수(workspace/card.ts)로 짓고,
-// 그림 위 표시는 뷰어와 같은 클래스(.marks .ol · .box · .box.pick, style.css)다. 트리는 pearl 0번 그림을 눈으로 본뜬 것이다(point-tree.ts).
 const meta = { title: '가리키기/PointCard' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 type Origin = NonNullable<Parameters<typeof cardOf>[2]>['from'];
 const NO: PointActions = { choose() {}, cancel() {}, follow() {}, pick() {}, peek() {}, jump() {}, close() {} };
 
-/** 카드 높이를 재어 밑에 적는다 — 시안의 높이 실측(약 430px)을 Storybook 에서 바로 본다. */
 function Height({ of, deps }: { of: () => HTMLElement | null | undefined; deps: unknown }) {
   const [h, setH] = useState(0);
   useEffect(() => { const t = setTimeout(() => setH(Math.round(of()?.getBoundingClientRect().height ?? 0)), 700); return () => clearTimeout(t); }, [deps]); // eslint-disable-line react-hooks/exhaustive-deps
   return <span className="story-meta story-height" data-height={h}>{h ? `${h}px` : ''}</span>;
 }
 
-/** 상태 하나 — 트리 줄을 누르면 그 노드로 다시 가리킨 것처럼 카드 전체가 바뀐다. */
 function Picker({ list, start, copied, bare, msg, from }: { list: Picked[]; start: Picked; copied?: boolean; bare?: boolean; msg?: string; from?: Origin }) {
   const [here, setHere] = useState(start), wrap = useRef<HTMLDivElement>(null);
   const actions: PointActions = { ...NO, pick: r => setHere(list[Number(r.id)]) };
@@ -50,14 +46,9 @@ export const States: Story = { render: () => <div className="story-sheets">{['li
   </div>
 </section>)}</div> };
 
-/** 무대 — 그림은 왼쪽 위 24px 에 서고, 카드는 그 밖 오른쪽에 뜬다. */
 const INSET = 24, STAGE = { width: INSET + SHOT.width + 16 + 320 + 24, height: SHOT.height + INSET * 2 };
 const place = (n: Picked | null) => { const r = n && rectOf(n); return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : undefined; };
 
-/**
- * 보드에서 가리키기 — 그림을 누르면 고른 노드와 카드가 뜨고, 카드 트리 줄에 올리면 그림 위에 옅은 바탕, 누르면 그 노드로 다시 가리킨다.
- * `Esc` · 닫기 · 빈 곳 클릭으로 닫힌다. still 이면 처음 노드를 고른 채 구조 테두리를 늘 보인다(그림 위 스토리).
- */
 function Board({ theme, start = null, still }: { theme: string; start?: Picked | null; still?: boolean }) {
   const [here, setHere] = useState<Picked | null>(start), [hover, setHover] = useState<Picked | null>(null), [peek, setPeek] = useState<Picked | null>(null), [over, setOver] = useState(!!still);
   const [host, setHost] = useState<HTMLDivElement | null>(null), img = useRef<HTMLImageElement>(null);

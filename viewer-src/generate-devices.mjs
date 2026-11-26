@@ -16,8 +16,6 @@ const number = (value, where) => { if (typeof value !== 'number' || !Number.isFi
 const dp = (px, dpi) => Math.round(number(px, 'px') / dpi * 160 * 100) / 100;
 const BARS = ['aosp', 'oneui', 'pixel', 'ios'];
 
-// 화면 모서리는 사이트의 측정값(자세마다 cornerRadius)이 있으면 그것이고, 없을 때만 look.radius(그림 값)다 — 둘 다 있으면 어느 쪽이 맞는지 알 수 없어 실패한다.
-// 값은 네 모서리 [좌상, 우상, 우하, 좌하](자연 방향)다. 스펙은 넷이 같으면 숫자 하나, 다르면 그 순서의 목록으로 적는다.
 const corners = (value, where) => {
   const list = Array.isArray(value) ? value : [value, value, value, value];
   if (list.length !== 4) throw Error(`${where}: 숫자 하나이거나 [좌상, 우상, 우하, 좌하] 넷이다`);
@@ -42,10 +40,6 @@ function measuredRadius(screen, dpi, ios, where) {
   return found.size ? JSON.parse([...found][0]) : undefined;
 }
 
-// 컷아웃 하나는 시스템이 보고하는 배제 상자(box)와 그 안에 그릴 구멍(holes)이다. 상태 줄 · 핸들 · 눈금자 칸은 상자를 피하고, 장면 · 기기 PNG 는 구멍을 그린다.
-// box 는 가장자리 기준이다(w 는 가장자리를 따른 길이, h 는 깊이, y 는 가장자리에서 떨어진 거리, x 는 가장자리를 따른 위치 비율).
-// holes 는 화면 왼쪽 위 기준 자연 방향 dp 의 원이다(cx · cy 중심, d 지름, lens 면 렌즈 테와 유리 반점). 없으면 상자 모양 그대로 그린다.
-// 그릴 모양(cams)은 위 가장자리 기준 상자로 바꿔 둔다 — 장면의 camBox 가 상자와 같은 회전을 쓴다.
 function cutout(raw, where, size) {
   keys(raw, ['box', 'holes'], where, ['box']);
   const box = keys(raw.box, ['w', 'h', 'y', 'x', 'notch', 'edge'], `${where}.box`, ['w', 'h', 'y']);
@@ -97,8 +91,6 @@ function status(raw, where) {
   return { top: number(raw.top, `${where}.top`), right: number(raw.right, `${where}.right`), ...raw.left === undefined ? {} : { left: number(raw.left, `${where}.left`) }, s: number(raw.scale, `${where}.scale`), time };
 }
 
-// 접기 장면의 판 — 펼친 판 하나의 두께와 다 접혔을 때 두 화면 사이 틈(dp, 실물 mm 에서 옮긴 어림값).
-// axis 는 힌지가 가르는 변이다 — width 는 책형, height 는 조개형. blur 는 접히는 판의 화면에 겹 흐림을 준다(iPhone Duo 의 접기 모양).
 function plate(look, where) {
   const hinge = keys(look.hinge, ['axis', 'gap', 'blur'], `${where}.hinge`, ['axis', 'gap']);
   if (hinge.blur !== undefined && hinge.blur !== true) throw Error(`${where}.hinge.blur: true 만 받는다`);
@@ -120,11 +112,7 @@ export function deviceTable(specList) {
     if (!/^#[0-9a-f]{6}$/i.test(look.tone)) throw Error(`${where}.look.tone: #rrggbb 가 아니다 — 접기 장면이 빛에 맞춰 채널을 나눠 계산한다`);
     if (look.bar === 'ios' && !folds && !look.status) throw Error(`${where}: iOS 홑 기기에는 look.status 가 필요하다`);
     if (look.status && (look.bar !== 'ios' || folds)) throw Error(`${where}: look.status 는 iOS 홑 기기만 갖는다`);
-    // 화면마다 밀도가 다를 수 있다(Galaxy Z Flip8 커버 380 · 펼침 480) — 화면의 dpi 가 없으면 기기 dpi 다.
     const dpiOf = key => screens[key].dpi === undefined ? number(m.dpi, `${where}.measured.dpi`) : number(screens[key].dpi, `${where}.measured.screens.${key}.dpi`);
-    // 측정한 자세가 하나뿐인 화면은 그 자세로만 둔다 — 돌리기를 끈다(fixed).
-    // 컷아웃 인셋이 선 변 — 자세마다 w(위 · 아래)와 h(왼쪽 · 오른쪽)를 적는다. 인셋 배지가 눈금 바깥에 설 자리를 장면이 미리 비운다.
-    // 측정 자세는 displayCutout 이고, 측정이 없는 iOS 는 데몬(DeviceInsetInput.iosAppInsets)처럼 safeArea 에서 아래를 뺀 값이 컷아웃이다.
     const cutIn = screen => Object.fromEntries(Object.entries(screen.postures).map(([name, posture]) => {
       const edges = posture.insets ? posture.insets.displayCutout?.dp ?? {} : { ...posture.safeArea, bottom: 0 };
       return [name, `${edges.top || edges.bottom ? 'w' : ''}${edges.left || edges.right ? 'h' : ''}`];
@@ -138,7 +126,6 @@ export function deviceTable(specList) {
     const states = folds ? ['cover', 'open'] : ['open'], entry = { name: spec.label, short: look.short, fold: folds };
     for (const key of states) entry[key] = panel(key);
     entry.look = Object.fromEntries(states.map(key => [key, { tone: look.tone, ...body(look[key], `${where}.look.${key}`, measuredRadius(screens[key], dpiOf(key), look.bar === 'ios', `${where}.measured.screens.${key}`), [entry[key].w, entry[key].h]) }]));
-    // 상태바 자리는 데몬만 쓴다(DeviceChrome, D-189) — 여기서는 모양만 검사하고 devices.ts 에 싣지 않는다.
     if (look.status) status(look.status, `${where}.look.status`);
     if (folds) entry.plate = plate(look, `${where}.look`);
     return { order: number(spec.order, `${where}.order`), id: spec.id, entry };
@@ -146,8 +133,6 @@ export function deviceTable(specList) {
   const ids = devices.map(d => d.id);
   if (new Set(ids).size !== ids.length) throw Error('기기 id 가 겹친다');
   const table = Object.fromEntries(devices.map(d => [d.id, d.entry]));
-  // 메뉴 묶음은 제품 라인(label 의 첫 단어 — Galaxy · Pixel · iPhone)이고, 묶음 순서는 그 안의 가장 앞 order 다.
-  // 칸 이름은 묶음 머리 아래에서 읽히므로 라인 이름을 되풀이하지 않는다(Pixel 9 → 9).
   const lineOf = d => d.entry.name.split(' ')[0];
   for (const d of devices) {
     const short = d.entry.short;

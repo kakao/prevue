@@ -3,10 +3,6 @@ import type { ReactNode } from 'react';
 import '../../viewer-src/static/resize.css';
 import './ios-status-bar.css';
 
-// iPhone 시스템 바(SystemBars.tsx 의 IosStatus)를 iOS 처럼 다시 그릴 때의 후보 — 옮기기 전 모양을 기준으로 기기 실제 크기(1dp = 1px)에서 본다.
-// 수치는 iOS 27.0 시뮬레이터(Xcode 27.1, status_bar override 9:41 · 막대 4 · Wi-Fi 3 · 배터리 100%)의 3x 스크린숏을 pt 로 잰 값이다(2026-11-11).
-// 고른 것(2026-11-11, 사용자): A 실측. SystemBars.tsx 의 IosStatus 와 장면의 iPhone 아일랜드(cam)에 옮겼고, 지금은 데몬이 PNG에 굽는다(DeviceChrome · DeviceChromePainter, D-189). 이 스토리는 고른 기록으로 남는다.
-// 모서리는 장면(plugin/viewer/js/resize-scene.js)의 값이다. 아일랜드는 알림이 뜨는 순간의 스크린숏에서 잰 값(125.33×36.67, 위 14 · Air 20)이고, 옮기기 전 장면은 셋 다 124×36 · 위 11 이었다.
 const meta = { title: '시안/iPhone 시스템 바' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -14,7 +10,6 @@ type Story = StoryObj<typeof meta>;
 type Device = { id: string; name: string; w: number; h: number; statusDp: number; navDp: number; radius: number;
   islandY: number; top: number; right: number; s: number; time: { cx: number; base: number; size: number } };
 
-// top · right 는 오른쪽 아이콘 묶음(신호 왼쪽 끝 ~ 배터리 꼭지 오른쪽 끝)의 윗변 · 오른쪽 끝, s 는 iPhone 17 대비 배율, time 은 시각 글자의 가운데 · 기준선 · 크기다.
 const DEVICES: Device[] = [
   { id: 'ip17', name: 'iPhone 17', w: 402, h: 874, statusDp: 62, navDp: 34, radius: 55, islandY: 14,
     top: 26.33, right: 366.67, s: 1, time: { cx: 72.67, base: 39, size: 17 } },
@@ -27,7 +22,6 @@ type Island = { w: number; h: number; y: number };
 const NOW_ISLAND: Island = { w: 124, h: 36, y: 11 };
 const islandOf = (d: Device): Island => ({ w: 125.33, h: 36.67, y: d.islandY });
 
-// 옮기기 전 — 그때 SystemBars.tsx 의 IosStatus 그대로.
 const NOW_SIGNAL = (x: number, y: number) => <g transform={`translate(${x} ${y})`}>
   <rect x="0" y="7" width="3" height="4" rx=".8" /><rect x="4.5" y="5" width="3" height="6" rx=".8" />
   <rect x="9" y="2.5" width="3" height="8.5" rx=".8" /><rect x="13.5" y="0" width="3" height="11" rx=".8" />
@@ -45,10 +39,8 @@ function NowStatus({ d }: { d: Device }) {
   </>;
 }
 
-// 후보 — 실측 그림. 좌표는 iPhone 17(배율 1)의 오른쪽 묶음 안이고, 윗변이 y 0, 신호 왼쪽 끝이 x 0 이다.
 const GROUP_W = 78.33;
 const at = (cx: number, cy: number, r: number, deg: number) => { const a = deg * Math.PI / 180; return `${(cx + r * Math.sin(a)).toFixed(2)} ${(cy - r * Math.cos(a)).toFixed(2)}`; };
-// Wi-Fi 부채꼴 한 겹 — 가운데 o 에서 반지름 inner~outer, 위로 ±half 도. 모서리는 획(round join)으로 둥글게 하고 그만큼 안으로 줄인다.
 const band = (cx: number, cy: number, inner: number, outer: number, half: number) => inner > 0
   ? `M${at(cx, cy, outer, -half)} A${outer} ${outer} 0 0 1 ${at(cx, cy, outer, half)} L${at(cx, cy, inner, half)} A${inner} ${inner} 0 0 0 ${at(cx, cy, inner, -half)} Z`
   : `M${cx} ${cy} L${at(cx, cy, outer, -half)} A${outer} ${outer} 0 0 1 ${at(cx, cy, outer, half)} Z`;
@@ -77,7 +69,6 @@ function MeasuredStatus({ d, percent = false }: { d: Device; percent?: boolean }
   </>;
 }
 
-// 홈 인디케이터 — 옮기기 전과 후보가 같다. 시뮬레이터 스크린숏에 찍히지 않아 기존 값(134×5 · 아래 8pt) 그대로다.
 const HOME = (d: Device) => <rect x={(d.w - 134) / 2} y={d.h - 13} width="134" height="5" rx="2.5" />;
 
 type Look = { key: string; name: string; why: string; island: (d: Device) => Island; status: (d: Device) => ReactNode };
@@ -89,7 +80,6 @@ const LOOKS: Look[] = [
 
 const TOP_H = 76, BOTTOM_H = 44;
 type Ground = 'bright' | 'dark';
-/** 화면 한 조각 — 위(상태바)나 아래(홈 인디케이터)를 기기 dp 좌표 그대로 자른다. 바깥은 기기 몸체, 화면 모서리는 장면의 반지름이다. */
 function Strip({ d, look, ground, part, zoom = 1 }: { d: Device; look: Look; ground: Ground; part: 'top' | 'bottom'; zoom?: number }) {
   const y0 = part === 'top' ? 0 : d.h - BOTTOM_H, vh = part === 'top' ? TOP_H : BOTTOM_H;
   const ink = ground === 'bright' ? 'dark' : 'light';

@@ -12,11 +12,9 @@ export type ResizeScene = {
   update(target: SceneTarget, instant?: boolean): void;
   enable(on: boolean): void;
   clearImages(): void;
-  /** 크기 · 기기 메뉴가 열려 있었으면 닫고 true. */
   closeMenu(): boolean;
   sizeOf(sel: string): { w: number; h: number } | null;
   dock: SceneDock;
-  /** force 면 창 크기가 그대로여도 다시 맞춘다(오버레이 켬 · 끔처럼 자리가 달라질 때). */
   relayout(force?: boolean): void;
   moving(): boolean;
 };
