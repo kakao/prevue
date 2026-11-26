@@ -1,8 +1,8 @@
 #!/bin/sh
-# plugin/VERSION 의 값을 배포 매니페스트 둘과 CHANGELOG 제목에 옮긴다. README 의 버전 배지는 GitHub Release 를 읽는 동적 배지라 옮기지 않는다.
-# 버전의 원천은 VERSION 하나다 — plugin.json 은 손으로 고치지 않고 develop 에 직접 미는 버전 커밋(/ship)에서 이 스크립트로만 옮긴다.
+# plugin/VERSION 의 값을 배포 매니페스트 둘과 CHANGELOG 제목에 옮기고, 설치본의 고지 사본(tools/plugin-copies.sh)을 맞춘다. README 의 버전 배지는 GitHub Release 를 읽는 동적 배지라 옮기지 않는다.
+# 버전의 원천은 VERSION 하나다 — plugin.json 은 손으로 고치지 않고 develop 에 직접 미는 버전 커밋(/release)에서 이 스크립트로만 옮긴다.
 # 마켓플레이스 둘의 플러그인 소스는 main 브랜치다 — main 은 릴리즈 PR 로만 움직이는 배포본이라 머지가 곧 배포다.
-# 그래서 검증은 main 으로 가는 PR 에서 끝난다(/ship 이 --check 로, Release 워크플로가 태그 전에 한 번 더).
+# 그래서 검증은 main 으로 가는 PR 에서 끝난다(/release 가 --check 로, Release 워크플로가 태그 전에 한 번 더).
 #
 #   tools/sync-version.sh           옮긴다
 #   tools/sync-version.sh --check   옮길 것이 있으면 무엇인지 말하고 1로 끝난다
@@ -25,6 +25,7 @@ for M in .claude-plugin/marketplace.json .agents/plugins/marketplace.json; do
   grep -q '"ref": "main"' "$M" || { echo "$M 의 플러그인 소스가 main 이 아니다" >&2; exit 1; }
 done
 grep -qF "## [$NEXT]" CHANGELOG.md || STALE="$STALE CHANGELOG.md"
+sh tools/plugin-copies.sh --check > /dev/null || STALE="$STALE plugin/LICENSE·NOTICE.md"
 
 if [ "${1:-}" = "--check" ]; then
   [ -z "$STALE" ] && { echo "$NEXT 로 맞다"; exit 0; }
@@ -48,4 +49,5 @@ if ! grep -qF "## [$NEXT]" CHANGELOG.md; then
   awk -v h="## [$NEXT] — $DATE" '!done && /^## \[Unreleased\]/ { print; print ""; print h; done = 1; next } 1' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 fi
 
+sh tools/plugin-copies.sh > /dev/null
 echo "$NEXT 로 옮겼다"

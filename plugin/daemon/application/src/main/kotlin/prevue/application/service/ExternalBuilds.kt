@@ -3,6 +3,7 @@ package prevue.application.service
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CancellationException
 import prevue.application.domain.model.ExternalResult
 import prevue.application.domain.model.Phrase
 import prevue.application.domain.model.PreviewSpec
@@ -14,6 +15,7 @@ import prevue.application.domain.rule.StaleReasons
 import prevue.application.port.BuildChange
 import prevue.application.port.Compiler
 import prevue.application.port.FailureKind
+import prevue.application.port.GalleryShots
 
 @SingleIn(AppScope::class)
 @Inject
@@ -24,10 +26,12 @@ class ExternalBuilds(
     private val literals: LiteralPatches,
     private val live: LiveShot,
     private val boards: Boards,
+    private val gallery: GalleryShots,
 ) {
     suspend fun applyBuild(change: BuildChange, done: Boolean): ExternalResult = ws.exclusive { ed ->
         if (change.resources.isNotEmpty()) ed.markStaleOnce(StaleReasons.RESOURCES, StaleReasons.resources(change.resources, ws.now.current?.file))
         if (change.buildFiles.isNotEmpty()) ed.markStaleOnce(StaleReasons.BUILD_FILES, StaleReasons.buildFiles(change.buildFiles))
+        if (done && change.built.isNotEmpty()) forgetGalleryFailures()
         if (ws.now.current == null) return@exclusive ExternalResult.NoPreview
 
         val p = ws.now.let { it.board?.focusCard?.spec ?: it.current }
@@ -42,6 +46,13 @@ class ExternalBuilds(
         }
     }
 
+    private suspend fun forgetGalleryFailures() {
+        try { gallery.forgetFailures() } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            System.err.println("[prevue] 갤러리의 못 그린 기록을 잊지 못했다: $e")
+        }
+    }
+
     private suspend fun redraw(ed: WorkspaceEditor, change: BuildChange, preview: PreviewSpec, clear: List<String>): ExternalResult {
         clear.forEach { compiler.clearOverlay(it) }
         literals.externalBuild(clear)
@@ -50,15 +61,14 @@ class ExternalBuilds(
         val className = preview.fqn.substringBeforeLast('.')
         if (!compiler.hasClass(owner, className))
             return pending(ed, change, preview, phrase("stale.classMissing", "class" to className))
-        val r = live.show(ed, preview, "gradle", deferMissing = true)
+        val r = live.show(ed, preview, "gradle", LiveShot.Draw(deferMissing = true, newRound = true))
         if (r.shot.out.failure == FailureKind.NOT_FOUND)
             return pending(ed, change, preview, r.shot.out.message ?: Verbatim(""))
         ed.markStale(StaleReasons.BUILD, if (r.ok) null else StaleReasons.redrawFailed(change.built, change.own.isNotEmpty()))
         if (r.ok) ed.markStale(StaleReasons.EXPECT_ACTUAL, null)
         val out = r.copy(stale = ws.now.stale)
-        ed.update { s -> s.copy(lastResult = out, board = s.board?.advance()) }
+        ed.update { it.copy(lastResult = out) }
         ed.markHiddenTabsStale()
-        live.recordFocus(ed, out.shot)
         boards.fill("gradle", out.startedAtMs)
         return ExternalResult.Redrawn(out)
     }

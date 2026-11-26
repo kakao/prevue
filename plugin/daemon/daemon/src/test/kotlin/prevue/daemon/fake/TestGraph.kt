@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import prevue.application.service.Workspace
 import prevue.infrastructure.controller.browser.BrowserEndpoint
+import prevue.infrastructure.controller.browser.BrowserGallery
 import prevue.infrastructure.controller.browser.BrowserInput
 import prevue.infrastructure.controller.browser.BrowserPointing
 import prevue.infrastructure.controller.browser.BrowserPresenter
@@ -49,6 +50,8 @@ import prevue.application.port.LiveSessionFactory
 import prevue.application.port.MemoryMeter
 import prevue.application.port.MonotonicClock
 import prevue.application.port.PreviewRenderer
+import prevue.application.port.GalleryShots
+import prevue.infrastructure.store.FileGalleryShots
 import prevue.application.port.PreviewRepository
 import prevue.application.port.ResourceValues
 import prevue.application.port.SourceFileRepository
@@ -60,11 +63,6 @@ import prevue.application.service.QuietFill
 import prevue.application.service.LiveLoop
 import prevue.application.port.PrevueDispatchers
 
-/**
- * 테스트의 조립 — 운영과 같은 `AppScope` 기여(domain 의 `@Inject` · 입구의 `@ContributesIntoSet` · `EntryBindings`)를 Metro 가 잇고,
- * 기술 어댑터의 바인딩 컨테이너와 `:app` 의 `DaemonBindings` 만 빼고 가짜 포트([TestPorts])와 [Workspace]를 넣는다.
- * 배선 실수는 이 그래프가 컴파일 때 잡는다 — 손으로 묶은 통이 아니다.
- */
 @DependencyGraph(
     AppScope::class,
     excludes = [TargetBindings::class, CompileBindings::class, RenderBindings::class, SourceBindings::class, PortBindings::class,
@@ -89,6 +87,8 @@ internal interface TestGraph {
     val presenter: BrowserPresenter
     val browserInput: BrowserInput
     val browserTabs: BrowserTabs
+    val browserGallery: BrowserGallery
+    val galleryShots: GalleryShots
     val browserPointing: BrowserPointing
     val browserEndpoint: BrowserEndpoint
     val hotSwap: HotSwapRunner
@@ -140,6 +140,8 @@ internal class TestPorts(
     @Provides fun dispatchers(): PrevueDispatchers = dispatchers
     @Provides fun engineLog(): EngineLog = EngineLog { System.err.println("[prevue] $it") }
     @Provides fun monotonicClock(): MonotonicClock = MonotonicClock.SYSTEM
+    @Provides @SingleIn(AppScope::class)
+    fun galleryShots(dispatchers: PrevueDispatchers): GalleryShots = FileGalleryShots(File(repoRoot, "build/prevue-gallery"), dispatchers)
 }
 
 @Suppress("LongParameterList")

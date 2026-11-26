@@ -8,3 +8,19 @@ export const store: { st: ViewerState | null; projectFiles: Map<string, string[]
   // 베이스네임 → 저장소 상대 경로들(FR-20). 트리에서 프레임워크 노드를 거르는 데(narrow)만 쓴다 — 풀패스는 데몬이 붙인다.
   projectFiles: new Map(),
 };
+
+export type Store<T> = { get(): T; set(next: Partial<T>): void; subscribe(listener: () => void): () => void };
+
+export function createStore<T extends object>(initial: T): Store<T> {
+  let value = initial;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set(next) {
+      if ((Object.keys(next) as Array<keyof T>).every(key => value[key] === next[key])) return;
+      value = { ...value, ...next };
+      for (const listener of listeners) listener();
+    },
+    subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+  };
+}

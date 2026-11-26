@@ -84,14 +84,14 @@ class ReactStyles(unittest.TestCase):
 
     def test_원본만_훑고_번들과_개발_출력은_뺀다(self):
         with tempfile.TemporaryDirectory() as root:
-            paths = ("viewer-src/a.css", "viewer-src/a.ts", "viewer-src/a.tsx", "viewer-src/legacy/js/a.js",
+            paths = ("viewer-src/a.css", "viewer-src/a.ts", "viewer-src/a.tsx", "viewer-src/static/a.js",
                      "viewer-src/node_modules/a.ts", "viewer-src/storybook-static/a.js", "plugin/viewer/js/viewer.js", "plugin/viewer/js/resize-scene.js", "plugin/viewer/tokens.css")
             for path in paths:
                 full = os.path.join(root, path)
                 os.makedirs(os.path.dirname(full), exist_ok=True)
                 with open(full, "w") as f:
                     f.write("")
-            self.assertEqual(set(viewer.files(root)), set(paths[:4]) | {"plugin/viewer/js/resize-scene.js"})
+            self.assertEqual(set(viewer.files(root)), set(paths[:4]))
 
 
 class Color(unittest.TestCase):
@@ -327,11 +327,27 @@ class Data(unittest.TestCase):
         viewer.DATA = self.data
 
     def test_데이터_예외는_그_자리만_놓아주고_가리키는_곳이_없으면_실패다(self):
-        viewer.DATA = (("viewer-src/legacy/js/m.js", 'stop-color="white"', "마스크 휘도"),)
-        root = self.tree({"viewer-src/legacy/js/m.js": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
+        viewer.DATA = (("viewer-src/src/runtime/m.ts", 'stop-color="white"', "마스크 휘도"),)
+        root = self.tree({"viewer-src/src/runtime/m.ts": 'const m = `<stop stop-color="white"/><stop stop-color="red"/>`;\n'})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/raw-color"])
-        root = self.tree({"viewer-src/legacy/js/m.js": "const a = 1;\n"})
+        root = self.tree({"viewer-src/src/runtime/m.ts": "const a = 1;\n"})
         self.assertEqual([r for _, _, r, _ in viewer.check(root)], ["viewer/data-stale"])
+
+
+class SceneImport(unittest.TestCase):
+    tree = Data.tree
+
+    def test_장면은_입구로만_부른다(self):
+        root = self.tree({
+            "viewer-src/src/workspace/a.ts": "import { x } from '../scene/dock';\nimport { createResizeScene } from '../runtime/resize-scene';\n",
+            "viewer-src/src/workspace/b.tsx": "const m = await import('../scene/state');\nexport { y } from \"../scene/types\";\n",
+            "viewer-src/stories/c.tsx": "import '../src/scene/engine';\n",
+            "viewer-src/src/preparation/entry-scene.ts": "import { z } from './scene-x';\n",
+            "viewer-src/src/runtime/resize-scene.ts": "import { createState } from '../scene/state';\n",
+            "viewer-src/src/scene/dock.ts": "import { fit } from './engine';\n",
+        })
+        self.assertEqual(sorted((p, l) for p, l, r, _ in viewer.check(root) if r == "viewer/scene-import"),
+                         [("viewer-src/src/workspace/a.ts", 1), ("viewer-src/src/workspace/b.tsx", 1), ("viewer-src/src/workspace/b.tsx", 2), ("viewer-src/stories/c.tsx", 1)])
 
 
 if __name__ == "__main__":

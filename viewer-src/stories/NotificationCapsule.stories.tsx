@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import '../legacy/style.css';
+import '../static/style.css';
 import { NotificationCapsule } from '../src/components/NotificationCapsule';
 import { useMessages } from '../src/messages';
 
-// 캡슐의 글은 데몬 상태가 아니라 뷰어가 사전에서 고른다 — 끊김 오류 · 공유 소스 세트의 처음 한 번 안내.
 const meta = { title: '공통/NotificationCapsule' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;

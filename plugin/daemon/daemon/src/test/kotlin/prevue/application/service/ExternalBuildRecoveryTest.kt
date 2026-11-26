@@ -117,4 +117,16 @@ class ExternalBuildRecoveryTest {
         assertFalse(result.ok)
         assertFalse(uc.workspace.now.buildPending)
     }
+
+    @Test fun `밖의 빌드가 끝나 산출물이 바뀌면 갤러리의 못 그린 기록을 잊는다`() = runBlocking {
+        val uc = opened()
+        val other = File(fx.srcRoot, "demo/Other.kt")
+        uc.galleryShots.fail(other, 3, 1)
+        uc.externalBuilds.applyBuild(built, done = false)
+        assertEquals(setOf(1), uc.galleryShots.kept(other)!!.failedAt.keys)
+        uc.externalBuilds.applyBuild(BuildChange(resources = listOf(File(fx.root, "app/src/main/res/values/x.xml")), outputsExist = true), done = true)
+        assertEquals(setOf(1), uc.galleryShots.kept(other)!!.failedAt.keys)
+        uc.externalBuilds.applyBuild(built, done = true)
+        assertEquals(emptySet<Int>(), uc.galleryShots.kept(other)!!.failedAt.keys)
+    }
 }

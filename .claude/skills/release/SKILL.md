@@ -1,9 +1,10 @@
 ---
-name: ship
-description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 머지(=배포)하고, Release 워크플로가 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/ship, /ship 0.11.0). 멈춘 자리부터 이어 간다.
+name: release
+description: Prevue를 릴리즈한다. 버전 커밋을 develop에 올려 develop → main PR 하나를 열고, CI와 스킬 평가를 나란히 돌려 둘 다 통과하면 머지(=배포)하고, Release 워크플로가 태그·GitHub Release를 남긴다. 사용자가 릴리즈·배포를 지시할 때만 쓴다(/release, /release 0.11.0). 멈춘 자리부터 이어 간다.
 ---
+<!-- 생성물이다. dev-skills-src/release/SKILL.md 를 고치고 tools/gen-agents.sh 로 만든다 -->
 
-# ship — Prevue 릴리즈
+# release — Prevue 릴리즈
 
 릴리즈는 **사용자가 지시할 때만** 한다. 이 스킬이 불렸다는 것이 그 지시다. 규칙(왜 PR이 하나인가 · merge commit · 직접 푸시 예외)은 그 규칙을 쓰는 단계에 이유와 함께 둔다.
 
@@ -75,20 +76,20 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기의 `tools/check-local.sh`가 같은 여섯 — 스킬 두 벌 · 고지 사본 · 뷰어 생성물 · CLI 판정 · 단위 · 린트 — 을 돈다), PR 없이 들어오는 것은 버전 커밋(버전 문자열 네 파일)과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것은 릴리즈 PR의 `Verify`가 같은 여섯에 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것과 고지 사본의 어긋남은 릴리즈 PR의 `Verify`가 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
 printf '%s\n' 0.11.0 > plugin/VERSION
-sh tools/sync-version.sh            # 매니페스트 둘 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜). README 배지는 Release를 읽는 동적 배지다
+sh tools/sync-version.sh            # 매니페스트 둘 · CHANGELOG 제목([Unreleased] → [0.11.0] — 날짜) · plugin/ 의 고지 사본. README 배지는 Release를 읽는 동적 배지다
 sh tools/sync-version.sh --check
-git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md 뿐이다
+git diff --stat                     # plugin/VERSION · plugin/.claude-plugin/plugin.json · plugin/.codex-plugin/plugin.json · CHANGELOG.md, 루트 고지가 바뀌었으면 plugin/LICENSE · plugin/NOTICE.md 뿐이다
 git commit -am "0.11.0 릴리즈 — VERSION · 매니페스트, CHANGELOG 정리(<무엇을 합치고 고쳤나>)"
 git push origin HEAD:develop        # fast-forward 만
 gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본문>"
 ```
 
-이 네 파일 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
+이 파일들 밖이 바뀌었으면 밀지 말고 멈춘다 — PR 없이 develop에 바로 가는 예외는 버전 커밋뿐이다. 고지 사본이 함께 바뀌었으면 커밋 메시지 괄호에 그것도 적는다. 커밋 끝에는 세션의 공동 저자 줄을 붙인다. 푸시가 거부되면(그 사이 develop이 움직였다) 버전 커밋을 버리고(`git reset --hard origin/develop`) 2단계부터 다시 본다.
 
 본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 
@@ -106,12 +107,7 @@ st success "Claude 6/6 · Codex 24/24"        # 결과대로 — 실패면 failu
 gh pr comment <N> --body "<에이전트별 통과 수 · 실패한 케이스의 채점기와 이유 · 비용>"
 ```
 
-<!-- only:claude -->
 두 평가는 `run_in_background`로 나란히 띄운다. 4단계의 CI 기다림도 PR에 CI 체크가 붙은 것을 본 뒤 같이 띄운다. 셋 다 끝났다는 알림에 이어 간다.
-<!-- /only -->
-<!-- only:codex -->
-두 평가 모두 모델을 부르고 `~/.codex` · 네트워크를 쓴다 — 처음부터 샌드박스 밖 실행(권한 상승)으로 친다.
-<!-- /only -->
 - 실패한 케이스는 그 케이스만 한 번 다시 돌린다(`--case <이름>`) — 모델 행동이라 회차마다 흔들린다. 다시 돌려도 실패하면 `failure`로 올리고 **멈춰** 실패한 채점기 · 트레이스 요지를 보고한다. 사람이 그 결과를 보고 진행하라고 하면 그 말을 코멘트에 남기고 `success`(설명 "사람 승인 — …")로 올려 4단계로 간다.
 - `claude` · `codex`가 없거나 로그인이 안 됐으면 그 평가를 건너뛰고 `success`로 올리되 설명을 "건너뜀(…)"으로 **시작한다** — 평가 때문에 릴리즈를 멈추지 않는 대신 체크 목록에서 보이게 한다. 6단계 보고에도 싣는다.
 - 사용자가 2단계에서 평가를 뺐으면 돌리지 않고 `success`(설명 "뺐다(사용자)")를 바로 올린다 — 다시 불렸을 때 1단계가 빠진 평가로 읽지 않게.
@@ -132,11 +128,9 @@ gh pr checks <N> --watch
 ```
 
 `Verify`의 판정 job `ci-success`가 초록이어야 하고, PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
-<!-- only:claude -->
 기다림은 `run_in_background`로 돌리고 끝났다는 알림에 이어 간다(포그라운드 sleep은 막혀 있다).
-<!-- /only -->
 
-실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/ship`을 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
+실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/release`를 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
 
 초록이면:
 

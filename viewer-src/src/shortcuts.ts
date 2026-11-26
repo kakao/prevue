@@ -1,12 +1,12 @@
 // 단축키 — 표 하나가 디스패치와 `?` 도움말(ShortcutHelp)을 함께 갖는다. 같은 키가 화면마다 다른 일을 하므로 화면을 먼저 본다.
 // 하는 일은 기존 모듈의 함수라 actions 로 받는다 — Storybook 은 표만 그린다.
 export type ShortcutActions = {
-  /** 끊겼으면 화면이 없다(offline) — 탭이 0개인 빈 화면(시작 화면)과 가른다(D-63). */
   screen(): string;
   tabCount(): number;
   moveCursor(d: number): void;
   openCursor(): void;
   exitFocus(): void;
+  openGallery(): void;
   zoomIn(): void;
   zoomOut(): void;
   zoomFit(): void;
@@ -28,6 +28,7 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
       { keys: ['ArrowLeft', 'ArrowRight'], cap: ['←', '→'], label: phrase('keys.card.pick'), when: () => a.screen() === 'board',
         run: e => a.moveCursor(e.key === 'ArrowLeft' ? -1 : 1) },
       { keys: ['Enter', 'i'], cap: ['↩', 'I'], label: phrase('keys.card.open'), when: () => a.screen() === 'board', run: () => a.openCursor() },
+      { keys: ['Escape'], cap: ['esc'], label: phrase('keys.board.gallery'), when: () => a.screen() === 'board', run: () => a.openGallery() },
     ] },
     { group: phrase('keys.group.single'), rows: [
       // ← → 는 비워 둔다 — 이웃 장으로 넘기지 않는다(W3). 나오면 그 카드에 커서가 있어 → ↩ 로 이웃에 든다.
@@ -50,7 +51,6 @@ export function shortcutTable(phrase: (key: string) => string, a: ShortcutAction
     ] },
     { group: phrase('keys.group.anywhere'), rows: [
       // 파일을 여는 것은 화면과 무관하다 — 보드에서도 작업 공간에서도 같은 패널이다(D-56).
-      // 시작 화면(탭 0개)이면 본문의 필드로 간다(D-63).
       { keys: ['/'], cap: ['/', '⌘K'], label: phrase('keys.any.open'), when: () => a.screen() !== 'offline', run: () => a.openQuickOpen(document.activeElement) },
       { cap: [phrase('keys.cap.click')], label: phrase('keys.any.point') },
       { keys: ['?'], cap: ['?'], label: phrase('keys.any.help'), when: () => true, run: () => a.toggleHelp(!a.helpOpen(), true) },
@@ -75,16 +75,12 @@ export function keyOf(e: KeyboardEvent) {
   return e.key;
 }
 
-/**
- * 떠 있는 층이 먼저 Esc 를 먹는다 — 도움말, 그다음 후보 고르기 · 배율 메뉴 · 기기 메뉴 · 폴더 팝오버 · 레일 서랍 · 가리킨 카드. 닫은 것이 있으면 true.
- * 카드가 화면의 Esc 보다 먼저라 한 장에서는 첫 Esc 가 카드를 걷고 둘째가 보드로 나간다.
- */
-export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDeviceMenu(): boolean; closeDirPop(): boolean; closeRailDrawer(): boolean; closeCard(): boolean };
+export type EscapeLayers = { chooserOpen(): boolean; cancelChoice(): void; closeZoomMenu(): boolean; closeDeviceMenu(): boolean; closeDirPop(): boolean; closeRailDrawer(): boolean; closeCard(): boolean; closeSheet(): boolean; sheetOpen(): boolean; openSheetFile(): void };
 
 export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, layers: EscapeLayers) {
   const keydown = (e: KeyboardEvent) => {
     // ⌘K(Ctrl+K) — 웹 앱 검색의 관용 키. 브라우저의 주소창 검색보다 먼저 받는다. ⌘P(인쇄)는 잡지 않는다.
-    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); a.openQuickOpen(document.activeElement); return; }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyK' && a.screen() !== 'offline') { e.preventDefault(); if (!layers.sheetOpen()) a.openQuickOpen(document.activeElement); return; }
     if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
     const key = keyOf(e);
     // 버튼의 Enter 는 그 버튼이 받는다 — 키보드로 간 버튼(:focus-visible)만. 마우스로 누른 뒤 남은 포커스가 고른 카드 열기를 가져가면 안 된다(D-63).
@@ -97,6 +93,8 @@ export function installShortcuts(table: ShortcutGroup[], a: ShortcutActions, lay
     if (key === 'Escape' && layers.closeDirPop()) { e.preventDefault(); return; }
     if (key === 'Escape' && layers.closeRailDrawer()) { e.preventDefault(); return; }
     if (key === 'Escape' && layers.closeCard()) { e.preventDefault(); return; }
+    if (key === 'Escape' && layers.closeSheet()) { e.preventDefault(); return; }
+    if (layers.sheetOpen() && !a.helpOpen()) { if (key === 'Enter') { e.preventDefault(); layers.openSheetFile(); } return; }
     if (a.helpOpen() && key !== '?') return;
     for (const g of table) for (const r of g.rows) {
       if (!r.run || !r.keys!.includes(key) || !r.when!()) continue;

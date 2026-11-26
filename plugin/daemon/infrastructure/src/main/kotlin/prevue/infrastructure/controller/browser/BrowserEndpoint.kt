@@ -5,6 +5,8 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets.UTF_8
 import prevue.infrastructure.controller.http.mapper.toJson
 import prevue.infrastructure.controller.http.mapper.toPointed
 import prevue.infrastructure.controller.http.mapper.toScreenSize
@@ -19,6 +21,7 @@ import prevue.infrastructure.controller.http.json
 public class BrowserEndpoint @Inject internal constructor(
     private val presenter: BrowserPresenter,
     private val tabs: BrowserTabs,
+    private val gallery: BrowserGallery,
     input: BrowserInput,
     private val pointing: BrowserPointing,
     private val frames: FrameStreamer,
@@ -30,7 +33,7 @@ public class BrowserEndpoint @Inject internal constructor(
     private val reveal = target.reveal
 
     override suspend fun route(ex: HttpExchange, path: String, method: String): Boolean =
-        routeLive(ex, path, method) || routeData(ex, path, method)
+        routeLive(ex, path, method) || routeData(ex, path, method) || routeGallery(ex, path, method)
 
     private suspend fun routeLive(ex: HttpExchange, path: String, method: String): Boolean {
         when {
@@ -46,7 +49,7 @@ public class BrowserEndpoint @Inject internal constructor(
     private suspend fun routeData(ex: HttpExchange, path: String, method: String): Boolean {
         when {
             path == "/project-files.json" -> ex.json(200, tabs.sourceIndex()?.toJson() ?: emptyMap<String, Any?>())
-            path == "/preview-files.json" -> ex.json(200, tabs.previewFiles())
+            path == "/preview-files.json" -> ex.json(200, tabs.previewFiles(gallery::keptOf))
             path == "/viewer/state" -> ex.json(200, presenter.current().toJson())
             path == "/app.json" -> ex.json(200, appJson())
             path == "/app-icon.png" && method == "GET" -> png(ex, identity.second, "max-age=3600")
@@ -54,6 +57,28 @@ public class BrowserEndpoint @Inject internal constructor(
         }
         return true
     }
+
+    private suspend fun routeGallery(ex: HttpExchange, path: String, method: String): Boolean {
+        if (method != "GET") return false
+        when {
+            path == "/gallery/card" -> galleryCard(ex)
+            path.startsWith(SHOT) && path.endsWith(".png") ->
+                png(ex, gallery.image(path.removePrefix(SHOT).removeSuffix(".png"))?.readBytes(), "max-age=31536000, immutable")
+            else -> return false
+        }
+        return true
+    }
+
+    private suspend fun galleryCard(ex: HttpExchange) {
+        val file = queryParam(ex, "file")
+        val card = file?.let { gallery.card(it) }
+        if (card == null) ex.json(404, mapOf("ok" to false)) else ex.json(200, card)
+    }
+
+    private fun queryParam(ex: HttpExchange, name: String): String? =
+        ex.requestURI.rawQuery?.split('&')?.firstNotNullOfOrNull { pair ->
+            pair.split('=', limit = 2).takeIf { it.size == 2 && it[0] == name }?.let { URLDecoder.decode(it[1], UTF_8) }
+        }?.takeIf { it.isNotEmpty() }
 
     private fun stream(ex: HttpExchange) {
         ex.responseHeaders.add("Content-Type", "multipart/x-mixed-replace; boundary=${FrameStreamer.BOUNDARY}")
@@ -131,5 +156,6 @@ public class BrowserEndpoint @Inject internal constructor(
 
     private companion object {
         val ACCEPTED = mapOf("ok" to true)
+        const val SHOT = "/gallery/shot/"
     }
 }

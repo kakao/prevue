@@ -57,7 +57,7 @@ class ComposableCallsTest {
         assertEquals(mapOf("P" to listOf("Label", "Real"), "Q" to listOf("Other")), calls(src, "P", "Q"))
     }
 
-    @Test fun `본문 안 지역 함수는 정의도 호출도 아니다 — 부른 자리만 호출이다`() {
+    @Test fun `본문 안 지역 함수와 멤버는 최상위 정의가 아니라 안쪽 정의다 — 부른 자리만 호출이다`() {
         val src = """
             @Preview @Composable fun P() {
                 @Composable fun Local() { Inner() }
@@ -66,6 +66,7 @@ class ComposableCallsTest {
             object Holder { @Composable fun Member() {} }
         """.trimIndent()
         assertEquals(listOf("P"), defined(src))
+        assertEquals(listOf("Local", "Member"), ComposableCalls.outline(src, emptyList()).innerComposables)
         assertEquals(listOf("Inner", "Local"), calls(src, "P")["P"])
     }
 

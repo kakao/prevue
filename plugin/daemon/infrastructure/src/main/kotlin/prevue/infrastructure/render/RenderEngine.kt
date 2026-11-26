@@ -56,7 +56,7 @@ internal class RenderEngine(
     private val fonts = File(layoutlibDir, "data/fonts")
     private val artifacts = RenderArtifactStore(outDir, dispatchers)
     private val chrome = DeviceChromePainter.of(fonts)
-    private val outputs = RenderOutputs(artifacts, chrome) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
+    private val outputs = RenderOutputs(artifacts, chrome, spec) { p, why, loader -> loaders.reportBlank(p, why, loader, loaderGen, tasksOnLoader) }
     override var outMaxBytes: Long by artifacts::maxBytes
     override val outBytes: Long get() = artifacts.bytes
     override fun protect(keep: () -> Set<String>) = artifacts.protect(keep)
@@ -342,7 +342,7 @@ internal class RenderEngine(
         }
         try {
             val renderMs = msSince(t)
-            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview)) refreshTree(l, result)
+            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview) || outputs.isNewAdapter(result)) refreshTree(l, result)
             val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
             return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
         } finally {

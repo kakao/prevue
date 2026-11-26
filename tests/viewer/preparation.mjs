@@ -57,13 +57,14 @@ try {
   let state = await toBoard(viewer);
   if (!state.board) {
     await send('Page.navigate', { url: bootstrap || viewer });
-    await until(`!document.querySelector('#preparation') && document.querySelector('#startView')?.hidden===false && document.querySelector('#startView .qo-row')`);
-    await check(`!document.querySelector('#q').disabled && !document.querySelector('body>main').inert`, '파일 미지정 준비는 실제 파일 검색으로 연결');
-    await evaluate(`document.querySelector('#q').value='PearlPreviews';document.querySelector('#q').dispatchEvent(new Event('input',{bubbles:true}))`);
-    await until(`document.querySelector('#startView .qo-row')?.textContent.includes('PearlPreviews')`);
-    await evaluate(`document.querySelector('#startView .qo-row').click()`);
+    await until(`!document.querySelector('#preparation') && document.querySelector('#galleryView')?.hidden===false && !!document.querySelector('#galleryView .gcard')`);
+    await check(`!document.querySelector('body>main').inert`, '파일 미지정 준비는 실제 갤러리로 연결');
+    await until(`[...document.querySelectorAll('#galleryView .gcard-file')].some(el=>el.title==='PearlPreviews'||el.textContent==='PearlPreviews')`);
+    await evaluate(`[...document.querySelectorAll('#galleryView .gcard-file')].find(el=>el.title==='PearlPreviews'||el.textContent==='PearlPreviews').closest('.gcard-hit').click()`);
+    await until(`!!document.querySelector('.gsheet-go')`);
+    await evaluate(`document.querySelector('.gsheet-go').click()`);
     await until(`import('/js/store.js').then(m=>m.store.st?.screen==='board' && !m.store.st.busy)`);
-    await check(`!document.querySelector('#boardView').hidden && document.querySelector('.card img').naturalWidth>0`, '실제 파일 검색에서 선택한 프리뷰가 보드로 열림');
+    await check(`!document.querySelector('#boardView').hidden && document.querySelector('#galleryView').hidden && document.querySelector('.card img').naturalWidth>0`, '갤러리에서 고른 파일이 보드로 열림');
     state = await fetch(new URL('/viewer/state', viewer)).then(response => response.json());
     bootstrap = null;
   }

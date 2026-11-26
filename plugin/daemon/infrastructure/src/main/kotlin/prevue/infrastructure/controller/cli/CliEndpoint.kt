@@ -117,9 +117,15 @@ public class CliEndpoint @Inject internal constructor(
 
     private suspend fun focus(ex: HttpExchange) {
         val b = ex.body()
-        val r = boards.focus(
-            (b["index"] as Number).toInt(), b["interactive"] == true, b.string("by") ?: "viewer", b.toScreenSize(), b.toSystemUi(), b.toEdgeToEdge(),
-        )
+        val index = (b["index"] as Number).toInt()
+        val by = b.string("by") ?: "viewer"
+        val size = b.toScreenSize()
+        val systemUi = b.toSystemUi()
+        val edgeToEdge = b.toEdgeToEdge()
+        val r: FocusResult = if (b["interactive"] == true) boards.focus(index, by, size, systemUi, edgeToEdge) else {
+            require(size == null && systemUi == null && edgeToEdge == null) { "크기 · 시스템 UI는 인터랙티브 카드에만 준다 — --on과 함께" }
+            boards.exitInteractive(index, by)
+        }
         ex.json(okOr422(r !is FocusResult.On || r.result.ok), r.toJson())
     }
 

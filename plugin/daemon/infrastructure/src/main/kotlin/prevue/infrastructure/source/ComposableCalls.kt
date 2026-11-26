@@ -17,13 +17,14 @@ internal object ComposableCalls {
     fun outline(text: String, functions: Collection<String>): SourceOutline {
         val code = blank(text)
         val depth = braceDepths(code)
-        val defined = definitionRe.findAll(code).filter { depth[it.range.first] == 0 }.map { it.groupValues[1] }.distinct().toList()
+        val (top, inner) = definitionRe.findAll(code).partition { depth[it.range.first] == 0 }
+        val defined = top.map { it.groupValues[1] }.distinct()
         val wanted = functions.toSet()
         val bodies = funRe.findAll(code).filter { depth[it.range.first] == 0 && it.groupValues[1] in wanted }
             .mapNotNull { m -> body(code, m)?.let { m.groupValues[1] to it } }
             .groupBy({ it.first }, { it.second })
         val calls = functions.associateWith { fn -> bodies[fn].orEmpty().flatMap(::callsIn).distinct() }
-        return SourceOutline(defined, calls)
+        return SourceOutline(defined, calls, inner.map { it.groupValues[1] }.distinct())
     }
 
     private fun callsIn(body: String): List<String> =

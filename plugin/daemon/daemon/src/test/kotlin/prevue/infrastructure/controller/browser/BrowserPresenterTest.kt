@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -32,7 +33,6 @@ import prevue.daemon.fake.eventually
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.watching
 
-/** 화면 조작의 비즈니스(D-41). 브라우저에 있을 때는 테스트 밖이었던 것들이다. */
 class BrowserPresenterTest {
     private val fx = Fixture()
     private val uc = fx.graph()
@@ -93,7 +93,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val on = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, on = true, by = "cli") }
+        val on = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, by = "cli") }
         assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
         val entering = awaitState { it.screen == BrowserState.Screen.FOCUS }
         assertNull(entering.focus!!.streamUrl, "태스크가 걸리기 전에 스트림 주소가 나왔다")
@@ -107,16 +107,16 @@ class BrowserPresenterTest {
     @Test fun `진입 렌더가 예외로 끝나도 스트림 주소는 나온다`() {
         opened()
         fx.renderer.showThrows = IllegalStateException("렌더러가 죽었다")
-        runBlocking { runCatching { uc.boards.focus(1, on = true, by = "cli") } }
+        runBlocking { runCatching { uc.boards.focus(1, by = "cli") } }
         awaitState { it.screen == BrowserState.Screen.FOCUS && it.focus?.streamUrl != null }
     }
 
     // 다른 장으로 옮겨 켜면 새 태스크다 — 같은 주소면 뷰어가 MJPEG 를 다시 열지 않고 앞 장의 마지막 프레임에 머문다.
     @Test fun `켠 채 다른 장으로 옮기면 스트림 주소가 바뀐다`() {
         opened()
-        runBlocking { uc.boards.focus(0, on = true, by = "cli") }
+        runBlocking { uc.boards.focus(0, by = "cli") }
         val first = awaitState { it.focus?.streamUrl != null }.focus!!.streamUrl
-        runBlocking { uc.boards.focus(2, on = true, by = "cli") }
+        runBlocking { uc.boards.focus(2, by = "cli") }
         awaitState { it.focus?.previewId == "Card2" && it.focus?.streamUrl != null && it.focus?.streamUrl != first }
     }
 
@@ -219,7 +219,7 @@ class BrowserPresenterTest {
         val gate = CountDownLatch(1)
         fx.renderer.showGate = gate
         fx.renderer.showEntered.drainPermits()
-        val agent = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, on = true, by = "cli") }
+        val agent = CoroutineScope(Dispatchers.Default).launch { uc.boards.focus(1, by = "cli") }
         try {
             assertTrue(fx.renderer.showEntered.tryAcquire(5, TimeUnit.SECONDS))
             for (i in 0 until 20) input.touch(if (i % 2 == 0) "press" else "release", i, i)
@@ -242,7 +242,7 @@ class BrowserPresenterTest {
     @Test fun `진행과 정착은 알림을 내지 않고 정착 뒤에도 알약 시간이 남는다`() {
         opened()
         runBlocking {
-            presenter.events.test {
+            presenter.events.filterNot { it == UiEvent.GalleryShots }.test {
                 uc.hotReload.applySave(listOf(fx.file), "watch"); uc.workspace.awaitBoardFilled()
                 input.enterFocus(0); presenter.drain()
                 input.touch("tap", 1, 1); presenter.drain()
@@ -333,7 +333,7 @@ class BrowserPresenterTest {
         presenter.state.awaitState("뷰어 상태가 보드 시간까지") { it.timing == now().timing }
         val before = presenter.state.value.version
         runBlocking {
-            presenter.events.test {
+            presenter.events.filterNot { it == UiEvent.GalleryShots }.test {
                 uc.watchers.indexPreviewFiles()
                 assertEquals(UiEvent.PreviewFiles, awaitItem())
                 assertEquals(before, presenter.state.value.version)
@@ -364,10 +364,8 @@ class BrowserPresenterTest {
         assertEquals(emptyList<LaneSpy.View>(), io.views)
     }
 
-    /** 줄에 앞서 들어온 `WorkspaceEvent`를 다 반영한 상태. */
     private fun now() = runBlocking { presenter.current() }
 
-    /** 채우기 · 쓰기 완료는 따로 돈다 — 상태가 그 모양이 될 때까지 기다린다. */
     private fun awaitState(timeoutMs: Long = 5_000, ok: (BrowserState) -> Boolean): BrowserState =
         awaitValue({ now().let { s -> "상태: busy=${s.busy} note=${s.boardNote} timing=${s.timing}" } }, timeoutMs) { now().takeIf(ok) }
 

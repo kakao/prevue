@@ -20,6 +20,8 @@
   { "fg": ["on-surface"], "bg": ["pick-container", "surface"], "need": 4.5 },
   { "fg": ["live"], "bg": ["surface"], "need": 3 },
   { "fg": ["outline-variant"], "bg": ["surface-container"], "need": 0 },
+  { "fg": ["outline-faint"], "bg": ["surface"], "need": 0 },
+  { "fg": ["skeleton-sheen"], "bg": ["surface-container"], "need": 0 },
   { "fg": ["inset-status"], "bg": ["surface-container"], "need": 0 },
   { "fg": ["inset-nav"], "bg": ["surface-container"], "need": 0 },
   { "fg": ["inset-caption"], "bg": ["surface-container"], "need": 0 },

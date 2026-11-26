@@ -8,6 +8,43 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-11-26
+
+![Prevue 0.24 — Every preview, at a glance. The All Previews grid of a Pearl project, with a sheet raised from the ShowcasePreviews card showing its NavTour, HomeTour and Sip previews and a View on board button](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/release-0.24.0.png)
+
+**Every preview, at a glance.** All Previews lays out every preview file in your project as a card grid: hover a card to see the next previews behind it, click it to raise a sheet with its first three, and View on board opens its board. This release also stops `prevue setup` and the first `start` after an update from failing on a Kotlin compile daemon that another build started on JDK 17, and keeps a preview with a View-based spinner from taking the daemon down.
+
+### All Previews
+
+![All Previews in a Pearl project: the pointer passes over the cards in the grid and the previews behind each one fan out, clicking ShowcasePreviews raises a sheet with its first three previews, View on board opens its board, and Esc returns to the grid](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/gallery.gif)
+
+- **All Previews shows every preview file as a card grid** — the start screen with no open tabs, **All Previews** at the top of the rail, or `esc` on a board takes you there, files are ordered by most recently changed, each card shows the file name, package, module and how many previews it has, and the number beside **All Previews** appears once the project's previews are indexed.
+- **Cards draw only once they scroll into view**, from what is already built (no Gradle) — a file that isn't built yet shows "Couldn't draw" until the file changes or the next build.
+- **Click a card and a sheet rises from where it sits** with its first three previews and their names — **View on board** (or `enter`) opens its tab and board, and `esc` or a click outside puts it back.
+- **Hovering a card shows the next two previews behind it**, tilted slightly apart the same way for a tall screen and a wide component (which sits centered in the card) — each card draws a file's first three previews together, skipping any that can't be drawn (up to six tried).
+- **Drawn previews are kept** (the first three of each file, up to 128 MB, `PREVUE_GALLERY_MAX_MB` to change) and come back instantly, even after the daemon restarts — a preview drawn before its file changed shows faded with **Outdated** until the board draws it again.
+- **While a card waits, a light sweeps across its whole picture area, and the picture settles into place as it fades in** — a file that can't be drawn shows "Couldn't draw" across that area, and the sweep stays still when your system asks to reduce motion.
+
+### Pointing card
+
+- **The pointing card's source chip tells where a composable comes from** — the Jetpack Compose mark with `Compose` (Compose and other AndroidX libraries), a book with `Library` for libraries outside AndroidX, or the module that defines your own composable (including one defined inside a function or class); when the source can't be told, there's no chip.
+
+### Fixes
+
+- **`prevue setup` and the first `start` after an update no longer fail with "UnsupportedClassVersionError"** while a Kotlin compile daemon that another build started on JDK 17 is still running ([#315](https://github.com/kakao/prevue/issues/315)). Reported by @GMLim.
+- **A preview with a View-based spinner (an indeterminate `ProgressBar` inside `AndroidView`) no longer takes the daemon down** with "0 isn't a real frame time!" — opening it on a board or drawing it as a gallery card now draws it like any other preview.
+- **`prevue start` no longer ends with "[Errno 2] … server.json" when the preparation screen is slow to come up** ([#316](https://github.com/kakao/prevue/issues/316)) — it waits up to 10 seconds, and if the screen server still doesn't answer it stops with a message to try `prevue show` again, pointing at its error output in `~/.prevue/daemons/preparation-server-<port>.log`. Reported by @GMLim.
+- **The first `start` no longer answers "The daemon didn't start" while the daemon is still booting**, and when a daemon takes longer than that it says "still starting" instead; a failure no longer blames the class-cache (AOT) lines the JVM prints on exit.
+- **`prevue setup --offline` no longer tells you to download again when the build failed for another reason**, such as a compile error — it now points at the Gradle output, and asks for `prevue setup` only when something wasn't downloaded yet.
+- **The first `prevue start` after an update no longer tells you to run `prevue setup` when building the executable failed for another reason**, such as a compile error — it now exits 1 pointing at the Gradle output, and asks for `prevue setup` only when something wasn't downloaded yet.
+- **Leftover AOT training files no longer pile up in `~/.prevue/aot`** — the `.aot.tmp.config` files an interrupted class-cache training leaves behind are removed on the next daemon start once they are a day old, and right away when that training's stale lock is cleaned up.
+- **Pointing at an element on a preview's first render now marks and picks it where it is in the picture**, not higher up. Thanks to @easternkite for the fix ([#290](https://github.com/kakao/prevue/pull/290)).
+- Also: the size and device you already picked in the dock menu respond to hover too, the ▶ button on board cards opens at once instead of sliding wider when your system asks to reduce motion, and `render --fresh` on an interactive card updates that card on the board too.
+
+### Thanks
+
+@easternkite ([#290](https://github.com/kakao/prevue/pull/290)) · @GMLim ([#315](https://github.com/kakao/prevue/issues/315), [#316](https://github.com/kakao/prevue/issues/316))
+
 ## [0.23.0] — 2026-11-19
 
 **Eight more devices, and the system UI is in the PNG.** Galaxy Z Flip8, Galaxy S26 Ultra, Pixel 10 Pro XL, iPhone 18 Pro, iPhone SE, Galaxy A07 5G, iPhone 17e and Galaxy Tab S11 Ultra join the device menu, and the status bar, navigation handle and camera an agent reads in the PNG now match what you see. The viewer keeps up with slow frames and narrow windows.

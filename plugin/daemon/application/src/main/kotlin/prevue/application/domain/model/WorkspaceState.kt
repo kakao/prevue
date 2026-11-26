@@ -84,5 +84,20 @@ data class WorkspaceState(
     private fun withPostures(round: Long, edit: (Postures, ScreenSize) -> Postures): WorkspaceState =
         postures?.takeIf { it.round == round }?.let { ps -> shownTarget()?.let { copy(postures = edit(ps, it.second)) } } ?: this
 
+    fun withInteractive(override: CardOverride?): WorkspaceState = copy(interactive = true, focusAttachedAt = null, cardOverride = override)
+
+    fun focusInteractive(index: Int, size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null): WorkspaceState {
+        val board = checkNotNull(board)
+        val id = board.cards[index].spec.previewId
+        return copy(board = board.focusOn(index)).withInteractive(adjustedOverride(id, size, systemUi, edgeToEdge))
+    }
+
+    fun adjustedOverride(previewId: String, size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge?): CardOverride? =
+        (cardOverride?.takeIf { it.previewId == previewId } ?: CardOverride(previewId)).with(size, systemUi, edgeToEdge)
+
+    fun withoutInteractive(): WorkspaceState = copy(interactive = false, focusAttachedAt = null, cardOverride = null)
+
+    fun withNothingShown(): WorkspaceState = withoutInteractive().copy(board = null, current = null)
+
     fun withCreated(added: List<String>, gone: Set<String>): WorkspaceState = copy(newFiles = (newFiles + added) - gone)
 }

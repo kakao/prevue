@@ -26,7 +26,6 @@ export function findWorkspaceParts(): WorkspaceParts {
   };
 }
 
-/** 모프의 출발점 · 도착점 — 그리기 전에 잰다. */
 export type Frame = { el: HTMLElement; rect: DOMRect; radius: Radii; shadow: string; url: string; ratio: number };
 type Flight = { m: ReturnType<typeof frameMorph>; same: boolean; hidden: HTMLElement[]; entering?: boolean; ready?: boolean; landed?: boolean; lead?: number; giveUp?: number };
 
@@ -35,13 +34,9 @@ export type Workspace = ReturnType<typeof createWorkspace>;
 export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, marks, scene, insetMarks, geometry, panel, header }: WorkspaceParts) {
   let all: Hit[] = [], nodes: Hit[] = [], ready = false;
 
-  /** 색인이 다시 왔다. 들고 있는 트리를 새 색인으로 다시 거른다. */
   function renarrow() { if (ready) nodes = narrow(all); }
 
-  /**
-   * 그림을 창 높이에 맞춘다. stage 의 top 에서 창 바닥까지가 쓸 수 있는 높이다 —
-   * 낡음 띠가 뜨면 top 이 내려가므로 고정값(100vh - N)으로 두지 않고 매번 잰다. 캡슐 자리는 늘 비워 둔다.
-   */
+  // 낡음 띠가 뜨면 stage 의 top 이 내려가므로 고정값(100vh - N)으로 두지 않고 매번 잰다.
   function fitStage() {
     if (focusView.hidden) return;
     const css = getComputedStyle(document.documentElement);
@@ -75,12 +70,10 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     fullW = shot.naturalWidth; fullH = shot.naturalHeight;
     shot.dataset.fullW = String(fullW); shot.dataset.fullH = String(fullH);
   }
-  /** 원래 크기로 맞춤 자리를 잡는다 — 받은 그림이 작아도 같은 자리. 가로 넘침은 CSS max-width 가 자른다. */
   function sizeShot(maxH: number) {
     shot.style.width = fullW ? Math.min(fullW, maxH * fullW / fullH) + 'px' : '';
   }
 
-  /** 데몬에 지금 그리는 화소 폭을 알린다(레이아웃 × dpr × 확대). 바뀔 때만 · 몰아서. */
   let sentW = 0, viewportTimer = 0;
   function reportViewport() {
     // 첫 장이 오기 전의 <img> 폭은 그림의 폭이 아니다 — WebKit(cmux 브라우저 · Safari)은 빈 그림에 깨진 그림 자리(55×21)를 잡는다.
@@ -96,10 +89,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
   }
 
   let treeUrl: string | null = null, treeLoad: Promise<void> = Promise.resolve();
-  /**
-   * 포커스 화면의 트리. PNG와 트리를 함께 받아야 가리키기가 맞는다.
-   * 받는 중인 것은 treeLoad 로 들고 있어, 그 사이의 클릭이 옛 트리로 노드를 찾지 않고 기다리게 한다.
-   */
   function loadFocusTree(url: string) {
     if (url === treeUrl) return treeLoad;
     treeUrl = url;
@@ -168,7 +157,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     focusView.classList.remove('morph-hold');
     decorations(true, 0);
   }
-  /** 들어온 틀을 실제 캔버스에 넘긴다. 같은 비율이면 카드 그림이 자리 표시라 첫 장이 올 때 그 위에서 흐려진다. */
   function handOver(f: Flight) {
     if (flight !== f) return;
     flight = null;
@@ -177,7 +165,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     decorations(true, motionMs('--duration-short4'));
     f.m.finish(f.same ? 150 : 0);
   }
-  /** 화면을 그린 직후(전환의 update 안에서) 부른다. src 는 그리기 전에 잰 출발 틀이다. */
   function morphIn(src: Frame | null) {
     stopFlight();
     if (!src || reduced.matches || document.hidden || focusView.hidden || !wrap.classList.contains('resize-wrap')) return;
@@ -198,9 +185,7 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
       f.giveUp = window.setTimeout(() => handOver(f), 5000);
     }));
   }
-  /** 준비가 실패했다 — 자리 표시를 거두고 실패 표시를 보인다. */
   function prepareFailed() { if (flight?.entering) handOver(flight); }
-  /** 첫 장이 붙었다. 같은 비율의 모프가 날거나 기다리는 중이면 그 틀이 크로스페이드를 맡는다(참이면 캔버스는 페이드하지 않는다). */
   function firstFrame() {
     const f = flight;
     if (!f || !f.entering || !f.same) return false;
@@ -208,10 +193,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (f.landed) handOver(f);
     return true;
   }
-  /**
-   * 작업 공간에서 나간다. 장식이 --duration-short2 만큼 먼저 물러나고, 지금 프레임을 멈춰 세운 틀이 target()(그린 뒤의 도착 틀)로 줄어든다.
-   * 도착 틀이 없으면(화면 밖) 페이드하고 miss()를 부른다 — 보드는 카드 강조다.
-   */
   function morphOut(update: () => void, done: () => void, target: () => HTMLElement | null, miss: () => void = () => {}, still: () => boolean = () => true) {
     stopFlight();
     const plain = () => transition(() => { update(); target(); miss(); }, done, { workspace: true, image: shot });
@@ -349,7 +330,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
   // 작은 컴포넌트는 맞춤이 곧 PNG 원래 크기라 실제 크기보다 크다 — 그때는 맞춤 아래로도 줄어든다.
   const zMin = () => Math.min(1, realZ() || 1), zMax = () => Math.max(8, (realZ() || 1) * 4);
 
-  /** 그림이 틀 밖으로 다 나가지 않게 — 그림의 가장자리가 틀 가운데를 넘지 않는다. 맞춤보다 작으면 제자리 가운데에 둔다. */
   function clamp(z: number, x: number, y: number): [number, number, number] {
     if (z <= 1) return [z, stage.offsetWidth * (1 - z) / 2, stage.offsetHeight * (1 - z) / 2];
     const w = stage.offsetWidth * z, h = stage.offsetHeight * z;
@@ -367,12 +347,10 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     showZoom();
     reportViewport();
   }
-  /** 배율 숫자 — 실제 크기 대비. 맞춤 배율이 창 · 그림이 바뀌면 달라지므로 그때마다 다시 쓴다. */
   function showZoom() {
     const r = realZ();
     zoomView.set({ pct: Math.round((r ? zoom.z / r : zoom.z) * 100), real: !!r, atFit: zoom.z === 1 });
   }
-  /** (cx, cy) 화면 점을 붙잡은 채 확대한다 — 포인터 아래의 것이 포인터 아래에 남는다. */
   function zoomAt(z2: number, cx: number, cy: number, animate: boolean) {
     const r = stage.getBoundingClientRect(), left = r.left - zoom.x, top = r.top - zoom.y;
     const lx = (cx - r.left) / zoom.z, ly = (cy - r.top) / zoom.z;
@@ -396,7 +374,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     if (menu && active && menu.contains(active)) { if (zoomByKey) document.getElementById('zoomPct')?.focus({ preventScroll: true }); else active.blur(); }
     return true;
   }
-  /** byKey 면 키보드로 누른 것이다. */
   function toggleZoomMenu(byKey: boolean) {
     const on = !zoomView.get().menu;
     if (on) zoomByKey = byKey;
@@ -420,7 +397,6 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     else if (zoom.z > 1) { e.preventDefault(); setZoom(zoom.z, zoom.x - e.deltaX, zoom.y - e.deltaY, false); }
   }, { passive: false });
 
-  /** 휠 델타를 그림 px 로 바꾼다. 내용이 휠만큼 따라 움직이게 — 화면 1 CSS px 은 그림 1 / (layoutScale × 확대) px 다. */
   function wheelAt(e: WheelEvent) {
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? wrap.clientHeight : 1;
     const per = layoutScale() * zoom.z || 1;
@@ -496,19 +472,19 @@ export function createWorkspace({ focusView, wrap, stage, shot, box, pickBox, ma
     image: () => shot,
     zoomIn, zoomOut, zoomFit, zoomMenuPick, toggleZoomMenu, closeZoomMenu,
     closeDeviceMenu: () => resizeUI.closeMenu(),
+    dock: resizeUI.dock,
   };
 }
 
 const ratioOf = (img: HTMLImageElement | null | undefined) => img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0;
 const stills = new Map<string, HTMLImageElement>();
-/** 스트림 대신 담을 정지 그림의 비율 — 디코드한 적이 있는 것만 안다. */
 function still(img: HTMLImageElement | null) {
   const u = img?.dataset.still;
   if (!u) return null;
   if (!stills.has(u)) { const i = new Image(); i.src = u; stills.set(u, i); if (stills.size > 8) stills.delete(stills.keys().next().value!); }
   return stills.get(u)!;
 }
-/** 모프의 출발점 · 도착점 — 그리기 전에 잰다. 스트림 주소는 담지 않는다(복제하면 연결이 하나 더 열린다). */
+// 스트림 주소는 담지 않는다 — 복제하면 연결이 하나 더 열린다.
 export function frameOf(el: HTMLElement | null): Frame | null {
   if (!el) return null;
   const img = el.querySelector('img'), cs = getComputedStyle(el), url = img ? img.getAttribute('src') || '' : '';
@@ -517,9 +493,6 @@ export function frameOf(el: HTMLElement | null): Frame | null {
 }
 
 /* ---------- 의도 ---------- */
-/** FR-18. 카드 하나에 태스크를 걸고 그 장만 남긴다. 화면 전환은 돌아올 state 가 한다. */
 export function enterFocus(i: number) { post('/viewer/focus', { index: i }).catch(e => setStatus(phrase('focus.enter.failed', { why: (e as Error).message }), 'error')); }
-/** 보드로 — 버튼 · esc · I · 브라우저 뒤로 가기가 모두 이것이다(W7). 한 장은 늘 보드 위에서 열린다(D-155). */
 export function exitFocus() { if (store.st && store.st.focus) post('/viewer/exit'); }
-/** 시스템 UI 세 값(D-159 ①) — 이 한 장만 덮어쓴다. 다시 그린 그림은 돌아올 state 가 붙인다. */
 export function pickSystemUi(choice: string) { post('/viewer/systemUi', { systemUi: choice }).catch(e => flash(phrase('request.failed', { why: (e as Error).message }))); }

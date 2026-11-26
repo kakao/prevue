@@ -4,6 +4,11 @@ name: Verify — static checks
 
 on:
   workflow_call:
+    inputs:
+      save-cache:
+        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
+        type: boolean
+        default: false
 
 # Scripts that run under the user's /bin/sh are checked with sh, not bash.
 defaults:
@@ -33,8 +38,9 @@ jobs:
       - name: Check that both skill sets and CLAUDE.md are generated from source
         run: sh tools/gen-agents.sh --check
 
-      # Installs receive plugin/ only (D-123) — its LICENSE · NOTICE.md are copies of the root originals.
+      # Installs receive plugin/ only (D-123). The version commit syncs the copies (tools/sync-version.sh); release PRs only.
       - name: Check that the plugin's notice copies match the originals
+        if: ${{ github.base_ref == 'main' }}
         run: sh tools/plugin-copies.sh --check
 
       - name: Set up Node for viewer development
@@ -71,9 +77,10 @@ jobs:
           java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
 
       # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
-      # A cache is only visible from the ref that made it — a PR run's cache hits from that PR's next run on.
+      # A PR's own cache is visible to that PR alone, so Verify only reads — cache-warm.yml saves on develop.
       - name: Gradle home cache
-        uses: actions/cache@v4
+        id: gradle-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.gradle/caches
@@ -82,18 +89,29 @@ jobs:
           restore-keys: gradle-lint-${{ runner.os }}-
 
       # Slop rules · detekt metrics · new comments (D-70). Clean if every work PR ran it locally — this is the net for skipped runs.
-      # The base is the branch the PR targets. Run by hand (workflow_dispatch), it compares with main.
+      # The base is the branch the PR targets. Run by hand (workflow_dispatch), it compares with main. The cache-warm push run
+      # compares the branch with itself — nothing new to check.
       - name: Kotlin lint
         env:
-          BASE_REF: ${{ github.base_ref || 'main' }}
+          BASE_REF: ${{ github.event_name == 'push' && github.ref_name || github.base_ref || 'main' }}
         run: |
           set -eu
-          sh tools/lint.sh --base "origin/$BASE_REF"
+          sh tools/ci-retry.sh sh tools/lint.sh --base "origin/$BASE_REF"
+
+      # Only on success: a half-filled cache would stay under this key until the build files change.
+      - name: Save the Gradle home cache
+        if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
       # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
       - name: Cancel the run, this job failed
-        if: ${{ failure() }}
+        if: ${{ failure() && !inputs.save-cache }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

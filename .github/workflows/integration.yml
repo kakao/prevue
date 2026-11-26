@@ -5,6 +5,11 @@ name: Verify — integration tests
 
 on:
   workflow_call:
+    inputs:
+      save-cache:
+        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -27,7 +32,7 @@ jobs:
       # duration (the two KMP classes share the KMP fixture setup).
       SHARDS: |
         render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
-        insets: InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
+        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
         kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
 
     steps:
@@ -60,7 +65,7 @@ jobs:
           java-version: "21"
 
       # The wrappers and dependencies of both the daemon and the fixtures land in the same Gradle home; the key is all their
-      # build files. Shards download different things (only the KMP shard gets KMP dependencies), so each saves its own.
+      # build files. Shards download different things (only the KMP shard gets KMP dependencies), so each has its own.
       - name: Restore the Gradle home cache
         id: gradle-cache
         uses: actions/cache/restore@v4
@@ -88,7 +93,7 @@ jobs:
         working-directory: plugin/daemon
         env:
           PREVUE_JDK: ${{ env.JAVA_HOME }}
-        run: ./gradlew :daemon:integrationTest ${{ steps.shard.outputs.tests }} --no-daemon
+        run: sh ../../tools/ci-retry.sh ./gradlew :daemon:integrationTest ${{ steps.shard.outputs.tests }} --no-daemon
 
       # Without the toolchain or the SDK the tests skip quietly and go green — that counts as a failure, not a result.
       - name: Check that the tests actually ran
@@ -117,9 +122,9 @@ jobs:
             plugin/daemon/daemon/build/reports/tests/integrationTest
           if-no-files-found: ignore
 
-      # Keep what was downloaded even when the tests fail, so the next run starts warm. Skipped when the key already exists.
+      # Only the cache-warm run saves, and only on success (a half-filled cache would stay under this key). Skipped when the key exists.
       - name: Save the Gradle home cache
-        if: always() && steps.gradle-cache.outputs.cache-hit != 'true'
+        if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |

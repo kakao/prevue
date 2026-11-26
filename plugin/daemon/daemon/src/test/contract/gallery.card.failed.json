@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "schema": {
+    "failure": "string",
+    "front": [
+      "empty"
+    ],
+    "sheets": "number"
+  },
+  "example": {
+    "sheets": 1,
+    "front": [],
+    "failure": "그리지 못했다"
+  }
+}

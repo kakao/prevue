@@ -43,7 +43,7 @@ data class CardOverride(
         size.applyTo(edgeToEdge.applyTo(SystemUi.ON.applyTo(p))).copy(appInsets = DeviceInsetInputs.of(size).values)
     } else size.applyTo(base(p))
 
-    fun with(size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge? = null): CardOverride? {
+    fun with(size: ScreenSize? = null, systemUi: SystemUi? = null, edgeToEdge: EdgeToEdge? = null): CardOverride? {
         val target = size ?: this.size
         require(systemUi == null || target !is ScreenSize.Device) { "기기는 시스템 UI를 항상 표시하고 기기 인셋을 늘 전달한다 — --system-ui는 기기가 아닌 크기에만 쓴다" }
         return of(previewId, target, systemUi ?: this.systemUi, edgeToEdge ?: this.edgeToEdge)
@@ -51,10 +51,10 @@ data class CardOverride(
 
     companion object {
         fun of(previewId: String, size: ScreenSize, systemUi: SystemUi, edgeToEdge: EdgeToEdge = EdgeToEdge.AUTO): CardOverride? =
-            CardOverride(previewId, size, systemUi, edgeToEdge).takeUnless {
-                size == ScreenSize.Original && systemUi == SystemUi.ANNOTATED && edgeToEdge == EdgeToEdge.AUTO
-            }
+            CardOverride(previewId, size, systemUi, edgeToEdge).takeUnless { isDefault(size, systemUi, edgeToEdge) }
+
+        fun isDefault(size: ScreenSize?, systemUi: SystemUi?, edgeToEdge: EdgeToEdge?): Boolean =
+            (size ?: ScreenSize.Original) == ScreenSize.Original && (systemUi ?: SystemUi.ANNOTATED) == SystemUi.ANNOTATED &&
+                (edgeToEdge ?: EdgeToEdge.AUTO) == EdgeToEdge.AUTO
     }
 }
-
-data class CardAdjustment(val size: ScreenSize? = null, val systemUi: SystemUi? = null, val edgeToEdge: EdgeToEdge? = null)

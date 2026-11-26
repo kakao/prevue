@@ -4,17 +4,17 @@
 
 ## 해당 없음
 
-둘 중 하나면 그 이유를 "화면 확인 해당 없음 — <이유>"로 적는다. 제품 입력이 develop과 같거나, 사용자에게 보이는 동작(뷰어 화면 · CLI 출력)이 바뀌지 않았다. 제품 입력은 `tools/check-local.sh`의 `INPUTS`에 `plugin/bin`을 더한 경로다.
+둘 중 하나면 그 이유를 "화면 확인 해당 없음 — <이유>"로 적는다. 제품 입력이 develop과 같거나, 사용자에게 보이는 동작(뷰어 화면 · CLI 출력)이 바뀌지 않았다. 제품 입력은 `sh tools/unit-test.sh --inputs`가 찍는 경로에 `plugin/bin`을 더한 것이다.
 
 ```sh
 # sh로 감싼다 — zsh는 $P를 단어로 나누지 않아 plugin/bin만 보고 "해당 없음"으로 잘못 건너뛴다
-sh -c 'P="$(sed -n "s/^INPUTS=\"\(.*\)\"\$/\1/p" tools/check-local.sh)"; test -n "$P" || exit 2; git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P'
+sh -c 'P="$(sh tools/unit-test.sh --inputs)"; test -n "$P" || exit 2; git diff --quiet "$(git merge-base origin/develop HEAD)" -- plugin/bin $P'
 # 0 해당 없음 · 1 제품 입력이 바뀌었다 · 2 INPUTS를 못 읽었다 — 판정하지 않고 멈춘다
 ```
 
 ## 빌드하고 띄운다
 
-이 워크트리를 `(cd plugin/daemon && ./gradlew --offline installPrevue)`로 빌드하고 그 `plugin/bin/prevue`를 쓴다. CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `implement`의 멈춤 목록(대상 저장소의 Gradle)이다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
+이 워크트리를 `plugin/bin/prevue setup --offline`으로 빌드하고 그 `plugin/bin/prevue`를 쓴다 — 받아 둔 것만으로 `installPrevue`를 돌리고, Gradle을 띄울 JDK 21+(Metro)를 셸의 `JAVA_HOME`과 상관없이 스스로 찾는다. 모자라다고 `prevue setup`을 권하면 새로 받는 일이다. CLI는 자기 체크아웃이 띄운 데몬만 쓴다(status의 `root`) — 다른 체크아웃의 `plugin/bin/prevue`를 부르면 그 체크아웃의 데몬과 코드로 그린다. 대상은 저장소 픽스처(`fixtures/pearl` · `fixtures/pearl-kmp` · `fixtures/pearl-demo`)다 — 그 밖의 대상은 `implement`의 멈춤 목록(대상 저장소의 Gradle)이다. 파일 인자가 없는 명령(`focus` · `touch` · `scroll` · `log` · `status` 등)은 대상 픽스처 디렉터리 안에서 친다 — 데몬이 둘 이상 떠 있으면 워크트리 루트에서는 "Can't tell which repository"가 나고, `focus` · `type` · `scroll` · `log`는 오류가 권하는 `--project`를 옵션으로 받지 않는다.
 
 개발 위생이다 — 제품 제약이 아니다.
 

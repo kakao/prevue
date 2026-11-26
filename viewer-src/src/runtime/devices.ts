@@ -1,6 +1,15 @@
 // 생성물이다. plugin/devices/*.json 을 고치고 sh tools/gen-viewer.sh 로 만든다.
-// 번들 밖 한 벌이다 — resize-scene.js 와 번들이 같은 주소에서 읽는다(motion.js 와 같은 이유).
-export const DEVICES = {
+export type DeviceCam = { w: number; h: number; y: number; x?: number; notch?: number; edge?: 'right' | 'bottom'; lens?: true };
+export type DeviceBody = { tone: string; bezel: number; ends?: number; home?: true; radius: [number, number, number, number]; cuts: DeviceCam[]; cams: DeviceCam[]; btn: { side: 1 | -1; at: number; len: number }[] };
+export type DevicePanel = { w: number; h: number; hinge?: number; fixed?: true; cutIn: Record<string, '' | 'w' | 'h' | 'wh'> };
+export type DeviceEntry = {
+  name: string; short: string; fold: boolean;
+  open: DevicePanel; cover?: DevicePanel;
+  look: { open: DeviceBody; cover?: DeviceBody };
+  plate?: { thickness: number; gap: number; axis: 'width' | 'height'; blur?: true };
+};
+
+export const DEVICES: Record<string, DeviceEntry> = {
   "s26": {
     "name": "Galaxy S26",
     "short": "S26",
@@ -1512,7 +1521,7 @@ export const DEVICES = {
   }
 };
 
-export const DEVICE_MENU = [
+export const DEVICE_MENU: { group: string; ids: string[] }[] = [
   {
     "group": "Galaxy",
     "ids": [

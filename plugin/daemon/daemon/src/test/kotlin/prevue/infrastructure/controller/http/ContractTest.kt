@@ -21,14 +21,6 @@ import prevue.daemon.fake.eventually
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.infrastructure.bindings.EntryHooks
 
-/**
- * HTTP 계약. `Main`과 같은 입구 조립(`EntryPoints`) + 진짜 유스케이스에 가짜 포트를 끼워 띄우고, 응답의 **키와 타입**을 `src/test/contract/<이름>.json`과 대조한다.
- * CLI·스킬·뷰어가 읽는 것은 이 JSON이다 — 안쪽을 옮기는 동안 여기가 초록이면 바깥이 본 표면은 그대로다.
- * 값은 대조하지 않는다(경로·시각·ms가 매번 다르다). 예시는 문서용으로 함께 적는다.
- *
- * 계약을 바꾸는 것은 의도한 변화일 때만이다: `./gradlew test -PcontractUpdate=true` 로 다시 쓰고 diff를 커밋에 싣는다.
- * `status`의 감시 비용(`watch`·`staleWatch`)은 감시 포트가 있을 때만 실린다 — 계약 테스트는 주지 않는다(`HotSwapRunnerTest`가 본다).
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ContractTest {
     private val fx = Fixture(previews = 2).apply {
@@ -58,7 +50,6 @@ class ContractTest {
 
     @AfterAll fun down() { runBlocking { server.stop() }; fx.close() }
 
-    /** 한 메서드로 순서대로 친다 — 보드·선택·인터랙티브가 앞 요청의 상태 위에 선다. 실패를 모아 한 번에 보인다. */
     @Test fun `HTTP 계약`() {
         val f = fx.file.path
         val misses = ArrayList<String>()
@@ -80,8 +71,15 @@ class ContractTest {
         check("preview-files.pending", get("/preview-files.json"))
         check("previews.of.pending", post("/previews", mapOf("of" to "Badge")))
         runBlocking { uc.watchers.indexPreviewFiles() }
+        prevue.daemon.fake.awaitUntil("보드가 그린 앞 장이 갤러리 캐시에 남기") { uc.galleryShots.kept(File(f)) != null }
         check("preview-files", get("/preview-files.json"))
         check("previews.of", post("/previews", mapOf("of" to "lib.Badge")))
+        val card = "/gallery/card?file=" + java.net.URLEncoder.encode(f, UTF_8)
+        check("gallery.card", get(card))
+        fx.renderer.asideFails = "그리지 못했다"
+        check("gallery.card.failed", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.srcRoot, "demo/Badges.kt").path, UTF_8)))
+        fx.renderer.asideFails = null
+        check("gallery.card.none", get("/gallery/card?file=" + java.net.URLEncoder.encode(File(fx.root, "Nope.kt").path, UTF_8)))
         check("previews.of.none", post("/previews", mapOf("of" to "Nope")))
         check("card.cached", post("/card", mapOf("index" to 1)))
         check("card.force", post("/card", mapOf("index" to 1, "force" to true)))
@@ -249,12 +247,6 @@ class ContractTest {
         return diffs
     }
 
-    /**
-     * 이벤트는 같은 종류라도 부른 자리마다 키가 다르다(감시가 부른 컴파일엔 감지·대기 ms). 종류별로 합쳐 본다.
-     * state 는 뷰어마다 최신 값만 보낸다(CONFLATED) — 한 단계에만 잠깐 서는 모양(choice · selection · boardNote …)은 다음 단계가 덮으면 오지 않는다.
-     * 그래서 state 는 "온 것이 모두 계약 안에 있다"만 본다. 그 모양들은 GET /viewer/state 계약이 정확히 고정하고, SSE 로만 보이는 것(settle)은 도착을 기다린다.
-     * ui 는 버리지 않는 채널이라 그대로 정확히 견준다.
-     */
     private fun compareEvents(): List<String> {
         val byType = events.groupBy { it["type"].toString() }.toSortedMap()
             .mapValues { (_, evs) -> evs.map { schema(it) }.reduce(::union) }
@@ -275,7 +267,6 @@ class ContractTest {
         return diffs
     }
 
-    /** [got]이 [want] 안에 드는가 — 키 · 타입이 빠지거나 좁은 것은 괜찮고, 없던 키 · 타입만 어긋남이다. */
     private fun fits(at: String, want: Any?, got: Any?, out: MutableList<String>) {
         fun types(v: Any?) = when (v) {
             is String -> v.split('|').toSet()
@@ -311,10 +302,6 @@ class ContractTest {
         else if (want != got) out += "${at.removeSuffix(".")} ${Json.str(want)} → ${Json.str(got)}"
     }
 
-    /**
-     * 값 → 타입. 객체는 키별로, 배열은 원소의 합집합 하나로. 타입이 갈리면 `null|string`처럼 이름순으로 잇는다.
-     * 객체가 어떤 자리에서는 스칼라(대개 null)면 그 스칼라 타입을 객체의 `|` 키에 둔다.
-     */
     private fun schema(v: Any?): Any = when (v) {
         null -> "null"
         is String -> "string"
@@ -337,9 +324,8 @@ class ContractTest {
         else -> error("합칠 수 없는 스키마: $a / $b")
     }
 
-    /** 예시에서 매번 바뀌는 것을 걷는다 — 문서로 읽힐 것이라 diff가 시끄러우면 안 된다. */
     private fun normalize(v: Any?): Any? = when (v) {
-        is String -> v.replace(fx.root.path, "<repo>").replace(fx.root.parent, "<tmp>").replace(fx.root.name, "<repo-name>").replace(Regex("""\?t=\d+"""), "?t=<t>")
+        is String -> v.replace(fx.root.path, "<repo>").replace(fx.root.parent, "<tmp>").replace(fx.root.name, "<repo-name>").replace(Regex("""\?t=\d+"""), "?t=<t>").replace(Regex("""/gallery/shot/[0-9a-f]{16}-"""), "/gallery/shot/<key>-")
             .replace(Regex("""\d{4}-\d\d-\d\dT[\d:.]+Z"""), "<at>").replace("127.0.0.1:$port", "127.0.0.1:<port>")
             .replace(Regex("""\b\d\d:\d\d:\d\d\b"""), "<hh:mm:ss>").replace(Regex("""\b\d+(ms|(\.\d+)?s)\b"""), "<took>")
         is Map<*, *> -> v.entries.associate { (k, x) ->
@@ -374,8 +360,7 @@ class ContractTest {
     }
 }
 
-/** 실행마다 달라지는 측정값. 고정값(`atMs` · `gapMs` · `heapMaxMb`)과 음수 표지(`firstChangeMs: -1`)는 그대로 둔다. */
 private val VOLATILE = setOf(
     "bootstrapMs", "burstMs", "coldMs", "encodeMs", "renderMs", "taskMs", "tickMs", "totalMs", "waitedMs", "ms",
-    "heapUsedMb", "version", "mtime",
+    "heapUsedMb", "version", "mtime", "at",
 )

@@ -10,5 +10,5 @@ type Story = StoryObj<typeof meta>;
 const state = { ...board.example, screen: 'board' as const } satisfies ViewerState;
 export const Boundary: Story = { render: () => {
   const [version, setVersion] = useState<number | null>(null);
-  return <div><ViewerRoot state={state} renderLegacy={value => setVersion(value.version)} /><output data-version={version ?? ''}>apply(state): {version ?? '…'}</output></div>;
+  return <div><ViewerRoot state={state} afterCommit={value => setVersion(value.version)} /><output data-version={version ?? ''}>apply(state): {version ?? '…'}</output></div>;
 } };

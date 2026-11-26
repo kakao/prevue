@@ -62,13 +62,21 @@ any_repo_daemons() {  # <저장소 키>
 # 데몬이 끝나며 남기는 줄(Main.kt). 로그는 시작마다 새로 쓰고, 자기를 다시 띄우는 데몬(NFR-4)은 이 줄 없이 끝난다 —
 # 그래서 이 줄이 있으면 죽은 것이고, pid 를 보면 새 JVM 이 pid 파일을 고쳐 쓰기 전의 틈을 죽음으로 읽는다.
 log_failure() { grep -E '^\[prevue [0-9:]+\] (데몬 실패|데몬 시작·실행 실패|포트를 열지 못했다)' "$LOG" 2>/dev/null | tail -1; }
+# JVM 이 끝나며 AOT 캐시를 굽고 남기는 줄 — 데몬이 살았든 죽었든 이유가 아니다. 같은 로그에 지는 쪽 JVM 도 쓴다.
+JVM_NOISE='^\(Temporary AOTConfiguration\|Launching child process\|Picked up JAVA_TOOL_OPTIONS\|Reading AOTConfiguration\|AOTCache creation\|Removed temporary AOT\|\[[0-9.]*s\]\[[a-z]* *\] *\[\(aot\|cds\)\)'
 # 죽은 이유. 데몬의 실패 줄을 먼저 본다 — 첫 실행이면 JVM 이 그 뒤에 AOT 캐시를 구운 줄을 더 붙인다.
 # 그런 줄이 없으면 스택 프레임을 걷어낸 마지막 줄이 대개 그 이유다. JSON 문자열에 넣으므로 제어 문자를 걷는다.
 log_why() {
   local why
   why="$(log_failure)"
-  [ -n "$why" ] || why="$(grep -v '^[[:space:]]*at ' "$LOG" 2>/dev/null | grep -v '^[[:space:]]*$' | tail -1)"
+  [ -n "$why" ] || why="$(grep -v "$JVM_NOISE" "$LOG" 2>/dev/null | grep -v '^[[:space:]]*at ' | grep -v '^[[:space:]]*$' | tail -1)"
   printf '%s' "$why" | tr '\t' ' ' | LC_ALL=C tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+# 기록된 데몬 프로세스가 아직 살아 있고 실패 줄도 없다 — 죽은 것이 아니라 아직 뜨는 중이다(첫 실행은 AOT 학습 · 콜드 기동으로 느리다).
+# kill -0 이 EPERM(샌드박스)이면 살았는지 모르므로 뜨는 중으로 치지 않는다.
+still_booting() {
+  local p; p="$(cat "$DAEMON_DIR/daemon-$PORT.pid" 2>/dev/null)"
+  [ -n "$p" ] && [ -z "$(log_failure)" ] && kill -0 "$p" 2>/dev/null
 }
 # 그 저장소에서 마지막으로 show·start 를 받은 데몬. 두 앱이 함께 담은 모듈(core:ui)이나 파일을 안 가리킨 명령(status·wait)이 그리로 간다.
 mark_recent() { [ -n "${KEY:-}" ] && printf '%s' "$PORT" > "$DAEMON_DIR/recent-$KEY" 2>/dev/null; return 0; }
@@ -231,6 +239,19 @@ shared_toolchain() {
   mv="$(sed -n 's/^metro *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
   [ -n "$kv" ] && [ -n "$lv" ] && [ -n "$mv" ] && [ -d "$HOME/.prevue/toolchain/compiler-$kv" ] && [ -d "$HOME/.prevue/toolchain/layoutlib-$lv" ] \
     && [ -d "${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/dev.zacsweers.metro/compiler/$mv" ]
+}
+
+bake_toolchain() {
+  (cd "$ROOT/daemon" && ./gradlew installPrevue -q -Pkotlin.compiler.execution.strategy=in-process "$@")
+}
+
+bake_offline() {
+  local out rc=0
+  out="$(bake_toolchain --offline 2>&1)" || rc=$?
+  printf '%s\n' "$out" >&2
+  [ "$rc" = 0 ] && return 0
+  printf '%s' "$out" | grep -qE 'available for offline mode|could not resolve plugin artifact' && return 2
+  return 1
 }
 
 # 이 체크아웃이 구워 둔 실행 환경이 지금도 쓸 수 있는가. prevue-env 는 체크아웃에 남아도 그것이 가리키는 공유 툴체인은
@@ -399,12 +420,12 @@ aot_args() {  # <java 플래그 …> — AOT 배열 · AOT_CACHE · AOT_LOCK 을
     local p started; p="$(cat "$lock/pid" 2>/dev/null)"; started="$(cat "$lock/started" 2>/dev/null)"
     if [ -n "$p" ] && ! ps -p "$p" -o command= 2>/dev/null | grep -qF -- "-XX:AOTCacheOutput=$f.tmp"; then
       [ -s "$f.tmp" ] && [ "$(( $(date -r "$f.tmp" +%s) - ${started:-0} ))" -ge 30 ] && mv -f "$f.tmp" "$f"
-      rm -rf "$lock" "$f.tmp"
+      rm -rf "$lock" "$f.tmp" "$f.tmp.config"
     elif [ -z "$p" ] && [ -z "$(find "$lock" -maxdepth 0 -mmin -1 2>/dev/null)" ]; then
       rm -rf "$lock"
     fi
   fi
-  find "$AOT_DIR" -maxdepth 1 \( -name '*.aot' -o -name '*.aot.tmp' -o -name '*.training' \) ! -name "$key.*" -mtime +1 \
+  find "$AOT_DIR" -maxdepth 1 \( -name '*.aot' -o -name '*.aot.tmp' -o -name '*.aot.tmp.config' -o -name '*.training' \) ! -name "$key.*" -mtime +1 \
     -exec rm -rf {} + 2>/dev/null
   AOT_FLAGS=(-XX:+UnlockDiagnosticVMOptions -XX:-AOTRecordTraining -XX:-AOTClassLinking)
   if [ -s "$f" ]; then
@@ -532,7 +553,7 @@ show_unready() {  # <파일> — 돌아오지 않는다
     while IFS= read -r line; do start+=("$line"); done < <(printf '%s' "$h" | python3 "$PLAN_PY" autostart)
     if [ ${#start[@]} -gt 0 ]; then
       out="$("$ROOT/bin/prevue" start "${start[@]}" --show "$1")"; rc=$?
-      [ "$rc" = 0 ] || [ "$rc" = 1 ] || { echo "$out"; exit "$rc"; }   # 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
+      [ "$rc" = 0 ] || { [ "$rc" = 1 ] && baked; } || { echo "$out"; exit "$rc"; }   # 구운 뒤의 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
       # 브라우저를 못 열었으면(샌드박스) 그 사실은 start 의 답에만 있다 — 버리면 에이전트가 "열렸다"고 말하고 사람은 빈 화면을 본다
       case "$out" in *'"opened": false'*|*'"opened":false'*) export PREVUE_NOT_OPENED=1;; esac
       PREVUE_AUTOSTARTED=1 exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
@@ -712,14 +733,16 @@ case "$cmd" in
     # 래퍼는 JAVA_HOME 을 따른다. 데몬이 쓰는 JDK(21+)를 준다 — 셸의 JAVA_HOME 이 17 인 것이 AGP 세계의 기본값인데, Metro 의 Gradle 플러그인은 Gradle 자체가 21+ 여야 풀린다.
     require_java
     export JAVA_HOME="$JDK"
+    BAKE_RC=0
     if [ "$OFFLINE" = 1 ]; then
-      # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
-      if ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2; then
+      bake_offline || BAKE_RC=$?
+      if [ "$BAKE_RC" = 2 ]; then
         echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
       fi
-    elif ! (cd "$ROOT/daemon" && ./gradlew installPrevue -q) >&2; then
-      echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
+    else
+      bake_toolchain >&2 || BAKE_RC=$?
     fi
+    [ "$BAKE_RC" = 0 ] || { echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1; }
     baked || { echo "{\"ok\":false,\"error\":\"The build finished but $ENV_FILE or the toolchain it points to is missing\"}"; exit 1; }
     echo "{\"ok\":true,\"toolchain\":true,\"alreadyHad\":$HAD}"
     ;;
@@ -919,7 +942,8 @@ case "$cmd" in
       require_java
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
       export JAVA_HOME="$JDK"
-      (cd "$ROOT/daemon" && ./gradlew installPrevue -q --offline) >&2 || true
+      BAKE_RC=0; bake_offline || BAKE_RC=$?
+      [ "$BAKE_RC" = 1 ] && { echo "{\"ok\":false,\"error\":\"Couldn't build this version's executable — the cause is in the Gradle output above\"}"; exit 1; }
     fi
     baked || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
     . "$ENV_FILE"
@@ -1025,9 +1049,14 @@ except OSError:
     for _ in $(seq 1 60); do curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; [ -n "$(log_failure)" ] && break; sleep 0.5; done
     # JVM 은 맞지 않는 캐시를 알리고 캐시 없이 뜬다 — 지워 두면 다음 시작이 다시 학습한다
     [ -n "$AOT_CACHE" ] && grep -E '\[(error|warning) *\]\[(aot|cds)' "$LOG" 2>/dev/null | grep -qv 'Preload Warning' && rm -f "$AOT_CACHE"
+    # 30초 안에 못 떴어도 프로세스가 살아 있고 실패 줄이 없으면 더 기다린다 — 실패로 답한 뒤 데몬이 떠 있던 사례가 있다
+    for _ in $(seq 1 60); do still_booting || break; curl -sf -m 1 "$BASE/status" >/dev/null 2>&1 && break; sleep 0.5; done
     if ! curl -sf -m 2 "$BASE/status" >/dev/null; then
       # 경로만 주고 "읽어 봐라"로 끝내면 이유가 한 겹 아래에 묻힌다
       WHY="$(log_why)"
+      if still_booting; then
+        echo "{\"ok\":false,\"error\":\"The daemon is still starting — check with prevue status\",\"log\":\"$LOG\"}"; exit 3
+      fi
       echo "{\"ok\":false,\"error\":\"The daemon didn't start${WHY:+ — $WHY}\",\"log\":\"$LOG\"}"; exit 3
     fi
     mark_recent; open_viewer

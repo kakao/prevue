@@ -11,6 +11,8 @@ import prevue.infrastructure.watch.PollingBuildWatcher
 import prevue.infrastructure.watch.PollingSourceWatcher
 import prevue.application.port.BuildWatcher
 import prevue.application.port.Compiler
+import prevue.application.port.GalleryShots
+import prevue.infrastructure.store.FileGalleryShots
 import prevue.application.port.LiveSessionFactory
 import prevue.application.port.PreviewRenderer
 import prevue.application.port.PrevueDispatchers
@@ -32,6 +34,9 @@ public object PortBindings {
 
     @Provides
     internal fun resources(engine: BootingEngine): ResourceValues? = engine.resources
+
+    @Provides @SingleIn(AppScope::class)
+    internal fun galleryShots(paths: DaemonPaths, dispatchers: PrevueDispatchers): GalleryShots = FileGalleryShots(paths.gallery, dispatchers)
 
     @Provides @SingleIn(AppScope::class)
     internal fun sources(watches: Watches, dispatchers: PrevueDispatchers): SourceWatcher? =

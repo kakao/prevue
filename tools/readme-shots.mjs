@@ -17,9 +17,9 @@
 // 장면을 안 주면 전부 찍는다. 데몬이 없으면 이미 뜬 덤프로 --no-open 으로 띄운다 — 사람의 브라우저에 뷰어를 열지 않고,
 // Gradle 은 부르지 않는다(덤프가 없으면 멈춘다). 찍은 뒤 데몬은 그대로 둔다 — 다 찍었으면 prevue stop --mine.
 // 같은 대상을 다른 워크트리의 데몬이 보고 있을 때와 검증장 위생은 dev-skills-src/implement/tools/screen.md 의 개발 위생을 따른다.
-// 장면: hero · board · party · pointing · worktrees · match · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
-// · --mw · --mh(match 가운데 창) · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
-// GIF 장면(pointing · worktrees · match · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을,
+// 장면: hero · board · gallery · party · pointing · worktrees · match · interactive · devices · loop · bench. 바꿀 수 있는 것: --fps(GIF, 15) · --pace(GIF 박자, 0.7)
+// · --mw · --mh(match 가운데 창) · --iw · --ih(interactive 창) · --dw · --dh(devices 창) · --bw · --bh(hero · board 창) · --gw · --gh(gallery 창) · --bare(board 를 뷰어만) · --kw · --kh · --party · --out(party · pointing 의 webp 이름 — 둘이 같이 읽으니 한 장면씩 찍을 때만) · --q(img2webp 필요) · --pw · --ph · --at(pointing 창 · 누를 자리) · --sweet(cup 의 Sweetness 줄 비율).
+// GIF 장면(gallery · pointing · worktrees · match · interactive · devices)은 ffmpeg 가 있어야 한다. worktrees 는 크롬을 둘 더 띄우고 두 사본의 Theme.kt · strings.xml 을,
 // match 는 크롬을 하나 더 띄우고 --pearl-a 의 PearlScreen.kt · Theme.kt 를 고쳤다가 되돌린다. 픽스처가 바뀌면 사본을 다시 떼어 온다.
 // 의존성 없음: Node 22+ 내장 WebSocket · fetch, macOS Chrome(CHROME 으로 바꾼다).
 
@@ -338,8 +338,11 @@ function glide(c, x, y) {
     await to(r.x + r.w / 2, r.y + r.h / 2);
   };
   const tap = async () => { await sleep(160); await mouse("mousePressed", { clickCount: 1 }); await sleep(90); await mouse("mouseReleased", { clickCount: 1 }); };
+  const x0 = x, y0 = y;
   return {
     at: () => mouse("mouseMoved"),
+    hover: toEl,
+    rest: () => to(x0, y0),
     async press(sel) { await toEl(sel); await tap(); },
     async pressAt(tx, ty) { await to(tx, ty); await tap(); },
   };
@@ -629,6 +632,60 @@ const SCENES = {
       await sleep(500);
     };
     await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)], !!opt.bare);
+  },
+  // 모든 Preview — 탭 없는 시작 화면의 Pearl 카드 격자. 포인터가 카드 위를 지나며 뒤 그림이 비져나오고, ShowcasePreviews 를 눌러
+  // 앞 3장 시트를 띄운 뒤 「View on board」로 보드에 들어가고, esc 로 격자에 돌아온다. 결과는 assets/gallery.gif. --gw · --gh(창)
+  // ShowcasePreviews 탭을 미리 열고 보드에서 esc 로 들어가 시작한다 — 보드 그림이 미리 차고, 레일이 처음과 끝에 같아 반복이 이어진다.
+  // 순서는 최근 바뀐 순이라 데몬을 띄우기 전에 사본에서 Cup · ComponentPreviews · DrinkCard · ShowcasePreviews · SearchScreen · PearlPreviews 순으로 touch 한다.
+  // 그린 뒤 touch 하면 카드가 Outdated 로 흐려진다 — 데몬을 내리고 그 사본의 ~/.prevue/projects/<키>/gallery 를 지운 뒤 다시 찍는다.
+  async gallery(c) {
+    const repo = opt["pearl-a"];
+    const url = await viewer(repo, [PEARL.showcase]);
+    const w = +(opt.gw || 1280), h = +(opt.gh || 820);
+    const hit = f => `.gcard-slot[data-path$="/${f}"] .gcard-hit`;
+    const drawn = `(() => { const cs = [...document.querySelectorAll("#galleryView .gcard")].filter(e => e.getBoundingClientRect().top < innerHeight);
+      return cs.length > 0 && cs.every(e => e.dataset.state !== "loading") && [...document.querySelectorAll("#galleryView img")].every(i => i.complete && i.naturalWidth > 0); })()`;
+    const sheet = `[...document.querySelectorAll(".gsheet img")].length >= 3 && [...document.querySelectorAll(".gsheet img")].every(i => i.complete && i.naturalWidth > 0)`;
+    await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "no-preference" }] });
+    try {
+      await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+      await c.send("Page.navigate", { url });
+      await c.until(BOARD, 60_000);
+      await c.key("Escape", "Escape");
+      await c.until(drawn, 120_000);
+      // 시트를 한 번 열어 앞 3장을 받아 둔다 — 녹화 중에 로딩 판이 끼지 않게
+      const sc = await c.rect(hit(basename(PEARL.showcase)));
+      if (!sc) throw new Error("ShowcasePreviews 카드가 첫 화면에 없다");
+      await c.click(sc.x + sc.w / 2, sc.y + sc.h / 2);
+      await c.until(sheet, 60_000);
+      await c.key("Escape", "Escape");
+      await c.until(`!document.querySelector(".gsheet")`, 5_000);
+      await c.evaluate("document.activeElement?.blur(); true");
+      await sleep(800);
+      await c.evaluate(POINTER);
+      const title = await c.evaluate("document.title");
+      const g = glide(c, w * 0.55, (h - BAR) * 0.18);
+      await g.at();
+      const frames = await record(c, async () => {
+        await sleep(pace(700));
+        await g.hover(hit("PearlPreviews.kt"));
+        await sleep(pace(1100));
+        await g.hover(hit("SearchScreen.kt"));
+        await sleep(pace(1100));
+        await g.press(hit(basename(PEARL.showcase)));
+        await c.until(sheet, 10_000);
+        await sleep(pace(2400));
+        await g.press(".gsheet-go");
+        await c.until(BOARD, 20_000);
+        await sleep(pace(2000));
+        await c.key("Escape", "Escape");
+        await c.until(drawn, 20_000);
+        await g.rest();
+      }, 1200);
+      await gif(c, "gallery", title, url, frames, w, h);
+    } finally {
+      await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+    }
   },
   // KMP 파티 — KotlinConf 앱 commonMain 의 PartyAnimation 보드에서 포인터가 Dark 카드의 Interactive 를 눌러 작업 공간에 들어가
   // 파티를 보고(3초) ‹ 로 보드에 돌아온다. 처음과 끝이 같은 보드라 반복해도 이음매가 없다. 그 Preview 는 intensity 1 로 고정돼

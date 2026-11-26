@@ -17,6 +17,8 @@ const server = createServer(async (request, response) => {
     response.writeHead(200, { 'Content-Type': 'text/event-stream' });
     response.write(`data: ${JSON.stringify({ type: 'state', state })}\n\n`);
     streams.add(response); request.on('close', () => streams.delete(response));
+  } else if (path === '/gallery/card') {
+    response.writeHead(404).end(JSON.stringify({ ok: false }));
   } else if (path === '/preview-files.json' || path === '/project-files.json') {
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(path === '/preview-files.json' ? { ready: true, files } : { files: {} }));
@@ -131,11 +133,13 @@ try {
 
   const empty = { ...state, version: state.version + 1, screen: 'empty', tabs: [], board: null, focus: null };
   for (const response of streams) response.write(`data: ${JSON.stringify({ type: 'state', state: empty })}\n\n`);
-  await until(`document.querySelector('#startView').hidden===false && document.querySelector('#startView .qo-row')`);
-  await pause(600);
-  await check(`document.querySelector('#startView .qo-col') && !document.querySelector('#qoSheet .qo-col') && document.querySelector('#startView .qo-field')`, '시작 화면은 팔레트와 같은 상자를 쓴다');
-  await check(`(()=>{const c=document.querySelector('#qoCurtain'),b=document.querySelector('#startView .qo-col').getBoundingClientRect(),m=document.querySelector('main').getBoundingClientRect();
-    return c.hidden && getComputedStyle(c).opacity==='0' && document.querySelector('#startView').contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2)) && Math.abs(b.left+b.width/2-(m.left+m.width/2))<=1})()`, '시작 화면에는 막이 없고 상자는 본문 가운데에 놓인다');
+  await until(`document.querySelector('#galleryView').hidden===false && !!document.querySelector('#galleryView .gcard')`);
+  await check(`!document.querySelector('#galleryView .qo-col') && document.querySelector('#qoSheet').hidden`, '탭 0개의 시작 화면은 검색 상자가 아니라 갤러리(D-198)');
+  await key('/');
+  await until(`document.querySelector('#qoSheet').classList.contains('on') && document.querySelector('#qoIn .qo-row')`);
+  await check(`document.activeElement.id==='q' && document.querySelector('#galleryView').hidden===false`, '갤러리 위에서도 / 는 같은 팔레트');
+  await key('Escape');
+  await until(`document.querySelector('#qoSheet').hidden`);
   await check(`__errors.length===0`, '브라우저 오류 없음');
   console.log(`완료: ${checked}개 검사`);
 } finally {

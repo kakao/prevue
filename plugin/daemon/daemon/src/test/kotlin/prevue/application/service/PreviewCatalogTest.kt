@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import prevue.daemon.fake.Fixture
+import prevue.infrastructure.controller.browser.previewFilesJson
 import prevue.application.port.SourceChange
 import prevue.application.domain.model.WorkspaceEvent
 
@@ -86,6 +87,35 @@ class PreviewCatalogTest {
         assertEquals(":app", defs.getValue("Banner").single().module)
         assertEquals(":lib", defs.getValue("Chip").single().module)
         assertEquals(listOf("Banner", "Chip", "ScreenPreview"), defs.keys.sorted())
+    }
+
+    @Test fun `안쪽 정의는 출처 칩용으로만 모듈을 달고, 호출 거르기와 --of 에는 들지 않으며 최상위 이름에 진다`() {
+        runBlocking { uc.watchers.indexPreviewFiles() }
+        val detail = File(fx.srcRoot, "demo/Detail.kt").apply {
+            writeText("""
+                package demo
+                @Composable fun DetailScreen() {
+                    @Composable fun AddBar() { Text("x") }
+                    @Composable fun Chip() {}
+                    AddBar()
+                }
+                @Preview @Composable fun DetailPreview() {
+                    @Composable fun Local() {}
+                    Local(); DetailScreen()
+                }
+            """.trimIndent())
+        }
+        change(created = listOf(detail, lib("Chips", "@Composable fun Chip() {}\n")))
+        val index = uc.status.readPreviewIndex()!!
+        assertEquals(listOf("AddBar", "Local"), index.innerComposables.keys.sorted())
+        assertEquals(":app", index.innerComposables.getValue("AddBar").single().module)
+        assertEquals(":lib", index.composables.getValue("Chip").single().module)
+        assertFalse("AddBar" in index.composables)
+        assertEquals(listOf("DetailScreen"), calls("Detail.kt")["DetailPreview"])
+        assertEquals(emptyList<Any>(), uc.status.findPreviews("AddBar")!!.definitions)
+        @Suppress("UNCHECKED_CAST")
+        val sent = previewFilesJson(index, fx.srcRoot.path)["composables"] as List<Map<String, Any?>>
+        assertEquals(listOf(":app", ":lib"), sent.filter { it["name"] in setOf("AddBar", "Chip") }.map { it["module"] as String }.sorted())
     }
 
     @Test fun `다른 파일에 정의가 생기면 그 파일만 읽고도 호출이 늘고, 정의만 바뀐 저장도 알린다`() {

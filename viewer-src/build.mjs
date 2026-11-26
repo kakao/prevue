@@ -11,12 +11,11 @@ const destination = resolve(source, '../plugin/viewer');
 const check = process.argv.includes('--check');
 const temporary = await mkdtemp(join(tmpdir(), 'prevue-viewer-'));
 const server = await mkdtemp(join(tmpdir(), 'prevue-prerender-'));
-const legacy = join(source, 'legacy/js/');
 const runtimeDir = join(source, 'src/runtime/');
-const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion'];
-const separate = id => id.startsWith(legacy) || id.startsWith(runtimeDir);
-const separatePath = id => './js/' + id.slice((id.startsWith(legacy) ? legacy : runtimeDir).length).replace(/\.ts$/, '.js');
-const handWritten = name => name === 'tokens.css' || name === 'js/resize-scene.js' || name === 'prevue.svg' || name.startsWith('strings/');
+const runtime = ['api', 'store', 'strings', 'messages', 'capsule', 'board', 'motion', 'resize-scene', 'devices'];
+const separate = id => id.startsWith(runtimeDir);
+const separatePath = id => './js/' + id.slice(runtimeDir.length).replace(/\.ts$/, '.js');
+const handWritten = name => name === 'tokens.css' || name === 'prevue.svg' || name.startsWith('strings/');
 
 async function files(directory, prefix = '') {
   return (await Promise.all((await readdir(directory, { withFileTypes: true })).map(async entry => {
@@ -37,19 +36,13 @@ try {
       emptyOutDir: false,
       target: 'es2022',
       minify: true,
-      // 준비 페이지(prepare.html)와 뷰어가 진입점을 따로 갖는다. 준비 장면은 브라우저 검사가 그 주소를 직접 import 한다.
       lib: {
         entry: { viewer: join(source, 'src/main.tsx'), 'preparation-start': join(source, 'src/preparation/entry-start.ts'), 'preparation-scene': join(source, 'src/preparation/entry-scene.ts') },
         formats: ['es'],
         fileName: (_, name) => `js/${name}.js`,
       },
-      // 런타임 모듈(src/runtime)은 아래 따로 빌드해 js/<이름>.js 한 벌만 쓴다 — 사본이 번들에 들면 사전 · 마지막 상태 · 캡슐 · 전환 중 여부가 두 벌이 된다.
-      // 손으로 고치는 resize-scene.js 가 같은 URL(./motion.js · ./strings.js)로 부르므로 이름과 자리를 지킨다.
-      // resize-scene.js 도 번들 밖이다 — 타입만 legacy/js 에 두고 본체는 plugin/viewer/js 의 그 주소로 부른다.
-      // React 도 한 벌(js/react.js)을 두 페이지가 함께 쓴다 — 진입점마다 실으면 NFR-21 크기 상한을 넘는다. 준비 서버가 이 이름을 내준다.
       rolldownOptions: {
         external: separate,
-        // 준비 장면은 뷰어와 함께 쓰는 모듈(사전 맥락 등)을 덧붙여 내보낸다 — 진입점 겉면 파일을 따로 두면 준비 서버가 모르는 이름이 생긴다.
         preserveEntrySignatures: 'allow-extension',
         output: {
           paths: id => separate(id) ? separatePath(id) : id,
@@ -60,10 +53,8 @@ try {
     },
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   });
-  // 메인 빌드의 청크가 런타임 모듈과 같은 이름이면 아래가 그 청크를 덮는다 — 청크 이름에 해시가 없다.
   const mainChunks = new Set(await files(temporary));
   for (const name of runtime) if (mainChunks.has(`js/${name}.js`)) throw Error(`번들 청크와 런타임 모듈의 이름이 겹친다: js/${name}.js`);
-  // 런타임 모듈은 하나씩 따로 묶는다 — 서로는 번들에 넣지 않고 같은 URL로 부른다(그래야 모듈 상태가 한 벌이다). 입구 여럿을 한 번에 묶으면 서로를 같은 청크로 합친다.
   for (const name of runtime) await build({
     configFile: false,
     root: source,
@@ -81,7 +72,6 @@ try {
       },
     },
   });
-  // 한 장의 정적 껍데기(WorkspaceShell)를 index.html 에 미리 그린다 — resize-scene.js 와 접기 하네스가 페이지의 그 마크업을 쥔다.
   await build({
     configFile: false,
     root: source,
@@ -95,12 +85,10 @@ try {
   const { prerendered } = await import(pathToFileURL(join(server, 'prerender.mjs')).href);
   const shells = prerendered();
   const built = new Set(await files(temporary));
-  for (const name of await files(join(source, 'legacy'))) {
-    if (name.endsWith('.d.ts')) continue;
-    // 위와 같다 — 손으로 둔 legacy 파일이 번들 청크와 같은 이름이면 그 청크를 덮는다.
-    if (built.has(name)) throw Error(`번들 청크와 기존 모듈의 이름이 겹친다: ${name}`);
+  for (const name of await files(join(source, 'static'))) {
+    if (built.has(name)) throw Error(`빌드 출력과 정적 파일의 이름이 겹친다: ${name}`);
     await mkdir(dirname(join(temporary, name)), { recursive: true });
-    let body = await readFile(join(source, 'legacy', name));
+    let body = await readFile(join(source, 'static', name));
     if (name === 'index.html') {
       let html = body.toString('utf8');
       for (const [slot, markup] of Object.entries(shells)) {
@@ -111,7 +99,6 @@ try {
     }
     await writeFile(join(temporary, name), body);
   }
-  // 준비 페이지는 데몬이 뜨기 전 준비 서버가 내준다 — 그 서버가 아는 JS만 불러야 한다(plugin/cli/prevue_prepare.py).
   const served = name => /^js\/preparation[^/]*\.js$/.test(name) || ['js/strings.js', 'js/messages.js', 'js/react.js'].includes(name);
   const reached = new Set(), pending = ['js/preparation-start.js'];
   while (pending.length) {
