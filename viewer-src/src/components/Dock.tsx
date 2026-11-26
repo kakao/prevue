@@ -35,7 +35,7 @@ export function SizePicker({ dock }: { dock: SceneDock }) {
     const d = DEVICES[sel];
     return <button className={mono ? 'pn-it mono' : 'pn-it'} type="button" role="radio" data-sel={sel} key={sel} aria-checked={sel === checked}
       title={d ? d.name : tip && phrase(tip)} disabled={locked} onClick={() => { choose(sel); dock.setMenu(false); }}>
-      {d && <Silhouette dev={sel} />}<span className="nm">{sel === 'custom' ? phrase('size.custom') : itemName(sel)}</span><span className="d">{rows[sel] ?? ''}</span>
+      {d && <Silhouette dev={sel} />}<span className="nm">{itemName(sel)}</span><span className="d">{rows[sel] ?? ''}</span>
     </button>;
   };
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -69,16 +69,16 @@ export function DeviceMenu({ dock, host }: { dock: SceneDock; host?: HTMLElement
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
   const menu = useDock(dock, 'menu'), locked = useDock(dock, 'locked');
-  const sumKey = useDock(dock, 'sumKey'), sumDev = useDock(dock, 'sumDev'), sumTitle = useDock(dock, 'sumTitle');
+  const checked = useDock(dock, 'checked'), sumTitle = useDock(dock, 'sumTitle');
   const sum = useRef<HTMLButtonElement>(null), body = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     element?.classList.toggle('open', menu);
     if (!menu && body.current?.contains(document.activeElement)) sum.current?.focus({ preventScroll: true });
   }, [element, menu]);
   return place(<>
-    <button className={sumKey === 'original' ? 'tb-btn pn-sum mono' : 'tb-btn pn-sum'} id="pnSum" type="button" aria-haspopup="true" aria-expanded={menu} aria-controls="pnBody"
+    <button className={checked === 'original' ? 'tb-btn pn-sum mono' : 'tb-btn pn-sum'} id="pnSum" type="button" aria-haspopup="true" aria-expanded={menu} aria-controls="pnBody"
       title={sumTitle || phrase('panel.pick')} disabled={locked} ref={sum} onClick={() => dock.setMenu(!menu)}>
-      <span className="pn-sum-sil">{sumDev && <Silhouette dev={sumDev} />}</span><span className="nm">{sumKey && itemName(sumKey)}</span>{CHEVRON}
+      <span className="pn-sum-sil">{DEVICES[checked] && <Silhouette dev={checked} />}</span><span className="nm">{checked && itemName(checked)}</span>{CHEVRON}
     </button>
     <div className="pn-body" id="pnBody" inert={!menu} ref={body}><SizePicker dock={dock} /></div>
   </>, menuHost);

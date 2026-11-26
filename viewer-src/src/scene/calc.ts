@@ -249,6 +249,6 @@ export const openDims = (d: DeviceEntry) => `${Math.round(d.open.w)}×${Math.rou
 // 커스텀 슬라이더(D-99) — 끄는 동안은 틀과 치수선 숫자만 따라온다(draft, 요청 없음). 놓거나 키 입력이 멈추면 치수선 입력과 같은 규칙으로 한 번 보낸다.
 // 보낸 뒤에도 새 상태가 올 때까지 draft 를 붙들어 틀이 옛 크기로 되튀지 않는다.
 export const SL_KEY_SETTLE = 350;
-export const DOCK_START: DockView = { menu: false, orientMenu: false, locked: false, checked: "", rows: {}, sumKey: "", sumDev: "", sumTitle: "",
+export const DOCK_START: DockView = { menu: false, orientMenu: false, locked: false, checked: "", rows: {}, sumTitle: "",
   posture: false, sliders: false, foldable: false, folded: false, orientFixed: false, orientation: "portrait", hinge: true, slW: DP_MIN, slH: DP_MIN };
 export const slAt = (v: number) => `${((v - DP_MIN) / (DP_MAX - DP_MIN) * 100).toFixed(3)}%`;

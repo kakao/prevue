@@ -23,7 +23,7 @@ export type ResizeScene = {
 export type DockView = {
   menu: boolean; orientMenu: boolean; locked: boolean;
   checked: string; rows: Readonly<Record<string, string>>;
-  sumKey: string; sumDev: string; sumTitle: string;
+  sumTitle: string;
   posture: boolean; sliders: boolean;
   foldable: boolean; folded: boolean; orientFixed: boolean; orientation: Orientation; hinge: boolean;
   slW: number; slH: number;

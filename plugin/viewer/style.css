@@ -237,7 +237,6 @@ body:not(.resizing-ui) .pn-fold, body:not(.resizing-ui) #devCtl, body:not(.resiz
 .pn-it .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pn-it.mono .nm { font: var(--type-code); }
 .pn-it .d { flex: 0 0 auto; color: var(--on-surface-variant); font: var(--type-code-small); font-variant-numeric: tabular-nums; }
-/* 기기의 몸체 윤곽 — 그림이 아니라 크롬이라 무채색이다. 모양은 resize-scene.js 의 silOf 가 몸체 값에서 그린다 */
 .pn-sil { flex: 0 0 auto; width: 20px; height: 20px; }
 .pn-sl.off .sl { opacity: .45; cursor: default; pointer-events: none; }
 /* 커스텀 폭 · 높이 슬라이더(D-99) — 조작 독 가운데. 손잡이가 초점을 받고 막대 전체가 끌 자리다. 끝은 240 · 1600, 눈금은 창 크기 구간 경계 */

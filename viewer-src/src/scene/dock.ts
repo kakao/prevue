@@ -7,7 +7,6 @@ import type { Axis, Dev, SceneDock, St } from "./types";
 
 const ROW_SELS = ["original", "narrow", "foldable", "custom", ...DEVICE_MENU.flatMap(g => g.ids)];
 const ROW_NAMES: Record<string, string> = { original: "@Preview", narrow: "320×640", foldable: "673×841" };
-// 이름은 목록의 칸 이름 그대로다(기기는 짧은 이름). 치수 · 자세는 치수선과 자세 버튼이 말한다.
 export const itemName = (sel: string) => DEVICES[sel] ? DEVICES[sel].short : sel === "custom" ? phrase("size.custom") : ROW_NAMES[sel] ?? sel;
 
 export const orientationOpen = (S: Scene) => S.dock.get().orientMenu;
@@ -20,15 +19,13 @@ export function setOpen(S: Scene, on: boolean) {
   if (on) setOrientationOpen(S, false);
   S.dock.set({ menu: on });
 }
-// 바깥 누름은 창에서 받는다 — 장면이 켜진 동안만 걸고 끌 때 뗀다(Storybook 은 스토리마다 장면을 새로 만든다).
 export const outside = (S: Scene, e: PointerEvent) => {
   const at = e.target instanceof Element ? e.target : null;
   if (menuOpen(S) && !at?.closest("#pnFold")) setOpen(S, false);
   if (orientationOpen(S) && !at?.closest("#dcOrientation")) setOrientationOpen(S, false);
 };
 function paintSum(S: Scene, key: string) {
-  const here = S.cur!, dev = here.kind === "device" && key === here.dev ? key : "";
-  S.dock.set({ sumKey: key, sumDev: dev, sumTitle: `${dev ? DEVICES[dev].name : itemName(key)} · ${dims(here)}` });
+  S.dock.set({ sumTitle: `${DEVICES[key] ? DEVICES[key].name : itemName(key)} · ${dims(S.cur!)}` });
 }
 // 방향키로 지나가는 것은 고르기만 한다 — 커서까지 옮기면 라디오 묶음에서 빠져나가 다음 칩에 못 간다.
 function pick(S: Scene, sel: string, byKey?: boolean) {
@@ -36,7 +33,6 @@ function pick(S: Scene, sel: string, byKey?: boolean) {
   dropDraft(S);
   // 슬라이더에 초점이 남으면 커스텀 칸이 고른 채로 남는다 — 숫자 입력처럼 놓고 간다
   S.slFocus = false;
-  // 숫자를 고치던 중이면 그 입력은 버린다 — 칩을 고르며 빠지는 blur 가 옛 숫자를 새 크기 위에 덧입혀 320×841 같은 커스텀이 됐다
   dropRuler(S);
   if (sel === "custom") {
     const w = clamp(Math.round(S.cur!.w), DP_MIN, DP_MAX), h = clamp(Math.round(S.cur!.h), DP_MIN, DP_MAX);
@@ -55,14 +51,12 @@ export function paintBar(S: Scene, st: St, instant?: boolean) {
   if (instant) { S.roll.w.snap(st.w); S.roll.h.snap(st.h); } else { S.roll.w.to(st.w, 420, now); S.roll.h.to(st.h, 420, now); }
   if (st.kind === "device") {
     setLook(S, lookOf(st), instant);
-    // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 돌릴 곳이 없다.
     const orientFixed = !!DEVICES[st.dev][st.folded ? "cover" : "open"]!.fixed;
     S.dock.set({ foldable: !!DEVICES[st.dev].fold, folded: st.folded, orientFixed, orientation: st.orientation });
     if (orientFixed) setOrientationOpen(S, false);
   }
   paintPick(S);
 }
-// 고른 칸의 dp 는 지금 크기다 — 접거나 돌린 기기 · 커스텀은 그 크기를, 나머지 기기는 펼친 크기를 적는다.
 export function paintPick(S: Scene) {
   const here = S.cur!, custom = S.editing || (S.slFocus && here.sel === S.slSent) || here.kind === "custom", key = custom ? "custom" : itemOf(here);
   const rows: Record<string, string> = {};

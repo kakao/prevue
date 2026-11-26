@@ -4836,7 +4836,7 @@ function ds({ dock: e }) {
 				l && /* @__PURE__ */ (0, V.jsx)(cs, { dev: a }),
 				/* @__PURE__ */ (0, V.jsx)("span", {
 					className: "nm",
-					children: a === "custom" ? t("size.custom") : Te(a)
+					children: Te(a)
 				}),
 				/* @__PURE__ */ (0, V.jsx)("span", {
 					className: "d",
@@ -4888,9 +4888,9 @@ function ds({ dock: e }) {
 	});
 }
 function fs({ dock: e, host: t }) {
-	let { phrase: n } = s(), { element: r, place: i } = o(t), a = Q(e, "menu"), c = Q(e, "locked"), l = Q(e, "sumKey"), u = Q(e, "sumDev"), d = Q(e, "sumTitle"), f = (0, B.useRef)(null), p = (0, B.useRef)(null);
+	let { phrase: n } = s(), { element: r, place: i } = o(t), a = Q(e, "menu"), c = Q(e, "locked"), l = Q(e, "checked"), u = Q(e, "sumTitle"), d = (0, B.useRef)(null), f = (0, B.useRef)(null);
 	return (0, B.useLayoutEffect)(() => {
-		r?.classList.toggle("open", a), !a && p.current?.contains(document.activeElement) && f.current?.focus({ preventScroll: !0 });
+		r?.classList.toggle("open", a), !a && f.current?.contains(document.activeElement) && d.current?.focus({ preventScroll: !0 });
 	}, [r, a]), i(/* @__PURE__ */ (0, V.jsxs)(V.Fragment, { children: [/* @__PURE__ */ (0, V.jsxs)("button", {
 		className: l === "original" ? "tb-btn pn-sum mono" : "tb-btn pn-sum",
 		id: "pnSum",
@@ -4898,14 +4898,14 @@ function fs({ dock: e, host: t }) {
 		"aria-haspopup": "true",
 		"aria-expanded": a,
 		"aria-controls": "pnBody",
-		title: d || n("panel.pick"),
+		title: u || n("panel.pick"),
 		disabled: c,
-		ref: f,
+		ref: d,
 		onClick: () => e.setMenu(!a),
 		children: [
 			/* @__PURE__ */ (0, V.jsx)("span", {
 				className: "pn-sum-sil",
-				children: u && /* @__PURE__ */ (0, V.jsx)(cs, { dev: u })
+				children: Oe[l] && /* @__PURE__ */ (0, V.jsx)(cs, { dev: l })
 			}),
 			/* @__PURE__ */ (0, V.jsx)("span", {
 				className: "nm",
@@ -4917,7 +4917,7 @@ function fs({ dock: e, host: t }) {
 		className: "pn-body",
 		id: "pnBody",
 		inert: !a,
-		ref: p,
+		ref: f,
 		children: /* @__PURE__ */ (0, V.jsx)(ds, { dock: e })
 	})] }), Qo);
 }

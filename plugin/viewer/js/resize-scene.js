@@ -335,8 +335,6 @@ var he = (e, t, n) => e.map(([e, r, i, a, o]) => `${U((e * Math.cos(t) + r * Mat
 	locked: !1,
 	checked: "",
 	rows: {},
-	sumKey: "",
-	sumDev: "",
 	sumTitle: "",
 	posture: !1,
 	sliders: !1,
@@ -1407,12 +1405,7 @@ var wt = (e, t) => {
 	St(e) && !n?.closest("#pnFold") && Ct(e, !1), xt(e) && !n?.closest("#dcOrientation") && Q(e, !1);
 };
 function Tt(t, n) {
-	let r = t.cur, i = r.kind === "device" && n === r.dev ? n : "";
-	t.dock.set({
-		sumKey: n,
-		sumDev: i,
-		sumTitle: `${i ? e[i].name : bt(n)} · ${R(r)}`
-	});
+	t.dock.set({ sumTitle: `${e[n] ? e[n].name : bt(n)} · ${R(t.cur)}` });
 }
 function Et(t, n, r) {
 	if (t.focusW = !1, Bt(t), t.slFocus = !1, Dt(t), n === "custom") {

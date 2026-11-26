@@ -3,7 +3,6 @@ import { Workspace } from '../src/components/Workspace';
 import { examples } from './examples';
 import { useLiveScene, WorkspaceBody } from './workspace';
 
-// 한 장의 배치 — 창을 다 쓰는 무대(장면 + 캔버스)와 그 아래 가운데의 조작 독(크기 · 기기 메뉴 · 자세나 커스텀 슬라이더 · 시스템 UI · 확대, D-167). 뷰어에서는 무대 · 독의 칸을 빌드가 index.html 에 미리 그려 둔다.
 const meta = { title: '작업공간/Workspace' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
