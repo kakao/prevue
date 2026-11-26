@@ -2,9 +2,9 @@
   <img src="assets/icon.png" width="40" height="40" alt="" align="absmiddle">&nbsp;Prevue
 </h1>
 
-<p align="center"><b>Android Studio를 꺼도 Preview는 뜹니다.</b></p>
+<p align="center"><b>Android Studio 없이 보는 Compose Preview.</b></p>
 
-<p align="center">저장하고 1초면 브라우저의 Compose Preview가 다시 그려집니다.<br>에이전트도 같은 화면을 봅니다.</p>
+<p align="center">저장하면 1초, 브라우저에서 다시 그려집니다.<br>에이전트도 같은 화면을 봅니다.</p>
 
 <p align="center"><a href="README.md">English</a> | <b>한국어</b></p>
 
