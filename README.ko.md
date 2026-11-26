@@ -176,11 +176,13 @@ codex plugin add prevue@prevue
 | 되는 것 | 안 되는 것 |
 |---|---|
 | Android 모듈(app · library) | 순수 JVM 모듈 |
-| Android 타깃이 있는 Kotlin Multiplatform · Compose Multiplatform 모듈 — AGP 9의 `com.android.kotlin.multiplatform.library`, 또는 `kotlin.multiplatform` + `com.android.library` | Android 타깃이 없는 KMP 모듈, Amper처럼 Gradle이 아닌 빌드 |
-| commonMain 파일도 저장하면 Gradle 없이 다시 그립니다 | `expect` · `actual` 선언이 든 파일 — 저장해도 Gradle 빌드 전까지 이전 그림이 남습니다 |
-| debug 계열 변형. Android Studio의 Build Variants 기본 규칙대로 고르고, 다른 변형이 필요하면 에이전트에게 말하면 됩니다 | release 변형 |
-| 최상위 `@Preview` 함수. Multipreview와 `@PreviewParameter`도 펼쳐서 그립니다 | 클래스 안에 선언한 멤버 Preview |
-| 실기기가 없어도 그려지는 컴포저블 | DI 컨테이너나 `AndroidView`가 필요한 Preview — 실패 종류가 `DI` · `ANDROID_VIEW`로 표시됩니다 |
+| Android 타깃이 있는 KMP · Compose Multiplatform 모듈¹ | Android 타깃이 없는 KMP 모듈, Gradle이 아닌 빌드(Amper 등) |
+| commonMain 파일 — 저장하면 Gradle 없이 다시 그림 | `expect` · `actual`이 든 파일 — Gradle 빌드 전까지 이전 그림 |
+| debug 계열 변형² | release 변형 |
+| 최상위 `@Preview` 함수(Multipreview · `@PreviewParameter` 포함) | 클래스 안의 멤버 Preview |
+| 실기기 없이 그려지는 컴포저블 | DI 컨테이너나 `AndroidView`가 필요한 Preview³ |
+
+<sub>¹ AGP 9의 `com.android.kotlin.multiplatform.library`, 또는 `kotlin.multiplatform` + `com.android.library` · ² Android Studio의 Build Variants 기본 규칙대로 고르고, 다른 변형은 에이전트에게 말하면 됩니다 · ³ 실패 종류가 `DI` · `ANDROID_VIEW`로 표시됩니다</sub>
 
 ## 벤치마크
 
