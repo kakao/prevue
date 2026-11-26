@@ -728,7 +728,7 @@ case "$cmd" in
     if [ "$OFFLINE" = 1 ]; then
       BAKE_OUT="$(bake_toolchain --offline 2>&1)" || BAKE_RC=$?
       printf '%s\n' "$BAKE_OUT" >&2
-      if [ "$BAKE_RC" != 0 ] && printf '%s' "$BAKE_OUT" | grep -q 'available for offline mode'; then
+      if [ "$BAKE_RC" != 0 ] && printf '%s' "$BAKE_OUT" | grep -qE 'available for offline mode|could not resolve plugin artifact'; then
         echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
       fi
     else

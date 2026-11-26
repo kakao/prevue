@@ -126,9 +126,12 @@ class Baked(Case):
         return self.prevue("setup", "--offline", PREVUE_JDK=jdk)
 
     def test_offline_setup_asks_for_a_download_only_when_the_cache_lacks_it(self):
-        code, out = self.offline_setup("No cached version of org.jetbrains.kotlin:kotlin-stdlib:2.0.0 available for offline mode")
-        self.assertEqual((code, out["missing"]), (1, ["toolchain"]), out)
-        self.assertTrue(out["next"].endswith("prevue setup"), out)
+        for says in ("No cached version of org.jetbrains.kotlin:kotlin-stdlib:2.0.0 available for offline mode",
+                     "Plugin was not found: could not resolve plugin artifact 'dev.zacsweers.metro:dev.zacsweers.metro.gradle.plugin:9.9'"):
+            with self.subTest(says=says):
+                code, out = self.offline_setup(says)
+                self.assertEqual((code, out["missing"]), (1, ["toolchain"]), out)
+                self.assertTrue(out["next"].endswith("prevue setup"), out)
 
     def test_offline_setup_points_at_the_gradle_output_when_the_build_fails_for_another_reason(self):
         code, out = self.offline_setup("e: UnsupportedClassVersionError: class file version 65")
