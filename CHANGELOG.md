@@ -21,7 +21,7 @@ Only changes users can see go here.
 - **`prevue setup --offline` no longer tells you to download again when the build failed for another reason**, such as a compile error — it now points at the Gradle output, and asks for `prevue setup` only when something wasn't downloaded yet.
 - **The first `prevue start` after an update no longer tells you to run `prevue setup` when building the executable failed for another reason**, such as a compile error — it now exits 1 pointing at the Gradle output, and asks for `prevue setup` only when something wasn't downloaded yet.
 - **The first `start` no longer answers "The daemon didn't start" while the daemon is still booting**, and when a daemon takes longer than that it says "still starting" instead; a failure no longer blames the class-cache (AOT) lines the JVM prints on exit.
-- **Selection guides no longer sit above the picture on a preview's first render** — the layout the guides follow is read again after the first draw, so a divider's line and its guide match instead of the guide floating about 80 px too high.
+- **Pointing at an element on a preview's first render now marks and picks it where it is in the picture**, not higher up.
 
 ## [0.23.0] — 2026-11-19
 
