@@ -14,7 +14,7 @@ Only changes users can see go here.
 
 ### All Previews
 
-![All Previews in a Now in Android project: hovering cards in the grid fans the next previews out behind each one, clicking a card raises a sheet with its first three previews and Esc puts it back, and View on board opens the file's board](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/release-0.24.0-gallery.webp)
+![All Previews in a Pearl project: the pointer passes over the cards in the grid and the previews behind each one fan out, clicking ShowcasePreviews raises a sheet with its first three previews, View on board opens its board, and Esc returns to the grid](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/gallery.gif)
 
 - **All Previews shows every preview file as a card grid** — the start screen with no open tabs, **All Previews** at the top of the rail, or `esc` on a board takes you there, files are ordered by most recently changed, each card shows the file name, package, module and how many previews it has, and the number beside **All Previews** appears once the project's previews are indexed.
 - **Cards draw only once they scroll into view**, from what is already built (no Gradle) — a file that isn't built yet shows "Couldn't draw" until the file changes or the next build.
