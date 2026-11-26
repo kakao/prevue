@@ -75,7 +75,6 @@ internal class RenderEngine(
     private val touchMode = MutableStateFlow<String?>(null)
     override val touchModeError: String? get() = touchMode.value
     private var scrollBroken: String? = null
-    private var treeRefreshBroken: String? = null
 
     private val lazyListReader = LazyListReader()
     private val semanticsReader = SemanticsReader()
@@ -325,6 +324,8 @@ internal class RenderEngine(
         }
     }
 
+    internal fun shownAdapter(): Any? = outputs.lastAdapter
+
     internal fun focusedView(): String? = (live ?: error(NOTHING_SHOWN)).focusedViewName()
 
     private suspend fun renderLive(timing: RenderTiming, relayout: Boolean = false): RenderOutput =
@@ -342,7 +343,7 @@ internal class RenderEngine(
         }
         try {
             val renderMs = msSince(t)
-            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview) || outputs.isNewAdapter(result)) refreshTree(l, result)
+            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview) || outputs.isNewAdapter(result)) outputs.keepRead(l.readTree(result))
             val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
             return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
         } finally {
@@ -356,13 +357,6 @@ internal class RenderEngine(
         if (hung(l.preview, timedOut)) return lostOutput(l.preview)
         if (l === live) disposeLive()
         return outputs.failed(l.preview, kind, message, timing.copy(renderMs = msSince(since)))
-    }
-
-    private fun refreshTree(l: LayoutlibSession, result: RenderResult) {
-        val why = l.rebuildTree(result) ?: return
-        if (treeRefreshBroken != null) return
-        treeRefreshBroken = why
-        System.err.println("[prevue] 트리를 지금 화면으로 다시 짓지 못했다 — 첫 화면의 트리가 남는다: $why")
     }
 
     private suspend fun hung(p: PreviewSpec, timedOut: Boolean = false): Boolean = watch.hung(p, timedOut).also { if (it) live = null }

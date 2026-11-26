@@ -10,6 +10,7 @@ import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
 import prevue.application.port.RenderOutput
 import prevue.infrastructure.dump.ClasspathSpec
+import java.util.WeakHashMap
 
 internal data class RenderTiming(
     val taskMs: Long,
@@ -38,6 +39,17 @@ internal class RenderOutputs(
     var afterBuild = false
     var lastCompose: List<Map<String, Any?>> = emptyList()
     var lastAdapter: Any? = null
+    private val trees = WeakHashMap<Any, List<ComposeNode>>()
+
+    private var readBroken: String? = null
+
+    fun keepRead(read: Result<Pair<Any, List<ComposeNode>>?>) {
+        read.getOrNull()?.let { (adapter, tree) -> trees[adapter] = tree }
+        val why = read.exceptionOrNull()?.let { (it.cause ?: it).toString() } ?: return
+        if (readBroken != null) return
+        readBroken = why
+        System.err.println("[prevue] 트리를 지금 화면으로 짓지 못했다 — 직전에 지은 트리가 남는다: $why")
+    }
 
     fun forgetTree() {
         lastCompose = emptyList()
@@ -49,7 +61,7 @@ internal class RenderOutputs(
     ): RenderOutput {
         val ph = timing.phases
         var t = System.nanoTime()
-        val compose = if (tree.written) ViewInfoJson.compose(result.rootViews, origins) else emptyList()
+        val compose = if (tree.written) ViewInfoJson.compose(readTree(result), origins) else emptyList()
         val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), tree.written && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
@@ -100,6 +112,9 @@ internal class RenderOutputs(
         lastCompose = compose
         lastAdapter = ViewInfoJson.adapter(result.rootViews)
     }
+
+    private fun readTree(result: RenderResult): List<ComposeNode> =
+        ViewInfoJson.adapter(result.rootViews)?.let { trees[it] }.orEmpty()
 
     fun isNewAdapter(result: RenderResult): Boolean = ViewInfoJson.adapter(result.rootViews) !== lastAdapter
 

@@ -6,36 +6,72 @@ import java.net.URLClassLoader
 import java.nio.file.Path
 import javax.tools.ToolProvider
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class ViewInfoJsonTest {
     @TempDir lateinit var dir: Path
 
-    // 진짜 ui-tooling 과 같은 이름이라 테스트 출력에 두면 통합 테스트의 렌더 클래스패스를 가린다 — 제 로더에만 싣는다
-    private fun fakeTooling(adapterBody: String, viewInfoBody: String = ""): Any {
-        val pkg = File(dir.toFile(), "androidx/compose/ui/tooling").apply { mkdirs() }
-        val adapter = File(pkg, "ComposeViewAdapter.java").apply {
-            writeText("package androidx.compose.ui.tooling; public class ComposeViewAdapter { $adapterBody }")
-        }
-        val viewInfo = File(pkg, "ViewInfo.java").apply {
-            writeText("package androidx.compose.ui.tooling; public class ViewInfo { $viewInfoBody }")
-        }
-        val javac = ToolProvider.getSystemJavaCompiler()
-        assertEquals(0, javac.run(null, null, null, "-d", dir.toString(), adapter.path, viewInfo.path))
-        return URLClassLoader(arrayOf(dir.toUri().toURL()), null).loadClass("androidx.compose.ui.tooling.ComposeViewAdapter")
-            .getConstructor().newInstance()
-    }
-
-    private fun adapterWithoutTreeGetter() = fakeTooling("public java.util.List<Object> getViewInfos() { return null; }")
-
-    private fun adapterWithNode(nodeGetters: String) = fakeTooling(
-        "public java.util.List<ViewInfo> getViewInfos\$ui_tooling() { return java.util.List.of(new ViewInfo()); }",
-        nodeGetters + " public java.util.List<ViewInfo> getChildren() { return java.util.List.of(); }" +
-            " public Edges getBounds() { return new Edges(); }" +
-            " public static class Edges { public int getLeft() { return 0; } public int getTop() { return 0; }" +
-            " public int getRight() { return 0; } public int getBottom() { return 0; } }",
+    private class Fake(
+        val tree: String = "N.n(\"Root\", 2)",
+        val record: Boolean = true,
+        val makeTree: Boolean = true,
+        val lineGetter: Boolean = true,
     )
+
+    // 진짜 ui-tooling 과 같은 이름이라 테스트 출력에 두면 통합 테스트의 렌더 클래스패스를 가린다 — 제 로더에만 싣는다.
+    // Kotlin 함수 타입은 제 로더의 stdlib 것이라 데몬의 Function 과 다른 클래스다 — 진짜 렌더 로더와 같은 처지다
+    private fun fakeAdapter(fake: Fake): Any {
+        val runtime = "androidx.compose.runtime.tooling"
+        val data = "androidx.compose.ui.tooling.data"
+        val sources = mapOf(
+            "$runtime.CompositionData" to "public interface CompositionData {}",
+            "$runtime.CompositionGroup" to "public interface CompositionGroup { Object getNode(); }",
+            "$runtime.CompositionInstance" to "public interface CompositionInstance {}",
+            "androidx.compose.ui.unit.IntRect" to "public final class IntRect { int[] e; public IntRect(int... e) { this.e = e; }" +
+                " public int getLeft() { return e[0]; } public int getTop() { return e[1]; }" +
+                " public int getRight() { return e[2]; } public int getBottom() { return e[3]; } }",
+            "$data.SourceLocation" to "public final class SourceLocation { int h;" +
+                " public SourceLocation(int h) { this.h = h; } public String getSourceFile() { return \"A.kt\"; }" +
+                (if (fake.lineGetter) " public int getLineNumber() { return h * 10; }" else "") +
+                " public int getPackageHash() { return h; } }",
+            "$data.SourceContext" to "public interface SourceContext { String getName();" +
+                " androidx.compose.ui.unit.IntRect getBounds(); SourceLocation getLocation(); }",
+            "$data.ContextCache" to "public final class ContextCache {}",
+            "$data.N" to "import java.util.*; public final class N implements $runtime.CompositionGroup, SourceContext {" +
+                " String name; Integer h; N[] c; N[] s = {};" +
+                " public static N n(String name, Integer h, N... c) { N n = new N(); n.name = name; n.h = h; n.c = c; return n; }" +
+                " public N stitch(N... s) { this.s = s; return this; }" +
+                " public Object getNode() { return null; } public String getName() { return name; }" +
+                " public androidx.compose.ui.unit.IntRect getBounds() { return new androidx.compose.ui.unit.IntRect(0, 0, 10, 10); }" +
+                " public SourceLocation getLocation() { return h == null ? null : new SourceLocation(h); } }",
+            "$data.D" to "public final class D implements $runtime.CompositionData { public final N root; public D(N root) { this.root = root; } }",
+            "$data.CompositionDataTreeKt" to "import java.util.*; import kotlin.jvm.functions.*; public final class CompositionDataTreeKt {" +
+                (if (!fake.makeTree) "" else
+                    " public static List makeTree(Set set, Function1 prepare, Function4 factory, Function3 result, ContextCache cache) {" +
+                        " List out = new ArrayList(); for (Object d : set) out.add(result.invoke(null, build(((D) d).root, factory, result), List.of()));" +
+                        " return out; }" +
+                        " static Object build(N n, Function4 f, Function3 r) {" +
+                        " List kids = new ArrayList(); for (N c : n.c) kids.add(build(c, f, r));" +
+                        " List st = new ArrayList(); for (N c : n.s) st.add(r.invoke(null, build(c, f, r), List.of()));" +
+                        " return f.invoke(n, n, kids, st); }") + " }",
+            "androidx.compose.ui.tooling.CompositionDataRecord" to "public interface CompositionDataRecord { java.util.Set getStore(); }",
+            "androidx.compose.ui.tooling.ComposeViewAdapter" to "import $data.*; public class ComposeViewAdapter {" +
+                (if (!fake.record) "" else
+                    " private final CompositionDataRecord slotTableRecord = () -> java.util.Set.of(new D(${fake.tree}));") + " }",
+        )
+        val files = sources.map { (fqn, body) ->
+            val pkg = fqn.substringBeforeLast('.')
+            File(dir.toFile(), fqn.replace('.', '/') + ".java").apply { parentFile.mkdirs(); writeText("package $pkg; $body") }
+        }
+        val stdlib = File(Unit::class.java.protectionDomain.codeSource.location.toURI())
+        val javac = ToolProvider.getSystemJavaCompiler()
+        val args = listOf("-nowarn", "-cp", stdlib.path, "-d", dir.toString()) + files.map { it.path }
+        assertEquals(0, javac.run(null, null, null, *args.toTypedArray()))
+        return URLClassLoader(arrayOf(dir.toUri().toURL(), stdlib.toURI().toURL()), null)
+            .loadClass("androidx.compose.ui.tooling.ComposeViewAdapter").getConstructor().newInstance()
+    }
 
     private fun node(name: String, b: List<Int>, vararg children: Map<String, Any?>) =
         mapOf("name" to name, "fileName" to "A.kt", "lineNumber" to 1, "bounds" to b, "children" to children.toList())
@@ -59,41 +95,32 @@ class ViewInfoJsonTest {
     private fun view(name: String, viewObject: Any?, vararg children: ViewInfo) =
         ViewInfo(name, null, 0, 0, 100, 100, viewObject, null, null).apply { setChildren(children.toList()) }
 
-    private fun adapterWithTree(tree: String) = fakeTooling(
-        "public java.util.List<ViewInfo> getViewInfos\$ui_tooling() { return java.util.List.of($tree); }",
-        "String n; Integer h; ViewInfo[] c;" +
-            " public ViewInfo(String n, Integer h, ViewInfo... c) { this.n = n; this.h = h; this.c = c; }" +
-            " public String getName() { return n; } public String getFileName() { return \"A.kt\"; } public int getLineNumber() { return 1; }" +
-            " public java.util.List<ViewInfo> getChildren() { return java.util.List.of(c); }" +
-            " public Loc getLocation() { return h == null ? null : new Loc(h); }" +
-            " public Edges getBounds() { return new Edges(); }" +
-            " public static class Loc { int h; Loc(int h) { this.h = h; } public int getPackageHash() { return h; } }" +
-            " public static class Edges { public int getLeft() { return 0; } public int getTop() { return 0; }" +
-            " public int getRight() { return 10; } public int getBottom() { return 10; } }",
-    )
+    private fun roots(fake: Fake) = listOf(view("FrameLayout", null, view("ComposeViewAdapter", fakeAdapter(fake))))
 
-    private fun originsOf(tree: String): Map<String, Any?> {
-        val known = mapOf(1 to ComposableOrigin.COMPOSE, 2 to ComposableOrigin.PROJECT, 3 to ComposableOrigin.LIBRARY)
-        val out = HashMap<String, Any?>()
+    private fun composed(tree: String, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> =
+        ViewInfoJson.compose(ViewInfoJson.read(roots(Fake(tree)))!!.second, origins)
+
+    private fun flat(tree: List<*>): Map<String, Map<*, *>> = buildMap {
         fun walk(list: List<*>) {
-            for (n in list) { val m = n as Map<*, *>; out[m["name"] as String] = m["origin"]; walk(m["children"] as List<*>) }
+            for (n in list) { val m = n as Map<*, *>; put(m["name"] as String, m); walk(m["children"] as List<*>) }
         }
-        walk(ViewInfoJson.compose(listOf(view("ComposeViewAdapter", adapterWithTree(tree))), known::get))
-        return out
+        walk(tree)
     }
 
     @Test fun `출처는 안쪽 노드 중 부른 자리와 다른 패키지, 없으면 첫 안쪽 노드의 패키지다 — 모르면 싣지 않는다`() {
-        val origins = originsOf(
-            "new ViewInfo(\"Screen\", 2," +
-                " new ViewInfo(\"Row\", 2, new ViewInfo(\"rowLayout\", 1))," +
-                " new ViewInfo(\"Card\", 2, new ViewInfo(\"group\", null), new ViewInfo(\"cardBody\", 2))," +
-                " new ViewInfo(\"Image\", 2, new ViewInfo(\"imageBody\", 3))," +
-                " new ViewInfo(\"Stripped\", 2, new ViewInfo(\"noSource\", null))," +
-                " new ViewInfo(\"Unknown\", 2, new ViewInfo(\"elsewhere\", 9))," +
-                " new ViewInfo(\"Leaf\", 2)," +
-                " new ViewInfo(\"Constraint\", 2, new ViewInfo(\"callerLambda\", 2), new ViewInfo(\"libraryBody\", 3))," +
-                " new ViewInfo(\"Wrapped\", 2, new ViewInfo(\"group\", null, new ViewInfo(\"wrappedBody\", 3))))",
-        )
+        val known = mapOf(1 to ComposableOrigin.COMPOSE, 2 to ComposableOrigin.PROJECT, 3 to ComposableOrigin.LIBRARY)
+        val origins = flat(composed(
+            "N.n(\"Screen\", 2," +
+                " N.n(\"Row\", 2, N.n(\"rowLayout\", 1))," +
+                " N.n(\"Card\", 2, N.n(\"group\", null), N.n(\"cardBody\", 2))," +
+                " N.n(\"Image\", 2, N.n(\"imageBody\", 3))," +
+                " N.n(\"Stripped\", 2, N.n(\"noSource\", null))," +
+                " N.n(\"Unknown\", 2, N.n(\"elsewhere\", 9))," +
+                " N.n(\"Leaf\", 2)," +
+                " N.n(\"Constraint\", 2, N.n(\"callerLambda\", 2), N.n(\"libraryBody\", 3))," +
+                " N.n(\"Wrapped\", 2, N.n(\"group\", null, N.n(\"wrappedBody\", 3))))",
+            known::get,
+        )).mapValues { it.value["origin"] }
         assertEquals("project", origins["Screen"])
         assertEquals("compose", origins["Row"])
         assertEquals("project", origins["Card"])
@@ -105,19 +132,31 @@ class ViewInfoJsonTest {
         assertEquals("library", origins["Wrapped"])
     }
 
-    @Test fun `ui-tooling 판이 트리 접근자를 갖지 않으면 그 이름을 판 짝 실패로 낸다`() {
-        val roots = listOf(view("FrameLayout", null, view("ComposeViewAdapter", adapterWithoutTreeGetter())))
-        assertEquals("ComposeViewAdapter.getViewInfos\$ui_tooling", ViewInfoJson.toolingMismatch(roots))
-        assertEquals(emptyList<Any>(), ViewInfoJson.compose(roots))
+    @Test fun `노드는 위치의 파일 · 줄 · 영역을 싣고 이어 붙인 서브컴포지션을 제 자식 뒤에 둔다`() {
+        val nodes = flat(composed("N.n(\"Lazy\", 4, N.n(\"header\", 5)).stitch(N.n(\"item\", 6), N.n(\"bare\", null))"))
+        val lazy = nodes.getValue("Lazy")
+        assertEquals(listOf("A.kt", 40, listOf(0, 0, 10, 10)), listOf(lazy["fileName"], lazy["lineNumber"], lazy["bounds"]))
+        assertEquals(listOf("header", "item", "bare"), (lazy["children"] as List<*>).map { (it as Map<*, *>)["name"] })
+        assertEquals(listOf("", -1), listOf(nodes.getValue("bare")["fileName"], nodes.getValue("bare")["lineNumber"]))
     }
 
-    @Test fun `ui-tooling 노드가 위치 getter를 갖지 않으면 빈 자리 대신 그 이름을 판 짝 실패로 낸다`() {
-        val roots = listOf(view("ComposeViewAdapter", adapterWithNode("public String getFileName() { return \"A.kt\"; }")))
-        assertEquals("ViewInfo.getLineNumber", ViewInfoJson.toolingMismatch(roots))
+    @Test fun `어댑터에 컴포지션 기록 필드가 없으면 그 이름을 판 짝 실패로 내고 트리를 짓지 않는다`() {
+        val roots = roots(Fake(record = false))
+        assertEquals("ComposeViewAdapter.slotTableRecord", ViewInfoJson.toolingMismatch(roots))
+        assertThrows(IllegalStateException::class.java) { ViewInfoJson.read(roots) }
     }
 
-    @Test fun `ui-tooling 노드가 위치 getter를 다 가지면 판 짝 실패가 아니다`() {
-        val getters = "public String getFileName() { return \"A.kt\"; } public int getLineNumber() { return 1; }"
-        assertEquals(null, ViewInfoJson.toolingMismatch(listOf(view("ComposeViewAdapter", adapterWithNode(getters)))))
+    @Test fun `ui-tooling-data에 트리 함수가 없으면 그 이름을 판 짝 실패로 낸다`() {
+        assertEquals("CompositionDataTreeKt.makeTree", ViewInfoJson.toolingMismatch(roots(Fake(makeTree = false))))
+    }
+
+    @Test fun `위치가 줄 getter를 갖지 않으면 빈 자리 대신 그 이름을 판 짝 실패로 낸다`() {
+        assertEquals("SourceLocation.getLineNumber", ViewInfoJson.toolingMismatch(roots(Fake(lineGetter = false))))
+    }
+
+    @Test fun `표면이 다 있으면 판 짝 실패가 아니고, Compose 프리뷰가 아니면 보지 않는다`() {
+        assertEquals(null, ViewInfoJson.toolingMismatch(roots(Fake())))
+        assertEquals(null, ViewInfoJson.toolingMismatch(listOf(view("FrameLayout", null))))
+        assertEquals(null, ViewInfoJson.read(listOf(view("FrameLayout", null))))
     }
 }

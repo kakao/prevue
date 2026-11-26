@@ -40,49 +40,17 @@ internal object ViewInfoJson {
         else -> listOf(maxOf(a[0], b[0]), maxOf(a[1], b[1]), minOf(a[2], b[2]), minOf(a[3], b[3]))
     }
 
-    /** ComposeViewAdapter는 루트가 아니라 몇 단계 아래에 있어 트리를 훑어 찾는다. */
-    fun compose(roots: List<ViewInfo>, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> {
-        for (root in roots) deepFind(root, origins)?.let { return it }
-        return emptyList()
-    }
+    fun compose(tree: List<ComposeNode>, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> =
+        tree.flatMap { nodes(it, origins) }.map { it.json }
 
-    private fun deepFind(vi: ViewInfo, origins: (Int) -> ComposableOrigin?): List<Map<String, Any?>>? {
-        composeViewInfos(vi.viewObject, origins)?.let { return it }
-        vi.children.orEmpty().forEach { child -> deepFind(child, origins)?.let { return it } }
-        return null
-    }
-
-    /**
-     * 어댑터의 viewInfos를 지금 컴포지션으로 다시 짓는다. 어댑터는 첫 배치(onLayout)에서만 짓는다 — 터치로 바뀐 화면(목록 → 상세 · 스크롤)은
-     * Compose 안에서 다시 배치될 뿐이라, 그대로 두면 트리가 첫 화면에 머물러 가리키기와 에이전트가 읽는 좌표가 그림과 어긋났다.
-     * 렌더 세션 안에서 불러야 한다(컴포지션 · 리소스를 읽는다). 못 지었으면 그 이유 — private 메서드라 렌더러 판올림에 깨질 수 있다.
-     */
-    fun refresh(roots: List<ViewInfo>): String? {
-        val adapter = roots.firstNotNullOfOrNull { findAdapter(it) } ?: return null   // Compose 프리뷰가 아니다
-        return runCatching {
-            adapter.javaClass.getDeclaredMethod("processViewInfos").apply { isAccessible = true }.invoke(adapter)
-            null
-        }.getOrElse { (it.cause ?: it).toString() }
+    fun read(roots: List<ViewInfo>): Pair<Any, List<ComposeNode>>? {
+        val adapter = adapter(roots) ?: return null
+        return adapter to ToolingTree.of(adapter.javaClass).read(adapter)
     }
 
     fun adapter(roots: List<ViewInfo>): Any? = roots.firstNotNullOfOrNull { findAdapter(it) }
 
-    fun toolingMismatch(roots: List<ViewInfo>): String? {
-        val adapter = adapter(roots) ?: return null
-        val getter = runCatching { adapter.javaClass.getMethod(TREE_GETTER) }.getOrNull()
-        if (getter == null || !List::class.java.isAssignableFrom(getter.returnType)) return "ComposeViewAdapter.$TREE_GETTER"
-        val first = runCatching { getter.invoke(adapter) as? List<*> }.getOrNull()?.firstOrNull() ?: return null
-        return missingPositionGetter(first)
-    }
-
-    private fun missingPositionGetter(node: Any): String? {
-        missingGetter(node, NODE_GETTERS)?.let { return it }
-        val bounds = runCatching { node.javaClass.getMethod("getBounds").invoke(node) }.getOrNull() ?: return null
-        return missingGetter(bounds, EDGES)
-    }
-
-    private fun missingGetter(o: Any, names: List<String>): String? =
-        names.firstOrNull { n -> runCatching { o.javaClass.getMethod(n) }.isFailure }?.let { "${o.javaClass.simpleName}.$it" }
+    fun toolingMismatch(roots: List<ViewInfo>): String? = adapter(roots)?.let { ToolingTree.of(it.javaClass).missing }
 
     private fun findAdapter(vi: ViewInfo): Any? {
         vi.viewObject?.takeIf { it.javaClass.name == ADAPTER }?.let { return it }
@@ -91,72 +59,40 @@ internal object ViewInfoJson {
 
     private const val LOCATION_DEPTH = 4
     private const val ADAPTER = "androidx.compose.ui.tooling.ComposeViewAdapter"
-    private const val TREE_GETTER = "getViewInfos${'$'}ui_tooling"
-    private val NODE_GETTERS = listOf("getFileName", "getLineNumber", "getBounds", "getChildren")
-    private val EDGES = listOf("getLeft", "getTop", "getRight", "getBottom")
-
-    /**
-     * ComposeViewAdapter가 들고 있는 viewInfos를 리플렉션으로 읽는다.
-     * 접근자가 internal이라 JVM 이름이 모듈명으로 맹글링돼 있다 — alpha 렌더러라 릴리즈마다 깨질 수 있는 지점이다.
-     */
-    private fun composeViewInfos(root: Any?, origins: (Int) -> ComposableOrigin?): List<Map<String, Any?>>? {
-        if (root == null) return null
-        val cls = root.javaClass
-        if (cls.name != ADAPTER) return null
-        val getter = runCatching { cls.getMethod(TREE_GETTER) }.getOrNull() ?: return null
-        val infos = runCatching { getter.invoke(root) as? List<*> }.getOrNull() ?: return null
-        return infos.flatMap { nodes(it, origins) }.map { it.json }
-    }
 
     private class Node(val json: Map<String, Any?>, val holdsPlacedLayout: Boolean, val hasArea: Boolean) {
         val shown: Boolean get() = holdsPlacedLayout || hasArea
     }
 
-    private fun nodes(o: Any?, origins: (Int) -> ComposableOrigin?): List<Node> {
-        if (o == null) return listOf(Node(emptyMap(), false, false))
-        val c = o.javaClass
-        fun call(n: String) = runCatching { c.getMethod(n).invoke(o) }.getOrNull()
-        val layout = call("getLayoutInfo")
+    private fun nodes(o: ComposeNode, origins: (Int) -> ComposableOrigin?): List<Node> {
+        val layout = o.layoutInfo
         val placed = layout == null || isPlaced(layout)
-        val raw = (call("getChildren") as? List<*>).orEmpty()
-        val kids = raw.map { nodes(it, origins) }
+        val kids = o.children.map { nodes(it, origins) }
         val children = kids.flatten()
         if (!placed) return if (children.any { it.holdsPlacedLayout }) children else emptyList()
         val holdsPlacedLayout = layout != null || children.any { it.holdsPlacedLayout }
         if (kids.any { it.isEmpty() } && layout == null && children.none { it.shown }) return emptyList()
-        val box = box(call("getBounds"))
+        val box = o.bounds
         return listOf(Node(buildMap {
-            put("name", call("getName")?.toString() ?: "")
-            put("fileName", call("getFileName")?.toString() ?: "")
-            put("lineNumber", call("getLineNumber") ?: -1)
-            putAll(originOf(o, raw, origins))
+            put("name", o.name)
+            put("fileName", o.fileName)
+            put("lineNumber", o.lineNumber)
+            putAll(originOf(o, origins))
             put("bounds", box)
             if (layout != null) put("modifiers", ModifierChain.of(layout))
             put("children", children.map { it.json })
         }, holdsPlacedLayout, box[2] > box[0] && box[3] > box[1]))
     }
 
-    private fun originOf(node: Any, children: List<*>, origins: (Int) -> ComposableOrigin?): Map<String, String> {
-        val caller = packageHash(node)
-        val inner = located(children, LOCATION_DEPTH)
+    private fun originOf(node: ComposeNode, origins: (Int) -> ComposableOrigin?): Map<String, String> {
+        val caller = node.packageHash
+        val inner = located(node.children, LOCATION_DEPTH)
         val defined = inner.firstOrNull { it != caller } ?: inner.firstOrNull()
         return defined?.let(origins)?.let { mapOf("origin" to it.json) }.orEmpty()
     }
 
-    private fun located(children: List<*>, depth: Int): List<Int> = children.flatMap { c ->
-        packageHash(c)?.let(::listOf) ?: if (depth > 1) located(childrenOf(c), depth - 1) else emptyList()
-    }
-
-    private fun childrenOf(node: Any?): List<*> =
-        runCatching { node?.javaClass?.getMethod("getChildren")?.invoke(node) as? List<*> }.getOrNull().orEmpty()
-
-    private fun packageHash(child: Any?): Int? = runCatching {
-        val location = child?.javaClass?.getMethod("getLocation")?.invoke(child) ?: return null
-        location.javaClass.getMethod("getPackageHash").invoke(location) as? Int
-    }.getOrNull()
-
-    private fun box(bounds: Any?): List<Int> = EDGES.map { n ->
-        (bounds?.let { r -> runCatching { r.javaClass.getMethod(n).invoke(r) }.getOrNull() } as? Number)?.toInt() ?: 0
+    private fun located(children: List<ComposeNode>, depth: Int): List<Int> = children.flatMap { c ->
+        c.packageHash?.let(::listOf) ?: if (depth > 1) located(c.children, depth - 1) else emptyList()
     }
 
     private fun isPlaced(layout: Any): Boolean =

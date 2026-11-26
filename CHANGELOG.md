@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **Projects on Compose `ui-tooling` 1.13 (BOM 2026.11.01) draw their previews and point at file:line again** — they no longer all fail with "ComposeViewAdapter.getViewInfos$ui_tooling is missing" ([#343](https://github.com/kakao/prevue/issues/343)). Reported by @sergei-lapin.
+
 ## [0.24.0] — 2026-11-26
 
 ![Prevue 0.24 — Every preview, at a glance. The All Previews grid of a Pearl project, with a sheet raised from the ShowcasePreviews card showing its NavTour, HomeTour and Sip previews and a View on board button](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/release-0.24.0.png)
