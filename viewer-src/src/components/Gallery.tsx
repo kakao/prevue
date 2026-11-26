@@ -6,8 +6,8 @@ import { useHost } from '../host';
 import { useMessages, type Messages } from '../messages';
 import type { PreviewFile } from '../match';
 import { activeKey, type ViewerState } from '../state';
-import { byChanged, cardKey, changedAgo, commonHead, moduleOf, packageOf, stemOf } from '../gallery/cards';
-import { createCardQueue, type CardQueue, type CardView } from '../gallery/queue';
+import { byChanged, cachedView, cardKey, changedAgo, commonHead, moduleOf, packageOf, stale as isStale, stemOf } from '../gallery/cards';
+import { createCardQueue, type CardImage, type CardQueue, type CardView } from '../gallery/queue';
 import { closeGallery, closeSheet, currentLayer, galleryShown, loadFiles, markShown, openGallery, openSheet, sheetClosed, useLayer } from '../gallery/layer';
 import { GallerySheet } from './GallerySheet';
 import { fit, fontOf } from './fit';
@@ -47,22 +47,31 @@ function Fitted({ text, className }: { text: string; className: string }) {
 
 export type CardText = { name: string; pkg: string; mod: string; changed: string };
 
-export const GalleryCard = memo(function GalleryCard({ text, view, near = true, onOpen, onLost }: { text: CardText; view: CardView; near?: boolean; onOpen?: () => void; onLost?: () => void }) {
+const NO_GHOSTS: Array<CardImage | null> = [];
+
+export const GalleryCard = memo(function GalleryCard({ text, view, stale = false, near = true, shown = true, onOpen, onLost }: {
+  text: CardText; view: CardView; stale?: boolean; near?: boolean; shown?: boolean; onOpen?: () => void; onLost?: () => void;
+}) {
+  const ghosts = view.status === 'done' ? [view.front[1]?.image ?? null, view.front[2]?.image ?? null] : NO_GHOSTS;
   const { phrase, daemonText } = useMessages();
   const state = view.status === 'done' ? 'done' : view.status === 'error' ? 'failed' : 'loading';
   const tall = view.status !== 'done' || view.image.w <= view.image.h;
   const sheets = view.status === 'done' ? view.sheets : 0;
-  return <article className="gcard" data-state={state} aria-busy={state === 'loading'}>
+  return <article className="gcard" data-state={state} data-stale={stale || undefined} aria-busy={state === 'loading'}>
     <button className="gcard-hit" type="button" aria-haspopup="dialog" onClick={onOpen}>
       <span className="gcard-cover">
         {view.status === 'error'
           ? <span className="gcard-failed" title={daemonText(view.failure) || undefined}>{phrase('gallery.failed')}</span>
           : <span className="gcard-stack" data-o={tall ? 'tall' : 'wide'}>
-              {(sheets > 2 ? ['l', 'r'] : sheets > 1 ? ['r'] : []).map(g => <span key={g} className="gcard-ghost" data-g={g} />)}
+              {(['r', 'l'] as const).slice(0, ghosts.filter(Boolean).length).map(g => {
+                const img = shown ? ghosts[g === 'r' ? 0 : 1] : null;
+                return <span key={g} className="gcard-ghost" data-g={g}>{img && <img src={img.url} width={img.w} height={img.h} alt="" decoding="async" />}</span>;
+              })}
               <span className="gcard-shot">{view.status === 'done' && near
                 ? <img src={view.image.url} width={view.image.w} height={view.image.h} alt="" decoding="async" onLoad={e => e.currentTarget.classList.add('in')} onError={onLost} />
                 : <span className="gcard-ph" />}</span>
             </span>}
+        {stale && <span className="gcard-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
         {sheets > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: sheets })}><Stack />{sheets}</span>}
       </span>
       <span className="gcard-body">
@@ -79,18 +88,26 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const key = cardKey(f);
-  const view = useSyncExternalStore(cards.subscribe, () => cards.get(key));
+  const queued = useSyncExternalStore(cards.subscribe, () => cards.get(key));
+  const [broken, setBroken] = useState(false);
+  const cachedCard = useMemo(() => (broken ? null : cachedView(f)), [broken, f]);
+  const cached = !!cachedCard;
+  const view = cachedCard ?? queued;
   const [near, setNear] = useState(false);
+  const [shown, setShown] = useState(false);
   useEffect(() => {
     const el = ref.current!;
-    const off = inView().add(el, on => (on ? cards.want(key, f.path, order) : cards.drop(key)));
+    const off = inView().add(el, on => { setShown(on); if (!on) cards.drop(key); else if (!cached) cards.want(key, f.path, order); });
     const offNear = nearView().add(el, setNear);
     return () => { off(); offNear(); cards.drop(key); };
-  }, [key, order, cards]);
+  }, [key, order, cards, cached]);
   const text = useMemo(() => ({ name, pkg, mod, changed }), [name, pkg, mod, changed]);
   const open = useCallback(() => onOpen(f), [onOpen, f]);
-  const lost = useCallback(() => cards.lost(key, f.path, order), [cards, key, f, order]);
-  return <div ref={ref} className="gcard-slot" data-path={f.path}><GalleryCard text={text} view={view} near={near} onOpen={open} onLost={lost} /></div>;
+  const lost = useCallback(() => (cached ? setBroken(true) : cards.lost(key, f.path, order)), [cached, cards, key, f, order]);
+  const stale = view.status === 'done' && isStale(f, view.image);
+  return <div ref={ref} className="gcard-slot" data-path={f.path}>
+    <GalleryCard text={text} view={view} stale={stale} near={near} shown={shown} onOpen={open} onLost={lost} />
+  </div>;
 });
 
 async function openFile(f: PreviewFile, { phrase, daemonText }: Messages) {
@@ -168,7 +185,10 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
 function SheetHost({ f, closing, onOpen }: { f: PreviewFile; closing: boolean; onOpen(): void }) {
   const { phrase } = useMessages();
   const key = cardKey(f);
-  const view = useSyncExternalStore(queue.subscribe, () => queue.get(key));
+  const queued = useSyncExternalStore(queue.subscribe, () => queue.get(key));
+  const cachedCard = useMemo(() => cachedView(f), [f]);
+  const view = cachedCard ?? queued;
+  useEffect(() => { if (!cachedCard) queue.urgent(key, f.path); }, [key]);
   const lang = document.documentElement.lang || 'en';
   const text = useMemo(() => ({ name: stemOf(f), pkg: packageOf(f, []), mod: moduleOf(f.module), changed: changedAgo(f.mtime, Date.now(), phrase, lang) }), [f, phrase, lang]);
   return <GallerySheet file={f} text={text} view={view} closing={closing} onClose={closeSheet} onClosed={sheetClosed} onOpen={onOpen} />;

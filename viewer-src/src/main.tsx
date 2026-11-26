@@ -51,7 +51,7 @@ installShortcuts(shortcuts, actions, {
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, dock: workspace.dock, point: pointActions });
-startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); galleryFilesChanged(); forgetPreviewIndex(); }, prepared: preparation });
+startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); galleryFilesChanged(); forgetPreviewIndex(); }, onGalleryShots: galleryFilesChanged, prepared: preparation });
 
 /*
  * 마우스로 누른 버튼은 포커스를 쥐지 않는다(D-63) — Chromium 은 누른 버튼에 포커스를 줘서, 다음 Enter(고른 카드 열기)를

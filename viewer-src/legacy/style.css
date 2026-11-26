@@ -12,7 +12,7 @@
   --gallery-wide-w: 86%;
   --gallery-plate: 9 / 19.5;
   --gallery-hover-scale: 1.02;
-  --gallery-breathe: .55;
+  --gallery-stale: .45;
   --gallery-tilt: 5deg;
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
@@ -825,14 +825,21 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-shot img { display: block; width: 100%; height: auto; opacity: 0; transition: opacity var(--duration-medium2) var(--easing-standard); }
 .gcard-shot img.in { opacity: 1; }
 .gcard-stack[data-o="wide"] .gcard-shot img { width: auto; max-width: 100%; }
-.gcard-ghost { position: absolute; inset: 0; border-radius: var(--corner-medium) var(--corner-medium) 0 0; background: var(--surface-container);
+.gcard-ghost { position: absolute; inset: 0; overflow: hidden; border-radius: var(--corner-medium) var(--corner-medium) 0 0; background: var(--surface-container);
                box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1); transform-origin: 50% 100%;
                transition: transform var(--duration-medium2) var(--easing-decelerate); }
 .gcard-stack:has(.gcard-ghost) .gcard-shot { position: relative; }
 .gcard-hit:hover .gcard-ghost[data-g="l"] { transform: translateX(calc(var(--space-6) * -1)) rotate(calc(var(--gallery-tilt) * -1)); }
 .gcard-hit:hover .gcard-ghost[data-g="r"] { transform: translateX(var(--space-6)) rotate(var(--gallery-tilt)); }
-.gcard-ph { display: block; width: 100%; aspect-ratio: var(--gallery-plate); background: var(--surface-container);
-            animation: gcard-breathe var(--duration-long4) var(--easing-standard) infinite alternate; }
+.gcard-ghost img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.gcard-ph { position: relative; display: block; width: 100%; overflow: hidden; aspect-ratio: var(--gallery-plate); background: var(--surface-container); }
+.gcard-ph::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+                   background: linear-gradient(90deg, transparent, var(--skeleton-sheen), transparent);
+                   animation: gcard-shimmer var(--duration-extra-long4) var(--easing-standard) infinite; }
+.gcard[data-stale] .gcard-shot img, .gcard[data-stale] .gcard-ghost img, .gsheet-fig[data-stale] .gsheet-shot img { opacity: var(--gallery-stale); }
+.gcard-old, .gsheet-old { position: absolute; left: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center;
+               padding: 0 var(--space-6); border-radius: var(--corner-full); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint);
+               color: var(--on-surface-variant); font: var(--type-label-small); }
 .gcard-count { position: absolute; right: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center; gap: var(--space-4);
                padding: 0 var(--space-6); border-radius: var(--corner-full); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint);
                color: var(--on-surface-variant); font: var(--type-label-small); }
@@ -847,7 +854,7 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-mod { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--space-6);
              border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-small); }
 .gcard-info { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-medium); }
-@keyframes gcard-breathe { to { opacity: var(--gallery-breathe); } }
+@keyframes gcard-shimmer { to { transform: translateX(100%); } }
 
 .gsheet-layer { position: fixed; inset: 0; z-index: 21; }
 .gsheet-scrim { position: absolute; inset: 0; background: var(--scrim); }
@@ -892,7 +899,7 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
                               background: var(--surface); color: var(--on-surface); font: var(--type-label-medium); outline: 2px solid var(--focus-ring); }
 @media (prefers-reduced-motion: reduce) {
   .gcard-hit:hover { transform: none; }
-  .gcard-ph { animation: none; }
+  .gcard-ph::after { display: none; }
   .gcard-ghost { transition: none; }
   .gcard-hit:hover .gcard-ghost { transform: none; }
   .gsheet-go:hover svg { transform: none; }

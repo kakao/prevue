@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import prevue.application.port.PreviewRenderer
 import prevue.application.service.Workspace
 import prevue.application.service.Engine
+import prevue.application.service.GalleryKeeper
 import prevue.application.service.Live
 import prevue.application.service.QuietFill
 
@@ -21,6 +22,7 @@ internal class StartDaemon(
     private val engine: Engine,
     private val live: Live,
     private val quietFill: QuietFill,
+    private val galleryKeeper: GalleryKeeper,
     private val scope: CoroutineScope,
 ) {
     private val started = MutableStateFlow(false)
@@ -29,6 +31,7 @@ internal class StartDaemon(
         if (!started.compareAndSet(expect = false, update = true)) return
         renderer.protect { ws.now.keepIds() }
         quietFill.start()
+        galleryKeeper.start()
         scope.launch {
             engine.shots.collect { shot ->
                 if (shot.claimed) return@collect

@@ -2,22 +2,47 @@
   "status": 200,
   "schema": {
     "failure": "null",
-    "image": {
-      "h": "number",
-      "url": "string",
-      "w": "number"
-    },
-    "ok": "boolean",
+    "front": [
+      {
+        "i": "number",
+        "image": {
+          "at": "number",
+          "h": "number",
+          "url": "string",
+          "w": "number"
+        },
+        "name": "string",
+        "variant": "null"
+      }
+    ],
     "sheets": "number"
   },
   "example": {
-    "ok": true,
     "sheets": 2,
-    "image": {
-      "url": "/Card0@gallery-0.png?t=<t>",
-      "w": 100,
-      "h": 100
-    },
+    "front": [
+      {
+        "i": 0,
+        "name": "Card0",
+        "variant": null,
+        "image": {
+          "url": "/gallery/shot/<key>-0.png?t=<t>",
+          "w": 100,
+          "h": 100,
+          "at": 0
+        }
+      },
+      {
+        "i": 1,
+        "name": "Card1",
+        "variant": null,
+        "image": {
+          "url": "/gallery/shot/<key>-1.png?t=<t>",
+          "w": 100,
+          "h": 100,
+          "at": 0
+        }
+      }
+    ],
     "failure": null
   }
 }

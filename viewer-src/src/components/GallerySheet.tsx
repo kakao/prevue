@@ -1,10 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { fetchGallerySheet, type GallerySheetAnswer } from '../runtime/api';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { motionMs, motionToken, reduced } from '../runtime/motion';
 import { useMessages } from '../messages';
 import type { PreviewFile } from '../match';
-import { stemOf } from '../gallery/cards';
-import type { CardView } from '../gallery/queue';
+import { stale, stemOf } from '../gallery/cards';
+import type { CardImage, CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
 
 const SHEET_MAX = 3;
@@ -15,19 +14,13 @@ function shortLabel(name: string, stem: string) {
   return r.replace(/^Preview/, '').replace(/Preview$/, '').replace(/^_+|_+$/g, '');
 }
 
-type Shot = { url: string; w: number; h: number } | 'failed' | null;
+type Shot = CardImage | 'failed' | null;
 
-function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>, answer: GallerySheetAnswer | null) {
-  const total = view.status === 'done' || view.status === 'error' ? view.sheets : f.functions.length;
-  const n = Math.min(SHEET_MAX, Math.max(1, total, answer?.sheets.length ?? 0));
+function sheetSlots(view: CardView, f: Pick<PreviewFile, 'rel' | 'functions'>): Array<{ shot: Shot; label: string }> {
   const stem = stemOf(f);
-  return Array.from({ length: n }, (_, i): { shot: Shot; label: string } => {
-    const a = answer?.sheets[i];
-    const shot: Shot = i === 0 && view.status === 'done' ? view.image
-      : a?.image ?? (answer || (i === 0 && view.status === 'error') ? 'failed' : null);
-    const label = a ? a.variant ?? shortLabel(a.name, stem) : answer ? '' : shortLabel(f.functions[i] ?? '', stem);
-    return { shot, label };
-  });
+  if (view.status === 'done') return view.front.map(s => ({ shot: s.image, label: s.variant ?? shortLabel(s.name, stem) }));
+  if (view.status === 'error') return [{ shot: 'failed', label: '' }];
+  return f.functions.slice(0, SHEET_MAX).map(fn => ({ shot: null, label: shortLabel(fn, stem) }));
 }
 
 const Arrow = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -122,18 +115,11 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
 }) {
   const { phrase } = useMessages();
   const sheet = useRef<HTMLElement>(null);
-  const [answer, setAnswer] = useState<GallerySheetAnswer | null>(null);
   const [place, setPlace] = useState<CSSProperties | null>(null);
-  const slots = sheetSlots(view, file, answer);
-  const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : view.status === 'done' ? view.image : null));
+  const slots = sheetSlots(view, file);
+  const known = slots.map(s => (s.shot && s.shot !== 'failed' ? s.shot : null));
   const flow = known.every(s => s && s.w > s.h * WIDE) ? 'col' : 'row';
   const count = view.status === 'done' ? view.sheets : 0;
-
-  useEffect(() => {
-    let live = true;
-    fetchGallerySheet(file.path).then(a => a ?? { sheets: [] }, () => ({ sheets: [] })).then(a => { if (live) setAnswer(a); });
-    return () => { live = false; };
-  }, [file.path]);
 
   useLayoutEffect(() => {
     const root = document.documentElement, body = document.body;
@@ -216,12 +202,13 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       <span className="gsheet-shell" />
       <span className="gsheet-mediabg" />
       <div className="gsheet-stage" data-flow={flow} style={{ ['--k' as string]: slots.length }}>
-        {slots.map((s, i) => <span key={i} className="gsheet-fig" style={{ zIndex: slots.length - i }}>
+        {slots.map((s, i) => { const old = !!s.shot && s.shot !== 'failed' && stale(file, s.shot); return <span key={i} className="gsheet-fig" data-stale={old || undefined} style={{ zIndex: slots.length - i }}>
           <span className="gsheet-shot" data-state={s.shot === 'failed' ? 'failed' : s.shot ? 'done' : 'loading'}>
+            {old && <span className="gsheet-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
             {s.shot === 'failed' ? <span className="gsheet-failed">{phrase('gallery.failed')}</span>
               : s.shot ? <img src={s.shot.url} width={s.shot.w} height={s.shot.h} alt="" />
               : <span className="gcard-ph" />}</span>
-          {s.label && <span className="gsheet-cap">{s.label}</span>}</span>)}
+          {s.label && <span className="gsheet-cap">{s.label}</span>}</span>; })}
         {count > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: count })}><Stack />{count}</span>}
       </div>
       <div className="gsheet-body">

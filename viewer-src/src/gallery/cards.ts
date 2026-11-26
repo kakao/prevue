@@ -1,4 +1,5 @@
 import type { PreviewFile } from '../match';
+import { viewOf, type CardView } from './queue';
 
 export const stemOf = (f: Pick<PreviewFile, 'rel'>) => f.rel.slice(f.rel.lastIndexOf('/') + 1).replace(/\.kts?$/, '');
 
@@ -33,3 +34,7 @@ export function changedAgo(mtime: number, now: number, phrase: (key: string, arg
 export const byChanged = (files: PreviewFile[]) => [...files].sort((a, b) => b.mtime - a.mtime || a.rel.localeCompare(b.rel));
 
 export const cardKey = (f: Pick<PreviewFile, 'path' | 'mtime'>) => `${f.mtime} ${f.path}`;
+
+export const cachedView = (f: Pick<PreviewFile, 'shots'>): CardView | null => (f.shots ? viewOf(f.shots) : null);
+
+export const stale = (f: Pick<PreviewFile, 'mtime'>, image: { at?: number } | null | undefined) => image?.at != null && f.mtime > image.at;
