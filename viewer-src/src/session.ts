@@ -156,15 +156,16 @@ type UiEvent = { kind: string; text?: Parameters<typeof daemonText>[0] };
 
 /**
  * render 는 상태와 알약을 그대로 둘지를 받는다. onConnection 은 데몬 상태 밖의 연결 사건(다시 시작 · 끊김)을 받는다.
- * onPreviewFiles 는 빠른 열기의 목록이 바뀌었다는 데몬의 알림을 받는다.
+ * onPreviewFiles 는 빠른 열기의 목록이 바뀌었다는 데몬의 알림을 받는다. onStreamOpen 은 스트림이 열릴 때마다 — 그 전에 끝난 색인은 알림이 오지 않는다.
  * prepared 는 준비 화면이 이어받은 요청이다 — 있으면 끊김을 그 화면의 실패로 알리고, 다시 시작 알림은 받지 않는다.
  */
-export function startViewer({ workspace: ws, render, onConnection, onPreviewFiles, onGalleryShots, prepared = null }: {
+export function startViewer({ workspace: ws, render, onConnection, onPreviewFiles, onGalleryShots, onStreamOpen, prepared = null }: {
   workspace: Workspace;
   render(state: ViewerState, holdStatus: boolean): void;
   onConnection(connection: Connection): void;
   onPreviewFiles(): void;
   onGalleryShots(): void;
+  onStreamOpen(): void;
   prepared?: Preparation | null;
 }) {
   workspace = ws;
@@ -172,7 +173,7 @@ export function startViewer({ workspace: ws, render, onConnection, onPreviewFile
   connection = onConnection;
   preparation = prepared;
   connect({
-    open: () => { if (lost && !restarting) location.reload(); else if (!lost) loadProjectFiles(); },
+    open: () => { if (lost && !restarting) { location.reload(); return; } if (!lost) loadProjectFiles(); onStreamOpen(); },
     state: receive,
     ui: (ev: UiEvent) => {
       if (ev.kind === 'flash') flash(daemonText(ev.text ?? null));

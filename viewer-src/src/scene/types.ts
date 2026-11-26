@@ -1,4 +1,5 @@
 import type { DeviceBody, DeviceEntry } from "../../legacy/js/devices.js";
+import type { Store } from "../runtime/store";
 import { Tw } from "./calc";
 
 export type SceneRect = { cx: number; y: number; w: number; h: number; s: number; radius: Radii; bezel: number };
@@ -14,17 +15,39 @@ export type ResizeScene = {
   /** 크기 · 기기 메뉴가 열려 있었으면 닫고 true. */
   closeMenu(): boolean;
   sizeOf(sel: string): { w: number; h: number } | null;
-  sliderOff(on: boolean): void;
+  dock: SceneDock;
   /** force 면 창 크기가 그대로여도 다시 맞춘다(오버레이 켬 · 끔처럼 자리가 달라질 때). */
   relayout(force?: boolean): void;
   moving(): boolean;
 };
+export type DockView = {
+  menu: boolean; orientMenu: boolean; locked: boolean;
+  checked: string; rows: Readonly<Record<string, string>>;
+  sumTitle: string;
+  posture: boolean; sliders: boolean;
+  foldable: boolean; folded: boolean; orientFixed: boolean; orientation: Orientation; hinge: boolean;
+  slW: number; slH: number;
+};
+export type SceneDock = {
+  view: Pick<Store<DockView>, "get" | "subscribe">;
+  setMenu(open: boolean): void;
+  setOrientMenu(open: boolean): void;
+  pick(sel: string, byKey?: boolean): void;
+  orient(orientation: string): void;
+  fold(): void;
+  hinge(): void;
+  cancelRuler(): void;
+  grab(axis: Axis, v: number): void;
+  drag(axis: Axis, v: number): void;
+  release(axis: Axis): void;
+  step(axis: Axis, v: number): void;
+  sliderFocus(on: boolean): void;
+  lock(on: boolean): void;
+};
 export type SceneHooks = {
   request(sel: string): Promise<boolean>;
   layout(rect: SceneRect, moving: boolean): void;
-  /** 인셋 영역 보기가 켜졌는지 — 켜졌을 때만 배지가 설 자리를 비운다. */
   insetOn?(): boolean;
-  /** 몸체 아래 줄(왼쪽 · 오른쪽 변의 컷아웃 아닌 종류)에 배지가 서는지 — 설 때만 조작 독 위로 자리를 비운다. */
   insetBelow?(): boolean;
 };
 export type Radii = [number, number, number, number];
@@ -53,7 +76,6 @@ export type Face = { el: HTMLElement; cam: HTMLElement; cams: HTMLElement[]; old
 export type Panel = { el: HTMLElement; front: Side; back: Side; strips: HTMLElement[] };
 export type PanelSpec = { body: number[]; span: number[]; bodyR: number[]; scr: number[]; scrR: number[]; backScrR?: number[]; T: number; normal: (v: number[]) => number[]; tone: number[]; hk: number; hingeLeft: boolean; u: number };
 export type Axis = "w" | "h";
-export type Slider = { track: HTMLElement; thumb: HTMLElement; fill: HTMLElement; val: HTMLElement };
 export type Shadow = [number, number, number, number, string];
 export type Outline = { w: number; h: number; op: number; crease: number; shell: number; rot: boolean; mirrored: boolean; tall: boolean; look: Body };
 export type Spin = { on: boolean; t0: number; dur: number; from: Dev; to: Dev; f0: Frame; f1: Frame; dir: number; cached: boolean };

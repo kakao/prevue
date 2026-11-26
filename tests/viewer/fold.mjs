@@ -6,7 +6,6 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// 실제 마크업과 접기 버튼을 쓰고, 프레임 시계만 제어해 모션 양끝과 중간을 함께 잰다.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const markup = (await readFile(join(root, 'plugin/viewer/index.html'), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 const harness = `<script type="module">
@@ -34,11 +33,9 @@ window.ready=true;
 // 위 · 아래 짧은 변이 두꺼운(ends) 홈 버튼 접는 기기는 아직 없다 — 책형 · 조개형을 하나씩 본떠 기기 표에 덧붙여 접는 경로를 잰다.
 const SYNTH = { fold8e: ['fold8', 16], flip8e: ['flip8', 14] };
 const synth = `\nfor (const [id, [from, ends]] of Object.entries(${JSON.stringify(SYNTH)})) { const d = structuredClone(DEVICES[from]); for (const k of ['open', 'cover']) Object.assign(d.look[k], { ends, home: true }); DEVICES[id] = d; }\n`;
-// 메뉴 칸은 빌드가 기기 표에서 미리 그린다 — 덧붙인 기기도 칸을 하나씩 단다.
-const rows = Object.keys(SYNTH).map(id => `<button class="pn-it" type="button" role="radio" data-sel="${id}"></button>`).join('');
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, 'http://localhost').pathname;
-  if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup.replace('data-sel="duo"></button>', '$&' + rows)+harness); return; }
+  if (path === '/') { response.setHeader('Content-Type','text/html'); response.end(markup+harness); return; }
   if (path === '/js/devices.js') { response.setHeader('Content-Type','text/javascript'); response.end(await readFile(join(root, 'plugin/viewer/js/devices.js'), 'utf8') + synth); return; }
   const file = resolve(root, 'plugin/viewer', '.' + path);
   if (!file.startsWith(join(root, 'plugin/viewer') + '/')) { response.writeHead(404).end(); return; }
@@ -102,10 +99,6 @@ try {
   // 측정한 자세가 하나뿐인 화면(Flip8 커버)은 세로만 있다 — 펼친 가로에서 접으면 세로로 서며 접힌다(셋째 값 true).
   const FIXED = { flip8: { 'open:portrait':['portrait'], 'open:landscape-left':['portrait',false,true], 'open:landscape-right':['portrait',false,true], 'cover:portrait':['portrait'] } };
   const results = [], landings = [];
-  const click = async selector => {
-    const at = await evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)}),r=el.getBoundingClientRect();if(el.hidden||!r.width||!r.height)throw Error('버튼이 숨었다: '+el.id);return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
-    for (const type of ['mousePressed','mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...at, button: 'left', clickCount: 1 });
-  };
   await evaluate(`window.box=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};
     // 렌즈 유리 반점이 카메라 가운데에서 화면으로 얼마나 비켰나 — 반점 자리에 탐침을 꽂아 장면 회전 · 판 접힘 · 뒷면 뒤집기를 다 거친 화면 좌표로 잰다.
     window.glints=sel=>[...document.querySelectorAll(sel)].flatMap(f=>[...f.querySelectorAll('.cam.lens')]).filter(c=>Number(c.style.opacity)>0).map(c=>{
@@ -193,8 +186,7 @@ try {
           const cached=arrival==='cached';
           await evaluate(`reset(${JSON.stringify(from)});window.cached=${cached};requests=[];${cached?`scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));`:''}`);
           const initial=await evaluate('snapshot()');near(initial.body,refs[from.sel].body,'시작 몸체');
-          // CDP 포인터로 실제 독의 버튼을 눌러 toggleFold → request → update를 통과한다.
-          await click('#dcFold');
+          await evaluate('scene.dock.fold()');
           assert.deepEqual(await evaluate('requests'),[to.sel],`${name}: 손에 든 회전을 잇는 요청`);
           const duration=1000;
           const motion=await evaluate(`(()=>{
@@ -325,7 +317,7 @@ try {
   // 돌리기 끄기 — 측정한 자세가 하나뿐인 Flip8 커버에서는 방향 고르기가 숨고, 돌린 자세는 장면이 받지 않는다.
   for (const [sel, w, h, fixed] of [['flip8:cover',399.16,441.26,true], ['flip8:open',360,840,false], ['fold8:cover',475.43,751.24,false]]) {
     await evaluate(`states={};reset(${JSON.stringify({sel,w,h})})`);
-    await check(`document.querySelector('#dcOrientation').hidden===${fixed}`, `${sel} 돌리기 ${fixed?'꺼짐':'켜짐'}`);
+    await check(`scene.dock.view.get().orientFixed===${fixed}`, `${sel} 돌리기 ${fixed?'꺼짐':'켜짐'}`);
   }
   await check("scene.sizeOf('flip8:cover:rot')===null&&scene.sizeOf('flip8:cover')!==null", 'flip8 커버의 돌린 자세는 없다');
   // 흐린 채움의 시작 — 그림이 없는 크기로 가면 옛 그림이 원래 dp 자리에서 덮는 크기로 자란다. 틀이 dp와 다를 때(캐시 있는 전환 도중 ·
@@ -427,7 +419,7 @@ try {
     const from=pose(device,false,natural,size),to=pose(device,true,handOf(device,false,natural)[0],size);
     // 비대칭 표식이 든 실제 그림으로 중간 모션의 육안 확인 자료도 남긴다.
     await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
-    await click('#dcFold');
+    await evaluate('scene.dock.fold()');
     await evaluate(`step(time+350);Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode().catch(()=>{})))`);
     const shot=await send('Page.captureScreenshot',{format:'png'});
     await writeFile(join(root,'.cache/fold',device+'-motion.png'),Buffer.from(shot.data,'base64'));
@@ -439,7 +431,7 @@ try {
       const from=pose(device,folded,orientation,size),to=pose(device,!folded,handOf(device,folded,orientation)[0],size);
       for(const cached of [false,true]) {
         await evaluate(`states=${JSON.stringify({[from.sel]:from,[to.sel]:to})};reset(${JSON.stringify(from)});${cached?`scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}))`:""}`);
-        await click('#dcFold');
+        await evaluate('scene.dock.fold()');
         const reduced=await evaluate(`(()=>{const frames=[];for(let i=0;i<60;i++){if(i===20&&!${cached})scene.image(${JSON.stringify(to.sel)},spec(${to.w},${to.h}));step(time+16);frames.push({rig:!document.querySelector('#rig').hidden})}return frames})()`);
         assert.deepEqual(await evaluate('requests.slice(-1)'),[to.sel],'reduced motion도 손에 든 회전을 잇는 요청');
         assert(reduced.every(f=>!f.rig),'reduced motion은 접기 없이 페이드');
