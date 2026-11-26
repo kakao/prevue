@@ -67,6 +67,16 @@ Kotlin Multiplatform and Compose Multiplatform modules work the same way. Prevue
 
 Switch between a screen file and its component files while you edit, and the open files stay in the list on the left. `/` or `⌘K` finds a file by name, initials (`fys` → `ForYouScreen.kt`), or Preview function name. Press `?` in the viewer for every shortcut.
 
+## Every preview at a glance
+
+Once a project has many preview files, it's hard to find one whose name you don't remember. **All Previews** lays every preview file out as a card, so you can browse and pick by eye. The most recently changed come first.
+Each card shows the file's previews with its name, package, and module. Click one to spread out its first few previews and go on to its board.
+
+<p align="center">
+  <img src="assets/gallery.gif" width="1000"
+       alt="All Previews for the Pearl sample app. The pointer passes over the cards, whose next two previews tilt out behind them, then clicks ShowcasePreviews; a sheet rises with NavTour, HomeTour and Sip, View on board opens its board, and esc returns to the grid">
+</p>
+
 ## Point instead of explaining
 
 Click anything in the Preview and tell your agent what to do with it. No screenshots, no "the second card from the top."
@@ -87,7 +97,7 @@ A card opens beside the picture with what you pointed at: its name, its file:lin
 ## Interactive mode
 
 Press a card's `▶` to open it large. Like Android Studio's Interactive Mode, click and drag to check motion and animations.
-Without touching the source, change the screen size or the device (six Android, four iPhone), turn it to Portrait, Landscape left or Landscape right, and fold or unfold foldables.
+Without touching the source, change the screen size or the device (18 Galaxy, Pixel and iPhone models), turn it to Portrait, Landscape left or Landscape right, and fold or unfold foldables.
 
 - **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
 - **Show inset areas** draws each inset band and the safe area over the picture.
