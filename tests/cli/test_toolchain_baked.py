@@ -51,7 +51,7 @@ class Baked(Case):
 
     def toolchain(self, *rels):
         for rel in rels:
-            os.makedirs(os.path.join(self.home, rel))
+            os.makedirs(os.path.join(self.home, rel), exist_ok=True)
 
     def file(self):
         r = self.repo(":app")
@@ -90,6 +90,30 @@ class Baked(Case):
         code, out = self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
                                 PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
         return code, out, os.path.exists(gradle_ran)
+
+    def failing_bake_start(self, gradle_says):
+        self.shared_toolchain()
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-start-%d" % len(os.listdir(self.tmp.name))), "21.0.12")
+        with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
+            f.write("#!/bin/sh\necho '%s' >&2\nexit 1\n" % gradle_says)
+        os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
+        return self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
+                           PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
+
+    def test_start_bake_asks_for_setup_only_when_the_cache_lacks_it(self):
+        for says in ("No cached version of org.jetbrains.kotlin:kotlin-stdlib:2.0.0 available for offline mode",
+                     "Plugin was not found: could not resolve plugin artifact 'dev.zacsweers.metro:dev.zacsweers.metro.gradle.plugin:9.9'"):
+            with self.subTest(says=says):
+                code, out = self.failing_bake_start(says)
+                self.assertEqual((code, out.get("missing")), (3, ["toolchain"]), out)
+                self.assertTrue(out["next"].endswith("prevue setup"), out)
+
+    def test_start_bake_points_at_the_gradle_output_when_the_build_fails_for_another_reason(self):
+        code, out = self.failing_bake_start("e: UnsupportedClassVersionError: class file version 65")
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("next", out)
+        self.assertNotIn("missing", out)
+        self.assertIn("Gradle output above", out["error"])
 
     def gradle_args(self, *setup_args):
         jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-setup" + "".join(setup_args)), "21.0.12")
