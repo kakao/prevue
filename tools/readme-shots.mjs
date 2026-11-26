@@ -338,8 +338,11 @@ function glide(c, x, y) {
     await to(r.x + r.w / 2, r.y + r.h / 2);
   };
   const tap = async () => { await sleep(160); await mouse("mousePressed", { clickCount: 1 }); await sleep(90); await mouse("mouseReleased", { clickCount: 1 }); };
+  const x0 = x, y0 = y;
   return {
     at: () => mouse("mouseMoved"),
+    hover: toEl,
+    rest: () => to(x0, y0),
     async press(sel) { await toEl(sel); await tap(); },
     async pressAt(tx, ty) { await to(tx, ty); await tap(); },
   };
@@ -630,27 +633,59 @@ const SCENES = {
     };
     await frame(c, "board-kotlinconf", [await window_(c, url, +(opt.bw || 680), +(opt.bh || 760), dismiss)], !!opt.bare);
   },
-  // 모든 Preview — 탭 없는 시작 화면의 Pearl 카드 격자에서 ShowcasePreviews 카드를 눌러 앞 3장 시트를 띄운다. --gw · --gh(창)
+  // 모든 Preview — 탭 없는 시작 화면의 Pearl 카드 격자. 포인터가 카드 위를 지나며 뒤 그림이 비져나오고, ShowcasePreviews 를 눌러
+  // 앞 3장 시트를 띄운 뒤 「View on board」로 보드에 들어가고, esc 로 격자에 돌아온다. 결과는 assets/gallery.gif. --gw · --gh(창)
+  // ShowcasePreviews 탭을 미리 열고 보드에서 esc 로 들어가 시작한다 — 보드 그림이 미리 차고, 레일이 처음과 끝에 같아 반복이 이어진다.
   // 순서는 최근 바뀐 순이라 데몬을 띄우기 전에 사본에서 Cup · ComponentPreviews · DrinkCard · ShowcasePreviews · SearchScreen · PearlPreviews 순으로 touch 한다.
   // 그린 뒤 touch 하면 카드가 Outdated 로 흐려진다 — 데몬을 내리고 그 사본의 ~/.prevue/projects/<키>/gallery 를 지운 뒤 다시 찍는다.
   async gallery(c) {
-    const url = await viewer(opt["pearl-a"], [PEARL.previews]);
-    prevue(opt["pearl-a"], "close", join(opt["pearl-a"], PEARL.previews));
-    const w = +(opt.gw || 1320), h = +(opt.gh || 860);
-    await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: SCALE, mobile: false });
-    await c.send("Page.navigate", { url });
+    const repo = opt["pearl-a"];
+    const url = await viewer(repo, [PEARL.showcase]);
+    const w = +(opt.gw || 1280), h = +(opt.gh || 820);
+    const hit = f => `.gcard-slot[data-path$="/${f}"] .gcard-hit`;
     const drawn = `(() => { const cs = [...document.querySelectorAll("#galleryView .gcard")].filter(e => e.getBoundingClientRect().top < innerHeight);
       return cs.length > 0 && cs.every(e => e.dataset.state !== "loading") && [...document.querySelectorAll("#galleryView img")].every(i => i.complete && i.naturalWidth > 0); })()`;
-    await c.until(drawn, 120_000);
-    await sleep(800);
-    const slot = await c.rect(`.gcard-slot[data-path$="${basename(PEARL.showcase)}"] .gcard-hit`);
-    if (!slot) throw new Error("ShowcasePreviews 카드가 첫 화면에 없다");
-    await c.click(slot.x + slot.w / 2, slot.y + slot.h / 2);
-    await c.until(`[...document.querySelectorAll("[role=dialog] img")].length >= 3 && [...document.querySelectorAll("[role=dialog] img")].every(i => i.complete && i.naturalWidth > 0)`, 60_000);
-    await sleep(1200);
-    await c.move(w - 4, h - BAR - 4);
-    const { data } = await c.send("Page.captureScreenshot", { format: "png" });
-    await frame(c, "gallery", [{ data, title: await c.evaluate("document.title"), url, w, h }]);
+    const sheet = `[...document.querySelectorAll(".gsheet img")].length >= 3 && [...document.querySelectorAll(".gsheet img")].every(i => i.complete && i.naturalWidth > 0)`;
+    await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "no-preference" }] });
+    try {
+      await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h - BAR, deviceScaleFactor: 1, mobile: false });
+      await c.send("Page.navigate", { url });
+      await c.until(BOARD, 60_000);
+      await c.key("Escape", "Escape");
+      await c.until(drawn, 120_000);
+      // 시트를 한 번 열어 앞 3장을 받아 둔다 — 녹화 중에 로딩 판이 끼지 않게
+      const sc = await c.rect(hit(basename(PEARL.showcase)));
+      if (!sc) throw new Error("ShowcasePreviews 카드가 첫 화면에 없다");
+      await c.click(sc.x + sc.w / 2, sc.y + sc.h / 2);
+      await c.until(sheet, 60_000);
+      await c.key("Escape", "Escape");
+      await c.until(`!document.querySelector(".gsheet")`, 5_000);
+      await c.evaluate("document.activeElement?.blur(); true");
+      await sleep(800);
+      await c.evaluate(POINTER);
+      const title = await c.evaluate("document.title");
+      const g = glide(c, w * 0.55, (h - BAR) * 0.18);
+      await g.at();
+      const frames = await record(c, async () => {
+        await sleep(pace(700));
+        await g.hover(hit("PearlPreviews.kt"));
+        await sleep(pace(1100));
+        await g.hover(hit("SearchScreen.kt"));
+        await sleep(pace(1100));
+        await g.press(hit(basename(PEARL.showcase)));
+        await c.until(sheet, 10_000);
+        await sleep(pace(2400));
+        await g.press(".gsheet-go");
+        await c.until(BOARD, 20_000);
+        await sleep(pace(2000));
+        await c.key("Escape", "Escape");
+        await c.until(drawn, 20_000);
+        await g.rest();
+      }, 1200);
+      await gif(c, "gallery", title, url, frames, w, h);
+    } finally {
+      await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+    }
   },
   // KMP 파티 — KotlinConf 앱 commonMain 의 PartyAnimation 보드에서 포인터가 Dark 카드의 Interactive 를 눌러 작업 공간에 들어가
   // 파티를 보고(3초) ‹ 로 보드에 돌아온다. 처음과 끝이 같은 보드라 반복해도 이음매가 없다. 그 Preview 는 intensity 1 로 고정돼

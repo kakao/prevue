@@ -72,8 +72,8 @@ Preview 파일이 많아지면 이름이 기억나지 않아 찾기 어렵습니
 카드에는 그 파일의 Preview 그림과 파일 이름 · 패키지 · 모듈이 나옵니다. 카드를 누르면 앞의 몇 장을 펼쳐 보고, 그 파일의 보드로 넘어갈 수 있습니다.
 
 <p align="center">
-  <img src="assets/gallery.png" width="1000"
-       alt="Pearl 예제 앱의 모든 Preview 화면과 펼친 시트">
+  <img src="assets/gallery.gif" width="1000"
+       alt="모든 Preview에서 카드를 눌러 시트를 열고 보드로 들어가는 장면">
 </p>
 
 ## 가리키기

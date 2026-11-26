@@ -73,8 +73,8 @@ Once a project has many preview files, it's hard to find one whose name you don'
 Each card shows the file's previews with its name, package, and module. Click one to spread out its first few previews and go on to its board.
 
 <p align="center">
-  <img src="assets/gallery.png" width="1000"
-       alt="All Previews for the Pearl sample app with no tabs open. The rail shows All Previews 23 at the top and No open files below it. The grid, sorted by Recently changed, starts with PearlPreviews (30 previews), SearchScreen, and ShowcasePreviews, each card showing its drawn preview, file name, package, and module. ShowcasePreviews is open as a sheet raised over its card, with NavTour, HomeTour, and Sip side by side, the package com.example.pearl.feature.pearl.showcase, the module feature/pearl, and View on board">
+  <img src="assets/gallery.gif" width="1000"
+       alt="All Previews for the Pearl sample app. The pointer passes over the cards, whose next two previews tilt out behind them, then clicks ShowcasePreviews; a sheet rises with NavTour, HomeTour and Sip, View on board opens its board, and esc returns to the grid">
 </p>
 
 ## Point instead of explaining
