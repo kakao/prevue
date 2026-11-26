@@ -45,9 +45,9 @@ internal class LayoutlibSession(
     fun anchor() {
         if (anchored) return
         val start = clock.next()
-        // 외부: layoutlib 17 세션 시각은 (이번 setNanosTime 값 − 직전 값) + 코레오그래퍼 시각이고, 렌더러는 세션을 시각 0 으로 만든다
+        // 외부: layoutlib 17 세션 시각은 (이번 setNanosTime 값 − 직전 값) + 코레오그래퍼 시각이고, 렌더러는 세션을 시각 0 으로 만든다. hwui 는 첫 프레임이 1ms 미만이면 렌더 스레드 애니메이터에서 abort 한다
         onSession { repeat(2) { System_Delegate.setNanosTime(start) } }
-        advanceCallbacks(start)
+        advanceCallbacks(clock.advance(FIRST_FRAME_NS))
         anchored = true
     }
 
@@ -64,6 +64,10 @@ internal class LayoutlibSession(
             when {
                 insets != null -> placeInsets(insets)
                 bars != null -> placeBars(bars)
+                else -> {
+                    task.inflate().get(timeoutSec(), TimeUnit.SECONDS)?.dispose()
+                    anchor()
+                }
             }
             barsPlaced = true
         }
@@ -307,6 +311,7 @@ internal class LayoutlibSession(
         const val SLOW_TREE_MS = 50
         const val LONG_PRESS_MARGIN_MS = 150
         const val FRAME_MS = 16L
+        const val FIRST_FRAME_NS = 1_000_000L
         const val PRESS_PUMP_GAP_MS = 8L
         const val MAX_PRESS_PUMPS = 4
 
