@@ -15,7 +15,7 @@ import subprocess
 import unittest
 
 from test_daemon_records import free_port
-from test_plan import Case, fake_jdk
+from test_plan import Case, P, fake_jdk, fake_sdk
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 LAYOUTLIB, COMPILER, LIB = ".prevue/toolchain/layoutlib-1", ".prevue/toolchain/compiler-1", ".prevue/toolchain/lib-1"
@@ -51,7 +51,7 @@ class Baked(Case):
 
     def toolchain(self, *rels):
         for rel in rels:
-            os.makedirs(os.path.join(self.home, rel))
+            os.makedirs(os.path.join(self.home, rel), exist_ok=True)
 
     def file(self):
         r = self.repo(":app")
@@ -90,6 +90,53 @@ class Baked(Case):
         code, out = self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
                                 PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
         return code, out, os.path.exists(gradle_ran)
+
+    def failing_bake_start(self, gradle_says):
+        self.shared_toolchain()
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-start-%d" % len(os.listdir(self.tmp.name))), "21.0.12")
+        with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
+            f.write("#!/bin/sh\necho '%s' >&2\nexit 1\n" % gradle_says)
+        os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
+        return self.prevue("start", "--no-open", PREVUE_PORT=str(free_port()), PREVUE_JDK=jdk,
+                           PREVUE_PREPARATION=os.path.join(self.tmp.name, "prep"))
+
+    def test_start_bake_asks_for_setup_only_when_the_cache_lacks_it(self):
+        for says in ("No cached version of org.jetbrains.kotlin:kotlin-stdlib:2.0.0 available for offline mode",
+                     "Plugin was not found: could not resolve plugin artifact 'dev.zacsweers.metro:dev.zacsweers.metro.gradle.plugin:9.9'"):
+            with self.subTest(says=says):
+                code, out = self.failing_bake_start(says)
+                self.assertEqual((code, out.get("missing")), (3, ["toolchain"]), out)
+                self.assertTrue(out["next"].endswith("prevue setup"), out)
+
+    def test_start_bake_points_at_the_gradle_output_when_the_build_fails_for_another_reason(self):
+        code, out = self.failing_bake_start("e: UnsupportedClassVersionError: class file version 65")
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("next", out)
+        self.assertNotIn("missing", out)
+        self.assertIn("Gradle output above", out["error"])
+
+    def test_show_answers_the_failed_start_bake_instead_of_asking_for_the_daemon(self):
+        os.remove(os.path.join(self.plugin, "daemon", "daemon", "build", "prevue-env"))
+        self.shared_toolchain()
+        r = self.repo(":app")
+        os.chmod(os.path.join(r.root, "gradlew"), 0o755)
+        path = P.dump_path(os.path.join(self.home, ".prevue", "projects"), r.root, ":app", "debug")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"schema": P.SCHEMA, "project": ":app", "variant": "debug", "resourceApkPath": r.apk(":app", "debug"),
+                       "projectClassPath": [r.built(":app", "debug")], "classPath": ["a.jar"]}, f)
+        bakes = os.path.join(self.tmp.name, "bakes")
+        with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
+            f.write("#!/bin/sh\necho ran >> '%s'\necho 'e: compile error' >&2\nexit 1\n" % bakes)
+        os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
+        code, out = self.prevue("show", r.src(":app"), PREVUE_PORT=str(free_port()),
+                                PREVUE_JDK=fake_jdk(os.path.join(self.tmp.name, "jdk-show"), "21.0.12"),
+                                ANDROID_HOME=fake_sdk(os.path.join(self.tmp.name, "sdk")))
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("missing", out)
+        self.assertIn("Gradle output above", out["error"])
+        with open(bakes) as f:
+            self.assertEqual(len(f.readlines()), 1)
 
     def gradle_args(self, *setup_args):
         jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-setup" + "".join(setup_args)), "21.0.12")

@@ -245,6 +245,15 @@ bake_toolchain() {
   (cd "$ROOT/daemon" && ./gradlew installPrevue -q -Pkotlin.compiler.execution.strategy=in-process "$@")
 }
 
+bake_offline() {
+  local out rc=0
+  out="$(bake_toolchain --offline 2>&1)" || rc=$?
+  printf '%s\n' "$out" >&2
+  [ "$rc" = 0 ] && return 0
+  printf '%s' "$out" | grep -qE 'available for offline mode|could not resolve plugin artifact' && return 2
+  return 1
+}
+
 # 이 체크아웃이 구워 둔 실행 환경이 지금도 쓸 수 있는가. prevue-env 는 체크아웃에 남아도 그것이 가리키는 공유 툴체인은
 # 홈에 있어 따로 사라진다(~/.prevue/toolchain 을 지웠거나 같은 체크아웃을 다른 계정이 쓸 때) — 파일만 보면 없는 jar 로
 # 데몬을 띄워 JVM 이 엉뚱한 "JavaFX 런타임 구성요소 누락"을 내며 죽는다. 서브셸에서 읽어 PREVUE_* 가 새지 않게 한다.
@@ -544,7 +553,7 @@ show_unready() {  # <파일> — 돌아오지 않는다
     while IFS= read -r line; do start+=("$line"); done < <(printf '%s' "$h" | python3 "$PLAN_PY" autostart)
     if [ ${#start[@]} -gt 0 ]; then
       out="$("$ROOT/bin/prevue" start "${start[@]}" --show "$1")"; rc=$?
-      [ "$rc" = 0 ] || [ "$rc" = 1 ] || { echo "$out"; exit "$rc"; }   # 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
+      [ "$rc" = 0 ] || { [ "$rc" = 1 ] && baked; } || { echo "$out"; exit "$rc"; }   # 구운 뒤의 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
       # 브라우저를 못 열었으면(샌드박스) 그 사실은 start 의 답에만 있다 — 버리면 에이전트가 "열렸다"고 말하고 사람은 빈 화면을 본다
       case "$out" in *'"opened": false'*|*'"opened":false'*) export PREVUE_NOT_OPENED=1;; esac
       PREVUE_AUTOSTARTED=1 exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
@@ -726,9 +735,8 @@ case "$cmd" in
     export JAVA_HOME="$JDK"
     BAKE_RC=0
     if [ "$OFFLINE" = 1 ]; then
-      BAKE_OUT="$(bake_toolchain --offline 2>&1)" || BAKE_RC=$?
-      printf '%s\n' "$BAKE_OUT" >&2
-      if [ "$BAKE_RC" != 0 ] && printf '%s' "$BAKE_OUT" | grep -qE 'available for offline mode|could not resolve plugin artifact'; then
+      bake_offline || BAKE_RC=$?
+      if [ "$BAKE_RC" = 2 ]; then
         echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
       fi
     else
@@ -934,7 +942,8 @@ case "$cmd" in
       require_java
       echo "prevue: building this version's executable from the downloaded components (once after an update)" >&2
       export JAVA_HOME="$JDK"
-      bake_toolchain --offline >&2 || true
+      BAKE_RC=0; bake_offline || BAKE_RC=$?
+      [ "$BAKE_RC" = 1 ] && { echo "{\"ok\":false,\"error\":\"Couldn't build this version's executable — the cause is in the Gradle output above\"}"; exit 1; }
     fi
     baked || { echo "{\"ok\":false,\"missing\":[\"toolchain\"],\"error\":\"No toolchain — prevue setup\",\"next\":\"prevue setup\"}" | python3 "$PLAN_PY" runnable; exit 3; }
     . "$ENV_FILE"
