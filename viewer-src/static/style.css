@@ -12,8 +12,7 @@
   --gallery-wide-w: 86%;
   --gallery-hover-scale: 1.02;
   --gallery-stale: .45;
-  --gallery-tilt: 5deg;
-  --gallery-drop: var(--space-6);
+  --gallery-tilt: 2deg;
   /* 열린 파일 레일(D-98). 펴지면 본문 · 낡음 띠 · 캡슐이 그만큼 비킨다. 작업 공간에서는 접혀 0 이다. */
   --rail-w: 0px;
   --rail-size: 200px;   /* 레일 자체의 폭 — 좁은 창에서는 본문을 밀지 않고(--rail-w 0) 이 폭 그대로 서랍으로 뜬다 */
@@ -832,8 +831,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-stack:has(.gcard-ghost) .gcard-shot { position: relative; }
 .gcard-hit:hover .gcard-ghost[data-g="l"] { transform: translateX(calc(var(--space-6) * -1)) rotate(calc(var(--gallery-tilt) * -1)); }
 .gcard-hit:hover .gcard-ghost[data-g="r"] { transform: translateX(var(--space-6)) rotate(var(--gallery-tilt)); }
-.gcard-hit:hover [data-o="wide"] .gcard-ghost[data-g="l"] { transform: translateY(var(--gallery-drop)); }
-.gcard-hit:hover [data-o="wide"] .gcard-ghost[data-g="r"] { transform: translateY(calc(var(--gallery-drop) * 2)); }
 .gcard-ghost img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .gcard[data-stale] .gcard-shot img, .gcard[data-stale] .gcard-ghost img, .gsheet-fig[data-stale] .gsheet-shot img { opacity: var(--gallery-stale); }
 .gcard-old, .gsheet-old { position: absolute; left: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center;
