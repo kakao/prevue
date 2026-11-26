@@ -153,7 +153,7 @@ try {
   await until(`document.querySelector('${wide} .gcard-stack')?.dataset.o==='wide' && document.querySelector('${wide} .gcard-shot img')?.complete`);
   await check(`(()=>{const c=document.querySelector('${wide} .gcard-cover').getBoundingClientRect(),s=document.querySelector('${wide} .gcard-stack').getBoundingClientRect();return s.top-c.top>1&&Math.abs((s.top-c.top)-(c.bottom-s.bottom))<1.5})()`, '가로 그림은 그림 칸 한가운데');
   await check(`(()=>{const st=getComputedStyle(document.querySelector('${wide} .gcard-shot'));return parseFloat(st.borderBottomLeftRadius)>0&&parseFloat(st.borderBottomRightRadius)>0&&parseFloat(st.borderTopLeftRadius)>0})()`, '가로 그림은 네 모서리가 둥글다');
-  const ghostsOf = sel => `[...document.querySelectorAll('${sel} .gcard-ghost')].map(g=>{const m=new DOMMatrix(getComputedStyle(g).transform);return {g:g.dataset.g,deg:Math.atan2(m.b,m.a)*180/Math.PI,y:m.f}})`;
+  const ghostsOf = sel => `[...document.querySelectorAll('${sel} .gcard-ghost')].map(g=>{const m=new DOMMatrix(getComputedStyle(g).transform);return {g:g.dataset.g,deg:Math.atan2(m.b,m.a)*180/Math.PI}})`;
   const hover = async sel => {
     await evaluate(`document.querySelector('${sel}').scrollIntoView({block:'center'})`);
     const p = await evaluate(`(()=>{const r=document.querySelector('${sel} .gcard-cover').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
@@ -162,12 +162,12 @@ try {
   };
   await hover(wide);
   const wideGhosts = await evaluate(ghostsOf(wide));
-  const [wl, wr] = ['l', 'r'].map(g => wideGhosts.find(x => x.g === g));
-  ok(wideGhosts.length === 2 && wideGhosts.every(x => Math.abs(x.deg) < .01) && wl.y > 0 && wr.y > wl.y, `가로 그림 호버 — 뒤 그림은 돌지 않고 아래로 층층이 ${JSON.stringify(wideGhosts)}`);
+  const tilted = ghosts => ghosts.length === 2 && ghosts.every(x => Math.abs(Math.abs(x.deg) - 2) < .1) && ghosts.find(x => x.g === 'l').deg < 0;
+  ok(tilted(wideGhosts), `가로 그림 호버 — 뒤 그림은 세로와 같이 ±2° ${JSON.stringify(wideGhosts)}`);
   const tall = '#galleryView .gcard-slot:nth-child(1)';
   await hover(tall);
   const tallGhosts = await evaluate(ghostsOf(tall));
-  ok(tallGhosts.length === 2 && tallGhosts.every(x => Math.abs(Math.abs(x.deg) - 5) < .1), `세로 그림 호버 — 뒤 그림은 ±5° ${JSON.stringify(tallGhosts)}`);
+  ok(tilted(tallGhosts), `세로 그림 호버 — 뒤 그림은 ±2° ${JSON.stringify(tallGhosts)}`);
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 });
   await evaluate(`scrollTo(0, 0)`);
   const before = asked.length;
