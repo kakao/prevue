@@ -96,7 +96,7 @@ Preview 파일이 많아지면 이름이 기억나지 않아 찾기 어렵습니
 ## 인터랙티브 모드
 
 보드의 카드에서 `▶`를 누르면 Preview가 크게 열립니다. Android Studio의 Interactive Mode처럼 클릭하고 드래그하며 모션과 애니메이션을 확인할 수 있습니다.
-소스를 고치지 않고도 화면 크기나 기기(Android 6종 · iPhone 4종)를 바꾸고, 세로 · 가로(왼쪽) · 가로(오른쪽)로 돌리고, 폴더블을 접었다 펼 수 있습니다.
+소스를 고치지 않아도 화면 크기와 기기(Galaxy · Pixel · iPhone 18종)를 바꿀 수 있습니다. 화면을 가로로 돌리거나 폴더블을 접었다 펴 볼 수도 있습니다.
 
 - **실제 기기의 인셋이 컴포저블에 그대로 들어갑니다** — 값은 [windowinsets.info](https://windowinsets.info/) · [safearea.info](https://safearea.info/)에서 가져왔습니다.
 - **인셋 영역 보기**를 켜면 인셋 띠와 안전 영역이 그림 위에 색으로 표시됩니다.
