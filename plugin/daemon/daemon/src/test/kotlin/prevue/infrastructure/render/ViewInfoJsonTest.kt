@@ -98,7 +98,7 @@ class ViewInfoJsonTest {
     private fun roots(fake: Fake) = listOf(view("FrameLayout", null, view("ComposeViewAdapter", fakeAdapter(fake))))
 
     private fun composed(tree: String, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> =
-        ViewInfoJson.compose(ViewInfoJson.read(roots(Fake(tree)))!!.second, origins)
+        ViewInfoJson.compose((ViewInfoJson.read(roots(Fake(tree))) as TreeRead.Built).tree, origins)
 
     private fun flat(tree: List<*>): Map<String, Map<*, *>> = buildMap {
         fun walk(list: List<*>) {
@@ -157,6 +157,6 @@ class ViewInfoJsonTest {
     @Test fun `표면이 다 있으면 판 짝 실패가 아니고, Compose 프리뷰가 아니면 보지 않는다`() {
         assertEquals(null, ViewInfoJson.toolingMismatch(roots(Fake())))
         assertEquals(null, ViewInfoJson.toolingMismatch(listOf(view("FrameLayout", null))))
-        assertEquals(null, ViewInfoJson.read(listOf(view("FrameLayout", null))))
+        assertEquals(TreeRead.NotCompose, ViewInfoJson.read(listOf(view("FrameLayout", null))))
     }
 }

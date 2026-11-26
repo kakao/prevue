@@ -10,7 +10,6 @@ import prevue.application.domain.model.phrase
 import prevue.application.port.FailureKind
 import prevue.application.port.RenderOutput
 import prevue.infrastructure.dump.ClasspathSpec
-import java.util.WeakHashMap
 
 internal data class RenderTiming(
     val taskMs: Long,
@@ -29,6 +28,8 @@ internal enum class TreeOut {
     val written: Boolean get() = this != NONE
 }
 
+internal class TreeIn(val read: TreeRead, val out: TreeOut)
+
 internal class RenderOutputs(
     private val artifacts: RenderArtifactStore,
     private val chrome: DeviceChromePainter,
@@ -39,29 +40,23 @@ internal class RenderOutputs(
     var afterBuild = false
     var lastCompose: List<Map<String, Any?>> = emptyList()
     var lastAdapter: Any? = null
-    private val trees = WeakHashMap<Any, List<ComposeNode>>()
-
+    private var lastTree: List<ComposeNode> = emptyList()
     private var readBroken: String? = null
-
-    fun keepRead(read: Result<Pair<Any, List<ComposeNode>>?>) {
-        read.getOrNull()?.let { (adapter, tree) -> trees[adapter] = tree }
-        val why = read.exceptionOrNull()?.let { (it.cause ?: it).toString() } ?: return
-        if (readBroken != null) return
-        readBroken = why
-        System.err.println("[prevue] 트리를 지금 화면으로 짓지 못했다 — 직전에 지은 트리가 남는다: $why")
-    }
 
     fun forgetTree() {
         lastCompose = emptyList()
         lastAdapter = null
+        lastTree = emptyList()
     }
 
     fun written(
-        p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, tree: TreeOut = TreeOut.KEPT,
+        p: PreviewSpec, result: RenderResult, logger: RenderLogger, timing: RenderTiming, loader: ClassLoader?, trees: TreeIn,
     ): RenderOutput {
         val ph = timing.phases
         var t = System.nanoTime()
-        val compose = if (tree.written) ViewInfoJson.compose(readTree(result), origins) else emptyList()
+        val tree = trees.out
+        val nodes = treeOf(trees.read, result)
+        val compose = if (tree.written) ViewInfoJson.compose(nodes, origins) else emptyList()
         val verdict = RenderVerdict.of(p, result, logger, PreviewProbe(loader), tree.written && compose.isEmpty())
         ph["classifyMs"] = msSince(t)
         verdict.blank?.let { onBlank(p, it, loader) }
@@ -88,7 +83,7 @@ internal class RenderOutputs(
             "renderResult" to status, "failure" to verdict.failure?.name, "message" to verdict.message?.text, "warnings" to verdict.warnings,
             "timings" to mapOf("taskMs" to timing.taskMs, "renderMs" to timing.renderMs, "freshLoader" to timing.freshLoader),
             "layoutlibViewInfo" to if (tree.written) result.rootViews.map { ViewInfoJson.layoutlib(it) } else emptyList(),
-            "composeViewInfo" to if (tree.written) keptForLive(tree, compose, result) else emptyList(),
+            "composeViewInfo" to if (tree.written) keptForLive(tree, compose, nodes, result) else emptyList(),
         )
         ph["treeMs"] = msSince(t)
         val ok = verdict.failure == null
@@ -103,18 +98,37 @@ internal class RenderOutputs(
         if (tree == TreeOut.KEPT) forgetTree()
     }
 
-    private fun keptForLive(tree: TreeOut, compose: List<Map<String, Any?>>, result: RenderResult): List<Map<String, Any?>> {
-        if (tree == TreeOut.KEPT) keepTree(compose, result)
+    private fun keptForLive(
+        tree: TreeOut, compose: List<Map<String, Any?>>, nodes: List<ComposeNode>, result: RenderResult,
+    ): List<Map<String, Any?>> {
+        if (tree == TreeOut.KEPT) keepTree(compose, nodes, result)
         return compose
     }
 
-    private fun keepTree(compose: List<Map<String, Any?>>, result: RenderResult) {
+    private fun keepTree(compose: List<Map<String, Any?>>, nodes: List<ComposeNode>, result: RenderResult) {
         lastCompose = compose
+        lastTree = nodes
         lastAdapter = ViewInfoJson.adapter(result.rootViews)
     }
 
-    private fun readTree(result: RenderResult): List<ComposeNode> =
-        ViewInfoJson.adapter(result.rootViews)?.let { trees[it] }.orEmpty()
+    private fun treeOf(read: TreeRead, result: RenderResult): List<ComposeNode> = when (read) {
+        is TreeRead.Built -> read.tree
+        TreeRead.NotCompose -> emptyList()
+        TreeRead.Kept -> keptTreeOf(result)
+        is TreeRead.Failed -> {
+            warnReadOnce(read.why)
+            keptTreeOf(result)
+        }
+    }
+
+    private fun keptTreeOf(result: RenderResult): List<ComposeNode> =
+        lastTree.takeIf { lastAdapter != null && ViewInfoJson.adapter(result.rootViews) === lastAdapter }.orEmpty()
+
+    private fun warnReadOnce(why: String) {
+        if (readBroken != null) return
+        readBroken = why
+        System.err.println("[prevue] 트리를 지금 화면으로 짓지 못했다 — 같은 어댑터면 직전 트리가, 새 어댑터면 빈 트리가 나간다: $why")
+    }
 
     fun isNewAdapter(result: RenderResult): Boolean = ViewInfoJson.adapter(result.rootViews) !== lastAdapter
 

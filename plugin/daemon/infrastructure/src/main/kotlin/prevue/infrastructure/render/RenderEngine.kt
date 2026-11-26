@@ -343,8 +343,8 @@ internal class RenderEngine(
         }
         try {
             val renderMs = msSince(t)
-            if (relayout || LayoutlibBars.fitsContent(l.task, l.preview) || outputs.isNewAdapter(result)) outputs.keepRead(l.readTree(result))
-            val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, tree))
+            val trees = TreeIn(readTree(l, result, relayout), tree)
+            val out = l.withPlacedWarning(outputs.written(l.preview, result, l.logger, timing.copy(renderMs = renderMs), l.task.classLoader, trees))
             return if (!out.ok && hung(l.preview)) lostOutput(l.preview) else out
         } finally {
             result.dispose()
@@ -358,6 +358,9 @@ internal class RenderEngine(
         if (l === live) disposeLive()
         return outputs.failed(l.preview, kind, message, timing.copy(renderMs = msSince(since)))
     }
+
+    private fun readTree(l: LayoutlibSession, result: RenderResult, relayout: Boolean): TreeRead =
+        if (relayout || LayoutlibBars.fitsContent(l.task, l.preview) || outputs.isNewAdapter(result)) l.readTree(result) else TreeRead.Kept
 
     private suspend fun hung(p: PreviewSpec, timedOut: Boolean = false): Boolean = watch.hung(p, timedOut).also { if (it) live = null }
 

@@ -13,6 +13,13 @@ internal class ComposeNode(
     val children: List<ComposeNode>,
 )
 
+internal sealed interface TreeRead {
+    class Built(val tree: List<ComposeNode>) : TreeRead
+    class Failed(val why: String) : TreeRead
+    data object NotCompose : TreeRead
+    data object Kept : TreeRead
+}
+
 internal class ToolingTree private constructor(adapter: Class<*>) {
     private val loader: ClassLoader? = adapter.classLoader
     private val gaps = mutableListOf<String>()

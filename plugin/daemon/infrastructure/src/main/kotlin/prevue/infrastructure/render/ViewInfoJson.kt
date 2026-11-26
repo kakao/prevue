@@ -4,7 +4,6 @@ import com.android.ide.common.rendering.api.ViewInfo
 import prevue.application.domain.model.ViewNode
 import prevue.infrastructure.json.map
 
-/** layoutlib ViewInfo와 ComposeViewAdapter의 Compose 레벨 ViewInfo를 뷰어가 읽는 JSON 구조로 옮긴다. */
 internal object ViewInfoJson {
     /** layoutlib 트리. 안드로이드 View 경계만 있고 file:line은 없다. */
     fun layoutlib(vi: ViewInfo): Map<String, Any?> = mapOf(
@@ -43,9 +42,9 @@ internal object ViewInfoJson {
     fun compose(tree: List<ComposeNode>, origins: (Int) -> ComposableOrigin? = { null }): List<Map<String, Any?>> =
         tree.flatMap { nodes(it, origins) }.map { it.json }
 
-    fun read(roots: List<ViewInfo>): Pair<Any, List<ComposeNode>>? {
-        val adapter = adapter(roots) ?: return null
-        return adapter to ToolingTree.of(adapter.javaClass).read(adapter)
+    fun read(roots: List<ViewInfo>): TreeRead {
+        val adapter = adapter(roots) ?: return TreeRead.NotCompose
+        return TreeRead.Built(ToolingTree.of(adapter.javaClass).read(adapter))
     }
 
     fun adapter(roots: List<ViewInfo>): Any? = roots.firstNotNullOfOrNull { findAdapter(it) }
