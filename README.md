@@ -97,7 +97,7 @@ A card opens beside the picture with what you pointed at: its name, its file:lin
 ## Interactive mode
 
 Press a card's `▶` to open it large. Like Android Studio's Interactive Mode, click and drag to check motion and animations.
-Without touching the source, change the screen size or the device (six Android, four iPhone), turn it to Portrait, Landscape left or Landscape right, and fold or unfold foldables.
+Without touching the source, change the screen size or the device (18 Galaxy, Pixel and iPhone models), turn it to Portrait, Landscape left or Landscape right, and fold or unfold foldables.
 
 - **Real device insets reach your Composable**, from [windowinsets.info](https://windowinsets.info/) and [safearea.info](https://safearea.info/).
 - **Show inset areas** draws each inset band and the safe area over the picture.
