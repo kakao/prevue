@@ -10,7 +10,6 @@
   --gallery-cover: 4 / 3;
   --gallery-tall-w: 58%;
   --gallery-wide-w: 86%;
-  --gallery-plate: 9 / 19.5;
   --gallery-hover-scale: 1.02;
   --gallery-stale: .45;
   --gallery-tilt: 5deg;
@@ -833,10 +832,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-hit:hover .gcard-ghost[data-g="l"] { transform: translateX(calc(var(--space-6) * -1)) rotate(calc(var(--gallery-tilt) * -1)); }
 .gcard-hit:hover .gcard-ghost[data-g="r"] { transform: translateX(var(--space-6)) rotate(var(--gallery-tilt)); }
 .gcard-ghost img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.gcard-ph { position: relative; display: block; width: 100%; overflow: hidden; aspect-ratio: var(--gallery-plate); background: var(--surface-container); }
-.gcard-ph::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-                   background: linear-gradient(90deg, transparent, var(--skeleton-sheen), transparent);
-                   animation: gcard-shimmer var(--duration-extra-long4) var(--easing-standard) infinite; }
 .gcard[data-stale] .gcard-shot img, .gcard[data-stale] .gcard-ghost img, .gsheet-fig[data-stale] .gsheet-shot img { opacity: var(--gallery-stale); }
 .gcard-old, .gsheet-old { position: absolute; left: var(--space-8); top: var(--space-8); z-index: 1; display: inline-flex; align-items: center;
                padding: 0 var(--space-6); border-radius: var(--corner-full); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint);
@@ -845,7 +840,19 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
                padding: 0 var(--space-6); border-radius: var(--corner-full); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint);
                color: var(--on-surface-variant); font: var(--type-label-small); }
 .gcard-count svg { width: 12px; height: 12px; }
-.gcard-failed { flex: 1 1 auto; display: grid; place-items: center; margin-bottom: var(--space-20); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); }
+.gcard-failed { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-8); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
+.gveil { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; background: var(--surface-container-high); }
+.gveil::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+                background: linear-gradient(90deg, transparent, var(--skeleton-sheen), transparent);
+                animation: gveil-sheen var(--duration-extra-long4) var(--easing-standard) infinite; }
+.gveil[data-phase="clear"] { animation: gveil-out var(--duration-medium2) var(--easing-standard) both; }
+.gcard-cover:has(> .gveil[data-phase="wait"]) > :not(.gveil),
+.gsheet:has(> .gsheet-veil[data-phase="wait"]) > :is(.gsheet-stage, .gsheet-failed) { visibility: hidden; }
+.gcard-cover:has(> .gveil[data-phase="clear"]) > :not(.gveil),
+.gsheet:has(> .gsheet-veil[data-phase="clear"]) > :is(.gsheet-stage, .gsheet-failed) { animation: gveil-in var(--duration-long1) var(--easing-decelerate) both; }
+@keyframes gveil-sheen { to { transform: translateX(100%); } }
+@keyframes gveil-out { to { opacity: 0; } }
+@keyframes gveil-in { from { opacity: 0; scale: var(--motion-enter-scale); } }
 .gcard-body { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; padding: var(--space-16) var(--space-20); }
 .gcard-file { display: block; overflow: hidden; white-space: nowrap; font: var(--type-title-medium); }
 .gcard-pkgrow { display: flex; align-items: flex-start; gap: var(--space-4); min-width: 0; color: var(--on-surface-variant); }
@@ -855,7 +862,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gcard-mod { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--space-6);
              border-radius: var(--corner-small); box-shadow: inset 0 0 0 1px var(--outline-variant); color: var(--on-surface-variant); font: var(--type-label-small); }
 .gcard-info { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-medium); }
-@keyframes gcard-shimmer { to { transform: translateX(100%); } }
 
 .gsheet-layer { position: fixed; inset: 0; z-index: 21; }
 .gsheet-scrim { position: absolute; inset: 0; background: var(--scrim); }
@@ -871,10 +877,8 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gsheet-shot { position: relative; max-width: 100%; overflow: hidden; border-radius: var(--corner-medium); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1); }
 .gsheet-shot img { display: block; max-width: 100%; width: auto; height: auto; max-height: calc(var(--stage-h) - var(--cap-h)); }
 .gsheet-stage[data-flow="col"] .gsheet-shot img { max-height: calc((var(--stage-h) - var(--space-12) * (var(--k) - 1)) / var(--k) - var(--cap-h)); }
-.gsheet-shot .gcard-ph { width: auto; height: calc(var(--stage-h) - var(--cap-h)); }
-.gsheet-stage[data-flow="col"] .gsheet-shot .gcard-ph { height: calc((var(--stage-h) - var(--space-12) * (var(--k) - 1)) / var(--k) - var(--cap-h)); aspect-ratio: auto; width: var(--stage-h); }
-.gsheet-failed { display: grid; place-items: center; height: calc(var(--stage-h) - var(--cap-h)); aspect-ratio: var(--gallery-plate); padding: var(--space-8);
-                 background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
+.gsheet-failed, .gsheet-veil { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--stage-h) + var(--space-20) * 2); border-radius: var(--corner-large) var(--corner-large) 0 0; }
+.gsheet-failed { display: grid; place-items: center; padding: var(--space-8); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
 .gsheet-cap { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-small); }
 .gsheet-body { position: relative; display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; padding: var(--space-16) var(--space-20); }
 .gsheet-file { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--type-title-medium); }
@@ -900,7 +904,7 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
                               background: var(--surface); color: var(--on-surface); font: var(--type-label-medium); outline: 2px solid var(--focus-ring); }
 @media (prefers-reduced-motion: reduce) {
   .gcard-hit:hover { transform: none; }
-  .gcard-ph::after { display: none; }
+  .gveil::after { display: none; }
   .gcard-ghost { transition: none; }
   .gcard-hit:hover .gcard-ghost { transform: none; }
   .gsheet-go:hover svg { transform: none; }

@@ -10,6 +10,7 @@ import { byChanged, cachedView, cardKey, changedAgo, commonHead, moduleOf, packa
 import { createCardQueue, type CardImage, type CardQueue, type CardView } from '../gallery/queue';
 import { closeGallery, closeSheet, currentLayer, galleryShown, loadFiles, markShown, openGallery, openSheet, sheetClosed, useLayer } from '../gallery/layer';
 import { GallerySheet } from './GallerySheet';
+import { Veil, useVeil } from './Veil';
 import { fit, fontOf } from './fit';
 
 
@@ -55,6 +56,10 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
   const ghosts = view.status === 'done' ? [view.front[1]?.image ?? null, view.front[2]?.image ?? null] : NO_GHOSTS;
   const { phrase, daemonText } = useMessages();
   const state = view.status === 'done' ? 'done' : view.status === 'error' ? 'failed' : 'loading';
+  const url = view.status === 'done' ? view.image.url : null;
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const ready = view.status === 'error' || (!!url && loaded === url);
+  const veil = useVeil(shown, ready);
   const tall = view.status !== 'done' || view.image.w <= view.image.h;
   const sheets = view.status === 'done' ? view.sheets : 0;
   return <article className="gcard" data-state={state} data-stale={stale || undefined} aria-busy={state === 'loading'}>
@@ -62,17 +67,17 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
       <span className="gcard-cover">
         {view.status === 'error'
           ? <span className="gcard-failed" title={daemonText(view.failure) || undefined}>{phrase('gallery.failed')}</span>
-          : <span className="gcard-stack" data-o={tall ? 'tall' : 'wide'}>
+          : view.status === 'done' && <span className="gcard-stack" data-o={tall ? 'tall' : 'wide'}>
               {(['r', 'l'] as const).slice(0, ghosts.filter(Boolean).length).map(g => {
                 const img = shown ? ghosts[g === 'r' ? 0 : 1] : null;
                 return <span key={g} className="gcard-ghost" data-g={g}>{img && <img src={img.url} width={img.w} height={img.h} alt="" decoding="async" />}</span>;
               })}
-              <span className="gcard-shot">{view.status === 'done' && near
-                ? <img src={view.image.url} width={view.image.w} height={view.image.h} alt="" decoding="async" onLoad={e => e.currentTarget.classList.add('in')} onError={onLost} />
-                : <span className="gcard-ph" />}</span>
+              <span className="gcard-shot">{near && <img src={view.image.url} width={view.image.w} height={view.image.h} alt="" decoding="async"
+                onLoad={e => { e.currentTarget.classList.add('in'); setLoaded(e.currentTarget.getAttribute('src')); }} onError={onLost} />}</span>
             </span>}
         {stale && <span className="gcard-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
         {sheets > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: sheets })}><Stack />{sheets}</span>}
+        {veil.on && <Veil ready={ready} onDone={veil.done} />}
       </span>
       <span className="gcard-body">
         <Fitted className="gcard-file" text={text.name} />

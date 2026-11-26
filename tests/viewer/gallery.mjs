@@ -128,7 +128,9 @@ try {
   await check(`document.querySelector('#railAll').classList.contains('on') && document.querySelector('#railAll').getAttribute('aria-current')==='page'`, '갤러리에 있는 동안 레일 「모든 Preview」가 고른 줄');
   await check(`[...document.querySelectorAll('#galleryView .gcard-file')].map(el=>el.title||el.textContent).slice(0,3).join()==='Screen0,Screen1,Screen2'`, '최근 바뀐 순, .kt 를 뗀 이름');
   await check(`document.querySelector('#galleryView .gcard-pkg').textContent==='f0' && document.querySelector('#galleryView .gcard-mod').textContent==='feature/f0'`, '패키지는 공통 머리를 떼고, 모듈은 impl 을 뗀다');
-  await check(`document.querySelectorAll('#galleryView .gcard[data-state="loading"] .gcard-ph').length>0`, '그림이 오기 전에는 로딩 판');
+  await check(`document.querySelectorAll('#galleryView .gcard[data-state="loading"] .gveil').length>0 && !document.querySelector('#galleryView .gcard[data-state="loading"] .gcard-stack')`, '그림이 오기 전에는 그림 칸 전체가 로딩 판');
+  await check(`(()=>{const v=document.querySelector('#galleryView .gcard[data-state="loading"] .gveil'),c=v.closest('.gcard-cover').getBoundingClientRect(),r=v.getBoundingClientRect();return r.width===c.width&&r.height===c.height})()`, '로딩 판은 그림 칸을 꽉 채운다');
+  await check(`[...document.querySelectorAll('#galleryView .gcard-slot')].filter(el=>{const r=el.getBoundingClientRect();return r.top>innerHeight}).every(el=>!el.querySelector('.gveil'))`, '화면 밖 카드에는 로딩 판이 없다');
 
   const shown = await evaluate(visible);
   await until(`(${visible}).every(p=>document.querySelector('#galleryView .gcard-slot[data-path="'+CSS.escape(p)+'"] .gcard').dataset.state!=='loading')`);
@@ -138,9 +140,12 @@ try {
   ok(maxInFlight === 1, '한 번에 하나씩 묻는다');
   ok(asked.join() === shown.filter(p => asked.includes(p)).join(), '격자 순서로 묻는다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').dataset.state==='done' && document.querySelector('#galleryView .gcard-slot:nth-child(1) img')`, '완료 카드는 그림');
+  await until(`!document.querySelector('#galleryView .gveil')`);
+  ok(true, '그림이 오면 로딩 판이 걷혀 사라진다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard-count')?.textContent==='4' && !document.querySelector('#galleryView .gcard-slot:nth-child(3) .gcard-count')`, '두 장 이상일 때만 장 수');
   await check(`document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost img').length===2 && document.querySelectorAll('#galleryView .gcard-slot:nth-child(1) .gcard-ghost').length===2`, '카드는 그려진 앞 세 장을 함께 받아 호버 뒤 판에 둔다');
   await check(`document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard').dataset.state==='failed' && document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-failed')`, '그리지 못한 카드는 실패 판');
+  await check(`(()=>{const f=document.querySelector('#galleryView .gcard-slot:nth-child(2) .gcard-failed'),c=f.closest('.gcard-cover').getBoundingClientRect(),r=f.getBoundingClientRect();return r.width===c.width&&r.height===c.height})()`, '실패 판은 그림 칸 전체');
   const before = asked.length;
   await evaluate(`scrollTo(0, document.documentElement.scrollHeight)`);
   await until(`(${visible}).every(p=>document.querySelector('#galleryView .gcard-slot[data-path="'+CSS.escape(p)+'"] .gcard').dataset.state!=='loading')`);
@@ -166,7 +171,6 @@ try {
   await until(`document.querySelectorAll('.gsheet-fig').length===3 && document.querySelectorAll('.gsheet-shot img').length===3`);
   ok(sheetAsked.length === 0 && count0() === 1, '시트는 카드가 그린 앞 장을 그대로 쓰고 따로 묻지 않는다');
   await check(`[...document.querySelectorAll('.gsheet-cap')].map(c=>c.textContent).join()==='Dark,Long'`, '이름표는 파일 이름 · Preview 를 떼고, 변주는 변주 이름, 남는 것이 없으면 생략');
-  await check(`!document.querySelector('.gsheet-shot[data-state="failed"]')`, '못 그린 장은 시트에 없다');
   await check(`document.querySelector('.gsheet-stage').dataset.flow==='row' && document.querySelector('.gsheet .gcard-count').textContent==='4'`, '세로 그림은 나란히, 장 수는 카드와 같은 알약');
   await check(`document.querySelectorAll('.gsheet-close').length===1 && document.querySelector('.gsheet-close').textContent.length>0`, '화면 읽기용 닫기 단추');
   const stayed = [];
@@ -192,6 +196,22 @@ try {
   await check(`document.querySelector('#galleryView').hidden===false && document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard').style.visibility===''`, 'Esc 로 시트를 닫으면 카드가 제자리에 돌아온다');
   await check(`document.activeElement===document.querySelector('#galleryView .gcard-slot:nth-child(1) .gcard-hit')`, '닫으면 포커스가 카드로 돌아온다');
   await check(`getComputedStyle(document.documentElement).overflow!=='hidden' && !document.querySelector('#galleryView .gallery-in').inert`, '닫으면 뒤 스크롤 잠금이 풀린다');
+
+  delay = 1500;
+  const drawing = files.find(f => !asked.includes(f.path));
+  await evaluate(`document.querySelector('#galleryView .gcard-slot[data-path="${drawing.path}"]').scrollIntoView({block:'center'})`);
+  await until(`document.querySelector('#galleryView .gcard-slot[data-path="${drawing.path}"] .gveil')`);
+  await click(`#galleryView .gcard-slot[data-path="${drawing.path}"] .gcard-hit`);
+  await until(sheetUp);
+  await check(`document.querySelector('.gsheet-veil') && !document.querySelector('.gsheet-fig') && (()=>{const v=document.querySelector('.gsheet-veil').getBoundingClientRect(),m=document.querySelector('.gsheet-mediabg').getBoundingClientRect();return Math.abs(v.width-m.width)<1&&Math.abs(v.height-m.height)<1})()`, '그리는 중인 시트는 그림 칸 전체가 로딩 판이고 자리 · 이름표가 없다');
+  await until(`!document.querySelector('.gsheet-veil') && document.querySelector('.gsheet-fig img')`);
+  ok(true, '시트도 그림이 오면 로딩 판이 걷힌다');
+  delay = 120;
+  await key('Escape');
+  await until(sheetGone);
+
+  await evaluate(`scrollTo(0, 0)`);
+  await pause(300);
 
   await click('#galleryView .gcard-slot:nth-child(1) .gcard-hit');
   await until(sheetUp);
@@ -426,12 +446,25 @@ try {
   await key('Escape');
   await until(sheetGone);
 
-  await evaluate(`(()=>{const p=document.createElement('span');p.className='gcard-ph';p.id='phProbe';document.querySelector('#galleryView').append(p)})()`);
-  await check(`getComputedStyle(document.querySelector('#phProbe'),'::after').animationName==='gcard-shimmer'`, '로딩 판은 빛이 지나가는 쉬머');
+  await evaluate(`document.querySelector('${slot({ path: FAILED })}').scrollIntoView({block:'center'})`);
+  await until(`document.querySelector('${slot({ path: FAILED })} .gcard').dataset.state==='failed'`);
+  await click(`${slot({ path: FAILED })} .gcard-hit`);
+  await until(sheetUp);
+  await check(`!document.querySelector('.gsheet-fig') && (()=>{const f=document.querySelector('.gsheet-failed').getBoundingClientRect(),m=document.querySelector('.gsheet-mediabg').getBoundingClientRect();return f.width===m.width&&f.height===m.height})()`, '그리지 못한 파일의 시트는 그림 칸 전체가 실패 판');
+  await key('Escape');
+  await until(sheetGone);
+  await evaluate(`(()=>{const c=document.createElement('span');c.className='gcard-cover';c.id='veilProbe';c.innerHTML='<span class="gveil" data-phase="wait"></span><span class="gcard-stack"></span>';document.querySelector('#galleryView').append(c)})()`);
+  const probe = `document.querySelector('#veilProbe .gveil')`;
+  await check(`getComputedStyle(${probe},'::after').animationName==='gveil-sheen' && getComputedStyle(document.querySelector('#veilProbe .gcard-stack')).visibility==='hidden'`, '로딩 판은 빛줄기가 지나가고, 그 아래 그림은 숨긴다');
+  await evaluate(`${probe}.dataset.phase='clear'`);
+  await check(`getComputedStyle(${probe}).animationName==='gveil-out' && getComputedStyle(document.querySelector('#veilProbe .gcard-stack')).animationName==='gveil-in'`, '그림이 오면 판은 페이드아웃, 그림은 자리 잡으며 페이드인');
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
-  await check(`getComputedStyle(document.querySelector('#phProbe'),'::after').display==='none' && getComputedStyle(document.querySelector('#phProbe')).animationName==='none'`, '움직임 줄이기에서는 멈춘 판');
+  await evaluate(`${probe}.dataset.phase='wait'`);
+  await check(`getComputedStyle(${probe},'::after').display==='none'`, '움직임 줄이기에서는 빛줄기 없는 멈춘 판');
+  await evaluate(`${probe}.dataset.phase='clear'`);
+  await check(`getComputedStyle(${probe}).animationName==='gveil-out' && parseFloat(getComputedStyle(${probe}).animationDuration)>0`, '움직임 줄이기에서도 시간이 있는 페이드');
   await send('Emulation.setEmulatedMedia', { features: [] });
-  await evaluate(`document.querySelector('#phProbe').remove()`);
+  await evaluate(`document.querySelector('#veilProbe').remove()`);
   await evaluate(`document.querySelector('#galleryView .gcard-slot[data-path="${BROKEN}"]').scrollIntoView({block:'center'})`);
   await until(`document.querySelector('#galleryView .gcard-slot[data-path="${BROKEN}"] .gcard').dataset.state==='failed'`);
   ok(true, '카드 요청이 서버 오류로 끝나면 실패 카드');
