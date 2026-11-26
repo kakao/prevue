@@ -47,6 +47,7 @@ import prevue.application.port.Clock
 import prevue.application.port.FailureKind
 import prevue.infrastructure.compile.HotCompiler
 import prevue.infrastructure.render.ViewInfoJson
+import prevue.infrastructure.render.ComposeNode
 import prevue.infrastructure.json.Json
 import prevue.infrastructure.store.InMemoryWorkspaceStore
 import prevue.infrastructure.watch.PollingSourceWatcher
@@ -1170,6 +1171,34 @@ class RenderIntegrationTest {
 
     private fun samePixels(a: prevue.application.domain.model.Bitmap, b: prevue.application.domain.model.Bitmap): Boolean =
         a.width == b.width && a.height == b.height && (0 until a.height step 4).all { y -> (0 until a.width step 4).all { x -> a.pixels[y * a.width + x] == b.pixels[y * b.width + x] } }
+
+    // 성공 기준 1(ui-tooling 1.13 트리 getter). 어댑터가 지은 viewInfos 가 기준값이다 — 맹글링 이름은 판마다 달라 테스트만 접두사로 찾는다.
+    // 게으른 목록 카드라 서브컴포지션 이어 붙이기까지 같아야 한다. -PpearlComposeBom 으로 판을 바꿔 돈다
+    @Test @Order(42) fun `직접 지은 가리키기 트리는 어댑터의 viewInfos 와 노드 · 파일 줄 · 영역이 같다`() = runBlocking {
+        assertTrue(uc.tabs.openPreview(PearlFixture.until.path, null, emptyMap(), "test").ok)
+        ws.awaitBoardFilled(timeoutMs = 60_000)
+        val preview = ws.now.board?.focusCard?.spec ?: ws.now.current!!
+        val out = engine.written(engine.show(preview))
+        assertTrue(out.ok, out.message?.text)
+        val ours = PearlFixture.tree(out.tree!!).nodes
+        val adapter = engine.shownAdapter()!!
+        val getter = adapter.javaClass.methods.single { it.name.startsWith("getViewInfos$") && it.parameterCount == 0 }
+        println("[pearl] ${getter.name} (BOM ${System.getProperty("prevue.pearlComposeBom") ?: "fixed"})")
+        val theirs = ViewInfoJson.nodes(ViewInfoJson.compose((getter.invoke(adapter) as List<*>).map(::adapterNode)))
+        assertTrue(ours.count { it.file == PearlFixture.until.name } > 10, "게으른 목록 칸이 트리에 없다: ${ours.size}")
+        assertEquals(theirs, ours)
+    }
+
+    private fun adapterNode(info: Any?): ComposeNode {
+        fun call(o: Any?, name: String): Any? = o?.let { runCatching { it.javaClass.getMethod(name).invoke(it) }.getOrNull() }
+        val bounds = call(info, "getBounds")
+        return ComposeNode(
+            call(info, "getName")?.toString() ?: "", call(info, "getFileName")?.toString() ?: "", call(info, "getLineNumber") as? Int ?: -1,
+            listOf("getLeft", "getTop", "getRight", "getBottom").map { (call(bounds, it) as? Number)?.toInt() ?: 0 },
+            call(call(info, "getLocation"), "getPackageHash") as? Int, call(info, "getLayoutInfo"),
+            (call(info, "getChildren") as? List<*>).orEmpty().map(::adapterNode),
+        )
+    }
 
     companion object {
         @JvmStatic fun available(): Boolean = PearlFixture.available()

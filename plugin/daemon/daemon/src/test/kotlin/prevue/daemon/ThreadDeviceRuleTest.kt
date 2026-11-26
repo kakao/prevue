@@ -27,6 +27,7 @@ class ThreadDeviceRuleTest {
             Allowed("$RENDER/LazyListReflection.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/SemanticsTree.kt", "ClassValue", 3, CLASS_LIFETIME),
             Allowed("$RENDER/ModifierChain.kt", "ClassValue", 2, CLASS_LIFETIME),
+            Allowed("$RENDER/ToolingTree.kt", "ClassValue", 1, CLASS_LIFETIME),
             Allowed("$RENDER/Shim.java", "CompletableFuture", 1, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "Thread", 2, RENDERER_API),
             Allowed("$RENDER/SessionDisposal.kt", "ThreadLocal", 2, RENDERER_API),
