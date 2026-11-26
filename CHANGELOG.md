@@ -8,6 +8,8 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-11-26
+
 ![Prevue 0.24 — Every preview, at a glance. The All Previews grid of a Pearl project, with a sheet raised from the ShowcasePreviews card showing its NavTour, HomeTour and Sip previews and a View on board button](https://raw.githubusercontent.com/kakao/prevue/v0.24.0/assets/release-0.24.0.png)
 
 **Every preview, at a glance.** All Previews lays out every preview file in your project as a card grid: hover a card to see the next previews behind it, click it to raise a sheet with its first three, and View on board opens its board. This release also stops `prevue setup` and the first `start` after an update from failing on a Kotlin compile daemon that another build started on JDK 17, and keeps a preview with a View-based spinner from taking the daemon down.
