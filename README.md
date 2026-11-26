@@ -69,15 +69,13 @@ Switch between a screen file and its component files while you edit, and the ope
 
 ## Every preview at a glance
 
-Don't remember the file name? Browse instead. **All Previews** shows every preview file in the project as a card grid, most recently changed first. It's the start screen when no tabs are open, sits at the top of the rail, and `esc` on a board takes you back to it.
-Each card shows the file name, package, module, and how many previews it has. Cards draw as they scroll into view, from what is already built, without Gradle. Click one and a sheet rises from where it sits with its first three previews, and **View on board** opens its board.
+Once a project has many preview files, it's hard to find one whose name you don't remember. **All Previews** lays every preview file out as a card, so you can browse and pick by eye. The most recently changed come first.
+Each card shows the file's previews with its name, package, and module. Click one to spread out its first few previews and go on to its board.
 
 <p align="center">
   <img src="assets/gallery.png" width="1000"
        alt="All Previews for the Pearl sample app with no tabs open. The rail shows All Previews 23 at the top and No open files below it. The grid, sorted by Recently changed, starts with PearlPreviews (30 previews), SearchScreen, and ShowcasePreviews, each card showing its drawn preview, file name, package, and module. ShowcasePreviews is open as a sheet raised over its card, with NavTour, HomeTour, and Sip side by side, the package com.example.pearl.feature.pearl.showcase, the module feature/pearl, and View on board">
 </p>
-
-Drawn cards are kept, even across daemon restarts, so the grid comes back at once. A card drawn before its file changed shows faded with **Outdated** until the board draws it again.
 
 ## Point instead of explaining
 
