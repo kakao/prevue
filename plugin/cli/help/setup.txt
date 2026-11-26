@@ -4,6 +4,7 @@ Downloads and assembles the toolchain (renderer · layoutlib · Kotlin compiler)
 --offline builds only from what was already downloaded (start does the build after a plugin update itself). With a file or --variant it doesn't run and
 sends you to warmup (exit 2) — downloading from the external network and running Gradle in the target repository are separate approvals.
 On success {"ok":true,"toolchain":true,"alreadyHad":…} — alreadyHad means it was already there and finished in seconds. On failure, error and the Gradle output above it.
+--offline asks for a download (missing ["toolchain"], next prevue setup) only when the Gradle output says something wasn't available offline; any other failure, such as a compile error, is answered with error and the Gradle output.
 
 If the person asks more
   About 435MB, around 30 seconds. Downloads layoutlib · the Kotlin compiler from Google (dl.google.com) and Maven Central. No company repository credentials needed.
