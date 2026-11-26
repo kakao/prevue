@@ -5,7 +5,7 @@ import type { PreviewFile } from '../match';
 import { stale, stemOf } from '../gallery/cards';
 import type { CardImage, CardView } from '../gallery/queue';
 import type { CardText } from './Gallery';
-import { Veil, useVeil } from './Veil';
+import { Veil } from './Veil';
 
 const SCALE = 1.5, MIN_W = 420, MAX_W = 640, EDGE = 16, STAGE_RATIO = 10 / 16, STAGE_INSET = 40, WIDE = 1.2;
 
@@ -117,7 +117,6 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   const slots = sheetSlots(view, file);
   const flow = slots.length && slots.every(s => s.shot.w > s.shot.h * WIDE) ? 'col' : 'row';
   const settled = view.status === 'done' || view.status === 'error';
-  const veil = useVeil(true, settled);
   const count = view.status === 'done' ? view.sheets : 0;
 
   useLayoutEffect(() => {
@@ -201,7 +200,7 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       <span className="gsheet-shell" />
       <span className="gsheet-mediabg" />
       {view.status === 'error' && <span className="gsheet-failed">{phrase('gallery.failed')}</span>}
-      {veil.on && <Veil className="gsheet-veil" ready={settled} onDone={veil.done} />}
+      <Veil className="gsheet-veil" ready={settled} />
       <div className="gsheet-stage" data-flow={flow} style={{ ['--k' as string]: slots.length }}>
         {slots.map((s, i) => { const old = stale(file, s.shot); return <span key={i} className="gsheet-fig" data-stale={old || undefined} style={{ zIndex: slots.length - i }}>
           <span className="gsheet-shot">

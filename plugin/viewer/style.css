@@ -868,7 +868,8 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gsheet { --cap-h: 0px; position: absolute; display: flex; flex-direction: column; color: var(--on-surface); }
 .gsheet[data-cap] { --cap-h: calc(var(--space-16) + var(--space-6)); }
 .gsheet-shell { position: absolute; inset: 0; border-radius: var(--corner-large); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-4); }
-.gsheet-mediabg { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--stage-h) + var(--space-20) * 2); border-radius: var(--corner-large) var(--corner-large) 0 0; background: var(--surface-container-high); }
+.gsheet-mediabg, .gsheet-failed, .gsheet-veil { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--stage-h) + var(--space-20) * 2); border-radius: var(--corner-large) var(--corner-large) 0 0; }
+.gsheet-mediabg { background: var(--surface-container-high); }
 .gsheet-stage { position: relative; display: flex; align-items: center; justify-content: center; gap: var(--space-12); height: calc(var(--stage-h) + var(--space-20) * 2); padding: var(--space-20); }
 .gsheet-stage[data-flow="col"] { flex-direction: column; }
 .gsheet-fig { position: relative; flex: 0 1 auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-6); min-width: 0;
@@ -877,7 +878,6 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gsheet-shot { position: relative; max-width: 100%; overflow: hidden; border-radius: var(--corner-medium); background: var(--surface); box-shadow: 0 0 0 1px var(--outline-faint), var(--elevation-1); }
 .gsheet-shot img { display: block; max-width: 100%; width: auto; height: auto; max-height: calc(var(--stage-h) - var(--cap-h)); }
 .gsheet-stage[data-flow="col"] .gsheet-shot img { max-height: calc((var(--stage-h) - var(--space-12) * (var(--k) - 1)) / var(--k) - var(--cap-h)); }
-.gsheet-failed, .gsheet-veil { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--stage-h) + var(--space-20) * 2); border-radius: var(--corner-large) var(--corner-large) 0 0; }
 .gsheet-failed { display: grid; place-items: center; padding: var(--space-8); background: var(--surface-container); color: var(--on-surface-variant); font: var(--type-body-small); text-align: center; }
 .gsheet-cap { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--on-surface-variant); font: var(--type-label-small); }
 .gsheet-body { position: relative; display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; padding: var(--space-16) var(--space-20); }

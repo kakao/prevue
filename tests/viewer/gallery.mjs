@@ -343,6 +343,8 @@ try {
   for (let i = 0; i < 100 && count(files[3].path) < brokenAsks + 2; i++) await pause(50);
   await pause(800);
   ok(count(files[3].path) === brokenAsks + 2, '그림을 받지 못하면 그 카드를 한 번만 다시 묻는다');
+  await until(`!document.querySelector('#galleryView .gcard-slot:nth-child(4) .gveil')`);
+  ok(true, '다시 물어도 그림을 받지 못하면 로딩 판이 걷힌다');
   brokenImage = null;
 
   push({ ...boardOf(files[2].path), tabs: [tabOf(files[2].path), { ...tabOf(files[6].path), active: false }] });
