@@ -553,7 +553,7 @@ show_unready() {  # <파일> — 돌아오지 않는다
     while IFS= read -r line; do start+=("$line"); done < <(printf '%s' "$h" | python3 "$PLAN_PY" autostart)
     if [ ${#start[@]} -gt 0 ]; then
       out="$("$ROOT/bin/prevue" start "${start[@]}" --show "$1")"; rc=$?
-      [ "$rc" = 0 ] || [ "$rc" = 1 ] || { echo "$out"; exit "$rc"; }   # 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
+      [ "$rc" = 0 ] || { [ "$rc" = 1 ] && baked; } || { echo "$out"; exit "$rc"; }   # 구운 뒤의 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
       # 브라우저를 못 열었으면(샌드박스) 그 사실은 start 의 답에만 있다 — 버리면 에이전트가 "열렸다"고 말하고 사람은 빈 화면을 본다
       case "$out" in *'"opened": false'*|*'"opened":false'*) export PREVUE_NOT_OPENED=1;; esac
       PREVUE_AUTOSTARTED=1 exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}

@@ -15,7 +15,7 @@ import subprocess
 import unittest
 
 from test_daemon_records import free_port
-from test_plan import Case, fake_jdk
+from test_plan import Case, P, fake_jdk, fake_sdk
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugin"))
 LAYOUTLIB, COMPILER, LIB = ".prevue/toolchain/layoutlib-1", ".prevue/toolchain/compiler-1", ".prevue/toolchain/lib-1"
@@ -114,6 +114,29 @@ class Baked(Case):
         self.assertNotIn("next", out)
         self.assertNotIn("missing", out)
         self.assertIn("Gradle output above", out["error"])
+
+    def test_show_answers_the_failed_start_bake_instead_of_asking_for_the_daemon(self):
+        os.remove(os.path.join(self.plugin, "daemon", "daemon", "build", "prevue-env"))
+        self.shared_toolchain()
+        r = self.repo(":app")
+        os.chmod(os.path.join(r.root, "gradlew"), 0o755)
+        path = P.dump_path(os.path.join(self.home, ".prevue", "projects"), r.root, ":app", "debug")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"schema": P.SCHEMA, "project": ":app", "variant": "debug", "resourceApkPath": r.apk(":app", "debug"),
+                       "projectClassPath": [r.built(":app", "debug")], "classPath": ["a.jar"]}, f)
+        bakes = os.path.join(self.tmp.name, "bakes")
+        with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
+            f.write("#!/bin/sh\necho ran >> '%s'\necho 'e: compile error' >&2\nexit 1\n" % bakes)
+        os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
+        code, out = self.prevue("show", r.src(":app"), PREVUE_PORT=str(free_port()),
+                                PREVUE_JDK=fake_jdk(os.path.join(self.tmp.name, "jdk-show"), "21.0.12"),
+                                ANDROID_HOME=fake_sdk(os.path.join(self.tmp.name, "sdk")))
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("missing", out)
+        self.assertIn("Gradle output above", out["error"])
+        with open(bakes) as f:
+            self.assertEqual(len(f.readlines()), 1)
 
     def gradle_args(self, *setup_args):
         jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-setup" + "".join(setup_args)), "21.0.12")
