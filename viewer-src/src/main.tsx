@@ -6,7 +6,7 @@ import { closeDirPop } from './components/ProjectHeader';
 import type { WorkspaceActions } from './components/Workspace';
 import { prepareViewer } from './preparation/PreparationScreen';
 import { openQuickOpen, previewFilesChanged } from './components/QuickOpen';
-import { closeSheet, currentLayer, galleryFilesChanged, galleryShown, openGallery, sheetOpen } from './gallery/layer';
+import { closeSheet, currentLayer, galleryFilesChanged, galleryShown, loadFiles, openGallery, sheetOpen } from './gallery/layer';
 import { helpOpen, toggleHelp } from './components/ShortcutHelp';
 import { drawScreens, startViewer } from './session';
 import { installShortcuts, shortcutTable, type ShortcutActions } from './shortcuts';
@@ -51,7 +51,7 @@ installShortcuts(shortcuts, actions, {
 });
 const viewer = createViewerRoot({ renderLegacy: renderScreens, messages: { phrase, daemonText }, hosts: findHosts(), shortcuts,
   board: { open: enterFocus, point: pointCard }, workspace: workspaceActions, point: pointActions });
-startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); galleryFilesChanged(); forgetPreviewIndex(); }, onGalleryShots: galleryFilesChanged, prepared: preparation });
+startViewer({ workspace, render: viewer.apply, onConnection: viewer.connection, onPreviewFiles: () => { previewFilesChanged(); loadFiles(); forgetPreviewIndex(); }, onGalleryShots: galleryFilesChanged, onStreamOpen: loadFiles, prepared: preparation });
 
 /*
  * 마우스로 누른 버튼은 포커스를 쥐지 않는다(D-63) — Chromium 은 누른 버튼에 포커스를 줘서, 다음 Enter(고른 카드 열기)를

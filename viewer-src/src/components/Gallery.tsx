@@ -6,7 +6,7 @@ import { useHost } from '../host';
 import { useMessages, type Messages } from '../messages';
 import type { PreviewFile } from '../match';
 import { activeKey, type ViewerState } from '../state';
-import { byChanged, cachedView, cardKey, changedAgo, commonHead, moduleOf, packageOf, stale as isStale, stemOf } from '../gallery/cards';
+import { byChanged, cachedView, cardKey, commonHead, moduleOf, packageOf, stale as isStale, stemOf } from '../gallery/cards';
 import { createCardQueue, type CardImage, type CardQueue, type CardView } from '../gallery/queue';
 import { closeGallery, closeSheet, currentLayer, galleryShown, loadFiles, markShown, openGallery, openSheet, sheetClosed, useLayer } from '../gallery/layer';
 import { GallerySheet } from './GallerySheet';
@@ -45,7 +45,7 @@ function Fitted({ text, className }: { text: string; className: string }) {
   return <span ref={ref} className={className} title={shownText === text ? undefined : text}>{shownText}</span>;
 }
 
-export type CardText = { name: string; pkg: string; mod: string; changed: string };
+export type CardText = { name: string; pkg: string; mod: string };
 
 const NO_GHOSTS: Array<CardImage | null> = [];
 
@@ -77,14 +77,14 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
       <span className="gcard-body">
         <Fitted className="gcard-file" text={text.name} />
         <span className="gcard-pkgrow"><Folder /><Fitted className="gcard-pkg" text={text.pkg} /></span>
-        <span className="gcard-foot">{text.mod && <span className="gcard-mod">{text.mod}</span>}<span className="gcard-info">{text.changed}</span></span>
+        <span className="gcard-foot">{text.mod && <span className="gcard-mod">{text.mod}</span>}</span>
       </span>
     </button>
   </article>;
 });
 
-const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, cards, onOpen }: {
-  f: PreviewFile; order: number; name: string; pkg: string; mod: string; changed: string; cards: CardQueue; onOpen: (f: PreviewFile) => void;
+const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, cards, onOpen }: {
+  f: PreviewFile; order: number; name: string; pkg: string; mod: string; cards: CardQueue; onOpen: (f: PreviewFile) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const key = cardKey(f);
@@ -101,7 +101,7 @@ const LiveCard = memo(function LiveCard({ f, order, name, pkg, mod, changed, car
     const offNear = nearView().add(el, setNear);
     return () => { off(); offNear(); cards.drop(key); };
   }, [key, order, cards, cached]);
-  const text = useMemo(() => ({ name, pkg, mod, changed }), [name, pkg, mod, changed]);
+  const text = useMemo(() => ({ name, pkg, mod }), [name, pkg, mod]);
   const open = useCallback(() => onOpen(f), [onOpen, f]);
   const lost = useCallback(() => (cached ? setBroken(true) : cards.lost(key, f.path, order)), [cached, cards, key, f, order]);
   const stale = view.status === 'done' && isStale(f, view.image);
@@ -116,13 +116,12 @@ async function openFile(f: PreviewFile, { phrase, daemonText }: Messages) {
   if (!r.ok) flash(daemonText(r.message) || phrase('open.cannot'));
 }
 
-export const GalleryGrid = memo(function GalleryGrid({ files, ready, cards, now = Date.now(), onOpen }: {
-  files: PreviewFile[] | null; ready: boolean; cards: CardQueue; now?: number; onOpen: (f: PreviewFile) => void;
+export const GalleryGrid = memo(function GalleryGrid({ files, ready, cards, onOpen }: {
+  files: PreviewFile[] | null; ready: boolean; cards: CardQueue; onOpen: (f: PreviewFile) => void;
 }) {
   const { phrase } = useMessages();
   const sorted = useMemo(() => (files ? byChanged(files) : null), [files]);
   const head = useMemo(() => (files ? commonHead(files) : []), [files]);
-  const lang = document.documentElement.lang || 'en';
   return <div className="gallery-in">
     <div className="gallery-head">
       <h1 className="gallery-title">{phrase('gallery.title')}</h1>
@@ -132,7 +131,7 @@ export const GalleryGrid = memo(function GalleryGrid({ files, ready, cards, now 
     {!sorted || (!ready && !sorted.length) ? <p className="gallery-note">{phrase('quickopen.loading')}</p>
       : !sorted.length ? <p className="gallery-note">{phrase('quickopen.none')}</p>
       : <div className="gallery-grid">{sorted.map((f, i) => <LiveCard key={f.path} f={f} order={i} cards={cards} onOpen={onOpen}
-          name={stemOf(f)} pkg={packageOf(f, head)} mod={moduleOf(f.module)} changed={changedAgo(f.mtime, now, phrase, lang)} />)}</div>}
+          name={stemOf(f)} pkg={packageOf(f, head)} mod={moduleOf(f.module)} />)}</div>}
   </div>;
 });
 
@@ -183,14 +182,12 @@ export function Gallery({ shown: on, state, draw, host }: { shown: boolean; stat
 }
 
 function SheetHost({ f, closing, onOpen }: { f: PreviewFile; closing: boolean; onOpen(): void }) {
-  const { phrase } = useMessages();
   const key = cardKey(f);
   const queued = useSyncExternalStore(queue.subscribe, () => queue.get(key));
   const cachedCard = useMemo(() => cachedView(f), [f]);
   const view = cachedCard ?? queued;
   useEffect(() => { if (!cachedCard) queue.urgent(key, f.path); }, [key]);
-  const lang = document.documentElement.lang || 'en';
-  const text = useMemo(() => ({ name: stemOf(f), pkg: packageOf(f, []), mod: moduleOf(f.module), changed: changedAgo(f.mtime, Date.now(), phrase, lang) }), [f, phrase, lang]);
+  const text = useMemo(() => ({ name: stemOf(f), pkg: packageOf(f, []), mod: moduleOf(f.module) }), [f]);
   return <GallerySheet file={f} text={text} view={view} closing={closing} onClose={closeSheet} onClosed={sheetClosed} onOpen={onOpen} />;
 }
 

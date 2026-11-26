@@ -57,7 +57,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   // 스트림 · 틀 · 스크롤처럼 그린 뒤에 재는 것은 session.ts 가 한다. 영역들은 자식이라 그 효과가 먼저 돈다 — 헤더 · 레일 · 화면이 먼저 자리를 잡는다.
   useLayoutEffect(() => { if (state) renderLegacy(state); }, [draw]);
   const gallery = useGalleryShown(state, connection);
-  const files = useLayer().files;
+  const { files, ready } = useLayer();
   const screen = gallery ? 'gallery' : state?.screen ?? null;
   if (!hosts) return null;
   return <>
@@ -65,7 +65,7 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <StatusPill state={statusState} connection={connection} host={hosts.status} bar={hosts.bar} />
     <HelpButton host={hosts.helpButton} />
     <FileRail tabs={state?.tabs ?? null} screen={state?.screen ?? null} gallery={gallery} hosts={hosts.rail} />
-    <GalleryEntry on={gallery} count={files?.length ?? null} host={hosts.railAll} />
+    <GalleryEntry on={gallery} count={ready ? files?.length ?? null : null} host={hosts.railAll} />
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
     <BuildNotice pending={!!state?.buildPending} host={hosts.buildNotice} />
     <Gallery shown={gallery} state={state} draw={draw} host={hosts.gallery} />
