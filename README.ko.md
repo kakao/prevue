@@ -196,12 +196,11 @@ codex plugin add prevue@prevue
        alt="Prevue가 다시 그리는 속도">
 </p>
 
-- **측정 사양** — Apple Silicon 14코어 · RAM 36GB · nowinandroid `ForYouScreen.kt`(Preview 25장). Android Studio 2026.1.3은 2026-09-22에, Prevue(develop `feb5c6e`)는 2026-10-23에 측정했습니다. Prevue 값은 중앙값입니다
-- **Hot Swap** — 저장한 뒤 25장이 모두 새로 그려지기까지. 첫 장은 0.9초에 나옵니다
-- **First Preview** — Android Studio는 프로젝트를 열고, Prevue는 데몬을 띄우고 첫 렌더가 끝나기까지
-- **Memory** — Android Studio는 한 시점에 IDE와 Gradle 데몬이 쓴 메모리의 합계, Prevue는 10번 저장한 뒤 데몬 하나가 쓴 메모리입니다. 모듈을 오가며 오래 써도 최대 1.6GB였고, 1시간 동안 쓰지 않으면 데몬이 스스로 종료됩니다(`prevue start --idle <분>`으로 조절)
-- **Disk** — Android Studio 앱 번들 대 `~/.prevue/toolchain`. JDK 25 이상에서는 데몬을 빨리 띄우기 위해 `~/.prevue/aot`에 200MB 안팎의 클래스 캐시를 추가로 둡니다
-- **Prevue가 다시 그리는 속도** — 리터럴이나 리소스 값만 바꿔 저장하면 컴파일을 건너뜁니다. 모듈 전환과 기기 바꾸기는 새 그림이 나오기까지의 시간, 인터랙티브는 피드를 드래그하는 동안 뷰어 스트림의 초당 프레임 수입니다
+- **측정 사양** — Apple Silicon 14코어 · RAM 36GB. Android Studio 2026.1.3은 2026-09-22에, Prevue(develop `feb5c6e`)는 2026-10-23에 측정했습니다
+- **First Preview** — Android Studio는 프로젝트를 연 때부터, Prevue는 데몬을 띄운 때부터 잽니다
+- **Memory** — Android Studio는 IDE와 Gradle 데몬의 합계입니다. Prevue는 모듈을 오가며 오래 써도 최대 1.6GB였고, 1시간 쓰지 않으면 스스로 종료됩니다(`prevue start --idle <분>`으로 조절)
+- **Disk** — JDK 25 이상에서는 `~/.prevue/aot`에 클래스 캐시 200MB 안팎이 더 듭니다
+- **리터럴 · 리소스 값 저장**은 컴파일을 건너뛰어 더 빠릅니다
 
 ## 명령
 
