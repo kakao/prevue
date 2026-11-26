@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import '../static/style.css';
 import { GalleryCard, GalleryGrid } from '../src/components/Gallery';
 import { createCardQueue, viewOf, type CardAnswer, type CardView } from '../src/gallery/queue';
@@ -49,3 +49,22 @@ const views: Array<[string, CardView]> = [
 export const Cards: Story = { render: () => <div className="story-shell gallery"><div className="gallery-grid">
   {views.map(([k, v]) => <GalleryCard key={k} text={text} view={v} />)}
 </div></div> };
+
+type VeilArgs = { outcome: 'done' | 'failed' };
+
+function VeilDemo({ outcome }: VeilArgs) {
+  const [round, setRound] = useState(0);
+  const [arrived, setArrived] = useState(false);
+  const view: CardView = !arrived ? { status: 'loading' } : outcome === 'done' ? viewOf(answer(3, round, 360, 780)) : viewOf(null);
+  return <div className="story-shell gallery">
+    <p><button type="button" onClick={() => setArrived(true)} disabled={arrived}>그림 도착</button>{' '}
+      <button type="button" onClick={() => { setArrived(false); setRound(r => r + 1); }}>다시</button></p>
+    <div className="gallery-grid">{[0, 1, 2].map(i => <GalleryCard key={`${round}-${i}`} text={{ ...text, name: `${text.name}${i}` }} view={view} />)}</div>
+  </div>;
+}
+
+export const LoadingVeil: StoryObj<VeilArgs> = {
+  args: { outcome: 'done' },
+  argTypes: { outcome: { control: 'inline-radio', options: ['done', 'failed'] } },
+  render: args => <VeilDemo {...args} />,
+};
