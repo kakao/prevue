@@ -725,10 +725,18 @@ case "$cmd" in
     require_java
     export JAVA_HOME="$JDK"
     if [ "$OFFLINE" = 1 ]; then
-      # 받아 둔 것만으로 굽는다. 모자라면 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다.
-      if ! bake_toolchain --offline >&2; then
-        echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
+      # 받아 둔 것만으로 굽는다. 캐시에 없어서 실패한 때만 새로 받아야 하므로 승인이 필요한 setup 으로 돌려보낸다 — 컴파일 오류 같은 다른 이유는 다시 받아도 되풀이된다.
+      BAKE_OUT="$(mktemp)"
+      if ! bake_toolchain --offline >"$BAKE_OUT" 2>&1; then
+        cat "$BAKE_OUT" >&2
+        if grep -q 'available for offline mode' "$BAKE_OUT"; then
+          rm -f "$BAKE_OUT"
+          echo '{"ok":false,"missing":["toolchain"],"error":"Cannot build from the downloaded components — they need to be downloaded again","next":"prevue setup"}' | python3 "$PLAN_PY" runnable; exit 1
+        fi
+        rm -f "$BAKE_OUT"
+        echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
       fi
+      cat "$BAKE_OUT" >&2; rm -f "$BAKE_OUT"
     elif ! bake_toolchain >&2; then
       echo '{"ok":false,"error":"The toolchain build failed — the cause is in the Gradle output above"}'; exit 1
     fi

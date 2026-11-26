@@ -118,6 +118,25 @@ class Baked(Case):
         with open(os.path.join(self.plugin, "daemon", "gradlew.ran")) as f:
             self.assertIn(in_process, f.read().split())
 
+    def offline_setup(self, gradle_says):
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-offline"), "21.0.12")
+        with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
+            f.write("#!/bin/sh\necho '%s' >&2\nexit 1\n" % gradle_says)
+        os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
+        return self.prevue("setup", "--offline", PREVUE_JDK=jdk)
+
+    def test_offline_setup_asks_for_a_download_only_when_the_cache_lacks_it(self):
+        code, out = self.offline_setup("No cached version of org.jetbrains.kotlin:kotlin-stdlib:2.0.0 available for offline mode")
+        self.assertEqual((code, out["missing"]), (1, ["toolchain"]), out)
+        self.assertTrue(out["next"].endswith("prevue setup"), out)
+
+    def test_offline_setup_points_at_the_gradle_output_when_the_build_fails_for_another_reason(self):
+        code, out = self.offline_setup("e: UnsupportedClassVersionError: class file version 65")
+        self.assertEqual(code, 1)
+        self.assertNotIn("next", out)
+        self.assertNotIn("missing", out)
+        self.assertIn("Gradle output above", out["error"])
+
     def test_health_counts_the_toolchain_by_its_directories_not_the_env_file(self):
         f = self.file()
         for present, missing in (((LAYOUTLIB, COMPILER), True), ((LIB,), False)):
