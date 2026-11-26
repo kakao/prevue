@@ -116,7 +116,8 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
   const [place, setPlace] = useState<CSSProperties | null>(null);
   const slots = sheetSlots(view, file);
   const flow = slots.length && slots.every(s => s.shot.w > s.shot.h * WIDE) ? 'col' : 'row';
-  const settled = view.status === 'done' || view.status === 'error';
+  const [drawn, setDrawn] = useState(view.status === 'done');
+  const ready = view.status === 'error' || (view.status === 'done' && drawn);
   const count = view.status === 'done' ? view.sheets : 0;
 
   useLayoutEffect(() => {
@@ -200,12 +201,12 @@ export function GallerySheet({ file, text, view, closing, onClose, onClosed, onO
       <span className="gsheet-shell" />
       <span className="gsheet-mediabg" />
       {view.status === 'error' && <span className="gsheet-failed">{phrase('gallery.failed')}</span>}
-      <Veil className="gsheet-veil" ready={settled} />
+      <Veil className="gsheet-veil" ready={ready} />
       <div className="gsheet-stage" data-flow={flow} style={{ ['--k' as string]: slots.length }}>
         {slots.map((s, i) => { const old = stale(file, s.shot); return <span key={i} className="gsheet-fig" data-stale={old || undefined} style={{ zIndex: slots.length - i }}>
           <span className="gsheet-shot">
             {old && <span className="gsheet-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
-            <img src={s.shot.url} width={s.shot.w} height={s.shot.h} alt="" /></span>
+            <img src={s.shot.url} width={s.shot.w} height={s.shot.h} alt="" onLoad={i ? undefined : () => setDrawn(true)} onError={i ? undefined : () => setDrawn(true)} /></span>
           {s.label && <span className="gsheet-cap">{s.label}</span>}</span>; })}
         {count > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: count })}><Stack />{count}</span>}
       </div>

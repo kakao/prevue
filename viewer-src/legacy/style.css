@@ -845,7 +845,7 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; 
 .gveil::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
                 background: linear-gradient(90deg, transparent, var(--skeleton-sheen), transparent);
                 animation: gveil-sheen var(--duration-extra-long4) var(--easing-standard) infinite; }
-.gveil[data-phase="clear"] { animation: gveil-out var(--duration-medium2) var(--easing-standard) both; }
+.gveil[data-phase="clear"] { animation: gveil-out var(--duration-long1) var(--easing-standard) both; }
 .gcard-cover:has(> .gveil[data-phase="wait"]) > :not(.gveil),
 .gsheet:has(> .gsheet-veil[data-phase="wait"]) > :is(.gsheet-stage, .gsheet-failed) { visibility: hidden; }
 .gcard-cover:has(> .gveil[data-phase="clear"]) > :not(.gveil),

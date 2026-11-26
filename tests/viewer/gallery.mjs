@@ -422,6 +422,7 @@ try {
   notifyShots();
   await until(`document.querySelector('${slot(old)} .gcard-shot img')?.getAttribute('src')==='/prevue.svg?new' && !document.querySelector('${slot(old)} .gcard').dataset.stale && !document.querySelector('${slot(old)} .gcard-old')`);
   ok(true, '보드가 다시 그려 갤러리 알림이 오면 그 자리에서 갈아 끼우고 흐림이 풀린다');
+  await check(`!document.querySelector('${slot(old)} .gveil')`, '그림이 보이던 카드는 새 그림으로 바뀌는 동안 로딩 판을 다시 씌우지 않는다');
   old.shots = oldShots;
   notifyFiles();
   await until(`document.querySelector('${slot(old)} .gcard').dataset.stale==='true'`);

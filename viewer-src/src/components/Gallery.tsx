@@ -56,9 +56,8 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
   const ghosts = view.status === 'done' ? [view.front[1]?.image ?? null, view.front[2]?.image ?? null] : NO_GHOSTS;
   const { phrase, daemonText } = useMessages();
   const state = view.status === 'done' ? 'done' : view.status === 'error' ? 'failed' : 'loading';
-  const url = view.status === 'done' ? view.image.url : null;
-  const [loaded, setLoaded] = useState<string | null>(null);
-  const ready = view.status === 'error' || (!!url && loaded === url);
+  const [settled, setSettled] = useState(false);
+  const ready = view.status === 'error' || (view.status === 'done' && settled);
   const tall = view.status !== 'done' || view.image.w <= view.image.h;
   const sheets = view.status === 'done' ? view.sheets : 0;
   return <article className="gcard" data-state={state} data-stale={stale || undefined} aria-busy={state === 'loading'}>
@@ -72,8 +71,8 @@ export const GalleryCard = memo(function GalleryCard({ text, view, stale = false
                 return <span key={g} className="gcard-ghost" data-g={g}>{img && <img src={img.url} width={img.w} height={img.h} alt="" decoding="async" />}</span>;
               })}
               <span className="gcard-shot">{near && <img src={view.image.url} width={view.image.w} height={view.image.h} alt="" decoding="async"
-                onLoad={e => { e.currentTarget.classList.add('in'); setLoaded(e.currentTarget.getAttribute('src')); }}
-                onError={e => { setLoaded(e.currentTarget.getAttribute('src')); onLost?.(); }} />}</span>
+                onLoad={e => { e.currentTarget.classList.add('in'); setSettled(true); }}
+                onError={() => { setSettled(true); onLost?.(); }} />}</span>
             </span>}
         {stale && <span className="gcard-old" title={phrase('gallery.stale.why')}>{phrase('gallery.stale')}</span>}
         {sheets > 1 && <span className="gcard-count" aria-label={phrase('board.count', { n: sheets })}><Stack />{sheets}</span>}

@@ -2932,7 +2932,7 @@ function ga(e) {
 }
 var _a = (e) => document.querySelector(`#galleryView .gcard-slot[data-path="${CSS.escape(e)}"] .gcard`);
 function va({ file: e, text: t, view: n, closing: r, onClose: i, onClosed: a, onOpen: o }) {
-	let { phrase: c } = s(), l = (0, R.useRef)(null), [u, d] = (0, R.useState)(null), f = ra(n, e), p = f.length && f.every((e) => e.shot.w > e.shot.h * ta) ? "col" : "row", m = n.status === "done" || n.status === "error", h = n.status === "done" ? n.sheets : 0;
+	let { phrase: c } = s(), l = (0, R.useRef)(null), [u, d] = (0, R.useState)(null), f = ra(n, e), p = f.length && f.every((e) => e.shot.w > e.shot.h * ta) ? "col" : "row", [m, h] = (0, R.useState)(n.status === "done"), g = n.status === "error" || n.status === "done" && m, _ = n.status === "done" ? n.sheets : 0;
 	return (0, R.useLayoutEffect)(() => {
 		let t = document.documentElement, n = document.body, r = [
 			t.style.overflow,
@@ -3036,7 +3036,7 @@ function va({ file: e, text: t, view: n, closing: r, onClose: i, onClosed: a, on
 				}),
 				/* @__PURE__ */ (0, z.jsx)(Ji, {
 					className: "gsheet-veil",
-					ready: m
+					ready: g
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "gsheet-stage",
@@ -3058,17 +3058,19 @@ function va({ file: e, text: t, view: n, closing: r, onClose: i, onClosed: a, on
 									src: t.shot.url,
 									width: t.shot.w,
 									height: t.shot.h,
-									alt: ""
+									alt: "",
+									onLoad: n ? void 0 : () => h(!0),
+									onError: n ? void 0 : () => h(!0)
 								})]
 							}), t.label && /* @__PURE__ */ (0, z.jsx)("span", {
 								className: "gsheet-cap",
 								children: t.label
 							})]
 						}, n);
-					}), h > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
+					}), _ > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
 						className: "gcard-count",
-						"aria-label": c("board.count", { n: h }),
-						children: [/* @__PURE__ */ (0, z.jsx)(oa, {}), h]
+						"aria-label": c("board.count", { n: _ }),
+						children: [/* @__PURE__ */ (0, z.jsx)(oa, {}), _]
 					})]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
@@ -3177,7 +3179,7 @@ function Ea({ text: e, className: t }) {
 	});
 }
 var Da = [], Oa = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: r = !0, shown: i = !0, onOpen: a, onLost: o }) {
-	let c = t.status === "done" ? [t.front[1]?.image ?? null, t.front[2]?.image ?? null] : Da, { phrase: l, daemonText: u } = s(), d = t.status === "done" ? "done" : t.status === "error" ? "failed" : "loading", f = t.status === "done" ? t.image.url : null, [p, m] = (0, R.useState)(null), h = t.status === "error" || !!f && p === f, g = t.status !== "done" || t.image.w <= t.image.h, _ = t.status === "done" ? t.sheets : 0;
+	let c = t.status === "done" ? [t.front[1]?.image ?? null, t.front[2]?.image ?? null] : Da, { phrase: l, daemonText: u } = s(), d = t.status === "done" ? "done" : t.status === "error" ? "failed" : "loading", [f, p] = (0, R.useState)(!1), m = t.status === "error" || t.status === "done" && f, h = t.status !== "done" || t.image.w <= t.image.h, g = t.status === "done" ? t.sheets : 0;
 	return /* @__PURE__ */ (0, z.jsx)("article", {
 		className: "gcard",
 		"data-state": d,
@@ -3197,7 +3199,7 @@ var Da = [], Oa = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 						children: l("gallery.failed")
 					}) : t.status === "done" && /* @__PURE__ */ (0, z.jsxs)("span", {
 						className: "gcard-stack",
-						"data-o": g ? "tall" : "wide",
+						"data-o": h ? "tall" : "wide",
 						children: [["r", "l"].slice(0, c.filter(Boolean).length).map((e) => {
 							let t = i ? c[e === "r" ? 0 : 1] : null;
 							return /* @__PURE__ */ (0, z.jsx)("span", {
@@ -3220,10 +3222,10 @@ var Da = [], Oa = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 								alt: "",
 								decoding: "async",
 								onLoad: (e) => {
-									e.currentTarget.classList.add("in"), m(e.currentTarget.getAttribute("src"));
+									e.currentTarget.classList.add("in"), p(!0);
 								},
-								onError: (e) => {
-									m(e.currentTarget.getAttribute("src")), o?.();
+								onError: () => {
+									p(!0), o?.();
 								}
 							})
 						})]
@@ -3233,14 +3235,14 @@ var Da = [], Oa = (0, R.memo)(function({ text: e, view: t, stale: n = !1, near: 
 						title: l("gallery.stale.why"),
 						children: l("gallery.stale")
 					}),
-					_ > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
+					g > 1 && /* @__PURE__ */ (0, z.jsxs)("span", {
 						className: "gcard-count",
-						"aria-label": l("board.count", { n: _ }),
-						children: [/* @__PURE__ */ (0, z.jsx)(Ca, {}), _]
+						"aria-label": l("board.count", { n: g }),
+						children: [/* @__PURE__ */ (0, z.jsx)(Ca, {}), g]
 					}),
 					/* @__PURE__ */ (0, z.jsx)(Ji, {
 						shown: i,
-						ready: h
+						ready: m
 					})
 				]
 			}), /* @__PURE__ */ (0, z.jsxs)("span", {
