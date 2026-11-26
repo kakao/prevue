@@ -23,7 +23,7 @@ const boardOf = path => ({ ...board, version: version++, screen: 'board', tabs: 
 let current = { ...board, version: version++, screen: 'empty', tabs: [], board: null, focus: null };
 const asked = [], opened = [], sheetAsked = [];
 const WIDE = files[4].path;
-let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null, filesReady = true;
+let inFlight = 0, maxInFlight = 0, delay = 120, brokenImage = null, filesReady = true, filesAsked = 0;
 const streams = new Set();
 const notifyShots = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'galleryShots' } })}\n\n`); };
 const notifyFiles = () => { for (const r of streams) r.write(`data: ${JSON.stringify({ type: 'ui', event: { kind: 'previewFiles' } })}\n\n`); };
@@ -60,6 +60,7 @@ const server = createServer(async (request, response) => {
     response.end(JSON.stringify({ ok: true }));
     push(boardOf(file));
   } else if (path === '/preview-files.json' || path === '/project-files.json') {
+    if (path === '/preview-files.json') filesAsked++;
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(path === '/preview-files.json' ? { ready: filesReady, files: filesReady ? files : [] } : { files: {} }));
   } else if (path.startsWith('/viewer/')) {
@@ -462,10 +463,18 @@ try {
   await check(`__errors.length===0`, '브라우저 오류 없음');
 
   current = boardOf(files[2].path);
+  const reopen = async () => {
+    const before = filesAsked;
+    await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` });
+    await until(`document.querySelector('#boardView')?.hidden===false && document.querySelector('#railAll')`);
+    for (let i = 0; i < 100 && filesAsked === before; i++) await pause(50);
+    await pause(200);
+    return filesAsked > before;
+  };
+  ok(await reopen(), '갤러리가 닫힌 채 뷰어를 열어도 목록을 받는다');
+  await check(`document.querySelector('#galleryView').hidden && document.querySelector('#railAll .rail-all-n')?.textContent==='${files.length}'`, '색인이 이미 끝났으면 알림 없이도 레일 숫자가 파일 수');
   filesReady = false;
-  await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` });
-  await until(`document.querySelector('#boardView')?.hidden===false && document.querySelector('#railAll')`);
-  await pause(400);
+  ok(await reopen(), '색인 중에 다시 열어도 목록을 받는다');
   await check(`document.querySelector('#galleryView').hidden && !document.querySelector('#railAll .rail-all-n')`, '색인 중에는 레일 숫자가 없다');
   filesReady = true;
   notifyFiles();
