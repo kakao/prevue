@@ -119,7 +119,7 @@ class Baked(Case):
             self.assertIn(in_process, f.read().split())
 
     def offline_setup(self, gradle_says):
-        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-offline"), "21.0.12")
+        jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-offline-%d" % len(os.listdir(self.tmp.name))), "21.0.12")
         with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
             f.write("#!/bin/sh\necho '%s' >&2\nexit 1\n" % gradle_says)
         os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
