@@ -62,10 +62,6 @@ internal fun UiEvent.toJson(): Map<String, Any?> = when (this) {
     UiEvent.ProjectFiles -> mapOf("kind" to "projectFiles")
 }
 
-/**
- * D-56. 빠른 열기의 목록. 다 훑기 전이면 `ready: false`에 빈 목록이다. `path`는 `/viewer/open`에 그대로 넘기는 풀패스,
- * `rel`은 저장소 기준 — 줄에 보이고 매칭하는 것은 이쪽이다.
- */
 internal fun previewFilesJson(index: PreviewIndex?, repoRoot: String, kept: (File) -> Map<String, Any?>? = { null }): Map<String, Any?> = mapOf(
     "ready" to (index != null),
     "files" to index?.files.orEmpty().map { f ->

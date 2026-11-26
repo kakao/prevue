@@ -33,7 +33,6 @@ import prevue.daemon.fake.eventually
 import prevue.daemon.fake.awaitBoardFilled
 import prevue.daemon.fake.watching
 
-/** 화면 조작의 비즈니스(D-41). 브라우저에 있을 때는 테스트 밖이었던 것들이다. */
 class BrowserPresenterTest {
     private val fx = Fixture()
     private val uc = fx.graph()
@@ -365,10 +364,8 @@ class BrowserPresenterTest {
         assertEquals(emptyList<LaneSpy.View>(), io.views)
     }
 
-    /** 줄에 앞서 들어온 `WorkspaceEvent`를 다 반영한 상태. */
     private fun now() = runBlocking { presenter.current() }
 
-    /** 채우기 · 쓰기 완료는 따로 돈다 — 상태가 그 모양이 될 때까지 기다린다. */
     private fun awaitState(timeoutMs: Long = 5_000, ok: (BrowserState) -> Boolean): BrowserState =
         awaitValue({ now().let { s -> "상태: busy=${s.busy} note=${s.boardNote} timing=${s.timing}" } }, timeoutMs) { now().takeIf(ok) }
 

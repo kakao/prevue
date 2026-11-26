@@ -282,7 +282,6 @@ class BrowserEndpointTest {
         return Side(BrowserEndpoint(g.presenter, g.browserTabs, g.browserGallery, g.browserInput, g.browserPointing, server.frames, feed, ViewerTarget({ null to null }, null, null, null)), feed)
     }
 
-    /** 놓아 줄 때까지 쓰기가 멈춘다 — 읽지 않는 브라우저 탭. */
     private class StuckStream : OutputStream() {
         val release = CountDownLatch(1)
         override fun write(b: Int) { release.await(); throw IOException("닫혔다") }

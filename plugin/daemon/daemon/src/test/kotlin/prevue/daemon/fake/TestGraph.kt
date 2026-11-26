@@ -63,11 +63,6 @@ import prevue.application.service.QuietFill
 import prevue.application.service.LiveLoop
 import prevue.application.port.PrevueDispatchers
 
-/**
- * 테스트의 조립 — 운영과 같은 `AppScope` 기여(domain 의 `@Inject` · 입구의 `@ContributesIntoSet` · `EntryBindings`)를 Metro 가 잇고,
- * 기술 어댑터의 바인딩 컨테이너와 `:app` 의 `DaemonBindings` 만 빼고 가짜 포트([TestPorts])와 [Workspace]를 넣는다.
- * 배선 실수는 이 그래프가 컴파일 때 잡는다 — 손으로 묶은 통이 아니다.
- */
 @DependencyGraph(
     AppScope::class,
     excludes = [TargetBindings::class, CompileBindings::class, RenderBindings::class, SourceBindings::class, PortBindings::class,
