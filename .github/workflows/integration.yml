@@ -32,7 +32,7 @@ jobs:
       # duration (the two KMP classes share the KMP fixture setup).
       SHARDS: |
         render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
-        insets: StaleBoundsIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
+        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
         kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
 
     steps:
