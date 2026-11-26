@@ -1,4 +1,4 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES } from "../runtime/devices";
 import { phrase } from "../runtime/strings";
 import { BELOW_H, CAPSULE_ROOM, FRAME_TOP, LANE_H, LANE_W, NARROW, P, PLATE_EDGE, RIGHT_NEED, RULER_RAIL, RULER_SIDE, Val, WIDE, bezier, camBox, camsLook, clamp, cutEdgesOf, easeOut, edgeOf, endsOf, isOpen, layersOf, lerp, lined, padsOf, plateOf, reducedOn, rigCrease, shelled, smooth, springOf, swapAt, swapBlurAt, tallOf, turnOf, turnR } from "./calc";
 import { paintBar } from "./dock";
@@ -44,7 +44,6 @@ export function fit(S: Scene, st: St): Frame {
   const r = room(S, st), lane = cutLaneOf(S, st, r.side), each = (x: St, maxW: number, maxH: number) => { const [pw, ph] = padsOf(x); return Math.min(maxW / (x.w + pw), maxH / (x.h + ph), 2); };
   const both = (maxW: number, maxH: number) => Math.min(each(S.ORIGINAL, maxW, maxH), each(st, maxW, maxH));
   let maxW = r.maxW, maxH = r.maxH, up = 0, s = both(maxW, maxH);
-  // 위 · 아래 줄은 같이 비운다 — 한쪽만 비우면 틀이 줄어든 높이의 가운데로 옮겨 가 맞은편 여백이 그 절반만큼 준다.
   const freeH = (maxH - (st.h + padsOf(st)[1]) * s) / 2, below = belowOf(S, st), short = freeH < Math.max(lane.h, below);
   if (lane.w && (maxW - (st.w + padsOf(st)[0]) * s) / 2 < lane.w) maxW -= 2 * lane.w;
   if (lane.h && short) { maxH -= lane.h; up = lane.h; }
@@ -95,9 +94,6 @@ function freeze(S: Scene, now: number) {
   o.held = true;
   n.r = null; n.op.snap(0); n.blur.snap(0); S.layer.swap = null;
 }
-// 도착 그림이 없으면 옛 화면을 틀에 채워 흐린다 — 빈칸 · 잘림 대신 흐린 화면이 자리를 지킨다.
-// 채움은 흐림이 오르는 동안 원래 dp 자리에서 덮는 크기로 자란다 — 틀이 움직이던 중이면 그 사이가 커서 한 프레임에 튀었다.
-// 기기를 바꿀 때 그림은 대개 수백 ms 안에 온다 — 크기 전환은 옅게만 흐리고(light), 그 안에 안 오면 tick 이 holdBlur 로 깊인다.
 function hold(S: Scene, now: number, light = false) {
   const o = S.layer.old;
   o.grow.to(1, P.holdRise, now); o.blur.to(Math.max(light ? P.holdLight : P.holdBlur, o.blur.at(now)), P.holdRise, now); o.veil.to(P.veil, P.holdRise, now);
@@ -107,7 +103,6 @@ function sharpen(S: Scene, now: number) {
   o.grow.to(0, 120, now); o.blur.to(0, 120, now); o.veil.to(0, 120, now);
 }
 const atRest = (S: Scene, now: number) => S.V.w.done(now) && S.V.h.done(now) && S.V.y.done(now) && S.V.s.done(now, .002);
-// 눈에는 이미 멈춘 때 — 남은 거리가 3px 안. 끝 꼬리를 기다리면 흐림이 오래 남았다
 const nearRest = (S: Scene, now: number) => { const f = fit(S, S.cur!); return Math.abs(S.V.w.at(now) - f.w) < 3 && Math.abs(S.V.h.at(now) - f.h) < 3 && Math.abs(S.V.y.at(now) - f.y) < 3; };
 export function go(S: Scene, sel: string) {
   const now = performance.now(), to = resolve(S, sel);
@@ -120,7 +115,6 @@ export function go(S: Scene, sel: string) {
   if ((folding || spinning) && !atRest(S, now)) { S.queued = to.sel; return; }
   S.queued = null;
 
-  // 크기가 같은 칸끼리(프리셋 → 같은 치수 커스텀)는 그림도 틀도 같다 — 전환 없이 이름만 바꾼다. 흐린 채움 · 교체 흐림이 낄 자리가 없다
   const sameSize = !S.tr && !shelled(from) && !shelled(to) && Math.round(from.w) === Math.round(to.w) && Math.round(from.h) === Math.round(to.h);
   if (sameSize && from.img) {
     if (!S.images.has(to.sel)) S.images.set(to.sel, from.img);
@@ -138,7 +132,6 @@ export function go(S: Scene, sel: string) {
   else startSize(S, from, to, now, cached);
   if (cached && S.tr!.kind !== "size") S.tr!.arriveAt = now;
 }
-// 캐시가 있으면 틀을 덮는 쪽 레이아웃을 원래 dp로 둔다 — 커지면 처음에, 작아지면 틀이 새 크기에 닿을 즈음 바꾼다.
 function startSize(S: Scene, from: St, to: St, now: number, cached: boolean) {
   if (S.tr && S.tr.kind === "fade") endFade(S, now);
   freeze(S, now);
@@ -196,15 +189,12 @@ function arrive(S: Scene) {
     return;
   }
   const n = S.layer.neu;
-  // 깊어지기 전에 온 그림은 그 순간의 옅은 흐림에서 바로 끝까지 걷는다 — 틀이 멈추길 기다리면 흐린 시간이 또렷한 시간과 맞먹었다.
   if (S.tr.deepAt) {
     S.tr.deepAt = 0;
     n.r = S.tr.to.img; n.op.snap(0); n.op.to(1, P.fastReveal, at); n.blur.snap(S.layer.old.blur.at(at)); n.blur.to(0, P.fastReveal, at);
     return;
   }
-  // 새 그림은 옛 화면의 흐림에서 시작해 걷히며 드러난다.
   n.r = S.tr.to.img; n.op.snap(0); n.op.to(1, P.revealFade, at); n.blur.snap(Math.max(S.layer.old.blur.at(at), S.layer.old.blur.b));
-  // 틀이 아직 움직이면 다 걷지 않는다 — 움직이는 동안은 옅게 흐리고, 멈추면 tick 이 걷는다(B + 흐림 → B)
   n.blur.to(S.tr.kind === "size" && !nearRest(S, at) ? P.moveBlur : 0, P.revealDur, at);
 }
 export function rigCamera(S: Scene, folded: boolean, scale: number) {
@@ -221,7 +211,6 @@ function startFold(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
   const openU = (f: Frame) => f.cx - O.w * f.s / 2 + H * f.s;
   const coverU = (f: Frame) => f.cx - C.w * f.s / 2;
   const frame = { w: to.w, h: to.h };
-  // 짝 없는 방향(거꾸로 선 세로 대신 바로 선 세로)은 180° 돌지 않고 접기만 보인 뒤 정지 자세로 맞춘다
   const delta = ((to.angle - from.angle + 540) % 360) - 180, turn = Math.abs(delta) === 180 ? 0 : delta;
   Object.assign(S.rig, {
     on: true, turn, q: tallOf(d) ? 90 : 0, z: parseFloat(getComputedStyle(S.rigEl).getPropertyValue("--z")) || 1, t0: now, dur: P.foldDur, dir, d, restBlur, oldSpec: S.layer.old.r!, from, to, f0, f1, cached,
@@ -249,9 +238,7 @@ function startFold(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
   S.tr = { kind: dir, from, to, t0: now, arriveAt: Infinity, arrived: false };
 }
 const rigAngle = (S: Scene, e: number) => S.rig.from.angle + S.rig.turn * e + S.rig.q;
-// 판 좌표의 몸체 두께 [왼 · 오른 변(u), 위 · 아래 변(v)] — ends 는 기기 자연 방향의 위 · 아래라 조개형(tall)은 u, 책형은 v 다.
 export const rigEdges = (S: Scene, lk: Body): [number, number] => { const side = lk.bezel * P.shellK, end = endsOf(lk) * P.shellK; return tallOf(S.rig.d) ? [end, side] : [side, end]; };
-// 접는 한 자세(e 는 이징을 지난 진행)와 그 자세가 맞춤 영역에 들려면 필요한 배율 비(1 이하).
 function rigPose(S: Scene, e: number, [bu, bv]: [number, number]) {
   const th = (S.rig.dir === "fold" ? e : 1 - e) * 180;
   const baseS = lerp(S.rig.s0, S.rig.s1, e), cy = lerp(S.rig.f0.y + S.rig.f0.h / 2, S.rig.f1.y + S.rig.f1.h / 2, e);
@@ -268,9 +255,6 @@ function rigPose(S: Scene, e: number, [bu, bv]: [number, number]) {
   const need = Math.min(1, r.maxW / (2 * extent(0) * baseS), r.maxH / (2 * extent(1) * baseS));
   return { th, baseS, cy, angle, v, hx, r, need };
 }
-// 회전 중 대각선과 원근으로 커진 장도 맞춤 영역 안에 둔다. 프레임마다 모자란 만큼 줄이면 경계에 닿는 순간 배율이 꺾여
-// 기기 전체가 덜컥였다 — 시작할 때 전 구간의 모자람을 재고, 양끝 0에서 그 자리까지 부드럽게 오르내리는 곡선의 최댓값으로 준다.
-// 양끝은 정지 자세의 fit 이라 재지 않는다.
 function rigDip(S: Scene) {
   const [ou, ov] = rigEdges(S, S.rig.d.look.open), [cu, cv] = rigEdges(S, S.rig.d.look.cover), bezel: [number, number] = [Math.max(ou, cu), Math.max(ov, cv)], n = 48, need: [number, number][] = [];
   for (let i = 1; i < n; i++) { const e = i / n, lack = 1 - rigPose(S, e, bezel).need; if (lack > 0) need.push([e, lack + .004]); }
@@ -299,7 +283,6 @@ const spinEase = (S: Scene) => {
   if (k !== S.spinEaseKey) { S.spinEaseKey = k; S.spinEaseFn = bezier(P.rotLift, 0, P.rotLand, 1); }
   return S.spinEaseFn!;
 };
-// 몸체 · 틀만 돌고 내용은 반대로 돌아 똑바로 선다. 캐시가 있으면 45° 근처에서 가로 레이아웃으로 흐림 교체한다.
 function startSpin(S: Scene, from: Dev, to: Dev, now: number, cached: boolean) {
   freeze(S, now);
   if (cached) sharpen(S, now); else hold(S, now);
@@ -323,7 +306,6 @@ function endSpin(S: Scene, now: number) {
   S.creaseOp.snap(isOpen(st) ? P.crease : 0);
   S.rulerOp.to(1, 200, now);
   if (cached) { settle(S, st.img); if (S.tr?.kind === "spin") S.tr = null; return; }
-  // 그림이 아직이면 흐린 옛 화면을 새 틀에 둔 채 기다리고, 오면 흐림이 걷히며 드러난다.
   if (S.tr?.kind === "spin") Object.assign(S.tr, { kind: "size", cached: false, arrived: false, arriveAt: S.images.has(st.sel) ? now : Infinity });
 }
 export function tick(S: Scene) {
@@ -340,7 +322,6 @@ export function tick(S: Scene) {
     settle(S, n.r);
     if (S.tr?.kind === "size" && keep) S.layer.old.blur.snap(keep);
   }
-  // 크기 전환은 틀이 멈춘 뒤에 선명해진다 — 움직이는 동안 늘었다 줄었다 하는 화면을 옅은 흐림이 가린다
   if (S.tr?.kind === "size" && S.tr.arrived && !S.layer.neu.r && nearRest(S, now) && S.layer.old.blur.b > 0 && !(S.layer.old.grow.b > 0)) S.layer.old.blur.to(0, P.settleSharp, now);
   if (S.tr) {
     if (S.tr.kind === "fade") { if (S.tr.arrived && S.unitOp.b.done(now)) endFade(S, now); }

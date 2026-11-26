@@ -1,14 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import '../../viewer-src/legacy/resize.css';
+import '../../viewer-src/static/resize.css';
 import './android-status-bar.css';
 
-// Android 기기 시스템 바를 뷰어 오버레이로 그릴 때의 후보(D-176) — 기기 실제 크기(1dp = 1px, 넓은 기기는 줄여서)에서 본다.
-// 상태바 · 내비게이션 높이는 windowinsets.info 측정값(plugin/devices 의 기기 스펙)이고, 측정 26건이 모두 제스처 내비게이션이라 버튼 바는 없다.
-// 아이콘 모양 · 자리는 Material 아이콘과 실기기 인상을 따른 근사다 — iOS 처럼 기기 스크린숏으로 잰 값이 아니다.
-// 모서리 · 카메라는 고를 때(2026-11-11)의 장면(plugin/viewer/js/resize-scene.js) 값이다 — 지금 장면 카메라는 windowinsets.info 컷아웃을 따른다.
-// 고른 것(2026-11-11, 사용자): A 공통 Material — 제조사와 상관없이 한 벌. 뷰어 SystemBars.tsx 를 거쳐 지금은 데몬이 PNG에 굽는다(DeviceChrome · DeviceChromePainter, D-189). 이 스토리는 고른 기록으로 남는다.
-// 고를 때 뷰어는 장면의 카메라 · 모서리를 몰라 줄 높이를 상태바 가운데(최대 17), 좌우 여백을 20 + 옆 컷아웃으로 단순화했고, 위 구석 카메라(Pixel 9 Pro Fold 펼침 세로)만 따로 피했다 — 지금은 데몬 DeviceChrome 이 장면과 같은 카메라 자리로 위 띠 카메라 가운데에 맞춘다.
 const meta = { title: '시안/Android 시스템 바' } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -27,9 +21,7 @@ const DEVICES: Device[] = [
   { id: 'tablet', name: 'Pixel Tablet 가로', maker: 'pixel', w: 1280, h: 800, statusDp: 24, navDp: 32, radius: 34, cam: null, zoom: .45 },
 ];
 
-// 상태 줄의 가운데 높이 — 위에 카메라 구멍이 있으면 그 가운데(실기기에서 아이콘 줄이 구멍과 같은 높이다), 없으면 상태바 가운데.
 const rowY = (d: Device) => d.cam && d.cam.cy < d.statusDp ? d.cam.cy : d.statusDp / 2;
-// 좌우 여백 — 둥근 모서리만큼 안으로, 컷아웃이 옆에 있으면 그만큼 더, 구석 카메라가 위에 있으면 그 앞에서 멈춘다.
 function edges(d: Device): [number, number] {
   const pad = Math.max(16, d.radius * .7);
   let left = pad + (d.cutL ?? 0), right = d.w - pad - (d.cutR ?? 0);
@@ -45,11 +37,9 @@ const wedge = (cx: number, cy: number, r: number, half: number) => `M${cx} ${cy}
 const band = (cx: number, cy: number, inner: number, outer: number, half: number) =>
   `M${at(cx, cy, outer, -half)} A${outer} ${outer} 0 0 1 ${at(cx, cy, outer, half)} L${at(cx, cy, inner, half)} A${inner} ${inner} 0 0 0 ${at(cx, cy, inner, -half)} Z`;
 
-// 아이콘 묶음 — 높이 13 의 줄 안, 왼쪽 끝 x 0. width 는 오른쪽 끝이다.
 type Glyphs = { width: number; body: ReactNode };
 type Look = { key: string; name: string; time: { size: number; weight: number; spacing?: number }; icons: Glyphs; handle: { w: number; h: number } };
 
-// 공통 Material — Android 기본(AOSP) 아이콘: 꽉 찬 부채꼴 Wi-Fi, 직각삼각형 신호, 세로 배터리.
 const MATERIAL: Look = { key: 'material', name: 'Material', time: { size: 14, weight: 500 }, handle: { w: 108, h: 4 },
   icons: { width: 46, body: <g strokeLinejoin="round" stroke="currentColor" strokeWidth="1">
     <path d={wedge(8.85, 12.5, 12, 45)} />
@@ -58,7 +48,6 @@ const MATERIAL: Look = { key: 'material', name: 'Material', time: { size: 14, we
     <rect x="40" y="1.4" width="6" height="11.6" rx="1.2" strokeWidth="0" />
   </g> } };
 
-// Pixel — Android 16 Material 3 Expressive: 둥근 부채꼴 · 둥근 삼각형, 가로 알약 배터리, 시각이 조금 크다.
 const PIXEL: Look = { key: 'pixel', name: 'Pixel', time: { size: 15, weight: 500, spacing: .2 }, handle: { w: 108, h: 4 },
   icons: { width: 63, body: <>
     <g strokeLinejoin="round" stroke="currentColor" strokeWidth="2.4"><path d={wedge(9, 11.6, 10.4, 44)} /><path d="M23.5 12 L34.5 12 L34.5 1 Z" /></g>
@@ -66,7 +55,6 @@ const PIXEL: Look = { key: 'pixel', name: 'Pixel', time: { size: 15, weight: 500
     <rect x="61.2" y="4.5" width="1.8" height="4" rx=".9" opacity=".55" />
   </> } };
 
-// One UI — 8.5: 얇은 시각, 세 겹 Wi-Fi, 막대 넷 신호, 테두리 있는 가로 배터리, 가는 제스처 힌트.
 const ONE_UI: Look = { key: 'oneui', name: 'One UI', time: { size: 13.5, weight: 400 }, handle: { w: 116, h: 3 },
   icons: { width: 57, body: <>
     <g stroke="currentColor" strokeWidth="1" strokeLinejoin="round">
@@ -85,7 +73,6 @@ function AndroidStatus({ d, look }: { d: Device; look: Look }) {
     <g transform={`translate(${right - look.icons.width} ${y - 6.5})`}>{look.icons.body}</g>
   </>;
 }
-// 제스처 핸들 — 내비게이션 띠 가운데(24dp 보다 두꺼우면 아래 24dp 의 가운데)에 둔다.
 const handleOf = (d: Device, look: Look) => {
   const cy = d.h - Math.min(d.navDp, 24) / 2;
   return <rect x={(d.w - look.handle.w) / 2} y={cy - look.handle.h / 2} width={look.handle.w} height={look.handle.h} rx={look.handle.h / 2} />;

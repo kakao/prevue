@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
-import '../legacy/style.css';
+import '../static/style.css';
 import { GalleryCard, GalleryGrid } from '../src/components/Gallery';
 import { createCardQueue, viewOf, type CardAnswer, type CardView } from '../src/gallery/queue';
 import { pearlBoard, pearlFiles } from './pearl';

@@ -1,4 +1,4 @@
-import { DEVICES } from "../../legacy/js/devices.js";
+import { DEVICES } from "./devices";
 import { P, springOf } from "../scene/calc";
 import { dropDraft, installDock, menuOpen, orientationOpen, outside, paintPick, setOpen, setOrientationOpen } from "../scene/dock";
 import { animate, fit, go, relayout, resolve, setFrame, snapTo, tick, wake } from "../scene/engine";
@@ -34,7 +34,6 @@ export function createResizeScene(root: HTMLElement, hooks: SceneHooks): ResizeS
         S.cur.img = img;
         if (S.tr?.to.sel === sel) {
           S.tr.to.img = img; S.tr.arriveAt = performance.now();
-          // 미리 그린 그림으로 이미 바꿨으면 같은 레이아웃의 새 그림으로 갈아 끼운다.
           if (S.tr.kind === "size" && S.tr.swapped) { if (S.layer.neu.r) S.layer.neu.r = img; else S.layer.old.r = img; }
         }
         else if (!S.tr) { S.layer.old.r = img; }
@@ -42,7 +41,6 @@ export function createResizeScene(root: HTMLElement, hooks: SceneHooks): ResizeS
     },
     update(st, instant = false) {
       S.target = st;
-      // 보낸 크기가 돌아왔을 때만 놓는다 — 끄는 중 · 키 입력이 멈추기 전이거나 다른(늦은) 상태면 틀을 붙든다
       if (S.draft && !S.dragging && !S.keyTimer && Math.round(st.w) === S.draft.w && Math.round(st.h) === S.draft.h) S.draft = null;
       if (!S.cur || instant) snapTo(S, st.sel); else go(S, st.sel);
       if (instant) { S.clock.t = performance.now(); tick(S); }
@@ -64,7 +62,6 @@ export function createResizeScene(root: HTMLElement, hooks: SceneHooks): ResizeS
       if (!menuOpen(S)) return false;
       setOpen(S, false); return true;
     },
-    // 고른 칸(sel)이 그릴 dp — 데몬 없이 장면을 띄우는 곳(Storybook)이 고른 것을 그대로 돌려줄 때 쓴다.
     sizeOf(sel) { const st = resolve(S, sel); return st && { w: st.w, h: st.h }; },
   };
 }

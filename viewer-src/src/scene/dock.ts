@@ -1,4 +1,4 @@
-import { DEVICES, DEVICE_MENU } from "../../legacy/js/devices.js";
+import { DEVICES, DEVICE_MENU } from "../runtime/devices";
 import { phrase } from "../runtime/strings";
 import { DP_MAX, DP_MIN, SL_KEY_SETTLE, clamp, devSel, dims, itemOf, lookOf, openDims, stepOf } from "./calc";
 import { fit, relayout, request, resolve, setFrame, setLook, wake } from "./engine";
@@ -27,11 +27,9 @@ export const outside = (S: Scene, e: PointerEvent) => {
 function paintSum(S: Scene, key: string) {
   S.dock.set({ sumTitle: `${DEVICES[key] ? DEVICES[key].name : itemName(key)} · ${dims(S.cur!)}` });
 }
-// 방향키로 지나가는 것은 고르기만 한다 — 커서까지 옮기면 라디오 묶음에서 빠져나가 다음 칩에 못 간다.
 function pick(S: Scene, sel: string, byKey?: boolean) {
   S.focusW = false;
   dropDraft(S);
-  // 슬라이더에 초점이 남으면 커스텀 칸이 고른 채로 남는다 — 숫자 입력처럼 놓고 간다
   S.slFocus = false;
   dropRuler(S);
   if (sel === "custom") {
@@ -81,7 +79,6 @@ function toggleHinge(S: Scene) {
   S.hingeOp.to(S.hingeLine ? 1 : 0, 200, performance.now());
   wake(S);
 }
-// 접고 펼 때는 손에 든 회전(기본 방향에서 돈 각도)을 잇는다. 다른 화면에 그 각도가 없으면(거꾸로 선 세로) 세로로 간다.
 const foldSel = (S: Scene, st: Dev) => ["portrait", "landscape-left", "landscape-right"].map(o => devSel(st, !st.folded, o))
   .find(sel => { const r = resolve(S, sel); return r?.kind === "device" && r.angle === st.angle; }) ?? devSel(st, !st.folded, "portrait");
 function toggleFold(S: Scene) { const here = S.cur!; if (here.kind === "device" && DEVICES[here.dev].fold) request(S, foldSel(S, here)); }
@@ -95,13 +92,11 @@ function applyRuler(S: Scene, axis: Axis, raw: string) {
   request(S, sizeSel(S, w, h));
 }
 const sizeSel = (S: Scene, w: number, h: number) => S.PRESETS.find(x => x.w === w && x.h === h)?.sel || `custom:${w}x${h}`;
-// 숫자를 고치기 시작하면 지금 크기 그대로 커스텀이 된다 — 기기를 고른 동안에도(D-99)
 function toCustom(S: Scene, typing = false) {
-  if (S.editing) return;   // 누름(pointerdown)과 초점(focus)이 함께 와도 한 번만 보낸다
+  if (S.editing) return;
   if (S.cur!.kind !== "custom") {
     const w = clamp(Math.round(S.cur!.w), DP_MIN, DP_MAX), h = clamp(Math.round(S.cur!.h), DP_MIN, DP_MAX);
     request(S, `custom:${w}x${h}`);
-    // 초점을 받은 칸은 틀이 갱신하지 않는다 — 한계를 넘는 기기(1691dp)는 잘린 값을 바로 보인다(치는 중에는 덮지 않는다)
     if (!typing) for (const [axis, el, v] of [["w", S.RL.w, w], ["h", S.RL.h, h]] as [Axis, HTMLInputElement, number][]) { el.value = String(v); S.RL.shown[axis] = String(v); }
   }
   S.editing = true; paintPick(S);
@@ -133,7 +128,6 @@ export function dropDraft(S: Scene) {
 
 export function installDock(S: Scene): SceneDock {
   for (const [axis, el] of [["w", S.RL.w], ["h", S.RL.h]] as [Axis, HTMLInputElement][]) {
-    // 프리셋 · @Preview 는 초점만으로 커스텀이 된다. 기기는 누르거나 고칠 때만 — Tab 으로 지나가며 기기 몸체 · 자세를 잃지 않게
     el.addEventListener("focus", () => { el.select(); if (S.cur!.kind !== "device") toCustom(S); });
     el.addEventListener("pointerdown", () => toCustom(S));
     el.addEventListener("input", () => toCustom(S, true));
@@ -156,7 +150,6 @@ export function installDock(S: Scene): SceneDock {
       wake(S);
     });
   }
-  // 높이 자 배지의 폭이 바뀌면(글꼴 · 스타일) 양옆 비움이 달라진다 — 숨겨 폭이 0일 때는 지난 값을 둔다
   new ResizeObserver(() => { const w = S.RL.h.offsetWidth; if (w && w !== S.badge.w) { S.badge.w = w; relayout(S); } }).observe(S.RL.h, { box: "border-box" });
   const live = () => !!S.cur && !S.dock.get().locked;
   return {

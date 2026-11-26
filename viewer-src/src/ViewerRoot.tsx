@@ -40,7 +40,7 @@ export function findHosts(): Hosts {
   };
 }
 
-export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, renderLegacy }: {
+export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, afterCommit }: {
   state: ViewerState | null;
   draw?: number;
   statusState?: ViewerState | null;
@@ -52,10 +52,9 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   workspace?: WorkspaceActions;
   dock?: SceneDock;
   point?: PointActions;
-  renderLegacy: (state: ViewerState) => void;
+  afterCommit: (state: ViewerState) => void;
 }) {
-  // 스트림 · 틀 · 스크롤처럼 그린 뒤에 재는 것은 session.ts 가 한다. 영역들은 자식이라 그 효과가 먼저 돈다 — 헤더 · 레일 · 화면이 먼저 자리를 잡는다.
-  useLayoutEffect(() => { if (state) renderLegacy(state); }, [draw]);
+  useLayoutEffect(() => { if (state) afterCommit(state); }, [draw]);
   const gallery = useGalleryShown(state, connection);
   const { files, ready } = useLayer();
   const screen = gallery ? 'gallery' : state?.screen ?? null;
@@ -69,11 +68,9 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
     <StaleBanner rows={state?.stale ?? null} host={hosts.stale} />
     <BuildNotice pending={!!state?.buildPending} host={hosts.buildNotice} />
     <Gallery shown={gallery} state={state} draw={draw} host={hosts.gallery} />
-    {/* 레일이 접히고 펴진 뒤에 잰다 — 보드의 배율은 레일을 뺀 폭으로 정한다. */}
     <PreviewBoard board={state?.board ?? null} screen={screen} hosts={hosts.board} actions={board} />
     <QuickOpen state={state} draw={draw} connection={connection} hosts={hosts.quickOpen} />
     <VacantTab screen={screen} vacant={state?.vacant ?? null} host={hosts.vacant} />
-    {/* 무대의 hidden 과 내비게이션 바(body.ws)를 맞춘 뒤에 session.ts 가 무대의 높이를 재고 그림을 붙인다. */}
     <Workspace screen={state?.screen ?? null} systemUi={state?.focus?.systemUi ?? null} deviceInsets={state?.focus?.deviceInsets ?? null} size={state?.focus?.size ?? null} hosts={hosts.workspace} actions={workspace} dock={dock} />
     <WorkspaceHeader state={state} hosts={hosts.workspaceHeader} actions={workspace} />
     <PointOverlay actions={point} />
@@ -83,8 +80,8 @@ export function ViewerRoot({ state, draw = 0, statusState = state, connection = 
   </>;
 }
 
-export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, board, workspace, dock, point }: {
-  renderLegacy: (state: ViewerState) => void;
+export function createViewerRoot({ afterCommit, messages, hosts, shortcuts, board, workspace, dock, point }: {
+  afterCommit: (state: ViewerState) => void;
   messages: Messages;
   hosts: Hosts;
   shortcuts: ShortcutGroup[];
@@ -99,18 +96,15 @@ export function createViewerRoot({ renderLegacy, messages, hosts, shortcuts, boa
   const root = createRoot(container);
   let state: ViewerState | null = null, statusState: ViewerState | null = null, connection: Connection | null = null, app: AppInfo | null = null, draw = 0;
   const render = () => root.render(<MessagesContext.Provider value={messages}>
-    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} dock={dock} point={point} renderLegacy={renderLegacy} />
+    <ViewerRoot state={state} draw={draw} statusState={statusState} connection={connection} app={app} shortcuts={shortcuts} hosts={hosts} board={board} workspace={workspace} dock={dock} point={point} afterCommit={afterCommit} />
   </MessagesContext.Provider>);
-  // 끊김은 상태가 오기 전에도 알린다 — 첫 상태를 기다리지 않고 바로 붙인다.
   flushSync(render);
-  // 대상 앱의 런처 아이콘과 이름(B1 · H12) — 폰에서 보이는 그대로. 데몬 하나가 앱 하나라 한 번만 묻는다.
   get('/app.json').then(r => r.json()).then((a: AppInfo) => { app = a; render(); }).catch(() => { app = {}; render(); });
   return {
     apply(next: ViewerState, holdStatus = false) {
       state = next;
       if (!holdStatus || !statusState) statusState = next;
       draw++;
-      // View Transition의 새 화면 스냅숏 전에 기존 영역도 함께 커밋한다.
       flushSync(render);
     },
     connection(next: Connection) { connection = next; flushSync(render); },

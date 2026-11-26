@@ -5755,7 +5755,7 @@ function Ws() {
 		chooser: e("chooser")
 	};
 }
-function Gs({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, dock: l, point: u, renderLegacy: d }) {
+function Gs({ state: e, draw: t = 0, statusState: n = e, connection: r = null, app: i = null, shortcuts: a = [], hosts: o, board: s, workspace: c, dock: l, point: u, afterCommit: d }) {
 	(0, B.useLayoutEffect)(() => {
 		e && d(e);
 	}, [t]);
@@ -5845,7 +5845,7 @@ function Gs({ state: e, draw: t = 0, statusState: n = e, connection: r = null, a
 		})
 	] }) : null;
 }
-function Ks({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, dock: o, point: s }) {
+function Ks({ afterCommit: e, messages: t, hosts: n, shortcuts: r, board: i, workspace: a, dock: o, point: s }) {
 	let c = document.createElement("div");
 	c.hidden = !0, document.body.append(c);
 	let l = (0, Vi.createRoot)(c), u = null, f = null, p = null, m = null, h = 0, g = () => l.render(/* @__PURE__ */ (0, V.jsx)(d.Provider, {
@@ -5862,7 +5862,7 @@ function Ks({ renderLegacy: e, messages: t, hosts: n, shortcuts: r, board: i, wo
 			workspace: a,
 			dock: o,
 			point: s,
-			renderLegacy: e
+			afterCommit: e
 		})
 	}));
 	return (0, Bi.flushSync)(g), te("/app.json").then((e) => e.json()).then((e) => {
@@ -5936,7 +5936,7 @@ zi(ec, $s, {
 	}
 });
 var tc = Ks({
-	renderLegacy: Ys,
+	afterCommit: Ys,
 	messages: {
 		phrase: k,
 		daemonText: O

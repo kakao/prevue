@@ -1,5 +1,5 @@
 import { Fragment, useLayoutEffect, useRef, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
-import { DEVICES, DEVICE_MENU } from '../../legacy/js/devices.js';
+import { DEVICES, DEVICE_MENU } from '../runtime/devices';
 import { useHost } from '../host';
 import { useMessages } from '../messages';
 import { DP_MAX, DP_MIN, itemName, silhouette, slAt, stepOf, type Axis, type DockView, type SceneDock } from '../runtime/resize-scene';
