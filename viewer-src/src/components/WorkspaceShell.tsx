@@ -11,7 +11,6 @@ function useT() {
   };
 }
 
-/** 기기 한 대의 층 — 몸체 · 윤곽 · 화면(두 그림 사이의 베일) · 치수 눈금. 크기를 바꿀 때 #ua · #ub 가 엇갈린다. */
 const Unit = ({ id, hidden }: { id: string; hidden?: boolean }) => <div className="unit" id={id} hidden={hidden}>
   <div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" /><div className="btn" />
   <div className="shell" /><div className="home" /><div className="outline" />
@@ -19,7 +18,6 @@ const Unit = ({ id, hidden }: { id: string; hidden?: boolean }) => <div classNam
   <div className="tick t-top" /><div className="tick t-bot" />
 </div>;
 
-/** 치수선 — 지금 폭 · 높이를 읽고, 커스텀이면 숫자를 고친다. 자리 · 값 · 잠금은 resize-scene.js 가 쓴다. */
 export function Ruler() {
   const t = useT();
   return <div className="ruler" id="ruler" hidden>
@@ -29,7 +27,6 @@ export function Ruler() {
   </div>;
 }
 
-/** 크기 · 회전 · 접기 전환의 틀과 그림. 접는 기기는 #rig 가 두께 있는 두 판으로 접는다. */
 export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode }) {
   return <div className="resize-scene" id="resizeScene" hidden><div className="resize-geometry" id="resizeGeometry">
     <Unit id="ua" /><Unit id="ub" hidden />
@@ -54,27 +51,19 @@ export function ResizeScene({ marks = insetMarksHost() }: { marks?: ReactNode })
   </div></div>;
 }
 
-/** 첫 장 대기 표시의 바깥 요소 — 안과 hidden · failed 는 WorkspaceLoading 이 맞춘다. */
 export const loadingHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="workspace-loading" id="workspaceLoading" role="status" hidden ref={ref}>{children}</div>;
-/** 인셋 영역을 덧그리는 층 — 그림 위, 가리키기 표시 아래. 안과 hidden 은 InsetOverlay 가 맞춘다. */
 export const insetOverlayHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="inset-overlay" id="insetOverlay" aria-hidden="true" hidden ref={ref}>{children}</div>;
-/** 인셋 표지 — 화면과 같은 상자에 서되 #stage 밖이라 잘리지 않아, 기기 몸체 바깥에 dp 배지 · 치수선을 둔다. 상자는 workspace/focus.ts 의 layout 이, 안과 hidden 은 InsetMarks 가 맞춘다. */
 export const insetMarksHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="inset-marks" id="insetMarks" aria-hidden="true" hidden ref={ref}>{children}</div>;
 
-/** 시스템 UI 의 바깥 요소 — 독의 가운데 조작과 확대 사이. 안과 hidden 은 SystemUiControl 이 맞춘다. */
 export const systemUiHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="sys-ui" id="sysUiCtl" role="group" data-t-aria-label="systemUi.label" hidden ref={ref}>{children}</div>;
-/** 확대의 바깥 요소 — 독의 오른쪽 끝. 안과 at-fit 은 ZoomControls 가 맞춘다. */
 export const zoomHost = (ref?: Ref<HTMLDivElement>, children?: ReactNode) =>
   <div className="zoom at-fit" id="zoomCtl" role="group" data-t-aria-label="zoom.label" ref={ref}>{children}</div>;
 
-/**
- * 정지 그림 · 스트림을 보이는 무대. 그림의 src 는 JSX 가 갖지 않는다 — focus.ts 가 크로스페이드 · 스트림 붙이기로 갈아 끼운다.
- * #shot 은 늘 붙어 있다 — 다시 붙이면 MJPEG 연결이 새로 열리고, WebKit 은 옛 연결을 닫지 않는다.
- */
+// #shot 은 늘 붙어 있다 — 다시 붙이면 MJPEG 연결이 새로 열리고, WebKit 은 옛 연결을 닫지 않는다.
 export function PreviewStage({ loading = loadingHost(), inset = insetOverlayHost() }: { loading?: ReactNode; inset?: ReactNode }) {
   return <div className="stage" id="stage">
     <img id="shot" alt="preview" />
@@ -85,7 +74,6 @@ export function PreviewStage({ loading = loadingHost(), inset = insetOverlayHost
   </div>;
 }
 
-/** 무대 — 장면(기기 틀)과 캔버스. 조작 중에는 workspace/resize.ts 가 캔버스(#stage)를 장면의 틀 안으로 옮긴다. */
 export function WorkspaceStage({ loading, inset, marks }: { loading?: ReactNode; inset?: ReactNode; marks?: ReactNode }) {
   return <div className="wrap"><ResizeScene marks={marks} /><PreviewStage loading={loading} inset={inset} /></div>;
 }

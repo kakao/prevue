@@ -16,7 +16,6 @@ export type WorkspaceActions = {
   zoomOut(): void;
   zoomFit(): void;
   zoomMenuPick(z: string): void;
-  /** byKey 면 키보드로 누른 것이다 — 메뉴를 닫을 때 포커스를 배율로 돌려준다. */
   toggleZoomMenu(byKey: boolean): void;
   pickSystemUi(choice: string): void;
 };
@@ -25,7 +24,6 @@ export type WorkspaceHeaderHosts = { back: HTMLElement; title: HTMLElement };
 
 const NO_ACTIONS: WorkspaceActions = { exit() {}, zoomIn() {}, zoomOut() {}, zoomFit() {}, zoomMenuPick() {}, toggleZoomMenu() {}, pickSystemUi() {} };
 
-/** 첫 장을 기다리는 자리 표시 — 받지 못했으면 실패 문장. 그동안 조작 도구는 잠기고 출구(#back)는 남는다. */
 export function WorkspaceLoading({ host }: { host?: HTMLElement }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
@@ -51,10 +49,6 @@ function ZoomPct({ real, menu, disabled, actions }: { real: boolean; menu: boole
     title={phrase(real ? 'zoom.tip.real' : 'zoom.tip.fit')} onClick={e => actions.toggleZoomMenu(e.detail === 0)}>{pct}%</button>;
 }
 
-/**
- * 확대는 늘 보인다(W4) — 숨은 제스처(핀치 · ⌘ + 휠)를 받치는 눈에 보이는 컨트롤. 조작 독의 오른쪽 끝이다(D-167). 배율의 100% 는 1dp = 1 CSS px(실제 크기)다.
- * 맞춤이 아니면 `맞춤` 단추가 폭이 자라며 살아나 처음 화면으로 돌린다 — 그래서 hidden 대신 클래스로 접는다. 메뉴는 그 위로 열린다.
- */
 export const ZoomControls = memo(function ZoomControls({ host, actions = NO_ACTIONS }: { host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
@@ -76,7 +70,6 @@ export const ZoomControls = memo(function ZoomControls({ host, actions = NO_ACTI
 });
 
 const BARS = <svg className="tb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="1.8" /><path d="M5.5 5.5h9M8.5 15h3" /></svg>;
-/** 기기는 바를 늘 보이고 인셋을 늘 전달하니 이 자리에 인셋 영역 보기 토글을 둔다. 비기기는 기존 시스템 UI 선택을 사용한다. */
 export function SystemUiControl({ systemUi, deviceInsets = null, host, actions = NO_ACTIONS }: { systemUi: SystemUi | null; deviceInsets?: DeviceInsets | null; host?: HTMLElement; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const { element, place } = useHost(host);
@@ -127,12 +120,6 @@ function fitTitle(back: HTMLElement, title: HTMLElement) {
 
 const BACK = <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5" /></svg>;
 
-/**
- * 헤더가 내비게이션 바가 된다(W2) — 앱 록업 · 파일 레일 · 보드 도구가 물러나고, 돌아갈 곳 · 이 장의 이름이 남는다.
- * 뒤로 버튼이 그 파일(탭 이름)을 갖는다 — FQN 으로 열어도 그 파일 보드 위의 한 장이라 늘 돌아갈 데가 있다(D-155).
- * 제목은 두 줄(D-63) — 위 프리뷰 이름(name=), 아래 함수 이름. 이름이 없으면 함수 이름 한 줄. 데몬이 구조로 싣는다 —
- * 카드 이름표를 잘라 쓰면 이름표 규칙이 바뀔 때마다 깨지고, 묶음의 다섯 장이 모두 `foldable`이면 어느 함수인지 안 남았다.
- */
 export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state: ViewerState | null; hosts?: WorkspaceHeaderHosts; actions?: WorkspaceActions }) {
   const { phrase } = useMessages();
   const back = useHost(hosts?.back), title = useHost(hosts?.title);
@@ -173,11 +160,6 @@ export function WorkspaceHeader({ state, hosts, actions = NO_ACTIONS }: { state:
   </>;
 }
 
-/**
- * 한 장의 배치 — 무대(장면 + 캔버스)와 그 아래 가운데의 조작 독. 진입 · 복귀의 틀 모프는 session.ts 가 고르고 focus.ts 가 띄운다.
- * 섹션의 hidden 은 같은 커밋의 레이아웃 효과에서 맞춘다 — session.ts 가 무대의 높이를 재는 것이 그 뒤다.
- * 뷰어에서는 껍데기가 이미 index.html 에 있어 움직이는 칸만 포털로 그리고, Storybook 에서는 껍데기째 그린다.
- */
 export function Workspace({ screen, systemUi = null, deviceInsets = null, size = null, hosts, actions = NO_ACTIONS, dock }: {
   screen: ViewerState['screen'] | null; systemUi?: SystemUi | null; deviceInsets?: DeviceInsets | null; size?: Size | null; hosts?: WorkspaceHosts; actions?: WorkspaceActions;
   dock?: SceneDock;

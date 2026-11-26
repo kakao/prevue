@@ -22,7 +22,6 @@ import type { ShortcutGroup } from './shortcuts';
 import type { SceneDock } from './runtime/resize-scene';
 import type { ViewerState } from './state';
 
-/** index.html 이 두는 영역의 바깥 요소 — 기존 모듈이 처음부터 쥐는 요소가 그 안에 섞여 있어 바깥은 마크업이 갖는다. */
 export type Hosts = {
   bar: HTMLElement; brand: HTMLElement; app: HTMLElement; status: HTMLElement; helpButton: HTMLElement;
   rail: RailHosts; railAll: HTMLElement; gallery: HTMLElement; stale: HTMLElement; buildNotice: HTMLElement; board: BoardHosts; quickOpen: QuickOpenHosts; capsule: HTMLElement; help: HTMLElement;
@@ -43,7 +42,6 @@ export function findHosts(): Hosts {
 
 export function ViewerRoot({ state, draw = 0, statusState = state, connection = null, app = null, shortcuts = [], hosts, board, workspace, dock, point, renderLegacy }: {
   state: ViewerState | null;
-  /** apply 한 번에 하나씩 는다 — 기존 화면은 apply 마다 한 번만 그린다(앱 정보가 늦게 와도 다시 그리지 않는다). */
   draw?: number;
   statusState?: ViewerState | null;
   connection?: Connection | null;

@@ -12,7 +12,6 @@ import { pearlBoard } from './pearl';
 export const focusExample = examples[1], choiceExample = examples[3];
 export const pearlCard = pearlBoard.groups[0].cards[0];
 
-/** 무대의 그림 — 뷰어에서는 focus.ts 가 src 를 갈아 끼우므로 JSX 가 갖지 않는다. 스토리도 그린 뒤에 담는다. */
 export function useShot(url: string | null = pearlCard.imageUrl) {
   useLayoutEffect(() => {
     const shot = document.getElementById('shot') as HTMLImageElement | null;
@@ -20,13 +19,11 @@ export function useShot(url: string | null = pearlCard.imageUrl) {
   }, [url]);
 }
 
-/** 작업 공간의 본문 — 뷰어에서는 한 장에 들어오면 body.ws 가 붙는다. 조작 독을 세우는 스토리는 이 안에서 그린다. */
 export function WorkspaceBody({ children }: { children: ReactNode }) {
   useLayoutEffect(() => { document.body.classList.add('ws'); return () => document.body.classList.remove('ws'); }, []);
   return <div className="story-panel">{children}</div>;
 }
 
-/** 브라우저 쪽 표시 상태(배율 · 첫 장 대기 · 가리킨 카드)를 스토리 동안만 넣고, 끝나면 처음 값으로 돌린다. */
 export function WithView<T extends object>({ store, value, children }: { store: Store<T>; value: Partial<T>; children: ReactNode }) {
   // 첫 렌더에 한 번만 넣는다 — 자식이 붙기 전이라 구독자가 없다. 다시 그려도 뷰어 코드가 바꾼 값을 덮지 않는다.
   const [initial] = useState(() => { const before = store.get(); store.set(value); return before; });
