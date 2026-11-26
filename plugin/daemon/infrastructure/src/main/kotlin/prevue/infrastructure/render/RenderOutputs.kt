@@ -127,7 +127,7 @@ internal class RenderOutputs(
     private fun warnReadOnce(why: String) {
         if (readBroken != null) return
         readBroken = why
-        System.err.println("[prevue] 트리를 지금 화면으로 짓지 못했다 — 같은 어댑터면 직전 트리가, 새 어댑터면 빈 트리가 나간다: $why")
+        System.err.println("[prevue] 트리를 지금 화면으로 짓지 못했다 — 이 어댑터의 직전 트리를 쥐고 있으면 그 트리가, 아니면 빈 트리가 나간다: $why")
     }
 
     fun isNewAdapter(result: RenderResult): Boolean = ViewInfoJson.adapter(result.rootViews) !== lastAdapter
