@@ -217,6 +217,12 @@ codex plugin add prevue@prevue
 | `prevue log` | 데몬 로그 — 막혔을 때 에이전트에게 읽어 달라고 합니다 |
 | `prevue paths` | 툴체인 · 덤프 · 산출물의 위치와 크기 — 지울 곳을 찾을 때 |
 
+## Contributors
+
+<a href="https://github.com/kakao/prevue/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kakao/prevue" />
+</a>
+
 ## License
 
 This software is licensed under the Apache 2 license, quoted below.

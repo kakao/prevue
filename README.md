@@ -217,6 +217,12 @@ See every command and exit code with `prevue --help`, and each command with `pre
 | `prevue log` | The daemon log — ask your agent to read it when you're stuck |
 | `prevue paths` | Where the toolchain, dumps, and outputs live and how much space they take — for finding what to delete |
 
+## Contributors
+
+<a href="https://github.com/kakao/prevue/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kakao/prevue" />
+</a>
+
 ## License
 
 This software is licensed under the Apache 2 license, quoted below.
