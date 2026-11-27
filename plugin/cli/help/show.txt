@@ -23,6 +23,7 @@ and @PreviewParameter one card per value. E.g. @DevicePreviews(5) × 5 functions
 If preparation (toolchain · dump) is done, it starts the daemon itself and draws even without one (started:true, a few seconds to the first PNG). For a module of the same app,
 the running daemon draws it (about 1 second).
 
-Exit codes: 0 everything rendered · 1 there are ok:false cards, or with only error the first build after an update failed (the cause is in the Gradle output above) · 3 this file can't be drawn now — the response has health's shape (missing · next · ask · options · tell,
-prevue health --help). If something needing approval is missing, put the ask, and if approved run next (· then) and follow up to the last response's next. A 3 with only ["daemon"]
+Exit codes: 0 everything rendered · 1 there are ok:false cards · 3 this file can't be drawn now — the response has doctor's shape (missing · next · ask · options · tell,
+prevue doctor --help). If something needing approval is missing, put the ask, and if approved run next (· then) and follow up to the last response's next. A 3 with only ["daemon"]
 is when the sandbox needs escalation to start it (startNeedsEscalation) — run next's prevue start … as is.
+When show started the daemon itself and it didn't come up, show answers with start's own response and exit code as is — e.g. 1 with only error when the first build after an update failed (the cause is in the Gradle output above).

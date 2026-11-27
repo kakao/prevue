@@ -163,7 +163,7 @@ def codex_cmd(ws, logdir, prompt, args):
     # --approve-for-me: 권한 상승 요청을 자동 리뷰가 판정한다(샌드박스는 workspace-write 로 고정 — -s 와 함께 못 쓴다).
     # exec 기본은 상승이 아예 막혀 에이전트가 "이 세션에서는 권한 상승이 안 된다 — 직접 쳐 달라"로 빠졌다(실측).
     # 대화형에서 사람이 승인하는 자리를 흉내 낸다.
-    # 샌드박스 네트워크는 연다 — Prevue 를 쓰는 Codex 사용자는 health 의 동의를 거쳐 이 값을 넣어 둔 상태다.
+    # 샌드박스 네트워크는 연다 — Prevue 를 쓰는 Codex 사용자는 doctor 의 동의를 거쳐 이 값을 넣어 둔 상태다.
     # 그 동의 자체는 codex-cases 의 sandbox-* 가 가짜 응답으로 잰다.
     trust = "projects.%s.trust_level=\"trusted\"" % os.path.realpath(ws)
     return [CODEX, "exec", "--json", "--ephemeral", "--ignore-user-config", "--disable", "hooks", "--approve-for-me",

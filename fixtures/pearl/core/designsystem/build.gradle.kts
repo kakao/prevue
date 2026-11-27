@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.example.pearl.core.designsystem"
     compileSdk {
-        version = release(37)
+        version = release(37) { minorApiLevel = providers.gradleProperty("pearlCompileSdkMinor").orNull?.toInt() ?: 0 }
     }
     defaultConfig {
         minSdk = 24
@@ -22,7 +22,12 @@ android {
 
 dependencies {
     api(project(":core:model"))
-    api(platform(libs.androidx.compose.bom))
+    val bom = providers.gradleProperty("pearlComposeBom").orNull
+    when {
+        bom == null -> api(platform(libs.androidx.compose.bom))
+        ':' in bom -> api(platform(bom))
+        else -> api(platform("androidx.compose:compose-bom:$bom"))
+    }
     api(libs.androidx.compose.material3)
     api(libs.androidx.compose.ui)
     api(libs.androidx.compose.ui.graphics)

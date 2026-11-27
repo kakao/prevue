@@ -1,7 +1,7 @@
 prevue warmup <file> [--variant V] [--resources-from :m] [--module :m] [--project <directory>] [--show] [--no-open]
 
 Runs Gradle once in the target repository to take that module's classpath dump (once per module). Requests for company dependencies may go out, so it needs the user's approval —
-the question to put is the ask in the health response. Add only the flags the person chose (health's next is already that command).
+the question to put is the ask in the doctor response. Add only the flags the person chose (doctor's next is already that command).
 When --show is on the next of a show request, it opens the preparation screen first and, after the dump, goes on to bring up the preview. A plain warmup only takes the dump in the terminal.
 With --show and no file, it goes to file search after preparing. --no-open doesn't open the browser automatically.
 If a viewer tab was viewing this daemon, --show opens no new preparation screen either — that tab shows "restarting" and then reattaches to the new daemon (reattached:true).
@@ -11,7 +11,7 @@ If there are several resource APK candidates it narrows them to the apps contain
 A file of a KMP module (com.android.kotlin.multiplatform.library) is drawn from the dump of the Android app that includes it, so it takes that app's dump instead (module in the response is the app).
 If the app isn't known yet (a fresh clone), the first Gradle call finds it and Gradle runs once more for the app. If several apps include it, it comes back with need:"choose" — give the chosen one as --resources-from.
 --module only when the derivation is wrong (a repository that moved projectDir). With only --module it finds the repository from the current directory — giving the file is safer.
-The dump records fingerprints of the build files (settings · root · that module's build.gradle, gradle.properties, libs.versions.toml) — when they change, health asks to take the dump again.
+The dump records fingerprints of the build files (settings · root · that module's build.gradle, gradle.properties, libs.versions.toml) — when they change, doctor asks to take the dump again.
 If a daemon started by this checkout (including other agents with the same release installed) is drawing that module, it is stopped (stoppedDaemons) — it holds the old dump, so next's start starts a new one. Daemons of other checkouts are only reported in otherDaemons.
 On success next is prevue start --classpath … --show <file> with this dump — it holds the chosen variant · resource provider · module, so run it as is. gradleJdk · gradleJdkFrom say which JDK it ran on — the Gradle daemon that built this module's outputs →
 the JDK Prevue used last time → project settings → the shell's java, in that order. A JDK whose warmup here failed with a JDK error (JVM target mismatch, class file version, a JDK too old for Gradle or AGP) is skipped with every install of the same version, until a root build file changes — if nothing else is left, another version found on this machine. If it took minutes and gradleJdkFrom is marked "guessed", ask which JDK they usually build with and give it as JAVA_HOME.

@@ -102,7 +102,7 @@ def daemon_java_home(log_text):
 def repo_builds(log_dir, repo, before=None):
     """[(pid, 이 저장소 빌드 시작 시각, java home)] — log_dir 의 daemon-<pid>.out.log 중 이 저장소를 빌드한 것.
 
-    로그는 수십 개·수십 MB 라 health 마다 다 읽지 않는다. 로그의 mtime 은 그 안의 마지막 빌드보다 늦으므로 새 것부터 읽다가
+    로그는 수십 개·수십 MB 라 doctor 마다 다 읽지 않는다. 로그의 mtime 은 그 안의 마지막 빌드보다 늦으므로 새 것부터 읽다가
     이미 찾은 가장 늦은 빌드보다 오래된 로그가 나오면 멈춘다 — 1순위만 쓰니 그 뒤는 답을 바꾸지 못한다.
     before 뒤에 뜬 데몬의 로그는 열지 않는다 — before 전의 빌드가 있을 수 없다. 모듈을 오래 안 컴파일했으면 그 사이 로그가
     전부 mtime 으로는 걸러지지 않아 다 읽었다(nowinandroid 124MB, 0.25초).
@@ -144,7 +144,7 @@ JDK_ERROR = re.compile(r"Inconsistent JVM[- ]Target Compatibility|Unsupported cl
                        r"|Unknown Kotlin JVM target|Gradle requires JVM \d+ or later|Android Gradle plugin requires Java", re.I)
 # 바뀌면 덤프가 낡는 빌드 파일 — 모듈 · 의존 · 저장소 구성이 여기서 정해진다. 데몬의 감시 목록(ClasspathSpec.buildFiles)과 같은 것이다.
 # 산출물만 보면 놓친다: 모듈을 개명하면 옛 자리의 build/ 가 디스크에 남아(git 이 지우지 않는다) 낡은 덤프가 가리키는 jar 가
-# 멀쩡히 있다 — health 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
+# 멀쩡히 있다 — doctor 가 준비됨으로 답하고 렌더가 옛 R 을 찾다 전부 실패했다(이슈 #152).
 # JDK 실패 표시의 지문도 이것으로 뜬다(build_fingerprint) — 목록을 바꾸면 덤프 낡음 판정과 데몬 감시 목록이 함께 바뀐다.
 ROOT_BUILD_FILES = ("build.gradle.kts", "build.gradle", "settings.gradle.kts", "settings.gradle",
                     "gradle.properties", "gradle/libs.versions.toml")

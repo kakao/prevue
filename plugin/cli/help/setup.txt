@@ -1,6 +1,6 @@
 prevue setup [--offline]
 
-Downloads and assembles the toolchain (renderer · layoutlib · Kotlin compiler). Once per machine. Needs the user's approval — the question to put is the ask in the health response.
+Downloads and assembles the toolchain (renderer · layoutlib · Kotlin compiler). Once per machine. Needs the user's approval — the question to put is the ask in the doctor response.
 --offline builds only from what was already downloaded (start does the build after a plugin update itself). With a file or --variant it doesn't run and
 sends you to warmup (exit 2) — downloading from the external network and running Gradle in the target repository are separate approvals.
 On success {"ok":true,"toolchain":true,"alreadyHad":…} — alreadyHad means it was already there and finished in seconds. On failure, error and the Gradle output above it.

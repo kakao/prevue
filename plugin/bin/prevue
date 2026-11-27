@@ -175,7 +175,7 @@ json_kv() {  # k=v 목록을 {"k":"v"} 로
 jstr() { python3 -c 'import json,sys; print(json.dumps(sys.argv[1],ensure_ascii=False))' "$1"; }
 
 # ── 관찰 ────────────────────────────────────────────────────────────────────
-# 무엇이 있는지 보고 무엇을 할지 정하는 일(모듈 · 변형 · 덤프 · 리소스 제공자 · health · Gradle 오류)은 전부 prevue_plan.py 가 한다.
+# 무엇이 있는지 보고 무엇을 할지 정하는 일(모듈 · 변형 · 덤프 · 리소스 제공자 · doctor · Gradle 오류)은 전부 prevue_plan.py 가 한다.
 # 여기는 인자를 모아 넘기고, 자리 계산·curl·Gradle 실행만 한다 — 판정이 두 곳이면 서로 다른 답을 낸다.
 PLAN_PY="$ROOT/cli/prevue_plan.py"
 
@@ -231,7 +231,7 @@ gradle_jdk_of() {  # <repo> -> "<경로>\t<출처>"
 }
 
 # 이 플러그인 버전이 쓰는 렌더러·컴파일러가 공유 툴체인에 이미 있는가. 버전은 빌드와 같은 카탈로그에서 읽는다.
-# Metro(컴파일러 플러그인)는 공유 툴체인이 아니라 Gradle 캐시에만 있다 — 없으면 start 의 오프라인 굽기가 실패하므로 health 가 여기서 미리 가린다.
+# Metro(컴파일러 플러그인)는 공유 툴체인이 아니라 Gradle 캐시에만 있다 — 없으면 start 의 오프라인 굽기가 실패하므로 doctor 가 여기서 미리 가린다.
 shared_toolchain() {
   local kv lv mv
   kv="$(sed -n 's/^kotlin *= *"\([^"]*\)".*/\1/p' "$ROOT/daemon/gradle/libs.versions.toml" | head -1)"
@@ -453,7 +453,7 @@ unreached_json() {
   if [ -n "$(alive_records "$PORT")" ]; then
     echo "{\"ok\":false,\"error\":\"$NET_BLOCKED_MSG\",\"port\":$PORT,\"networkBlocked\":true}"
   else
-    echo "{\"ok\":false,\"error\":\"No daemon ($BASE) — see what is missing with prevue health <file>\",\"daemon\":false}"
+    echo "{\"ok\":false,\"error\":\"No daemon ($BASE) — see what is missing with prevue doctor <file>\",\"daemon\":false}"
   fi
 }
 # 에이전트가 읽는 응답(show·start --show·wait)은 prevue_plan.py agent-view 가 추린다(NFR-18).
@@ -522,10 +522,10 @@ plan_json() {  # <파일|""> <variant|""> <projdir|""> [module]
     "$(gradle_jdk_pick "$repo" "$(module_dir "$repo" "$module")")" "$HOME/.prevue/projects"
 }
 
-# health — resolve 의 판정에 데몬 생존을 더한다. 빠진 것을 **전부** missing 에 순서대로 싣는다 —
+# doctor — resolve 의 판정에 데몬 생존을 더한다. 빠진 것을 **전부** missing 에 순서대로 싣는다 —
 # 하나씩 말하면 툴체인을 승인받고 30초 뒤 덤프를 또 물어 대화가 두 번 끊긴다. 한 번에 알면 한 번에 묻는다.
 # 종료 0 준비됨(데몬까지) · 1 빠진 것 있음 · 2 고를 것이 남았다
-health_json() {  # <파일>
+doctor_json() {  # <파일>
   local file="$1" plan rc r key seat mod alive=false viewer="" dst=""
   plan="$(plan_json "$file" "" "")"; rc=$?
   local blocked=false
@@ -540,23 +540,23 @@ health_json() {  # <파일>
   fi
   local unbaked=false; baked || unbaked=true
   local nojdk="" nosdk=""; have_java || nojdk="$JDK"; have_sdk || nosdk="$SDK"
-  python3 "$PLAN_PY" health "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
+  python3 "$PLAN_PY" doctor "$plan" "$rc" "$alive" "$viewer" "$file" "$dst" "$blocked" "$NET_BLOCKED_MSG" "$unbaked" "$nojdk" "$JDK_FOUND" "$nosdk" "$JDK_FROM"
 }
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —
 # 에이전트가 종료 3 을 받아 그 start 를 그대로 치던 한 호출이다(재실측 10회차 모두, NFR-17). 툴체인 · 덤프 · 고를 것이 남았으면
-# 승인이나 사람의 답이 들어 health 모양으로 3 — 에이전트가 ask 를 묻는다. 다시 부른 show 는 또 띄우지 않는다.
+# 승인이나 사람의 답이 들어 doctor 모양으로 3 — 에이전트가 ask 를 묻는다. 다시 부른 show 는 또 띄우지 않는다.
 show_unready() {  # <파일> — 돌아오지 않는다
   local h start=() line out rc
-  h="$(health_json "$1" | python3 "$PLAN_PY" prepare-request)"
+  if [ -n "${PREVUE_START_ANSWER:-}" ]; then printf '%s\n' "$PREVUE_START_ANSWER"; exit "${PREVUE_START_CODE:-3}"; fi
+  h="$(doctor_json "$1" | python3 "$PLAN_PY" prepare-request)"
   if [ -z "${PREVUE_AUTOSTARTED:-}" ]; then
     while IFS= read -r line; do start+=("$line"); done < <(printf '%s' "$h" | python3 "$PLAN_PY" autostart)
     if [ ${#start[@]} -gt 0 ]; then
       out="$("$ROOT/bin/prevue" start "${start[@]}" --show "$1")"; rc=$?
-      [ "$rc" = 0 ] || { [ "$rc" = 1 ] && baked; } || { echo "$out"; exit "$rc"; }   # 구운 뒤의 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
       # 브라우저를 못 열었으면(샌드박스) 그 사실은 start 의 답에만 있다 — 버리면 에이전트가 "열렸다"고 말하고 사람은 빈 화면을 본다
       case "$out" in *'"opened": false'*|*'"opened":false'*) export PREVUE_NOT_OPENED=1;; esac
-      PREVUE_AUTOSTARTED=1 exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
+      PREVUE_AUTOSTARTED=1 PREVUE_START_ANSWER="$out" PREVUE_START_CODE="$rc" exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
     fi
   fi
   printf '%s' "$h" | python3 -c "$UNREADY_VIEW"; exit 3
@@ -595,11 +595,11 @@ case "$cmd" in index|failures) usage ;; esac   # 도움말 주제일 뿐 명령�
 # 매 호출에 붙으므로 python 을 띄우지 않고 경로와 xcode-select 만 본다.
 PY3="$(command -v python3 2>/dev/null)"
 if [ -z "$PY3" ] || { [ "$PY3" = /usr/bin/python3 ] && [ "$(uname)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; }; then
-  # health 와 같은 모양으로 답하고 물을 문장(ask)도 싣는다 — python 없이 JSON 문자열로 옮기므로 \ 와 " 만 이스케이프한다.
-  # 종료 코드도 health 규칙(빠진 것 있음 1)과 show 규칙(준비 안 됨 3)을 따른다.
+  # doctor 와 같은 모양으로 답하고 물을 문장(ask)도 싣는다 — python 없이 JSON 문자열로 옮기므로 \ 와 " 만 이스케이프한다.
+  # 종료 코드도 doctor 규칙(빠진 것 있음 1)과 show 규칙(준비 안 됨 3)을 따른다.
   ASK="$(sed 's/\\/\\\\/g; s/"/\\"/g' "$ROOT/cli/help/ask/python3.txt" | tr -d '\n')"
   echo '{"ok":false,"missing":["python3"],"error":"No python3 — macOS Command Line Tools are needed","next":"xcode-select --install","ask":"'"$ASK"'"}'
-  [ "$cmd" = health ] && exit 1 || exit 3
+  [ "$cmd" = doctor ] && exit 1 || exit 3
 fi
 
 # setup·warmup 은 Gradle 이 ~/.gradle 에 써서 Codex 샌드박스 안에서는 늘 실패한다(~/.gradle 락 Operation not permitted, 실측).
@@ -648,9 +648,9 @@ fi
 # 그리고 대개는 아무도 --port 를 안 쓴다. 이 호출이 **어느 저장소를 말하는지**를 먼저 정하고,
 # 자리는 그 저장소에서 계산한다(port_of). 에이전트가 포트를 기억할 일이 없어지고,
 # 기억이 틀려 남의 데몬에게 말하는 길이 닫힌다.
-case "$cmd" in health|setup|warmup|start) jdk_resolve ;; esac
+case "$cmd" in doctor|setup|warmup|start) jdk_resolve ;; esac
 case "$cmd" in
-  resolve|health|setup|warmup|paths) ;;          # 데몬에 말하지 않는다. health 는 자리를 스스로 본다
+  resolve|doctor|setup|warmup|paths) ;;          # 데몬에 말하지 않는다. doctor 는 자리를 스스로 본다
   stop) case "${1:-}" in --all|--mine) ;; *) RESOLVE_SEAT=1 ;; esac ;;   # --all·--mine 은 저장소를 안 가리킨다
   *) RESOLVE_SEAT=1 ;;
 esac
@@ -710,15 +710,15 @@ case "$cmd" in
     esac; done
     plan_json "$FILE" "$VARIANT" "$PROJ"; exit $?
     ;;
-  health)
+  doctor)
     FILE=""
     while [ $# -gt 0 ]; do case "$1" in
       -*) usage;;
       *) FILE="$(abspath "$1" 2>/dev/null)" || { echo "{\"ok\":false,\"error\":\"No such file: $1\"}"; exit 2; }; shift;;
     esac; done
     # 파일 없는 답은 "툴체인만 있어도 ok" 로 읽혀 덤프를 건너뛰게 한다. 준비됐다는 것은 언제나 어느 모듈을 그리기에 준비됐다는 뜻이다.
-    [ -n "$FILE" ] || { echo '{"ok":false,"error":"A file is needed to decide the module — prevue health <file>"}'; exit 2; }
-    health_json "$FILE"; exit $?
+    [ -n "$FILE" ] || { echo '{"ok":false,"error":"A file is needed to decide the module — prevue doctor <file>"}'; exit 2; }
+    doctor_json "$FILE"; exit $?
     ;;
   setup)
     # 툴체인만 받는다. 덤프 인자가 붙어 오면 돌리지 않고 warmup 으로 보낸다 — 외부망 435MB 와
@@ -773,9 +773,9 @@ case "$cmd" in
     fi
     [ "${MODULE#:}" = "$MODULE" ] && MODULE=":$MODULE"
 
-    # 변형은 plan_json 과 같은 규칙으로 찍는다 — 판정이 두 곳이면 health 가 "준비됨"이라 한 덤프를 warmup 이 다른 이름으로 뜬다.
+    # 변형은 plan_json 과 같은 규칙으로 찍는다 — 판정이 두 곳이면 doctor 가 "준비됨"이라 한 덤프를 warmup 이 다른 이름으로 뜬다.
     # JDK 는 모듈을 정한 뒤에 고른다 — 그 모듈의 최신 산출물을 구운 JDK 여야 한다. plan 이 고른 것을 그대로 쓴다(warmup_target).
-    # 리소스를 빌릴 앱을 이미 알면(health 가 관찰로 골라 next 에 붙였거나 사람이 줬다) 그 덤프까지 Gradle 한 번에 뜬다 —
+    # 리소스를 빌릴 앱을 이미 알면(doctor 가 관찰로 골라 next 에 붙였거나 사람이 줬다) 그 덤프까지 Gradle 한 번에 뜬다 —
     # 이 모듈의 태스크는 앱 덤프의 부분집합이라 고정비(기동 · 설정 · 그래프)만 한 번 빠진다. 합칠지는 plan 이 가른다(combine_provider).
     PLAN=""; GJ=""
     if [ -z "$VARIANT" ]; then PLAN="$(plan_json "$FILE" "" "$PROJ" "$MODULE")"
@@ -932,7 +932,7 @@ case "$cmd" in
       --show) SHOW="$2"; ARGS+=("$1" "$2"); shift 2;;
       *) ARGS+=("$1"); shift;; esac; done
     # 판올림하면 플러그인 디렉터리가 새로 생겨 build/ 가 빈다. 받아 둔 툴체인으로 굽는 것은 승인이 없으니 여기서 한다 —
-    # health 가 build 로 에이전트를 보내면 스킬 읽기·setup·health 재확인으로 모델 호출이 셋 더 들었다(Codex 실측).
+    # doctor 가 build 로 에이전트를 보내면 스킬 읽기·setup·doctor 재확인으로 모델 호출이 셋 더 들었다(Codex 실측).
     if ! baked && shared_toolchain; then
       # 굽기는 Gradle 이라 ~/.gradle 에 쓴다 — 샌드박스 안이면 이번 한 번만 권한 상승으로 다시 치게 한다.
       if [ "${CODEX_SANDBOX:-}" = seatbelt ]; then
@@ -1255,7 +1255,7 @@ out["libCopiesNote"] = ("Each plugin update that changes dependencies leaves an 
                         "no installed plugin, this plugin or a running daemon, so they can be deleted"
                         if cmdlines is not None else
                         "Couldn't list running processes, so no copy is marked deletable — run prevue paths outside the sandbox")
-out["note"] = "toolchainRoot, projects and aot can be deleted — prevue setup downloads the toolchain again and health says what else to recreate"
+out["note"] = "toolchainRoot, projects and aot can be deleted — prevue setup downloads the toolchain again and doctor says what else to recreate"
 print(json.dumps(out, ensure_ascii=False))
 PY
     ;;

@@ -37,6 +37,7 @@ class Baked(Case):
         with open(os.path.join(build, "prevue-env"), "w") as f:
             f.write('PREVUE_CP="$ROOT/daemon/daemon/build/libs/prevue.jar:$HOME/%s/a.jar"\n' % LIB)
             f.write('PREVUE_LAYOUTLIB="$HOME/%s"\nPREVUE_COMPILER="$HOME/%s"\nPREVUE_LIB="$HOME/%s"\n' % (LAYOUTLIB, COMPILER, LIB))
+            f.write('PREVUE_BRIDGE="$ROOT/daemon/daemon/build/libs/prevue-bridge.jar"\n')
         self.home = os.path.join(self.tmp.name, "home")
         os.makedirs(self.home)
 
@@ -115,9 +116,7 @@ class Baked(Case):
         self.assertNotIn("missing", out)
         self.assertIn("Gradle output above", out["error"])
 
-    def test_show_answers_the_failed_start_bake_instead_of_asking_for_the_daemon(self):
-        os.remove(os.path.join(self.plugin, "daemon", "daemon", "build", "prevue-env"))
-        self.shared_toolchain()
+    def dumped_repo(self):
         r = self.repo(":app")
         os.chmod(os.path.join(r.root, "gradlew"), 0o755)
         path = P.dump_path(os.path.join(self.home, ".prevue", "projects"), r.root, ":app", "debug")
@@ -125,18 +124,35 @@ class Baked(Case):
         with open(path, "w") as f:
             json.dump({"schema": P.SCHEMA, "project": ":app", "variant": "debug", "resourceApkPath": r.apk(":app", "debug"),
                        "projectClassPath": [r.built(":app", "debug")], "classPath": ["a.jar"]}, f)
+        return r
+
+    def show(self, r):
+        return self.prevue("show", r.src(":app"), PREVUE_PORT=str(free_port()),
+                           PREVUE_JDK=fake_jdk(os.path.join(self.tmp.name, "jdk-show"), "21.0.12"),
+                           ANDROID_HOME=fake_sdk(os.path.join(self.tmp.name, "sdk")))
+
+    def test_show_answers_the_failed_start_bake_instead_of_asking_for_the_daemon(self):
+        os.remove(os.path.join(self.plugin, "daemon", "daemon", "build", "prevue-env"))
+        self.shared_toolchain()
+        r = self.dumped_repo()
         bakes = os.path.join(self.tmp.name, "bakes")
         with open(os.path.join(self.plugin, "daemon", "gradlew"), "w") as f:
             f.write("#!/bin/sh\necho ran >> '%s'\necho 'e: compile error' >&2\nexit 1\n" % bakes)
         os.chmod(os.path.join(self.plugin, "daemon", "gradlew"), 0o755)
-        code, out = self.prevue("show", r.src(":app"), PREVUE_PORT=str(free_port()),
-                                PREVUE_JDK=fake_jdk(os.path.join(self.tmp.name, "jdk-show"), "21.0.12"),
-                                ANDROID_HOME=fake_sdk(os.path.join(self.tmp.name, "sdk")))
+        code, out = self.show(r)
         self.assertEqual(code, 1, out)
         self.assertNotIn("missing", out)
         self.assertIn("Gradle output above", out["error"])
         with open(bakes) as f:
             self.assertEqual(len(f.readlines()), 1)
+
+    def test_show_answers_any_start_failure_that_left_no_daemon_as_start_gave_it(self):
+        self.toolchain(LAYOUTLIB, COMPILER, LIB)
+        r = self.dumped_repo()
+        code, out = self.show(r)
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("missing", out)
+        self.assertIn("for the daemon to run from", out["error"])
 
     def gradle_args(self, *setup_args):
         jdk = fake_jdk(os.path.join(self.tmp.name, "jdk-setup" + "".join(setup_args)), "21.0.12")
@@ -187,12 +203,12 @@ class Baked(Case):
         self.assertNotIn("missing", out)
         self.assertIn("Gradle output above", out["error"])
 
-    def test_health_counts_the_toolchain_by_its_directories_not_the_env_file(self):
+    def test_doctor_counts_the_toolchain_by_its_directories_not_the_env_file(self):
         f = self.file()
         for present, missing in (((LAYOUTLIB, COMPILER), True), ((LIB,), False)):
             with self.subTest(present=present):
                 self.toolchain(*present)
-                _, out = self.prevue("health", f)
+                _, out = self.prevue("doctor", f)
                 self.assertEqual("toolchain" in out["missing"], missing)
 
     def test_paths_keeps_every_lib_copy_a_plugin_install_points_at(self):

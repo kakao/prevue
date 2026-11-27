@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.example.pearl"
     compileSdk {
-        version = release(37)
+        version = release(37) { minorApiLevel = providers.gradleProperty("pearlCompileSdkMinor").orNull?.toInt() ?: 0 }
     }
     defaultConfig {
         applicationId = "com.example.pearl"

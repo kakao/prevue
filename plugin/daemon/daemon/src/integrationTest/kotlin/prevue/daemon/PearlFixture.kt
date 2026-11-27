@@ -94,7 +94,9 @@ object PearlFixture {
 
     /** `:feature:pearl` 덤프와 리소스를 빌릴 `:app` 덤프 — Gradle 한 번. */
     internal fun warmup(): Pair<ClasspathSpec, ClasspathSpec> {
-        val json = warmupJson(board!!, "--variant", "debug", "--resources-from", ":app")
+        val versions = listOf("pearlComposeBom", "pearlCompileSdkMinor")
+            .mapNotNull { key -> System.getProperty("prevue.$key")?.let { "ORG_GRADLE_PROJECT_$key" to it } }.toMap()
+        val json = warmupJson(board!!, "--variant", "debug", "--resources-from", ":app", env = versions)
         fun field(name: String) = Regex("\"$name\": \"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: error("warmup 이 덤프를 뜨지 못했다: $json")
         return ClasspathSpec.load(File(field("classpath"))) to ClasspathSpec.load(File(field("resourcesClasspath")))
     }

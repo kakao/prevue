@@ -469,7 +469,7 @@ class NotGradle(unittest.TestCase):
             env = dict(os.environ, HOME=t)
             w = subprocess.run([PREVUE, "warmup", kt], capture_output=True, text=True, env=env, timeout=60)
             self.assertEqual(w.returncode, 2, w.stdout + w.stderr)
-            h = subprocess.run([PREVUE, "health", kt], capture_output=True, text=True, env=env, timeout=60)
+            h = subprocess.run([PREVUE, "doctor", kt], capture_output=True, text=True, env=env, timeout=60)
             for out in (w.stdout, h.stdout):
                 self.assertIn("Gradle builds only", json.loads(out.strip().splitlines()[-1])["error"])
 
@@ -483,7 +483,7 @@ class NoPython(unittest.TestCase):
                 p = shutil.which(c)
                 if p:
                     os.symlink(p, os.path.join(t, c))
-            p = subprocess.run(["/bin/bash", PREVUE, "health", "/x/Screen.kt"], capture_output=True, text=True,
+            p = subprocess.run(["/bin/bash", PREVUE, "doctor", "/x/Screen.kt"], capture_output=True, text=True,
                                env={"HOME": t, "PATH": t}, timeout=30)
             self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
             out = json.loads(p.stdout)

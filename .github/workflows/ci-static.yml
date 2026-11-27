@@ -1,16 +1,14 @@
-# Called by Verify (build.yml) — checks that read code without running it: generated files · copies · viewer types · Kotlin
-# lint. Uses no daemon build output, so it runs beside the build.
-name: Verify — static checks
+name: CI — static checks
 
 on:
   workflow_call:
     inputs:
       save-cache:
-        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
+        description: "Save the Gradle home cache (the cache-warm run on develop). CI only reads it."
         type: boolean
         default: false
 
-# Scripts that run under the user's /bin/sh are checked with sh, not bash.
+# Scripts run under the user's /bin/sh.
 defaults:
   run:
     shell: sh
@@ -20,10 +18,11 @@ permissions:
 
 jobs:
   lint:
+    name: Static checks
     permissions:
       contents: read
       actions: write
-    # Pinned so the runner does not move to Ubuntu 26.04, which has no Python 3.9 build.
+    # Ubuntu 26.04 has no Python 3.9 build.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -33,12 +32,10 @@ jobs:
         with:
           fetch-depth: 0    # the lint diffs against the base branch to find new comments and touched functions
 
-      # The two skill sets (plugin/skills/claude/ · plugin/skills/codex/ · .claude/skills/ · .agents/skills/) and CLAUDE.md are
-      # generated from their sources. Catches commits that edited one side by hand.
       - name: Check that both skill sets and CLAUDE.md are generated from source
         run: sh tools/gen-agents.sh --check
 
-      # Installs receive plugin/ only (D-123). The version commit syncs the copies (tools/sync-version.sh); release PRs only.
+      # The version commit syncs the copies (D-123), so only release PRs have them in sync.
       - name: Check that the plugin's notice copies match the originals
         if: ${{ github.base_ref == 'main' }}
         run: sh tools/plugin-copies.sh --check
@@ -64,7 +61,7 @@ jobs:
           npm run typecheck
           npm run build-storybook
 
-      # The CLI runs on macOS's default python3 (3.9) — checking with the runner's newer python lets 3.10+ syntax through.
+      # The CLI runs on macOS's default python3 (3.9).
       - name: Set python3 to 3.9
         uses: actions/setup-python@v5
         with:
@@ -76,8 +73,7 @@ jobs:
           distribution: temurin
           java-version: "21"      # same as the users' minimum JDK. Bytecode 17 is pinned by build-logic's convention plugin (prevue.jvm)
 
-      # Gradle dependencies · wrapper. Each job downloads different things (detekt · test dependencies), so the key is per job.
-      # A PR's own cache is visible to that PR alone, so Verify only reads — cache-warm.yml saves on develop.
+      # A PR's own cache is visible to that PR alone, so CI only reads; cache-warm.yml saves on develop.
       - name: Gradle home cache
         id: gradle-cache
         uses: actions/cache/restore@v4
@@ -88,9 +84,7 @@ jobs:
           key: gradle-lint-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'tools/lint/detekt.init.gradle.kts') }}
           restore-keys: gradle-lint-${{ runner.os }}-
 
-      # Slop rules · detekt metrics · new comments (D-70). Clean if every work PR ran it locally — this is the net for skipped runs.
-      # The base is the branch the PR targets. Run by hand (workflow_dispatch), it compares with main. The cache-warm push run
-      # compares the branch with itself — nothing new to check.
+      # Compares with the PR's base; a dispatched run compares with main.
       - name: Kotlin lint
         env:
           BASE_REF: ${{ github.event_name == 'push' && github.ref_name || github.base_ref || 'main' }}
@@ -108,8 +102,8 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
-      # Fail fast (build.yml). The last step, so the job is already failed when the run is cancelled. continue-on-error: the
-      # token of a fork PR is read-only and cannot cancel; there the run just finishes as before.
+      # Must stay the last step: a step after it would end the failed job as cancelled, hiding the cause.
+      # continue-on-error: a fork PR's token is read-only and cannot cancel.
       - name: Cancel the run, this job failed
         if: ${{ failure() && !inputs.save-cache }}
         continue-on-error: true

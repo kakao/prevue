@@ -1,5 +1,5 @@
 """Android SDK 판정 — 진짜 bin/prevue 가 데몬과 같은 순서(ANDROID_HOME → ANDROID_SDK_ROOT → ~/Library/Android/sdk)로
-platforms/*/android.jar 를 찾고, 없으면 health 는 sdk 를 말하고 start 는 데몬을 띄우기 전에 멈추는가.
+platforms/*/android.jar 를 찾고, 없으면 doctor 는 sdk 를 말하고 start 는 데몬을 띄우기 전에 멈추는가.
 데몬을 띄우지 않는다. 실행: python3 -m unittest discover -s tests/cli
 """
 
@@ -38,34 +38,34 @@ class AndroidSdk(Case):
         p = subprocess.run([str(ROOT / "bin/prevue"), *args], capture_output=True, text=True, cwd=self.tmp.name, env=env)
         return p.returncode, json.loads(p.stdout)
 
-    def health(self, **sdk_env):
-        return self.run_prevue("health", self.file, **sdk_env)[1]
+    def doctor(self, **sdk_env):
+        return self.run_prevue("doctor", self.file, **sdk_env)[1]
 
     def test_없으면_기본_자리를_말하고_멈춘다(self):
-        out = self.health()
+        out = self.doctor()
         default = os.path.join(self.home, "Library/Android/sdk")
-        self.assertEqual((out["missing"][0], out["sdk"], out["next"]), ("sdk", default, "prevue health " + self.file))
+        self.assertEqual((out["missing"][0], out["sdk"], out["next"]), ("sdk", default, "prevue doctor " + self.file))
         self.assertIn(default, out["tell"])
         self.assertIn("ANDROID_HOME", out["tell"])
 
     def test_기본_자리에_있으면_통과한다(self):
         fake_sdk(os.path.join(self.home, "Library/Android/sdk"))
-        self.assertNotIn("sdk", self.health()["missing"])
+        self.assertNotIn("sdk", self.doctor()["missing"])
 
     def test_android_jar_가_없는_SDK_는_없는_것이다(self):
         sdk = self.sdk("empty", platforms=())
         os.makedirs(os.path.join(sdk, "platforms", "android-36"))
-        out = self.health(ANDROID_HOME=sdk)
+        out = self.doctor(ANDROID_HOME=sdk)
         self.assertEqual((out["missing"][0], out["sdk"]), ("sdk", sdk))
 
     def test_ANDROID_HOME_이_먼저다(self):
-        out = self.health(ANDROID_HOME=self.sdk("empty", platforms=()), ANDROID_SDK_ROOT=self.sdk("full"))
+        out = self.doctor(ANDROID_HOME=self.sdk("empty", platforms=()), ANDROID_SDK_ROOT=self.sdk("full"))
         self.assertEqual(out["missing"][0], "sdk")
-        self.assertNotIn("sdk", self.health(ANDROID_HOME=self.sdk("home"), ANDROID_SDK_ROOT="/nope")["missing"])
+        self.assertNotIn("sdk", self.doctor(ANDROID_HOME=self.sdk("home"), ANDROID_SDK_ROOT="/nope")["missing"])
 
     # 지킬 것: 빈 ANDROID_HOME 은 없는 것이다 — 데몬(AndroidPlatforms.findJar)도 같은 순서로 찾는다
     def test_ANDROID_HOME_이_비면_ANDROID_SDK_ROOT_를_본다(self):
-        out = self.health(ANDROID_HOME="", ANDROID_SDK_ROOT=self.sdk("root"))
+        out = self.doctor(ANDROID_HOME="", ANDROID_SDK_ROOT=self.sdk("root"))
         self.assertNotIn("sdk", out["missing"], out)
 
     def test_start_는_데몬을_띄우기_전에_멈춘다(self):

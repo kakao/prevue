@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.example.pearl.core.ui"
     compileSdk {
-        version = release(37)
+        version = release(37) { minorApiLevel = providers.gradleProperty("pearlCompileSdkMinor").orNull?.toInt() ?: 0 }
     }
     defaultConfig {
         minSdk = 24

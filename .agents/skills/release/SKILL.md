@@ -54,7 +54,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 **실린 작업.** `git log --first-parent --format='%s' v$M..origin/develop` — squash 커밋 제목의 `(#N)`이 PR이다. 확인 화면의 "실리는 PR"이 된다.
 
-**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 평가를 돌리지 않는다 — 그래도 `스킬 평가` 상태는 3단계에서 올린다. main ruleset이 모든 릴리즈 PR에 `ci-success`와 `스킬 평가` 둘 다를 요구한다.
+**스킬 평가.** `git diff --name-only v$M origin/develop -- skills-src plugin/cli/help plugin/bin/help bin/help tests/evals tools/skill-eval.sh tools/skill-eval-codex.py`가 비어 있지 않으면 스킬 · 도움말이 바뀐 판이다 — 3단계에서 **PR을 연 뒤 CI와 나란히 두 스킬 평가를 돌린다.** 평가는 모델 호출이라 CI에 없다 — 배포 전에 여기서 한 번 잰다. 확인 화면에 한 줄로 싣고, 사용자가 빼라고 하면 뺀다. 바뀐 것이 없으면 평가를 돌리지 않는다 — 그래도 `스킬 평가` 상태는 3단계에서 올린다. main ruleset이 모든 릴리즈 PR에 `CI result`와 `스킬 평가` 둘 다를 요구한다.
 
 이것을 한 화면으로 보이고 승인을 받는다.
 
@@ -76,7 +76,7 @@ gh pr list --base main --head develop --state open --json number,url
 
 ## 3. 버전 커밋 → PR → CI ∥ 스킬 평가
 
-**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것과 고지 사본의 어긋남은 릴리즈 PR의 `Verify`가 빌드 · CLI 계약까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
+**로컬 검증은 돌지 않는다.** develop에 코드가 들어오는 길은 `implement` PR뿐이고(그 검증 돌리기가 린트 · 단위 테스트 · 생성물을 돈다), PR 없이 들어오는 것은 버전 커밋과 릴리즈 뒤 fast-forward뿐이다. PR끼리 합쳐져 깨지는 것과 고지 사본의 어긋남은 릴리즈 PR의 `CI`가 빌드 · CLI 계약 · 최신 Compose 렌더(`Release only`)까지 더해 **머지 전에** 잡는다. 그때 버전 커밋은 이미 develop에 있지만 배포 전이라, 4단계의 실패 경로대로 고침 PR로 이어 간다.
 
 ```sh
 # CHANGELOG.md 의 [Unreleased] 를 승인받은 정리본으로 바꾼 뒤
@@ -93,7 +93,7 @@ gh pr create --base main --head develop --title "0.11.0 릴리즈" --body "<본�
 
 본문: 첫 줄 "`develop` → `main`. **merge commit으로 머지한다**(squash · rebase면 develop과 main이 갈라진다). 머지가 곧 배포다." 그다음 `[0.11.0]` 절의 요지 한 문단, 실린 PR 범위(`#44~#47`). 스킬 · 도움말이 바뀐 판이면 "스킬 평가: CI와 나란히 도는 중 — 결과는 `스킬 평가` 상태와 코멘트"(사용자가 뺐으면 "스킬 평가: 뺐다(사용자)")라고 적는다. 끝에 세션의 PR 서명 줄.
 
-**스킬 평가 — 2단계에서 실었으면 PR을 연 직후 돌린다.** CI(`Verify`)는 PR을 열면 저절로 돌고, 평가는 그와 나란히 돈다. **먼저 PR head에 `스킬 평가`를 `pending`으로 올린다** — 4단계의 `gh pr checks --watch`는 이미 있는 체크만 기다려서, 상태가 없으면 CI가 끝나는 순간 평가가 돌고 있어도 초록으로 끝난다.
+**스킬 평가 — 2단계에서 실었으면 PR을 연 직후 돌린다.** `CI`는 PR을 열면 저절로 돌고, 평가는 그와 나란히 돈다. **먼저 PR head에 `스킬 평가`를 `pending`으로 올린다** — 4단계의 `gh pr checks --watch`는 이미 있는 체크만 기다려서, 상태가 없으면 CI가 끝나는 순간 평가가 돌고 있어도 초록으로 끝난다.
 
 ```sh
 H=$(gh pr view <N> --json headRefOid -q .headRefOid)     # 평가할 커밋 — 로컬 HEAD 와 같아야 한다(아니면 2단계부터)
@@ -127,9 +127,9 @@ git diff --name-only <상태가 있는 앞 head> <새 head> -- skills-src plugin
 gh pr checks <N> --watch
 ```
 
-`Verify`의 판정 job `ci-success`가 초록이어야 하고, PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `Verify`는 CI(Ubuntu)에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
+`CI`의 판정 `CI result`가 초록이어야 하고, PR head의 `스킬 평가` 상태도 `success`여야 한다 — 3단계가 `pending`부터 올려 두어 `gh pr checks`가 둘을 함께 기다린다. 머지 직전에 PR head와 그 상태가 붙은 커밋이 같은지 한 번 더 본다(다르면 3단계의 "상태가 없는 head"). `CI`는 Ubuntu에서 돌아 macOS에서만 통과하는 것도 잡는다. 막 연 PR은 체크가 아직 안 붙어 "no checks"로 끝날 수 있다 — 그러면 조금 뒤 다시 본다.
 
-실패하면(rollup에서 `ci-success`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/release`를 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
+실패하면(rollup에서 `CI result`의 conclusion이 `SUCCESS`가 아니거나 `스킬 평가`가 `success`가 아니다 — `gh pr checks`의 종료 코드가 아니다) **머지하지 않고 멈추고** 어느 체크 · 어느 스텝이 무엇으로 실패했는지(`gh run view <id> --log-failed`의 요지 · 평가의 채점기) 보고한다. 고치는 일은 이 스킬 밖이다 — 평소처럼 작업 PR을 develop에 넣고 `/release`를 다시 치면 PR에 새 커밋이 실려 4단계부터 이어진다. 버전 커밋을 되돌리지 않는다 — 머지 전이라 사용자에게 간 것은 없다. 새 head에는 `스킬 평가` 상태가 없으니 3단계의 "상태가 없는 head"대로 한다.
 
 초록이면:
 

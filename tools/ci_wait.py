@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""작업 PR 의 필수 CI(Verify 의 ci-success)를 한 번에 기다려 판정한다 — implement 의 PR 올리기 도구가 부른다.
+"""작업 PR 의 필수 CI(CI 의 CI result)를 한 번에 기다려 판정한다 — implement 의 PR 올리기 도구가 부른다.
 
     python3 tools/ci_wait.py <PR 번호> [--appear-timeout 600] [--poll 15]
 
 종료 코드: 0 초록 · 1 CI 실패(실패 job 과 로그 요지를 찍는다) · 2 develop 과 충돌(CI 가 뜨지 않는다)
           · 3 상한 안에 run 이 생기지 않았다 · 4 도구 오류(gh 실패 · PR 이 열려 있지 않다)
 
-왜 스크립트인가: `gh pr checks --required --watch` 는 ci-success 가 생기기 전이면 "no required checks reported"로
+왜 스크립트인가: `gh pr checks --required --watch` 는 CI result 가 생기기 전이면 "no required checks reported"로
 곧바로 끝나고, 충돌한 PR 은 pull_request CI 가 아예 뜨지 않는다. 그래서 충돌 확인 → head 의 run 찾기 → run 이
 끝날 때까지 watch → 필수 체크 판정 → 실패 로그 요지를 여기서 묶는다. 로그는 jobs 로그 API 로 원인 job 만 받아 첫
-##[error] 앞부분을 자른다 — `--log-failed` 는 실패 job 전부(실패를 옮기기만 하는 ci-success 포함)를 한 덩어리로
+##[error] 앞부분을 자른다 — `--log-failed` 는 실패 job 전부(실패를 옮기기만 하는 CI result 포함)를 한 덩어리로
 쏟아 원인 job 이 섞인다. 일시 실패인지 · 다시 돌릴지는 부른 쪽이 판단한다 — 여기서 재실행하지 않는다.
 """
 
@@ -20,8 +20,8 @@ import subprocess
 import sys
 import time
 
-WORKFLOW = "build.yml"
-REQUIRED = "ci-success"
+WORKFLOW = "ci.yml"
+REQUIRED = "CI result"
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 STAMP = re.compile(r"^\d{4}-\d\d-\d\dT[\d:.]+Z ")
 LOG_LINES = 40
@@ -89,7 +89,7 @@ def report_failure(run):
     view = gh_json("run", "view", str(run), "--json", "attempt,url,jobs")
     print(f"CI 실패 — run {run} attempt {view['attempt']} · {view['url']}")
     failed = [j for j in view["jobs"] if j.get("conclusion") == "failure"]
-    # ci-success 는 다른 job 의 실패를 옮길 뿐이라 원인 로그가 아니다
+    # CI result 는 다른 job 의 실패를 옮길 뿐이라 원인 로그가 아니다
     causes = [j for j in failed if j["name"] != REQUIRED] or failed
     for job in causes:
         steps = [s["name"] for s in job.get("steps", []) if s.get("conclusion") == "failure"]
@@ -117,8 +117,9 @@ def wait(pr, timeout, poll):
         if gh_json("pr", "view", str(pr), "--json", "headRefOid")["headRefOid"] != sha:
             print("head 가 바뀌었다 — 새 head 의 run 을 다시 기다린다.", flush=True)
             continue
-        # 실패 · 대기 중이면 종료 코드가 0 이 아니어도 JSON 은 찍힌다. "no required checks reported"면 빈 출력이다
-        out = gh("pr", "checks", str(pr), "--required", "--json", "name,bucket,link", check=False).stdout
+        # 판정은 이름으로 찾는다 — --required 는 ruleset 이 그 이름을 필수로 등록하기 전이면 빈 출력이다.
+        # 실패 · 대기 중이면 종료 코드가 0 이 아니어도 JSON 은 찍힌다
+        out = gh("pr", "checks", str(pr), "--json", "name,bucket,link", check=False).stdout
         checks = json.loads(out) if out.strip() else []
         verdict = next((c for c in checks if c["name"] == REQUIRED), None)
         bucket = verdict["bucket"] if verdict else None

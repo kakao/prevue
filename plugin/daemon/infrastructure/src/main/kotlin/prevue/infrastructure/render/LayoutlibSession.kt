@@ -170,14 +170,17 @@ internal class LayoutlibSession(
         return content.rootView as? ViewGroup
     }
 
-    fun rebuildTree(result: RenderResult): String? {
+    fun readTree(result: RenderResult): TreeRead {
         val t = System.nanoTime()
-        var why: String? = null
-        runCatching { onSession(TREE_REFRESH_SEC) { why = ViewInfoJson.refresh(result.rootViews) } }.onFailure { why = it.toString() }
+        var read: TreeRead = TreeRead.NotCompose
+        runCatching { onSession(TREE_REFRESH_SEC) { read = runCatching { ViewInfoJson.read(result.rootViews) }.getOrElse(::failedRead) } }
+            .onFailure { read = failedRead(it) }
         val ms = (System.nanoTime() - t) / 1_000_000
-        if (ms > SLOW_TREE_MS) println("[prevue] 트리 다시 짓기 ${ms}ms")
-        return why
+        if (ms > SLOW_TREE_MS) println("[prevue] 트리 짓기 ${ms}ms")
+        return read
     }
+
+    private fun failedRead(e: Throwable) = TreeRead.Failed((e.cause ?: e).toString())
 
     fun queueSizes(): Pair<Int, Int> {
         var out = 0 to 0

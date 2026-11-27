@@ -35,7 +35,7 @@ class Runnable(unittest.TestCase):
 
 
 class Reread(unittest.TestCase):
-    """bin/prevue 가 plan 응답을 health 인자로 되넘긴다 — 경로가 붙은 next 도 "prevue …" 로 판정해야 한다."""
+    """bin/prevue 가 plan 응답을 doctor 인자로 되넘긴다 — 경로가 붙은 next 도 "prevue …" 로 판정해야 한다."""
 
     def test_낡은_데몬의_warmup_은_plan_이_준_리소스_제공자를_지킨다(self):
         f = "/r/app/src/main/kotlin/A.kt"
@@ -44,7 +44,7 @@ class Reread(unittest.TestCase):
         status = {"module": ":app", "stale": {"resources": ["strings.xml"]}}
         env = {k: v for k, v in os.environ.items() if not k.startswith("CODEX")}
         env.update(PATH=search_path(), PREVUE_LANG="")
-        p = subprocess.run([sys.executable, str(ROOT / "cli" / "prevue_plan.py"), "health", json.dumps(plan), "0", "true",
+        p = subprocess.run([sys.executable, str(ROOT / "cli" / "prevue_plan.py"), "doctor", json.dumps(plan), "0", "true",
                             "http://127.0.0.1:1/", f, json.dumps(status), "false", "", "false", "", "", "", ""],
                            capture_output=True, text=True, env=env)
         out = json.loads(p.stdout)
@@ -71,15 +71,15 @@ class CallerCli(test_lang.CliCase):
         return shlex.split(command.partition("   #")[0])[0]
 
     def test_다른_prevue_가_PATH_에_있으면_next_는_이_체크아웃의_것이다(self):
-        out, _ = self.run_on(search_path(self.decoy()), "health", self.file)
+        out, _ = self.run_on(search_path(self.decoy()), "doctor", self.file)
         self.assertEqual(self.program(out["next"]), SELF, out)
 
     def test_PATH_에_prevue_가_없어도_이_체크아웃의_것이다(self):
-        out, _ = self.run_on(search_path(), "health", self.file)
+        out, _ = self.run_on(search_path(), "doctor", self.file)
         self.assertEqual(self.program(out["next"]), SELF, out)
 
     def test_PATH_의_prevue_로_부르면_지금과_같다(self):
-        out, _ = self.run_on(installed_path(), "health", self.file)
+        out, _ = self.run_on(installed_path(), "doctor", self.file)
         commands = [out[k] for k in ("next", "then") if k in out]     # 툴체인이 없으면 next 가 setup, then 이 warmup 이다
         self.assertTrue(commands, out)
         for command in commands:
