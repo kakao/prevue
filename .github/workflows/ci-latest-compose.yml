@@ -43,7 +43,10 @@ jobs:
           import os, re, urllib.request
           a = os.environ["ARTIFACT"]
           xml = urllib.request.urlopen(f"https://dl.google.com/android/maven2/androidx/compose/{a}/maven-metadata.xml", timeout=60).read().decode()
-          version = re.findall(r"<version>([^<]+)</version>", xml)[-1]
+          versions = [v for v in re.findall(r"<version>([^<]+)</version>", xml) if re.fullmatch(r"\d{4}\.\d\d\.\d\d", v)]
+          if not versions:
+              raise SystemExit(f"no YYYY.MM.NN version in {a} metadata")
+          version = max(versions)
           print(f"coordinate=androidx.compose:{a}:{version}")
           PY
           cat "$GITHUB_OUTPUT"
@@ -60,9 +63,8 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: latest-compose-gradle-${{ matrix.channel }}-${{ runner.os }}-${{ steps.bom.outputs.coordinate }}
+          key: integration-gradle-render-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'fixtures/pearl/**/*.gradle.kts', 'fixtures/pearl/**/libs.versions.toml', 'fixtures/pearl/**/gradle-wrapper.properties', 'fixtures/pearl-kmp/**/*.gradle.kts', 'fixtures/pearl-kmp/**/libs.versions.toml', 'fixtures/pearl-kmp/**/gradle-wrapper.properties') }}
           restore-keys: |
-            latest-compose-gradle-${{ matrix.channel }}-${{ runner.os }}-
             integration-gradle-render-${{ runner.os }}-
 
       # New Compose releases raise the compileSdk they need (1.13 needs 37.1).
@@ -71,7 +73,7 @@ jobs:
         run: |
           set -eu
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          P=$("$SDKM" --list 2>/dev/null | grep -o 'platforms;android-37\.[0-9]*' | sort -t. -k2 -n | tail -1)
+          P=$("$SDKM" --list 2>/dev/null | grep -oE 'platforms;android-37\.[0-9]+ ' | tr -d ' ' | sort -t. -k2 -n | tail -1)
           [ -n "$P" ] || { echo "::error::no android-37 platform in sdkmanager --list"; exit 1; }
           [ -f "$ANDROID_HOME/platforms/${P#platforms;}/android.jar" ] || "$SDKM" --install "$P" >/dev/null
           echo "minor=${P##*.}" >> "$GITHUB_OUTPUT"
