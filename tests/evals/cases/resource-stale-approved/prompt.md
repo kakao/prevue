@@ -1,6 +1,6 @@
 ---
 name: resource-stale-approved
-description: after adding an entry to resources (values), see wait's stale.resources, find the reread through health, warmup with the approval given up front, then confirm with an image that isn't stale
+description: after adding an entry to resources (values), see wait's stale.resources, find the reread through doctor, warmup with the approval given up front, then confirm with an image that isn't stale
 tags: [nfr15, loop]
 plugins: ["../.."]
 max_turns: 30

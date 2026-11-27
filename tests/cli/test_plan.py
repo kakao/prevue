@@ -391,7 +391,7 @@ class Plan(Case):
         cp = [r.built(app, "debug")] + [r.built(m, "debug") for m in holds]
         return r.dump(app, "debug", apk="x.ap_", projectClassPath=cp, classPath=cp + ["a.jar"])
 
-    # 앱 데몬이 떠 있으면 그 앱이 담은 모듈은 덤프 없이 그린다(health 의 hosted). 데몬이 내려가 있어도 같은 앱 덤프로 띄운다 —
+    # 앱 데몬이 떠 있으면 그 앱이 담은 모듈은 덤프 없이 그린다(doctor 의 hosted). 데몬이 내려가 있어도 같은 앱 덤프로 띄운다 —
     # 여태는 이 모듈의 덤프를 요구해 승인 한 번과 Gradle 두 번(이 모듈 · 앱 다시)을 치렀다.
     def test_앱_덤프가_담은_모듈은_자기_덤프_없이_띄운다(self):
         r = self.repo(":app", ":core:ui")
@@ -402,7 +402,7 @@ class Plan(Case):
         self.assertEqual((rc, out["classpath"], out["host"], out["hostChosenBy"]), (0, app, ":app", "only"))
         self.assertEqual(out["next"], "prevue start --classpath %s --show %s" % (app, f))
         self.assertNotIn("resourcesFrom", out)
-        h, _ = P.health(out, rc, False, "", f, "", False, "", False, {"HOME": self.tmp.name})
+        h, _ = P.doctor(out, rc, False, "", f, "", False, "", False, {"HOME": self.tmp.name})
         self.assertEqual((h["missing"], P.autostart(h)), (["daemon"], ["--classpath", app]))   # show 가 스스로 띄운다
 
     def test_자기_덤프가_있으면_그것으로_띄운다(self):
@@ -560,9 +560,9 @@ class Plan(Case):
         self.assertEqual(err["next"], "prevue warmup --module <%s>" % "|".join(err["modules"]))
 
 
-# ── health ──────────────────────────────────────────────────────────────────
+# ── doctor ──────────────────────────────────────────────────────────────────
 
-class Health(Case):
+class Doctor(Case):
     def ready_plan(self):
         r = self.repo(":app")
         f = r.src(":app")
@@ -570,15 +570,15 @@ class Health(Case):
         r.dump(":app", "debug", apk="x.ap_")
         return r.plan(":app", f), f
 
-    def health(self, plan, f, alive=False, dmod="", blocked=False, unbaked=False, env=None, dmods=(), dstale=(), nojdk="",
+    def doctor(self, plan, f, alive=False, dmod="", blocked=False, unbaked=False, env=None, dmods=(), dstale=(), nojdk="",
                jdkver="", nosdk=""):
         (out, rc) = plan
-        return P.health(out, rc, alive, "http://127.0.0.1:8800/" if alive or blocked else "", f, dmod, blocked, "막혔다",
+        return P.doctor(out, rc, alive, "http://127.0.0.1:8800/" if alive or blocked else "", f, dmod, blocked, "막혔다",
                         unbaked, env or {"HOME": self.tmp.name}, dmods, dstale, nojdk, jdkver, nosdk)
 
     def test_리소스가_낡은_데몬이면_다시_뜨라고_묻는다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, alive=True, dmod=":app", dstale=["resources"])
+        out, rc = self.doctor(plan, f, alive=True, dmod=":app", dstale=["resources"])
         self.assertEqual((rc, out["ok"], out["missing"], out["next"]), (1, False, ["dump"], "prevue warmup " + f))
         self.assertEqual(out["ask"], P.say("dump-resources") + " " + P.say("proceed"))
 
@@ -587,22 +587,22 @@ class Health(Case):
         f = r.src(":core:ui")
         r.built(":core:ui", "debug")
         r.apk(":app", "debug")
-        out, _ = self.health(r.plan(":core:ui", f), f, alive=True, dmod=":app", dmods=(":core:ui", ":app"), dstale=["resources"])
+        out, _ = self.doctor(r.plan(":core:ui", f), f, alive=True, dmod=":app", dmods=(":core:ui", ":app"), dstale=["resources"])
         self.assertEqual((out["missing"], out["next"]), (["dump"], "prevue warmup %s --resources-from :app" % f))
 
     def test_빌드_파일이_낡은_데몬은_설정이_바뀌었다고_묻는다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, alive=True, dmod=":app", dstale=["build-files"])
+        out, _ = self.doctor(plan, f, alive=True, dmod=":app", dstale=["build-files"])
         self.assertEqual((out["missing"], out["ask"]), (["dump"], P.say("dump-changed") + " " + P.say("proceed")))
 
     def test_다른_모듈을_그리는_데몬의_낡음은_이_파일과_무관하다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, alive=True, dmod=":core:ui", dstale=["resources"])
+        out, _ = self.doctor(plan, f, alive=True, dmod=":core:ui", dstale=["resources"])
         self.assertEqual(out["missing"], ["daemon"])
 
     def test_툴체인도_없으면_then_이_다시_뜨기다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health((dict(plan[0], toolchain=False), plan[1]), f, alive=True, dmod=":app", dstale=["resources"])
+        out, _ = self.doctor((dict(plan[0], toolchain=False), plan[1]), f, alive=True, dmod=":app", dstale=["resources"])
         self.assertEqual((out["missing"], out["next"], out["then"]), (["toolchain", "dump"], "prevue setup", "prevue warmup " + f))
 
     def test_낡음을_쥔_데몬은_변형이_달라도_warmup_이_내린다(self):
@@ -614,19 +614,19 @@ class Health(Case):
 
     def test_데몬까지_있으면_show(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, alive=True, dmod=":app")
+        out, rc = self.doctor(plan, f, alive=True, dmod=":app")
         self.assertEqual((rc, out["missing"], out["next"]), (0, [], "prevue show " + f))
 
     def test_데몬만_없으면_start(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f)
+        out, rc = self.doctor(plan, f)
         self.assertEqual((rc, out["missing"]), (1, ["daemon"]))
         self.assertTrue(out["next"].startswith("prevue start "))
 
     def test_java_가_없으면_띄우지_않고_JDK_를_말한다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, nojdk="/Applications/Android Studio.app/Contents/jbr/Contents/Home")
-        self.assertEqual((rc, out["missing"], out["next"]), (1, ["jdk", "daemon"], "prevue health " + f))
+        out, rc = self.doctor(plan, f, nojdk="/Applications/Android Studio.app/Contents/jbr/Contents/Home")
+        self.assertEqual((rc, out["missing"], out["next"]), (1, ["jdk", "daemon"], "prevue doctor " + f))
         self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/Applications/Android Studio.app/Contents/jbr/Contents/Home"}))
         self.assertIsNone(P.autostart(out))
 
@@ -634,19 +634,19 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, _ = self.health(r.plan(":app", f, toolchain=False), f, nojdk="/nope")
-        self.assertEqual((out["missing"], out["next"]), (["jdk", "toolchain", "dump", "daemon"], "prevue health " + f))
+        out, _ = self.doctor(r.plan(":app", f, toolchain=False), f, nojdk="/nope")
+        self.assertEqual((out["missing"], out["next"]), (["jdk", "toolchain", "dump", "daemon"], "prevue doctor " + f))
         self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.runtime_tell({"jdk": "/nope"}), False, False))
 
     def test_저장소를_못_찾은_이유가_java_보다_먼저다(self):
-        out, _ = P.health({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
+        out, _ = P.doctor({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
                           {"HOME": self.tmp.name}, nojdk="/nope")
         self.assertNotIn("jdk", out["missing"])
         self.assertNotIn("tell", out)
 
     def test_java_가_21_미만이면_없는_것과_같이_말하고_찾은_버전을_싣는다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, nojdk="/jdk17", jdkver="17")
+        out, rc = self.doctor(plan, f, nojdk="/jdk17", jdkver="17")
         self.assertEqual((rc, out["missing"], out["jdk"], out["jdkVersion"]), (1, ["jdk", "daemon"], "/jdk17", "17"))
         self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/jdk17", "jdkVersion": "17"}))
 
@@ -654,7 +654,7 @@ class Health(Case):
     def test_고를_것이_남아도_java_가_없으면_고르기를_묻지_않고_1(self):
         r = self.repo(":app")
         r.built(":app", "devRelease")
-        out, rc = self.health(r.plan(":app"), "", nojdk="/nope")
+        out, rc = self.doctor(r.plan(":app"), "", nojdk="/nope")
         self.assertEqual((rc, out["missing"][0]), (1, "jdk"))
         self.assertFalse({"need", "choose", "ask", "options"} & set(out))
         self.assertEqual(out["tell"], P.runtime_tell({"jdk": "/nope"}))
@@ -662,7 +662,7 @@ class Health(Case):
     # 지킬 것: 데몬이 떠 있는데 이 셸이 못 닿으면 JDK 탓이 아니다 — missing 첫 자리가 next · tell 과 같은 network 여야 한다
     def test_닿지_못하는_데몬은_java_를_찾지_않는다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, blocked=True, nojdk="/nope")
+        out, rc = self.doctor(plan, f, blocked=True, nojdk="/nope")
         self.assertEqual((rc, out["missing"]), (1, ["network"]))
         self.assertEqual(out["tell"], P.say("network"))
 
@@ -677,7 +677,7 @@ class Health(Case):
 
     def test_떠_있는_데몬은_java_를_다시_찾지_않는다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, alive=True, dmod=":app", nojdk="/nope")
+        out, rc = self.doctor(plan, f, alive=True, dmod=":app", nojdk="/nope")
         self.assertEqual((rc, out["missing"]), (0, []))
         self.assertNotIn("tell", out)
 
@@ -685,15 +685,15 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, rc = self.health(r.plan(":app", f, toolchain=False), f, nosdk="/sdk")
+        out, rc = self.doctor(r.plan(":app", f, toolchain=False), f, nosdk="/sdk")
         self.assertEqual((rc, out["missing"], out["sdk"], out["next"]),
-                         (1, ["sdk", "toolchain", "dump", "daemon"], "/sdk", "prevue health " + f))
+                         (1, ["sdk", "toolchain", "dump", "daemon"], "/sdk", "prevue doctor " + f))
         self.assertEqual((out["tell"], "ask" in out, "then" in out), (P.runtime_tell({"sdk": "/sdk"}), False, False))
 
     # 지킬 것: 둘 다 없으면 한 번에 말한다 — java 만 깔고 다시 물었을 때 SDK 로 또 막히면 대화가 두 번 끊긴다
     def test_java_와_SDK_가_다_없으면_한_tell_에_둘_다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, nojdk="/jdk17", jdkver="17", nosdk="/sdk")
+        out, _ = self.doctor(plan, f, nojdk="/jdk17", jdkver="17", nosdk="/sdk")
         self.assertEqual(out["missing"], ["jdk", "sdk", "daemon"])
         self.assertEqual(out["tell"], " ".join((P.jdk_tell("/jdk17", "17"), P.say("sdk", sdk="/sdk"), P.say("again"))))
         self.assertEqual(out["tell"].count("ask me again"), 1)
@@ -701,19 +701,19 @@ class Health(Case):
     def test_고를_것이_남아도_SDK_가_없으면_고르기를_묻지_않고_1(self):
         r = self.repo(":app")
         r.built(":app", "devRelease")
-        out, rc = self.health(r.plan(":app"), "", nosdk="/sdk")
+        out, rc = self.doctor(r.plan(":app"), "", nosdk="/sdk")
         self.assertEqual((rc, out["missing"][0]), (1, "sdk"))
         self.assertFalse({"need", "choose", "ask", "options"} & set(out))
 
     def test_떠_있거나_닿지_못하는_데몬은_SDK_를_찾지_않는다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, alive=True, dmod=":app", nosdk="/sdk")
+        out, rc = self.doctor(plan, f, alive=True, dmod=":app", nosdk="/sdk")
         self.assertEqual((rc, out["missing"]), (0, []))
-        out, _ = self.health(plan, f, blocked=True, nosdk="/sdk")
+        out, _ = self.doctor(plan, f, blocked=True, nosdk="/sdk")
         self.assertEqual(out["missing"], ["network"])
 
     def test_저장소를_못_찾은_이유가_SDK_보다_먼저다(self):
-        out, _ = P.health({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
+        out, _ = P.doctor({"ok": False, "error": "gradlew not found"}, 2, False, "", "/x/A.kt", "", False, "", False,
                           {"HOME": self.tmp.name}, nosdk="/sdk")
         self.assertNotIn("sdk", out["missing"])
 
@@ -729,20 +729,20 @@ class Health(Case):
 
     def test_다른_모듈을_그리는_데몬은_없는_것(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, alive=True, dmod=":core:ui")
+        out, _ = self.doctor(plan, f, alive=True, dmod=":core:ui")
         self.assertEqual((out["missing"], out["daemon"]), (["daemon"], False))
 
     def test_같은_앱의_모듈은_덤프가_없어도_그_데몬이_그린다(self):
         r = self.repo(":app", ":core:ui")
         f = r.src(":core:ui")
         r.built(":core:ui", "debug")
-        out, rc = self.health(r.plan(":core:ui", f), f, alive=True, dmod=":app", dmods=(":core:ui", ":app"))
+        out, rc = self.doctor(r.plan(":core:ui", f), f, alive=True, dmod=":app", dmods=(":core:ui", ":app"))
         self.assertEqual((rc, out["missing"], out["next"], out["daemon"]), (0, [], "prevue show " + f, True))
         self.assertNotIn("daemonModule", out)
 
     def test_앱에_없는_모듈은_새_자리에_띄운다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, alive=True, dmod=":feature:x", dmods=(":feature:x", ":demo"))
+        out, _ = self.doctor(plan, f, alive=True, dmod=":feature:x", dmods=(":feature:x", ":demo"))
         self.assertEqual(out["missing"], ["daemon"])
         self.assertTrue(out["next"].startswith("prevue start "))
         self.assertNotIn("daemonModule", out)
@@ -751,19 +751,19 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, rc = self.health(r.plan(":app", f, toolchain=False), f)
+        out, rc = self.doctor(r.plan(":app", f, toolchain=False), f)
         self.assertEqual((rc, out["missing"]), (1, ["toolchain", "dump", "daemon"]))
         self.assertEqual((out["next"], out["then"]), ("prevue setup", "prevue warmup " + f))
 
     def test_닿지_못하면_셸을_바꾼다(self):
         plan, f = self.ready_plan()
-        out, rc = self.health(plan, f, blocked=True)
+        out, rc = self.doctor(plan, f, blocked=True)
         self.assertEqual((rc, out["missing"], out["networkBlocked"]), (1, ["network"], True))
 
     def test_Codex_샌드박스_설정_전(self):
         plan, f = self.ready_plan()
         env = {"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"}
-        out, _ = self.health(plan, f, env=env)
+        out, _ = self.doctor(plan, f, env=env)
         self.assertEqual(out["missing"][0], "sandbox")
         self.assertFalse(out["sandbox"]["configured"])
 
@@ -772,21 +772,21 @@ class Health(Case):
         os.makedirs(os.path.join(self.tmp.name, ".codex"))
         with open(os.path.join(self.tmp.name, ".codex", "config.toml"), "w") as fh:
             fh.write('[sandbox_workspace_write]\nnetwork_access = true\nwritable_roots = ["%s/.prevue"]\n' % self.tmp.name)
-        out, _ = self.health(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
+        out, _ = self.doctor(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
         self.assertTrue(out["sandbox"]["restartNeeded"])
 
     def test_판올림_뒤_샌드박스의_start_는_권한_상승(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, unbaked=True, env={"HOME": self.tmp.name, "CODEX_SANDBOX": "seatbelt"})
+        out, _ = self.doctor(plan, f, unbaked=True, env={"HOME": self.tmp.name, "CODEX_SANDBOX": "seatbelt"})
         self.assertTrue(out["startNeedsEscalation"])
 
     # NFR-17. 판올림하면 새 체크아웃에는 데몬이 없고 실행 파일도 안 구워졌다 — show 가 스스로 띄우거나(아래 8c),
     # 샌드박스라 권한 상승이 들면 show(1) 다음 next 하나(2)가 첫 프리뷰를 내야 한다.
-    # health·setup·warmup 을 거치거나 start 뒤에 show 를 또 쳐야 하면 3회가 된다.
+    # doctor·setup·warmup 을 거치거나 start 뒤에 show 를 또 쳐야 하면 3회가 된다.
     def test_판올림_뒤에도_첫_프리뷰는_두_번(self):
         plan, f = self.ready_plan()
         for env in ({"HOME": self.tmp.name}, {"HOME": self.tmp.name, "CODEX_SANDBOX": "seatbelt"}):
-            out, rc = self.health(plan, f, unbaked=True, env=env)
+            out, rc = self.doctor(plan, f, unbaked=True, env=env)
             self.assertEqual((rc, out["missing"]), (1, ["daemon"]))
             self.assertRegex(out["next"], r"^prevue start .* --show " + re.escape(f) + "$")
             self.assertNotIn("then", out)
@@ -794,14 +794,14 @@ class Health(Case):
     def test_고를_것이_남으면_2(self):
         r = self.repo(":app")
         r.built(":app", "devRelease")
-        out, rc = self.health(r.plan(":app"), "")
+        out, rc = self.doctor(r.plan(":app"), "")
         self.assertEqual(rc, 2)
         self.assertEqual(out["need"], "choose")
 
     # D-86. 준비가 덜 되면 응답이 사람에게 물을 문장(ask)을 싣는다 — 상황마다 문장이 하나로 정해지고, 승인 둘을 섞지 않는다.
     def test_데몬만_없으면_묻지_않는다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f)
+        out, _ = self.doctor(plan, f)
         self.assertEqual(out["missing"], ["daemon"])
         self.assertFalse({"ask", "tell", "options"} & set(out))
 
@@ -809,7 +809,7 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, _ = self.health(r.plan(":app", f), f)
+        out, _ = self.doctor(r.plan(":app", f), f)
         self.assertEqual(out["missing"], ["dump", "daemon"])
         self.assertEqual(out["ask"], P.say("dump") + " " + P.say("proceed"))
         self.assertNotIn("components", out["ask"])
@@ -819,14 +819,14 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, _ = self.health(r.plan(":app", f, toolchain=False), f)
+        out, _ = self.doctor(r.plan(":app", f, toolchain=False), f)
         self.assertEqual(out["ask"], P.say("toolchain-dump") + " " + P.say("proceed"))
         self.assertIn("components", out["ask"])
         self.assertIn("build settings", out["ask"])
 
     def test_툴체인만_없으면_구성_요소만_묻는다(self):
         plan, f = self.ready_plan()
-        out, rc = P.health(dict(plan[0], toolchain=False), plan[1], False, "", f, "", False, "", False, {"HOME": self.tmp.name})
+        out, rc = P.doctor(dict(plan[0], toolchain=False), plan[1], False, "", f, "", False, "", False, {"HOME": self.tmp.name})
         self.assertEqual(out["missing"], ["toolchain", "daemon"])
         self.assertEqual(out["ask"], P.say("toolchain") + " " + P.say("proceed"))
         self.assertNotIn("build settings", out["ask"])
@@ -836,13 +836,13 @@ class Health(Case):
         f = r.src(":app")
         r.built(":app", "devDebug", time.time())
         r.dump(":app", "dev2Debug")
-        out, _ = self.health(r.plan(":app", f), f)
+        out, _ = self.doctor(r.plan(":app", f), f)
         self.assertEqual(out["variantChanged"], {"from": ["dev2Debug"]})
         self.assertEqual(out["ask"], P.say("dump-changed") + " " + P.say("proceed"))
 
     def test_빌드_파일이_바뀌어_낡은_덤프도_다시_읽는_문장(self):
         plan, f = self.ready_plan()
-        out, _ = self.health((dict(plan[0], classpath=None, dumpOutdated="/x.json"), 1), f)
+        out, _ = self.doctor((dict(plan[0], classpath=None, dumpOutdated="/x.json"), 1), f)
         self.assertEqual(out["ask"], P.say("dump-changed") + " " + P.say("proceed"))   # "first time opening"은 거짓이다
 
     def test_후보가_비면_고르기를_묻지_않는다(self):
@@ -856,7 +856,7 @@ class Health(Case):
         r.built(":core:ui", "debug")
         r.apk(":app", "debug")
         r.apk(":wear", "debug")
-        out, rc = self.health(r.plan(":core:ui", f), f)
+        out, rc = self.doctor(r.plan(":core:ui", f), f)
         self.assertEqual((rc, out["missing"]), (2, ["dump", "daemon"]))
         self.assertEqual(out["options"], [":app", ":wear"])
         self.assertEqual(out["ask"], P.say("choose-app") + " " + P.say("dump"))
@@ -869,19 +869,19 @@ class Health(Case):
         r.built(":core:ui", "debug")
         r.apk(":app", "debug")
         r.apk(":wear", "debug")
-        out, _ = self.health(r.plan(":core:ui", f, toolchain=False), f)
+        out, _ = self.doctor(r.plan(":core:ui", f, toolchain=False), f)
         self.assertEqual((out["next"], out["options"]), ("prevue setup", [":app", ":wear"]))
         self.assertEqual(out["ask"], P.say("choose-app") + " " + P.say("toolchain-dump"))
 
     def test_닿지_못하면_전하고_멈춘다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, blocked=True)
+        out, _ = self.doctor(plan, f, blocked=True)
         self.assertEqual(out["tell"], P.say("network"))
         self.assertNotIn("ask", out)
 
     def test_Codex_샌드박스는_넣을_값과_함께_동의를_묻는다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
+        out, _ = self.doctor(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
         self.assertIn('writable_roots = ["%s/.prevue"]' % self.tmp.name, out["ask"])
         self.assertIn(os.path.join(self.tmp.name, ".codex", "config.toml"), out["ask"])
         self.assertNotIn("{", out["ask"].replace("{…}", ""))   # 채우지 못한 자리가 없다
@@ -892,7 +892,7 @@ class Health(Case):
         os.makedirs(os.path.join(self.tmp.name, ".codex"))
         with open(os.path.join(self.tmp.name, ".codex", "config.toml"), "w") as fh:
             fh.write('[sandbox_workspace_write]\nnetwork_access = true\nwritable_roots = ["%s/.prevue"]\n' % self.tmp.name)
-        out, _ = self.health(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
+        out, _ = self.doctor(plan, f, env={"HOME": self.tmp.name, "CODEX_SANDBOX_NETWORK_DISABLED": "1"})
         self.assertEqual(out["tell"], P.say("sandbox-restart"))
         self.assertNotIn("ask", out)
 
@@ -906,10 +906,10 @@ class Health(Case):
                 self.assertRegex(src, r'"%s"|ask/%s\.txt' % (re.escape(name), re.escape(name)))
 
     # NFR-17 · 8c. 덤프는 있는데 데몬만 없으면 show 가 next 의 start 를 스스로 쳐 첫 프리뷰가 한 번이다.
-    # 승인이나 사람의 답이 드는 것(툴체인 · 덤프 · 고를 것 · 샌드박스 권한 상승)이 남으면 띄우지 않고 health 로 보낸다.
+    # 승인이나 사람의 답이 드는 것(툴체인 · 덤프 · 고를 것 · 샌드박스 권한 상승)이 남으면 띄우지 않고 doctor 로 보낸다.
     def test_데몬만_없으면_show_가_스스로_띄운다(self):
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, unbaked=True)
+        out, _ = self.doctor(plan, f, unbaked=True)
         self.assertEqual(P.autostart(out), ["--classpath", out["classpath"]])
         self.assertIn("prevue start --classpath " + out["classpath"], out["next"])     # 손으로 칠 next 와 같은 인자다
 
@@ -917,12 +917,12 @@ class Health(Case):
         r = self.repo(":app")
         f = r.src(":app")
         r.built(":app", "debug")
-        out, _ = self.health(r.plan(":app", f, toolchain=False), f)
+        out, _ = self.doctor(r.plan(":app", f, toolchain=False), f)
         self.assertIsNone(P.autostart(out))
         plan, f = self.ready_plan()
-        out, _ = self.health(plan, f, unbaked=True, env={"HOME": self.tmp.name, "CODEX_SANDBOX": "seatbelt"})
+        out, _ = self.doctor(plan, f, unbaked=True, env={"HOME": self.tmp.name, "CODEX_SANDBOX": "seatbelt"})
         self.assertIsNone(P.autostart(out))
-        out, _ = self.health(plan, f, blocked=True)
+        out, _ = self.doctor(plan, f, blocked=True)
         self.assertIsNone(P.autostart(out))
 
     def test_리소스를_빌리면_그_덤프도_넘긴다(self):
@@ -938,7 +938,7 @@ class Health(Case):
         P.stamp_build_files(r.dump(":app", "debug", apk="x.ap_"), r.root)
         with open(os.path.join(r.root, "settings.gradle.kts"), "a") as fh:
             fh.write("// 개명\n")
-        out, rc = self.health(r.plan(":app", f), f)
+        out, rc = self.doctor(r.plan(":app", f), f)
         self.assertEqual((rc, out["missing"]), (1, ["dump", "daemon"]))
         self.assertTrue(out["next"].startswith("prevue warmup "))
         self.assertIsNone(P.autostart(out))

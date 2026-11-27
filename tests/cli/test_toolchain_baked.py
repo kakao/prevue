@@ -187,12 +187,12 @@ class Baked(Case):
         self.assertNotIn("missing", out)
         self.assertIn("Gradle output above", out["error"])
 
-    def test_health_counts_the_toolchain_by_its_directories_not_the_env_file(self):
+    def test_doctor_counts_the_toolchain_by_its_directories_not_the_env_file(self):
         f = self.file()
         for present, missing in (((LAYOUTLIB, COMPILER), True), ((LIB,), False)):
             with self.subTest(present=present):
                 self.toolchain(*present)
-                _, out = self.prevue("health", f)
+                _, out = self.prevue("doctor", f)
                 self.assertEqual("toolchain" in out["missing"], missing)
 
     def test_paths_keeps_every_lib_copy_a_plugin_install_points_at(self):

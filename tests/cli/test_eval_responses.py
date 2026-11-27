@@ -42,9 +42,9 @@ class EvalResponses(Case):
                 repo.apk(":app", "debug")
                 if choosing:
                     repo.apk(":wear", "debug")
-                response, _ = P.health(*repo.plan(module, file, toolchain=scenario != "first-install"),
+                response, _ = P.doctor(*repo.plan(module, file, toolchain=scenario != "first-install"),
                                        False, "", file, "", False, "", False, os.environ)
-                for command in ("show", "health", "wait"):
+                for command in ("show", "doctor", "wait"):
                     expected = P.prepare_request(dict(response)) if command == "show" else response
                     actual, code = self.invoke(scenario, command, file)
                     self.assertEqual(code, 3)

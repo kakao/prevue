@@ -83,8 +83,8 @@ function prevue(cwd, ...args) {
 async function viewer(repo, files) {
   if (!repo) throw new Error("저장소 경로가 없다 — --nia · --pearl-a · --pearl-b · --kotlinconf");
   const abs = files.map(f => join(repo, f));
-  const h = prevue(repo, "health", abs[0]).json;
-  if (!h) throw new Error(`${abs[0]}: health 가 답하지 않는다`);
+  const h = prevue(repo, "doctor", abs[0]).json;
+  if (!h) throw new Error(`${abs[0]}: doctor 가 답하지 않는다`);
   if (!h.daemon) {
     const lack = (h.missing || []).filter(m => m !== "daemon");
     if (lack.length || !h.classpath) throw new Error(`${repo}: 준비가 덜 됐다(${lack.join(", ") || "덤프"}) — 에이전트로 이 저장소의 프리뷰를 한 번 띄운다`);

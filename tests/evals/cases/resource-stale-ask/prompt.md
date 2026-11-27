@@ -1,6 +1,6 @@
 ---
 name: resource-stale-ask
-description: when adding an entry to resources (values) makes the image stale and there is no approval, ask about rereading with health's ask and don't run warmup
+description: when adding an entry to resources (values) makes the image stale and there is no approval, ask about rereading with doctor's ask and don't run warmup
 tags: [nfr15, loop]
 plugins: ["../.."]
 max_turns: 30

@@ -59,7 +59,7 @@ Read the PNGs **only when you need to see them** — when fixing UI or matching 
 
 ### Exit code 3 — not ready yet
 
-The response has the same shape as `prevue health <file>`. `missing` lists everything missing, `next` (and `then`) are the commands to run, and **the response also carries what to say to the person** — `ask` (the question to put) · `options` (the choices) · `tell` (the message to pass on, then stop).
+The response has the same shape as `prevue doctor <file>`. `missing` lists everything missing, `next` (and `then`) are the commands to run, and **the response also carries what to say to the person** — `ask` (the question to put) · `options` (the choices) · `tell` (the message to pass on, then stop).
 
 ```json
 {"ok":false,"module":":feature:foryou:impl","variant":"demoDebug","variantChosenBy":"fresh","toolchain":true,
@@ -79,14 +79,14 @@ The response has the same shape as `prevue health <file>`. `missing` lists every
 - If `missing` is **only `["daemon"]`**, run the `prevue start …` in `next` as is. Don't assemble it yourself. The browser opens, so don't say "go to this address". If the module isn't in the running daemon's app, `start` launches another one on a new port — tell the person the new viewer address
 - If there is only an `error` and no `missing`, the repository or module wasn't found. Tell the person as it is
 
-**Don't run `prevue setup` · `prevue warmup` without approval.** If the person asks "is it ready?", run `prevue health <file>` and answer from it.
+**Don't run `prevue setup` · `prevue warmup` without approval.** If the person asks "is it ready?", run `prevue doctor <file>` and answer from it.
 
 ## After editing, get the result with `wait`
 
 The file watcher catches the save and redraws. **After saving, call `prevue wait <saved file>` and judge by the image in that response** — don't call `show` again, or read `status` after a `sleep`.
 If the exit code isn't 0, the image may not be from this save — read `failure` · `message` (`prevue wait --help`).
 For `COMPILE`, fix the code. For failures this tool can't fix, like `DI` · `ANDROID_VIEW`, tell the person and stop (`prevue failures --help`).
-**If you added or changed resources (values such as strings.xml under `res/`), check the response's `stale.resources`.** If it is there, the image is from before the save — don't move on; run `prevue health <preview file>` and follow the "Exit code 3" rules above (`next` if approved, `ask` if not). Move on only when the redrawn image has no `stale`.
+**If you added or changed resources (values such as strings.xml under `res/`), check the response's `stale.resources`.** If it is there, the image is from before the save — don't move on; run `prevue doctor <preview file>` and follow the "Exit code 3" rules above (`next` if approved, `ask` if not). Move on only when the redrawn image has no `stale`.
 
 When matching a mockup (Figma frame · screenshot · mock), compare the rendered PNG with it and fix again if they differ. Fetching the mockup is not Prevue's job.
 **Prevue's rendering is deterministic — the same picture gives a byte-identical PNG, and different bytes mean a different picture.** Don't write it off as file metadata; find where it differs.
@@ -109,5 +109,5 @@ When the user uses **words that point at the screen** like "this", "the padding 
 
 - **Don't call Gradle.** Once Gradle is in the save loop, the one-second budget is gone on the spot
 - **Don't edit build files.** This tool rests on planting nothing in the target repository
-- **Don't restart the daemon by hand.** The exception is when `stale.remedy` says so — if it says `prevue warmup`, run `prevue health <file>` and ask with its `ask`. Moving to another module is not a restart (`show` handles it)
+- **Don't restart the daemon by hand.** The exception is when `stale.remedy` says so — if it says `prevue warmup`, run `prevue doctor <file>` and ask with its `ask`. Moving to another module is not a restart (`show` handles it)
 - Don't say "fixed" based on an image that has `stale` on it
