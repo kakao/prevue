@@ -548,15 +548,15 @@ doctor_json() {  # <파일>
 # 승인이나 사람의 답이 들어 doctor 모양으로 3 — 에이전트가 ask 를 묻는다. 다시 부른 show 는 또 띄우지 않는다.
 show_unready() {  # <파일> — 돌아오지 않는다
   local h start=() line out rc
+  if [ -n "${PREVUE_START_ANSWER:-}" ]; then printf '%s\n' "$PREVUE_START_ANSWER"; exit "${PREVUE_START_CODE:-3}"; fi
   h="$(doctor_json "$1" | python3 "$PLAN_PY" prepare-request)"
   if [ -z "${PREVUE_AUTOSTARTED:-}" ]; then
     while IFS= read -r line; do start+=("$line"); done < <(printf '%s' "$h" | python3 "$PLAN_PY" autostart)
     if [ ${#start[@]} -gt 0 ]; then
       out="$("$ROOT/bin/prevue" start "${start[@]}" --show "$1")"; rc=$?
-      [ "$rc" = 0 ] || { [ "$rc" = 1 ] && baked; } || { echo "$out"; exit "$rc"; }   # 구운 뒤의 1 은 그림 실패 · 저장 전 그림 — 데몬은 떴다
       # 브라우저를 못 열었으면(샌드박스) 그 사실은 start 의 답에만 있다 — 버리면 에이전트가 "열렸다"고 말하고 사람은 빈 화면을 본다
       case "$out" in *'"opened": false'*|*'"opened":false'*) export PREVUE_NOT_OPENED=1;; esac
-      PREVUE_AUTOSTARTED=1 exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
+      PREVUE_AUTOSTARTED=1 PREVUE_START_ANSWER="$out" PREVUE_START_CODE="$rc" exec "$ROOT/bin/prevue" show ${SHOW_ARGS[@]+"${SHOW_ARGS[@]}"}
     fi
   fi
   printf '%s' "$h" | python3 -c "$UNREADY_VIEW"; exit 3
