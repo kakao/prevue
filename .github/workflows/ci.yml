@@ -45,6 +45,7 @@ jobs:
 
   latest-compose:
     name: Release only
+    if: ${{ github.base_ref == 'main' || github.event_name == 'workflow_dispatch' }}
     needs: [lint, compile]
     uses: ./.github/workflows/ci-latest-compose.yml
 
@@ -60,7 +61,7 @@ jobs:
         env:
           RESULTS: lint=${{ needs.lint.result }} compile=${{ needs.compile.result }} unit=${{ needs.unit.result }} integration=${{ needs.integration.result }}
           LATEST: ${{ needs.latest-compose.result }}
-          RELEASE_ONLY: ${{ true }}
+          RELEASE_ONLY: ${{ github.base_ref == 'main' || github.event_name == 'workflow_dispatch' }}
         run: |
           echo "$RESULTS latest-compose=$LATEST (required: $RELEASE_ONLY)"
           for R in $RESULTS; do
