@@ -2,7 +2,7 @@
 # GitHub Release.
 # main is what users install: both marketplaces read the plugin from the main branch, so the merge itself is the shipping
 # moment and this is only a record — a late or failed run does not affect anyone installing.
-# Verification finished before the merge: the main ruleset requires Verify's verdict (ci-success) and the skill evaluation
+# Verification finished before the merge: the main ruleset requires CI's verdict (CI result) and the skill evaluation
 # certificate (the "스킬 평가" status, posted by /release) on the release PR, a merge commit, and a PR head that contains main —
 # so the merged tree is exactly the verified develop tree. This run checks that once more before it tags.
 # The version's single source is plugin/VERSION; tools/sync-version.sh carries it over in the version commit (/release).

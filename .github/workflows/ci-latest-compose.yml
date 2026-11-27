@@ -1,0 +1,135 @@
+# A ui-tooling release that breaks the pointing tree must fail the release, not reach users first (#343).
+name: CI — latest Compose
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: sh
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: ${{ matrix.channel }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - channel: stable
+            bom: compose-bom
+          - channel: alpha
+            bom: compose-bom-alpha
+    env:
+      TESTS: >-
+        --tests prevue.daemon.RenderIntegrationTest.고정한*
+        --tests prevue.daemon.RenderIntegrationTest.직접*
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Pick the newest BOM
+        id: bom
+        env:
+          ARTIFACT: ${{ matrix.bom }}
+        run: |
+          set -eu
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, re, urllib.request
+          a = os.environ["ARTIFACT"]
+          xml = urllib.request.urlopen(f"https://dl.google.com/android/maven2/androidx/compose/{a}/maven-metadata.xml", timeout=60).read().decode()
+          versions = [v for v in re.findall(r"<version>([^<]+)</version>", xml) if re.fullmatch(r"\d{4}\.\d\d\.\d\d", v)]
+          if not versions:
+              raise SystemExit(f"no YYYY.MM.NN version in {a} metadata")
+          version = max(versions)
+          print(f"coordinate=androidx.compose:{a}:{version}")
+          PY
+          cat "$GITHUB_OUTPUT"
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Restore the Gradle home cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: integration-gradle-render-${{ runner.os }}-${{ hashFiles('plugin/daemon/**/*.gradle.kts', 'plugin/daemon/**/libs.versions.toml', 'plugin/daemon/**/gradle-wrapper.properties', 'fixtures/pearl/**/*.gradle.kts', 'fixtures/pearl/**/libs.versions.toml', 'fixtures/pearl/**/gradle-wrapper.properties', 'fixtures/pearl-kmp/**/*.gradle.kts', 'fixtures/pearl-kmp/**/libs.versions.toml', 'fixtures/pearl-kmp/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            integration-gradle-render-${{ runner.os }}-
+
+      # New Compose releases raise the compileSdk they need (1.13 needs 37.1).
+      - name: Set up the newest Android platform
+        id: platform
+        run: |
+          set -eu
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          P=$("$SDKM" --list 2>/dev/null | grep -oE 'platforms;android-37\.[0-9]+ ' | tr -d ' ' | sort -t. -k2 -n | tail -1)
+          [ -n "$P" ] || { echo "::error::no android-37 platform in sdkmanager --list"; exit 1; }
+          [ -f "$ANDROID_HOME/platforms/${P#platforms;}/android.jar" ] || "$SDKM" --install "$P" >/dev/null
+          echo "minor=${P##*.}" >> "$GITHUB_OUTPUT"
+          echo "$P"
+
+      - name: Render tests
+        working-directory: plugin/daemon
+        env:
+          PREVUE_JDK: ${{ env.JAVA_HOME }}
+        run: |
+          set -f
+          # shellcheck disable=SC2086
+          sh ../../tools/ci-retry.sh ./gradlew :daemon:integrationTest $TESTS --no-daemon \
+            "-PpearlComposeBom=${{ steps.bom.outputs.coordinate }}" \
+            "-PpearlCompileSdkMinor=${{ steps.platform.outputs.minor }}"
+
+      - name: Check that exactly the two tests ran with the newest Compose
+        if: always()
+        env:
+          COORDINATE: ${{ steps.bom.outputs.coordinate }}
+        run: |
+          set -eu
+          python3 tools/test-summary.py || true
+          python3 - <<'PY'
+          import glob, os, sys, xml.etree.ElementTree as ET
+          cases = [c for p in glob.glob("plugin/daemon/daemon/build/test-results/integrationTest/TEST-*.xml") for c in ET.parse(p).getroot().iter("testcase")]
+          for c in cases:
+              print(c.get("name"), "skipped" if c.find("skipped") is not None else "")
+          if len(cases) != 2 or any(c.find("skipped") is not None for c in cases):
+              print(f"::error::expected the two render tests to run, got {len(cases)}")
+              sys.exit(1)
+          out = "".join(s.text or "" for p in glob.glob("plugin/daemon/daemon/build/test-results/integrationTest/TEST-*.xml") for s in ET.parse(p).getroot().iter("system-out"))
+          seen = [l.strip() for l in out.splitlines() if "[pearl] getViewInfos$" in l]
+          print("\n".join(seen))
+          # The fixed fixture BOM still has the pre-1.13 name; seeing it means the newest BOM never reached the render.
+          if not seen or any("getViewInfos$ui_tooling " in l for l in seen) or not any(os.environ["COORDINATE"] in l for l in seen):
+              print(f"::error::the render did not use {os.environ['COORDINATE']}")
+              sys.exit(1)
+          PY
+
+      - name: Show the resolved ui-tooling version
+        if: always()
+        working-directory: fixtures/pearl
+        env:
+          ORG_GRADLE_PROJECT_pearlComposeBom: ${{ steps.bom.outputs.coordinate }}
+          ORG_GRADLE_PROJECT_pearlCompileSdkMinor: ${{ steps.platform.outputs.minor }}
+        run: |
+          set -eu
+          ./gradlew -q :app:dependencyInsight --dependency androidx.compose.ui:ui-tooling-android --configuration debugRuntimeClasspath --no-daemon | head -5 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-compose-results-${{ matrix.channel }}
+          path: |
+            plugin/daemon/daemon/build/test-results/integrationTest
+            plugin/daemon/daemon/build/reports/tests/integrationTest
+          if-no-files-found: ignore

@@ -1,6 +1,6 @@
 # 고정한다 — 올릴 때는 그 PR이 Prevue의 호환성 확인이다(Prevue 개발 문서 "버전 핀").
 [versions]
-agp = "9.3.3"
+agp = "9.4.1"
 kotlin = "2.2.10"
 composeBom = "2026.02.01"
 coreKtx = "1.19.0"

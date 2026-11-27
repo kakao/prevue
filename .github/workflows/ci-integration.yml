@@ -1,13 +1,10 @@
-# Called by Verify (build.yml) — integration tests: the real layoutlib renders fixtures/pearl · pearl-kmp.
-# The tests run one after another in a single JVM, which takes over 20 minutes on one runner — the classes are split into
-# shards that run on several runners at once.
-name: Verify — integration tests
+name: CI — integration tests
 
 on:
   workflow_call:
     inputs:
       save-cache:
-        description: "Save the Gradle home cache (the cache-warm run on develop). Verify only reads it."
+        description: "Save the Gradle home cache (the cache-warm run on develop). CI only reads it."
         type: boolean
         default: false
 
@@ -20,6 +17,7 @@ permissions:
 
 jobs:
   integration:
+    name: ${{ matrix.shard }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -27,12 +25,11 @@ jobs:
       matrix:
         shard: [render, insets, kmp]
     env:
-      # The classes each shard runs. Picking a shard checks that every test class is in exactly one shard, so a new class
-      # cannot drop out silently. The first class of a shard pays for the fixture's first Gradle run. Split by per-class
-      # duration (the two KMP classes share the KMP fixture setup).
+      # Every test class must be in exactly one shard, so a new class cannot drop out silently.
+      # Balanced by per-class duration; the slowest shard sets the wall-clock time, so render holds RenderIntegrationTest alone.
       SHARDS: |
-        render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
-        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
+        render: RenderIntegrationTest
+        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest HotCompilerJarIntegrationTest ShadowedOverloadRenderIntegrationTest
         kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
 
     steps:
@@ -64,8 +61,6 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # The wrappers and dependencies of both the daemon and the fixtures land in the same Gradle home; the key is all their
-      # build files. Shards download different things (only the KMP shard gets KMP dependencies), so each has its own.
       - name: Restore the Gradle home cache
         id: gradle-cache
         uses: actions/cache/restore@v4
@@ -78,8 +73,6 @@ jobs:
             integration-gradle-${{ matrix.shard }}-${{ runner.os }}-
             integration-gradle-${{ runner.os }}-
 
-      # The fixtures use compileSdk 37. The tests look for android.jar under ANDROID_HOME's platforms.
-      # The runner image ships android-37.0 (checked 2026-11) — on an image without it, install it.
       - name: Set up the Android platform
         run: |
           set -eu
@@ -95,7 +88,7 @@ jobs:
           PREVUE_JDK: ${{ env.JAVA_HOME }}
         run: sh ../../tools/ci-retry.sh ./gradlew :daemon:integrationTest ${{ steps.shard.outputs.tests }} --no-daemon
 
-      # Without the toolchain or the SDK the tests skip quietly and go green — that counts as a failure, not a result.
+      # Without the toolchain or the SDK the tests skip and go green.
       - name: Check that the tests actually ran
         if: always()
         run: |
@@ -122,7 +115,7 @@ jobs:
             plugin/daemon/daemon/build/reports/tests/integrationTest
           if-no-files-found: ignore
 
-      # Only the cache-warm run saves, and only on success (a half-filled cache would stay under this key). Skipped when the key exists.
+      # Only on success: a half-filled cache would stay under this key until the build files change.
       - name: Save the Gradle home cache
         if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
