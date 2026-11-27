@@ -545,9 +545,7 @@ doctor_json() {  # <파일>
 
 # show 가 이 파일을 그릴 데몬을 못 찾았을 때. 빠진 것이 데몬 하나뿐이면 next 의 start 를 여기서 치고 show 를 한 번 다시 부른다 —
 # 에이전트가 종료 3 을 받아 그 start 를 그대로 치던 한 호출이다(재실측 10회차 모두, NFR-17). 툴체인 · 덤프 · 고를 것이 남았으면
-# 승인이나 사람의 답이 들어 doctor 모양으로 3 — 에이전트가 ask 를 묻는다.
-# start 의 종료 코드로 데몬이 떴는지 짐작하지 않는다 — 다시 부른 show 가 데몬을 못 찾으면 start 의 답을 그대로 낸다.
-# 자리는 명령마다 처음에 정하고 start 는 덤프에 따라 다른 자리에 띄울 수 있어, 이 프로세스에서 이어 그리지 않고 다시 부른다.
+# 승인이나 사람의 답이 들어 doctor 모양으로 3 — 에이전트가 ask 를 묻는다. 다시 부른 show 는 또 띄우지 않는다.
 show_unready() {  # <파일> — 돌아오지 않는다
   local h start=() line out rc
   if [ -n "${PREVUE_START_ANSWER:-}" ]; then printf '%s\n' "$PREVUE_START_ANSWER"; exit "${PREVUE_START_CODE:-3}"; fi
