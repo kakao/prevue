@@ -72,7 +72,7 @@ jobs:
       # Must stay the last step: a step after it would end the failed job as cancelled, hiding the cause.
       # continue-on-error: a fork PR's token is read-only and cannot cancel.
       - name: Cancel the run, this job failed
-        if: ${{ failure() && !inputs.save-cache && github.event_name == 'none' }}
+        if: ${{ failure() && !inputs.save-cache }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
