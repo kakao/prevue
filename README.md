@@ -128,7 +128,7 @@ With Prevue, every worktree gets its own lightweight daemon, each using 83% less
   - Without Android Studio, install JDK 21 or later. `brew install openjdk@25` needs no sudo, and Prevue finds it there (or under `Library/Java/JavaVirtualMachines` or SDKMAN) by itself. 25 or later starts about a second faster.
   - Set `PREVUE_JDK` only to pick a different one.
 - **Android SDK** — with at least one platform. Set `ANDROID_HOME` if it isn't at `~/Library/Android/sdk`.
-- **Jetpack Compose** — every release is drawn with the newest stable and alpha Compose before it ships.
+- **Jetpack Compose** — `androidx.compose.ui:ui-tooling` 1.10 or newer (Compose BOM 2025.12.00 or newer). With an older one, previews fail with a message that ui-tooling doesn't pair with the renderer. Every release is drawn with the newest stable and alpha Compose before it ships.
 
 ### Install
 

@@ -130,7 +130,7 @@ Prevue는 워크트리마다 가벼운 데몬을 하나씩 띄웁니다.
   - Android Studio가 없으면 JDK 21 이상을 설치하세요. `brew install openjdk@25`는 sudo 없이 설치되고, Prevue가 그 위치(또는 `Library/Java/JavaVirtualMachines` · SDKMAN)에서 알아서 찾습니다. JDK 25 이상이면 콜드 스타트가 1초쯤 빨라집니다.
   - 다른 JDK를 쓰고 싶을 때만 `PREVUE_JDK`에 경로를 넣어 주세요.
 - **Android SDK** — 플랫폼을 하나 이상 설치해 두세요. SDK가 `~/Library/Android/sdk`에 있지 않으면 `ANDROID_HOME`에 그 경로를 넣어 주세요.
-- **Jetpack Compose** — 릴리즈마다 그때의 최신 stable과 alpha Compose로 그려 보고 내보냅니다.
+- **Jetpack Compose** — `androidx.compose.ui:ui-tooling` 1.10 이상(Compose BOM 2025.12.00 이상)이 필요합니다. 그보다 옛 판이면 프리뷰가 ui-tooling이 렌더러와 짝이 맞지 않는다는 실패로 나옵니다. 릴리즈마다 그때의 최신 stable과 alpha Compose로 그려 보고 내보냅니다.
 
 ### 설치
 
