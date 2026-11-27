@@ -4,7 +4,7 @@
      숫자는 README 벤치마크 절이 원 기록이다. tools/readme-shots.mjs bench 가 PNG 로 뽑는다. -->
 <svg viewBox="0 0 1200 598" width="1200" height="598" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d" xml:lang="ko">
   <title id="t">Prevue가 다시 그리는 속도</title>
-  <desc id="d">Prevue가 다시 그리는 속도 — 리터럴 0.23초, 리소스 값 0.22초, 코드 0.90초, 보드 전부 2.07초, 모듈 전환 0.33초, 기기 바꾸기 0.92초, 끄는 동안 약 54fps.</desc>
+  <desc id="d">Prevue가 다시 그리는 속도 — 리터럴 0.23초, 리소스 값 0.22초, 코드 0.90초, 보드 전부 2.07초, 모듈 전환 0.33초, 기기 바꾸기 0.92초, 드래그하는 동안 약 54fps.</desc>
   <defs>
     <style>
       .h { font: 600 26px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif; fill: #1d1d1f; letter-spacing: -.01em; }
@@ -64,5 +64,5 @@
   <text class="vp" x="600.1" y="427" text-anchor="start">0.92초</text>
   <rect x="52" y="492" width="400" height="38" rx="19" fill="rgba(0, 122, 255, .10)"/>
   <svg x="68" y="501" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5v-2a1.5 1.5 0 0 1 3 0V12"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2 .208a6 6 0 0 1-5.012-2.7L7 19c-.312-.479-1.407-2.388-3.286-5.728a1.5 1.5 0 0 1 .536-2.022 1.867 1.867 0 0 1 2.28.28L8 13"/></svg>
-  <text class="chip" x="98" y="517" text-anchor="start">인터랙티브 · 끄는 동안 약 54fps</text>
+  <text class="chip" x="98" y="517" text-anchor="start">인터랙티브 · 드래그하는 동안 약 54fps</text>
 </svg>
