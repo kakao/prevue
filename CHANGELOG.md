@@ -9,6 +9,7 @@ Only changes users can see go here.
 ## [Unreleased]
 
 - **`prevue health` is now `prevue doctor`** — same response and exit codes; `prevue health` is no longer a command (exit 2), so scripts that call it need the new name.
+- **When `prevue show` starts the daemon itself and the start fails, `show` now answers with that failure as is** — it no longer reads some failures as a missing daemon and points you at `prevue start` again.
 - **Projects on Compose `ui-tooling` 1.13 (BOM 2026.11.01) draw their previews and point at file:line again** — they no longer all fail with "ComposeViewAdapter.getViewInfos$ui_tooling is missing" ([#343](https://github.com/kakao/prevue/issues/343)). Reported by @sergei-lapin.
 
 ## [0.24.0] — 2026-11-26
