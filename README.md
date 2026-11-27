@@ -2,9 +2,9 @@
   <img src="assets/icon.png" width="40" height="40" alt="" align="absmiddle">&nbsp;Prevue
 </h1>
 
-<p align="center"><b>Close Android Studio. Your Previews still show.</b></p>
+<p align="center"><b>Compose Previews, without Android Studio.</b></p>
 
-<p align="center">Your Compose Previews, redrawn in the browser a second after you save.<br>Your agent sees the same screen.</p>
+<p align="center">Save, and it redraws in the browser in a second.<br>Your agent sees the same screen.</p>
 
 <p align="center"><b>English</b> | <a href="README.ko.md">한국어</a></p>
 
@@ -25,17 +25,16 @@
 
 <p align="center">
   <img src="assets/intro.webp" width="1000"
-       alt="Prevue in under 30 seconds, on the Pearl sample app. Point at it: clicking the Thai Milk Tea card opens a card beside the picture with DrinkCard, PearlScreen.kt:135, its size, its modifiers and the tree around it. Hot swap: on a board of Previews, one save turns the drink cards into wide rows, a second save changes the colors in Theme.kt to a dark theme, and all 30 Previews redraw each time — layout in 1.2 s, colors in 0.6 s, no Gradle build. Interactive: the live Preview scrolls, Mango Smoothie opens, and picking size L, ice, pearls and a topping redraws the cup with every tap. Every screen: the drink screen goes from 673×841 to a custom width dragged to 897, then iPhone Duo unfolds and folds shut">
+       alt="Pointing, hot swap, interactive and every screen on the Pearl sample app">
 </p>
-<p align="center"><sub>Point at it, hot swap, interactive and every screen — real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
+<p align="center"><sub>Point at it, hot swap, interactive and every screen — all real renders of Pearl, the sample app in <a href="fixtures/pearl"><code>fixtures/pearl</code></a>.</sub></p>
 
-Your agent says the screen is done, so you open Android Studio and wait for the build to check it.
-You take a screenshot of what's wrong, explain it, and wait again. **The agent writes the code, but you're still its eyes — every loop.**
-Prevue redraws the Preview about a second after each save so the agent sees it for itself, and you step outside the loop and check only the finished screen.
+Your agent can edit a Compose screen, but it can't see it. So after every edit you wait for an Android Studio build to check it, and explain what's wrong with a screenshot.
+Prevue redraws the Preview about a second after each save and shows it to your agent. The agent edits and checks on its own, and you only look at the finished screen.
 
 <p align="center">
   <img src="assets/agent-loop.png" width="720"
-       alt="The UI fix loop, before and after, stacked. Top, before Prevue: the developer sits inside the loop, highlighted in orange — the coding agent edits and saves, Android Studio builds and renders the Preview in about four seconds, and the developer looks, takes a screenshot, and explains what's wrong before the agent edits again, every loop. Bottom, with Prevue: the developer stays outside the loop — they hand the coding agent a goal and a reference, the agent edits and saves, Prevue renders a PNG in about a second, and the agent compares it with the reference and loops on its own. When it's done, the developer reviews the same Preview in the browser">
+       alt="The UI fix loop, before and after Prevue">
 </p>
 
 ## Your agent checks its own work
@@ -48,7 +47,7 @@ Make the ForYouScreen header match this screenshot
 
 <p align="center">
   <img src="assets/match.gif" width="640"
-       alt="Matching a mockup with no hands on the viewer. On the left, mockup.png: the Pearl menu screen with a green header. In the middle, the Prevue board showing PearlListPreview, which starts with a blue header, a smaller headline, and the drink grid pressed against the edges. Below it, the agent's terminal. Asked to make PearlListPreview match mockup.png, the agent saves three times — grid padding 8 → 24 dp, the header color back to forest green, the headline 22 → 28 sp — and runs prevue wait after each save, so the board redraws one difference at a time. After the third save the Preview is identical to the mockup and the terminal prints matches mockup.png">
+       alt="The agent matching a Preview to a mockup on its own">
 </p>
 
 Screens that only change when you tap or drag work the same way. The agent switches the Preview into interactive mode, sends touches, and gets the new picture back.
@@ -59,7 +58,7 @@ Save, and the Preview redraws in about a second without Gradle. Change only a va
 Every `@Preview` in a file is laid out on a board grouped by function and redrawn on every save. The agent and you look at the same board, so "it's done" and "I see it" happen at the same moment.
 
 <p align="center">
-  <img src="assets/hero.png" width="50%" alt="The board with the Previews of nowinandroid ForYouScreen.kt laid out in groups by function. The header shows the app name, folder, branch, module, and variant, with a check pill on the right. The open files list on the left has ForYouScreen, InterestsScreen, and NewsResourceCard, and each group header shows its count and zoom. Each Preview's name and size sit above its picture"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app's ui-components module. The header shows KotlinConf with kotlinconf-app, main, app:ui-components, commonMain and debug. In the open files list on the left, SpeakerCard, MainHeader, Kodee and TalkCard each carry the Kotlin Multiplatform mark on their file icon. Two groups, TalkCardLivePreview and TalkCardUpcomingPreview, each show a light and a dark session card for Asynchronous Programming With Kotlin Coroutines with its tags, speakers, room and time, and the name and size of each sit above the card">
+  <img src="assets/hero.png" width="50%" alt="The Preview board for nowinandroid ForYouScreen.kt"><img src="assets/board-kotlinconf.png" width="50%" alt="The board for TalkCard.kt in the commonMain of the KotlinConf app">
 </p>
 <p align="center"><sub>Left: <a href="https://github.com/android/nowinandroid">Now in Android</a> (Apache-2.0) · Right: <a href="https://github.com/JetBrains/kotlinconf-app">KotlinConf app</a>, Compose Multiplatform (Apache-2.0)</sub></p>
 
@@ -74,12 +73,12 @@ Each card shows the file's previews with its name, package, and module. Click on
 
 <p align="center">
   <img src="assets/gallery.gif" width="1000"
-       alt="All Previews for the Pearl sample app. The pointer passes over the cards, whose next two previews tilt out behind them, then clicks ShowcasePreviews; a sheet rises with NavTour, HomeTour and Sip, View on board opens its board, and esc returns to the grid">
+       alt="Clicking a card in All Previews to open its sheet and go to its board">
 </p>
 
-## Point instead of explaining
+## Point at it
 
-Click anything in the Preview and tell your agent what to do with it. No screenshots, no "the second card from the top."
+Describing the spot to fix in words is tedious. Click it in the Preview and just tell your agent what to do. No screenshots, no "the second card from the top."
 
 ```
 Tighten the padding on this
@@ -91,7 +90,7 @@ A card opens beside the picture with what you pointed at: its name, its file:lin
 
 <p align="center">
   <img src="assets/pointing.gif" width="1000"
-       alt="A board of Pearl app previews. Clicking beside the price on the Taro Milk Tea card in the home preview opens a card next to the picture: Column, DrinkCard.kt:106, 150.1 × 174.5 dp, fillMaxSize, and a tree of the elements around it. Clicking the DrinkCard row above it points at the whole drink card, the next DrinkCard row moves to Thai Milk Tea, and the Preview button in the card's header lists the three previews that call DrinkCard; choosing MenuCardsPreview opens the board of ComponentPreviews.kt at that preview">
+       alt="Clicking a Preview to see a composable's file, line and size">
 </p>
 
 ## Interactive mode
@@ -104,18 +103,21 @@ Without touching the source, change the screen size or the device (18 Galaxy, Pi
 - **Each device draws its own system UI** — Android, iOS and iPhone Duo status bars and cameras, in the PNG your agent reads as well as in the browser.
 
 <p align="center">
-  <img src="assets/devices.gif" width="49.2%" alt="Changing devices from the control dock under the workspace stage with Show inset areas left on throughout. S26 tints its 37 dp top band and 15 dp bottom band and labels the SAFE AREA between them, 360 × 728. Picking iPhone 17 redraws the screen inside its 62 dp and 34 dp bands, 402 × 778. Picking iPhone Duo and folding it right away lands on the cover screen with an 84 dp band beside the camera, 382 × 644, and unfolding splits the cup and options panel inside 867 × 635. Picking S26 again returns to the first frame"><img src="assets/interactive-detail.gif" width="25.4%" alt="In the workspace, with the control dock under the stage, tapping the Taro Milk Tea card grows the card to fill the screen while the cup flies separately into its spot on the detail screen. Add to bag sends the cup flying into the bag at the top right and the badge pops, and the back arrow plays it in reverse back to the card"><img src="assets/interactive-cup.gif" width="25.4%" alt="In the workspace, with the control dock under the stage, on the detail screen Ice Extra opens the lid and drops ice in so the drink rises, Pearls Extra pours pearls in a curve, and None flings them off screen. Dragging the cup side to side sloshes the drink, and Sweetness 0% and 100% make its color lighter and then deeper">
+  <img src="assets/devices.gif" width="49.2%" alt="Changing devices with inset areas shown"><img src="assets/interactive-detail.gif" width="25.4%" alt="The animation from a card to its detail screen"><img src="assets/interactive-cup.gif" width="25.4%" alt="An interactive Preview whose cup changes with each option">
 </p>
 
 ## Three agents, still light
 
 One Preview in Android Studio keeps a Gradle daemon and a Kotlin daemon running too, about 8GB. We gave three agents a worktree each on a 36GB Mac, and the three Android Studios started swapping until every task slowed to a crawl.
 
-With Prevue, every worktree gets its own lightweight daemon, each using 83% less memory than Android Studio ([Benchmark](#benchmark)). Even when two agents save at the same time, each window redraws on its own, and when only one saves again, the other stays put.
+With Prevue, every worktree gets its own lightweight daemon.
+
+- **83% less memory** — one daemon compared with Android Studio ([Benchmark](#benchmark)).
+- **Each window redraws on its own** — two agents saving at the same time don't mix, and when only one saves, the other window stays put.
 
 <p align="center">
   <img src="assets/worktrees.gif" width="1000"
-       alt="Two Chrome windows for two worktrees of the same repository, each with its own daemon and its own address (main and feature/big-cards) and a terminal strip for the agent working there. Both agents save at the same time — the left changes the header color to purple, the right changes the headline to Big cards, big sips — and each window redraws on its own with the prevue wait result printed below. Then only the left saves again, turning the header orange, and the right window stays as it was">
+       alt="Two worktrees redrawing on their own">
 </p>
 
 ## Get started
@@ -175,32 +177,33 @@ If you get stuck, ask your agent to read `prevue log`. If that doesn't help, [le
 | Works | Doesn't work |
 |---|---|
 | Android modules (app · library) | Pure JVM modules |
-| Kotlin Multiplatform · Compose Multiplatform modules with an Android target — AGP 9's `com.android.kotlin.multiplatform.library`, or `kotlin.multiplatform` with `com.android.library` | KMP modules without an Android target, and builds other than Gradle, such as Amper |
-| Saving a commonMain file redraws it without Gradle | Files with `expect` · `actual` declarations — after a save, the old picture stays until a Gradle build |
-| Debug-type variants. Picked by Android Studio's default Build Variants rules; ask your agent for another | Release variants |
-| Top-level `@Preview` functions. Multipreview and `@PreviewParameter` are expanded too | Member Previews declared inside a class |
-| Composables that draw without a real device | Previews that need a DI container or `AndroidView` — shown with the failure kinds `DI` · `ANDROID_VIEW` |
+| KMP · Compose Multiplatform modules with an Android target¹ | KMP modules without an Android target, non-Gradle builds (such as Amper) |
+| commonMain files — redrawn on save without Gradle | Files with `expect` · `actual` — old picture until a Gradle build |
+| Debug-type variants² | Release variants |
+| Top-level `@Preview` functions (including Multipreview · `@PreviewParameter`) | Member Previews inside a class |
+| Composables that draw without a real device | Previews that need a DI container or `AndroidView`³ |
+
+<sub>¹ AGP 9's `com.android.kotlin.multiplatform.library`, or `kotlin.multiplatform` with `com.android.library` · ² Picked by Android Studio's default Build Variants rules; ask your agent for another · ³ Shown with the failure kinds `DI` · `ANDROID_VIEW`</sub>
 
 ## Benchmark
 
-Top, the same work in Android Studio and in Prevue. Bottom, how fast each kind of change shows up.
+The top chart compares the same work in Android Studio and Prevue. The bottom chart shows how long each kind of change takes to show up.
 
 <p align="center">
   <img src="assets/benchmark-vs.png" width="1000"
-       alt="Android Studio vs Prevue on nowinandroid ForYouScreen.kt — Hot Swap 4.3s vs 2.1s (−51%), First Preview 12.1s vs 8.0s (−34%), Memory 8.1GB vs 1.4GB (−83%), Disk 3.2GB vs 446MB (−86%)">
+       alt="Android Studio vs Prevue benchmark">
 </p>
 
 <p align="center">
   <img src="assets/benchmark-redraw.png" width="1000"
-       alt="How fast Prevue redraws — literal edit 0.23s, resource value 0.22s, code edit 0.90s, whole board 2.07s, switch module 0.33s, change device 0.92s, and about 54 fps while dragging">
+       alt="How fast Prevue redraws">
 </p>
 
-- **Setup** — Apple Silicon, 14 cores · 36GB RAM · nowinandroid `ForYouScreen.kt` (25 Previews). Android Studio 2026.1.3 was measured on 2026-09-22 and Prevue (develop `feb5c6e`) on 2026-10-23. Prevue values are medians
-- **Hot Swap** — From save until all 25 show the new picture. The first one appears at 0.9 seconds
-- **First Preview** — Android Studio from opening the project, Prevue from starting the daemon, until the first render finishes
-- **Memory** — Android Studio is the IDE plus the Gradle daemon at one moment; Prevue is the memory use of its one daemon after 10 saves. Going back and forth between modules for a long time, it peaked at 1.6GB, and it shuts itself down after an hour without use (`prevue start --idle <minutes>` changes this)
-- **Disk** — The Android Studio app bundle vs `~/.prevue/toolchain`. With JDK 25 or later Prevue also keeps a class cache of about 200MB in `~/.prevue/aot` that makes the daemon start faster
-- **How fast Prevue redraws** — Literal and resource-value saves skip compilation. Switching modules and changing devices are measured until the new picture is ready. Interactive is the frame rate on the viewer stream while dragging a feed
+- **Setup** — Apple Silicon, 14 cores · 36GB RAM. Android Studio 2026.1.3 was measured on 2026-09-22 and Prevue (develop `feb5c6e`) on 2026-10-23
+- **First Preview** — Android Studio from opening the project, Prevue from starting the daemon
+- **Memory** — Android Studio is the IDE plus the Gradle daemon. Going back and forth between modules for a long time, Prevue peaked at 1.6GB, and it shuts itself down after an hour without use (`prevue start --idle <minutes>` changes this)
+- **Disk** — With JDK 25 or later, a class cache of about 200MB in `~/.prevue/aot` adds to this
+- **Literal and resource-value saves** skip compilation, so they're faster
 
 ## Commands
 
