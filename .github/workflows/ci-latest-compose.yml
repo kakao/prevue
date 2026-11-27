@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   render:
-    name: Latest ${{ matrix.channel }} Compose — render
+    name: ${{ matrix.channel }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
