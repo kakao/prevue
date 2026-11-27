@@ -90,18 +90,27 @@ jobs:
             "-PpearlComposeBom=${{ steps.bom.outputs.coordinate }}" \
             "-PpearlCompileSdkMinor=${{ steps.platform.outputs.minor }}"
 
-      - name: Check that exactly the two tests ran
+      - name: Check that exactly the two tests ran with the newest Compose
         if: always()
+        env:
+          COORDINATE: ${{ steps.bom.outputs.coordinate }}
         run: |
           set -eu
           python3 tools/test-summary.py || true
           python3 - <<'PY'
-          import glob, sys, xml.etree.ElementTree as ET
+          import glob, os, sys, xml.etree.ElementTree as ET
           cases = [c for p in glob.glob("plugin/daemon/daemon/build/test-results/integrationTest/TEST-*.xml") for c in ET.parse(p).getroot().iter("testcase")]
           for c in cases:
               print(c.get("name"), "skipped" if c.find("skipped") is not None else "")
           if len(cases) != 2 or any(c.find("skipped") is not None for c in cases):
               print(f"::error::expected the two render tests to run, got {len(cases)}")
+              sys.exit(1)
+          out = "".join(s.text or "" for p in glob.glob("plugin/daemon/daemon/build/test-results/integrationTest/TEST-*.xml") for s in ET.parse(p).getroot().iter("system-out"))
+          seen = [l.strip() for l in out.splitlines() if "[pearl] getViewInfos$" in l]
+          print("\n".join(seen))
+          # The fixed fixture BOM still has the pre-1.13 name; seeing it means the newest BOM never reached the render.
+          if not seen or any("getViewInfos$ui_tooling " in l for l in seen) or not any(os.environ["COORDINATE"] in l for l in seen):
+              print(f"::error::the render did not use {os.environ['COORDINATE']}")
               sys.exit(1)
           PY
 

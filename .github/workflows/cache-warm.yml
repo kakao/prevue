@@ -1,4 +1,5 @@
 # A work PR reads the caches of its base branch, so develop is warmed on every push.
+# No fail-fast here: a failed job must not stop the others from saving.
 name: Cache warm
 
 on:

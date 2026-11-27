@@ -59,6 +59,7 @@ jobs:
         working-directory: plugin/daemon
         run: sh ../../tools/ci-retry.sh ./gradlew test --no-daemon
 
+      # Only on success: a half-filled cache would stay under this key until the build files change.
       - name: Save the Gradle home cache
         if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
@@ -68,6 +69,7 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
+      # Must stay the last step: a step after it would end the failed job as cancelled, hiding the cause.
       # continue-on-error: a fork PR's token is read-only and cannot cancel.
       - name: Cancel the run, this job failed
         if: ${{ failure() && !inputs.save-cache }}

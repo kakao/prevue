@@ -26,6 +26,7 @@ jobs:
         shard: [render, insets, kmp]
     env:
       # Every test class must be in exactly one shard, so a new class cannot drop out silently.
+      # Balanced by per-class duration; the slowest shard sets the wall-clock time, so render holds RenderIntegrationTest alone.
       SHARDS: |
         render: RenderIntegrationTest
         insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest HotCompilerJarIntegrationTest ShadowedOverloadRenderIntegrationTest
@@ -114,6 +115,7 @@ jobs:
             plugin/daemon/daemon/build/reports/tests/integrationTest
           if-no-files-found: ignore
 
+      # Only on success: a half-filled cache would stay under this key until the build files change.
       - name: Save the Gradle home cache
         if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4

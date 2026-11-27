@@ -277,8 +277,9 @@ internal abstract class InsetsRenderChecks {
     }
 
     @Test fun `방향 · 접힘 · 힌지가 다른 자세마다 그 자세의 인셋을 전달하고 렌더러 바를 숨긴다`() = runBlocking {
-        val kinds = DeviceModel.entries.flatMap { it.postures }.distinctBy { Triple(it.orientation, it.folded, it.hingeDp != null) }
-        assertTrue(kinds.size >= 4, kinds.toString())
+        val kinds = DeviceModel.entries.flatMap { it.postures }
+            .distinctBy { listOf(it.orientation, it.folded, it.hingeDp != null, it.dpi % 160 == 0) }
+        assertTrue(kinds.any { it.dpi % 160 != 0 } && kinds.any { it.folded }, kinds.toString())
         for (device in kinds) {
             var shownBars: List<String>? = null
             for (spec in compared(CardOverride(preview.previewId, device).applyTo(preview))) {

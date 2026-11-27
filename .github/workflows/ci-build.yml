@@ -87,12 +87,13 @@ jobs:
           test -s "$PREVUE_BRIDGE" || { echo "::error::the bridge jar is missing"; exit 1; }
           ls "$PREVUE_COMPILER"/*.jar >/dev/null || { echo "::error::the compiler jars are missing"; exit 1; }
 
-          # The renderer jar bundles an old unshaded kotlin-reflect; behind it, @PreviewParameter dies at runtime.
+          # Checking only the order let through a build with no prevue.jar at all.
           for P in $(echo "$PREVUE_CP" | tr ':' ' '); do
             test -e "$P" || { echo "::error::the classpath points at something missing: $P"; exit 1; }
           done
           echo "every classpath entry exists"
 
+          # The renderer jar bundles an old unshaded kotlin-reflect; behind it, @PreviewParameter dies at runtime.
           R=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'kotlin-reflect' | head -1 | cut -d: -f1 || true)
           N=$(echo "$PREVUE_CP" | tr ':' '\n' | grep -n 'compose-preview-renderer' | head -1 | cut -d: -f1 || true)
           test -n "$R" -a -n "$N" || { echo "::error::reflect or renderer not found on the classpath"; exit 1; }
@@ -112,6 +113,7 @@ jobs:
           # 3 also comes out when python3 is missing.
           case "$OUT" in *'"python3"'*) echo "::error::status ended with 3 at the python3 check, not at the daemon: $OUT"; exit 1;; esac
 
+      # Only on success: a half-filled cache would stay under this key until the build files change.
       - name: Save the Gradle home cache
         if: ${{ success() && inputs.save-cache && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
@@ -121,6 +123,7 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
+      # Must stay the last step: a step after it would end the failed job as cancelled, hiding the cause.
       # continue-on-error: a fork PR's token is read-only and cannot cancel.
       - name: Cancel the run, this job failed
         if: ${{ failure() && !inputs.save-cache }}
