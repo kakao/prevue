@@ -42,13 +42,13 @@ sys.exit(r.get("code", 0))
 SHA = "a" * 40
 OPEN = {"state": "OPEN", "mergeable": "MERGEABLE", "headRefOid": SHA}
 RUN = [{"databaseId": 77}]
-PASS = [{"name": "ci-success", "bucket": "pass", "link": "https://ci/77"}]
-FAIL = [{"name": "ci-success", "bucket": "fail", "link": "https://ci/77"}]
+PASS = [{"name": "CI result", "bucket": "pass", "link": "https://ci/77"}]
+FAIL = [{"name": "CI result", "bucket": "fail", "link": "https://ci/77"}]
 JOBS = {"attempt": 1, "url": "https://run/77", "jobs": [
-    {"name": "lint / lint", "databaseId": 5, "conclusion": "failure",
+    {"name": "Every PR / Static checks", "databaseId": 5, "conclusion": "failure",
      "steps": [{"name": "Kotlin lint", "conclusion": "failure"}]},
-    {"name": "compile / compile", "databaseId": 6, "conclusion": "cancelled", "steps": []},
-    {"name": "ci-success", "databaseId": 7, "conclusion": "failure", "steps": []},
+    {"name": "Every PR / Build", "databaseId": 6, "conclusion": "cancelled", "steps": []},
+    {"name": "CI result", "databaseId": 7, "conclusion": "failure", "steps": []},
 ]}
 LOG = ("2026-11-18T03:45:36.1Z \x1b[31mReceived status code 429 from server: Too Many Requests\x1b[0m\n"
        "2026-11-18T03:45:36.2Z ##[error]Process completed with exit code 2.\n"
@@ -99,13 +99,13 @@ class CiWait(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("https://ci/77", out)
 
-    # 지킬 것: ci-success 가 생기기 전 "no required checks reported"로 끝나던 대기 — run 이 끝날 때까지 watch 한 뒤에 판정한다
+    # 지킬 것: CI result 가 생기기 전 "no required checks reported"로 끝나던 대기 — run 이 끝날 때까지 watch 한 뒤에 판정한다
     def test_run_이_끝날_때까지_watch_한_뒤에_필수_체크를_본다(self):
         self.run_with({"pr view": [{"out": OPEN}], "run list": [{"out": RUN}],
                        "run watch": [{}], "pr checks": [{"out": PASS}]})
         calls = self.calls()
         watch = next(i for i, c in enumerate(calls) if c.startswith("run watch 77"))
-        checks = next(i for i, c in enumerate(calls) if c.startswith("pr checks 42 --required"))
+        checks = next(i for i, c in enumerate(calls) if c.startswith("pr checks 42 --json"))
         self.assertLess(watch, checks)
         self.assertIn("--exit-status", calls[watch])
 
@@ -143,11 +143,11 @@ class CiWait(unittest.TestCase):
                                    "run view": [{"out": JOBS}], "api --allow-escape-sequences": [{"out": LOG}]})
         self.assertEqual(code, 1)
         self.assertIn("attempt 1", out)
-        self.assertIn("lint / lint — 실패 스텝: Kotlin lint", out)
+        self.assertIn("Every PR / Static checks — 실패 스텝: Kotlin lint", out)
         self.assertIn("Received status code 429", out)
         self.assertNotIn("\x1b", out)
         self.assertNotIn("Cleaning up", out)
-        # ci-success 는 다른 job 의 실패를 옮길 뿐이라 로그를 읽지 않는다
+        # CI result 는 다른 job 의 실패를 옮길 뿐이라 로그를 읽지 않는다
         self.assertEqual([c for c in self.calls() if c.startswith("api ")],
                          ["api --allow-escape-sequences repos/{owner}/{repo}/actions/jobs/5/logs"])
 

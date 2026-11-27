@@ -23,7 +23,11 @@ android {
 dependencies {
     api(project(":core:model"))
     val bom = providers.gradleProperty("pearlComposeBom").orNull
-    if (bom == null) api(platform(libs.androidx.compose.bom)) else api(platform("androidx.compose:compose-bom:$bom"))
+    when {
+        bom == null -> api(platform(libs.androidx.compose.bom))
+        ':' in bom -> api(platform(bom))
+        else -> api(platform("androidx.compose:compose-bom:$bom"))
+    }
     api(libs.androidx.compose.material3)
     api(libs.androidx.compose.ui)
     api(libs.androidx.compose.ui.graphics)

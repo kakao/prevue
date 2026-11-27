@@ -44,7 +44,7 @@ develop이 앞서 충돌하면 `git merge origin/develop`으로 따라가고 검
 
 ## CI
 
-- **기다린다** — `python3 tools/ci_wait.py <N>`. 충돌 확인 → head의 run 찾기 → run이 끝날 때까지 대기 → 필수 체크(`ci-success`) 판정을 한 번에 하고, 종료 코드로 갈린다. `gh pr checks --watch`로 직접 기다리지 않는다 — `ci-success`가 생기기 전이면 "no required checks reported"로 곧바로 끝난다.
+- **기다린다** — `python3 tools/ci_wait.py <N>`. 충돌 확인 → head의 run 찾기 → run이 끝날 때까지 대기 → 필수 체크(`CI result`) 판정을 한 번에 하고, 종료 코드로 갈린다. `gh pr checks --watch`로 직접 기다리지 않는다 — `CI result`가 생기기 전이면 "no required checks reported"로 곧바로 끝난다.
 - **0 초록이면** PR 본문의 "확인한 것"에 스크립트가 찍은 CI 링크를 채운다. `gh pr merge`는 부르지 않는다 — 머지는 사람이 한다.
 - **2 충돌이면** develop과 충돌해 `pull_request` CI가 아예 뜨지 않은 것이다 — 위 "develop 따라가기"대로 병합 · 검증 · 푸시하고 다시 기다린다. 병합으로 충돌을 풀 수 없으면 멈춰 보고한다.
 - **1 실패면** 스크립트가 찍은 실패 job · 스텝 · 오류 앞 로그를 읽는다.

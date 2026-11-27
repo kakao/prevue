@@ -1,0 +1,72 @@
+# Check names read "<when it runs> / <what it checks>".
+name: CI
+
+on:
+  # No push trigger: every merge would build the same tree again.
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# lint · compile · unit cancel the run when they fail, to fail fast; the cancel needs actions: write from the caller.
+jobs:
+  lint:
+    name: Every PR
+    uses: ./.github/workflows/ci-static.yml
+    permissions:
+      contents: read
+      actions: write
+
+  compile:
+    name: Every PR
+    uses: ./.github/workflows/ci-build.yml
+    permissions:
+      contents: read
+      actions: write
+
+  unit:
+    name: Every PR
+    needs: [lint, compile]
+    uses: ./.github/workflows/ci-unit.yml
+    permissions:
+      contents: read
+      actions: write
+
+  integration:
+    name: Every PR
+    needs: [lint, compile]
+    uses: ./.github/workflows/ci-integration.yml
+
+  latest-compose:
+    name: Release only
+    if: ${{ github.base_ref == 'main' || github.event_name == 'workflow_dispatch' }}
+    needs: [lint, compile]
+    uses: ./.github/workflows/ci-latest-compose.yml
+
+  # The required check of both rulesets. always(), not !cancelled(): a skipped required check lets a PR merge.
+  result:
+    name: CI result
+    if: ${{ always() }}
+    needs: [lint, compile, unit, integration, latest-compose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check that every job that had to run passed
+        env:
+          RESULTS: lint=${{ needs.lint.result }} compile=${{ needs.compile.result }} unit=${{ needs.unit.result }} integration=${{ needs.integration.result }}
+          LATEST: ${{ needs.latest-compose.result }}
+          RELEASE_ONLY: ${{ github.base_ref == 'main' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "$RESULTS latest-compose=$LATEST (required: $RELEASE_ONLY)"
+          for R in $RESULTS; do
+            case "$R" in *=success) ;; *) echo "::error::$R"; exit 1;; esac
+          done
+          if [ "$RELEASE_ONLY" = true ] && [ "$LATEST" != success ]; then
+            echo "::error::latest-compose=$LATEST"; exit 1
+          fi

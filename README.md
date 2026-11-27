@@ -10,7 +10,7 @@
 
 <div align="center">
 
-[![build check](https://img.shields.io/badge/build-check-555?labelColor=0E1B2A)](https://github.com/kakao/prevue/actions/workflows/build.yml)
+[![build check](https://img.shields.io/badge/build-check-555?labelColor=0E1B2A)](https://github.com/kakao/prevue/actions/workflows/ci.yml)
 [![version](https://img.shields.io/github/v/release/kakao/prevue?label=version&color=555&labelColor=0E1B2A)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-555?labelColor=0E1B2A)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code%20plugin-D97757?logo=claude&logoColor=white)](#get-started)
@@ -128,6 +128,7 @@ With Prevue, every worktree gets its own lightweight daemon, each using 83% less
   - Without Android Studio, install JDK 21 or later. `brew install openjdk@25` needs no sudo, and Prevue finds it there (or under `Library/Java/JavaVirtualMachines` or SDKMAN) by itself. 25 or later starts about a second faster.
   - Set `PREVUE_JDK` only to pick a different one.
 - **Android SDK** — with at least one platform. Set `ANDROID_HOME` if it isn't at `~/Library/Android/sdk`.
+- **Jetpack Compose** — `ui-tooling` 1.10 (BOM 2026.02.01) or later. Every release is drawn with the newest stable and alpha Compose before it ships.
 
 ### Install
 
