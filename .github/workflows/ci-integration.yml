@@ -27,8 +27,8 @@ jobs:
     env:
       # Every test class must be in exactly one shard, so a new class cannot drop out silently.
       SHARDS: |
-        render: RenderIntegrationTest ShadowedOverloadRenderIntegrationTest HotCompilerJarIntegrationTest
-        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest
+        render: RenderIntegrationTest
+        insets: StaleBoundsIntegrationTest LoadingIndicatorIntegrationTest InsetsIntegrationTest LegacyWindowIntegrationTest InfraIntegrationTest BlankRenderIntegrationTest NoPreloadRenderIntegrationTest TimeGlyphsIntegrationTest HotCompilerJarIntegrationTest ShadowedOverloadRenderIntegrationTest
         kmp: KmpInsetsIntegrationTest KmpRenderIntegrationTest
 
     steps:
