@@ -24,7 +24,7 @@ internal class ToolingTree private constructor(adapter: Class<*>) {
     private val loader: ClassLoader? = adapter.classLoader
     private val gaps = mutableListOf<String>()
     private val record = need("ComposeViewAdapter.slotTableRecord") {
-        adapter.getDeclaredField("slotTableRecord").apply { isAccessible = true }
+        adapter.getDeclaredField("slotTableRecordBroken").apply { isAccessible = true }
     }
     private val store = need("CompositionDataRecord.getStore") { cls(RECORD).getMethod("getStore") }
     private val makeTree = need("CompositionDataTreeKt.makeTree") { cls(TREE).methods.single { it.name == "makeTree" && shapedLikeMakeTree(it) } }
