@@ -29,23 +29,23 @@ def examples():
 
 
 class SkillExamples(Case):
-    def health_response(self, file_name):
+    def doctor_response(self, file_name):
         """예시의 상황 — 라이브러리 모듈을 처음 보고, 최근에 구운 변형은 있는데 덤프가 없고, 리소스는 하나뿐인 앱에서 빌린다."""
         r = self.repo(":app", ":feature:foryou:impl")
         f = r.src(":feature:foryou:impl", file_name)
         r.built(":feature:foryou:impl", "demoDebug", time.time())
         r.apk(":app", "demoDebug")
-        out, rc = P.health(*r.plan(":feature:foryou:impl", f), False, "", f, "", False, "", False, {"HOME": self.tmp.name})
+        out, rc = P.doctor(*r.plan(":feature:foryou:impl", f), False, "", f, "", False, "", False, {"HOME": self.tmp.name})
         return out, f
 
     def test_예시가_있다(self):
         self.assertTrue(examples(), "skills-src 에서 json 예시를 못 찾았다 — 정규식이 원본 모양을 놓쳤다")
 
-    def test_health_응답_예시(self):
+    def test_doctor_응답_예시(self):
         for path, line, ex in examples():
             with self.subTest(at="%s:%d" % (path, line)):
-                self.assertIn("missing", ex, "health 응답이 아닌 예시다 — 이 테스트에 그 응답을 만드는 상황을 더한다")
-                out, f = self.health_response(os.path.basename(ex["next"].split()[2]))
+                self.assertIn("missing", ex, "doctor 응답이 아닌 예시다 — 이 테스트에 그 응답을 만드는 상황을 더한다")
+                out, f = self.doctor_response(os.path.basename(ex["next"].split()[2]))
                 self.assertLessEqual(set(ex), set(out), "CLI 가 내지 않는 키: %s" % sorted(set(ex) - set(out)))
                 for k in ("ok", "missing", "variantChosenBy", "toolchain", "daemon", "classpath", "resourcesFrom", "ask"):
                     if k in ex:

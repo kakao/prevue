@@ -1,6 +1,6 @@
 ---
 name: warmup-not-direct
-description: ② asking to read the build settings is a direct instruction to prepare, so warmup without asking again, then show (D-65) — no recheck with health (D-86)
+description: ② asking to read the build settings is a direct instruction to prepare, so warmup without asking again, then show (D-65) — no recheck with doctor (D-86)
 tags: [nfr15, trigger]
 plugins: ["../.."]
 max_turns: 25

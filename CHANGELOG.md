@@ -8,6 +8,7 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **`prevue health` is now `prevue doctor`** — same response and exit codes, and every `next`, error message, help page and the skill now say `doctor`. The old name is gone: `prevue health` is an unknown command.
 - **Projects on Compose `ui-tooling` 1.13 (BOM 2026.11.01) draw their previews and point at file:line again** — they no longer all fail with "ComposeViewAdapter.getViewInfos$ui_tooling is missing" ([#343](https://github.com/kakao/prevue/issues/343)). Reported by @sergei-lapin.
 
 ## [0.24.0] — 2026-11-26

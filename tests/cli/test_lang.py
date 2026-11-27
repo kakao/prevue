@@ -83,11 +83,18 @@ class CliCase(Case):
 
 
 class Cli(CliCase):
-    def test_health_의_next_에_언어가_실린다(self):
-        out, code = self.run_cli("health", self.file, "--lang", "ko")
+    def test_doctor_의_next_에_언어가_실린다(self):
+        out, code = self.run_cli("doctor", self.file, "--lang", "ko")
         self.assertEqual(code, 1, out)
         self.assertTrue(out["next"].startswith("prevue "), out)
         self.assertTrue(out["next"].endswith(" --lang ko"), out["next"])
+
+    def test_옛_이름_health_는_알_수_없는_명령이다(self):
+        p = subprocess.run([str(ROOT / "bin/prevue"), "health", self.file], capture_output=True, text=True,
+                           cwd=self.tmp.name, env=dict(os.environ, HOME=self.home, PATH=installed_path()))
+        self.assertEqual((p.returncode, p.stdout), (2, ""))
+        self.assertIn("doctor <file>", p.stderr)
+        self.assertNotIn("health", p.stderr)
 
     def test_show_로_시작하면_승인_뒤_칠_명령에도_언어가_실린다(self):
         out, code = self.run_cli("show", "--lang", "ko", self.file)
@@ -102,21 +109,21 @@ class Cli(CliCase):
             self.fail("warmup 명령이 없다: %s" % out)
 
     def test_언어가_없으면_명령은_그대로다(self):
-        out, _ = self.run_cli("health", self.file)
+        out, _ = self.run_cli("doctor", self.file)
         self.assertNotIn("--lang", out["next"])
 
     def test_언어_태그가_아니면_이유를_말한다(self):
-        out, code = self.run_cli("health", self.file, "--lang", 'k"o')
+        out, code = self.run_cli("doctor", self.file, "--lang", 'k"o')
         self.assertEqual(code, 2)
         self.assertIn("--lang", out["error"])
 
     def test_명령_앞의_언어도_받는다(self):
-        out, _ = self.run_cli("--lang", "ko", "health", self.file)
+        out, _ = self.run_cli("--lang", "ko", "doctor", self.file)
         self.assertTrue(out["next"].endswith(" --lang ko"), out["next"])
 
     def test_셸의_로캘은_명령을_막지_않는다(self):
         env = dict(os.environ, HOME=self.home, PREVUE_LANG="ko_KR.UTF-8")
-        p = subprocess.run([str(ROOT / "bin/prevue"), "health", self.file], capture_output=True, text=True, env=env)
+        p = subprocess.run([str(ROOT / "bin/prevue"), "doctor", self.file], capture_output=True, text=True, env=env)
         self.assertNotIn("--lang", json.loads(p.stdout)["next"])
 
     def test_셸이_지은_next_에도_언어가_실린다(self):

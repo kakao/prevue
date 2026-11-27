@@ -27,7 +27,7 @@
 ```md
 O  - **Folding keeps the device the way you hold it.**
 O  - **Show inset areas** draws each inset band and the safe area.
-O  - **The first start after updating downloads about 11 MB once** — run `prevue setup` when `health` asks.
+O  - **The first start after updating downloads about 11 MB once** — run `prevue setup` when `doctor` asks.
 O  - **KMP library modules** with `implementation` dependencies no longer fail on save with "Unresolved reference" ([#129](https://github.com/kakao/prevue/issues/129)) — warm up once more. Thanks to @citytexi for the report and the fix ([#130](https://github.com/kakao/prevue/pull/130)).
 X  - **Fixed the fold posture bug.**
 X  - **Folding keeps the device the way you hold it.** Folding used to reset the device to portrait. Now the posture change keeps the orientation you picked, because …

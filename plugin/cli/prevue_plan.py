@@ -1,4 +1,4 @@
-"""CLI 의 판정. 무엇이 있는지 보고(관찰) 무엇을 할지 정한다 — 모듈 · 변형 · 덤프 유효성 · 리소스 제공자 · health 병합 · Gradle 오류.
+"""CLI 의 판정. 무엇이 있는지 보고(관찰) 무엇을 할지 정한다 — 모듈 · 변형 · 덤프 유효성 · 리소스 제공자 · doctor 병합 · Gradle 오류.
 
 bash(bin/prevue)는 인자를 모아 여기를 부르고, 자리 계산·curl·Gradle 실행만 한다. 여기서는 네트워크를 만지지 않고
 프로세스도 띄우지 않는다 — 파일만 읽으므로 가짜 저장소 트리로 판정 전부를 시험할 수 있다(tests/cli).
@@ -191,7 +191,7 @@ def last_built(module_dir_, name):
 
     코틀린 플러그인이 컴파일을 돌 때마다 cacheable/last-build.bin 을 갱신한다(UP-TO-DATE 면 안 건드린다) — 파일 하나라 싸다.
     산출물 폴더의 mtime 은 바로 아래 항목이 바뀔 때만 움직여 증분 빌드를 못 따라가고(실측: 폴더 09-22 · 안의 최신 09-28),
-    안을 다 뒤지면 대형 앱 모듈에서 3초라 health 마다 치를 수 없다. 코틀린 플러그인 내부 경로라 바뀔 수 있다 — 바뀌면 None 이 되어
+    안을 다 뒤지면 대형 앱 모듈에서 3초라 doctor 마다 치를 수 없다. 코틀린 플러그인 내부 경로라 바뀔 수 있다 — 바뀌면 None 이 되어
     다음 순위로 넘어갈 뿐이다(개발 문서 버전 핀).
     """
     # KMP 는 태스크 이름이 다르다 — 새 플러그인 compileAndroidMain, 옛 조합 compile<변형>KotlinAndroid
@@ -295,7 +295,7 @@ def _digest(path):
 def stamp_build_files(dump, repo, since=None):
     """warmup 이 뜬 덤프에 빌드 파일의 내용 지문을 적는다. 시각이 아니라 내용이다 — 브랜치를 갔다 오면 mtime 만 새것이 되어
     헛 warmup 을 부른다. since(Gradle 을 부르기 전, epoch 초) 뒤에 바뀐 파일은 덤프가 그 내용을 봤는지 몰라 지문을 비워 둔다 —
-    다음 health 가 다시 뜨라고 한다."""
+    다음 doctor 가 다시 뜨라고 한다."""
     with open(dump, encoding="utf-8") as f:
         d = json.load(f)
 
@@ -506,7 +506,7 @@ def plan(repo, module, variant, file, toolchain, gradle_jdk, projects):
         if resfrom:
             resdump = dump_path(projects, repo, resfrom, resource_variant(repo, resfrom, chosen))
             if not dump_ok(dump) and dump_ok(resdump) and dump_hosts(resdump, repo, module):
-                # 자기 덤프가 없어도 그 앱의 덤프가 이 모듈을 담으면 그것으로 띄운다. 앱 데몬이 떠 있으면 덤프 없이 그리는 것(health 의
+                # 자기 덤프가 없어도 그 앱의 덤프가 이 모듈을 담으면 그것으로 띄운다. 앱 데몬이 떠 있으면 덤프 없이 그리는 것(doctor 의
                 # hosted)과 같은 렌더러다(D-38) — 데몬이 내려갔다는 이유로 승인과 Gradle 두 번을 다시 치를 까닭이 없다.
                 # 컴파일 인자는 데몬이 앱 덤프에서 끌어낸다. 모자라 실패하면 그 실패의 remedy 가 이 모듈의 warmup 을 말한다.
                 out.update({"classpath": resdump, "host": resfrom, "hostChosenBy": by})
@@ -633,7 +633,7 @@ def with_ask(out, missing, home):
     return out
 
 
-# ── health ──────────────────────────────────────────────────────────────────
+# ── doctor ──────────────────────────────────────────────────────────────────
 
 def codex_sandbox(env):
     """Codex 샌드박스를 첫 판정에서 알아챈다. 데몬이 막히고 나서야 말하면 작업 도중에 설정 질문이 끼어든다.
@@ -754,7 +754,7 @@ def with_daemons(status_text, lines):
     return json.dumps(st, ensure_ascii=False)
 
 
-def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, env, dmods=(), dstale=(), nojdk="", jdkver="",
+def doctor(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, env, dmods=(), dstale=(), nojdk="", jdkver="",
            nosdk="", jdkfrom=""):
     """(응답, 종료 코드). plan 의 판정에 데몬 생존을 더한다. 빠진 것을 **전부** missing 에 순서대로 싣는다 —
     하나씩 말하면 툴체인을 승인받고 30초 뒤 덤프를 또 물어 대화가 두 번 끊긴다. 한 번에 알면 한 번에 묻는다.
@@ -778,7 +778,7 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
         missing.append("sandbox")
     # 데몬을 띄울 java 가 없거나 21 미만이다(jdkver 가 찾은 버전). 덤프 승인보다 먼저 말한다 — 승인받고 Gradle 을 몇 분 돌린 뒤에야
     # start 가 실패하면 대화가 두 번 끊긴다. 저장소를 못 찾은 응답(error)은 그 이유가 먼저고, 데몬이 떠 있는데 못 닿는 것(blocked)은
-    # JDK 가 아니라 셸의 문제다. 고를 것(need:"choose")은 JDK 를 깐 뒤의 health 가 다시 묻는다 — 지금 물으면 고를 후보 없이 묻게 된다
+    # JDK 가 아니라 셸의 문제다. 고를 것(need:"choose")은 JDK 를 깐 뒤의 doctor 가 다시 묻는다 — 지금 물으면 고를 후보 없이 묻게 된다
     if nojdk and not alive and not blocked and "error" not in out:
         missing.append("jdk")
         out["jdk"] = nojdk
@@ -823,7 +823,7 @@ def health(out, rc, alive, viewer, file, dmod, blocked, blocked_msg, unbaked, en
     if "network" in missing:
         out["next"] = "prevue show " + file + "   # in a shell with network access"
     elif runtime:
-        out["next"] = "prevue health " + file      # JDK · SDK 를 깐 뒤 다시 본다 — 그 전의 start · warmup 은 헛돈다
+        out["next"] = "prevue doctor " + file      # JDK · SDK 를 깐 뒤 다시 본다 — 그 전의 start · warmup 은 헛돈다
         out.pop("then", None)
     elif "toolchain" in missing:
         out["next"] = "prevue setup"
@@ -1089,7 +1089,7 @@ def gradle_run(timing, start, end, rc, runs, jdk, targets, err="", repo=""):
 def warmup_daemons(lines, module, variant, root):
     """(내릴 포트들, 알리기만 할 포트들). 이 모듈 · 변형을 그리는 데몬 중 내 것(own — 같은 릴리즈 설치본 포함, D-64)은 내리고
     남의 것은 알리기만 한다. 다른 변형의 데몬은 이번에 뜬 덤프와 무관하다 — 단 이 모듈을 그리며 다시 떠야 닫히는 낡음을 쥔 데몬은
-    변형이 달라도 내린다. health 가 그 낡음으로 이 warmup 을 시켰다(앱 demoDebug 데몬이 라이브러리 debug 를 그리는 경우)."""
+    변형이 달라도 내린다. doctor 가 그 낡음으로 이 warmup 을 시켰다(앱 demoDebug 데몬이 라이브러리 debug 를 그리는 경우)."""
     mine = set(own(lines, root))
     stop, others = [], []
     for line in lines:
@@ -1282,13 +1282,13 @@ def main(argv):
         print(m)
     elif cmd == "plan":                      # <repo> <module> <variant> <파일> <toolchain> <gradle jdk> <projects>
         _emit(*plan(a[0], a[1], a[2], a[3], a[4] == "true", a[5], a[6]))
-    elif cmd == "health":                    # <plan 응답> <plan 종료 코드> <alive> <viewer> <파일> <데몬 status> <blocked> <막힘 문구> <unbaked> <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처]
+    elif cmd == "doctor":                    # <plan 응답> <plan 종료 코드> <alive> <viewer> <파일> <데몬 status> <blocked> <막힘 문구> <unbaked> <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처]
         try:
             out = bare_commands(json.loads(a[0]))
         except ValueError:
             out = {"ok": False, "error": a[0].strip()}
         dmod, dmods, _ = daemon_status(a[5])
-        _emit(*health(out, int(a[1]), a[2] == "true", a[3], a[4], dmod, a[6] == "true", a[7], a[8] == "true", os.environ, dmods,
+        _emit(*doctor(out, int(a[1]), a[2] == "true", a[3], a[4], dmod, a[6] == "true", a[7], a[8] == "true", os.environ, dmods,
                       restart_stale(a[5]), a[9], a[10], a[11], a[12] if len(a) > 12 else ""))
     elif cmd == "runtime-missing":           # <쓸 수 없는 JDK|""> <찾은 주 버전|""> <없는 SDK|""> [JDK 출처] — start 가 데몬을 띄우기 전에 멈출 때
         _emit(runtime_missing(a[0], a[1], a[2], a[3] if len(a) > 3 else ""))
@@ -1347,7 +1347,7 @@ def main(argv):
         _emit(json.load(sys.stdin))
     elif cmd == "prepare-request":
         _emit(prepare_request(bare_commands(json.load(sys.stdin))))
-    elif cmd == "autostart":                 # stdin: health 응답 — start 인자를 한 줄에 하나, 띄우지 않을 것이면 종료 1
+    elif cmd == "autostart":                 # stdin: doctor 응답 — start 인자를 한 줄에 하나, 띄우지 않을 것이면 종료 1
         try:
             args = autostart(json.loads(sys.stdin.read()))
         except ValueError:
@@ -1374,7 +1374,7 @@ def main(argv):
             if d:
                 try:
                     stamp_build_files(d, repo, int(since_ms) / 1000)
-                except (OSError, ValueError) as e:   # 지문이 없으면 다음 health 가 빌드 파일의 mtime 으로 본다
+                except (OSError, ValueError) as e:   # 지문이 없으면 다음 doctor 가 빌드 파일의 mtime 으로 본다
                     sys.stderr.write("prevue: couldn't write build file fingerprints to %s — %s\n" % (d, e))
         _emit(warmup_result(out, resout, *a[7:13], stopped=" ".join(stop), others=" ".join(others)))
     elif cmd == "gradle-run":                # <시각 파일> <시작 ms> <끝 ms> <종료 코드> <회차 기록> <gradle jdk> <stderr 파일> <저장소> <모듈|변형|출력>...

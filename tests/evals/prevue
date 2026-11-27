@@ -60,7 +60,7 @@ first_install() {
 choose_app() {
   printf '{"ok":false,"module":":core:ui","variant":"debug","variantChosenBy":"fresh","toolchain":true,"classpath":null,"daemon":false,"need":"choose","choose":["resourcesFrom"],"resourceApks":[{"module":":app","variant":"debug"},{"module":":wear","variant":"debug"}],"missing":["dump","daemon"],"next":"prevue warmup %s --resources-from <:app|:wear>%s","options":[":app",":wear"],"ask":%s}\n' "$1" "$SHOW" "$(say choose-app dump)"
 }
-# Codex 샌드박스가 127.0.0.1 · ~/.prevue 를 막는다(health 의 sandbox). 설정 파일 자리는 **평가용 사본**을 가리킨다 —
+# Codex 샌드박스가 127.0.0.1 · ~/.prevue 를 막는다(doctor 의 sandbox). 설정 파일 자리는 **평가용 사본**을 가리킨다 —
 # 자동 리뷰가 권한 상승을 승인해 에이전트가 고쳐도 사용자의 진짜 config.toml 은 안전하다.
 sandboxed() {  # <파일> <restartNeeded:true|false>
   local cfg; cfg="$(dirname "${EVAL_PREVUE_LOG:-/tmp/x}")/codex-config.toml"
@@ -94,7 +94,7 @@ print(json.dumps(d))' "$@" "${CODEX_SANDBOX:-}"
 }
 
 # 리소스(values)에 새 항목을 더한 저장 — 데몬은 떠 있고 그림은 저장 전 것이다. wait 는 종료 0 에 stale.resources 를 싣고(진짜와 같다),
-# health 가 다시 읽기를 묻는다. warmup 뒤에는 낡음이 닫힌다. 저장한 파일(strings.xml)과 프리뷰 파일이 달라 상태는 작업 디렉터리로 가른다.
+# doctor 가 다시 읽기를 묻는다. warmup 뒤에는 낡음이 닫힌다. 저장한 파일(strings.xml)과 프리뷰 파일이 달라 상태는 작업 디렉터리로 가른다.
 RES_STATE="${TMPDIR:-/tmp}/prevue-eval-$(pwd | cksum | cut -d' ' -f1).resources"
 res_screen() { printf '%s/app/src/main/kotlin/Screen.kt' "$(pwd)"; }
 res_stale() {
@@ -119,7 +119,7 @@ previews_of() {  # <단순 이름>
 }
 
 F="$(file_of "$@")"
-# warmup 이 돌면 그 파일은 준비가 끝난다 — 다음 show · health · wait 는 준비된 응답이다. 여태는 warmup 뒤에도 "준비 안 됨"이라
+# warmup 이 돌면 그 파일은 준비가 끝난다 — 다음 show · doctor · wait 는 준비된 응답이다. 여태는 warmup 뒤에도 "준비 안 됨"이라
 # 에이전트가 덤프 파일을 찾아 헤매는 명령을 더 쳤다(Codex 평가 기준선 3/3). 파일 경로가 실행마다 달라 상태가 섞이지 않는다.
 STATE="${TMPDIR:-/tmp}/prevue-eval-$(printf '%s' "$F" | cksum | cut -d' ' -f1).warmed"
 # setup 은 파일을 받지 않는다 — 받은 자리를 실행의 작업 디렉터리로 가른다.
@@ -127,14 +127,14 @@ SETUP_STATE="${TMPDIR:-/tmp}/prevue-eval-$(pwd | cksum | cut -d' ' -f1).setup"
 case "$SCENARIO" in unready|first-install|choose-app) [ -f "$STATE" ] && SCENARIO=ready ;; esac
 [ "$SCENARIO" = first-install ] && [ -f "$SETUP_STATE" ] && SCENARIO=unready
 case "$SCENARIO:$cmd" in
-  unready:show|unready:health|unready:wait) unready "$F"; exit 3 ;;
-  first-install:show|first-install:health|first-install:wait) first_install "$F"; exit 3 ;;
-  choose-app:show|choose-app:health|choose-app:wait) choose_app "$F"; exit 3 ;;
+  unready:show|unready:doctor|unready:wait) unready "$F"; exit 3 ;;
+  first-install:show|first-install:doctor|first-install:wait) first_install "$F"; exit 3 ;;
+  choose-app:show|choose-app:doctor|choose-app:wait) choose_app "$F"; exit 3 ;;
   first-install:setup) : > "$SETUP_STATE"; printf '{"ok":true,"toolchain":true,"alreadyHad":false}\n'; exit 0 ;;
   first-install:warmup|choose-app:warmup) warmup_done "$@"; exit 0 ;;
-  sandbox:show|sandbox:health|sandbox:wait|sandbox:start|sandbox-merge:show|sandbox-merge:health|sandbox-merge:wait|sandbox-merge:start) sandboxed "$F" false; exit 3 ;;
-  # 판올림 뒤 첫 start — 실행 파일을 굽느라 Gradle 을 불러 샌드박스 안에서는 돌지 않는다. health 가 startNeedsEscalation 으로 미리 알린다.
-  unbaked:show|unbaked:health|unbaked:wait)
+  sandbox:show|sandbox:doctor|sandbox:wait|sandbox:start|sandbox-merge:show|sandbox-merge:doctor|sandbox-merge:wait|sandbox-merge:start) sandboxed "$F" false; exit 3 ;;
+  # 판올림 뒤 첫 start — 실행 파일을 굽느라 Gradle 을 불러 샌드박스 안에서는 돌지 않는다. doctor 가 startNeedsEscalation 으로 미리 알린다.
+  unbaked:show|unbaked:doctor|unbaked:wait)
     [ -f "$STATE" ] && { board "$F"; exit 0; }   # 권한 상승으로 띄운 뒤에는 준비됐다
     printf '{"ok":false,"module":":app","variant":"debug","toolchain":true,"classpath":"/home/.prevue/projects/k/app-debug.json","daemon":false,"missing":["daemon"],"startNeedsEscalation":true,"next":"prevue start --classpath /home/.prevue/projects/k/app-debug.json --show %s'"$LANG_ARG"'"}\n' "$F"; exit 3 ;;
   unbaked:start)
@@ -144,20 +144,20 @@ case "$SCENARIO:$cmd" in
     : > "$STATE"; board "$F"; exit 0 ;;
   # show 가 데몬을 스스로 띄웠는데 샌드박스가 브라우저 열기를 막았다 — 주소를 링크로 건네야 한다. 어느 명령으로 봐도 같다.
   not-opened:show|not-opened:start|not-opened:wait) board "$F" | python3 -c 'import json,sys; d=json.load(sys.stdin); d.update(started=True, opened=False); print(json.dumps(d))'; exit 0 ;;
-  sandbox-restart:show|sandbox-restart:health|sandbox-restart:wait|sandbox-restart:start) sandboxed "$F" true; exit 3 ;;
+  sandbox-restart:show|sandbox-restart:doctor|sandbox-restart:wait|sandbox-restart:start) sandboxed "$F" true; exit 3 ;;
   unready:warmup) warmup_done "$@"; exit 0 ;;
   resource-stale:warmup) : > "$RES_STATE"; warmup_done "$@"; exit 0 ;;
   resource-stale:wait|resource-stale:show|resource-stale:status|resource-stale:board)
     [ -f "$RES_STATE" ] || ! grep -q tap_hint app/src/main/res/values/strings.xml 2>/dev/null && { board "$F"; exit 0; }
     res_stale; exit 0 ;;
-  resource-stale:health)
+  resource-stale:doctor)
     if [ ! -f "$RES_STATE" ] && grep -q tap_hint app/src/main/res/values/strings.xml 2>/dev/null; then
       printf '{"ok":false,"module":":app","variant":"debug","toolchain":true,"classpath":"/home/.prevue/projects/k/app-debug.json","daemon":true,"daemonStale":["resources"],"viewer":"http://127.0.0.1:8801/'"$LANG_Q"'","missing":["dump"],"next":"prevue warmup %s'"$LANG_ARG"'","ask":%s}\n' "$F" "$(say dump-resources proceed)"
       exit 1
     fi
     printf '{"ok":true,"module":":app","variant":"debug","toolchain":true,"daemon":true,"missing":[],"viewer":"http://127.0.0.1:8801/'"$LANG_Q"'"}\n'; exit 0 ;;
   *:show|*:wait|*:start) board "$F"; exit 0 ;;
-  *:health) printf '{"ok":true,"module":":app","variant":"debug","toolchain":true,"daemon":true,"missing":[],"viewer":"http://127.0.0.1:8801/'"$LANG_Q"'"}\n'; exit 0 ;;
+  *:doctor) printf '{"ok":true,"module":":app","variant":"debug","toolchain":true,"daemon":true,"missing":[],"viewer":"http://127.0.0.1:8801/'"$LANG_Q"'"}\n'; exit 0 ;;
   selection-empty:selection) printf '{"ok":false,"error":"Nothing pointed at — ⌥+click in the viewer"}\n'; exit 1 ;;
   *:selection) printf '{"ok":true,"file":"%s","line":12,"node":"Text","userChain":["Greeting","Column","Text"],"image":"%s"}\n' "$F" "$PNG"; exit 0 ;;
   *:card) printf '{"ok":true,"index":%s,"image":"%s","rendered":true}\n' "${1:-0}" "$PNG"; exit 0 ;;
