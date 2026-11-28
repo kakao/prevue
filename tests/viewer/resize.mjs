@@ -197,8 +197,10 @@ try {
     await replay(`f=>{f.size=__stable.focus.postures.find(p=>p.size.device==='fold8'&&p.size.folded&&p.size.orientation==='portrait').size}`);
     await replay(`f=>{f.imageUrl=${JSON.stringify(turned)}}`);
     await until(`document.querySelector('#shot').dataset.still===${JSON.stringify(turned)}`, 3_000);
-    assert(await evaluate(`document.querySelector('#ua').style.transform.includes('rotate')`), "같은 크기 주소 바뀜을 회전이 끝나기 전에 재생");
-    await replay(`f=>{f.imageUrl+='&r=2'}`);
+    // 회전 중인지는 재생과 같은 왕복에서 읽는다 — 따로 읽으면 그 사이 회전이 끝나 순서를 못 만든 채 통과할 수 있다.
+    // 바뀐 주소는 읽히지 않는 그림이라 뷰어가 다시 넘겨 줄 수 없다 — 회전 중 받은 그림을 지키는 쪽만으로 쉬어야 한다
+    const spinning = await evaluate(`{const r=document.querySelector('#ua').style.transform.includes('rotate');const s=structuredClone(__store.st);s.version++;s.focus.imageUrl='/missing-'+Date.now()+'.png';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:s})}));r}`);
+    assert(spinning, "같은 크기 주소 바뀜을 회전이 끝나기 전에 재생");
     await until(`document.querySelector('#resizeScene').classList.contains('at-rest') && !document.querySelector('#stage').classList.contains('resize-hidden')`, 5_000);
     console.log(`통과 ${++checked}: 돌리는 중 같은 크기 그림 주소가 바뀌어도 회전이 끝나고 장면이 쉰다`);
     // 재생한 상태는 version 을 앞질렀다 — 데몬의 상태로 되돌리고 실제 이벤트를 다시 받는다
