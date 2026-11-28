@@ -13,6 +13,8 @@ import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
+import prevue.application.port.LiveSession
+import prevue.daemon.fake.awaitValue
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.json.Json
@@ -65,8 +67,7 @@ private suspend fun checkLegacyWindows() {
                     val box = ViewInfoJson.nodes(compose).first { it.name == "Box" && it.file == source.name && it.line == line }
                     assertEquals(listOf(target.left, target.top, target.right, target.bottom), listOf(box.left, box.top, box.right, box.bottom), "first PNG and tree must agree")
                     handle.touch("tap", (box.left + box.right) / 2, (box.top + box.bottom) / 2)
-                    handle.tick(forceImage = true)
-                    assertTrue(handle.look(semantics = true).tree.semantics.any { it.semantics.text?.startsWith("Taps: 1") == true }, "tree-centered touch hits the short top button")
+                    awaitTaps(handle, "api=$api device=$device edge=${edge.key}: tree-centered touch hits the short top button")
                 } finally {
                     handle.close()
                 }
@@ -76,3 +77,16 @@ private suspend fun checkLegacyWindows() {
         out.deleteRecursively()
     }
 }
+
+// 외부: layoutlib 17 세션 시각은 직전 두 setNanosTime 의 차 + 마지막 doFrame 시각이라, 뗌이 건 콜백이 바로 다음 틱엔 아직 때가 아닐 수 있다 — 제품 루프처럼 틱을 이어 돌리며 기다린다
+private fun awaitTaps(handle: LiveSession, what: String) {
+    var last: String? = null
+    awaitValue({ "$what — last \"$last\"" }, timeoutMs = TAP_SETTLE_MS, pollMs = TAP_FRAME_MS) {
+        handle.tick(forceImage = true)
+        last = handle.semantics().firstNotNullOfOrNull { n -> n.semantics.text?.takeIf { it.startsWith("Taps: ") } }
+        last?.takeIf { it.startsWith("Taps: 1") }
+    }
+}
+
+private const val TAP_SETTLE_MS = 2_000L
+private const val TAP_FRAME_MS = 16L
