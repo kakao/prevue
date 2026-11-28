@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import javax.imageio.ImageIO
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.condition.EnabledIf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,7 +24,7 @@ import prevue.infrastructure.render.ViewInfoJson
 
 @EnabledIf("prevue.daemon.InsetsIntegrationTest#available")
 internal class LegacyWindowIntegrationTest {
-    @Test fun `구형 targetSdk의 앱 창과 첫 트리와 터치가 플랫폼 API 및 기기 인셋과 무관하게 일치한다`() = runBlocking {
+    @RepeatedTest(12) fun `구형 targetSdk의 앱 창과 첫 트리와 터치가 플랫폼 API 및 기기 인셋과 무관하게 일치한다`() = runBlocking {
         checkLegacyWindows()
     }
 }
