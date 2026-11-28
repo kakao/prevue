@@ -1320,7 +1320,7 @@ function mt(e, t) {
 		kind: "size",
 		cached: !1,
 		arrived: !1,
-		arriveAt: e.images.has(n.sel) ? t : Infinity
+		arriveAt: e.tr.arrived || e.images.has(n.sel) ? t : Infinity
 	});
 }
 function ht(e) {

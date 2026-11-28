@@ -1851,7 +1851,13 @@ function Xr({ root: e, geometry: t, shot: n, stage: r, wrap: i, layout: a, dimen
 		let T = m;
 		m = a, h = d;
 		let E = !w && !!T && qr(T.deviceInsets) !== qr(a.deviceInsets);
-		T && !w && a.imageUrl !== T.imageUrl && j.clearImages();
+		if (T && !w && a.imageUrl !== T.imageUrl) {
+			j.clearImages();
+			let e = v, t = a.imageUrl;
+			P(t).then((n) => {
+				f && e === v && h === d && m?.imageUrl === t && j.image(d, te(n, a.size));
+			}).catch(() => {});
+		}
 		for (let e of a.postures || []) {
 			let t = v;
 			P(e.imageUrl).then((n) => {
