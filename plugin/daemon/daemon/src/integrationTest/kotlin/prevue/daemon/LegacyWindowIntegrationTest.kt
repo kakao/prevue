@@ -3,6 +3,7 @@ package prevue.daemon
 import java.io.File
 import java.nio.file.Files
 import javax.imageio.ImageIO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIf
@@ -13,6 +14,7 @@ import prevue.application.domain.model.DeviceModel
 import prevue.application.domain.model.EdgeToEdge
 import prevue.application.domain.model.PreviewSpec
 import prevue.application.domain.model.ScreenSize
+import prevue.application.port.LiveSession
 import prevue.daemon.fake.realDispatchers
 import prevue.infrastructure.dump.ClasspathSpec
 import prevue.infrastructure.json.Json
@@ -65,8 +67,8 @@ private suspend fun checkLegacyWindows() {
                     val box = ViewInfoJson.nodes(compose).first { it.name == "Box" && it.file == source.name && it.line == line }
                     assertEquals(listOf(target.left, target.top, target.right, target.bottom), listOf(box.left, box.top, box.right, box.bottom), "first PNG and tree must agree")
                     handle.touch("tap", (box.left + box.right) / 2, (box.top + box.bottom) / 2)
-                    handle.tick(forceImage = true)
-                    assertTrue(handle.look(semantics = true).tree.semantics.any { it.semantics.text?.startsWith("Taps: 1") == true }, "tree-centered touch hits the short top button")
+                    val taps = awaitTaps(handle)
+                    assertTrue(taps?.startsWith("Taps: 1") == true, "api=$api device=$device edge=${edge.key}: tree-centered touch hits the short top button — last \"$taps\"")
                 } finally {
                     handle.close()
                 }
@@ -76,3 +78,17 @@ private suspend fun checkLegacyWindows() {
         out.deleteRecursively()
     }
 }
+
+// 외부: layoutlib 17 세션 시각은 직전 두 setNanosTime 의 차 + 마지막 doFrame 시각이라, 뗌이 건 콜백이 바로 다음 틱엔 아직 때가 아닐 수 있다 — 제품 루프처럼 틱을 이어 돌리며 기다린다
+private suspend fun awaitTaps(handle: LiveSession): String? {
+    val until = System.nanoTime() + TAP_SETTLE_MS * 1_000_000
+    while (true) {
+        handle.tick(forceImage = true)
+        val taps = handle.look(semantics = true).tree.semantics.firstNotNullOfOrNull { n -> n.semantics.text?.takeIf { it.startsWith("Taps: ") } }
+        if (taps?.startsWith("Taps: 1") == true || System.nanoTime() > until) return taps
+        delay(TAP_FRAME_MS)
+    }
+}
+
+private const val TAP_SETTLE_MS = 2_000L
+private const val TAP_FRAME_MS = 16L
