@@ -255,6 +255,8 @@ try {
   await ready();
   await post("/viewer/resize", { size: "original" });
   await until(`__store.st.focus && !__store.st.focus.size`); await ready();
+  // ready 는 장면이 쉬는지 보지 않는다 — 틀이 원래 크기로 옮겨 가는 중에 재면 비율이 어긋난다
+  await until(`document.querySelector('#resizeScene').classList.contains('at-rest')`);
   await check(`(()=>{const shot=document.querySelector('#shot'),r=shot.getBoundingClientRect();return !__store.st.focus.size && Math.abs(r.width/r.height-shot.naturalWidth/shot.naturalHeight)<.002})()`, "크기를 바꾼 상태로 새로 열어도 원래 프리뷰의 비율 복원");
   await exit();
   // D-155 — FQN 딥링크도 그 파일 보드 위의 한 장이다. 늘 조작이고 뒤로 버튼이 있으며, esc 가 그 파일 보드의 그 카드 자리로 돌아간다.
@@ -319,6 +321,8 @@ try {
   // 각 모서리가 출발값에서 도착값까지 한 방향으로만 움직이고 끝 프레임이 도착값이다
   const along = (fs, from, to) => fs.length > 5 && fs[0].every((v, i) => Math.abs(v - from[i]) < 1) && fs.at(-1).every((v, i) => Math.abs(v - to[i]) < .5)
     && fs.every((f, n) => !n || f.every((v, i) => (v - fs[n - 1][i]) * Math.sign(to[i] - from[i]) > -.01));
+  // 들어갈 때의 틀은 장면이 쉰 뒤에 착지해 흐려진다 — 부하로 프레임이 느리면 쉰 뒤에도 남아 있어 나가는 틀의 첫 프레임으로 섞인다
+  await until(`!document.querySelector('.morph')`);
   const shrink = await corners(exit);
   assert(along(shrink, coverRadii, cardRadii), `나갈 때 틀의 네 모서리가 커버 반경에서 카드 반경으로 ${JSON.stringify(shrink.map(f => f.map(v => +v.toFixed(1))))}`);
   console.log(`통과 ${++checked}: Flip8 커버에서 나갈 때 틀이 네 모서리를 따로 옮긴다(${shrink.length}프레임)`);
