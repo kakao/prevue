@@ -86,7 +86,7 @@ try {
   await toBoard(viewer);
   await send("Page.enable"); await send("Runtime.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-  await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__errors=[];addEventListener('error',e=>__errors.push(e.message));addEventListener('unhandledrejection',e=>__errors.push(String(e.reason)));` });
+  await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__errors=[];window.__replaying=false;const ES=EventSource;window.EventSource=class extends ES{constructor(...a){super(...a);window.__events=this;this.addEventListener('message',e=>{if(__replaying&&e.isTrusted)e.stopImmediatePropagation()})}};addEventListener('error',e=>__errors.push(e.message));addEventListener('unhandledrejection',e=>__errors.push(String(e.reason)));` });
   await send("Page.navigate", { url: viewer });
   await until(`!!document.querySelector('#shot') && !!window.__errors`);
   await evaluate(`import('/js/store.js').then(m=>window.__store=m.store)`);
@@ -177,11 +177,36 @@ try {
   await beginFoldProbe();
   await click("#dcFold"); await until(`__store.st.focus.size.folded && !document.querySelector('#stage').classList.contains('resize-hidden')`);
   await endFoldProbe("Fold8 portrait");
+  // 장면이 쉬어도 치수 숫자는 420ms 굴러간다 — 다 굴러간 값을 읽는다
+  await until(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`);
   await check(`__store.st.focus.size.orientation==='landscape-right' && document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "펼친 세로를 접으면 손에 든 회전을 이어 커버 가로 오른쪽 · 치수 갱신");
   await check(`document.querySelector('#dcFold').dataset.folded==='true' && document.querySelector('#dcFold').getAttribute('aria-label')==='Unfold' && document.querySelector('#dcFold').title==='Unfold' && document.querySelector('#dcFold .unfold-ic').getBoundingClientRect().width>0 && document.querySelector('#dcFold .fold-ic').closest('svg').getBoundingClientRect().width===0 && document.querySelector('#dcFold').getBoundingClientRect().width===document.querySelector('#dcHinge').getBoundingClientRect().width`, "접은 기기의 접기 버튼은 펼치기 그림과 이름");
   await check(`document.querySelector('#pnSum .nm').textContent==='Fold8' && !!document.querySelector('#pnSum .pn-sil') && !document.querySelector('#devCtl').hidden && document.querySelector('#panel').contains(document.querySelector('#devCtl')) && document.querySelector('#pnSl').hidden && [...document.querySelectorAll('#devCtl .tb-btn')].every(b=>b.innerText.trim()==='' && b.getAttribute('aria-label')) && ${dockAt} && ${dockClear}`, "기기면 독 가운데에 아이콘만인 자세 버튼(이름은 aria-label) · 메뉴 버튼은 윤곽과 이름 · 기기를 가리지 않는다");
   await orient('landscape-left');
+  await until(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`);
   await check(`document.querySelector('#rlW').value==='751' && document.querySelector('#rlH').value==='475'`, "접은 기기의 가로 돌리기");
+  // 돌리는 중에 데몬이 같은 크기의 그림 주소(그린 시각 도장)를 다시 알리면, 회전 중에 받은 그림이 지워져 회전 끝에 영영 기다렸다(부하 · 오래 돈 데몬에서 system-bars a07 등).
+  // 데몬 타이밍에 기대지 않게 상태를 재생해 그 순서를 만든다 — 보관 비우기 → 받아 둔 그림 없는 회전 → 회전 중 도착 → 회전 중 같은 크기 주소 바뀜.
+  {
+    const turned = await evaluate(`__store.st.focus.postures.find(p=>p.size.device==='fold8'&&p.size.folded&&p.size.orientation==='portrait')?.imageUrl`);
+    assert(turned, "Fold8 커버 세로 자세 그림");
+    await evaluate(`(async()=>{const i=new Image();i.src=${JSON.stringify(turned)};await i.decode()})()`);
+    const replay = mutate => evaluate(`{const s=structuredClone(__store.st);s.version++;(${mutate})(s.focus);__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:s})}))}`);
+    await evaluate(`window.__stable=structuredClone(__store.st);window.__replaying=true`);
+    await replay(`f=>{f.imageUrl+='&r=1';f.postures=[]}`); await pause(200);
+    await replay(`f=>{f.size=__stable.focus.postures.find(p=>p.size.device==='fold8'&&p.size.folded&&p.size.orientation==='portrait').size}`);
+    await replay(`f=>{f.imageUrl=${JSON.stringify(turned)}}`);
+    await until(`document.querySelector('#shot').dataset.still===${JSON.stringify(turned)}`, 3_000);
+    // 회전 중인지는 재생과 같은 왕복에서 읽는다 — 따로 읽으면 그 사이 회전이 끝나 순서를 못 만든 채 통과할 수 있다.
+    // 바뀐 주소는 읽히지 않는 그림이라 뷰어가 다시 넘겨 줄 수 없다 — 회전 중 받은 그림을 지키는 쪽만으로 쉬어야 한다
+    const spinning = await evaluate(`{const r=document.querySelector('#ua').style.transform.includes('rotate');const s=structuredClone(__store.st);s.version++;s.focus.imageUrl='/missing-'+Date.now()+'.png';__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:s})}));r}`);
+    assert(spinning, "같은 크기 주소 바뀜을 회전이 끝나기 전에 재생");
+    await until(`document.querySelector('#resizeScene').classList.contains('at-rest') && !document.querySelector('#stage').classList.contains('resize-hidden')`, 5_000);
+    console.log(`통과 ${++checked}: 돌리는 중 같은 크기 그림 주소가 바뀌어도 회전이 끝나고 장면이 쉰다`);
+    // 재생한 상태는 version 을 앞질렀다 — 데몬의 상태로 되돌리고 실제 이벤트를 다시 받는다
+    await evaluate(`{const back=structuredClone(__stable);back.version=__store.st.version+1;__events.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'state',state:back})}));__store.st.version=__stable.version;window.__replaying=false}`);
+    await until(`__store.st.focus.size.orientation==='landscape-left' && document.querySelector('#resizeScene').classList.contains('at-rest') && !document.querySelector('#stage').classList.contains('resize-hidden')`);
+  }
   await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='true' && document.querySelector('#dcHinge').title==='Hide hinge line' && document.querySelector('#dcHinge').getAttribute('aria-label')==='Hinge line'`, "힌지 선은 켜지면 눌린 모양 · 툴팁은 할 동작");
   await click("#dcHinge"); await check(`document.querySelector('#dcHinge').getAttribute('aria-pressed')==='false' && document.querySelector('#dcHinge').title==='Show hinge line'`, "힌지 선 전환");
   await click("#rlH"); await until(`!__store.st.focus.size?.device && __store.st.focus.size?.widthDp===751 && __store.st.focus.size?.heightDp===475 && document.activeElement===document.querySelector('#rlH')`);

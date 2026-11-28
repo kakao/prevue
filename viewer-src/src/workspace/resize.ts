@@ -160,7 +160,12 @@ export function createResizeController({ root, geometry, shot, stage, wrap, layo
     current = f; key = next;
     // 같은 크기에서 인셋 값만 바뀌어 몸체 아래 배지 줄이 생기거나 사라지면 장면이 자리를 다시 맞춘다.
     const relayout = !sized && !!previous && marksBelow(previous.deviceInsets) !== marksBelow(f.deviceInsets);
-    if (previous && !sized && f.imageUrl !== previous.imageUrl) scene.clearImages();
+    if (previous && !sized && f.imageUrl !== previous.imageUrl) {
+      scene.clearImages();
+      // 비운 보관에는 지금 크기의 그림도 없다 — 장면이 아직 그 그림을 기다리는 중이면 다시 넘기지 않는 한 멈춘다
+      const gen = epoch, url = f.imageUrl;
+      load(url).then(img => { if (active && gen === epoch && key === next && current?.imageUrl === url) scene.image(next, spec(img, f.size)); }).catch(() => {});
+    }
     for (const p of f.postures || []) {
       const gen = epoch;
       load(p.imageUrl).then(img => { if (active && gen === epoch && current?.postures?.some(x => x.imageUrl === p.imageUrl)) scene.image(sizeKey(p.size), spec(img, p.size)); }).catch(() => {});

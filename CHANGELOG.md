@@ -8,6 +8,9 @@ Only changes users can see go here.
 
 ## [Unreleased]
 
+- **Turning a device no longer leaves the picture blurred and stuck** when the preview redraws mid-turn.
+- The device view no longer overflows sideways in narrow windows.
+
 ## [0.24.1] — 2026-11-27
 
 Previews draw again on Compose `ui-tooling` 1.13 (BOM 2026.11.01), and Prevue now states the oldest Compose it supports, `ui-tooling` 1.10. `prevue health` is renamed to `prevue doctor`, and `prevue show` answers with a failed daemon start as it is.

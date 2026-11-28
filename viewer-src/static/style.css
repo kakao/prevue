@@ -693,7 +693,9 @@ html { overflow-y: scroll; scrollbar-gutter: stable; }
 #focusView { position: relative; }
 /* 한 장의 틀. 확대된 그림은 이 안에서만 움직인다 — 안쪽 여백은 맞춤일 때 헤어라인 · 조작 링이 잘리지 않을 자리다. */
 .wrap { position: relative; display: flex; flex-direction: column; align-items: center; height: var(--view-h, auto);
-        padding: var(--space-16); margin: calc(var(--space-16) * -1); overflow: hidden; }
+        padding: var(--space-16); overflow: hidden;
+        /* 좌우는 main 의 여백(--board-pad)까지만 넓힌다 — 좁은 창(12px)에서 16px 를 넘기면 창 밖으로 나가 가로 스크롤이 생긴다 */
+        margin: calc(var(--space-16) * -1) calc(min(var(--space-16), var(--board-pad)) * -1); }
 /* 무대도 바닥이다 — 반경 · 그림자 없이 카드와 같은 헤어라인(D-153). 확대해도 가늘게 --z 로 되돌린다. */
 .stage { position: relative; line-height: 0; background: var(--surface-container);
          box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--outline-variant); max-width: 100%; min-width: 120px; min-height: 60px;

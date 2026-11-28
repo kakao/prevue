@@ -306,7 +306,8 @@ function endSpin(S: Scene, now: number) {
   S.creaseOp.snap(isOpen(st) ? P.crease : 0);
   S.rulerOp.to(1, 200, now);
   if (cached) { settle(S, st.img); if (S.tr?.kind === "spin") S.tr = null; return; }
-  if (S.tr?.kind === "spin") Object.assign(S.tr, { kind: "size", cached: false, arrived: false, arriveAt: S.images.has(st.sel) ? now : Infinity });
+  // 회전 중에 온 그림은 보관이 비워져도(그림 주소만 바뀜) tr.to.img 에 남는다 — 도착을 보관에서만 다시 찾으면 영영 기다린다
+  if (S.tr?.kind === "spin") Object.assign(S.tr, { kind: "size", cached: false, arrived: false, arriveAt: S.tr.arrived || S.images.has(st.sel) ? now : Infinity });
 }
 export function tick(S: Scene) {
   const now = S.clock.t;
